@@ -1,0 +1,42 @@
+---
+title: "Website Template"
+author: "Ben Weinstein"
+date: "3/4/2018"
+output:
+  prettydoc::html_pretty:
+    theme: tactile
+    highlight: github
+---
+
+```{r,echo=F,message=FALSE,warning=FALSE}
+library(knitr)
+library(ggplot2)
+opts_chunk$set(echo=F,message=FALSE,warning=FALSE)
+
+```
+
+# Aims
+# Tasks
+## Segmentation
+### Accuracy
+```{r}
+ggplot() + xlab("Date") + ylab("Accuracy")
+```
+
+### Precision
+```{r}
+ggplot() + xlab("Date") + ylab("Precision")
+```
+
+### Latest Model Description
+
+## Classification
+### Accuracy
+### Precision
+
+# Data Exploration
+[NIST data overlap](DataExploration/DataExploration.html)
+
+# View the data
+
+[link to shiny server](link)

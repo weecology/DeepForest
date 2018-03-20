@@ -1,0 +1,5 @@
+env/*
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata

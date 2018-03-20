@@ -1,0 +1,8 @@
+dask[complete] 
+holoviews
+jupyter
+laspy
+numpy
+#GDAL binary needs to be installed https://www.karambelkar.info/2016/10/gdal-2-on-mac-with-homebrew/
+gdal
+matplotlib
