@@ -1,5 +1,3 @@
-#!/usr/bin/env bash
-
 import logging
 import os
 import socket
