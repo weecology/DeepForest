@@ -14,3 +14,4 @@
 
 module load R
 
+Rscript session-info.R
