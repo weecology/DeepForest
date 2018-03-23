@@ -61,3 +61,8 @@ The main executition script is RunJob.sh
 
 * Zhen, Z. et al. 2016. Trends in automatic individual tree crown detection and delineation-evolution of LiDAR data. - Remote Sens. 8: 1–26.  (review)
 
+* Wallace, L. et al. 2014. Evaluating tree detection and segmentation routines on very high resolution UAV LiDAR ata. - IEEE Trans. Geosci. Remote Sens. 52: 7619–7628. (review)
+
+* Wallace, L. et al. 2016. Assessment of forest structure using two UAV techniques: A comparison of airborne laser scanning and structure from motion (SfM) point clouds. - Forests 7: 1–16.
+
+* Jaskierniak, D. et al. 2015. Using tree detection algorithms to predict stand sapwood area, basal area and stocking density in Eucalyptus regnans forest. - Remote Sens. 7: 7298–7323.
