@@ -32,30 +32,32 @@ The main executition script is RunJob.sh
 
 * RunJob.sh
 
-## Tree Crown Implementations
-[Watershed](http://neondataskills.org/lidar/calc-biomass-py/)
+## Tree Crown Implementations (R and Python)
+[Watershed](http://neondataskills.org/lidar/calc-biomass-py/) in python
 
-[Watershed and Standard Window, silva?](http://adam-erickson.github.io/gapfraction/)
+[Watershed and Standard Window, silva?](http://adam-erickson.github.io/gapfraction/) in R
 
-[forestutils?](https://pypi.python.org/pypi/forestutils)
+[Li 2012](https://pypi.python.org/pypi/forestutils) in python
 
-[Hamraz 2016](http://cs.uky.edu/~hhamraz/lidar/manual.htm)
+[Hamraz 2016](http://cs.uky.edu/~hhamraz/lidar/manual.htm) in python
 
-[Li 2012](https://github.com/Jean-Romain/lidR/wiki/Tree-segmentation-from-A-to-Z)
+[Li 2012](https://github.com/Jean-Romain/lidR/wiki/Tree-segmentation-from-A-to-Z) in R
 
-[Silva 2016](https://rdrr.io/rforge/rLiDAR/man/FindTreesCHM.html)
+[Silva 2016](https://rdrr.io/rforge/rLiDAR/man/FindTreesCHM.html) in R
 
-[Dalponte 2016](https://www.rdocumentation.org/packages/lidR/versions/1.4.0/topics/lastrees)ib
+[Dalponte 2016](https://www.rdocumentation.org/packages/lidR/versions/1.4.0/topics/lastrees) in R
+
+[Ayrey, E. et al. 2017. Layer Stacking: A Novel Algorithm for Individual Forest Tree Segmentation from LiDAR Point Clouds. - Can. J. Remote Sens. 43: 16–27.](https://github.com/bw4sz/Layer-Stacking)
 
 ### Authors still to be contacted (Bibliography)
+
+* Xu, S. et al. 2018. A supervoxel approach to the segmentation of individual trees from LiDAR point clouds. - Remote Sens. Lett. 9: 515–523.
 
 * Ferraz, A. et al. 2016. Lidar detection of individual tree size in tropical forests. - Remote Sens. Environ. 183: 318–333.
 
 * Vega, C. et al. 2014. PTrees: A point-based approach to forest tree extractionfrom lidar data. - Int. J. Appl. Earth Obs. Geoinf. 33: 98–108.
 
 * Lee, J. et al. 2017. A graph cut approach to 3D tree delineation, using integrated airborne LiDAR and hyperspectral imagery.: 1–24.
-
-* Ayrey, E. et al. 2017. Layer Stacking: A Novel Algorithm for Individual Forest Tree Segmentation from LiDAR Point Clouds. - Can. J. Remote Sens. 43: 16–27.
 
 * Zhen, Z. et al. 2016. Trends in automatic individual tree crown detection and delineation-evolution of LiDAR data. - Remote Sens. 8: 1–26.  (review)
 
