@@ -1,3 +1,4 @@
+datashader
 dask[complete] 
 holoviews
 jupyterlab
