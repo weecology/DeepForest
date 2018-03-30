@@ -1,4 +1,8 @@
-# Tree Crown Segmentation and Species Classification for the National Ecological Observation Network Sites
+# DeepForest
+
+[![Build status](https://travis-ci.org/weecology/DeepForest.svg?master)](https://travis-ci.org/weecology)
+
+Tree Crown Segmentation and Species Classification for the National Ecological Observation Network Sites
 
 ## Contributors
 
@@ -16,6 +20,7 @@ The following is tested on the University of Florida Hipergator High Performance
 The goal of this repo is to investigate and implement as many tree crown delination approaches as possible. Nearly 30 methods have been published in the past 10 years. The vast majority use unsupervised classification approaches to deliniate tree crown polygons. By treating these unsupervised classification methods as a feature ensemble for a deep learning neural network, we can leverage the benefits of each approach. Using field collected crown polygons as ground truth, the ensemble network will be run across NEON sites.
 
 # Pipeline
+
 
 ## Non-pypi Dependencies
 It is highly suggested that a user runs in a clean virtualenv. 
