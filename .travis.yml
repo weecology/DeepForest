@@ -1,14 +1,10 @@
 language: python
 python:
-    -"3.6"
-    # PyPy versions
-    - "pypy3.5"
-    
+    - "3.6"
 before_install:
-  - sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
-  - sudo apt-get update -q
-  - sudo apt-get install gcc-4.8  g++-4.8 git -y
-
+    - sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
+    - sudo apt-get update -q
+    - sudo apt-get install gcc-4.8  g++-4.8 git -y
 install:
     - pip install -r requirements.txt
     #conda dependences
