@@ -1,5 +1,4 @@
 #! /usr/bin/env sh
-
 module load git
 git clone https://github.com/LASzip/LASzip.git
 cd LASzip
