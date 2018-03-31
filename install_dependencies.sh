@@ -11,6 +11,7 @@ make install
 
 cd ~
 wget http://lastools.org/download/LAStools.zip
+#curl http://lastools.org/download/LAStools.zip
 unzip LAStools.zip
 cd LAStools
 make
