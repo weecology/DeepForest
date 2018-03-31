@@ -5,7 +5,7 @@ git checkout tags/2.0.2
 
 mkdir build
 cd build
-cmake .. 
+cmake .. -DCMAKE_INSTALL_PREFIX=~/LASzip/build 
 make
 make install
 
@@ -14,8 +14,11 @@ wget http://lastools.org/download/LAStools.zip
 unzip LAStools.zip
 cd LAStools
 make
+cd bin
 
-cd /usr/local/LAStools/bin
-cp laszip /user/b.weinstein/LASzip/build/bin/
-cd /usr/local/LASzip/build/bin/
-ln -s /usr/local/LASzip/build/bin/laszip /usr/local/LASzip/build/bin/laszip-cli
+cp laszip ~/LASzip/build/bin/
+cd ~/LASzip/build/bin/
+ln -s laszip laszip-cli
+
+export LD_LIBRARY_PATH="~/LASzip/build/lib:$LD_LIBRARY_PATH"
+export PATH="~/LASzip/build/bin:$PATH"

@@ -1,0 +1,4 @@
+[
+  "tests/test_Lidar.py::test_Lidar", 
+  "tests/test_sample.py::test_pass"
+]
