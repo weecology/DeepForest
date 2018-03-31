@@ -10,8 +10,6 @@ Ben Weinstein
 
 Sergio Marconi
 
-Sarah Graves
-
 Ethan White
 
 # Summary
@@ -22,20 +20,11 @@ The goal of this repo is to investigate and implement as many tree crown delinat
 # Pipeline
 
 
-## Non-pypi Dependencies
-It is highly suggested that a user runs in a clean virtualenv. 
-
-* GDAL
-
 ## Dependencies
 
 ```
 pip install -r requirements.txt
 ```
-
-The main executition script is RunJob.sh
-
-* RunJob.sh
 
 ## Tree Crown Implementations (R and Python)
 [Watershed](http://neondataskills.org/lidar/calc-biomass-py/) in python
@@ -71,3 +60,5 @@ The main executition script is RunJob.sh
 * Wallace, L. et al. 2016. Assessment of forest structure using two UAV techniques: A comparison of airborne laser scanning and structure from motion (SfM) point clouds. - Forests 7: 1–16.
 
 * Jaskierniak, D. et al. 2015. Using tree detection algorithms to predict stand sapwood area, basal area and stocking density in Eucalyptus regnans forest. - Remote Sens. 7: 7298–7323.
+
+* https://github.com/JorisJoBo/treedentifier
