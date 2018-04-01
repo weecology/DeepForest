@@ -6,7 +6,7 @@ git checkout tags/2.0.2
 
 mkdir build
 cd build
-cmake .. -DCMAKE_INSTALL_PREFIX=~/LASzip/build 
+sudo cmake .. 
 make
 sudo make install
 
