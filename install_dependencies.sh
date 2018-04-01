@@ -12,7 +12,7 @@ make install
 
 cd ~
 unzip /home/travis/build/weecology/DeepForest/tests/LAStools
-cd /home/travis/build/weecology/DeepForest/tests/LAStools
+cd LAStools
 make
 cd bin
 
