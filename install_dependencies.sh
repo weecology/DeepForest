@@ -8,17 +8,11 @@ mkdir build
 cd build
 cmake .. -DCMAKE_INSTALL_PREFIX=~/LASzip/build 
 make
-make install
+sudo make install
 
 cd ~
 unzip /home/travis/build/weecology/DeepForest/tests/LAStools
 cd LAStools
 make
-cd bin
+sudo make install
 
-cp laszip ~/LASzip/build/bin/
-cd ~/LASzip/build/bin/
-ln -s laszip laszip-cli
-
-export LD_LIBRARY_PATH="~/LASzip/build/lib:$LD_LIBRARY_PATH"
-export PATH="~/LASzip/build/bin:$PATH"
