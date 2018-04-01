@@ -17,5 +17,5 @@ make
 sudo make install
 cd bin
 
-cp laszip /usr/local/bin/
+sudo cp laszip /usr/local/bin/
 
