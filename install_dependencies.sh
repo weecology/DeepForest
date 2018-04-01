@@ -10,7 +10,7 @@ make
 make install
 
 cd ~
-unzip tests/LAStools.zip
+unzip tests/LAStools
 cd LAStools
 make
 cd bin
