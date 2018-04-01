@@ -1,4 +1,5 @@
 #! /usr/bin/env sh
+cd ~
 git clone https://github.com/LASzip/LASzip.git
 cd LASzip
 git checkout tags/2.0.2
@@ -10,8 +11,8 @@ make
 make install
 
 cd ~
-unzip tests/LAStools
-cd LAStools
+unzip /home/travis/build/weecology/DeepForest/tests/LAStools
+cd /home/travis/build/weecology/DeepForest/tests/LAStools
 make
 cd bin
 
