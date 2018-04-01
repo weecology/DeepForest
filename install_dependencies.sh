@@ -14,7 +14,6 @@ cd ~
 unzip /home/travis/build/weecology/DeepForest/tests/LAStools
 cd LAStools
 make
-sudo make install
 cd bin
 
 sudo cp laszip /usr/local/bin/
