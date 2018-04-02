@@ -62,3 +62,15 @@ pip install -r requirements.txt
 * Jaskierniak, D. et al. 2015. Using tree detection algorithms to predict stand sapwood area, basal area and stocking density in Eucalyptus regnans forest. - Remote Sens. 7: 7298–7323.
 
 * https://github.com/JorisJoBo/treedentifier
+
+* Mongus, D. and Žalik, B. 2015. An efficient approach to 3D single tree-crown delineation in LiDAR data. - ISPRS J. Photogramm. Remote Sens. 108: 219–233.
+
+* Trochta, J. et al. 2017. 3D Forest: An application for descriptions of three-dimensional forest structures using terrestrial LiDAR. - PLoS One 12: 1–17.
+
+* Wu, B. et al. 2016. Individual tree crown delineation using localized contour tree method and airborne LiDAR data in coniferous forests. - Int. J. Appl. Earth Obs. Geoinf. 52: 82–94.
+
+* Hu, B. et al. 2014. Improving the efficiency and accuracy of individual tree crown delineation from high-density LiDAR data. - Int. J. Appl. Earth Obs. Geoinf. 26: 145–155.
+
+* Liu, J. et al. 2013. Extraction of individual tree crowns from airborne LiDAR data in human settlements. - Math. Comput. Model. 58: 524–535.
+
+* Jakubowski, M. K. et al. 2013. Delineating individual trees from lidar data: A comparison of vector- and raster-based segmentation approaches. - Remote Sens. 5: 4163–4186.
