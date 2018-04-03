@@ -1,6 +1,9 @@
 import laspy
-
+from pointcloud import CloudInfo
 class Lidar:
     def __init__(self,filename):
-        self.filename=filename
-        self.tile = laspy.file.File(filename)        
+        self.cloud=CloudInfo(filename)
+    
+    def plot(self):
+        pass
+        
