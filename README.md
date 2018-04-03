@@ -43,6 +43,8 @@ pip install -r requirements.txt
 
 [Ayrey, E. et al. 2017. Layer Stacking: A Novel Algorithm for Individual Forest Tree Segmentation from LiDAR Point Clouds. - Can. J. Remote Sens. 43: 16–27.](https://github.com/bw4sz/Layer-Stacking)
 
+[Carr, J. C. and Slyder, J. B. 2018. Individual tree segmentation from a leaf-off photogrammetric point cloud. - Int. J. Remote Sens. 0: 1–16.](https://github.com/bw4sz/forest) in Python
+
 ### Authors still to be contacted (Bibliography)
 
 * Xu, S. et al. 2018. A supervoxel approach to the segmentation of individual trees from LiDAR point clouds. - Remote Sens. Lett. 9: 515–523.
