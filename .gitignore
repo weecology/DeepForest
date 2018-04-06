@@ -1,5 +1,5 @@
 env/*
 .Rproj.user
 .Rhistory
-.RData
+*.RData
 .Ruserdata

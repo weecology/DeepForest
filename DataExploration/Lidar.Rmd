@@ -1,5 +1,5 @@
 ---
-title: "Lidar"
+title: "Unsupervised Classification Methods for lidar-based tree crown deliniation"
 author: "Ben Weinstein"
 date: "4/3/2018"
 output: html_document
@@ -9,7 +9,13 @@ output: html_document
 library(lidR)
 library(ggplot2)
 library(raster)
+library(knitr)
+#opts_chunk$set(warning=F,message=F)
 source("functions.R")
+#load("ITCs.RData")
+```
+
+```{r,eval=F}
 tile=readLAS("../tests/data/NEON_D03_OSBS_DP1_405000_3276000_classified_point_cloud.laz")
 
 tile<-tile %>% lasfilter(Z < 100)
@@ -23,25 +29,49 @@ summary(tile)
 #ggplot(tile@data,aes(x=as.factor(Classification),y=Z)) + geom_boxplot()
 ```
 
+```{r}
+#Toy file for testing
+LASfile <- system.file("extdata", "MixedConifer.laz", package="lidR")
+tile = readLAS(LASfile, select = "xyz", filter = "-drop_z_below 0")
+col = pastel.colors(200)
+```
+
 # Watershed
 
 ```{r}
-system.time(watershed<-segment_ITC(tile))
+system.time(watershed<-segment_ITC(tile,algorithm = "watershed"))
 ```
 # Dalponte 2016
 
 ```{r}
-system.time(dalponte<-segment_ITC(tile))
+system.time(dalponte<-segment_ITC(tile,algorithm = "dalponte2016"))
 ```
 
 # Silva 2016
 
 ```{r}
-system.time(dalponte<-segment_ITC(tile))
+system.time(silva2016<-segment_ITC(tile,algorithm = "silva2016"))
 ```
 
-# 
+#Comparison
+
+## How many tree objects
+```{r}
+library(pander)
+df<-data.frame(Algorthm=c("Watershed","Dalponte2016","Silva2016"),Total_Trees=c(length(watershed$polygons@polygons),length(dalponte$polygons@polygons),length(silva2016$polygons@polygons)))
+pandoc.table(df,style="rmarkdown")
+```
+
+# Subset the point cloud points based on ID.
 
 ```{r}
-save.image("")
+plot(silva2016$polygons[silva2016$polygons$id==10,])
+example_tree<-lasclip(tile,geometry=silva2016$polygons[silva2016$polygons$id==10,]@polygons[[1]]@Polygons[[1]])
+example_tree
+plot(example_tree)
+```
+
+
+```{r}
+save.image("ITCs.RData")
 ```
