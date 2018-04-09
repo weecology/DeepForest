@@ -26,7 +26,7 @@ segment_ITC<-function(las,algorithm="watershed"){
     
     plot(chm, col = height.colors(50))
     plot(contour, add = T)
-    return(list(polygons=contour,raster=crowns,tops=ttops))
+    return(las)
   }
 
   if(algorithm=="watershed"){
@@ -42,7 +42,7 @@ segment_ITC<-function(las,algorithm="watershed"){
     
     plot(chm, col = height.colors(50))
     plot(contour, add = T)
-    return(list(polygons=contour,raster=crowns))
+    return(las)
   }
   
   if(algorithm=="silva2016"){
@@ -53,14 +53,18 @@ segment_ITC<-function(las,algorithm="watershed"){
     
     # display
     tree = lasfilter(las, !is.na(treeID))
-    plot(tree, color = "treeID", colorPalette = pastel.colors(100), size = 1)
+    plot(tree, color = "treeID", colorPalette = pastel.colors(100), size = 1,backend="rgl")
     
     # More stuff
     contour = rasterToPolygons(crowns, dissolve = TRUE)
     
     plot(chm, col = height.colors(50))
     plot(contour, add = T)
-    return(list(polygons=contour,raster=crowns,tops=ttops))
+    return(las)
   }
 
+}
+
+get_edges<-function(x){
+  as.data.frame(t(combn(x,2)))
 }
