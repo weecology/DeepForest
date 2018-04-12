@@ -1,7 +1,6 @@
 ---
 title: "Unsupervised Classification Methods for lidar-based tree crown deliniation"
 author: "Ben Weinstein"
-date: "4/3/2018"
 output: html_document
 ---
 
@@ -160,10 +159,18 @@ but let's just look at some individual trees. The question is, can we classify t
 ```{r}
 ind_trees= split(tile@data, tile@data$treeID)
 ind_trees = lapply(ind_trees, LAS, header = tile@header)
-plot(ind_trees[[20]],color="treeID",bg="grey90")
-plot(ind_trees[[40]],color="treeID",bg="grey90")
-plot(ind_trees[[50]],color="treeID",bg="grey90")
+```
 
+```{r,webgl=TRUE}
+plot(ind_trees[[20]],color="treeID",bg="grey90")
+```
+
+```{r,webgl=TRUE}
+plot(ind_trees[[30]],color="treeID",bg="grey90")
+```
+
+```{r,webgl=TRUE}
+plot(ind_trees[[40]],color="treeID",bg="grey90")
 ```
 
 Clearly, more work to be done. Especially in reference to the ground model. 
