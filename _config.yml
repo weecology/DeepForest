@@ -1,3 +1,3 @@
 theme: jekyll-theme-minimal
-
 num_hipergator_workers: 4
+training_dir: /Users/Ben/Dropbox/Weecology/Neon/training/trees/

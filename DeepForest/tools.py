@@ -6,16 +6,12 @@ from dask_jobqueue import SLURMCluster
 from dask.distributed import Client
 from dask import delayed
 
-import geojson
-
 def start_dask(workers):
     
     ######################################################
     # Setup dask cluster
     ######################################################
     
-
-
     cluster = SLURMCluster(processes=1,queue='hpg2-compute', threads=2, memory='4GB', walltime='144:00:00')
     
     print('Starting up workers')
@@ -40,22 +36,18 @@ def start_dask(workers):
     # up the cluster/client. 
     import dask.array as da
     import xarray as xr
-
-def load_config(data_folder=None):
-    with open('_config.yaml', 'r') as f:
-        config = yaml.load(f)
-
-    if data_folder is None:
-        data_folder = config['data_folder']
         
 def data2geojson(df):
     features = []
     insert_features = lambda X: features.append(
-            geojson.Feature(geometry=geojson.Polygon([
-                (float(X["xmin"]),float(X["ymin"])),
-                (float(X["xmax"]),float(X["ymin"])),
-                (float(X["xmax"]),float(X["ymax"])),
-                (float(X["xmin"]),float(X["ymax"]))],
-                properties=dict(name=str(X["box"])))))
+            {"type": "Polygon",
+                 "coordinates": 
+                 [[(float(X["xmin"]),float(X["ymin"])),
+                     (float(X["xmax"]),float(X["ymin"])),
+                     (float(X["xmax"]),float(X["ymax"])),
+                     (float(X["xmin"]),float(X["ymax"])),
+                     (float(X["xmin"]),float(X["ymin"]))]]}
+        )
+             
     df.apply(insert_features, axis=1)
-    return geojson.FeatureCollection(features)
+    return features

@@ -1,7 +1,0 @@
-'''
-RGB data class
-Tools for cropping, subseting and viewing orthophoto data using dask
-Ben Weinstein ben.weinstein@weecology.oyh
-'''
-
-c
