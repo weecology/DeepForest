@@ -1,3 +1,8 @@
 theme: jekyll-theme-minimal
 num_hipergator_workers: 4
-training_dir: /Users/Ben/Dropbox/Weecology/Neon/training/trees/
+data_dir: data/
+
+training_params:
+          batch_size: 32
+          n_classes: 2
+          shuffle: True
