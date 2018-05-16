@@ -1,4 +1,4 @@
-'Crop generation and augmentation'
+'Crop generation and augmentation for keras model fitting'
 
 # Authors: Ben Weinstein<ben.weinstein@weecology.org>
 
@@ -6,7 +6,6 @@ import rasterio
 from rasterio.tools.mask import mask
 from rasterio import plot
 from matplotlib import pyplot
-import keras
 
 class DataGenerator:
     """
@@ -14,7 +13,7 @@ class DataGenerator:
     To be passed as argument in the fit_generator function of Keras.
     """
     
-    def __init__(self,list_IDs,batch_size,dim,n_classes=2,shuffle=True):
+    def __init__(self,box_file,list_IDs,batch_size,dim,n_classes=2,shuffle=True):
         
         'Initilization'
         self.batch_size=batch_size
@@ -22,6 +21,7 @@ class DataGenerator:
         self.list_IDs=list_IDs
         self.dim = dim
         self.n_classes=n_classes
+        self.box_file=box_file
         
         #shuffle order
         self.on_epoch_end()               
@@ -49,7 +49,7 @@ class DataGenerator:
         self.indexes = np.arange(len(self.list_IDs))
         if self.shuffle == True:
             np.random.shuffle(self.indexes)
-            
+    
     def data_gen(self,labels,list_IDs_shuffle):
         """
         Generator to yield batches of lidar and rgb inputs (per sample) along with their labels.
@@ -62,38 +62,72 @@ class DataGenerator:
             batch_labels = []            
 
             #label array 
-            y = np.empty((self.batch_size), dtype=int)
+            #TODO preset numpy array size? Faster
                         
             for id in list_IDs_shuffle:
                 
                 # Mask
-                rgb = crop_rgb(infile, row_id)
-                lidar = crop_lidar(infile, row_id)
-    
-                # Set label
-                label = get_label(infile,row_id)
-                batch_labels.append(label)
+                rgb = crop_rgb(id,self.box_file)
+                lidar = crop_lidar(id,self.box_file)
     
                 # Pack each input  separately
-                lidar_batch.append(top_img)
-                rgb_batch.append(bot_img)
+                lidar_batch.append(rgb)
+                rgb_batch.append(lidar)
                 
                 #one hot encode labels
+                label = self.box_file.loc(id).label
+                batch_labels.append(label)
+                
                 batch_labels=np.array(batch_labels)
                 y=keras.utils.to_categorical(batch_labels,num_classes=self.n_classes)
                 
             yield [np.array(lidar_batch), np.array(rgb_batch)], y 
 
             
-#Cropping functions             
-def crop_lidar(filename,row):
-    pass
+### Cropping functions###
+#####################
+            
+#RGB
 
-def crop_rgb(filename,row):
+def crop_rgb(id,file):
+    
+    #select row
+    row=file.loc(id)
+    
+    #create polygon from bounding box
     features=tools.data2geojson(row)
-    with rasterio.open(self.filename) as src:
+    
+    #crop and return image
+    with rasterio.open(filename) as src:
         out_image, out_transform = mask(src, [features], crop=True)
-    return(out_image)
+    return(out_image)        
+    
+def data2geojson(df):
+    '''
+    Convert a pandas row into a polygon bounding box
+    '''
+    features = []
+    insert_features = lambda X: features.append(
+            {"type": "Polygon",
+                 "coordinates": 
+                 [[(float(X["xmin"]),float(X["ymin"])),
+                     (float(X["xmax"]),float(X["ymin"])),
+                     (float(X["xmax"]),float(X["ymax"])),
+                     (float(X["xmin"]),float(X["ymax"])),
+                     (float(X["xmin"]),float(X["ymin"]))]]}
+        )
+             
+    df.apply(insert_features, axis=1)
+    return features
+
+#Lidar
+
+def crop_lidar(id,file):
+    #select row
+    row=file.loc(id)
+    
+    return(lidar_points)            
+
 
 
 ## Data augmentations

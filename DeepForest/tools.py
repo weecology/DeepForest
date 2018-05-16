@@ -36,18 +36,4 @@ def start_dask(workers):
     # up the cluster/client. 
     import dask.array as da
     import xarray as xr
-        
-def data2geojson(df):
-    features = []
-    insert_features = lambda X: features.append(
-            {"type": "Polygon",
-                 "coordinates": 
-                 [[(float(X["xmin"]),float(X["ymin"])),
-                     (float(X["xmax"]),float(X["ymin"])),
-                     (float(X["xmax"]),float(X["ymax"])),
-                     (float(X["xmin"]),float(X["ymax"])),
-                     (float(X["xmin"]),float(X["ymin"]))]]}
-        )
-             
-    df.apply(insert_features, axis=1)
-    return features
+  

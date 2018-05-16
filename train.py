@@ -8,6 +8,7 @@ import pandas as pd
 import glob
 import numpy as np
 from DeepForest.CropGenerator import DataGenerator
+import keras
 
 ##Set seed for reproducibility##
 np.random.seed(2)
@@ -16,6 +17,9 @@ np.random.seed(2)
 data_paths=glob.glob(config['data_dir']+"/*.csv")
 dataframes = (pd.read_csv(f,index_col=0) for f in data_paths)
 data = pd.concat(dataframes, ignore_index=True)
+
+#set index explicitely
+data=data.set_index('box')
 
 #Partition data
 msk = np.random.rand(len(data)) < 0.8
@@ -27,8 +31,6 @@ test = data[~msk]
 #Create dictionaries to keep track of labels and splits
 partition={"train": train.index.values,"test": test.index.values}
 labels=data.label.to_dict()
-
-#Label from DeepForest import config
 
 # Generators
 training_generator = DataGenerator(partition['train'], labels, **config.training_params)
