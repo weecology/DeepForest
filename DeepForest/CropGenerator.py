@@ -6,6 +6,8 @@ import rasterio
 from rasterio.tools.mask import mask
 from rasterio import plot
 from matplotlib import pyplot
+import numpy as np
+from cv2 import resize
 
 class DataGenerator:
     """
@@ -57,7 +59,7 @@ class DataGenerator:
         batch_size = config.batch_size
         while True:
             
-            lidar_batch = []
+            #lidar_batch = []
             rgb_batch = []
             batch_labels = []            
 
@@ -68,11 +70,11 @@ class DataGenerator:
                 
                 # Mask
                 rgb = crop_rgb(id,self.box_file)
-                lidar = crop_lidar(id,self.box_file)
+                #lidar = crop_lidar(id,self.box_file)
     
                 # Pack each input  separately
-                lidar_batch.append(rgb)
-                rgb_batch.append(lidar)
+                #lidar_batch.append(rgb)
+                rgb_batch.append(rgb)
                 
                 #one hot encode labels
                 label = self.box_file.loc(id).label
@@ -81,7 +83,7 @@ class DataGenerator:
                 batch_labels=np.array(batch_labels)
                 y=keras.utils.to_categorical(batch_labels,num_classes=self.n_classes)
                 
-            yield [np.array(lidar_batch), np.array(rgb_batch)], y 
+            yield [np.array(rgb_batch)], y 
 
             
 ### Cropping functions###
@@ -92,32 +94,35 @@ class DataGenerator:
 def crop_rgb(id,file):
     
     #select row
-    row=file.loc(id)
+    row=file.loc[id]
     
     #create polygon from bounding box
-    features=tools.data2geojson(row)
+    features=data2geojson(row)
     
     #crop and return image
-    with rasterio.open(filename) as src:
+    with rasterio.open(config['rgb_tile_dir'] + row.rgb_path) as src:
         out_image, out_transform = mask(src, [features], crop=True)
-    return(out_image)        
+        
+    #color channel should be last, check the order of rasterio, all should be rotation invariant?
+    out_image=np.moveaxis(out_image, 0, -1)
+
+    #TODO resize crop
+    #resize()
+    return(out_image.data)        
     
-def data2geojson(df):
+def data2geojson(row):
     '''
     Convert a pandas row into a polygon bounding box
-    '''
-    features = []
-    insert_features = lambda X: features.append(
-            {"type": "Polygon",
-                 "coordinates": 
-                 [[(float(X["xmin"]),float(X["ymin"])),
-                     (float(X["xmax"]),float(X["ymin"])),
-                     (float(X["xmax"]),float(X["ymax"])),
-                     (float(X["xmin"]),float(X["ymax"])),
-                     (float(X["xmin"]),float(X["ymin"]))]]}
-        )
-             
-    df.apply(insert_features, axis=1)
+    ''' 
+    
+    features={"type": "Polygon",
+         "coordinates": 
+         [[(float(row["xmin"]),float(row["ymin"])),
+             (float(row["xmax"]),float(row["ymin"])),
+             (float(row["xmax"]),float(row["ymax"])),
+             (float(row["xmin"]),float(row["ymax"])),
+             (float(row["xmin"]),float(row["ymin"]))]]}       
+    
     return features
 
 #Lidar
