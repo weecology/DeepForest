@@ -1,11 +1,11 @@
 theme: jekyll-theme-minimal
 num_hipergator_workers: 4
 bbox_data_dir: data/
-rgb_tile_dir: /Users/ben/Documents/TreeSegmentation/data/training/
 #rgb_tile_dir: /orange/ewhite/b.weinstein/NEON/D03/OSBS/DP1.30010.001/2017/FullSite/D03/2017_OSBS_3/L1/Camera/Images/2017092713/V01/
 #lidar_tile_dir: /orange/ewhite/NeonData/2017_Campaign/D03/OSBS/L1/DiscreteLidar/Classified_point_cloud/
 
 training_params:
+          rgb_tile_dir: /Users/ben/Documents/TreeSegmentation/data/training/
           batch_size: 32
           n_classes: 2
           shuffle: True

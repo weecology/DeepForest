@@ -8,20 +8,22 @@ from rasterio import plot
 from matplotlib import pyplot
 import numpy as np
 from cv2 import resize
+import keras
 
-class DataGenerator:
+class DataGenerator(keras.utils.Sequence):
     """
     Generates batches of lidar and rgb data on the fly.
     To be passed as argument in the fit_generator function of Keras.
     """
     
-    def __init__(self,box_file,list_IDs,batch_size,dim,n_classes=2,shuffle=True):
+    def __init__(self,box_file,list_IDs,labels,batch_size,rgb_tile_dir,n_classes=2,shuffle=True):
         
         'Initilization'
         self.batch_size=batch_size
+        self.rgb_tile_dir=rgb_tile_dir
+        self.labels=labels
         self.shuffle=shuffle
         self.list_IDs=list_IDs
-        self.dim = dim
         self.n_classes=n_classes
         self.box_file=box_file
         
@@ -38,7 +40,7 @@ class DataGenerator:
         list_IDs_temp = [self.list_IDs[k] for k in indexes]
 
         # Generate data
-        X, y = self.__data_generation(list_IDs_temp)
+        X, y = self.__data_generation(labels=self.labels,list_IDs_shuffle=list_IDs_temp)
 
         return X, y
     
@@ -52,11 +54,11 @@ class DataGenerator:
         if self.shuffle == True:
             np.random.shuffle(self.indexes)
     
-    def data_gen(self,labels,list_IDs_shuffle):
+    def __data_generation(self,labels,list_IDs_shuffle):
         """
         Generator to yield batches of lidar and rgb inputs (per sample) along with their labels.
         """
-        batch_size = config.batch_size
+        
         while True:
             
             #lidar_batch = []
@@ -67,9 +69,9 @@ class DataGenerator:
             #TODO preset numpy array size? Faster
                         
             for id in list_IDs_shuffle:
-                
+                print(id)
                 # Mask
-                rgb = crop_rgb(id,self.box_file)
+                rgb = crop_rgb(id,self.box_file,self.rgb_tile_dir)
                 #lidar = crop_lidar(id,self.box_file)
     
                 # Pack each input  separately
@@ -77,11 +79,10 @@ class DataGenerator:
                 rgb_batch.append(rgb)
                 
                 #one hot encode labels
-                label = self.box_file.loc(id).label
+                label = self.box_file.loc[id].label
                 batch_labels.append(label)
                 
-                batch_labels=np.array(batch_labels)
-                y=keras.utils.to_categorical(batch_labels,num_classes=self.n_classes)
+            y=keras.utils.to_categorical(batch_labels,num_classes=self.n_classes)
                 
             yield [np.array(rgb_batch)], y 
 
@@ -91,7 +92,7 @@ class DataGenerator:
             
 #RGB
 
-def crop_rgb(id,file):
+def crop_rgb(id,file,rgb_tile_dir):
     
     #select row
     row=file.loc[id]
@@ -100,15 +101,16 @@ def crop_rgb(id,file):
     features=data2geojson(row)
     
     #crop and return image
-    with rasterio.open(config['rgb_tile_dir'] + row.rgb_path) as src:
+    with rasterio.open(rgb_tile_dir + row.rgb_path) as src:
         out_image, out_transform = mask(src, [features], crop=True)
         
     #color channel should be last, check the order of rasterio, all should be rotation invariant?
     out_image=np.moveaxis(out_image, 0, -1)
 
     #TODO resize crop
-    #resize()
-    return(out_image.data)        
+    image_resize=resize(out_image.data,(32,32))
+    
+    return(image_resize)        
     
 def data2geojson(row):
     '''

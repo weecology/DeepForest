@@ -8,7 +8,7 @@ import pandas as pd
 import glob
 import numpy as np
 from DeepForest.CropGenerator import DataGenerator
-import models
+from models import rgb
 import keras
 
 ##Set seed for reproducibility##
@@ -22,6 +22,10 @@ data = pd.concat(dataframes, ignore_index=True)
 #set index explicitely
 data=data.set_index('box')
 
+#create numeric labels
+lookup={"Background": 0, "Tree": 1}
+data['label_numeric']=[lookup[x] for x in data.label]
+
 #Partition data
 msk = np.random.rand(len(data)) < 0.8
 
@@ -31,14 +35,14 @@ test = data[~msk]
 
 #Create dictionaries to keep track of labels and splits
 partition={"train": train.index.values,"test": test.index.values}
-labels=data.label.to_dict()
+labels=data.label_numeric.to_dict()
 
 # Generators
-training_generator = DataGenerator(partition['train'], labels, **config['training_params'])
-testing_generator = DataGenerator(partition['test'], labels, **config['training_params']) 
+training_generator = DataGenerator(box_file=train, list_IDs=partition['train'], labels=labels, **config['training_params'])
+testing_generator =DataGenerator(box_file=test, list_IDs=partition['test'], labels=labels, **config['training_params'])
 
 #Load Model
-DeepForest=models.rgb()
+DeepForest=rgb.get_model(is_training=True)
 
 #set loss
 DeepForest.compile(loss="binary_crossentropy",optimizer=keras.optimizers.RMSprop(), metrics=['acc'])
@@ -49,8 +53,8 @@ callbacks=keras.callbacks.TensorBoard(log_dir='logs')
 # Train model on dataset
 DeepForest.fit_generator(generator=training_generator,
                     validation_data=testing_generator,
-                    use_multiprocessing=True,
-                    workers=3,callbacks=callbacks)
+                    use_multiprocessing=False,
+                    workers=1)
 
 #save model
 model.save('DeepForest.h5')
