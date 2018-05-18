@@ -69,7 +69,7 @@ class DataGenerator(keras.utils.Sequence):
             #TODO preset numpy array size? Faster
                         
             for id in list_IDs_shuffle:
-                print(id)
+
                 # Mask
                 rgb = crop_rgb(id,self.box_file,self.rgb_tile_dir)
                 #lidar = crop_lidar(id,self.box_file)
@@ -79,12 +79,12 @@ class DataGenerator(keras.utils.Sequence):
                 rgb_batch.append(rgb)
                 
                 #one hot encode labels
-                label = self.box_file.loc[id].label
+                label = labels[id]
                 batch_labels.append(label)
                 
             y=keras.utils.to_categorical(batch_labels,num_classes=self.n_classes)
                 
-            yield [np.array(rgb_batch)], y 
+            return np.array(rgb_batch), y
 
             
 ### Cropping functions###

@@ -19,6 +19,9 @@ data_paths=glob.glob(config['bbox_data_dir']+"/*.csv")
 dataframes = (pd.read_csv(f,index_col=0) for f in data_paths)
 data = pd.concat(dataframes, ignore_index=True)
 
+#one data check #TODO understand why this happens, rare boxes of 0 size?
+data=data[data.xmin!=data.xmax]
+
 #set index explicitely
 data=data.set_index('box')
 
@@ -48,13 +51,10 @@ DeepForest=rgb.get_model(is_training=True)
 DeepForest.compile(loss="binary_crossentropy",optimizer=keras.optimizers.RMSprop(), metrics=['acc'])
 
 #callbacks
-callbacks=keras.callbacks.TensorBoard(log_dir='logs')
+callbacks=keras.callbacks.TensorBoard(log_dir='logs',write_images=True)
 
 # Train model on dataset
 DeepForest.fit_generator(generator=training_generator,
-                    validation_data=testing_generator,
+                    validation_data=testing_generator, epochs=200,
                     use_multiprocessing=False,
-                    workers=1)
-
-#save model
-model.save('DeepForest.h5')
+                    workers=1,callbacks=[callbacks])

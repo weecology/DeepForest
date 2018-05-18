@@ -6,6 +6,6 @@ bbox_data_dir: data/
 
 training_params:
           rgb_tile_dir: /Users/ben/Documents/TreeSegmentation/data/training/
-          batch_size: 32
+          batch_size: 64
           n_classes: 2
           shuffle: True
