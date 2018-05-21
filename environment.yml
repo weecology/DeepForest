@@ -1,0 +1,12 @@
+dependencies:
+    - python=3.6
+    - numpy
+    - scipy
+    - scikit-learn
+    - jupyter
+    - keras
+    - pandas
+    - tensorflow
+    - opencv-python
+    - comet_ml
+    - rasterio
