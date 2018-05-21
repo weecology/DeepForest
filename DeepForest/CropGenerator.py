@@ -7,7 +7,7 @@ from rasterio.tools.mask import mask
 from rasterio import plot
 from matplotlib import pyplot
 import numpy as np
-from cv2 import resize
+import cv2
 import keras
 
 class DataGenerator(keras.utils.Sequence):
@@ -61,30 +61,25 @@ class DataGenerator(keras.utils.Sequence):
         
         while True:
             
-            #lidar_batch = []
             rgb_batch = []
             batch_labels = []            
 
             #label array 
-            #TODO preset numpy array size? Faster
+            #TODO preset numpy array size? Faster.
                         
             for id in list_IDs_shuffle:
-
+                
                 # Mask
-                rgb = crop_rgb(id,self.box_file,self.rgb_tile_dir)
-                #lidar = crop_lidar(id,self.box_file)
+                rgb = crop_rgb(id,self.box_file,self.rgb_tile_dir,show=False)
     
                 # Pack each input  separately
-                #lidar_batch.append(rgb)
                 rgb_batch.append(rgb)
                 
                 #one hot encode labels
                 label = labels[id]
                 batch_labels.append(label)
                 
-            y=keras.utils.to_categorical(batch_labels,num_classes=self.n_classes)
-                
-            return np.array(rgb_batch), y
+            return np.array(rgb_batch), np.array(batch_labels)
 
             
 ### Cropping functions###
@@ -92,7 +87,7 @@ class DataGenerator(keras.utils.Sequence):
             
 #RGB
 
-def crop_rgb(id,file,rgb_tile_dir):
+def crop_rgb(id,file,rgb_tile_dir,show=False):
     
     #select row
     row=file.loc[id]
@@ -104,13 +99,18 @@ def crop_rgb(id,file,rgb_tile_dir):
     with rasterio.open(rgb_tile_dir + row.rgb_path) as src:
         out_image, out_transform = mask(src, [features], crop=True)
         
-    #color channel should be last, check the order of rasterio, all should be rotation invariant?
-    out_image=np.moveaxis(out_image, 0, -1)
+    #color channel should be last
+    out_image=np.moveaxis(out_image, 0, -1)     
+        
+    if show:
+        #cv2 takes bgr order
+        to_write=out_image[...,::-1]
+        cv2.imwrite("logs/images/" + id + ".png",to_write)    
 
-    #TODO resize crop
-    image_resize=resize(out_image.data,(32,32))
-    
-    return(image_resize)        
+    #resize image and rescale
+    image_resize=cv2.resize(out_image,(64,64))
+    image_rescale=image_resize/255.0
+    return(image_rescale)        
     
 def data2geojson(row):
     '''
@@ -127,14 +127,5 @@ def data2geojson(row):
     
     return features
 
-#Lidar
-
-def crop_lidar(id,file):
-    #select row
-    row=file.loc(id)
-    
-    return(lidar_points)            
-
-
-
-## Data augmentations
+if __name__ =="__main__":
+    pass

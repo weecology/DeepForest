@@ -10,6 +10,10 @@ import numpy as np
 from DeepForest.CropGenerator import DataGenerator
 from models import rgb
 import keras
+from datetime import datetime
+
+##set time
+now=datetime.now()
 
 ##Set seed for reproducibility##
 np.random.seed(2)
@@ -36,6 +40,10 @@ msk = np.random.rand(len(data)) < 0.8
 train = data[msk]
 test = data[~msk]
 
+#Work on a tiny dataset to start with.
+#train=train.sample(32*1)
+#test=test.sample(32*1)
+
 #Create dictionaries to keep track of labels and splits
 partition={"train": train.index.values,"test": test.index.values}
 labels=data.label_numeric.to_dict()
@@ -48,13 +56,13 @@ testing_generator =DataGenerator(box_file=test, list_IDs=partition['test'], labe
 DeepForest=rgb.get_model(is_training=True)
 
 #set loss
-DeepForest.compile(loss="binary_crossentropy",optimizer=keras.optimizers.RMSprop(), metrics=['acc'])
+DeepForest.compile(loss="binary_crossentropy",optimizer=keras.optimizers.Adam(), metrics=['acc'])
 
 #callbacks
-callbacks=keras.callbacks.TensorBoard(log_dir='logs',write_images=True)
+callbacks=keras.callbacks.TensorBoard(log_dir='logs/'+ now.strftime("%Y%m%d-%H%M%S") + '/',write_images=True)
 
 # Train model on dataset
-DeepForest.fit_generator(generator=training_generator,
-                    validation_data=testing_generator, epochs=200,
-                    use_multiprocessing=False,
-                    workers=1,callbacks=[callbacks])
+#samples/batchsize
+steps_per_epoch=int(train.shape[0]/config['training_params']['batch_size'])
+
+DeepForest.fit_generator(generator=training_generator,validation_data=training_generator, epochs=config['epochs'],use_multiprocessing=True,callbacks=[callbacks],steps_per_epoch=steps_per_epoch,validation_steps=steps_per_epoch)
