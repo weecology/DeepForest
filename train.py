@@ -50,10 +50,6 @@ msk = np.random.rand(len(data)) < 0.8
 train = data[msk]
 test = data[~msk]
 
-#Subsample
-train=train.sample(32*1)
-test=test.sample(32*1)
-
 #log data size
 experiment.log_parameter("training_samples", train.shape[0])
 experiment.log_parameter("testing_samples", test.shape[0])
