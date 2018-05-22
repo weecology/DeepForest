@@ -1,0 +1,10 @@
+theme: jekyll-theme-minimal
+num_hipergator_workers: 4
+bbox_data_dir: /home/b.weinstein/TreeSegmentation/analysis/Results/bounding_boxes/
+epochs: 100
+
+training_params:
+          rgb_tile_dir: /orange/ewhite/b.weinstein/NEON/D03/OSBS/DP1.30010.001/2017/FullSite/D03/2017_OSBS_3/L3/Camera/Mosaic/V01/
+          batch_size: 32
+          n_classes: 2
+          shuffle: True
