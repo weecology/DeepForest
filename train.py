@@ -15,7 +15,8 @@ from datetime import datetime
 
 #set experiment and log configs
 experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2",project_name='deepforest')
-experiment.log_multiple_params(config['training_params'])
+experiment.log_multiple_params(config['data_generator_params'])
+experiment.log_multiple_params(config['training'])
 
 ##set time
 now=datetime.now()
