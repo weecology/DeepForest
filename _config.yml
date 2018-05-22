@@ -1,8 +1,16 @@
-bbox_data_dir: data/
-epochs: 100
+#Config file for DeepMeerkat train.py
+
+#Location of bound box csv
+bbox_data_dir: /home/b.weinstein/TreeSegmentation/analysis/Results/bounding_boxes/
+
+#Subsample dataset
+subsample: 20000
 
 training_params:
-          rgb_tile_dir: /home/b.weinstein/TreeSegmentation/data/training/
+          rgb_tile_dir: /orange/ewhite/b.weinstein/NEON/D03/OSBS/DP1.30010.001/2017/FullSite/D03/2017_OSBS_3/L3/Camera/Mosaic/V01/
           batch_size: 32
           n_classes: 2
           shuffle: True
+          workers: 5
+          epochs: 100
+
