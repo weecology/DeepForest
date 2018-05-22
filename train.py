@@ -53,8 +53,8 @@ test = data[~msk]
 #test=test.sample(32*1)
 
 #log data size
-experiment.log_parameter("training_samples", len(train.shape[0]))
-experiment.log_parameter("testing_samples", len(test.shape[0]))
+experiment.log_parameter("training_samples", train.shape[0])
+experiment.log_parameter("testing_samples", test.shape[0])
 
 #Create dictionaries to keep track of labels and splits
 partition={"train": train.index.values,"test": test.index.values}
