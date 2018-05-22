@@ -40,7 +40,7 @@ data['label_numeric']=[lookup[x] for x in data.label]
 
 #optionally subset data, if config argument is numeric, subset data
 if(not isinstance(config["subsample"],str)):
-    data=data.sample(n=config["subsample"], random_state=np.random.get_state())
+    data=data.sample(n=config["subsample"], random_state=2)
     
 #Partition data
 msk = np.random.rand(len(data)) < 0.8
@@ -62,8 +62,8 @@ partition={"train": train.index.values,"test": test.index.values}
 labels=data.label_numeric.to_dict()
 
 # Generators
-training_generator = DataGenerator(box_file=train, list_IDs=partition['train'], labels=labels, **config['training_params'])
-testing_generator =DataGenerator(box_file=test, list_IDs=partition['test'], labels=labels, **config['training_params'])
+training_generator = DataGenerator(box_file=train, list_IDs=partition['train'], labels=labels, **config['data_generator_params'])
+testing_generator =DataGenerator(box_file=test, list_IDs=partition['test'], labels=labels, **config['data_generator_params'])
 
 #Load Model
 DeepForest=rgb.get_model(is_training=True)
@@ -75,12 +75,12 @@ DeepForest.compile(loss="binary_crossentropy",optimizer=keras.optimizers.Adam(),
 
 # Train model on dataset
 #samples/batchsize
-steps_per_epoch=int(train.shape[0]/config['training_params']['batch_size'])
+steps_per_epoch=int(train.shape[0]/config['data_generator_params']['batch_size'])
 
 DeepForest.fit_generator(generator=training_generator,
                          validation_data=training_generator,
-                         workers=config['training_params']['workers'],
-                         epochs=config['training_params']['epochs'],
+                         workers=config['training']['workers'],
+                         epochs=config['training']['epochs'],
                          use_multiprocessing=True,
                          callbacks=[callbacks],
                          steps_per_epoch=steps_per_epoch,
