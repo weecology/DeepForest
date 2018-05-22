@@ -13,12 +13,9 @@ from models import rgb
 import keras
 from datetime import datetime
 
-#set experiment
+#set experiment and log configs
 experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2",project_name='deepforest')
-
-#log config
 experiment.log_multiple_params(config['training_params'])
-
 
 ##set time
 now=datetime.now()
@@ -41,6 +38,10 @@ data=data.set_index('box')
 lookup={"Background": 0, "Tree": 1}
 data['label_numeric']=[lookup[x] for x in data.label]
 
+#optionally subset data, if config argument is numeric, subset data
+if(not isinstance(config["subsample"],str)):
+    data=data.sample(n=config["subsample"], random_state=np.random.get_state())
+    
 #Partition data
 msk = np.random.rand(len(data)) < 0.8
 
@@ -48,9 +49,9 @@ msk = np.random.rand(len(data)) < 0.8
 train = data[msk]
 test = data[~msk]
 
-#Work on a tiny dataset to start with.
-#train=train.sample(32*1)
-#test=test.sample(32*1)
+#Subsample
+train=train.sample(32*1)
+test=test.sample(32*1)
 
 #log data size
 experiment.log_parameter("training_samples", train.shape[0])
@@ -70,11 +71,17 @@ DeepForest=rgb.get_model(is_training=True)
 #set loss
 DeepForest.compile(loss="binary_crossentropy",optimizer=keras.optimizers.Adam(), metrics=['acc'])
 
-#callbacks
-callbacks=keras.callbacks.TensorBoard(log_dir='logs/'+ now.strftime("%Y%m%d-%H%M%S") + '/',write_images=True)
+#keras.callbacks.TensorBoard(log_dir='logs/'+ now.strftime("%Y%m%d-%H%M%S") + '/',write_images=True)
 
 # Train model on dataset
 #samples/batchsize
 steps_per_epoch=int(train.shape[0]/config['training_params']['batch_size'])
 
-DeepForest.fit_generator(generator=training_generator,validation_data=training_generator, epochs=config['epochs'],use_multiprocessing=True,callbacks=[callbacks],steps_per_epoch=steps_per_epoch,validation_steps=steps_per_epoch)
+DeepForest.fit_generator(generator=training_generator,
+                         validation_data=training_generator,
+                         workers=config['training_params']['workers'],
+                         epochs=config['training_params']['epochs'],
+                         use_multiprocessing=True,
+                         callbacks=[callbacks],
+                         steps_per_epoch=steps_per_epoch,
+                         validation_steps=steps_per_epoch)
