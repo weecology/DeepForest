@@ -17,7 +17,7 @@ from datetime import datetime
 experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2",project_name='deepforest')
 
 #log config
-experiment.log_multiple_params(**config['training_params'])
+experiment.log_multiple_params(config['training_params'])
 
 
 ##set time
