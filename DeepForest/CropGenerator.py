@@ -5,7 +5,6 @@
 import rasterio
 from rasterio.tools.mask import mask
 from rasterio import plot
-from matplotlib import pyplot
 import numpy as np
 import cv2
 import keras

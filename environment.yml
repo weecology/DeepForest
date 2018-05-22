@@ -9,9 +9,9 @@ dependencies:
     - tensorflow
     - matplotlib
     #- tensorflow-gpu
-    - rasterio
     - pip
     - pip:
         - opencv_python
         - comet_ml
         - cython
+        - rasterio
