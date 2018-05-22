@@ -93,7 +93,7 @@ def crop_rgb(id,file,rgb_tile_dir,show=False):
     
     #create polygon from bounding box
     features=data2geojson(row)
-    
+        
     #crop and return image
     with rasterio.open(rgb_tile_dir + row.rgb_path) as src:
         out_image, out_transform = mask(src, [features], crop=True)
