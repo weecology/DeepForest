@@ -3,6 +3,7 @@ Training script for DeepForest.
 Ben Weinstein - ben.weinstein@weecology.org
 Load data, partition into training and testing, and evaluate deep learning model
 '''
+from comet_ml import Experiment
 from DeepForest.config import config
 import pandas as pd
 import glob
@@ -11,6 +12,12 @@ from DeepForest.CropGenerator import DataGenerator
 from models import rgb
 import keras
 from datetime import datetime
+
+#set experiment
+experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2",project_name='deepforest')
+
+#log config
+experiment.log_multiple_params(**config['training_params'])
 
 ##set time
 now=datetime.now()
