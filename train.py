@@ -83,6 +83,5 @@ DeepForest.fit_generator(generator=training_generator,
                          workers=config['training']['workers'],
                          epochs=config['training']['epochs'],
                          use_multiprocessing=True,
-                         callbacks=[callbacks],
                          steps_per_epoch=steps_per_epoch,
                          validation_steps=steps_per_epoch)
