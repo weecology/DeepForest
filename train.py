@@ -19,6 +19,7 @@ experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2",project_name='deepfo
 #log config
 experiment.log_multiple_params(**config['training_params'])
 
+
 ##set time
 now=datetime.now()
 
@@ -50,6 +51,10 @@ test = data[~msk]
 #Work on a tiny dataset to start with.
 #train=train.sample(32*1)
 #test=test.sample(32*1)
+
+#log data size
+experiment.log_parameter("training_samples", len(train.shape[0]))
+experiment.log_parameter("testing_samples", len(test.shape[0]))
 
 #Create dictionaries to keep track of labels and splits
 partition={"train": train.index.values,"test": test.index.values}
