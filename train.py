@@ -13,7 +13,6 @@ from models import rgb
 import keras
 from datetime import datetime
 from DeepForest.tools import TimeHistory, PlotImages
-import tensorflow as tf
 
 #set experiment and log configs
 experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2",project_name='deepforest')
@@ -66,6 +65,7 @@ DeepForest.compile(loss="binary_crossentropy",optimizer=keras.optimizers.Adam(),
 
 #Callbacks and objects to add to comet logging
 time_callback = TimeHistory(experiment)
+#image_callback=PlotImages(experiment,testing_generator)
 
 #now=datetime.now()
 #keras.callbacks.TensorBoard(log_dir='logs/'+ now.strftime("%Y%m%d-%H%M%S") + '/',write_images=True)
@@ -75,10 +75,8 @@ time_callback = TimeHistory(experiment)
 steps_per_epoch=int(train.shape[0]/config['data_generator_params']['batch_size'])
 
 DeepForest.fit_generator(generator=training_generator,
-                         validation_data=testing_generator,
                          workers=config['training']['workers'],
                          epochs=config['training']['epochs'],
                          use_multiprocessing=True,
                          steps_per_epoch=steps_per_epoch,
-                         validation_steps=steps_per_epoch,
-                         callbacks=[time_callback])
+                         validation_steps=steps_per_epoch)
