@@ -3,16 +3,18 @@ Training script for DeepForest.
 Ben Weinstein - ben.weinstein@weecology.org
 Load data, partition into training and testing, and evaluate deep learning model
 '''
+import os
 from comet_ml import Experiment
 from DeepForest.config import config
 import pandas as pd
 import glob
 import numpy as np
 from DeepForest.CropGenerator import DataGenerator
-from models import rgb
+from models import inception
 import keras
 from datetime import datetime
-from DeepForest.tools import TimeHistory, PlotImages
+from DeepForest.tools import TimeHistory
+
 
 #set experiment and log configs
 experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2",project_name='deepforest')
@@ -66,8 +68,11 @@ testing_generator =DataGenerator(box_file=test, list_IDs=partition['test'], labe
 
 time_callback = TimeHistory(experiment)
 #image_callback=PlotImages(experiment,testing_generator)
-#now=datetime.now()
-#keras.callbacks.TensorBoard(log_dir='logs/'+ now.strftime("%Y%m%d-%H%M%S") + '/',write_images=True)
+
+#Create logdir
+now=datetime.now()
+logdir='logs/'+ now.strftime("%Y%m%d-%H%M%S")
+#keras.callbacks.TensorBoard(log_dir=logdir + '/',write_images=True)
 
 # Train model on dataset
 #samples/batchsize
@@ -78,7 +83,7 @@ steps_per_epoch=int(train.shape[0]/config['data_generator_params']['batch_size']
 ###
 
 #Load Model
-DeepForest=rgb.get_model(is_training=True)
+DeepForest=inception.get_model()
 
 #set loss
 DeepForest.compile(loss="binary_crossentropy",optimizer=keras.optimizers.Adam(), metrics=['acc'])
@@ -91,3 +96,16 @@ DeepForest.fit_generator(generator=training_generator,
                          steps_per_epoch=steps_per_epoch,
                          validation_steps=steps_per_epoch,
                          callbacks=[time_callback,])
+
+#Write model to file
+# serialize model to JSON
+if not os.path.exists(logdir):
+    os.makedirs(logdir)
+    
+model_json = DeepForest.to_json()
+with open(logdir + "/model.json", "w") as json_file:
+    json_file.write(model_json)
+
+# serialize weights to HDF5
+DeepForest.save_weights(logdir + "/model.h5")
+print("Saved model to disk")
