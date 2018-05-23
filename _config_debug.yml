@@ -1,0 +1,19 @@
+#Debug config file for DeepMeerkat train.py
+#Running locally on Mac OSX
+
+#Location of bound box csv
+bbox_data_dir: data/
+
+#Subsample dataset
+subsample: 60
+
+#Training params
+training:
+          epochs: 2
+          workers: 1
+
+data_generator_params:
+          rgb_tile_dir: /Users/ben/Documents/TreeSegmentation/data/training/
+          batch_size: 32
+          shuffle: True
+
