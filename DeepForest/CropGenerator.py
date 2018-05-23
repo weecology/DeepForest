@@ -89,7 +89,6 @@ class DataGenerator(keras.utils.Sequence):
 def crop_rgb(id,file,rgb_tile_dir,show=False):
     
     #select row
-    print(id)
     row=file.loc[id]
     
     #create polygon from bounding box

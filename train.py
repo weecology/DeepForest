@@ -10,7 +10,7 @@ import pandas as pd
 import glob
 import numpy as np
 from DeepForest.CropGenerator import DataGenerator
-from models import inception
+from models import rgb
 import keras
 from datetime import datetime
 from DeepForest.tools import TimeHistory
@@ -83,7 +83,7 @@ steps_per_epoch=int(train.shape[0]/config['data_generator_params']['batch_size']
 ###
 
 #Load Model
-DeepForest=inception.get_model()
+DeepForest=rgb.get_model()
 
 #set loss
 DeepForest.compile(loss="binary_crossentropy",optimizer=keras.optimizers.Adam(), metrics=['acc'])
@@ -95,7 +95,7 @@ DeepForest.fit_generator(generator=training_generator,
                          use_multiprocessing=True,
                          steps_per_epoch=steps_per_epoch,
                          validation_steps=steps_per_epoch,
-                         callbacks=[time_callback,])
+                         callbacks=[time_callback])
 
 #Write model to file
 # serialize model to JSON
