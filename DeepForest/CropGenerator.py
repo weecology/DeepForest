@@ -95,8 +95,11 @@ def crop_rgb(id,file,rgb_tile_dir,show=False):
     features=data2geojson(row)
         
     #crop and return image
-    with rasterio.open(rgb_tile_dir + row.rgb_path) as src:
-        out_image, out_transform = mask(src, [features], crop=True)
+    try:
+        with rasterio.open(rgb_tile_dir + row.rgb_path) as src:
+            out_image, out_transform = mask(src, [features], crop=True)
+    except:
+        print("%s cannot be cropped" %(rgb_tile_dir + row.rgb_path))
         
     #color channel should be last
     out_image=np.moveaxis(out_image, 0, -1)     
