@@ -8,7 +8,7 @@ subsample: 30000
 
 #Training params
 training:
-          epochs: 100
+          epochs: 20
           workers: 5
 
 data_generator_params:
