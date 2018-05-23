@@ -4,7 +4,7 @@
 bbox_data_dir: /home/b.weinstein/TreeSegmentation/analysis/Results/bounding_boxes/
 
 #Subsample dataset
-subsample: 20000
+subsample: 30000
 
 #Training params
 training:
