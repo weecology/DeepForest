@@ -27,6 +27,9 @@ data_paths=glob.glob(config['bbox_data_dir']+"/*.csv")
 dataframes = (pd.read_csv(f,index_col=0) for f in data_paths)
 data = pd.concat(dataframes, ignore_index=True)
 
+#one data check #TODO understand why this happens, rare boxes of 0 area?
+data=data[data.xmin!=data.xmax]
+
 #set index explicitely
 data=data.set_index('box')
 
@@ -57,16 +60,12 @@ labels=data.label_numeric.to_dict()
 training_generator = DataGenerator(box_file=train, list_IDs=partition['train'], labels=labels, **config['data_generator_params'])
 testing_generator =DataGenerator(box_file=test, list_IDs=partition['test'], labels=labels, **config['data_generator_params'])
 
-#Load Model
-DeepForest=rgb.get_model(is_training=True)
+######################################
+#Callbacks and objects to add to comet logging#
+######################################
 
-#set loss
-DeepForest.compile(loss="binary_crossentropy",optimizer=keras.optimizers.Adam(), metrics=['acc'])
-
-#Callbacks and objects to add to comet logging
 time_callback = TimeHistory(experiment)
 #image_callback=PlotImages(experiment,testing_generator)
-
 #now=datetime.now()
 #keras.callbacks.TensorBoard(log_dir='logs/'+ now.strftime("%Y%m%d-%H%M%S") + '/',write_images=True)
 
@@ -74,9 +73,21 @@ time_callback = TimeHistory(experiment)
 #samples/batchsize
 steps_per_epoch=int(train.shape[0]/config['data_generator_params']['batch_size'])
 
+###
+#Fit
+###
+
+#Load Model
+DeepForest=rgb.get_model(is_training=True)
+
+#set loss
+DeepForest.compile(loss="binary_crossentropy",optimizer=keras.optimizers.Adam(), metrics=['acc'])
+
 DeepForest.fit_generator(generator=training_generator,
+                         validation_data=testing_generator,
                          workers=config['training']['workers'],
                          epochs=config['training']['epochs'],
                          use_multiprocessing=True,
                          steps_per_epoch=steps_per_epoch,
-                         validation_steps=steps_per_epoch)
+                         validation_steps=steps_per_epoch,
+                         callbacks=[time_callback,])
