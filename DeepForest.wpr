@@ -5,3 +5,9 @@
 ##################################################################
 [project attributes]
 proj.file-type = 'shared'
+proj.launch-config = {loc('evaluate.py'): ('project',
+        (u'--logdir=logs/20180524-065707',
+         '')),
+                      loc('predict.py'): ('project',
+        (u'--logdir logs/20180524-065707',
+         ''))}

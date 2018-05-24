@@ -90,7 +90,7 @@ def crop_rgb(id,file,rgb_tile_dir,show=False):
     
     #select row
     row=file.loc[id]
-    
+
     #create polygon from bounding box
     features=data2geojson(row)
         
