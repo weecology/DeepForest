@@ -4,11 +4,11 @@
 bbox_data_dir: /home/b.weinstein/TreeSegmentation/analysis/Results/bounding_boxes/
 
 #Subsample dataset
-subsample: 60000
+subsample: 30000
 
 #Training params
 training:
-          epochs: 20
+          epochs: 5
           workers: 5
 
 data_generator_params:

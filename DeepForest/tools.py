@@ -7,10 +7,13 @@ from keras import backend as K
 import tensorflow as tf
 import time
 
+##Keras Callbacks
+
 class TimeHistory(Callback):
 
-    def __init__(self,experiment):
+    def __init__(self,experiment,nsamples):
         self.experiment = experiment
+        self.nsamples=nsamples
         
     def on_train_begin(self, logs={}):
         self.times = []
@@ -20,6 +23,9 @@ class TimeHistory(Callback):
 
     def on_epoch_end(self, batch, logs={}):
         self.times.append(time.time() - self.epoch_time_start)
-        self.experiment.log_other("epoch time", self.times[-1])
+        
+        #samples per second
+        samples_per_second=self.times[-1]/self.nsamples
+        self.experiment.log_other("epoch time", samples_per_second)
 
 
