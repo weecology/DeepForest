@@ -11,7 +11,7 @@ def get_model():
     from keras import backend as K
     
     # create the base pre-trained model
-    base_model = InceptionV3(weights=None, include_top=False)
+    base_model = InceptionV3(weights=None, include_top=False,input_shape=(150, 150, 3))
     
     # add a global spatial average pooling layer
     x = base_model.output
