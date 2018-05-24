@@ -107,7 +107,7 @@ def crop_rgb(id,file,rgb_tile_dir,show=False):
         cv2.imwrite("logs/images/" + id + ".png",to_write)    
 
     #resize image and rescale
-    image_resize=cv2.resize(out_image,(64,64))
+    image_resize=cv2.resize(out_image,(150,150))
     image_rescale=image_resize/255.0
     return(image_rescale)        
     
