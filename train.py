@@ -17,6 +17,8 @@ from DeepForest.CropGenerator import DataGenerator
 from DeepForest import preprocess, evaluate
 from models import inception
 
+batch_size=config['data_generator_params']['batch_size']
+
 #set experiment and log configs
 experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2",project_name='deepforest')
 experiment.log_multiple_params(config['data_generator_params'])
@@ -64,7 +66,7 @@ logdir='logs/'+ now.strftime("%Y%m%d-%H%M%S")
 ###
 
 #samples/batchsize
-steps_per_epoch=int(train.shape[0]/config['data_generator_params']['batch_size'])
+steps_per_epoch=int(train.shape[0]/batch_size)
 
 #Load Model
 DeepForest=inception.get_model()
@@ -96,7 +98,7 @@ print("Saved model to disk")
 
 #Calculate confusion and final statistics
 #predict
-preds, labels=evaluate.predict(DeepForest,test)
+preds, labels=evaluate.predict(DeepForest,test,batch_size=batch_size)
 
 #report and log confusion matrix    
 tn, fp, fn, tp=evaluate.calculate_confusion(labels,preds,test)

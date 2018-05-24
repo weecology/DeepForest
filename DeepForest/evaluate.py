@@ -24,7 +24,7 @@ def load_model(logdir):
     return(loaded_model)
 
 #iterate through a list of bounding boxes see ../data, and make predictions
-def predict(model,box_file):
+def predict(model,box_file,batch_size):
     
     images=[]
     labels=[]
@@ -36,7 +36,7 @@ def predict(model,box_file):
         images.append(image)
         labels.append(box_file.loc[id].label_numeric)
     
-    preds=model.predict(np.array(images))
+    preds=model.predict(np.array(images),batch_size=batch_size)
     return(preds,labels)
     
 # Create visualization
