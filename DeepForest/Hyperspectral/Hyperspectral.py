@@ -5,7 +5,6 @@ import h5py as h5
 
 class Hyperspec:
     
-    
     def __init__(self,filename,site="OSBS"):
         '''
         Read a .h5 from file
@@ -16,7 +15,7 @@ class Hyperspec:
         
         #Load and store data as array
         self.filename=filename        
-        self.h5file=h5py.File(filename,'r')
+        self.h5file=h5.File(filename,'r')
         
         #get data
         self.data=self.getData()
@@ -37,7 +36,7 @@ class Hyperspec:
         self.visititems(list_dataset)
     
     def getData(self):
-        self['OSBS']['Radiance']["Radiance_Data"])
+        self['OSBS']['Radiance']["Radiance_Data"]
         
     def getShape(self):
         self[site]["Radiance"]["Radiance_Data"].shape
@@ -137,7 +136,7 @@ class Hyperspec:
             stackedArray[...,i] = band_clean_dict[band_clean_names[i]]*256        
         return(stackedArray)
     
-    def NDVI(self,NIR=57,VIS=90,clipExtent):
+    def NDVI(self,clipExtent,NIR=57,VIS=90):
         '''
         Calculate normalized difference vegetation index
         NIR: Near infrared band
