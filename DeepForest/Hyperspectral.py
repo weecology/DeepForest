@@ -3,7 +3,7 @@ import numpy as np
 import os
 import h5py as h5
 
-class Hyperspec:
+class Tile:
     
     def __init__(self,filename,site="OSBS"):
         '''
