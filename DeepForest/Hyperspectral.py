@@ -109,11 +109,11 @@ class Tile:
             b = subArray[:,:,band].astype(np.float)        
 
         #no data value
-        scaleFactor = self.data.attrs['Scale_Factor']
+        #scaleFactor = self.data.attrs['Scale_Factor']
         noDataValue = self.data.attrs['Data_Ignore_Value']
     
         b[b==int(noDataValue)]=np.nan
-        b = b/scaleFactor
+        #b = b/scaleFactor
         return(b)
     
     def stack_bands(self,bands,clipExtent=None):
@@ -154,7 +154,7 @@ class Tile:
               %(NIR, self.wavelengths.value[NIR]-band_width/2, self.wavelengths.value[NIR]+band_width/2))
         
         print('Visible light band is band # %d wavelength range: %.2f - %.2f nm' 
-                   %( VIS, self.wavelengths.value[NIR]-band_width/2, self.wavelengths.value[NIR]+band_width/2))
+                   %( VIS, self.wavelengths.value[VIS]-band_width/2, self.wavelengths.value[VIS]+band_width/2))
 
         #Use the stack_subset_bands function to create a stack of the subsetted red and NIR bands needed to calculate NDVI
         ndvi_stack = self.stack_bands(bands=(NIR,VIS),clipExtent=clipExtent)        
