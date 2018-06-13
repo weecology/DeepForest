@@ -2,6 +2,7 @@
 import numpy as np
 import os
 import h5py as h5
+import matplotlib.pyplot as plt
 
 class Tile:
     
@@ -170,7 +171,33 @@ class Tile:
         b=(NIR_data+VIS_data)
         NDVI = np.divide(a, b, out=np.zeros_like(a), where=b!=0)
         return(NDVI)
-
+    
+    def plot(self,band_array,colorlimit,ax=plt.gca(),title='',cbar ='on',cmap_title='',colormap='spectral',save=False):
+        
+        '''plot reads in and plots a single band of a reflectance array
+        --------
+        Parameters
+        --------
+            band_array: flightline array of reflectance values, created from h5refl2array function
+            refl_extent: extent of reflectance data to be plotted (xMin, xMax, yMin, yMax) - use metadata['extent'] from h5refl2array function
+            colorlimit: range of values to plot (min,max). Best to look at the histogram of reflectance values before plotting to determine colorlimit.
+            ax: optional, default = current axis
+            title: string, optional; plot title
+            cmap_title: string, optional; colorbar title
+            colormap: string, optional; see https://matplotlib.org/examples/color/colormaps_reference.html for list of colormaps
+        '''
+    
+        plot = plt.imshow(band_array,clim=colorlimit); 
+        if cbar == 'on':
+            cbar = plt.colorbar(plot,aspect=40); plt.set_cmap(colormap); 
+            cbar.set_label(cmap_title,rotation=90,labelpad=20)
+        plt.title(title); ax = plt.gca(); 
+        ax.ticklabel_format(useOffset=False, style='plain'); #do not use scientific notation #
+        rotatexlabels = plt.setp(ax.get_xticklabels(),rotation=90); #rotate x tick labels 90 degrees
+        
+        if save:
+            plt.savefig('example.png', bbox_inches='tight')
+            
 #Util functions
 def list_dataset(name,node):
     if isinstance(node, h5.Dataset):
@@ -193,6 +220,5 @@ if __name__=="__main__":
     
     f=Tile("/orange/ewhite/b.weinstein/NEON/D03/OSBS/DP1.30008.001/2017/FullSite/D03/2017_OSBS_3/L1/Spectrometer/RadianceH5/2017092713_done/NEON_D03_OSBS_DP1_20170927_172515_radiance.h5")
     NDVI=f.NDVI(clipExtent=None)
-    print(NDVI)
-       
+    f.plot(NDVI,save=True)
     
