@@ -187,11 +187,11 @@ class Tile:
             colormap: string, optional; see https://matplotlib.org/examples/color/colormaps_reference.html for list of colormaps
         '''
     
-        plot = plt.imshow(band_array,clim=colorlimit); 
+        plot = plt.imshow(band_array); 
         if cbar == 'on':
             cbar = plt.colorbar(plot,aspect=40); plt.set_cmap(colormap); 
             cbar.set_label(cmap_title,rotation=90,labelpad=20)
-        
+            
         if save:
             plt.savefig('example.png', bbox_inches='tight')
             
