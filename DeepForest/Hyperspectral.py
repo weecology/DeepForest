@@ -146,11 +146,11 @@ class Tile:
         #Check the center wavelengths that these bands represent
         band_width = self.wavelengths.value[1]-self.wavelengths.value[0]
         
-        print('Near infrared band is band # %d wavelength range: %f - %f nm' 
-              %(NIR, str(round(self.wavelengths.value[NIR]-band_width/2,2)), str(round(self.wavelengths.value[NIR]+band_width/2,2))))
+        print('Near infrared band is band # %d wavelength range: %.2f - %.2f nm' 
+              %(NIR, self.wavelengths.value[NIR]-band_width/2, self.wavelengths.value[NIR]+band_width/2))
         
-        print('Visible light band is band # %d wavelength range: %f - %f nm' 
-                   %( VIS, str(round(self.wavelengths.value[NIR]-band_width/2,2)), str(round(self.wavelengths.value[NIR]+band_width/2,2))))  
+        print('Visible light band is band # %d wavelength range: %.2f - %.2f nm' 
+                   %( VIS, self.wavelengths.value[NIR]-band_width/2, self.wavelengths.value[NIR]+band_width/2))
 
         #Use the stack_subset_bands function to create a stack of the subsetted red and NIR bands needed to calculate NDVI
         ndvi_stack = self.stack_bands(bands=(NIR,VIS),clipExtent=clipExtent)        
