@@ -172,7 +172,7 @@ class Tile:
         NDVI = np.divide(a, b, out=np.zeros_like(a), where=b!=0)
         return(NDVI)
     
-    def plot(self,band_array,colorlimit,ax=plt.gca(),title='',cbar ='on',cmap_title='',colormap='spectral',save=False):
+    def plot(self,band_array,colorlimit,title='',cbar ='on',cmap_title='',colormap='spectral',save=False):
         
         '''plot reads in and plots a single band of a reflectance array
         --------
@@ -191,9 +191,6 @@ class Tile:
         if cbar == 'on':
             cbar = plt.colorbar(plot,aspect=40); plt.set_cmap(colormap); 
             cbar.set_label(cmap_title,rotation=90,labelpad=20)
-        plt.title(title); ax = plt.gca(); 
-        ax.ticklabel_format(useOffset=False, style='plain'); #do not use scientific notation #
-        rotatexlabels = plt.setp(ax.get_xticklabels(),rotation=90); #rotate x tick labels 90 degrees
         
         if save:
             plt.savefig('example.png', bbox_inches='tight')
