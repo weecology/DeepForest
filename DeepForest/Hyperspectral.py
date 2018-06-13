@@ -189,7 +189,7 @@ class Tile:
     
          
         if save:
-            plot=plt.imsave('example.png', band_array, bbox_inches='tight',cmap=colormap)
+            plot=plt.imsave('example.png', band_array,cmap=colormap)
         else:
             plot=plt.imshow(band_array,cmap=colormap)
             
