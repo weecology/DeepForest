@@ -172,7 +172,7 @@ class Tile:
         NDVI = np.divide(a, b, out=np.zeros_like(a), where=b!=0)
         return(NDVI)
     
-    def plot(self,band_array,colorlimit,title='',cbar ='on',cmap_title='',colormap='spectral',save=False):
+    def plot(self,band_array,title='',cbar ='on',cmap_title='',colormap='spectral',save=False):
         
         '''plot reads in and plots a single band of a reflectance array
         --------
