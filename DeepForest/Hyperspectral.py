@@ -122,10 +122,14 @@ class Tile:
         Stack cleaned bands
         '''
         
-        subArray_rows = clipExtent['ymax'] - clipExtent['ymin']
-        subArray_cols = clipExtent['xmax'] - clipExtent['xmin']
+        if clipExtent:
+            rows = clipExtent['ymax'] - clipExtent['ymin']
+            cols = clipExtent['xmax'] - clipExtent['xmin']
+        else:
+            rows=self.shape[0]
+            cols=self.shape[1]
         
-        stackedArray = np.zeros((subArray_rows,subArray_cols,len(bands)),'uint8') #pre-allocate stackedArray matrix      
+        stackedArray = np.zeros((rows,cols,len(bands)),'uint8') #pre-allocate stackedArray matrix      
         
         band_clean_dict = {}
         band_clean_names = []
