@@ -17,6 +17,8 @@ class Tile:
         self.filename=filename        
         self.h5file=h5.File(filename,'r')
         
+        self.fite=self.site
+        
         #get data
         self.data=self.getData()
         
@@ -39,14 +41,14 @@ class Tile:
         self.h5file['OSBS']['Radiance']["Radiance_Data"]
         
     def getShape(self):
-        self.h5file[site]["Radiance"]["Radiance_Data"].shape
+        self.h5file[self.site]["Radiance"]["Radiance_Data"].shape
         
     def getCoords(self):
         '''Get the upper left corner of raster'''
-        xmin=self.h5file[site]['Radiance']['Metadata']['Coordinate_System']['Map_Info'][3]
+        xmin=self.h5file[self.site]['Radiance']['Metadata']['Coordinate_System']['Map_Info'][3]
         xmin=float(str(xmin).split(",")[3])
         
-        ymax=self.h5file[site]['Radiance']['Metadata']['Coordinate_System']['Map_Info'][4]
+        ymax=self.h5file[self.site]['Radiance']['Metadata']['Coordinate_System']['Map_Info'][4]
         ymax=float(str(ymax).split(",")[4])   
         
         #find corners
@@ -63,16 +65,16 @@ class Tile:
         return(extDict)
     
     def getResolution(self):
-        map_info=str(self.h5file[site]['Radiance']['Metadata']['Coordinate_System']['Map_Info'].value).split(",")
+        map_info=str(self.h5file[self.site]['Radiance']['Metadata']['Coordinate_System']['Map_Info'].value).split(",")
         
         res=float(map_info[5]),float(map_info[6])
         xmin=float(str(xmin).split(",")[3])
-        ymax=self.h5file[site]['Radiance']['Metadata']['Coordinate_System']['Map_Info'][4]
+        ymax=self.h5file[self.site]['Radiance']['Metadata']['Coordinate_System']['Map_Info'][4]
         ymax=float(str(ymax).split(",")[4])   
         
     def getWavelengths(self):
         
-        wavelengths = self.h5file[site]['Radiance']['Metadata']['Spectral_Data']['Wavelength']
+        wavelengths = self.h5file[self.site]['Radiance']['Metadata']['Spectral_Data']['Wavelength']
         print(wavelengths)
         # print(wavelengths.value)
         # Display min & max wavelengths
