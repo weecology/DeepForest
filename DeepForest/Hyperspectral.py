@@ -33,20 +33,20 @@ class Tile:
         self.wavelengths=self.getWavelengths()
         
     def view_items(self):
-        self.visititems(list_dataset)
+        self.h5file.visititems(list_dataset)
     
     def getData(self):
-        self['OSBS']['Radiance']["Radiance_Data"]
+        self.h5file['OSBS']['Radiance']["Radiance_Data"]
         
     def getShape(self):
-        self[site]["Radiance"]["Radiance_Data"].shape
+        self.h5file[site]["Radiance"]["Radiance_Data"].shape
         
     def getCoords(self):
         '''Get the upper left corner of raster'''
-        xmin=self[site]['Radiance']['Metadata']['Coordinate_System']['Map_Info'][3]
+        xmin=self.h5file[site]['Radiance']['Metadata']['Coordinate_System']['Map_Info'][3]
         xmin=float(str(xmin).split(",")[3])
         
-        ymax=self[site]['Radiance']['Metadata']['Coordinate_System']['Map_Info'][4]
+        ymax=self.h5file[site]['Radiance']['Metadata']['Coordinate_System']['Map_Info'][4]
         ymax=float(str(ymax).split(",")[4])   
         
         #find corners
@@ -63,16 +63,16 @@ class Tile:
         return(extDict)
     
     def getResolution(self):
-        map_info=str(self[site]['Radiance']['Metadata']['Coordinate_System']['Map_Info'].value).split(",")
+        map_info=str(self.h5file[site]['Radiance']['Metadata']['Coordinate_System']['Map_Info'].value).split(",")
         
         res=float(map_info[5]),float(map_info[6])
         xmin=float(str(xmin).split(",")[3])
-        ymax=self[site]['Radiance']['Metadata']['Coordinate_System']['Map_Info'][4]
+        ymax=self.h5file[site]['Radiance']['Metadata']['Coordinate_System']['Map_Info'][4]
         ymax=float(str(ymax).split(",")[4])   
         
     def getWavelengths(self):
         
-        wavelengths = self[site]['Radiance']['Metadata']['Spectral_Data']['Wavelength']
+        wavelengths = self.h5file[site]['Radiance']['Metadata']['Spectral_Data']['Wavelength']
         print(wavelengths)
         # print(wavelengths.value)
         # Display min & max wavelengths
@@ -86,7 +86,7 @@ class Tile:
         return(wavelengths)
         
     def load_proj4(self):
-        return(self['OSBS']['Radiance']['Metadata']['Coordinate_System']['Proj4'].value)
+        return(self.h5file['OSBS']['Radiance']['Metadata']['Coordinate_System']['Proj4'].value)
         
     def extract_band(self,band,clipExtent=None):
         
@@ -181,7 +181,7 @@ def calc_clip_index(clipExtent, fullExtent, xscale=1, yscale=1):
 
 if __name__=="__main__":
     
-    f=Hyperspec("/orange/ewhite/b.weinstein/NEON/D03/OSBS/DP1.30008.001/2017/FullSite/D03/2017_OSBS_3/L1/Spectrometer/RadianceH5/2017092713_done/NEON_D03_OSBS_DP1_20170927_172515_radiance.h5","r")
+    f=Tile("/orange/ewhite/b.weinstein/NEON/D03/OSBS/DP1.30008.001/2017/FullSite/D03/2017_OSBS_3/L1/Spectrometer/RadianceH5/2017092713_done/NEON_D03_OSBS_DP1_20170927_172515_radiance.h5","r")
     f.NDVI(clipExtent=None)
        
     
