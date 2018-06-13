@@ -66,11 +66,8 @@ class Tile:
     
     def getResolution(self):
         map_info=str(self.h5file[self.site]['Radiance']['Metadata']['Coordinate_System']['Map_Info'].value).split(",")
-        
         res=float(map_info[5]),float(map_info[6])
-        xmin=float(str(xmin).split(",")[3])
-        ymax=self.h5file[self.site]['Radiance']['Metadata']['Coordinate_System']['Map_Info'][4]
-        ymax=float(str(ymax).split(",")[4])   
+        return(res)
         
     def getWavelengths(self):
         
