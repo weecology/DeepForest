@@ -162,11 +162,10 @@ class Tile:
         VIS_data = ndvi_stack[:,:,0].astype(float)
         NIR_data = ndvi_stack[:,:,1].astype(float)
         
-        print(NIR_data[0:5,0:5])
-        print(VIS_data[0:5,0:5])
+     
         
-        print(VIS_data.shape)
-        print(NIR_data.shape)
+        print(np.mean(VIS_data))
+        print(np.mean(NIR_data))
 
         NDVI = np.divide((NIR_data-VIS_data),(NIR_data+VIS_data))
         return(NDVI)
