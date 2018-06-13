@@ -17,7 +17,7 @@ class Tile:
         self.filename=filename        
         self.h5file=h5.File(filename,'r')
         
-        self.fite=self.site
+        self.site=site
         
         #get data
         self.data=self.getData()
