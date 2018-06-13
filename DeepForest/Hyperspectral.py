@@ -183,7 +183,7 @@ def calc_clip_index(clipExtent, fullExtent, xscale=1, yscale=1):
 
 if __name__=="__main__":
     
-    f=Tile("/orange/ewhite/b.weinstein/NEON/D03/OSBS/DP1.30008.001/2017/FullSite/D03/2017_OSBS_3/L1/Spectrometer/RadianceH5/2017092713_done/NEON_D03_OSBS_DP1_20170927_172515_radiance.h5","r")
+    f=Tile("/orange/ewhite/b.weinstein/NEON/D03/OSBS/DP1.30008.001/2017/FullSite/D03/2017_OSBS_3/L1/Spectrometer/RadianceH5/2017092713_done/NEON_D03_OSBS_DP1_20170927_172515_radiance.h5")
     f.NDVI(clipExtent=None)
        
     
