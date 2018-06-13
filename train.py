@@ -101,13 +101,12 @@ print("Saved model to disk")
 preds, labels=evaluate.predict(DeepForest,test,batch_size=batch_size)
 
 #report and log confusion matrix    
-tn, fp, fn, tp=evaluate.calculate_confusion(labels,preds,test)
-print("True Negative Rate %.3f\nTrue Positive Rate %.3f\nFalse Negative Rate %.3f\nFalse Positive Rate %.3f" % (tn,tp,fn,fp))    
+precision, recall, true_negative_rate=evaluate.calculate_confusion(labels,preds)
+print("Precision %.3f\nRecall %.3f\nTrue Negative Rate %.3f" % (precision,recall,true_negative_rate))    
 
-experiment.log_other("True Negative Rate", "{0:.3f}".format(tn))
-experiment.log_other("True Positive Rate", "{0:.3f}".format(tp))
-experiment.log_other("False Negative Rate", "{0:.3f}".format(fn))
-experiment.log_other("False Positive Rate", "{0:.3f}".format(fp))
+experiment.log_other("Precision", "{0:.3f}".format(precision))
+experiment.log_other("Recall", "{0:.3f}".format(recall))
+experiment.log_other("True Negative Rate", "{0:.3f}".format(true_negative_rate))
 
 
 

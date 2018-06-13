@@ -25,7 +25,7 @@ class TimeHistory(Callback):
         self.times.append(time.time() - self.epoch_time_start)
         
         #samples per second
-        samples_per_second=self.times[-1]/self.nsamples
-        self.experiment.log_other("epoch time", samples_per_second)
+        seconds_per_sample=self.times[-1]/self.nsamples
+        self.experiment.log_other("seconds_per_sample", seconds_per_sample)
 
 
