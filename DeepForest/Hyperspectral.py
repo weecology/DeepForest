@@ -45,11 +45,10 @@ class Tile:
         
     def getCoords(self):
         '''Get the upper left corner of raster'''
-        xmin=self.h5file[self.site]['Radiance']['Metadata']['Coordinate_System']['Map_Info']
-        xmin=float(str(xmin).split(",")[3])
+        map_info=self.h5file[self.site]['Radiance']['Metadata']['Coordinate_System']['Map_Info'].value
+        xmin=float(str(map_info).split(",")[3])
         
-        ymax=self.h5file[self.site]['Radiance']['Metadata']['Coordinate_System']['Map_Info']
-        ymax=float(str(ymax).split(",")[4])   
+        ymax=float(str(map_info).split(",")[4])   
         
         #find corners
         xmax = xmin + (self.shape[1]*self.res[0])
