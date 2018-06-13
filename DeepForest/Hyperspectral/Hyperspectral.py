@@ -1,182 +1,188 @@
 
-from Utilities import *
 import numpy as np
-import dask.array as da
-from dask_ml.decomposition import PCA
+import os
+import h5py as h5
 
 class Hyperspectral:
     
-    def __init__(self,filename):
+    
+    def __init__(self,filename,site="OSBS"):
         '''
         Read a .h5 from file
         '''        
         
+        #On hipergator, need env variable set
+        os.environ['HDF5_USE_FILE_LOCKING'] = 'FALSE'   
+        
         #Load and store data as array
         self.filename=filename        
         self.h5file=h5py.File(filename,'r')
-        self.reflArray,self.metadata,self.wavelengths = load(hdf5_file)
+        
+        #get data
+        self.data=self.getData()
+        
+        #get shape
+        self.shape=self.getShape()
+        
+        #get Resolution
+        self.res=self.getResolution()
+        
+        #get coordinates
+        self.coords=self.getCoords()
+        
+        #get wavelength
+        self.wavelengths=self.getWavelengths()
+        
+    def view_items(self):
+        self.visititems(list_dataset)
     
-    def clip(self):
-        '''
-        Clip h5 data by extent
-        '''
-        pass
+    def getData(self):
+        self['OSBS']['Radiance']["Radiance_Data"])
+        
+    def getShape(self):
+        self[site]["Radiance"]["Radiance_Data"].shape
+        
+    def getCoords(self):
+        '''Get the upper left corner of raster'''
+        xmin=self[site]['Radiance']['Metadata']['Coordinate_System']['Map_Info'][3]
+        xmin=float(str(xmin).split(",")[3])
+        
+        ymax=self[site]['Radiance']['Metadata']['Coordinate_System']['Map_Info'][4]
+        ymax=float(str(ymax).split(",")[4])   
+        
+        #find corners
+        xmax = xmin + (self.shape[1]*self.res[0])
+        ymin = ymax - (self.shape[0]*self.res[1])         
+        
+        #create extent dictionary
+        extDict = {}
+        extDict['xmin'] = xmin
+        extDict['xmax'] = xmax
+        extDict['ymin'] = ymin
+        extDict['ymax'] = ymax
+        
+        return(extDict)
     
-    def pca(self):
+    def getResolution(self):
+        map_info=str(self[site]['Radiance']['Metadata']['Coordinate_System']['Map_Info'].value).split(",")
+        
+        res=float(map_info[5]),float(map_info[6])
+        xmin=float(str(xmin).split(",")[3])
+        ymax=self[site]['Radiance']['Metadata']['Coordinate_System']['Map_Info'][4]
+        ymax=float(str(ymax).split(",")[4])   
+        
+    def getWavelengths(self):
+        
+        wavelengths = self[site]['Radiance']['Metadata']['Spectral_Data']['Wavelength']
+        print(wavelengths)
+        # print(wavelengths.value)
+        # Display min & max wavelengths
+        print('min wavelength:', np.amin(wavelengths),'nm')
+        print('max wavelength:', np.amax(wavelengths),'nm')
+        
+        # show the band width 
+        print('band width =',(wavelengths.value[1]-wavelengths.value[0]),'nm')
+        print('band width =',(wavelengths.value[-1]-wavelengths.value[-2]),'nm')
+        
+        return(wavelengths)
+        
+    def load_proj4(self):
+        return(self['OSBS']['Radiance']['Metadata']['Coordinate_System']['Proj4'].value)
+        
+    def extract_band(self,band,clipExtent=None):
+        
         '''
-        Dimensionality reduction
+        clipExtent: An optional dictionary with xmin,xmax,ymin,ymax
         '''
         
-        X = np.array([[-1, -1], [-2, -1], [-3, -2], [1, 1], [2, 1], [3, 2]])
-        dX = da.from_array(X, chunks=X.shape)
-        pca = PCA(n_components=2)
-        pca.fit(dX)
-        print(pca.explained_variance_ratio_)          
+        if not clipExtent:
+            
+            #No clipping, select band
+            b=self.data[:,:,band].astype(np.float)
+            
+        else:
+            #get index for clipping
+            sub_Index = calc_clip_index(clipExtent,self.coords)
+            
+            #extract array
+            subArray = self.data[sub_Index['ymin']:sub_Index['ymax'],sub_Index['xmin']:sub_Index['xmax'],:]
+            subExt = (clipExtent['xmin'],clipExtent['xmax'],clipExtent['ymin'],clipExtent['ymax'])   
+            b = subArray[:,:,band].astype(np.float)        
 
-        pass
+        #no data value
+        scaleFactor = self.data.attrs['Scale_Factor']
+        noDataValue = self.data.attrs['Data_Ignore_Value']
     
-    def subset(self):
+        b[b==int(noDataValue)]=np.nan
+        b = b/scaleFactor
+        return(b)
+    
+    def stack_bands(self,bands,clipExtent=None):
+        
         '''
-        Select specific layers
+        Stack cleaned bands
         '''
-        pass
-    def save_as_raster(self):
-        '''Export a numpy matrix as .tif'''
-        pass
-    def calc_clip_index(clipExtent, h5Extent, xscale=1, yscale=1):
         
-        h5rows = h5Extent['yMax'] - h5Extent['yMin']
-        h5cols = h5Extent['xMax'] - h5Extent['xMin']    
+        subArray_rows = clipExtent['ymax'] - clipExtent['ymin']
+        subArray_cols = clipExtent['xmax'] - clipExtent['xmin']
         
-        ind_ext = {}
-        ind_ext['xMin'] = round((clipExtent['xMin']-h5Extent['xMin'])/xscale)
-        ind_ext['xMax'] = round((clipExtent['xMax']-h5Extent['xMin'])/xscale)
-        ind_ext['yMax'] = round(h5rows - (clipExtent['yMin']-h5Extent['yMin'])/xscale)
-        ind_ext['yMin'] = round(h5rows - (clipExtent['yMax']-h5Extent['yMin'])/yscale)
+        stackedArray = np.zeros((subArray_rows,subArray_cols,len(bands)),'uint8') #pre-allocate stackedArray matrix      
         
-        return ind_ext
-    
-    
-    def stack_subset_bands(reflArray,reflArray_metadata,bands,clipIndex):
-        
-        subArray_rows = clipIndex['yMax'] - clipIndex['yMin']
-        subArray_cols = clipIndex['xMax'] - clipIndex['xMin']
-        
-        stackedArray = np.zeros((subArray_rows,subArray_cols,len(bands)),dtype = np.int16)
         band_clean_dict = {}
         band_clean_names = []
         
         for i in range(len(bands)):
             band_clean_names.append("b"+str(bands[i])+"_refl_clean")
-            band_clean_dict[band_clean_names[i]] = subset_clean_band(reflArray,reflArray_metadata,clipIndex,bands[i])
-            stackedArray[...,i] = band_clean_dict[band_clean_names[i]]
-                            
-        return stackedArray
+            band_clean_dict[band_clean_names[i]] = self.extract_band(band=bands[i],clipExtent=clipExtent)
+            stackedArray[...,i] = band_clean_dict[band_clean_names[i]]*256        
+        return(stackedArray)
     
-    
-    def subset_clean_band(reflArray,reflArray_metadata,clipIndex,bandIndex):
+    def NDVI(self,NIR=57,VIS=90,clipExtent):
+        '''
+        Calculate normalized difference vegetation index
+        NIR: Near infrared band
+        VIR: Visible band
+        '''
+
+        #Check the center wavelengths that these bands represent
+        band_width = self.wavelengths.value[1]-self.wavelengths.value[0]
         
-        bandCleaned = reflArray[clipIndex['yMin']:clipIndex['yMax'],clipIndex['xMin']:clipIndex['xMax'],bandIndex].astype(np.int16)
+        print('Near infrared band is band # %d wavelength range: %f - %f nm' 
+              %(NIR, str(round(self.wavelengths.value[NIR]-band_width/2,2)), str(round(wavelengths.value[NIR]+band_width/2,2))))
         
-        return bandCleaned 
-    
-    
-    def array2raster(newRaster,reflBandArray,reflArray_metadata, extent, ras_dir): 
+        print('Visible light band is band # %d wavelength range: %f - %f nm' 
+                   %( VIS, str(round(self.wavelengths.value[NIR]-band_width/2,2)), str(round(wavelengths.value[NIR]+band_width/2,2))))  
+
+        #Use the stack_subset_bands function to create a stack of the subsetted red and NIR bands needed to calculate NDVI
+        ndvi_stack = self.stack_bands(bands=(NIR,VIS),clipExtent=clipExtent)        
+
+        VIS_data = ndvi_stack[:,:,0].astype(float)
+        NIR_data = ndvi_stack[:,:,1].astype(float)
         
-        NP2GDAL_CONVERSION = {
-          "uint8": 1,
-          "int8": 1,
-          "uint16": 2,
-          "int16": 3,
-          "uint32": 4,
-          "int32": 5,
-          "float32": 6,
-          "float64": 7,
-          "complex64": 10,
-          "complex128": 11,
-        }
-        
-        pwd = os.getcwd()
-        os.chdir(ras_dir) 
-        cols = reflBandArray.shape[1]
-        rows = reflBandArray.shape[0]
-        bands = reflBandArray.shape[2]
-        pixelWidth = float(reflArray_metadata['res']['pixelWidth'])
-        pixelHeight = -float(reflArray_metadata['res']['pixelHeight'])
-        originX = extent['xMin']
-        originY = extent['yMax']
-        
-        driver = gdal.GetDriverByName('GTiff')
-        gdaltype = NP2GDAL_CONVERSION[reflBandArray.dtype.name]
-        outRaster = driver.Create(newRaster, cols, rows, bands, gdaltype)
-        outRaster.SetGeoTransform((originX, pixelWidth, 0, originY, 0, pixelHeight))
-        #outband = outRaster.GetRasterBand(1)
-        #outband.WriteArray(reflBandArray[:,:,x])
-        for band in range(bands):
-            outRaster.GetRasterBand(band+1).WriteArray(reflBandArray[:,:,band])
-        
-        outRasterSRS = osr.SpatialReference()
-        outRasterSRS.ImportFromEPSG(reflArray_metadata['epsg']) 
-        outRaster.SetProjection(outRasterSRS.ExportToWkt())
-        outRaster.FlushCache()
-        os.chdir(pwd) 
+        NDVI = np.divide((NIR_data-VIS_data),(NIR_data+VIS_data))
+        return(NDVI)
+
+#Util functions
+def list_dataset(name,node):
+    if isinstance(node, h5.Dataset):
+        print(name)
+
+def calc_clip_index(clipExtent, fullExtent, xscale=1, yscale=1):
     
-    def stripe2Raster(f, pt):
-        
-        full_path = pt+f
-        refl, refl_md, wavelengths = load(full_path)
-        refl_md['extent']
-        
-        #Drop water bands
-        
-        rgb = np.r_[0:425]
-        rgb = np.delete(rgb, np.r_[419:426])
-        rgb = np.delete(rgb, np.r_[283:315])
-        rgb = np.delete(rgb, np.r_[192:210])    
-        xmin, xmax, ymin, ymax = refl_md['extent']
-        clipExtent = {}
-        clipExtent['xMin'] = int(xmin) 
-        clipExtent['yMin'] = int(ymin) 
-        clipExtent['yMax'] = int(ymax) 
-        clipExtent['xMax'] = int(xmax) 
+    h5rows = fullExtent['ymax'] - fullExtent['ymin']
+    h5cols = fullExtent['xmax'] - fullExtent['xmin']    
     
-    
-        subInd = calc_clip_index(clipExtent,refl_md['ext_dict']) 
-        subInd['xMax'] = int(subInd['xMax'])
-        subInd['xMin'] = int(subInd['xMin'])
-        subInd['yMax'] = int(subInd['yMax'])
-        subInd['yMin'] = int(subInd['yMin'])
-        reflBandArray = stack_subset_bands(refl,refl_md,rgb,subInd)
-    
-        subArray_rows = subInd['yMax'] - subInd['yMin']
-        subArray_cols = subInd['xMax'] - subInd['xMin']
-        hcp = np.zeros((subArray_rows,subArray_cols,len(rgb)),dtype = np.int16)
-    
-        band_clean_dict = {}
-        band_clean_names = []
-        for i in range(len(rgb)):
-            band_clean_names.append("b"+str(rgb[i])+"_refl_clean")
-            band_clean_dict[band_clean_names[i]] = refl[:,:,rgb[i]].astype(np.int16)
-            hcp[...,i] = band_clean_dict[band_clean_names[i]]
-    
-        reflArray_metadata = refl_md
-        newRaster = f.replace(' ','')[:-3].upper()
-        newRaster = str(clipExtent['xMin'])+str((clipExtent['yMax']))+'.tif'
-    
-        ras_dir = '/ufrc/ewhite/s.marconi/Marconi2018/spatialPhase/rasters/'
-        array2raster(newRaster,hcp,reflArray_metadata, clipExtent, ras_dir)
+    indExtent = {}
+    indExtent['xmin'] = round((clipExtent['xmin']-fullExtent['xmin'])/xscale)
+    indExtent['xmax'] = round((clipExtent['xmax']-fullExtent['xmin'])/xscale)
+    indExtent['ymax'] = round(h5rows - (clipExtent['ymin']-fullExtent['ymin'])/xscale)
+    indExtent['ymin'] = round(h5rows - (clipExtent['ymax']-fullExtent['ymin'])/yscale)
+
+    return indExtent
 
 if __name__=="__main__":
-
-    import numpy as np
-    import h5py
-    import gdal, osr
-    import sys
-    import ogr, os
     
-    #pt = "/ufrc/ewhite/s.marconi/Marconi2018/spatialPhase/OSBS/Reflectance/"
-    #f = "NEON_D03_OSBS_DP3_394000_3280000_reflectance.h5"
-    #stripe2Raser(f,  pt)
-    h=Hyperspectral() 
-    h.stripe2Raster(sys.argv[1],  sys.argv[2])
-
+    f=Hyperspectral("NEON_D03_OSBS_DP1_20170927_172515_radiance.h5","r")
+    f.NDVI(clipExtent=None)
+       
+    

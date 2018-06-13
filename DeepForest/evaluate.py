@@ -51,31 +51,17 @@ def view_predictions():
 ## Save image predictions
 
 #Calculate confusion matrix
-def calculate_confusion(labels,preds,data):
-    tn, fp, fn, tp=confusion_matrix(labels, np.round(preds)).ravel()/data.shape[0]
-    return(tn, fp, fn, tp)
+def calculate_confusion(labels,preds):
     
-if __name__ =="__main__":
+    tn, fp, fn, tp=confusion_matrix(labels, np.round(preds)).ravel()
     
-    #parse logs
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--logdir", help="",type=str,default="20180523-181550/")
-    parser.add_argument("--box_file", help="",type=str,default="data/bounding_boxes_NEON_D03_OSBS_DP1_398000_3280000_classified_point_cloud_laz.csv")
+    #scale metrics
+    precision=tp/(tp+fp)
+    recall=tp/(tp+fn)
+    tnr=tn/(tn+fp)
+        
+    return(precision, recall, tnr)
     
-    args=parser.parse_args()
-    
-    #load model
-    model=load_model(args.logdir)
-    
-    #load data
-    data=preprocess.load_data(args.box_file)
-    
-    #predict
-    preds, labels=predict(model,data)
-    
-    #confusion matrix    
-    tn, fp, fn, tp=calculate_confusion(labels,preds)
-    print("True Negative Rate %.3f\nTrue Positive Rate %.3f\nFalse Negative Rate %.3f\nFalse Positive Rate %.3f" % (tn,tp,fn,fp))    
     
     
     
