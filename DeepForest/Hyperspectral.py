@@ -38,10 +38,12 @@ class Tile:
         self.h5file.visititems(list_dataset)
     
     def getData(self):
-        self.h5file['OSBS']['Radiance']["Radiance_Data"]
+        data=self.h5file['OSBS']['Radiance']["Radiance_Data"]
+        return(data)
         
     def getShape(self):
-        self.h5file[self.site]["Radiance"]["Radiance_Data"].shape
+        shape=self.h5file[self.site]["Radiance"]["Radiance_Data"].shape
+        return(shape)
         
     def getCoords(self):
         '''Get the upper left corner of raster'''
