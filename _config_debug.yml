@@ -7,6 +7,12 @@ bbox_data_dir: data/
 #Subsample dataset
 subsample: 60
 
+#Preprocessing routines
+preprocess:
+          zero_area: True
+          NDVI: False
+          NDVI_Threshold: 0.1
+          
 #Training params
 training:
           epochs: 2
@@ -14,6 +20,7 @@ training:
 
 data_generator_params:
           rgb_tile_dir: /Users/ben/Documents/TreeSegmentation/data/training/
+          hyperspec_tile_dir: NA
           batch_size: 32
           shuffle: True
 

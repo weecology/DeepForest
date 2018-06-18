@@ -6,6 +6,12 @@ bbox_data_dir: /home/b.weinstein/TreeSegmentation/analysis/Results/bounding_boxe
 #Subsample dataset
 subsample: 30000
 
+#Preprocessing routines
+preprocess:
+          zero_area: True
+          NDVI: False
+          NDVI_Threshold: 0.1
+          
 #Training params
 training:
           epochs: 5
@@ -13,6 +19,7 @@ training:
 
 data_generator_params:
           rgb_tile_dir: /orange/ewhite/b.weinstein/NEON/D03/OSBS/DP1.30010.001/2017/FullSite/D03/2017_OSBS_3/L3/Camera/Mosaic/V01/
+          hyperspec_tile_dir: NA
           batch_size: 32
           shuffle: True
 

@@ -50,7 +50,6 @@ class Tile:
         '''Get the upper left corner of raster'''
         map_info=self.h5file[self.site]['Radiance']['Metadata']['Coordinate_System']['Map_Info'].value
         xmin=float(str(map_info).split(",")[3])
-        
         ymax=float(str(map_info).split(",")[4])   
         
         #find corners
@@ -169,10 +168,10 @@ class Tile:
         #divide if not 0
         a=(NIR_data-VIS_data)
         b=(NIR_data+VIS_data)
-        NDVI = np.divide(a, b, out=np.zeros_like(a), where=b!=0)
+        NDVI = a/b
         return(NDVI)
     
-    def plot(self,band_array,title='',cmap_title='',colormap='Spectral',save=False):
+    def plot(self,band_array,title='',cmap_title='',colormap='hot',save=False):
         
         '''plot reads in and plots a single band of a reflectance array
         --------
@@ -186,14 +185,12 @@ class Tile:
             cmap_title: string, optional; colorbar title
             colormap: string, optional; see https://matplotlib.org/examples/color/colormaps_reference.html for list of colormaps
         '''
-    
-         
+
+
         if save:
-            plot=plt.imsave('example.png', band_array,cmap=colormap)
+            plt.imsave("example.png",band_array,cmap=colormap)
         else:
-            plot=plt.imshow(band_array,cmap=colormap)
-            
-            
+            plot.imshow(band_array,cmap=colormap)
             
 #Util functions
 def list_dataset(name,node):

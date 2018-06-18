@@ -59,6 +59,26 @@ def allometry(data):
 
 
 #Filter by ndvi threshold
-def ndvi(data):
-    pass
-
+def NDVI(data,threshold,data_dir):
+    
+    #for each row
+    for row,index in data.iterrows():
+        
+        #create the hyperspectral object
+        h=Hyperspectral(data_dir + row['hyperspec_path'])
+        
+        #create clipExtent from box
+        clipExtent={}
+        clipExtent["xmin"]=row["xmin"]
+        clipExtent["ymin"]=row["ymin"]
+        clipExtent["xmax"]=row["xmax"]
+        clipExtent["ymax"]=row["ymax"]
+        
+        #Calculate NDVI
+        NDVI=f.NDVI(clipExtent=clipExtent)
+        
+        data['NDVI']=NDVI
+    
+    #Create lower bound for NDVI   
+    data=data[data.NDVI > threshold]    
+    return(data)

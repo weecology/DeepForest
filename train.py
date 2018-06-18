@@ -27,11 +27,18 @@ experiment.log_multiple_params(config['training'])
 ##Set seed for reproducibility##
 np.random.seed(2)
 
-#Load data and comine into a large 
+#Load data and combine into a large 
 data=preprocess.load_data(data_dir=config['bbox_data_dir'],nsamples=config["subsample"])
 
 ##Preprocess Filters##
-data=preprocess.zero_area(data)
+
+if config['preprocess']['zero_area']:
+    data=preprocess.zero_area(data)
+    
+if config['preprocess']['NDVI']:
+    data=preprocess.NDVI(data,
+                         data_dir=config["data_generator_params"]["hyperspec_tile_dir"],
+                         threshold=float(config['preprocess']['NDVI_Threshold']))
     
 #Partition data in training and testing dataframes
 msk = np.random.rand(len(data)) < 0.8
