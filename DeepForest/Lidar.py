@@ -31,7 +31,7 @@ def preprocess(lidar_path,bounding_box_path,num_points,view=False):
     
     #Crop out tree
     trees=[]
-    for index,row in bbox.head().iterrows():
+    for index,row in bbox.iterrows():
         
         print(index)
         #Create Polygon
@@ -116,9 +116,7 @@ def sample(tree,num_points,view):
     #Minimum distances among points
     dat=np.asarray(downpcd.points)
     d=min_distance(dat)
-    
-    print(d.shape[0])
-    
+        
     #Sample points weighted by min distance.
     #If num points is more than available, replace=T
     if(d.shape[0]>num_points):
