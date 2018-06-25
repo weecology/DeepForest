@@ -32,22 +32,22 @@ import tensorflow as tf
 
 # Allow relative imports when being executed as script.
 if __name__ == "__main__" and __package__ is None:
-    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'keras-retinanet ', 'keras-retinanet '))
     import keras_retinanet.bin  # noqa: F401
     __package__ = "keras_retinanet.bin"
 
 # Change these to absolute imports if you copy this script outside the keras_retinanet package.
-from .. import layers  # noqa: F401
-from .. import losses
-from .. import models
-from ..callbacks import RedirectModel
-from ..callbacks.eval import Evaluate
-from ..models.retinanet import retinanet_bbox
-from ..utils.anchors import make_shapes_callback, anchor_targets_bbox
-from ..utils.keras_version import check_keras_version
-from ..utils.model import freeze as freeze_model
-from ..utils.transform import random_transform_generator
-from ..preprocessing.onthefly import OnTheFlyGenerator
+from keras_retinanet  import layers  # noqa: F401
+from keras_retinanet  import losses
+from keras_retinanet  import models
+from keras_retinanet .callbacks import RedirectModel
+from keras_retinanet .callbacks.eval import Evaluate
+from keras_retinanet .models.retinanet import retinanet_bbox
+from keras_retinanet .utils.anchors import make_shapes_callback, anchor_targets_bbox
+from keras_retinanet .utils.keras_version import check_keras_version
+from keras_retinanet .utils.model import freeze as freeze_model
+from keras_retinanet .utils.transform import random_transform_generator
+from keras_retinanet .preprocessing.onthefly import OnTheFlyGenerator
 
 def makedirs(path):
     # Intended behavior: try to create the directory,
@@ -156,7 +156,7 @@ def create_callbacks(model, training_model, prediction_model, validation_generat
 
     if args.evaluation and validation_generator:
         if args.dataset_type == 'coco':
-            from ..callbacks.coco import CocoEval
+            from keras-retinanet callbacks.coco import CocoEval
 
             # use prediction model for evaluation
             evaluation = CocoEval(validation_generator, tensorboard=tensorboard_callback)
@@ -361,7 +361,7 @@ def main(args=None):
 
     # create the model
     if args.snapshot is not None:
-        print('Loading model, this may take a second...')
+        print('Loading model, this may take a secondkeras-retinanet .')
         model            = models.load_model(args.snapshot, backbone_name=args.backbone)
         training_model   = model
         prediction_model = retinanet_bbox(model=model)
@@ -371,7 +371,7 @@ def main(args=None):
         if weights is None and args.imagenet_weights:
             weights = backbone.download_imagenet()
 
-        print('Creating model, this may take a second...')
+        print('Creating model, this may take a secondkeras-retinanet .')
         model, training_model, prediction_model = create_models(
             backbone_retinanet=backbone.retinanet,
             num_classes=train_generator.num_classes(),
