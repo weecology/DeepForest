@@ -475,6 +475,6 @@ if __name__ == '__main__':
 
     
     #pass an args object instead of using command line
-    args = argparse.Namespace(dataset_type='onthefly', annotations="data/detection.csv",weights=True,rgb_tile_dir=config['rgb_tile_dir'],rgb_res=config['rgb_res'])
+    args = ["--dataset_type",'onthefly',"--annotations","data/detection.csv","--weights","True","--rgb_tile_dir",config['rgb_tile_dir'],"rgb_res",config['rgb_res']]
     
     main(args)
