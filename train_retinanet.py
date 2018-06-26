@@ -19,6 +19,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+#Log training
+from comet_ml import Experiment
+
+#keras-retinanet imports
+
 import argparse
 import functools
 import os
@@ -47,7 +52,7 @@ from keras_retinanet .utils.anchors import make_shapes_callback, anchor_targets_
 from keras_retinanet .utils.keras_version import check_keras_version
 from keras_retinanet .utils.model import freeze as freeze_model
 from keras_retinanet .utils.transform import random_transform_generator
-from keras_retinanet .preprocessing.onthefly import OnTheFlyGenerator
+from keras_retinanet.preprocessing import onthefly
 
 def makedirs(path):
     # Intended behavior: try to create the directory,
@@ -156,7 +161,7 @@ def create_callbacks(model, training_model, prediction_model, validation_generat
 
     if args.evaluation and validation_generator:
         if args.dataset_type == 'coco':
-            from keras-retinanet callbacks.coco import CocoEval
+            from keras_retinanet.callbacks.coco import CocoEval
 
             # use prediction model for evaluation
             evaluation = CocoEval(validation_generator, tensorboard=tensorboard_callback)
@@ -196,7 +201,7 @@ def create_callbacks(model, training_model, prediction_model, validation_generat
     return callbacks
 
 
-def create_generators(args):
+def create_generators(args,config):
     """ Create generators for training and validation.
     """
     # create random transform generator for augmenting training data
@@ -238,14 +243,16 @@ def create_generators(args):
             validation_generator = None
 
     elif args.dataset_type == 'onthefly':
-        train_generator = OnTheFlyGenerator(
+        train_generator = onthefly.OnTheFlyGenerator(
             args.annotations,
             batch_size=args.batch_size,
+            config=config
         )
         if args.val_annotations:
-            validation_generaton=OnTheFlyGenerator(
+            validation_generaton=onthefly.OnTheFlyGenerator(
             args.val_annotations,
             batch_size=args.batch_size,
+            config=config
         )
         else:
             validation_generator=None
@@ -308,6 +315,8 @@ def parse_args(args):
     csv_parser = subparsers.add_parser('onthefly')
     csv_parser.add_argument('annotations', help='Path to CSV file containing annotations for training.')
     csv_parser.add_argument('--val-annotations', help='Path to CSV file containing annotations for validation (optional).')
+    csv_parser.add_argument('--rgb_res', help='Resolution of the rgb data.',default=0.1,type=float)
+    csv_parser.add_argument('--rgb_tile_dir', help='Path to rgb tiles.')
     
     csv_parser = subparsers.add_parser('csv')
     csv_parser.add_argument('annotations', help='Path to CSV file containing annotations for training.')
@@ -339,7 +348,7 @@ def parse_args(args):
     return check_args(parser.parse_args(args))
 
 
-def main(args=None):
+def main(args=None,config=None):
     # parse arguments
     if args is None:
         args = sys.argv[1:]
@@ -357,7 +366,7 @@ def main(args=None):
     keras.backend.tensorflow_backend.set_session(get_session())
 
     # create the generators
-    train_generator, validation_generator = create_generators(args)
+    train_generator, validation_generator = create_generators(args,config)
 
     # create the model
     if args.snapshot is not None:
@@ -418,9 +427,7 @@ if __name__ == '__main__':
     Training script for DeepForest.
     Ben Weinstein - ben.weinstein@weecology.org
     Load data, partition into training and testing, and evaluate deep learning model
-    '''
-    from comet_ml import Experiment
-    
+    '''    
     import os
     import pandas as pd
     import glob
@@ -428,8 +435,8 @@ if __name__ == '__main__':
     from datetime import datetime
     from DeepForest.config import config
     from DeepForest import preprocess
-    
-    batch_size=config['data_generator_params']['batch_size']
+
+    batch_size=config['batch_size']
     
     #set experiment and log configs
     experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2",project_name='deepforest-retinanet')
@@ -457,8 +464,17 @@ if __name__ == '__main__':
     train = data[msk]
     test = data[~msk]
     
+    #Write training to file for annotations
+    train.to_csv("data/detection.csv")
+    
+    #TODO validation annotations
+    
     #log data size
     experiment.log_parameter("training_samples", train.shape[0])
     experiment.log_parameter("testing_samples", test.shape[0])
 
-    main()
+    
+    #pass an args object instead of using command line
+    args = argparse.Namespace(dataset_type='onthefly', annotations="data/detection.csv",weights=True,rgb_tile_dir=config['rgb_tile_dir'],rgb_res=config['rgb_res'])
+    
+    main(args)

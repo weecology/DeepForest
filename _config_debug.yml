@@ -1,26 +1,28 @@
-#Debug config file for DeepMeerkat train.py
+#Debug config file for DeepMeerkat train_retinanet.py
 #Running locally on Mac OSX
 
 #Location of bound box csv
 bbox_data_dir: data/
 
 #Subsample dataset
-subsample: 60
+subsample: None
+
+rgb_tile_dir: data/training/
+rgb_res: 0.1
 
 #Preprocessing routines
 preprocess:
           zero_area: True
           NDVI: False
           NDVI_Threshold: 0.1
-          
+
+batch_size: 1      
+
 #Training params
 training:
           epochs: 2
           workers: 1
 
 data_generator_params:
-          rgb_tile_dir: /Users/ben/Documents/TreeSegmentation/data/training/
           hyperspec_tile_dir: NA
-          batch_size: 32
-          shuffle: True
-
+          

@@ -39,10 +39,6 @@ def load_data(data_dir=config['bbox_data_dir'],nsamples=config["subsample"]):
     #set index explicitely
     data=data.set_index('box')
     
-    #create numeric labels
-    lookup={"Background": 0, "Tree": 1}
-    data['label_numeric']=[lookup[x] for x in data.label]    
-    
     #optionally subset data, if config argument is numeric, subset data
     if(not isinstance(nsamples,str)):
         data=data.sample(n=nsamples, random_state=2)
