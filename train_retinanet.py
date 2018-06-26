@@ -475,6 +475,8 @@ if __name__ == '__main__':
 
     
     #pass an args object instead of using command line
-    args = ["--dataset_type",'onthefly',"--annotations","data/detection.csv","--weights","True","--rgb_tile_dir",config['rgb_tile_dir'],"rgb_res",config['rgb_res']]
+    #TODO, its not clear what is being read in by config arguments at end.
+    args = ["--no-weights",'onthefly',"data/detection.csv","--rgb_tile_dir",config['rgb_tile_dir'],"--rgb_res",str(config['rgb_res'])]
+            
     
-    main(args)
+    main(args,config)
