@@ -7,7 +7,7 @@ bbox_data_dir: data/
 #Subsample dataset
 subsample: None
 
-rgb_tile_dir: data/training/
+rgb_tile_dir: data/
 rgb_res: 0.1
 
 #Preprocessing routines
