@@ -8,20 +8,6 @@ import glob
 from .config import config
 import os
 
-#Load Model from saved weights, train.py
-def load_model(logdir):
-    json_file = open(logdir+'/model.json', 'r')
-    loaded_model_json = json_file.read()
-    json_file.close()
-    loaded_model = model_from_json(loaded_model_json)
-   
-    # load weights into new model
-    loaded_model.load_weights(logdir+"/model.h5")
-    print("Loaded model from disk")
-    
-    return(loaded_model)
-
-
 def load_data(data_dir=config['bbox_data_dir'],nsamples=config["subsample"]):
     '''
     data_dir: path to .csv files. Optionall can be a path to a specific .csv file.
@@ -34,10 +20,7 @@ def load_data(data_dir=config['bbox_data_dir'],nsamples=config["subsample"]):
         #Gather data
         data_paths=glob.glob(data_dir+"/*.csv")
         dataframes = (pd.read_csv(f,index_col=0) for f in data_paths)
-        data = pd.concat(dataframes, ignore_index=True)
-        
-    #set index explicitely
-    data=data.set_index('box')
+        data = pd.concat(dataframes, ignore_index=False)
     
     #optionally subset data, if config argument is numeric, subset data
     if(not isinstance(nsamples,str)):

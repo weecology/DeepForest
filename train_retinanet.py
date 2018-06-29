@@ -459,24 +459,23 @@ if __name__ == '__main__':
                              data_dir=config["data_generator_params"]["hyperspec_tile_dir"],
                              threshold=float(config['preprocess']['NDVI_Threshold']))
         
-    #Partition data in training and testing dataframes
-    msk = np.random.rand(len(data)) < 0.8
-    train = data[msk]
-    test = data[~msk]
+    #To DO: partition data in training and testing dataframes
+    #msk = np.random.rand(len(data)) < 0.8
+    #train = data[msk]
+    #test = data[~msk]
     
     #Write training to file for annotations
-    train.to_csv("data/detection.csv")
+    data.to_csv("data/tmp/detection.csv")
     
     #TODO validation annotations
     
     #log data size
-    experiment.log_parameter("training_samples", train.shape[0])
-    experiment.log_parameter("testing_samples", test.shape[0])
+    #experiment.log_parameter("training_samples", train.shape[0])
+    #experiment.log_parameter("testing_samples", test.shape[0])
 
-    
     #pass an args object instead of using command line
     #TODO, its not clear what is being read in by config arguments at end.
-    args = ["--no-weights",'onthefly',"data/detection.csv","--rgb_tile_dir",config['rgb_tile_dir'],"--rgb_res",str(config['rgb_res'])]
+    args = ["--no-weights",'onthefly',"data/tmp/detection.csv","--rgb_tile_dir",config['rgb_tile_dir'],"--rgb_res",str(config['rgb_res'])]
             
     
     main(args,config)

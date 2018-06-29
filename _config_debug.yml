@@ -10,6 +10,9 @@ subsample: None
 rgb_tile_dir: data/
 rgb_res: 0.1
 
+#Debug plot image
+plot_image: False
+
 #Preprocessing routines
 preprocess:
           zero_area: True
