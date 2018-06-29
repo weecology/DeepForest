@@ -11,12 +11,13 @@
 #SBATCH --output=/home/b.weinstein/logs/DeepForest_cpu.out   # Standard output and error log
 #SBATCH --error=/home/b.weinstein/logs/DeepForest_cpu.err
 
-ml tensorflow/1.7.0
 ml git
 ml gcc
 ml gdal
+ml tensorflow/1.7.0
 export PYTHONPATH=${PYTHONPATH}:/home/b.weinstein/miniconda3/envs/DeepForest/lib/python3.6/site-packages/
 echo $PYTHONPATH
+
 
 cd /home/b.weinstein/DeepForest
 
