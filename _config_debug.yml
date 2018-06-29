@@ -21,11 +21,4 @@ preprocess:
 
 batch_size: 1      
 
-#Training params
-training:
-          epochs: 2
-          workers: 1
-
-data_generator_params:
-          hyperspec_tile_dir: NA
           
