@@ -440,8 +440,6 @@ if __name__ == '__main__':
     
     #set experiment and log configs
     experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2",project_name='deepforest-retinanet')
-    experiment.log_multiple_params(config['data_generator_params'])
-    experiment.log_multiple_params(config['training'])
     
     ##Set seed for reproducibility##
     np.random.seed(2)
@@ -470,7 +468,7 @@ if __name__ == '__main__':
     #TODO validation annotations
     
     #log data size
-    #experiment.log_parameter("training_samples", train.shape[0])
+    experiment.log_parameter("training_samples", data.shape[0])
     #experiment.log_parameter("testing_samples", test.shape[0])
 
     #pass an args object instead of using command line
