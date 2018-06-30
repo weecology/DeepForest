@@ -4,3 +4,4 @@ env/*
 *.RData
 .Ruserdata
 logs/
+snapshots/
