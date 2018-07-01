@@ -103,8 +103,6 @@ def parse_args(args):
     #On the fly parser
     otf_parser = subparsers.add_parser('onthefly')
     otf_parser.add_argument('annotations', help='Path to CSV file containing annotations for training.')
-    otf_parser.add_argument('--rgb_res', help='Resolution of the rgb data.',default=0.1,type=float)
-    otf_parser.add_argument('--rgb_tile_dir', help='Path to rgb tiles.')
     
     parser.add_argument('model',             help='Path to RetinaNet model.')
     parser.add_argument('--convert-model',   help='Convert the model to an inference model (ie. the input is a training model).', action='store_true')

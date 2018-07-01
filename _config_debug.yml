@@ -13,12 +13,14 @@ rgb_res: 0.1
 #Debug plot image
 plot_image: False
 
+
 #Preprocessing routines
 preprocess:
           zero_area: True
           NDVI: False
           NDVI_Threshold: 0.1
 
+#Training
 batch_size: 1      
-
+epochs: 3
           

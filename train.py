@@ -315,8 +315,6 @@ def parse_args(args):
     csv_parser = subparsers.add_parser('onthefly')
     csv_parser.add_argument('annotations', help='Path to CSV file containing annotations for training.')
     csv_parser.add_argument('--val-annotations', help='Path to CSV file containing annotations for validation (optional).')
-    csv_parser.add_argument('--rgb_res', help='Resolution of the rgb data.',default=0.1,type=float)
-    csv_parser.add_argument('--rgb_tile_dir', help='Path to rgb tiles.')
     
     csv_parser = subparsers.add_parser('csv')
     csv_parser.add_argument('annotations', help='Path to CSV file containing annotations for training.')
@@ -471,9 +469,11 @@ if __name__ == '__main__':
     experiment.log_parameter("training_samples", data.shape[0])
     #experiment.log_parameter("testing_samples", test.shape[0])
 
-    #pass an args object instead of using command line
-    #TODO, its not clear what is being read in by config arguments at end.
-    args = ["--no-weights",'onthefly',"data/tmp/detection.csv","--rgb_tile_dir",config['rgb_tile_dir'],"--rgb_res",str(config['rgb_res'])]
-            
+    #pass an args object instead of using command line    
+    args = ["--no-weights",
+            "--epochs",str(config["epochs"]),
+                "--steps",str(data.shape[0]),
+            'onthefly',"data/tmp/detection.csv"]
     
+    #Run training    
     main(args,config)
