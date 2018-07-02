@@ -470,8 +470,7 @@ if __name__ == '__main__':
     #experiment.log_parameter("testing_samples", test.shape[0])
 
     #pass an args object instead of using command line    
-    args = ["--no-weights",
-            "--epochs",str(config["epochs"]),
+    args = ["--epochs",str(config["epochs"]),
                 "--steps",str(data.shape[0]),
             'onthefly',"data/tmp/detection.csv"]
     
