@@ -1,12 +1,14 @@
 #Config file for DeepMeerkat train.py on hypergator
 
 #Location of bound box csv
-bbox_data_dir: /home/b.weinstein/TreeSegmentation/analysis/Results/detection_boxes/
+#bbox_data_dir: /home/b.weinstein/TreeSegmentation/analysis/Results/detection_boxes/
 
 #Subsample dataset
-subsample: 1000
+subsample: None
 
-rgb_tile_dir: /orange/ewhite/b.weinstein/NEON/D03/OSBS/DP1.30010.001/2017/FullSite/D03/2017_OSBS_3/L3/Camera/Mosaic/V01/
+bbox_data_dir: data/
+#rgb_tile_dir: /orange/ewhite/b.weinstein/NEON/D03/OSBS/DP1.30010.001/2017/FullSite/D03/2017_OSBS_3/L3/Camera/Mosaic/V01/
+
 rgb_res: 0.1
 
 #Debug plot image
