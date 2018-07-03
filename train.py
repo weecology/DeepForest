@@ -465,9 +465,10 @@ if __name__ == '__main__':
     #pass an args object instead of using command line    
     args = ["--epochs",str(config["epochs"]),
                 "--steps",str(data.shape[0]),
-                "-snapshot-path",config["snapshot_path"],
+                "--snapshot-path",config["snapshot_path"],
             'onthefly',"data/tmp/detection.csv",
-            config["evaluation_file"]]
+            config["evaluation_file"]
+            ]
     
     #if no snapshots, add arg to front, will ignore path above
     if config["snapshot_path"]==None:
