@@ -458,7 +458,7 @@ if __name__ == '__main__':
                              threshold=float(config['preprocess']['NDVI_Threshold']))
     
     #Write training to file for annotations
-    data.to_csv("data/tmp/detection.csv")
+    data.to_csv("data/training/detection.csv")
         
     #log data size
     experiment.log_parameter("training_samples", data.shape[0])
@@ -467,7 +467,7 @@ if __name__ == '__main__':
     args = ["--epochs",str(config["epochs"]),
                 "--steps",str(data.shape[0]),
                 "--snapshot-path",config["snapshot_path"],
-            'onthefly',"data/tmp/detection.csv",
+            'onthefly',"data/training/detection.csv",
             config["evaluation_file"]
             ]
     

@@ -7,6 +7,7 @@ import pandas as pd
 import glob
 from .config import config
 import os
+import random
 
 def load_data(data_dir=config['bbox_data_dir'],nsamples=config["subsample"]):
     '''
@@ -22,9 +23,18 @@ def load_data(data_dir=config['bbox_data_dir'],nsamples=config["subsample"]):
         dataframes = (pd.read_csv(f,index_col=0) for f in data_paths)
         data = pd.concat(dataframes, ignore_index=False)
     
+
+    
     #optionally subset data, if config argument is numeric, subset data
+
     if(not isinstance(nsamples,str)):
-        data=data.sample(n=nsamples, random_state=2)
+        
+        #Create data image paths
+        data["image"]=data.rgb_path+"_"+data.Cluster.astype("str")
+        
+        #Sample unique
+        to_draw=random.sample(list(data.image.unique()),nsamples)
+        data=data[data.image.isin(to_draw)]
         
     return(data)
     

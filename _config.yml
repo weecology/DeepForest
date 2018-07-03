@@ -25,6 +25,6 @@ preprocess:
 snapshot: /orange/ewhite/b.weinstein/retinanet/snapshots/resnet50_onthefly_03.h5
 batch_size: 1      
 epochs: 100
-evaluation_file: data/evaluation.csv
+evaluation_file: data/training/evaluation.csv
 evaluation_tile_dir: data/
 snapshot_path: /orange/ewhite/b.weinstein/retinanet/snapshots/

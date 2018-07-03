@@ -25,7 +25,7 @@ preprocess:
 snapshot: None
 batch_size: 1     
 epochs: 3
-evaluation_file: data/evaluation.csv
+evaluation_file: data/training/evaluation.csv
 evaluation_tile_dir: data/
 snapshot_path: None
 
