@@ -8,7 +8,7 @@ rgb_tile_dir: /orange/ewhite/b.weinstein/NEON/D03/OSBS/DP1.30010.001/2017/FullSi
 #rgb_tile_dir: data/
 
 #Subsample dataset
-subsample: 1000
+subsample: 4000
 
 rgb_res: 0.1
 
@@ -23,7 +23,7 @@ preprocess:
 
 #Training
 batch_size: 1      
-epochs: 3
+epochs: 100
 evaluation_file: data/evaluation.csv
 evaluation_tile_dir: data/
 snapshot_path: /orange/ewhite/b.weinstein/retinanet/snapshots/

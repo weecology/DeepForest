@@ -22,7 +22,7 @@ preprocess:
           NDVI_Threshold: 0.1
 
 #Training
-batch_size: 1      
+batch_size: 1     
 epochs: 3
 evaluation_file: data/evaluation.csv
 evaluation_tile_dir: data/
