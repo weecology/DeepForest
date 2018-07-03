@@ -476,7 +476,7 @@ if __name__ == '__main__':
         args=["--no-snapshots"] + args
         
     #Resu
-    if config["snapshot"]=="None":
+    if not config["snapshot"]=="None":
         args= [config["snapshot"]] + args
         args=["--snapshot"] + args
     
