@@ -6,7 +6,7 @@
 [project attributes]
 proj.file-type = 'shared'
 proj.launch-config = {loc('eval.py'): ('project',
-                                       (u'--score-threshold 0.5 --save-path snapshots/images/ onthefly data/tmp/detection.csv snapshots/resnet50_onthefly_03.h5 --convert-model',
+                                       (u'--score-threshold 0.25 --save-path snapshots/images/ onthefly data/tmp/detection.csv snapshots/resnet50_onthefly_27.h5 --convert-model',
         '')),
                       loc('evaluate.py'): ('project',
         (u'--logdir=logs/20180524-065707',

@@ -249,7 +249,7 @@ def create_generators(args,config):
             config=config
         )
         if args.val_annotations:
-            validation_generaton=onthefly.OnTheFlyGenerator(
+            validation_generator=onthefly.OnTheFlyGenerator(
             args.val_annotations,
             batch_size=args.batch_size,
             config=config
@@ -314,12 +314,12 @@ def parse_args(args):
     #On the fly parser
     csv_parser = subparsers.add_parser('onthefly')
     csv_parser.add_argument('annotations', help='Path to CSV file containing annotations for training.')
-    csv_parser.add_argument('--val-annotations', help='Path to CSV file containing annotations for validation (optional).')
+    csv_parser.add_argument('val_annotations', help='Path to CSV file containing annotations for validation (optional).')
     
     csv_parser = subparsers.add_parser('csv')
     csv_parser.add_argument('annotations', help='Path to CSV file containing annotations for training.')
     csv_parser.add_argument('classes', help='Path to a CSV file containing class label mapping.')
-    csv_parser.add_argument('--val-annotations', help='Path to CSV file containing annotations for validation (optional).')
+    csv_parser.add_argument('--val_annotations', help='Path to CSV file containing annotations for validation (optional).')
 
     group = parser.add_mutually_exclusive_group()
     group.add_argument('--snapshot',          help='Resume training from a snapshot.')
@@ -454,11 +454,6 @@ if __name__ == '__main__':
         data=preprocess.NDVI(data,
                              data_dir=config["data_generator_params"]["hyperspec_tile_dir"],
                              threshold=float(config['preprocess']['NDVI_Threshold']))
-        
-    #To DO: partition data in training and testing dataframes
-    #msk = np.random.rand(len(data)) < 0.8
-    #train = data[msk]
-    #test = data[~msk]
     
     #Write training to file for annotations
     data.to_csv("data/tmp/detection.csv")
@@ -472,7 +467,8 @@ if __name__ == '__main__':
     #pass an args object instead of using command line    
     args = ["--epochs",str(config["epochs"]),
                 "--steps",str(data.shape[0]),
-            'onthefly',"data/tmp/detection.csv"]
+                "--no-snapshots",
+            'onthefly',"data/tmp/detection.csv","data/evaluation.csv"]
     
     #Run training    
     main(args,config)
