@@ -24,5 +24,6 @@ preprocess:
 #Training
 batch_size: 1      
 epochs: 3
-evaluation_file: 
+evaluation_file: data/evaluation.csv
+snapshot_path: None
           

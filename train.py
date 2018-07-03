@@ -457,9 +457,7 @@ if __name__ == '__main__':
     
     #Write training to file for annotations
     data.to_csv("data/tmp/detection.csv")
-    
-    #TODO validation annotations
-    
+        
     #log data size
     experiment.log_parameter("training_samples", data.shape[0])
     #experiment.log_parameter("testing_samples", test.shape[0])
@@ -467,8 +465,13 @@ if __name__ == '__main__':
     #pass an args object instead of using command line    
     args = ["--epochs",str(config["epochs"]),
                 "--steps",str(data.shape[0]),
-                "--no-snapshots",
-            'onthefly',"data/tmp/detection.csv","data/evaluation.csv"]
+                "-snapshot-path",config["snapshot_path"],
+            'onthefly',"data/tmp/detection.csv",
+            config["evaluation_file"]]
+    
+    #if no snapshots, add arg to front, will ignore path above
+    if config["snapshot_path"]==None:
+        args="--no-snapshots" + args
     
     #Run training    
     main(args,config)
