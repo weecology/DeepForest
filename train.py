@@ -462,7 +462,6 @@ if __name__ == '__main__':
         
     #log data size
     experiment.log_parameter("training_samples", data.shape[0])
-    #experiment.log_parameter("testing_samples", test.shape[0])
 
     #pass an args object instead of using command line    
     args = ["--epochs",str(config["epochs"]),
@@ -477,7 +476,7 @@ if __name__ == '__main__':
         args=["--no-snapshots"] + args
         
     #Resu
-    if config["snapshot"] is not None:
+    if config["snapshot"]=="None":
         args= [config["snapshot"]] + args
         args=["--snapshot"] + args
     
