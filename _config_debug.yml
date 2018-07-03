@@ -22,9 +22,10 @@ preprocess:
           NDVI_Threshold: 0.1
 
 #Training
+snapshot: snapshots/resnet50_onthefly_27.h5
 batch_size: 1     
 epochs: 3
 evaluation_file: data/evaluation.csv
 evaluation_tile_dir: data/
 snapshot_path: None
-          
+

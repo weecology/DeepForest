@@ -22,6 +22,7 @@ preprocess:
           NDVI_Threshold: 0.1
 
 #Training
+snapshot: /orange/ewhite/b.weinstein/retinanet/snapshots/resnet50_onthefly_03.h5
 batch_size: 1      
 epochs: 100
 evaluation_file: data/evaluation.csv

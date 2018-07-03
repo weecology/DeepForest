@@ -474,7 +474,12 @@ if __name__ == '__main__':
     
     #if no snapshots, add arg to front, will ignore path above
     if config["snapshot_path"]==None:
-        args="--no-snapshots" + args
+        args=["--no-snapshots"] + args
+        
+    #Resu
+    if config["snapshot"] is not None:
+        args= [config["snapshot"]] + args
+        args=["--snapshot"] + args
     
     #Run training    
     main(args,config)
