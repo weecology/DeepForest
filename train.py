@@ -246,12 +246,14 @@ def create_generators(args,config):
         train_generator = onthefly.OnTheFlyGenerator(
             args.annotations,
             batch_size=args.batch_size,
+            base_dir=config["rgb_tile_dir"],
             config=config
         )
         if args.val_annotations:
             validation_generator=onthefly.OnTheFlyGenerator(
             args.val_annotations,
             batch_size=args.batch_size,
+            base_dir=config["evaluation_tile_dir"],
             config=config
         )
         else:

@@ -25,4 +25,5 @@ preprocess:
 batch_size: 1      
 epochs: 3
 evaluation_file: data/evaluation.csv
+evaluation_tile_dir: data/
 snapshot_path: /orange/ewhite/b.weinstein/retinanet/snapshots/
