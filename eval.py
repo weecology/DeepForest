@@ -74,6 +74,7 @@ def create_generator(args,config):
             validation_generator = onthefly.OnTheFlyGenerator(
                     args.annotations,
                     batch_size=args.batch_size,
+                    base_dir=config["rgb_tile_dir"],
                     config=config)        
     else:
         raise ValueError('Invalid data type received: {}'.format(args.dataset_type))
