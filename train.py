@@ -316,7 +316,7 @@ def parse_args(args):
     #On the fly parser
     csv_parser = subparsers.add_parser('onthefly')
     csv_parser.add_argument('annotations', help='Path to CSV file containing annotations for training.')
-    csv_parser.add_argument('val_annotations', help='Path to CSV file containing annotations for validation (optional).')
+    csv_parser.add_argument('val_annotations', help='Path to CSV file containing annotations for validation.')
     
     csv_parser = subparsers.add_parser('csv')
     csv_parser.add_argument('annotations', help='Path to CSV file containing annotations for training.')
@@ -451,11 +451,6 @@ if __name__ == '__main__':
     
     if config['preprocess']['zero_area']:
         data=preprocess.zero_area(data)
-        
-    if config['preprocess']['NDVI']:
-        data=preprocess.NDVI(data,
-                             data_dir=config["data_generator_params"]["hyperspec_tile_dir"],
-                             threshold=float(config['preprocess']['NDVI_Threshold']))
     
     #Write training to file for annotations
     data.to_csv("data/training/detection.csv")
@@ -463,19 +458,28 @@ if __name__ == '__main__':
     #log data size
     experiment.log_parameter("training_samples", data.shape[0])
 
+    #Create log directory if saving snapshots
+    if not config["snapshot_path"]=="None":
+        dirname=datetime.now.strftime("%Y%m%d-%H%M%S")
+        snappath=config["snapshot_path"]+ dirname
+        os.mkdir(snappath)
+            
     #pass an args object instead of using command line    
     args = ["--epochs",str(config["epochs"]),
                 "--steps",str(data.shape[0]),
-                "--snapshot-path",config["snapshot_path"],
+                "--backbone",str(config["backbone"]),
             'onthefly',"data/training/detection.csv",
-            config["evaluation_file"]
+            config["evaluation_file"],
             ]
     
     #if no snapshots, add arg to front, will ignore path above
-    if config["snapshot_path"]==None:
+    if config["snapshot_path"]=="None":
         args=["--no-snapshots"] + args
+    else:
+        args=[snappath] + args
+        args=["--snapshot-path"] + args
         
-    #Resu
+    #Restart from a preview snapshot?
     if not config["snapshot"]=="None":
         args= [config["snapshot"]] + args
         args=["--snapshot"] + args

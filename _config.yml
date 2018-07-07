@@ -28,3 +28,4 @@ epochs: 50
 evaluation_file: data/training/evaluation.csv
 evaluation_tile_dir: data/
 snapshot_path: /orange/ewhite/b.weinstein/retinanet/snapshots/
+backbone: resnet101
