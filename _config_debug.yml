@@ -1,13 +1,9 @@
-#Debug config file for DeepMeerkat train_retinanet.py
-#Running locally on Mac OSX
+#Config file for DeepMeerkat train.py on local OSX
 
-#Location of bound box csv
-bbox_data_dir: data/
-
-#Subsample dataset
-subsample: 5
-
-rgb_tile_dir: data/
+#TODO implementation of sliding window config, currently hardcoded.
+#SlidingWindow
+patch_size: 250
+patch_overlap: 0.05
 rgb_res: 0.1
 
 #Debug plot image
@@ -20,14 +16,16 @@ preprocess:
           NDVI_Threshold: 0.1
 
 #Training
+training_csvs: data/
+rgb_tile_dir: data/
+subsample: 200
 snapshot: None
-batch_size: 1     
-epochs: 3
-evaluation_file: data/training/detection.csv
-evaluation_tile_dir: data/
+batch_size: 1      
+epochs: 2
 snapshot_path: None
 backbone: resnet101
 
-#TODO implementation of sliding window config, currently hardcoded.
-patch_size: 250
-patch_overlap: 0.05
+#Evaluation
+evaluation_csvs: data/
+validation_subsample: 100
+evaluation_tile_dir: data/

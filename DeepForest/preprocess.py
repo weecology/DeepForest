@@ -9,7 +9,7 @@ from .config import config
 import os
 import random
 
-def load_data(data_dir=config['bbox_data_dir']):
+def load_data(data_dir):
     '''
     data_dir: path to .csv files. Optionall can be a path to a specific .csv file.
     nsamples: Number of total samples, "all" will yield full dataset

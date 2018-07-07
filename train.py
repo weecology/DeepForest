@@ -250,6 +250,10 @@ def create_generators(args,config):
             config=config
         )
         if args.val_annotations:
+            
+            #Replace config subsample with validation subsample. Not the best, or the worst, way to do this.
+            config["subsample"]=config["validation_subsample"]
+            
             validation_generator=onthefly.OnTheFlyGenerator(
             args.val_annotations,
             batch_size=args.batch_size,
@@ -435,7 +439,8 @@ if __name__ == '__main__':
     from datetime import datetime
     from DeepForest.config import config
     from DeepForest import preprocess
-
+    import random
+    
     batch_size=config['batch_size']
     
     #set experiment and log configs
@@ -444,16 +449,23 @@ if __name__ == '__main__':
     ##Set seed for reproducibility##
     np.random.seed(2)
     
-    #Load data and combine into a large 
-    data=preprocess.load_data(data_dir=config['bbox_data_dir'])
+    #Load data and combine into a large frame
+    #Training
+    data=preprocess.load_data(data_dir=config['training_csvs'])
+    
+    #Evaluation
+    evaluation=preprocess.load_data(data_dir=config['evaluation_csvs'])
     
     ##Preprocess Filters##
     
     if config['preprocess']['zero_area']:
         data=preprocess.zero_area(data)
+        evaluation=preprocess.zero_area(evaluation)
+        
     
-    #Write training to file for annotations
+    #Write training and evaluation data to file for annotations
     data.to_csv("data/training/detection.csv")
+    evaluation.to_csv("data/training/evaluation.csv")
         
     #log data size and set number of steps
     if not config["subsample"] == "None":
@@ -474,7 +486,7 @@ if __name__ == '__main__':
                 "--steps",str(steps),
                 "--backbone",str(config["backbone"]),
             'onthefly',"data/training/detection.csv",
-            config["evaluation_file"],
+            "data/training/evaluation.csv",
             ]
     
     #if no snapshots, add arg to front, will ignore path above

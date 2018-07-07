@@ -1,15 +1,10 @@
 #Config file for DeepMeerkat train.py on hypergator
 
-#Location of bound box csv
-bbox_data_dir: /home/b.weinstein/TreeSegmentation/analysis/Results/detection_boxes/
-rgb_tile_dir: /orange/ewhite/b.weinstein/NEON/D03/OSBS/DP1.30010.001/2017/FullSite/D03/2017_OSBS_3/L3/Camera/Mosaic/V01/
 
-#bbox_data_dir: data/
-#rgb_tile_dir: data/
-
-#Subsample dataset
-subsample: 200
-
+#TODO implementation of sliding window config, currently hardcoded.
+#SlidingWindow
+patch_size: 250
+patch_overlap: 0.05
 rgb_res: 0.1
 
 #Debug plot image
@@ -22,14 +17,17 @@ preprocess:
           NDVI_Threshold: 0.1
 
 #Training
+training_csvs: /home/b.weinstein/TreeSegmentation/analysis/Results/detection_boxes/
+rgb_tile_dir: /orange/ewhite/b.weinstein/NEON/D03/OSBS/DP1.30010.001/2017/FullSite/D03/2017_OSBS_3/L3/Camera/Mosaic/V01/
+subsample: 200
 snapshot: /orange/ewhite/b.weinstein/retinanet/snapshots/resnet50_onthefly_10.h5
 batch_size: 1      
 epochs: 50
-evaluation_file: data/training/evaluation.csv
-evaluation_tile_dir: data/
 snapshot_path: /orange/ewhite/b.weinstein/retinanet/snapshots/
 backbone: resnet101
 
-#TODO implementation of sliding window config, currently hardcoded.
-patch_size: 250
-patch_overlap: 0.05
+#Evaluation
+evaluation_csvs: data/training/evaluation.csv
+validation_subsample: None
+evaluation_tile_dir: data/
+
