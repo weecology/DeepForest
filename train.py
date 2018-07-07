@@ -477,7 +477,7 @@ if __name__ == '__main__':
         
     #Create log directory if saving snapshots
     if not config["snapshot_path"]=="None":
-        dirname=datetime.now.strftime("%Y%m%d-%H%M%S")
+        dirname=datetime.now().strftime("%Y%m%d-%H%M%S")
         snappath=config["snapshot_path"]+ dirname
         os.mkdir(snappath)
             

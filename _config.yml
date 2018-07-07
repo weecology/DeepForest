@@ -1,6 +1,5 @@
 #Config file for DeepMeerkat train.py on hypergator
 
-
 #TODO implementation of sliding window config, currently hardcoded.
 #SlidingWindow
 patch_size: 250
@@ -20,7 +19,7 @@ preprocess:
 training_csvs: /home/b.weinstein/TreeSegmentation/analysis/Results/detection_boxes/
 rgb_tile_dir: /orange/ewhite/b.weinstein/NEON/D03/OSBS/DP1.30010.001/2017/FullSite/D03/2017_OSBS_3/L3/Camera/Mosaic/V01/
 subsample: 200
-snapshot: /orange/ewhite/b.weinstein/retinanet/snapshots/resnet50_onthefly_10.h5
+snapshot: None
 batch_size: 1      
 epochs: 50
 snapshot_path: /orange/ewhite/b.weinstein/retinanet/snapshots/
