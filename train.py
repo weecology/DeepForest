@@ -445,7 +445,7 @@ if __name__ == '__main__':
     np.random.seed(2)
     
     #Load data and combine into a large 
-    data=preprocess.load_data(data_dir=config['bbox_data_dir'],nsamples=config["subsample"])
+    data=preprocess.load_data(data_dir=config['bbox_data_dir'])
     
     ##Preprocess Filters##
     
@@ -455,9 +455,14 @@ if __name__ == '__main__':
     #Write training to file for annotations
     data.to_csv("data/training/detection.csv")
         
-    #log data size
-    experiment.log_parameter("training_samples", data.shape[0])
-
+    #log data size and set number of steps
+    if not config["subsample"] == "None":
+        experiment.log_parameter("training_samples", config["subsample"])
+        steps=config["subsample"]
+    else:
+        experiment.log_parameter("training_samples", data.shape[0])
+        steps=data.shape[0]
+        
     #Create log directory if saving snapshots
     if not config["snapshot_path"]=="None":
         dirname=datetime.now.strftime("%Y%m%d-%H%M%S")
@@ -466,7 +471,7 @@ if __name__ == '__main__':
             
     #pass an args object instead of using command line    
     args = ["--epochs",str(config["epochs"]),
-                "--steps",str(data.shape[0]),
+                "--steps",str(steps),
                 "--backbone",str(config["backbone"]),
             'onthefly',"data/training/detection.csv",
             config["evaluation_file"],

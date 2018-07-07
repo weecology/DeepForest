@@ -29,3 +29,7 @@ evaluation_file: data/training/evaluation.csv
 evaluation_tile_dir: data/
 snapshot_path: /orange/ewhite/b.weinstein/retinanet/snapshots/
 backbone: resnet101
+
+#TODO implementation of sliding window config, currently hardcoded.
+patch_size: 250
+patch_overlap: 0.05

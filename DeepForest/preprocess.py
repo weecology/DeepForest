@@ -9,7 +9,7 @@ from .config import config
 import os
 import random
 
-def load_data(data_dir=config['bbox_data_dir'],nsamples=config["subsample"]):
+def load_data(data_dir=config['bbox_data_dir']):
     '''
     data_dir: path to .csv files. Optionall can be a path to a specific .csv file.
     nsamples: Number of total samples, "all" will yield full dataset
@@ -22,19 +22,6 @@ def load_data(data_dir=config['bbox_data_dir'],nsamples=config["subsample"]):
         data_paths=glob.glob(data_dir+"/*.csv")
         dataframes = (pd.read_csv(f,index_col=0) for f in data_paths)
         data = pd.concat(dataframes, ignore_index=False)
-    
-
-    
-    #optionally subset data, if config argument is numeric, subset data
-
-    if(not isinstance(nsamples,str)):
-        
-        #Create data image paths
-        data["image"]=data.rgb_path+"_"+data.Cluster.astype("str")
-        
-        #Sample unique
-        to_draw=random.sample(list(data.image.unique()),nsamples)
-        data=data[data.image.isin(to_draw)]
         
     return(data)
     
