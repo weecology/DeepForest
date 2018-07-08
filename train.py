@@ -445,6 +445,7 @@ if __name__ == '__main__':
     
     #set experiment and log configs
     experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2",project_name='deepforest-retinanet')
+    experiment.log_multiple_params(config)
     
     ##Set seed for reproducibility##
     np.random.seed(2)

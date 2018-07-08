@@ -18,7 +18,7 @@ preprocess:
 #Training
 training_csvs: data/
 rgb_tile_dir: data/
-subsample: 200
+subsample: 2
 snapshot: None
 batch_size: 1      
 epochs: 2
@@ -27,5 +27,5 @@ backbone: resnet101
 
 #Evaluation
 evaluation_csvs: data/
-validation_subsample: 100
+validation_subsample: 2
 evaluation_tile_dir: data/
