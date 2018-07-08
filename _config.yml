@@ -18,15 +18,15 @@ preprocess:
 #Training
 training_csvs: /home/b.weinstein/TreeSegmentation/analysis/Results/detection_boxes/
 rgb_tile_dir: /orange/ewhite/b.weinstein/NEON/D03/OSBS/DP1.30010.001/2017/FullSite/D03/2017_OSBS_3/L3/Camera/Mosaic/V01/
-subsample: 5
+subsample: 1000
 snapshot: None
 batch_size: 1      
-epochs: 50
+epochs: 20
 save_snapshot_path: None
 backbone: resnet101
 
 #Evaluation
 evaluation_csvs: data/training/evaluation.csv
-validation_subsample: 5
+validation_subsample: 1
 evaluation_tile_dir: data/
 

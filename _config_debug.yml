@@ -22,7 +22,7 @@ subsample: 2
 snapshot: None
 batch_size: 1      
 epochs: 1
-save_snapshot_path: None
+save_snapshot_path: snapshots/
 backbone: resnet101
 
 #Evaluation
