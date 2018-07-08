@@ -13,6 +13,8 @@
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:tesla:1
 
+#maybe export  HDF5_USE_FILE_LOCKING=FALSE for saving paths.
+
 ml git
 ml gcc
 ml gdal
