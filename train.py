@@ -476,11 +476,6 @@ if __name__ == '__main__':
         experiment.log_parameter("training_samples", data.shape[0])
         steps=data.shape[0]
         
-    #Create log directory if saving snapshots
-    if not config["snapshot_path"]=="None":
-        dirname=datetime.now().strftime("%Y%m%d-%H%M%S")
-        snappath=config["snapshot_path"]+ dirname
-        os.mkdir(snappath)
             
     #pass an args object instead of using command line    
     args = ["--epochs",str(config["epochs"]),
@@ -490,8 +485,17 @@ if __name__ == '__main__':
             "data/training/evaluation.csv",
             ]
     
+    #Create log directory if saving snapshots
+    if not config["save_snapshot_path"]=="None":
+        dirname=datetime.now().strftime("%Y%m%d_%H%M%S")
+        snappath=config["save_snapshot_path"]+ dirname
+        os.mkdir(snappath)
+        
+        #Log to comet
+        experiment.log_parameter("snapshot_dir",snappath)        
+        
     #if no snapshots, add arg to front, will ignore path above
-    if config["snapshot_path"]=="None":
+    if config["save_snapshot_path"]=="None":
         args=["--no-snapshots"] + args
     else:
         args=[snappath] + args

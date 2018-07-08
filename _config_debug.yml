@@ -21,8 +21,8 @@ rgb_tile_dir: data/
 subsample: 2
 snapshot: None
 batch_size: 1      
-epochs: 2
-snapshot_path: None
+epochs: 1
+save_snapshot_path: None
 backbone: resnet101
 
 #Evaluation

@@ -22,7 +22,7 @@ subsample: 5
 snapshot: None
 batch_size: 1      
 epochs: 50
-snapshot_path: /orange/ewhite/b.weinstein/retinanet/snapshots/
+save_snapshot_path: None
 backbone: resnet101
 
 #Evaluation
