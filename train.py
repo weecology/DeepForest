@@ -448,9 +448,7 @@ if __name__ == '__main__':
     
     #save time for logging
     dirname=datetime.now().strftime("%Y%m%d_%H%M%S")
-    
-    batch_size=config['batch_size']
-    
+        
     #set experiment and log configs
     experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2",project_name='deepforest-retinanet')
     experiment.log_multiple_params(config)
@@ -479,18 +477,19 @@ if __name__ == '__main__':
     #log data size and set number of steps
     if not config["subsample"] == "None":
         experiment.log_parameter("training_samples", config["subsample"])
-        steps=config["subsample"]
+        steps=config["subsample"]/config['batch_size']
     else:
         experiment.log_parameter("training_samples", data.shape[0])
-        steps=data.shape[0]
-        
+        steps=data.shape[0]/config['batch_size']
             
     #pass an args object instead of using command line    
-    args = ["--epochs",str(config["epochs"]),
-                "--steps",str(steps),
-                "--backbone",str(config["backbone"]),
-            'onthefly',"data/training/detection.csv",
-            "data/training/evaluation.csv",
+    args = [
+        "--epochs",str(config["epochs"]),
+        "--batch-size",str(config['batch_size']),
+        "--steps",str(int(steps)),
+        "--backbone",str(config["backbone"]),
+        'onthefly',"data/training/detection.csv",
+        "data/training/evaluation.csv",
             ]
     
     #Create log directory if saving snapshots
@@ -501,7 +500,6 @@ if __name__ == '__main__':
         #Log to comet
         experiment.log_parameter("snapshot_dir",snappath)        
     
-       
     #if no snapshots, add arg to front, will ignore path above
     if config["save_snapshot_path"]=="None":
         args=["--no-snapshots"] + args
@@ -514,7 +512,6 @@ if __name__ == '__main__':
         args= [config["snapshot"]] + args
         args=["--snapshot"] + args
         
-        
     #Create log directory if saving eval images, add to arguments
     if not config["save_image_path"]=="None":
         save_image_path=config["save_image_path"]+ dirname
@@ -523,7 +520,7 @@ if __name__ == '__main__':
         
         args= [save_image_path] + args
         args=["--save-path"] + args        
-    
+        
     #Run training, and pass comet experiment   
     main(args,config,experiment)
 

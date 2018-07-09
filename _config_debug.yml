@@ -18,15 +18,15 @@ preprocess:
 #Training
 training_csvs: data/NEON_D03_OSBS_DP1_407000_3291000_classified_point_cloud_laz.csv
 rgb_tile_dir: data/
-subsample: 1
+subsample: 2
 snapshot: None
-batch_size: 1      
+batch_size: 2      
 epochs: 1
 save_snapshot_path: snapshots/
 backbone: resnet50
 
 #Evaluation
 evaluation_csvs: data/NEON_D03_OSBS_DP1_407000_3291000_classified_point_cloud_laz.csv
-validation_subsample: 100
+validation_subsample: 2
 evaluation_tile_dir: data/
 save_image_path: snapshots/
