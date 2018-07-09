@@ -21,7 +21,7 @@ rgb_tile_dir: /orange/ewhite/b.weinstein/NEON/D03/OSBS/DP1.30010.001/2017/FullSi
 
 #Number of sliding windows to select
 subsample: 200
-snapshot: None
+snapshot: snapshots/20180709_102648/resnet50_onthefly_08.h5
 batch_size: 1      
 epochs: 20
 save_snapshot_path: snapshots/
@@ -33,4 +33,4 @@ evaluation_csvs: data/NEON_D03_OSBS_DP1_407000_3291000_classified_point_cloud_la
 #Number of sliding windows to select
 validation_subsample: 5
 evaluation_tile_dir: data/
-
+save_image_path: snapshots/

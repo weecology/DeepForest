@@ -42,7 +42,6 @@ def get_session():
     config.gpu_options.allow_growth = True
     return tf.Session(config=config)
 
-
 def create_generator(args,config):
     """ Create generators for evaluation.
     """

@@ -128,7 +128,7 @@ def create_models(backbone_retinanet, num_classes, weights, multi_gpu=0, freeze_
     return model, training_model, prediction_model
 
 
-def create_callbacks(model, training_model, prediction_model, validation_generator, args):
+def create_callbacks(model, training_model, prediction_model, validation_generator, args,experiment):
     """ Creates the callbacks to use during training.
 
     Args
@@ -166,7 +166,7 @@ def create_callbacks(model, training_model, prediction_model, validation_generat
             # use prediction model for evaluation
             evaluation = CocoEval(validation_generator, tensorboard=tensorboard_callback)
         else:
-            evaluation = Evaluate(validation_generator, tensorboard=tensorboard_callback)
+            evaluation = Evaluate(validation_generator, tensorboard=tensorboard_callback,experiment=experiment,save_path=args.save_path)
         evaluation = RedirectModel(evaluation, prediction_model)
         callbacks.append(evaluation)
 
@@ -180,7 +180,7 @@ def create_callbacks(model, training_model, prediction_model, validation_generat
                 '{backbone}_{dataset_type}_{{epoch:02d}}.h5'.format(backbone=args.backbone, dataset_type=args.dataset_type)
             ),
             verbose=1,
-            # save_best_only=True,
+            #save_best_only=True,
             # monitor="mAP",
             # mode='max'
         )
@@ -348,16 +348,17 @@ def parse_args(args):
     parser.add_argument('--random-transform', help='Randomly transform image and annotations.', action='store_true')
     parser.add_argument('--image-min-side', help='Rescale the image so the smallest side is min_side.', type=int, default=800)
     parser.add_argument('--image-max-side', help='Rescale the image if the largest side is larger than max_side.', type=int, default=1333)
+    parser.add_argument('--save-path',       help='Path for saving eval images with detections (doesn\'t work for COCO).')
 
     return check_args(parser.parse_args(args))
 
 
-def main(args=None,config=None):
+def main(args=None,config=None,experiment=None):
     # parse arguments
     if args is None:
         args = sys.argv[1:]
     args = parse_args(args)
-
+         
     # create object that stores backbone information
     backbone = models.backbone(args.backbone)
 
@@ -410,6 +411,7 @@ def main(args=None,config=None):
         prediction_model,
         validation_generator,
         args,
+        experiment
     )
 
     # start training
@@ -441,11 +443,15 @@ if __name__ == '__main__':
     from DeepForest import preprocess
     import random
     
+    #save time for logging
+    dirname=datetime.now().strftime("%Y%m%d_%H%M%S")
+    
     batch_size=config['batch_size']
     
     #set experiment and log configs
     experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2",project_name='deepforest-retinanet')
     experiment.log_multiple_params(config)
+    experiment.log_parameter("Start Time", dirname)
     
     ##Set seed for reproducibility##
     np.random.seed(2)
@@ -463,7 +469,6 @@ if __name__ == '__main__':
         data=preprocess.zero_area(data)
         evaluation=preprocess.zero_area(evaluation)
         
-    
     #Write training and evaluation data to file for annotations
     data.to_csv("data/training/detection.csv")
     evaluation.to_csv("data/training/evaluation.csv")
@@ -487,13 +492,13 @@ if __name__ == '__main__':
     
     #Create log directory if saving snapshots
     if not config["save_snapshot_path"]=="None":
-        dirname=datetime.now().strftime("%Y%m%d_%H%M%S")
         snappath=config["save_snapshot_path"]+ dirname
         os.mkdir(snappath)
         
         #Log to comet
         experiment.log_parameter("snapshot_dir",snappath)        
-        
+    
+       
     #if no snapshots, add arg to front, will ignore path above
     if config["save_snapshot_path"]=="None":
         args=["--no-snapshots"] + args
@@ -505,6 +510,17 @@ if __name__ == '__main__':
     if not config["snapshot"]=="None":
         args= [config["snapshot"]] + args
         args=["--snapshot"] + args
+        
+        
+    #Create log directory if saving eval images, add to arguments
+    if not config["save_image_path"]=="None":
+        save_image_path=config["save_image_path"]+ dirname
+        if not os.path.exists(save_image_path):
+            os.mkdir(save_image_path)
+        
+        args= [save_image_path] + args
+        args=["--save-path"] + args        
     
-    #Run training    
-    main(args,config)
+    #Run training, and pass comet experiment   
+    main(args,config,experiment)
+
