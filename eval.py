@@ -70,6 +70,8 @@ def create_generator(args,config):
             image_max_side=args.image_max_side
         )
     elif  args.dataset_type == 'onthefly':
+        
+            config["subsample"]=config["validation_subsample"]
             validation_generator = onthefly.OnTheFlyGenerator(
                     args.annotations,
                     batch_size=args.batch_size,
@@ -174,5 +176,8 @@ def main(config,args=None):
 
 if __name__ == '__main__':
     
+    import numpy as np
+    
+    np.random.seed(2)
     from DeepForest.config import config    
     main(config)

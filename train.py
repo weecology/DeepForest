@@ -166,7 +166,7 @@ def create_callbacks(model, training_model, prediction_model, validation_generat
             # use prediction model for evaluation
             evaluation = CocoEval(validation_generator, tensorboard=tensorboard_callback)
         else:
-            evaluation = Evaluate(validation_generator, tensorboard=tensorboard_callback,experiment=experiment,save_path=args.save_path)
+            evaluation = Evaluate(validation_generator, tensorboard=tensorboard_callback,experiment=experiment,save_path=args.save_path,score_threshold=args.score_threshold)
         evaluation = RedirectModel(evaluation, prediction_model)
         callbacks.append(evaluation)
 
@@ -348,7 +348,10 @@ def parse_args(args):
     parser.add_argument('--random-transform', help='Randomly transform image and annotations.', action='store_true')
     parser.add_argument('--image-min-side', help='Rescale the image so the smallest side is min_side.', type=int, default=800)
     parser.add_argument('--image-max-side', help='Rescale the image if the largest side is larger than max_side.', type=int, default=1333)
+    
+    #Comet ml image viewer
     parser.add_argument('--save-path',       help='Path for saving eval images with detections (doesn\'t work for COCO).')
+    parser.add_argument('--score-threshold', help='Threshold on score to filter detections with (defaults to 0.5).', default=0.5, type=float)
 
     return check_args(parser.parse_args(args))
 
