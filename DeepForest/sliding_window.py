@@ -13,7 +13,7 @@ def compute_windows(image,pixels,overlap):
     
     
 def load():
-    im = Image.open('/Users/ben/Documents/DeepForest/data/2017_OSBS_3_400000_3287000_image.tif')
+    im = Image.open('/Users/ben/Documents/DeepForest/data/2017_OSBS_3_407000_3291000_image.tif')
     data = np.array(im)
     windows = sw.generate(data, sw.DimOrder.HeightWidthChannel, 250, 0.05)
     
@@ -31,7 +31,8 @@ def load():
     pyplot.show()
     for window in windows:        
         d=data[window.indices()]
-        pyplot.imshow(d)        
+        pyplot.imshow(d)
+        pyplot.show()
    
-if __name__=="__main__"     
-load()
+if __name__=="__main__":   
+    load()

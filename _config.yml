@@ -24,8 +24,8 @@ subsample: 200
 snapshot: None
 batch_size: 1      
 epochs: 20
-save_snapshot_path: None
-backbone: resnet101
+save_snapshot_path: snapshots/
+backbone: resnet50
 
 #Evaluation
 evaluation_csvs: data/NEON_D03_OSBS_DP1_407000_3291000_classified_point_cloud_laz.csv
