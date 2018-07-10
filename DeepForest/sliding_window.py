@@ -8,14 +8,14 @@ import matplotlib.patches as patches
 def compute_windows(image,pixels,overlap):
     im = Image.open('/Users/ben/Documents/DeepForest/data/2017_OSBS_3_400000_3287000_image.tif')
     data = np.array(im)    
-    windows = sw.generate(image, sw.DimOrder.HeightWidthChannel, 250, 0.05)
+    windows = sw.generate(image, sw.DimOrder.HeightWidthChannel, 300.05)
     return(windows)
     
     
 def load():
     im = Image.open('/Users/ben/Documents/DeepForest/data/2017_OSBS_3_407000_3291000_image.tif')
     data = np.array(im)
-    windows = sw.generate(data, sw.DimOrder.HeightWidthChannel, 250, 0.05)
+    windows = sw.generate(data, sw.DimOrder.HeightWidthChannel, 300, 0.05)
     
     # Do stuff with the generated windows
     fig,ax = pyplot.subplots(1)
