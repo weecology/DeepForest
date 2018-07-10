@@ -147,15 +147,18 @@ dependencies:
     - click==6.7
     - click-plugins==1.0.3
     - cligj==0.4.0
-    - comet-ml==1.0.16
+    - comet-ml==1.0.19
     - cython==0.28.3
     - idna==2.7
     - keras==2.2.0
     - keras-resnet==0.1.0
     - keras-retinanet==0.3.1
+    - netifaces==0.10.7
     - opencv-python==3.4.1.15
+    - psutil==5.4.6
     - rasterio==0.36.0
     - requests==2.19.1
+    - slidingwindow==0.0.13
     - snuggs==1.4.2
     - urllib3==1.23
     - websocket-client==0.48.0
