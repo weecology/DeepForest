@@ -20,7 +20,7 @@ training_csvs: data/NEON_D03_OSBS_DP1_407000_3291000_classified_point_cloud_laz.
 rgb_tile_dir: /orange/ewhite/b.weinstein/NEON/D03/OSBS/DP1.30010.001/2017/FullSite/D03/2017_OSBS_3/L3/Camera/Mosaic/V01/
 
 #Number of sliding windows to select
-subsample: 1000
+subsample: 2000
 snapshot: None
 batch_size: 2      
 epochs: 20
