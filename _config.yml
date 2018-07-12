@@ -16,7 +16,7 @@ preprocess:
           NDVI_Threshold: 0.1
 
 #Training
-training_csvs: data/NEON_D03_OSBS_DP1_411000_3282000_classified_point_cloud_laz.csv
+training_csvs: /home/b.weinstein/TreeSegmentation/analysis/Results/detection_boxes/
 rgb_tile_dir: /orange/ewhite/b.weinstein/NEON/D03/OSBS/DP1.30010.001/2017/FullSite/D03/2017_OSBS_3/L3/Camera/Mosaic/V01/
 
 #Number of sliding windows to select
@@ -31,6 +31,6 @@ backbone: resnet50
 evaluation_csvs: data/NEON_D03_OSBS_DP1_407000_3291000_classified_point_cloud_laz.csv
 
 #Number of sliding windows to select
-validation_subsample: 10
+validation_subsample: 100
 evaluation_tile_dir: data/
 save_image_path: snapshots/
