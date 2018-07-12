@@ -180,4 +180,16 @@ if __name__ == '__main__':
     
     np.random.seed(2)
     from DeepForest.config import config    
+    from DeepForest import preprocess
+    
+    #Prepare Evaluation
+    evaluation=preprocess.load_data(data_dir=config['evaluation_csvs'])
+    
+    ##Preprocess Filters##
+    if config['preprocess']['zero_area']:
+        evaluation=preprocess.zero_area(evaluation)
+        
+    #Write training and evaluation data to file for annotations
+    evaluation.to_csv("data/training/evaluation.csv") 
+    
     main(config)
