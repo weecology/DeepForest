@@ -27,6 +27,6 @@ backbone: resnet50
 
 #Evaluation
 evaluation_csvs: data/NEON_D03_OSBS_DP1_411000_3282000_classified_point_cloud_laz.csv
-validation_subsample: 100
+validation_subsample: 50
 evaluation_tile_dir: data/
 save_image_path: snapshots/

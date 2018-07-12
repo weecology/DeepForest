@@ -23,7 +23,7 @@ rgb_tile_dir: /orange/ewhite/b.weinstein/NEON/D03/OSBS/DP1.30010.001/2017/FullSi
 subsample: 500
 snapshot: None
 batch_size: 1      
-epochs: 2
+epochs: 20
 save_snapshot_path: snapshots/
 backbone: resnet50
 
@@ -31,6 +31,6 @@ backbone: resnet50
 evaluation_csvs: data/NEON_D03_OSBS_DP1_407000_3291000_classified_point_cloud_laz.csv
 
 #Number of sliding windows to select
-validation_subsample: 10
+validation_subsample: 20
 evaluation_tile_dir: data/
 save_image_path: snapshots/
