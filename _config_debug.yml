@@ -16,7 +16,7 @@ preprocess:
           NDVI_Threshold: 0.1
 
 #Training
-training_csvs: data/
+training_csvs: data/NEON_D03_OSBS_DP1_411000_3282000_classified_point_cloud_laz.csv
 rgb_tile_dir: data/
 subsample: 2
 snapshot: None
@@ -27,6 +27,6 @@ backbone: resnet50
 
 #Evaluation
 evaluation_csvs: data/NEON_D03_OSBS_DP1_411000_3282000_classified_point_cloud_laz.csv
-validation_subsample: 50
+validation_subsample: 200
 evaluation_tile_dir: data/
 save_image_path: snapshots/

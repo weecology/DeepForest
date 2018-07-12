@@ -21,10 +21,10 @@ def load(path):
     fig,ax = pyplot.subplots(1)
     ax.imshow(data)
     
+    print("There are %f windows" % (len(windows)))
     for window in windows:
         
         x,y,w,h=window.getRect()
-        print(x,y)
         rect = patches.Rectangle((x,y),w,h,linewidth=1,edgecolor='r',facecolor='none')     
         ax.add_patch(rect)
     
@@ -35,4 +35,4 @@ def load(path):
         pyplot.show()
    
 if __name__=="__main__":   
-    load(path="/Users/ben/Documents/DeepForest/data/OSBS_006_test.tif")
+    load(path="../data/2017_OSBS_3_407000_3291000_image.tif")
