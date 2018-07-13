@@ -86,7 +86,7 @@ def model_with_weights(model, weights, skip_mismatch):
     return model
 
 
-def create_models(backbone_retinanet, num_classes, weights, multi_gpu=0, freeze_backbone=False):
+def create_models(backbone_retinanet, num_classes, weights, multi_gpu=0, freeze_backbone=False,nms_threshold=nms_threshold):
     """ Creates three models (model, training_model, prediction_model).
 
     Args
@@ -114,7 +114,7 @@ def create_models(backbone_retinanet, num_classes, weights, multi_gpu=0, freeze_
         training_model = model
 
     # make prediction model
-    prediction_model = retinanet_bbox(model=model)
+    prediction_model = retinanet_bbox(model=model,nms_threshold=nms_threshold)
 
     # compile model
     training_model.compile(
@@ -247,7 +247,9 @@ def create_generators(args,config):
             args.annotations,
             batch_size=args.batch_size,
             base_dir=config["rgb_tile_dir"],
-            config=config
+            config=config,
+            group_method="none",
+            shuffle_groups=False,
         )
         if args.val_annotations:
             
@@ -258,7 +260,9 @@ def create_generators(args,config):
             args.val_annotations,
             batch_size=args.batch_size,
             base_dir=config["evaluation_tile_dir"],
-            config=config
+            config=config,
+            group_method="none",
+            shuffle_groups=False,
         )
         else:
             validation_generator=None
@@ -394,7 +398,8 @@ def main(args=None,config=None,experiment=None):
             num_classes=train_generator.num_classes(),
             weights=weights,
             multi_gpu=args.multi_gpu,
-            freeze_backbone=args.freeze_backbone
+            freeze_backbone=args.freeze_backbone,
+            nms_threshold=config["nms_threshold"]
         )
 
     # print model summary
