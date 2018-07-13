@@ -1,6 +1,5 @@
 #Config file for DeepMeerkat train.py on local OSX
 
-#TODO implementation of sliding window config, currently hardcoded.
 #SlidingWindow
 patch_size: 250
 patch_overlap: 0.05
