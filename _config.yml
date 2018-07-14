@@ -20,7 +20,7 @@ rgb_tile_dir: /orange/ewhite/b.weinstein/NEON/D03/OSBS/DP1.30010.001/2017/FullSi
 
 #Number of sliding windows to select
 subsample: 5000
-snapshot: snapshots/20180713_173925/resnet50_onthefly_02.h5
+snapshot: None
 batch_size: 1      
 epochs: 10
 save_snapshot_path: None
