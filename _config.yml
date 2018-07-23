@@ -1,7 +1,7 @@
 #Config file for DeepMeerkat train.py on hypergator
 
 #SlidingWindow
-patch_size: 250
+patch_size: 400
 patch_overlap: 0.05
 rgb_res: 0.1
 
@@ -19,11 +19,11 @@ training_csvs: /home/b.weinstein/TreeSegmentation/analysis/Results/detection_box
 rgb_tile_dir: /orange/ewhite/b.weinstein/NEON/D03/OSBS/DP1.30010.001/2017/FullSite/D03/2017_OSBS_3/L3/Camera/Mosaic/V01/
 
 #Number of sliding windows to select
-subsample: 5000
+subsample: 10000
 snapshot: None
 batch_size: 1      
 epochs: 10
-save_snapshot_path: None
+save_snapshot_path: snapshots/
 backbone: resnet50
 
 #Evaluation
