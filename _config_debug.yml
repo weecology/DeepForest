@@ -17,10 +17,10 @@ preprocess:
 #Training
 training_csvs: data/
 rgb_tile_dir: data/
-subsample: 10
+subsample: 4
 snapshot: None
 batch_size: 1      
-epochs: 1
+epochs: 2
 save_snapshot_path: snapshots/
 backbone: resnet50
 
