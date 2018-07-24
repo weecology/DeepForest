@@ -6,7 +6,7 @@ patch_overlap: 0.05
 rgb_res: 0.1
 
 #Debug plot image
-plot_image: False
+plot_image: True
 
 #Preprocessing routines
 preprocess:
