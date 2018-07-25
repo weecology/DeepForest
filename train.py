@@ -250,6 +250,7 @@ def create_generators(args,config):
             config=config,
             group_method="none",
             shuffle_groups=False,
+            shuffle_tiles=config["shuffle_training"]            
         )
         if args.val_annotations:
             
@@ -263,6 +264,7 @@ def create_generators(args,config):
             config=config,
             group_method="none",
             shuffle_groups=False,
+            shuffle_tiles=config["shuffle_eval"]
         )
         else:
             validation_generator=None
