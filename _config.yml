@@ -16,7 +16,9 @@ preprocess:
 
 #Training
 training_csvs: /home/b.weinstein/TreeSegmentation/analysis/Results/detection_boxes/SJER/
-rgb_tile_dir: /orange/ewhite/b.weinstein/NEON/D03/OSBS/DP1.30010.001/2017/FullSite/D03/2017_OSBS_3/L3/Camera/Mosaic/V01/
+#rgb_tile_dir: /orange/ewhite/b.weinstein/NEON/D03/OSBS/DP1.30010.001/2017/FullSite/D03/2017_OSBS_3/L3/Camera/Mosaic/V01/
+rgb_tile_dir: /orange/ewhite/NeonData/SJER/DP1.30010.001/2017/FullSite/D17/2017_SJER_2/L3/Camera/Mosaic/V02/
+
 
 #Number of sliding windows to select
 subsample: 5000
