@@ -464,7 +464,7 @@ if __name__ == '__main__':
     experiment.log_parameter("Start Time", dirname)
     
     #Log site
-    site=os.path.split(os.path.normpath(config["training_csvs"]))
+    site=os.path.split(os.path.normpath(config["training_csvs"]))[1]
     experiment.log_parameter("Site", site)
     
     ##Set seed for reproducibility##
