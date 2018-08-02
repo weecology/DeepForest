@@ -455,11 +455,17 @@ if __name__ == '__main__':
     
     #save time for logging
     dirname=datetime.now().strftime("%Y%m%d_%H%M%S")
-        
+    
+
+    
     #set experiment and log configs
     experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2",project_name='deepforest-retinanet')
     experiment.log_multiple_params(config)
     experiment.log_parameter("Start Time", dirname)
+    
+    #Log site
+    site=os.path.split(os.path.normpath(config["training_csvs"]))
+    experiment.log_parameter("Site", site)
     
     ##Set seed for reproducibility##
     np.random.seed(2)
