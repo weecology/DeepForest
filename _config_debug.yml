@@ -6,7 +6,7 @@ patch_overlap: 0.05
 rgb_res: 0.1
 
 #Debug plot image
-plot_image: True
+plot_image: False
 
 #Preprocessing routines
 preprocess:
@@ -17,18 +17,25 @@ preprocess:
 #Training
 training_csvs: data/
 rgb_tile_dir: data/
-subsample: 10
-snapshot: None
+subsample: 1
+snapshot: snapshots/resnet50_onthefly_10.h5
 batch_size: 1      
-epochs: 2
+epochs: 1
 save_snapshot_path: snapshots/
 backbone: resnet50
+shuffle_training: True
 
 #Evaluation
 evaluation_csvs: data/NEON_D03_OSBS_DP1_411000_3282000_classified_point_cloud_laz.csv
-validation_subsample: 200
+validation_subsample: 2
 evaluation_tile_dir: data/
 save_image_path: snapshots/
+shuffle_eval: True
+
+#Ground truth
+#Path, passed to glob for wildcards
+itc_path: /Users/ben/Documents/TreeSegmentation/data/ITCs/*/*.shp
+itc_tile_path: /Users/ben/Documents/TreeSegmentation/data/2017/Camera/L3/
 
 #Non-max suppression, threshold for the IoU value to determine when a box should be suppressed.
 nms_threshold: 0.5   

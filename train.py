@@ -19,8 +19,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-#Log training
-from comet_ml import Experiment
+
 
 #keras-retinanet imports
 
@@ -357,7 +356,7 @@ def parse_args(args):
     
     #Comet ml image viewer
     parser.add_argument('--save-path',       help='Path for saving eval images with detections (doesn\'t work for COCO).')
-    parser.add_argument('--score-threshold', help='Threshold on score to filter detections with (defaults to 0.3).', default=0.25, type=float)
+    parser.add_argument('--score-threshold', help='Threshold on score to filter detections with (defaults to 0.3).', default=0.05, type=float)
 
     return check_args(parser.parse_args(args))
 
@@ -455,8 +454,6 @@ if __name__ == '__main__':
     
     #save time for logging
     dirname=datetime.now().strftime("%Y%m%d_%H%M%S")
-    
-
     
     #set experiment and log configs
     experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2",project_name='deepforest-retinanet')

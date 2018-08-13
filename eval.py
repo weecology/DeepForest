@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-Copyright 2017-2018 Fizyr (https://fizyr.com)
+FCopyright 2017-2018 Fizyr (https://fizyr.com)
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,9 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+#Log training
+from comet_ml import Experiment
+
 import argparse
 import os
 import sys
+from datetime import datetime
 
 import keras
 import tensorflow as tf
@@ -29,9 +33,8 @@ if __name__ == "__main__" and __package__ is None:
 
 # Change these to absolute imports if you copy this script outside the keras_retinanet package.
 from keras_retinanet import models
-from keras_retinanet.preprocessing.csv_generator import CSVGenerator
-from keras_retinanet.preprocessing.pascal_voc import PascalVocGenerator
 from keras_retinanet.utils.eval import evaluate
+from keras_retinanet.utils.eval import JaccardEvaluate
 from keras_retinanet.utils.keras_version import check_keras_version
 from keras_retinanet.preprocessing import onthefly
 
@@ -45,38 +48,19 @@ def get_session():
 def create_generator(args,config):
     """ Create generators for evaluation.
     """
-    if args.dataset_type == 'coco':
-        # import here to prevent unnecessary dependency on cocoapi
-        from keras_retinanet.preprocessing.coco import CocoGenerator
-
-        validation_generator = CocoGenerator(
-            args.coco_path,
-            'val2017',
-            image_min_side=args.image_min_side,
-            image_max_side=args.image_max_side
-        )
-    elif args.dataset_type == 'pascal':
-        validation_generator = PascalVocGenerator(
-            args.pascal_path,
-            'test',
-            image_min_side=args.image_min_side,
-            image_max_side=args.image_max_side
-        )
-    elif args.dataset_type == 'csv':
-        validation_generator = CSVGenerator(
-            args.annotations,
-            args.classes,
-            image_min_side=args.image_min_side,
-            image_max_side=args.image_max_side
-        )
-    elif  args.dataset_type == 'onthefly':
-        
-            config["subsample"]=config["validation_subsample"]
-            validation_generator = onthefly.OnTheFlyGenerator(
+    if  args.dataset_type == 'onthefly':
+            
+        #Replace config subsample with validation subsample. Not the best, or the worst, way to do this.
+        config["subsample"]=config["validation_subsample"]
+    
+        validation_generator=onthefly.OnTheFlyGenerator(
                     args.annotations,
-                    batch_size=args.batch_size,
-                    base_dir=config["rgb_tile_dir"],
-                    config=config)        
+                batch_size=args.batch_size,
+                base_dir=config["evaluation_tile_dir"],
+                config=config,
+                group_method="none",
+                shuffle_groups=False,
+                shuffle_tiles=config["shuffle_eval"])   
     else:
         raise ValueError('Invalid data type received: {}'.format(args.dataset_type))
 
@@ -91,12 +75,6 @@ def parse_args(args):
     
     subparsers = parser.add_subparsers(help='Arguments for specific dataset types.', dest='dataset_type')
     subparsers.required = True
-
-    coco_parser = subparsers.add_parser('coco')
-    coco_parser.add_argument('coco_path', help='Path to dataset directory (ie. /tmp/COCO).')
-
-    pascal_parser = subparsers.add_parser('pascal')
-    pascal_parser.add_argument('pascal_path', help='Path to dataset directory (ie. /tmp/VOCdevkit).')
 
     csv_parser = subparsers.add_parser('csv')
     csv_parser.add_argument('annotations', help='Path to CSV file containing annotations for evaluation.')
@@ -120,7 +98,7 @@ def parse_args(args):
     return parser.parse_args(args)
 
 
-def main(config,args=None):
+def main(config,experiment,args=None):
     # parse arguments
     if args is None:
         args = sys.argv[1:]
@@ -134,9 +112,14 @@ def main(config,args=None):
         os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
     keras.backend.tensorflow_backend.set_session(get_session())
 
+    #Add seperate dir
+    #save time for logging
+    dirname=datetime.now().strftime("%Y%m%d_%H%M%S")
+    experiment.log_parameter("Start Time", dirname)
+    
     # make save path if it doesn't exist
-    if args.save_path is not None and not os.path.exists(args.save_path):
-        os.makedirs(args.save_path)
+    if args.save_path is not None and not os.path.exists(args.save_path + dirname):
+        os.makedirs(args.save_path + dirname)
 
     # create the generator
     generator = create_generator(args,config)
@@ -148,31 +131,37 @@ def main(config,args=None):
     # print model summary
     # print(model.summary())
 
-    # start evaluation
-    if args.dataset_type == 'coco':
-        from keras_retinanet.utils.coco_eval import evaluate_coco
-        evaluate_coco(generator, model, args.score_threshold)
-    else:
-        average_precisions = evaluate(
-            generator,
-            model,
-            iou_threshold=args.iou_threshold,
-            score_threshold=args.score_threshold,
-            max_detections=args.max_detections,
-            save_path=args.save_path
-        )
+    average_precisions = evaluate(
+        generator,
+        model,
+        iou_threshold=args.iou_threshold,
+        score_threshold=args.score_threshold,
+        max_detections=args.max_detections,
+        save_path=args.save_path + dirname
+    )
 
-        # print evaluation
-        present_classes = 0
-        precision = 0
-        for label, (average_precision, num_annotations) in average_precisions.items():
-            print('{:.0f} instances of class'.format(num_annotations),
-                  generator.label_to_name(label), 'with average precision: {:.4f}'.format(average_precision))
-            if num_annotations > 0:
-                present_classes += 1
-                precision       += average_precision
-        print('mAP: {:.4f}'.format(precision / present_classes))
+    # print evaluation
+    present_classes = 0
+    precision = 0
+    for label, (average_precision, num_annotations) in average_precisions.items():
+        print('{:.0f} instances of class'.format(num_annotations),
+              generator.label_to_name(label), 'with average precision: {:.4f}'.format(average_precision))
+        if num_annotations > 0:
+            present_classes += 1
+            precision       += average_precision
+    print('mAP: {:.4f}'.format(precision / present_classes))
 
+    #Ground truth scores
+    jaccard_scores = JaccardEvaluate(
+        generator,
+        model,
+        iou_threshold=args.iou_threshold,
+        score_threshold=args.score_threshold,
+        max_detections=args.max_detections,
+        save_path=args.save_path + dirname,
+        experiment=experiment,
+        config=config
+    )
 
 if __name__ == '__main__':
     
@@ -181,6 +170,14 @@ if __name__ == '__main__':
     np.random.seed(2)
     from DeepForest.config import config    
     from DeepForest import preprocess
+    
+    #set experiment and log configs
+    experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2",project_name='deepforest-retinanet')
+    experiment.log_multiple_params(config)
+    
+    #Log site
+    site=os.path.split(os.path.normpath(config["training_csvs"]))[1]
+    experiment.log_parameter("Site", site)
     
     #Prepare Evaluation
     evaluation=preprocess.load_data(data_dir=config['evaluation_csvs'])
@@ -192,4 +189,4 @@ if __name__ == '__main__':
     #Write training and evaluation data to file for annotations
     evaluation.to_csv("data/training/evaluation.csv") 
     
-    main(config)
+    main(config,experiment)
