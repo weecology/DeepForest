@@ -19,7 +19,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-
+#Import logger.
+from comet_ml import Experiment
 
 #keras-retinanet imports
 
@@ -127,7 +128,7 @@ def create_models(backbone_retinanet, num_classes, weights, multi_gpu=0, freeze_
     return model, training_model, prediction_model
 
 
-def create_callbacks(model, training_model, prediction_model, validation_generator, args,experiment):
+def create_callbacks(model, training_model, prediction_model, validation_generator, args,experiment,config):
     """ Creates the callbacks to use during training.
 
     Args
@@ -165,7 +166,7 @@ def create_callbacks(model, training_model, prediction_model, validation_generat
             # use prediction model for evaluation
             evaluation = CocoEval(validation_generator, tensorboard=tensorboard_callback)
         else:
-            evaluation = Evaluate(validation_generator, tensorboard=tensorboard_callback,experiment=experiment,save_path=args.save_path,score_threshold=args.score_threshold)
+            evaluation = Evaluate(validation_generator, tensorboard=tensorboard_callback,experiment=experiment,save_path=args.save_path,score_threshold=args.score_threshold,config=config)
         evaluation = RedirectModel(evaluation, prediction_model)
         callbacks.append(evaluation)
 
@@ -380,7 +381,7 @@ def main(args=None,config=None,experiment=None):
 
     # create the generators
     train_generator, validation_generator = create_generators(args,config)
-
+    
     # create the model
     if args.snapshot is not None:
         print('Loading model, this may take a secondkeras-retinanet .')
@@ -420,7 +421,8 @@ def main(args=None,config=None,experiment=None):
         prediction_model,
         validation_generator,
         args,
-        experiment
+        experiment,
+        config
     )
 
     # start training
@@ -432,6 +434,11 @@ def main(args=None,config=None,experiment=None):
         callbacks=callbacks,
     )
 
+    #Log number of trees trained on
+    #Logs the number of train and eval "trees"
+    train_generator.annotation_dict
+    ntrees=[len(x) for x in train_generator.annotation_dict.values()]
+    experiment.log_parameter("Number of Trees", ntrees)
     
 if __name__ == '__main__':
     
