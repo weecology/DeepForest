@@ -150,6 +150,7 @@ def main(config,experiment,args=None):
             present_classes += 1
             precision       += average_precision
     print('mAP: {:.4f}'.format(precision / present_classes))
+    experiment.log_metric("mAP", precision / present_classes)    
 
     #Ground truth scores
     jaccard_scores = JaccardEvaluate(
