@@ -30,14 +30,12 @@ shuffle_training: True
 
 #Evaluation
 evaluation_csvs: data/NEON_D03_OSBS_DP1_407000_3291000_classified_point_cloud_laz.csv
-#evaluation_csvs: /home/b.weinstein/TreeSegmentation/analysis/Results/detection_boxes/OSBS/
+evaluation_tile_dir: data/
 
 #Number of sliding windows to select for evaluation
 validation_subsample: 50
-evaluation_tile_dir: data/
-#evaluation_tile_dir: /orange/ewhite/NeonData/SJER/DP1.30010.001/2017/FullSite/D17/2017_SJER_2/L3/Camera/Mosaic/V02/
 save_image_path: snapshots/
 shuffle_eval: True
 
 #Non-max suppression, threshold for the IoU value to determine when a box should be suppressed.
-nms_threshold: 0.5   
+nms_threshold: 0.5 
