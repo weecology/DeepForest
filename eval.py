@@ -163,7 +163,10 @@ def main(config,experiment,args=None):
         config=config
     )
     
+    print("Mean IoU = %.3f" % (jaccard_scores))
     #Log results
+    experiment.log_metric("Mean IoU", jaccard_scores)    
+    
     #Logs the number of train and eval "trees"
     ntrees=[len(x) for x in generator.annotation_dict.values()]
     experiment.log_parameter("Number of Trees", ntrees)    
