@@ -165,8 +165,7 @@ def main(config,experiment,args=None):
     
     #Log results
     #Logs the number of train and eval "trees"
-    generator.annotation_dict
-    ntrees=[len(x) for x in train_generator.annotation_dict.values()]
+    ntrees=[len(x) for x in generator.annotation_dict.values()]
     experiment.log_parameter("Number of Trees", ntrees)    
 
 if __name__ == '__main__':

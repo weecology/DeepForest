@@ -27,7 +27,7 @@ shuffle_training: True
 
 #Evaluation
 evaluation_csvs: data/NEON_D03_OSBS_DP1_411000_3282000_classified_point_cloud_laz.csv
-validation_subsample: 2
+validation_subsample: 1
 evaluation_tile_dir: data/
 save_image_path: snapshots/
 shuffle_eval: True
