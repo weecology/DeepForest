@@ -15,9 +15,8 @@ preprocess:
           NDVI_Threshold: 0.1
 
 #Training
-training_csvs: /home/b.weinstein/TreeSegmentation/analysis/Results/detection_boxes/GRSM/
-#rgb_tile_dir: /orange/ewhite/b.weinstein/NEON/D03/OSBS/DP1.30010.001/2017/FullSite/D03/2017_OSBS_3/L3/Camera/Mosaic/V01/
-rgb_tile_dir: /orange/ewhite/NeonData/GRSM/DP1.30010.001/2016/FullSite/D07/2016_GRSM_2/L3/Camera/Mosaic/V01/
+training_csvs: /home/b.weinstein/TreeSegmentation/analysis/Results/detection_boxes/OSBS/
+rgb_tile_dir: /orange/ewhite/b.weinstein/NEON/D03/OSBS/DP1.30010.001/2017/FullSite/D03/2017_OSBS_3/L3/Camera/Mosaic/V01/
 #rgb_tile_dir: /orange/ewhite/NeonData/SJER/DP1.30010.001/2017/FullSite/D17/2017_SJER_2/L3/Camera/Mosaic/V02/
 
 #Number of sliding windows to select
@@ -30,13 +29,13 @@ backbone: resnet50
 shuffle_training: True
 
 #Evaluation
-#evaluation_csvs: data/NEON_D03_OSBS_DP1_407000_3291000_classified_point_cloud_laz.csv
-evaluation_csvs: /home/b.weinstein/TreeSegmentation/analysis/Results/detection_boxes/GRSM/
+evaluation_csvs: data/NEON_D03_OSBS_DP1_407000_3291000_classified_point_cloud_laz.csv
+#evaluation_csvs: /home/b.weinstein/TreeSegmentation/analysis/Results/detection_boxes/OSBS/
 
 #Number of sliding windows to select for evaluation
 validation_subsample: 50
+evaluation_tile_dir: data/
 #evaluation_tile_dir: /orange/ewhite/NeonData/SJER/DP1.30010.001/2017/FullSite/D17/2017_SJER_2/L3/Camera/Mosaic/V02/
-evaluation_tile_dir: /orange/ewhite/NeonData/GRSM/DP1.30010.001/2016/FullSite/D07/2016_GRSM_2/L3/Camera/Mosaic/V01/
 save_image_path: snapshots/
 shuffle_eval: True
 
