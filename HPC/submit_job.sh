@@ -22,6 +22,7 @@ ml geos/3.6.2
 ml tensorflow/1.7.0
 export PYTHONPATH=${PYTHONPATH}:/home/b.weinstein/miniconda3/envs/DeepForest/lib/python3.6/site-packages/
 echo $PYTHONPATH
+python
 
 cd /home/b.weinstein/DeepForest
 
