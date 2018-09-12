@@ -15,8 +15,8 @@ preprocess:
           NDVI_Threshold: 0.1
 
 #Training
-training_csvs: data/
-rgb_tile_dir: data/
+training_csvs: data/OSBS/
+rgb_tile_dir: data/OSBS/
 subsample: 1
 snapshot: snapshots/resnet50_onthefly_10.h5
 batch_size: 1      
@@ -26,9 +26,9 @@ backbone: resnet50
 shuffle_training: True
 
 #Evaluation
-evaluation_csvs: data/NEON_D03_OSBS_DP1_411000_3282000_classified_point_cloud_laz.csv
+evaluation_csvs: data/OSBS/NEON_D03_OSBS_DP1_411000_3282000_classified_point_cloud_laz.csv
 validation_subsample: 1
-evaluation_tile_dir: data/
+evaluation_tile_dir: data/OSBS/
 save_image_path: snapshots/
 shuffle_eval: True
 
