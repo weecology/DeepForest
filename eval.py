@@ -76,10 +76,6 @@ def parse_args(args):
     subparsers = parser.add_subparsers(help='Arguments for specific dataset types.', dest='dataset_type')
     subparsers.required = True
 
-    csv_parser = subparsers.add_parser('csv')
-    csv_parser.add_argument('annotations', help='Path to CSV file containing annotations for evaluation.')
-    csv_parser.add_argument('classes', help='Path to a CSV file containing class label mapping.')
-
     #On the fly parser
     otf_parser = subparsers.add_parser('onthefly')
     otf_parser.add_argument('annotations', help='Path to CSV file containing annotations for training.')
