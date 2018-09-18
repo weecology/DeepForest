@@ -23,4 +23,4 @@ echo $PYTHONPATH
 
 cd /home/b.weinstein/DeepForest
 
-python train.py
+python train.py --random_transform

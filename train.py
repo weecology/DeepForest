@@ -501,7 +501,6 @@ if __name__ == '__main__':
     #pass an args object instead of using command line    
     args = [
         "--epochs",str(config["epochs"]),
-        "--random_transform",str(config["random_transform"]),
         "--batch-size",str(config['batch_size']),
         "--steps",str(int(steps)),
         "--backbone",str(config["backbone"]),
