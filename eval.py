@@ -91,6 +91,7 @@ def parse_args(args):
     parser.add_argument('--score-threshold', help='Threshold on score to filter detections with (defaults to 0.05).', default=0.05, type=float)
     parser.add_argument('--iou-threshold',   help='IoU Threshold to count for a positive detection (defaults to 0.5).', default=0.5, type=float)
     parser.add_argument('--max-detections',  help='Max Detections per image (defaults to 100).', default=100, type=int)
+    parser.add_argument('--suppression-threshold',  help='Permitted overlap among predictions', default=0.2, type=float)
     parser.add_argument('--save-path',       help='Path for saving images with detections (doesn\'t work for COCO).')
     parser.add_argument('--image-min-side',  help='Rescale the image so the smallest side is min_side.', type=int, default=800)
     parser.add_argument('--image-max-side',  help='Rescale the image if the largest side is larger than max_side.', type=int, default=1333)
@@ -161,6 +162,7 @@ def main(config,experiment,args=None):
             #iou_threshold=args.iou_threshold,
             #score_threshold=args.score_threshold,
             #max_detections=args.max_detections,
+            #suppression_threshold=args.suppression_threshold,
             #save_path=args.save_path + dirname,
             #experiment=experiment,
             #config=config
@@ -178,6 +180,7 @@ def main(config,experiment,args=None):
         iou_threshold=args.iou_threshold,
         score_threshold=args.score_threshold,
         max_detections=args.max_detections,
+        suppression_threshold=args.suppression_threshold,
         save_path=args.save_path + dirname,
         experiment=experiment,
         config=config

@@ -26,7 +26,6 @@ epochs: 10
 save_snapshot_path: None
 backbone: resnet50
 shuffle_training: True
-random_transform: True
 
 #Evaluation
 evaluation_csvs: /home/b.weinstein/TreeSegmentation/analysis/Results/detection_boxes/HARV/

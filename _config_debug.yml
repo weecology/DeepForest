@@ -24,7 +24,6 @@ epochs: 1
 save_snapshot_path: snapshots/
 backbone: resnet50
 shuffle_training: True
-random_transform: True
 
 #Evaluation
 evaluation_csvs: data/OSBS/NEON_D03_OSBS_DP1_411000_3282000_classified_point_cloud_laz.csv
