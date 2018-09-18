@@ -436,7 +436,6 @@ def main(args=None,config=None,experiment=None):
 
     #Log number of trees trained on
     #Logs the number of train and eval "trees"
-    train_generator.annotation_dict
     ntrees=[len(x) for x in train_generator.annotation_dict.values()]
     experiment.log_parameter("Number of Trees", ntrees)
     
@@ -502,6 +501,7 @@ if __name__ == '__main__':
     #pass an args object instead of using command line    
     args = [
         "--epochs",str(config["epochs"]),
+        "--random_transform",str(config["random_transform"]),
         "--batch-size",str(config['batch_size']),
         "--steps",str(int(steps)),
         "--backbone",str(config["backbone"]),

@@ -24,8 +24,9 @@ snapshot: None
 batch_size: 1      
 epochs: 30
 save_snapshot_path: /orange/ewhite/b.weinstein/retinanet/snapshots/
-backbone: resnet101
+backbone: resnet50
 shuffle_training: False
+random_transform: True
 
 #Evaluation
 evaluation_csvs: /home/b.weinstein/TreeSegmentation/analysis/Results/detection_boxes/SJER/
