@@ -26,7 +26,6 @@ backbone: resnet50
 shuffle_training: True
 
 #Evaluation
-evaluation_csvs: data/OSBS/NEON_D03_OSBS_DP1_411000_3282000_classified_point_cloud_laz.csv
 validation_subsample: 100
 evaluation_tile_dir: data/OSBS/
 save_image_path: snapshots/
