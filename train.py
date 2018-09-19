@@ -424,7 +424,18 @@ def main(args=None,config=None,experiment=None):
         experiment,
         config
     )
+    
+    #Log
+    experiment.log_dataset_hash(train_generator.image_data)
+    experiment.log_dataset_hash(validation_generator.image_data)    
 
+    matched=[]
+    for entry in validation_generator.image_data.values():
+        test=entry in train_generator.image_data.values() 
+        matched.append(test)
+    if sum(matched) > 0:
+        raise Exception("%.2f percent of validation windows are in training data" %(100*sum(matched)/train_generator.size()))
+    
     # start training
     training_model.fit_generator(
         generator=train_generator,
