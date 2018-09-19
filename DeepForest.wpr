@@ -6,7 +6,7 @@
 [project attributes]
 proj.file-type = 'shared'
 proj.launch-config = {loc('debug.py'): ('project',
-        (u'onthefly data/training/evaluation.csv',
+        (u'--annotations onthefly data/training/evaluation.csv ',
          '')),
                       loc('eval.py'): ('project',
                                        (u'--score-threshold 0.05 --suppression-threshold 0.1 --save-path snapshots/images/ onthefly data/training/evaluation.csv snapshots/resnet50_onthefly_10.h5 --convert-model ',
