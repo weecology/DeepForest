@@ -435,7 +435,9 @@ def main(args=None,config=None,experiment=None):
         matched.append(test)
     if sum(matched) > 0:
         raise Exception("%.2f percent of validation windows are in training data" %(100*sum(matched)/train_generator.size()))
-    
+    else:
+        print("Test passed: No overlapping data in training and validation")
+        
     # start training
     training_model.fit_generator(
         generator=train_generator,
