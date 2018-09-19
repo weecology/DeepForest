@@ -483,24 +483,27 @@ if __name__ == '__main__':
     site=os.path.split(os.path.normpath(config["training_csvs"]))[1]
     experiment.log_parameter("Site", site)
     
-    ##Set seed for reproducibility##
-    np.random.seed(2)
+    #Set seed for reproducibility
+    if not config["shuffle_eval"]:
+        np.random.seed(2)
     
     #Load data and combine into a large frame
     #Training
     data=preprocess.load_data(data_dir=config['training_csvs'])
     
-    #Evaluation
-    evaluation=preprocess.load_data(data_dir=config['evaluation_csvs'])
-    
     ##Preprocess Filters##
-    
     if config['preprocess']['zero_area']:
         data=preprocess.zero_area(data)
-        evaluation=preprocess.zero_area(evaluation)
-        
+    
+    #hold out one validation tile    
+    all_images=list(data.rgb_path.unique())
+    eval_tile=random.sample(all_images,1)[0]
+    experiment.log_parameter(eval_tile,"Evaluation Tile")
+    evaluation=data[data.rgb_path==eval_tile]
+    training=data[~(data.rgb_path==eval_tile)]
+    
     #Write training and evaluation data to file for annotations
-    data.to_csv("data/training/detection.csv")
+    training.to_csv("data/training/detection.csv")
     evaluation.to_csv("data/training/evaluation.csv")
         
     #log data size and set number of steps
