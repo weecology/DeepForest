@@ -449,7 +449,7 @@ def main(args=None,config=None,experiment=None):
 
     #Log number of trees trained on
     #Logs the number of train and eval "trees"
-    ntrees=[len(x) for x in train_generator.annotation_dict.values()]
+    ntrees=sum([len(x) for x in train_generator.annotation_dict.values()])
     experiment.log_parameter("Number of Trees", ntrees)
     
 if __name__ == '__main__':
@@ -498,7 +498,7 @@ if __name__ == '__main__':
     #hold out one validation tile    
     all_images=list(data.rgb_path.unique())
     eval_tile=random.sample(all_images,1)[0]
-    experiment.log_parameter(eval_tile,"Evaluation Tile")
+    experiment.log_parameter("Evaluation Tile","eval_tile")
     evaluation=data[data.rgb_path==eval_tile]
     training=data[~(data.rgb_path==eval_tile)]
     
