@@ -19,10 +19,10 @@ training_csvs: /home/b.weinstein/TreeSegmentation/analysis/Results/detection_box
 rgb_tile_dir: /orange/ewhite/NeonData/SJER/DP1.30010.001/2017/FullSite/D17/2017_SJER_2/L3/Camera/Mosaic/V02/
 
 #Number of sliding windows to select
-subsample: 20000
+subsample: 10
 snapshot: None
 batch_size: 1      
-epochs: 30
+epochs: 20
 save_snapshot_path: /orange/ewhite/b.weinstein/retinanet/snapshots/
 backbone: resnet50
 shuffle_training: False
