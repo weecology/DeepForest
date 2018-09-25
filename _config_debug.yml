@@ -14,22 +14,29 @@ preprocess:
           NDVI: False
           NDVI_Threshold: 0.1
 
+
+#Number of trees to use in training. This incudes both training and validation data. Can accept "All" for all rows, regardless of size.
+Ntrees: All
+
 #Training
 training_csvs: data/OSBS/
 rgb_tile_dir: data/OSBS/
-subsample: 1
 snapshot: snapshots/resnet50_onthefly_10.h5
 batch_size: 1      
 epochs: 1
 save_snapshot_path: snapshots/
 backbone: resnet50
 shuffle_training: True
+subsample: None
 
 #Evaluation
-validation_subsample: 100
-evaluation_tile_dir: data/OSBS/
+validation_percent: 5
+evaluation_tile_dir: data/SJER/
 save_image_path: snapshots/
 shuffle_eval: True
+
+#Hand annotations
+hand_annotations: /Users/ben/Documents/DeepForest/data/SJER/annotations/2017_SJER_2_259000_4110000_image.xml
 
 #Ground truth
 #Path, passed to glob for wildcards

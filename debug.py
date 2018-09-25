@@ -24,29 +24,47 @@ import numpy as np
 
 from keras_retinanet.utils.transform import random_transform_generator
 from keras_retinanet.utils.visualization import draw_annotations, draw_boxes
-from keras_retinanet.preprocessing import onthefly
 from keras_retinanet.utils.anchors import anchors_for_shape
 
-def create_generator(args,config):
-    """ Create generators for evaluation.
-    """
-    if  args.dataset_type == 'onthefly':
-            
-        #Replace config subsample with validation subsample. Not the best, or the worst, way to do this.
-        config["subsample"]=config["validation_subsample"]
-    
-        validation_generator=onthefly.OnTheFlyGenerator(
-                    args.annotations,
-                batch_size=args.batch_size,
-                base_dir=config["evaluation_tile_dir"],
-                config=config,
-                group_method="none",
-                shuffle_groups=False,
-                shuffle_tiles=config["shuffle_eval"])   
-    else:
-        raise ValueError('Invalid data type received: {}'.format(args.dataset_type))
+#Custom Generator
+from DeepForest.onthefly_generator import OnTheFlyGenerator
 
-    return validation_generator
+def create_generator(args,config):
+    """ Create generators for training and validation.
+    """
+    # create random transform generator for augmenting training data
+    if args.random_transform:
+        transform_generator = random_transform_generator(
+            min_rotation=-0.1,
+            max_rotation=0.1,
+            min_translation=(-0.1, -0.1),
+            max_translation=(0.1, 0.1),
+            min_shear=-0.1,
+            max_shear=0.1,
+            min_scaling=(0.9, 0.9),
+            max_scaling=(1.1, 1.1),
+            flip_x_chance=0.5,
+            flip_y_chance=0.5,
+        )
+    else:
+        transform_generator = random_transform_generator(flip_x_chance=0.5)
+
+    #Split training and test data - hardcoded paths set below.
+    train,test=preprocess.split_retraining(args.annotations,DeepForest_config)
+
+    #Training Generator
+    generator =  OnTheFlyGenerator(
+        args.annotations,
+        train,
+        batch_size=args.batch_size,
+        base_dir=DeepForest_config["rgb_tile_dir"],
+        DeepForest_config=DeepForest_config,
+        group_method="none",
+        shuffle_groups=False,
+        shuffle_tiles=DeepForest_config["shuffle_training"]            
+    )
+    
+    return(generator)
 
 
 def parse_args(args):
@@ -121,14 +139,14 @@ def run(generator, args):
     return True
 
 
-def main(config,args=None):
+def main(DeepForest_config,args=None):
     # parse arguments
     if args is None:
         args = sys.argv[1:]
     args = parse_args(args)
 
     # create the generator
-    generator = create_generator(args,config)
+    generator = create_generator(args,DeepForest_config)
 
     # create the display window
     cv2.namedWindow('Image', cv2.WINDOW_NORMAL)
@@ -141,24 +159,25 @@ def main(config,args=None):
 
 
 if __name__ == '__main__':
-    
-    
+
     import numpy as np
+    from DeepForest import preprocess    
+    from DeepForest.config import load_config        
     
-    np.random.seed(2)
-    from DeepForest.config import config    
-    from DeepForest import preprocess
+    #Load DeepForest_config file
+    DeepForest_config=load_config("retrain")
     
+    np.random.seed(2)    
     
-    #Prepare Evaluation
-    evaluation=preprocess.load_data(data_dir=config['evaluation_csvs'])
-    
+    #Load hand annotated data
+    data=preprocess.load_xml(DeepForest_config["hand_annotations"],DeepForest_config["rgb_res"])
+
     ##Preprocess Filters##
-    if config['preprocess']['zero_area']:
-        evaluation=preprocess.zero_area(evaluation)
-        
+    if DeepForest_config['preprocess']['zero_area']:
+        data=preprocess.zero_area(data)
+
     #Write training and evaluation data to file for annotations
-    evaluation.to_csv("data/training/evaluation.csv") 
+    data.to_csv("data/training/annotations.csv")
     
-    main(config=config)
+    main(DeepForest_config=DeepForest_config)
     

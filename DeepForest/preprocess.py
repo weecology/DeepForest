@@ -5,9 +5,14 @@ Loading, Standardizing and Filtering the raw data to dimish false positive label
 
 import pandas as pd
 import glob
-from .config import config
 import os
 import random
+import xmltodict
+import numpy as np
+import rasterio
+from PIL import Image
+import slidingwindow as sw
+import itertools
 
 def load_data(data_dir):
     '''
@@ -58,3 +63,141 @@ def NDVI(data,threshold,data_dir):
     #Create lower bound for NDVI   
     data=data[data.NDVI > threshold]    
     return(data)
+
+def load_xml(path,res):
+
+    #parse
+    with open(path) as fd:
+        doc = xmltodict.parse(fd.read())
+    
+    #grab objects
+    tile_xml=doc["annotation"]["object"]
+    
+    xmin=[]
+    xmax=[]
+    ymin=[]
+    ymax=[]
+    label=[]
+    
+    #Construct frame
+    for tree in tile_xml:
+        xmin.append(tree["bndbox"]["xmin"])
+        xmax.append(tree["bndbox"]["xmax"])
+        ymin.append(tree["bndbox"]["ymin"])
+        ymax.append(tree["bndbox"]["ymax"])
+        label.append(tree['name'])
+        
+    treeID=np.arange(len(tile_xml))
+    rgb_path=doc["annotation"]["filename"]
+    
+    #bounds
+    
+    #read in tile to get dimensions
+    full_path=os.path.join("data",doc["annotation"]["folder"] ,rgb_path)
+
+    with rasterio.open(full_path) as dataset:
+        bounds=dataset.bounds         
+    
+    frame=pd.DataFrame({"treeID":treeID,"xmin":xmin,"xmax":xmax,"ymin":ymin,"ymax":ymax,"rgb_path":rgb_path,"label":label,
+                        "numeric_label":1,
+                        "tile_xmin":bounds.left,
+                        "tile_xmax":bounds.right,
+                        "tile_ymin":bounds.bottom,
+                        "tile_ymax":bounds.top})
+
+    #Modify indices, which came from R, zero indexed in python
+    frame=frame.set_index(frame.index.values)
+
+    ##Match expectations of naming, no computation needed for hand annotations
+    frame['origin_xmin']=frame["xmin"]
+    frame['origin_xmax']=frame["xmax"]
+    frame['origin_ymin']=frame["ymin"]
+    frame['origin_ymax']= frame["ymax"]  
+    
+    return(frame)
+
+def load_csv(csv_data_file,res):
+    
+    #Read in data
+    data=pd.read_csv(csv_data_file,index_col=0)    
+
+    #Modify indices, which came from R, zero indexed in python
+    data=data.set_index(data.index.values-1)
+    data.numeric_label=data.numeric_label-1
+    
+    #Remove xmin==xmax
+    data=data[data.xmin!=data.xmax]    
+    data=data[data.ymin!=data.ymax]    
+
+    ##Create bounding coordinates with respect to the crop for each box
+    #Rescaled to resolution of the cells.Also note that python and R have inverse coordinate Y axis, flipped rotation.
+    data['origin_xmin']=(data['xmin']-data['tile_xmin'])/res
+    data['origin_xmax']=(data['xmin']-data['tile_xmin']+ data['xmax']-data['xmin'])/res
+    data['origin_ymin']=(data['tile_ymax']-data['ymax'])/res
+    data['origin_ymax']= (data['tile_ymax']-data['ymax']+ data['ymax'] - data['ymin'])/res  
+    
+    return(data)    
+
+def compute_windows(image,pixels=250,overlap=0.05):
+    im = Image.open(image)
+    numpy_image = np.array(im)    
+    windows = sw.generate(numpy_image, sw.DimOrder.HeightWidthChannel, pixels,overlap )
+    return(windows)
+
+def expand_grid(data_dict):
+    rows = itertools.product(*data_dict.values())
+    return pd.DataFrame.from_records(rows, columns=data_dict.keys())
+
+def split_retraining(annotations_path,config):
+    
+    '''
+    Divide windows into training and testing split. Assumes that all tiles have the same size.
+    '''
+    
+    #Read image
+    #Read annotations into pandas dataframe
+    data=load_csv(annotations_path, config["rgb_res"])
+        
+    #Compute sliding windows, assumed that all objects are the same extent and resolution
+    base_dir=config["evaluation_tile_dir"]
+    image_path=os.path.join(base_dir, data.rgb_path.unique()[0])
+    windows=compute_windows(image=image_path, pixels=config["patch_size"], overlap=config["patch_overlap"])
+    
+    #Compute Windows
+    #Create dictionary of windows for each image
+    tile_windows={}
+    
+    all_images=list(data.rgb_path.unique())
+
+    tile_windows["image"]=all_images
+    tile_windows["windows"]=np.arange(0,len(windows))
+    
+    #Expand grid
+    tile_data=expand_grid(tile_windows)
+
+    #Optionally subsample data based on config file. 
+    msk = np.random.rand(len(tile_data)) < 1-(float(config["validation_percent"])/100)
+    
+    train = tile_data[msk]
+    test=tile_data[~msk]    
+    
+    #if config["debug_subset"] == True:
+        #train=train.head(n=2)
+        #test=test.head(n=2)    
+    
+    #To increase efficiency, place in order of preserving as many windows on the same tile, but shuffle within each tile
+    groups = [df for _, df in train.groupby('image')]
+    groups=[x.sample(frac=1) for x in groups]
+    train=pd.concat(groups).reset_index(drop=True)    
+    
+    groups = [df for _, df in test.groupby('image')]
+    groups=[x.sample(frac=1) for x in groups]
+    test=pd.concat(groups).reset_index(drop=True)    
+        
+    #save for logging purposes only, TODO log to comet?
+    train.to_csv("data/training/retraining_training.csv")
+    test.to_csv("data/training/retraining_testing.csv")
+    
+    return([train.to_dict("index"),test.to_dict("index")])
+    
+    

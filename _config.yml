@@ -15,26 +15,26 @@ preprocess:
           NDVI_Threshold: 0.1
 
 #Training
-training_csvs: /home/b.weinstein/TreeSegmentation/analysis/Results/detection_boxes/HARV/
-rgb_tile_dir: /orange/ewhite/NeonData/HARV/DP1.30010.001/2017/FullSite/D01/2017_HARV_4/L3/Camera/Mosaic/V01/
+training_csvs: /home/b.weinstein/TreeSegmentation/analysis/Results/detection_boxes/SJER/
+rgb_tile_dir: /orange/ewhite/NeonData/SJER/DP1.30010.001/2017/FullSite/D17/2017_SJER_2/L3/Camera/Mosaic/V02/
 
 #Number of sliding windows to select
-subsample: 5000
+subsample: 20000
 snapshot: None
 batch_size: 1      
-epochs: 10
-save_snapshot_path: None
+epochs: 30
+save_snapshot_path: /orange/ewhite/b.weinstein/retinanet/snapshots/
 backbone: resnet50
-shuffle_training: True
+shuffle_training: False
 
 #Evaluation
-evaluation_csvs: /home/b.weinstein/TreeSegmentation/analysis/Results/detection_boxes/HARV/
-evaluation_tile_dir: /orange/ewhite/NeonData/HARV/DP1.30010.001/2017/FullSite/D01/2017_HARV_4/L3/Camera/Mosaic/V01/
+evaluation_csvs: /home/b.weinstein/TreeSegmentation/analysis/Results/detection_boxes/SJER/
+evaluation_tile_dir: /orange/ewhite/NeonData/SJER/DP1.30010.001/2017/FullSite/D17/2017_SJER_2/L3/Camera/Mosaic/V02/
 
 #Number of sliding windows to select for evaluation
 validation_subsample: 50
 save_image_path: snapshots/
-shuffle_eval: True
+shuffle_eval: False
 
 #Ground truth
 #Path, passed to glob for wildcards

@@ -52,7 +52,9 @@ from keras_retinanet .utils.anchors import make_shapes_callback, anchor_targets_
 from keras_retinanet .utils.keras_version import check_keras_version
 from keras_retinanet .utils.model import freeze as freeze_model
 from keras_retinanet .utils.transform import random_transform_generator
-from keras_retinanet.preprocessing import onthefly
+
+#Custom Generator
+from DeepForest.onthefly_generator import OnTheFlyGenerator
 
 def makedirs(path):
     # Intended behavior: try to create the directory,
@@ -128,7 +130,7 @@ def create_models(backbone_retinanet, num_classes, weights, multi_gpu=0, freeze_
     return model, training_model, prediction_model
 
 
-def create_callbacks(model, training_model, prediction_model, validation_generator, args,experiment,config):
+def create_callbacks(model, training_model, prediction_model, validation_generator, args,experiment,DeepForest_config):
     """ Creates the callbacks to use during training.
 
     Args
@@ -166,7 +168,7 @@ def create_callbacks(model, training_model, prediction_model, validation_generat
             # use prediction model for evaluation
             evaluation = CocoEval(validation_generator, tensorboard=tensorboard_callback)
         else:
-            evaluation = Evaluate(validation_generator, tensorboard=tensorboard_callback,experiment=experiment,save_path=args.save_path,score_threshold=args.score_threshold,config=config)
+            evaluation = Evaluate(validation_generator, tensorboard=tensorboard_callback,experiment=experiment,save_path=args.save_path,score_threshold=args.score_threshold,DeepForest_config=DeepForest_config)
         evaluation = RedirectModel(evaluation, prediction_model)
         callbacks.append(evaluation)
 
@@ -201,7 +203,7 @@ def create_callbacks(model, training_model, prediction_model, validation_generat
     return callbacks
 
 
-def create_generators(args,config):
+def create_generators(args,DeepForest_config):
     """ Create generators for training and validation.
     """
     # create random transform generator for augmenting training data
@@ -243,28 +245,28 @@ def create_generators(args,config):
             validation_generator = None
 
     elif args.dataset_type == 'onthefly':
-        train_generator = onthefly.OnTheFlyGenerator(
+        train_generator = OnTheFlyGenerator(
             args.annotations,
             batch_size=args.batch_size,
-            base_dir=config["rgb_tile_dir"],
-            config=config,
+            base_dir=DeepForest_config["rgb_tile_dir"],
+            DeepForest_config=DeepForest_config,
             group_method="none",
             shuffle_groups=False,
-            shuffle_tiles=config["shuffle_training"]            
+            shuffle_tiles=DeepForest_config["shuffle_training"]            
         )
         if args.val_annotations:
             
-            #Replace config subsample with validation subsample. Not the best, or the worst, way to do this.
-            config["subsample"]=config["validation_subsample"]
+            #Replace DeepForest_config subsample with validation subsample. Not the best, or the worst, way to do this.
+            DeepForest_config["subsample"]=DeepForest_config["validation_subsample"]
             
             validation_generator=onthefly.OnTheFlyGenerator(
             args.val_annotations,
             batch_size=args.batch_size,
-            base_dir=config["evaluation_tile_dir"],
-            config=config,
+            base_dir=DeepForest_config["evaluation_tile_dir"],
+            DeepForest_config=DeepForest_config,
             group_method="none",
             shuffle_groups=False,
-            shuffle_tiles=config["shuffle_eval"]
+            shuffle_tiles=DeepForest_config["shuffle_eval"]
         )
         else:
             validation_generator=None
@@ -316,22 +318,10 @@ def parse_args(args):
     def csv_list(string):
         return string.split(',')
 
-    oid_parser = subparsers.add_parser('oid')
-    oid_parser.add_argument('main_dir', help='Path to dataset directory.')
-    oid_parser.add_argument('--version',  help='The current dataset version is v4.', default='v4')
-    oid_parser.add_argument('--labels-filter',  help='A list of labels to filter.', type=csv_list, default=None)
-    oid_parser.add_argument('--annotation-cache-dir', help='Path to store annotation cache.', default='.')
-    oid_parser.add_argument('--fixed-labels', help='Use the exact specified labels.', default=False)
-
     #On the fly parser
     csv_parser = subparsers.add_parser('onthefly')
     csv_parser.add_argument('annotations', help='Path to CSV file containing annotations for training.')
     csv_parser.add_argument('val_annotations', help='Path to CSV file containing annotations for validation.')
-    
-    csv_parser = subparsers.add_parser('csv')
-    csv_parser.add_argument('annotations', help='Path to CSV file containing annotations for training.')
-    csv_parser.add_argument('classes', help='Path to a CSV file containing class label mapping.')
-    csv_parser.add_argument('--val_annotations', help='Path to CSV file containing annotations for validation (optional).')
 
     group = parser.add_mutually_exclusive_group()
     group.add_argument('--snapshot',          help='Resume training from a snapshot.')
@@ -362,7 +352,7 @@ def parse_args(args):
     return check_args(parser.parse_args(args))
 
 
-def main(args=None,config=None,experiment=None):
+def main(args=None,DeepForest_config=None,experiment=None):
     # parse arguments
     if args is None:
         args = sys.argv[1:]
@@ -380,14 +370,14 @@ def main(args=None,config=None,experiment=None):
     keras.backend.tensorflow_backend.set_session(get_session())
 
     # create the generators
-    train_generator, validation_generator = create_generators(args,config)
+    train_generator, validation_generator = create_generators(args,DeepForest_config)
     
     # create the model
     if args.snapshot is not None:
         print('Loading model, this may take a secondkeras-retinanet .')
         model            = models.load_model(args.snapshot, backbone_name=args.backbone)
         training_model   = model
-        prediction_model = retinanet_bbox(model=model,nms_threshold=config["nms_threshold"])
+        prediction_model = retinanet_bbox(model=model,nms_threshold=DeepForest_config["nms_threshold"])
     else:
         weights = args.weights
         # default to imagenet if nothing else is specified
@@ -401,7 +391,7 @@ def main(args=None,config=None,experiment=None):
             weights=weights,
             multi_gpu=args.multi_gpu,
             freeze_backbone=args.freeze_backbone,
-            nms_threshold=config["nms_threshold"]
+            nms_threshold=DeepForest_config["nms_threshold"]
         )
 
     # print model summary
@@ -422,12 +412,8 @@ def main(args=None,config=None,experiment=None):
         validation_generator,
         args,
         experiment,
-        config
+        DeepForest_config
     )
-    
-    #Log
-    experiment.log_dataset_hash(train_generator.image_data)
-    experiment.log_dataset_hash(validation_generator.image_data)    
 
     matched=[]
     for entry in validation_generator.image_data.values():
@@ -467,32 +453,35 @@ if __name__ == '__main__':
     import glob
     import numpy as np
     from datetime import datetime
-    from DeepForest.config import config
+    from DeepForest.config import load_config
+    
+    DeepForest_config=load_config("train")
+    
     from DeepForest import preprocess
     import random
     
     #save time for logging
     dirname=datetime.now().strftime("%Y%m%d_%H%M%S")
     
-    #set experiment and log configs
+    #set experiment and log DeepForest_configs
     experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2",project_name='deepforest-retinanet')
-    experiment.log_multiple_params(config)
+    experiment.log_multiple_params(DeepForest_config)
     experiment.log_parameter("Start Time", dirname)
     
     #Log site
-    site=os.path.split(os.path.normpath(config["training_csvs"]))[1]
+    site=os.path.split(os.path.normpath(DeepForest_config["training_csvs"]))[1]
     experiment.log_parameter("Site", site)
     
     #Set seed for reproducibility
-    if not config["shuffle_eval"]:
+    if not DeepForest_config["shuffle_eval"]:
         np.random.seed(2)
     
     #Load data and combine into a large frame
     #Training
-    data=preprocess.load_data(data_dir=config['training_csvs'])
+    data=preprocess.load_data(data_dir=DeepForest_config['training_csvs'])
     
     ##Preprocess Filters##
-    if config['preprocess']['zero_area']:
+    if DeepForest_config['preprocess']['zero_area']:
         data=preprocess.zero_area(data)
     
     #hold out one validation tile    
@@ -507,46 +496,46 @@ if __name__ == '__main__':
     evaluation.to_csv("data/training/evaluation.csv")
         
     #log data size and set number of steps
-    if not config["subsample"] == "None":
-        experiment.log_parameter("training_samples", config["subsample"])
-        steps=config["subsample"]/config['batch_size']
+    if not DeepForest_config["subsample"] == "None":
+        experiment.log_parameter("training_samples", DeepForest_config["subsample"])
+        steps=DeepForest_config["subsample"]/DeepForest_config['batch_size']
     else:
         experiment.log_parameter("training_samples", data.shape[0])
-        steps=data.shape[0]/config['batch_size']
+        steps=data.shape[0]/DeepForest_config['batch_size']
             
     #pass an args object instead of using command line    
     args = [
-        "--epochs",str(config["epochs"]),
-        "--batch-size",str(config['batch_size']),
+        "--epochs",str(DeepForest_config["epochs"]),
+        "--batch-size",str(DeepForest_config['batch_size']),
         "--steps",str(int(steps)),
-        "--backbone",str(config["backbone"]),
+        "--backbone",str(DeepForest_config["backbone"]),
         'onthefly',"data/training/detection.csv",
         "data/training/evaluation.csv",
             ]
     
     #Create log directory if saving snapshots
-    if not config["save_snapshot_path"]=="None":
-        snappath=config["save_snapshot_path"]+ dirname
+    if not DeepForest_config["save_snapshot_path"]=="None":
+        snappath=DeepForest_config["save_snapshot_path"]+ dirname
         os.mkdir(snappath)
         
         #Log to comet
         experiment.log_parameter("snapshot_dir",snappath)        
     
     #if no snapshots, add arg to front, will ignore path above
-    if config["save_snapshot_path"]=="None":
+    if DeepForest_config["save_snapshot_path"]=="None":
         args=["--no-snapshots"] + args
     else:
         args=[snappath] + args
         args=["--snapshot-path"] + args
         
     #Restart from a preview snapshot?
-    if not config["snapshot"]=="None":
-        args= [config["snapshot"]] + args
+    if not DeepForest_config["snapshot"]=="None":
+        args= [DeepForest_config["snapshot"]] + args
         args=["--snapshot"] + args
         
     #Create log directory if saving eval images, add to arguments
-    if not config["save_image_path"]=="None":
-        save_image_path=config["save_image_path"]+ dirname
+    if not DeepForest_config["save_image_path"]=="None":
+        save_image_path=DeepForest_config["save_image_path"]+ dirname
         if not os.path.exists(save_image_path):
             os.mkdir(save_image_path)
         
@@ -554,5 +543,5 @@ if __name__ == '__main__':
         args=["--save-path"] + args        
         
     #Run training, and pass comet experiment   
-    main(args,config,experiment)
+    main(args,DeepForest_config,experiment)
 
