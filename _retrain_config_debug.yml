@@ -1,0 +1,39 @@
+#Config file for DeepMeerkat train.py on local OSX
+
+#SlidingWindow
+patch_size: 250
+patch_overlap: 0.05
+rgb_res: 0.1
+
+#Preprocessing routines
+preprocess:
+          zero_area: True
+
+#Hand annotations
+hand_annotations: /Users/ben/Documents/DeepForest/data/SJER/annotations/2017_SJER_2_259000_4110000_image.xml
+
+#Training
+rgb_tile_dir: /Users/ben/Documents/DeepForest/data/SJER/
+snapshot: snapshots/resnet50_onthefly_10.h5
+batch_size: 1      
+epochs: 1
+save_snapshot_path: snapshots/
+backbone: resnet50
+shuffle_training: True
+#Non-max suppression, threshold for the IoU value to determine when a box should be suppressed.
+nms_threshold: 0.5   
+
+#Evaluation
+validation_percent: 50
+evaluation_tile_dir: /Users/ben/Documents/DeepForest/data/SJER/
+save_image_path: snapshots/
+shuffle_eval: True
+
+#Ground truth
+#Path, passed to glob for wildcards
+itc_path: /Users/ben/Documents/TreeSegmentation/data/ITCs/*/*.shp
+itc_tile_path: /Users/ben/Documents/TreeSegmentation/data/2017/Camera/L3/
+
+
+#Debug - select just a couple images to run a toy model
+debug_subset: True
