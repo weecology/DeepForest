@@ -22,8 +22,8 @@ batch_size: 1
 epochs: 1
 save_snapshot_path: snapshots/
 backbone: resnet50
-shuffle_training: True
-training_images: All
+shuffle_training: False
+training_images: 10
 
 #Evaluation
 evaluation_images: All

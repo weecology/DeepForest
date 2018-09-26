@@ -49,11 +49,6 @@ def zero_area(data):
     data=data[data.xmin!=data.xmax]    
     return(data)
 
-#Allometry of height to tree size
-def allometry(data):
-    pass
-
-
 #Filter by ndvi threshold
 def NDVI(data,threshold,data_dir):
     
@@ -171,6 +166,10 @@ def split_training(annotations_path,DeepForest_config,experiment,single_tile=Fal
     #For retraining there is only a single tile
     if single_tile:
         
+        #Shuffle data if needed
+        if DeepForest_config["shuffle_training"]:
+            tile_data.sample(frac=1)
+            
         #Split training and testing
         msk = np.random.rand(len(tile_data)) < 1-(float(DeepForest_config["validation_percent"])/100)
                 
@@ -191,9 +190,14 @@ def split_training(annotations_path,DeepForest_config,experiment,single_tile=Fal
         
         if not DeepForest_config["training_images"]=="All":
             
+            #Shuffle if desired
+            if DeepForest_config["shuffle_training"]:
+                training.sample(frac=1)
+                
             #Select first n windows, reorder to preserve tile order.
             training=training.head(n=config["training_images"])
             groups = [df for _, df in training.groupby('image')]
+            
             groups=[x.sample(frac=1) for x in groups]
             training=pd.concat(groups).reset_index(drop=True)
         
