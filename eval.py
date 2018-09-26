@@ -41,31 +41,44 @@ from keras_retinanet.preprocessing import onthefly
 def get_session():
     """ Construct a modified tf session.
     """
-    config = tf.ConfigProto()
-    config.gpu_options.allow_growth = True
-    return tf.Session(config=config)
+    DeepForest_config = tf.DeepForest_configProto()
+    DeepForest_config.gpu_options.allow_growth = True
+    return tf.Session(DeepForest_config=DeepForest_config)
 
-def create_generator(args,config):
-    """ Create generators for evaluation.
+def create_generator(args,DeepForest_config):
+    """ Create generators for training and validation.
     """
-    if  args.dataset_type == 'onthefly':
-            
-        #Replace config subsample with validation subsample. Not the best, or the worst, way to do this.
-        config["subsample"]=config["validation_subsample"]
-    
-        validation_generator=onthefly.OnTheFlyGenerator(
-                    args.annotations,
-                batch_size=args.batch_size,
-                base_dir=config["evaluation_tile_dir"],
-                config=config,
-                group_method="none",
-                shuffle_groups=False,
-                shuffle_tiles=config["shuffle_eval"])   
+    # create random transform generator for augmenting training data
+    if args.random_transform:
+        transform_generator = random_transform_generator(
+            min_rotation=-0.1,
+            max_rotation=0.1,
+            min_translation=(-0.1, -0.1),
+            max_translation=(0.1, 0.1),
+            min_shear=-0.1,
+            max_shear=0.1,
+            min_scaling=(0.9, 0.9),
+            max_scaling=(1.1, 1.1),
+            flip_x_chance=0.5,
+            flip_y_chance=0.5,
+        )
     else:
-        raise ValueError('Invalid data type received: {}'.format(args.dataset_type))
+        transform_generator = random_transform_generator(flip_x_chance=0.5)
 
-    return validation_generator
+    #Split training and test data - hardcoded paths set below.
+    train,test=preprocess.split_training(args.annotations,DeepForest_DeepForest_config,single_tile=True,experiment=None)
 
+    #Training Generator
+    generator =  OnTheFlyGenerator(
+        args.annotations,
+        train,
+        batch_size=args.batch_size,
+        base_dir=DeepForest_DeepForest_config["rgb_tile_dir"],
+        DeepForest_DeepForest_config=DeepForest_DeepForest_config,
+        group_method="none",
+        shuffle_groups=False)
+    
+    return(generator)
 
 def parse_args(args):
     """ Parse the arguments.
@@ -95,7 +108,7 @@ def parse_args(args):
     return parser.parse_args(args)
 
 
-def main(config,experiment,args=None):
+def main(DeepForest_config,experiment,args=None):
     # parse arguments
     if args is None:
         args = sys.argv[1:]
@@ -119,7 +132,7 @@ def main(config,experiment,args=None):
         os.makedirs(args.save_path + dirname)
 
     # create the generator
-    generator = create_generator(args,config)
+    generator = create_generator(args,DeepForest_config)
 
     # load the model
     print('Loading model, this may take a second...')
@@ -127,46 +140,47 @@ def main(config,experiment,args=None):
 
     print(model.summary())
 
-    #average_precisions = evaluate(
-        #generator,
-        #model,
-        #iou_threshold=args.iou_threshold,
-        #score_threshold=args.score_threshold,
-        #max_detections=args.max_detections,
-        #save_path=args.save_path + dirname
-    #)
+    average_precisions = evaluate(
+        generator,
+        model,
+        iou_threshold=args.iou_threshold,
+        score_threshold=args.score_threshold,
+        max_detections=args.max_detections,
+        save_path=args.save_path + dirname
+    )
 
-    ## print evaluation
-    #present_classes = 0
-    #precision = 0
-    #for label, (average_precision, num_annotations) in average_precisions.items():
-        #print('{:.0f} instances of class'.format(num_annotations),
-              #generator.label_to_name(label), 'with average precision: {:.4f}'.format(average_precision))
-        #if num_annotations > 0:
-            #present_classes += 1
-            #precision       += average_precision
-    #print('mAP: {:.4f}'.format(precision / present_classes))
-    #experiment.log_metric("mAP", precision / present_classes)    
+    # print evaluation
+    present_classes = 0
+    precision = 0
+    for label, (average_precision, num_annotations) in average_precisions.items():
+        print('{:.0f} instances of class'.format(num_annotations),
+              generator.label_to_name(label), 'with average precision: {:.4f}'.format(average_precision))
+        if num_annotations > 0:
+            present_classes += 1
+            precision       += average_precision
+    print('mAP: {:.4f}'.format(precision / present_classes))
+    experiment.log_metric("mAP", precision / present_classes)    
 
-    ##Use field collected polygons only for Florida site
-    #if site == "OSBS":
+    #Use field collected polygons only for Florida site
+    if site == "OSBS":
 
-        ##Ground truth scores
-        #jaccard_scores = JaccardEvaluate(
-            #generator,
-            #model,
-            #iou_threshold=args.iou_threshold,
-            #score_threshold=args.score_threshold,
-            #max_detections=args.max_detections,
-            #suppression_threshold=args.suppression_threshold,
-            #save_path=args.save_path + dirname,
-            #experiment=experiment,
-            #config=config
-        #)
+        #Ground truth scores
+        jaccard_scores = JaccardEvaluate(
+            generator,
+            model,
+            iou_threshold=args.iou_threshold,
+            score_threshold=args.score_threshold,
+            max_detections=args.max_detections,
+            suppression_threshold=args.suppression_threshold,
+            save_path=args.save_path + dirname,
+            experiment=experiment,
+            DeepForest_config=DeepForest_config
+        )
         
-        #print("Mean IoU = %.3f" % (jaccard_scores))
-        ##Log results
-        #experiment.log_metric("Mean IoU", jaccard_scores)    
+        print("Mean IoU = %.3f" % (jaccard_scores))
+        
+        #Log results
+        experiment.log_metric("Mean IoU", jaccard_scores)    
         
     ##Neon plot recall rate
     recall = neonRecall(
@@ -179,7 +193,7 @@ def main(config,experiment,args=None):
         suppression_threshold=args.suppression_threshold,
         save_path=args.save_path + dirname,
         experiment=experiment,
-        config=config
+        DeepForest_config=DeepForest_config
     )    
     
     print(f" Recall: {recall:.2f}")
@@ -189,31 +203,42 @@ def main(config,experiment,args=None):
     #Logs the number of train and eval "trees"
     ntrees=[len(x) for x in generator.annotation_dict.values()]
     experiment.log_parameter("Number of Trees", ntrees)    
-
+    
 if __name__ == '__main__':
     
+    import os
+    import pandas as pd
+    import glob
     import numpy as np
+    from datetime import datetime
     
-    np.random.seed(2)
-    from DeepForest.config import config    
+    from DeepForest.config import load_config
     from DeepForest import preprocess
-    
+
+    #Load DeepForest_config file
+    DeepForest_config=load_config("train")
+
+    #save time for logging
+    dirname=datetime.now().strftime("%Y%m%d_%H%M%S")
+
     #set experiment and log configs
     experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2",project_name='deepforest-retinanet')
-    experiment.log_multiple_params(config)
-    
+    experiment.log_multiple_params(DeepForest_config)
+    experiment.log_parameter("Start Time", dirname)
+
     #Log site
-    site=os.path.split(os.path.normpath(config["training_csvs"]))[1]
+    site=os.path.split(os.path.normpath(DeepForest_config["evaluation_tile_dir"]))[1]
     experiment.log_parameter("Site", site)
-    
-    #Prepare Evaluation
-    evaluation=preprocess.load_data(data_dir=config['evaluation_csvs'])
-    
+
+    #Load hand annotated data
+    data=preprocess.load_data(DeepForest_config["training_csvs"],DeepForest_config["rgb_res"])
+
     ##Preprocess Filters##
-    if config['preprocess']['zero_area']:
-        evaluation=preprocess.zero_area(evaluation)
-        
+    if DeepForest_config['preprocess']['zero_area']:
+        data=preprocess.zero_area(data)
+
     #Write training and evaluation data to file for annotations
-    evaluation.to_csv("data/training/evaluation.csv") 
-    
-    main(config,experiment)
+    data.to_csv("data/training/evaluation.csv")
+
+    #Run training, and pass comet experiment   
+    main(DeepForest_config,experiment)
