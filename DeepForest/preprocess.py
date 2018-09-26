@@ -180,7 +180,10 @@ def split_training(annotations_path,DeepForest_config,experiment,single_tile=Fal
         
         #select a validation tile, record in log.
         eval_tile=random.sample(all_images,1)[0]
-        experiment.log_parameter(eval_tile,"Evaluation Tile")
+        
+        #Log if not debugging.
+        if experiment:
+            experiment.log_parameter(eval_tile,"Evaluation Tile")
         
         #Split data based on samples
         evaluation=tile_data[tile_data.image==eval_tile]

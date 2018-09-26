@@ -314,5 +314,5 @@ class OnTheFlyGenerator(Generator):
         #boxes=boxes.astype(float)
         
         #TODO test that the error is here.
-        return np.zeros((0, 5))
+        return boxes
     
