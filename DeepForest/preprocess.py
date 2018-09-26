@@ -183,8 +183,8 @@ def split_training(annotations_path,DeepForest_config,experiment,single_tile=Fal
         experiment.log_parameter(eval_tile,"Evaluation Tile")
         
         #Split data based on samples
-        evaluation=data[data.rgb_path==eval_tile]
-        training=data[~(data.rgb_path==eval_tile)]
+        evaluation=tile_data[tile_data.image==eval_tile]
+        training=tile_data[~(tile_data.image==eval_tile)]
         
         if not DeepForest_config["training_images"]=="All":
             
