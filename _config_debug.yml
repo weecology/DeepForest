@@ -1,7 +1,7 @@
 #Config file for DeepMeerkat train.py on local OSX
 
 #SlidingWindow
-patch_size: 250
+patch_size: 400
 patch_overlap: 0.05
 rgb_res: 0.1
 
@@ -13,10 +13,6 @@ preprocess:
           zero_area: True
           NDVI: False
           NDVI_Threshold: 0.1
-
-
-#Number of trees to use in training. This incudes both training and validation data. Can accept "All" for all rows, regardless of size.
-Ntrees: All
 
 #Training
 training_csvs: data/OSBS/

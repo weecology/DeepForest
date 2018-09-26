@@ -50,7 +50,7 @@ def create_generator(args,config):
         transform_generator = random_transform_generator(flip_x_chance=0.5)
 
     #Split training and test data - hardcoded paths set below.
-    train,test=preprocess.split_training(args.annotations,DeepForest_config,experiment=None)
+    train,test=preprocess.split_training(args.annotations,DeepForest_config,single_tile=True,experiment=None)
 
     #Training Generator
     generator =  OnTheFlyGenerator(
@@ -60,9 +60,7 @@ def create_generator(args,config):
         base_dir=DeepForest_config["rgb_tile_dir"],
         DeepForest_config=DeepForest_config,
         group_method="none",
-        shuffle_groups=False,
-        shuffle_tiles=DeepForest_config["shuffle_training"]            
-    )
+        shuffle_groups=False)
     
     return(generator)
 
@@ -165,12 +163,12 @@ if __name__ == '__main__':
     from DeepForest.config import load_config        
     
     #Load DeepForest_config file
-    DeepForest_config=load_config("train")
+    DeepForest_config=load_config("retrain")
     
     np.random.seed(2)    
     
     #Load hand annotated data
-    data=preprocess.load_data(DeepForest_config["training_csvs"],DeepForest_config["rgb_res"])
+    data=preprocess.load_xml(DeepForest_config["hand_annotations"],DeepForest_config["rgb_res"])
 
     ##Preprocess Filters##
     if DeepForest_config['preprocess']['zero_area']:
