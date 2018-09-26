@@ -27,7 +27,10 @@ nms_threshold: 0.5
 
 #Evaluation
 evaluation_images: All
+
+#Only used for single_tile, TODO hardcode this?
 validation_percent: 50
+
 evaluation_tile_dir: /home/b.weinstein/DeepForest/data/SJER/
 save_image_path: /orange/ewhite/b.weinstein/retinanet/snapshots/
 
@@ -35,6 +38,3 @@ save_image_path: /orange/ewhite/b.weinstein/retinanet/snapshots/
 #Path, passed to glob for wildcards
 itc_path: /Users/ben/Documents/TreeSegmentation/data/ITCs/*/*.shp
 itc_tile_path: /Users/ben/Documents/TreeSegmentation/data/2017/Camera/L3/
-
-#Debug - select just a couple images to run a toy model
-debug_subset: False

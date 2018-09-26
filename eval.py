@@ -159,7 +159,7 @@ def main(DeepForest_config,experiment,args=None):
             score_threshold=args.score_threshold,
             save_path=args.save_path,
             experiment=experiment,
-            DeepForest_config=self.DeepForest_config
+            DeepForest_config=DeepForest_config
         )
         print(f" Mean IoU: {jaccard:.2f}")
         
