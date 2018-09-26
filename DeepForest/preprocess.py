@@ -114,7 +114,7 @@ def load_xml(path,res):
         bounds=dataset.bounds         
     
     frame=pd.DataFrame({"treeID":treeID,"xmin":xmin,"xmax":xmax,"ymin":ymin,"ymax":ymax,"rgb_path":rgb_path,"label":label,
-                        "numeric_label":1,
+                        "numeric_label":0,
                         "tile_xmin":bounds.left,
                         "tile_xmax":bounds.right,
                         "tile_ymin":bounds.bottom,

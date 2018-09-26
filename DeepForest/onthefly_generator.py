@@ -312,6 +312,5 @@ class OnTheFlyGenerator(Generator):
         if not boxes.dtype==np.float64:   
             boxes=boxes.astype("float64")
         
-        #TODO test that the error is here.
         return boxes
     
