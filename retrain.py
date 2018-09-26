@@ -224,7 +224,7 @@ def create_generators(args,DeepForest_config):
         transform_generator = random_transform_generator(flip_x_chance=0.5)
 
     #Split training and test data - hardcoded paths set below.
-    train,test=preprocess.split_retraining(args.annotations,DeepForest_config)
+    train,test=preprocess.split_training(args.annotations,DeepForest_config,single_tile=True,experiment=experiment)
 
     #Training Generator
     train_generator = OnTheFlyGenerator(
@@ -421,7 +421,7 @@ if __name__ == '__main__':
     #See https://github.com/weecology/DeepForest
     
     '''
-    Training script for DeepForest.
+    Re-training script for DeepForest.
     Ben Weinstein - ben.weinstein@weecology.org
     Load data, partition into training and testing, and evaluate deep learning model
     '''    

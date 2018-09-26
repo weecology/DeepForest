@@ -223,55 +223,33 @@ def create_generators(args,DeepForest_config):
     else:
         transform_generator = random_transform_generator(flip_x_chance=0.5)
 
-    if args.dataset_type == 'csv':
-        train_generator = CSVGenerator(
-            args.annotations,
-            args.classes,
-            transform_generator=transform_generator,
-            batch_size=args.batch_size,
-            image_min_side=args.image_min_side,
-            image_max_side=args.image_max_side
-        )
+    #Split training and test data - hardcoded paths set below.
+    train,test=preprocess.split_training(args.annotations,DeepForest_config,single_tile=False,experiment=experiment)
 
-        if args.val_annotations:
-            validation_generator = CSVGenerator(
-                args.val_annotations,
-                args.classes,
-                batch_size=args.batch_size,
-                image_min_side=args.image_min_side,
-                image_max_side=args.image_max_side
-            )
-        else:
-            validation_generator = None
+    #Training Generator
+    train_generator = OnTheFlyGenerator(
+        args.annotations,
+        train,
+        batch_size=args.batch_size,
+        base_dir=DeepForest_config["rgb_tile_dir"],
+        DeepForest_config=DeepForest_config,
+        group_method="none",
+        shuffle_groups=False,
+        shuffle_tiles=DeepForest_config["shuffle_training"]            
+    )
 
-    elif args.dataset_type == 'onthefly':
-        train_generator = OnTheFlyGenerator(
-            args.annotations,
-            batch_size=args.batch_size,
-            base_dir=DeepForest_config["rgb_tile_dir"],
-            DeepForest_config=DeepForest_config,
-            group_method="none",
-            shuffle_groups=False,
-            shuffle_tiles=DeepForest_config["shuffle_training"]            
-        )
-        if args.val_annotations:
-            
-            #Replace DeepForest_config subsample with validation subsample. Not the best, or the worst, way to do this.
-            DeepForest_config["subsample"]=DeepForest_config["validation_subsample"]
-            
-            validation_generator=onthefly.OnTheFlyGenerator(
-            args.val_annotations,
-            batch_size=args.batch_size,
-            base_dir=DeepForest_config["evaluation_tile_dir"],
-            DeepForest_config=DeepForest_config,
-            group_method="none",
-            shuffle_groups=False,
-            shuffle_tiles=DeepForest_config["shuffle_eval"]
-        )
-        else:
-            validation_generator=None
-    else:
-        raise ValueError('Invalid data type received: {}'.format(args.dataset_type))
+    #Validation Generator        
+
+    validation_generator=OnTheFlyGenerator(
+    args.annotations,
+    test,
+    batch_size=args.batch_size,
+    base_dir=DeepForest_config["evaluation_tile_dir"],
+    DeepForest_config=DeepForest_config,
+    group_method="none",
+    shuffle_groups=False,
+    shuffle_tiles=DeepForest_config["shuffle_eval"]
+)
 
     return train_generator, validation_generator
 
@@ -321,8 +299,7 @@ def parse_args(args):
     #On the fly parser
     csv_parser = subparsers.add_parser('onthefly')
     csv_parser.add_argument('annotations', help='Path to CSV file containing annotations for training.')
-    csv_parser.add_argument('val_annotations', help='Path to CSV file containing annotations for validation.')
-
+    
     group = parser.add_mutually_exclusive_group()
     group.add_argument('--snapshot',          help='Resume training from a snapshot.')
     group.add_argument('--imagenet-weights',  help='Initialize the model with pretrained imagenet weights. This is the default behaviour.', action='store_const', const=True, default=True)
@@ -335,7 +312,6 @@ def parse_args(args):
     parser.add_argument('--multi-gpu',       help='Number of GPUs to use for parallel processing.', type=int, default=0)
     parser.add_argument('--multi-gpu-force', help='Extra flag needed to enable (experimental) multi-gpu support.', action='store_true')
     parser.add_argument('--epochs',          help='Number of epochs to train.', type=int, default=50)
-    parser.add_argument('--steps',           help='Number of steps per epoch.', type=int, default=10000)
     parser.add_argument('--snapshot-path',   help='Path to store snapshots of models during training (defaults to \'./snapshots\')', default='./snapshots')
     parser.add_argument('--tensorboard-dir', help='Log directory for Tensorboard output', default='./logs')
     parser.add_argument('--no-snapshots',    help='Disable saving snapshots.', dest='snapshots', action='store_false')
@@ -370,11 +346,11 @@ def main(args=None,DeepForest_config=None,experiment=None):
     keras.backend.tensorflow_backend.set_session(get_session())
 
     # create the generators
-    train_generator, validation_generator = create_generators(args,DeepForest_config)
+    train_generator, validation_generator = create_generators(args,DeepForest_config=DeepForest_config)
     
     # create the model
     if args.snapshot is not None:
-        print('Loading model, this may take a secondkeras-retinanet .')
+        print('Loading model, this may take a secondkeras-retinanet.\n')
         model            = models.load_model(args.snapshot, backbone_name=args.backbone)
         training_model   = model
         prediction_model = retinanet_bbox(model=model,nms_threshold=DeepForest_config["nms_threshold"])
@@ -414,7 +390,7 @@ def main(args=None,DeepForest_config=None,experiment=None):
         experiment,
         DeepForest_config
     )
-
+    
     matched=[]
     for entry in validation_generator.image_data.values():
         test=entry in train_generator.image_data.values() 
@@ -427,7 +403,7 @@ def main(args=None,DeepForest_config=None,experiment=None):
     # start training
     training_model.fit_generator(
         generator=train_generator,
-        steps_per_epoch=args.steps,
+        steps_per_epoch=train_generator.size()/DeepForest_config["batch_size"],
         epochs=args.epochs,
         verbose=1,
         callbacks=callbacks,
@@ -436,112 +412,81 @@ def main(args=None,DeepForest_config=None,experiment=None):
     #Log number of trees trained on
     #Logs the number of train and eval "trees"
     ntrees=sum([len(x) for x in train_generator.annotation_dict.values()])
-    experiment.log_parameter("Number of Trees", ntrees)
+    experiment.log_parameter("Number of Training Trees", ntrees)
     
 if __name__ == '__main__':
     
-    ## DeepForest args
-    #See https://github.com/weecology/DeepForest
-    
-    '''
-    Training script for DeepForest.
-    Ben Weinstein - ben.weinstein@weecology.org
-    Load data, partition into training and testing, and evaluate deep learning model
-    '''    
     import os
     import pandas as pd
     import glob
     import numpy as np
     from datetime import datetime
     from DeepForest.config import load_config
-    
+
+    #Load DeepForest_config file
     DeepForest_config=load_config("train")
-    
+
     from DeepForest import preprocess
     import random
-    
+
     #save time for logging
     dirname=datetime.now().strftime("%Y%m%d_%H%M%S")
-    
-    #set experiment and log DeepForest_configs
+
+    #set experiment and log configs
     experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2",project_name='deepforest-retinanet')
     experiment.log_multiple_params(DeepForest_config)
     experiment.log_parameter("Start Time", dirname)
-    
+
     #Log site
-    site=os.path.split(os.path.normpath(DeepForest_config["training_csvs"]))[1]
+    site=os.path.split(os.path.normpath(DeepForest_config["evaluation_tile_dir"]))[1]
     experiment.log_parameter("Site", site)
-    
-    #Set seed for reproducibility
-    if not DeepForest_config["shuffle_eval"]:
-        np.random.seed(2)
-    
-    #Load data and combine into a large frame
-    #Training
-    data=preprocess.load_data(data_dir=DeepForest_config['training_csvs'])
-    
+
+    #Load hand annotated data
+    data=preprocess.load_data(DeepForest_config["training_csvs"],DeepForest_config["rgb_res"])
+
     ##Preprocess Filters##
     if DeepForest_config['preprocess']['zero_area']:
         data=preprocess.zero_area(data)
-    
-    #hold out one validation tile    
-    all_images=list(data.rgb_path.unique())
-    eval_tile=random.sample(all_images,1)[0]
-    experiment.log_parameter("Evaluation Tile","eval_tile")
-    evaluation=data[data.rgb_path==eval_tile]
-    training=data[~(data.rgb_path==eval_tile)]
-    
+
     #Write training and evaluation data to file for annotations
-    training.to_csv("data/training/detection.csv")
-    evaluation.to_csv("data/training/evaluation.csv")
-        
-    #log data size and set number of steps
-    if not DeepForest_config["subsample"] == "None":
-        experiment.log_parameter("training_samples", DeepForest_config["subsample"])
-        steps=DeepForest_config["subsample"]/DeepForest_config['batch_size']
-    else:
-        experiment.log_parameter("training_samples", data.shape[0])
-        steps=data.shape[0]/DeepForest_config['batch_size']
-            
+    data.to_csv("data/training/annotations.csv")
+
     #pass an args object instead of using command line    
     args = [
         "--epochs",str(DeepForest_config["epochs"]),
         "--batch-size",str(DeepForest_config['batch_size']),
-        "--steps",str(int(steps)),
         "--backbone",str(DeepForest_config["backbone"]),
-        'onthefly',"data/training/detection.csv",
-        "data/training/evaluation.csv",
-            ]
-    
+        'onthefly',"data/training/annotations.csv",
+    ]
+
     #Create log directory if saving snapshots
     if not DeepForest_config["save_snapshot_path"]=="None":
         snappath=DeepForest_config["save_snapshot_path"]+ dirname
         os.mkdir(snappath)
-        
+
         #Log to comet
         experiment.log_parameter("snapshot_dir",snappath)        
-    
+
     #if no snapshots, add arg to front, will ignore path above
     if DeepForest_config["save_snapshot_path"]=="None":
         args=["--no-snapshots"] + args
     else:
         args=[snappath] + args
         args=["--snapshot-path"] + args
-        
+
     #Restart from a preview snapshot?
     if not DeepForest_config["snapshot"]=="None":
         args= [DeepForest_config["snapshot"]] + args
         args=["--snapshot"] + args
-        
+
     #Create log directory if saving eval images, add to arguments
     if not DeepForest_config["save_image_path"]=="None":
         save_image_path=DeepForest_config["save_image_path"]+ dirname
         if not os.path.exists(save_image_path):
             os.mkdir(save_image_path)
-        
+
         args= [save_image_path] + args
         args=["--save-path"] + args        
-        
+
     #Run training, and pass comet experiment   
     main(args,DeepForest_config,experiment)
-

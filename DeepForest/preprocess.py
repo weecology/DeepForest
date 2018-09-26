@@ -14,19 +14,34 @@ from PIL import Image
 import slidingwindow as sw
 import itertools
 
-def load_data(data_dir):
+def load_data(data_dir,res):
     '''
     data_dir: path to .csv files. Optionall can be a path to a specific .csv file.
-    nsamples: Number of total samples, "all" will yield full dataset
+    res: Cell resolution of the rgb imagery
     '''
     
     if(os.path.splitext(data_dir)[-1]==".csv"):
         data=pd.read_csv(data_dir,index_col=0)
     else:
-        #Gather data
+        #Gather list of csvs
         data_paths=glob.glob(data_dir+"/*.csv")
         dataframes = (pd.read_csv(f,index_col=0) for f in data_paths)
         data = pd.concat(dataframes, ignore_index=False)
+    
+    #Modify indices, which came from R, zero indexed in python
+    data=data.set_index(data.index.values-1)
+    data.numeric_label=data.numeric_label-1
+    
+    #Remove xmin==xmax
+    data=data[data.xmin!=data.xmax]    
+    data=data[data.ymin!=data.ymax]    
+
+    ##Create bounding coordinates with respect to the crop for each box
+    #Rescaled to resolution of the cells.Also note that python and R have inverse coordinate Y axis, flipped rotation.
+    data['origin_xmin']=(data['xmin']-data['tile_xmin'])/res
+    data['origin_xmax']=(data['xmin']-data['tile_xmin']+ data['xmax']-data['xmin'])/res
+    data['origin_ymin']=(data['tile_ymax']-data['ymax'])/res
+    data['origin_ymax']= (data['tile_ymax']-data['ymax']+ data['ymax'] - data['ymin'])/res  
         
     return(data)
     
@@ -116,28 +131,6 @@ def load_xml(path,res):
     
     return(frame)
 
-def load_csv(csv_data_file,res):
-    
-    #Read in data
-    data=pd.read_csv(csv_data_file,index_col=0)    
-
-    #Modify indices, which came from R, zero indexed in python
-    data=data.set_index(data.index.values-1)
-    data.numeric_label=data.numeric_label-1
-    
-    #Remove xmin==xmax
-    data=data[data.xmin!=data.xmax]    
-    data=data[data.ymin!=data.ymax]    
-
-    ##Create bounding coordinates with respect to the crop for each box
-    #Rescaled to resolution of the cells.Also note that python and R have inverse coordinate Y axis, flipped rotation.
-    data['origin_xmin']=(data['xmin']-data['tile_xmin'])/res
-    data['origin_xmax']=(data['xmin']-data['tile_xmin']+ data['xmax']-data['xmin'])/res
-    data['origin_ymin']=(data['tile_ymax']-data['ymax'])/res
-    data['origin_ymax']= (data['tile_ymax']-data['ymax']+ data['ymax'] - data['ymin'])/res  
-    
-    return(data)    
-
 def compute_windows(image,pixels=250,overlap=0.05):
     im = Image.open(image)
     numpy_image = np.array(im)    
@@ -148,7 +141,7 @@ def expand_grid(data_dict):
     rows = itertools.product(*data_dict.values())
     return pd.DataFrame.from_records(rows, columns=data_dict.keys())
 
-def split_retraining(annotations_path,config):
+def split_training(annotations_path,DeepForest_config,experiment,single_tile=False):
     
     '''
     Divide windows into training and testing split. Assumes that all tiles have the same size.
@@ -156,12 +149,12 @@ def split_retraining(annotations_path,config):
     
     #Read image
     #Read annotations into pandas dataframe
-    data=load_csv(annotations_path, config["rgb_res"])
-        
+    data=pd.read_csv(annotations_path,index_col=0)    
+            
     #Compute sliding windows, assumed that all objects are the same extent and resolution
-    base_dir=config["evaluation_tile_dir"]
+    base_dir=DeepForest_config["evaluation_tile_dir"]
     image_path=os.path.join(base_dir, data.rgb_path.unique()[0])
-    windows=compute_windows(image=image_path, pixels=config["patch_size"], overlap=config["patch_overlap"])
+    windows=compute_windows(image=image_path, pixels=DeepForest_config["patch_size"], overlap=DeepForest_config["patch_overlap"])
     
     #Compute Windows
     #Create dictionary of windows for each image
@@ -175,29 +168,45 @@ def split_retraining(annotations_path,config):
     #Expand grid
     tile_data=expand_grid(tile_windows)
 
-    #Optionally subsample data based on config file. 
-    msk = np.random.rand(len(tile_data)) < 1-(float(config["validation_percent"])/100)
-    
-    train = tile_data[msk]
-    test=tile_data[~msk]    
-    
-    #if config["debug_subset"] == True:
-        #train=train.head(n=2)
-        #test=test.head(n=2)    
-    
-    #To increase efficiency, place in order of preserving as many windows on the same tile, but shuffle within each tile
-    groups = [df for _, df in train.groupby('image')]
-    groups=[x.sample(frac=1) for x in groups]
-    train=pd.concat(groups).reset_index(drop=True)    
-    
-    groups = [df for _, df in test.groupby('image')]
-    groups=[x.sample(frac=1) for x in groups]
-    test=pd.concat(groups).reset_index(drop=True)    
+    #For retraining there is only a single tile
+    if single_tile:
         
-    #save for logging purposes only, TODO log to comet?
-    train.to_csv("data/training/retraining_training.csv")
-    test.to_csv("data/training/retraining_testing.csv")
+        #Split training and testing
+        msk = np.random.rand(len(tile_data)) < 1-(float(DeepForest_config["validation_percent"])/100)
+                
+        train = tile_data[msk]
+        test=tile_data[~msk]    
+    else:
+        
+        #select a validation tile, record in log.
+        eval_tile=random.sample(all_images,1)[0]
+        experiment.log_parameter(eval_tile,"Evaluation Tile")
+        
+        #Split data based on samples
+        evaluation=data[data.rgb_path==eval_tile]
+        training=data[~(data.rgb_path==eval_tile)]
+        
+        if not DeepForest_config["training_images"]=="All":
+            
+            #Select first n windows, reorder to preserve tile order.
+            training=training.head(n=config["training_images"])
+            groups = [df for _, df in training.groupby('image')]
+            groups=[x.sample(frac=1) for x in groups]
+            training=pd.concat(groups).reset_index(drop=True)
+        
+        if not DeepForest_config["evaluation_images"]=="All":
+            
+            #Select first n windows, reorder to preserve tile order.
+            evaluation=evaluation.head(n=config["training_images"])
+            groups = [df for _, df in evaluation.groupby('image')]
+            groups=[x.sample(frac=1) for x in groups]
+            evaluation=pd.concat(groups).reset_index(drop=True)        
+
     
-    return([train.to_dict("index"),test.to_dict("index")])
+    #save for logging purposes only, TODO log to comet?
+    training.to_csv("data/training/training.csv")
+    evaluation.to_csv("data/training/evaluation.csv")
+    
+    return([training.to_dict("index"),evaluation.to_dict("index")])
     
     
