@@ -56,6 +56,9 @@ from keras_retinanet .utils.transform import random_transform_generator
 #Custom Generator
 from DeepForest.onthefly_generator import OnTheFlyGenerator
 
+#Custom Callbacks
+from DeepForest.callbacks import jaccardCallback, recallCallback
+
 def makedirs(path):
     # Intended behavior: try to create the directory,
     # pass if the directory exists already, fails otherwise.
@@ -162,13 +165,14 @@ def create_callbacks(model, training_model, prediction_model, validation_generat
         callbacks.append(tensorboard_callback)
 
     if args.evaluation and validation_generator:
-        if args.dataset_type == 'coco':
-            from keras_retinanet.callbacks.coco import CocoEval
-
-            # use prediction model for evaluation
-            evaluation = CocoEval(validation_generator, tensorboard=tensorboard_callback)
-        else:
-            evaluation = Evaluate(validation_generator, tensorboard=tensorboard_callback,experiment=experiment,save_path=args.save_path,score_threshold=args.score_threshold,DeepForest_config=DeepForest_config)
+        
+        evaluation = Evaluate(validation_generator, 
+                              tensorboard=tensorboard_callback,
+                              experiment=experiment,
+                              save_path=args.save_path,
+                              score_threshold=args.score_threshold,
+                              DeepForest_config=DeepForest_config)
+        
         evaluation = RedirectModel(evaluation, prediction_model)
         callbacks.append(evaluation)
 
@@ -199,7 +203,20 @@ def create_callbacks(model, training_model, prediction_model, validation_generat
         cooldown = 0,
         min_lr   = 0
     ))
-
+    
+    #Neon Callbacks
+    site=os.path.split(os.path.normpath(DeepForest_config["evaluation_tile_dir"]))[1]
+    
+    #if site=="OSBS":
+        #jaccard=jaccardCallback(validation_generator,DeepForest_config=DeepForest_config,experiment=experiment)        
+        #jaccard = RedirectModel(jaccard, prediction_model)
+        #callbacks.append(jaccard)
+        
+    recall=recallCallback(site=site,generator=validation_generator,DeepForest_config=DeepForest_config,experiment=experiment)
+    recall = RedirectModel(recall, prediction_model)
+    
+    callbacks.append(recall)
+    
     return callbacks
 
 

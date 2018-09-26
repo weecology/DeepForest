@@ -12,20 +12,20 @@ preprocess:
           NDVI_Threshold: 0.1
 
 #Training
+training_images: 2
 training_csvs: data/OSBS/
 rgb_tile_dir: data/OSBS/
 snapshot: snapshots/resnet50_onthefly_10.h5
 batch_size: 1      
 epochs: 1
-save_snapshot_path: snapshots/
+save_snapshot_path: None
 backbone: resnet50
 shuffle_training: False
-training_images: 10
 
 #Evaluation
-evaluation_images: All
+evaluation_images: 2
 evaluation_tile_dir: data/OSBS/
-save_image_path: snapshots/
+save_image_path: None
 shuffle_eval: True
 
 #Ground truth
