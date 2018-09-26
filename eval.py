@@ -53,7 +53,7 @@ def create_generator(args,config):
     """
 
     #Split training and test data - hardcoded paths set below.
-    _,test=preprocess.split_training(args.annotations,DeepForest_config,single_tile=False,experiment=None)
+    _,test=preprocess.split_training(args.annotations,DeepForest_config,single_tile=DeepForest_config["single_tile"],experiment=None)
 
     #Training Generator
     generator =  OnTheFlyGenerator(

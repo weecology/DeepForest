@@ -52,7 +52,7 @@ def create_generator(args,DeepForest_config):
     #Split training and test data - hardcoded paths set below.
     train,test=preprocess.split_training(args.annotations,
                                          DeepForest_config,
-                                         single_tile=True,
+                                         single_tile=DeepForest_config["single_tile"],
                                          experiment=None)
 
     #Training Generator

@@ -11,6 +11,7 @@ preprocess:
 
 #Hand annotations
 hand_annotations: /Users/ben/Documents/DeepForest/data/SJER/annotations/2017_SJER_2_259000_4110000_image.xml
+single_tile: True
 
 #Training
 training_images: All
@@ -24,8 +25,7 @@ shuffle_training: False
 #Non-max suppression, threshold for the IoU value to determine when a box should be suppressed.
 nms_threshold: 0.5   
 
-#Evaluation
-evaluation_images: All
+#Only for single tile - retraining
 validation_percent: 50
 evaluation_tile_dir: /Users/ben/Documents/DeepForest/data/SJER/
 save_image_path: snapshots/
@@ -34,7 +34,3 @@ save_image_path: snapshots/
 #Path, passed to glob for wildcards
 itc_path: /Users/ben/Documents/TreeSegmentation/data/ITCs/*/*.shp
 itc_tile_path: /Users/ben/Documents/TreeSegmentation/data/2017/Camera/L3/
-
-
-#Debug - select just a couple images to run a toy model
-debug_subset: True

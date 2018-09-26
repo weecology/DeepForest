@@ -19,6 +19,7 @@ epochs: 1
 save_snapshot_path: None
 backbone: resnet50
 shuffle_training: False
+single_tile: False
 
 #Evaluation
 evaluation_images: 2

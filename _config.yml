@@ -5,9 +5,6 @@ patch_size: 400
 patch_overlap: 0.05
 rgb_res: 0.1
 
-#Debug plot image
-plot_image: False
-
 #Preprocessing routines
 preprocess:
           zero_area: True
@@ -15,16 +12,17 @@ preprocess:
 #Training
 training_csvs: /home/b.weinstein/TreeSegmentation/analysis/Results/detection_boxes/SJER/
 rgb_tile_dir: /orange/ewhite/NeonData/SJER/DP1.30010.001/2017/FullSite/D17/2017_SJER_2/L3/Camera/Mosaic/V02/
-training_images: 10
+training_images: 2
 snapshot: None
-batch_size: 3      
-epochs: 2
+batch_size: 1      
+epochs: 1
 save_snapshot_path: /orange/ewhite/b.weinstein/retinanet/snapshots/
 backbone: resnet50
 shuffle_training: False
+single_tile: False
 
 #Evaluation
-evaluation_images: 50
+evaluation_images: 2
 evaluation_tile_dir: /orange/ewhite/NeonData/SJER/DP1.30010.001/2017/FullSite/D17/2017_SJER_2/L3/Camera/Mosaic/V02/
 save_image_path: /orange/ewhite/b.weinstein/retinanet/snapshots/
 

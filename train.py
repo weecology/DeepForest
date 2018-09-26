@@ -241,7 +241,7 @@ def create_generators(args,DeepForest_config):
         transform_generator = random_transform_generator(flip_x_chance=0.5)
 
     #Split training and test data - hardcoded paths set below.
-    train,test=preprocess.split_training(args.annotations,DeepForest_config,single_tile=False,experiment=experiment)
+    train,test=preprocess.split_training(args.annotations,DeepForest_config,single_tile=DeepForest_config["single_tile"],experiment=experiment)
 
     #Training Generator
     train_generator = OnTheFlyGenerator(
