@@ -128,7 +128,7 @@ def create_models(backbone_retinanet, num_classes, weights, multi_gpu=0, freeze_
     return model, training_model, prediction_model
 
 
-def create_callbacks(model, training_model, prediction_model, validation_generator, args,experiment,config):
+def create_callbacks(model, training_model, prediction_model, validation_generator, args,experiment,DeepForest_config):
     """ Creates the callbacks to use during training.
 
     Args
@@ -166,7 +166,7 @@ def create_callbacks(model, training_model, prediction_model, validation_generat
             # use prediction model for evaluation
             evaluation = CocoEval(validation_generator, tensorboard=tensorboard_callback)
         else:
-            evaluation = Evaluate(validation_generator, tensorboard=tensorboard_callback,experiment=experiment,save_path=args.save_path,score_threshold=args.score_threshold,config=config)
+            evaluation = Evaluate(validation_generator, tensorboard=tensorboard_callback,experiment=experiment,save_path=args.save_path,score_threshold=args.score_threshold,DeepForest_config=DeepForest_config)
         evaluation = RedirectModel(evaluation, prediction_model)
         callbacks.append(evaluation)
 
@@ -201,7 +201,7 @@ def create_callbacks(model, training_model, prediction_model, validation_generat
     return callbacks
 
 
-def create_generators(args,config):
+def create_generators(args,DeepForest_config):
     """ Create generators for training and validation.
     """
     # create random transform generator for augmenting training data
@@ -246,25 +246,25 @@ def create_generators(args,config):
         train_generator = onthefly.OnTheFlyGenerator(
             args.annotations,
             batch_size=args.batch_size,
-            base_dir=config["rgb_tile_dir"],
-            config=config,
+            base_dir=DeepForest_config["rgb_tile_dir"],
+            DeepForest_config=DeepForest_config,
             group_method="none",
             shuffle_groups=False,
-            shuffle_tiles=config["shuffle_training"]            
+            shuffle_tiles=DeepForest_config["shuffle_training"]            
         )
         if args.val_annotations:
             
-            #Replace config subsample with validation subsample. Not the best, or the worst, way to do this.
-            config["subsample"]=config["validation_subsample"]
+            #Replace DeepForest_config subsample with validation subsample. Not the best, or the worst, way to do this.
+            DeepForest_config["subsample"]=DeepForest_config["validation_subsample"]
             
             validation_generator=onthefly.OnTheFlyGenerator(
             args.val_annotations,
             batch_size=args.batch_size,
-            base_dir=config["evaluation_tile_dir"],
-            config=config,
+            base_dir=DeepForest_config["evaluation_tile_dir"],
+            DeepForest_config=DeepForest_config,
             group_method="none",
             shuffle_groups=False,
-            shuffle_tiles=config["shuffle_eval"]
+            shuffle_tiles=DeepForest_config["shuffle_eval"]
         )
         else:
             validation_generator=None
@@ -362,7 +362,7 @@ def parse_args(args):
     return check_args(parser.parse_args(args))
 
 
-def main(args=None,config=None,experiment=None):
+def main(args=None,DeepForest_config=None,experiment=None):
     # parse arguments
     if args is None:
         args = sys.argv[1:]
@@ -380,14 +380,14 @@ def main(args=None,config=None,experiment=None):
     keras.backend.tensorflow_backend.set_session(get_session())
 
     # create the generators
-    train_generator, validation_generator = create_generators(args,config)
+    train_generator, validation_generator = create_generators(args,DeepForest_config)
     
     # create the model
     if args.snapshot is not None:
         print('Loading model, this may take a secondkeras-retinanet .')
         model            = models.load_model(args.snapshot, backbone_name=args.backbone)
         training_model   = model
-        prediction_model = retinanet_bbox(model=model,nms_threshold=config["nms_threshold"])
+        prediction_model = retinanet_bbox(model=model,nms_threshold=DeepForest_config["nms_threshold"])
     else:
         weights = args.weights
         # default to imagenet if nothing else is specified
@@ -401,7 +401,7 @@ def main(args=None,config=None,experiment=None):
             weights=weights,
             multi_gpu=args.multi_gpu,
             freeze_backbone=args.freeze_backbone,
-            nms_threshold=config["nms_threshold"]
+            nms_threshold=DeepForest_config["nms_threshold"]
         )
 
     # print model summary
@@ -422,7 +422,7 @@ def main(args=None,config=None,experiment=None):
         validation_generator,
         args,
         experiment,
-        config
+        DeepForest_config
     )
     
     #Log
@@ -474,7 +474,7 @@ if __name__ == '__main__':
     #save time for logging
     dirname=datetime.now().strftime("%Y%m%d_%H%M%S")
     
-    #set experiment and log configs
+    #set experiment and log DeepForest_configs
     experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2",project_name='deepforest-retinanet')
     experiment.log_multiple_params(config)
     experiment.log_parameter("Start Time", dirname)
