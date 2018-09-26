@@ -217,7 +217,6 @@ class OnTheFlyGenerator(Generator):
         for key, value in self.classes.items():
             self.labels[value] = key        
         
-        
         #Create list of sliding windows to select
         self.image_data=window_dict
         self.image_names = list(self.image_data.keys())

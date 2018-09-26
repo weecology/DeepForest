@@ -208,11 +208,6 @@ def split_training(annotations_path,DeepForest_config,experiment,single_tile=Fal
             groups = [df for _, df in evaluation.groupby('image')]
             groups=[x.sample(frac=1) for x in groups]
             evaluation=pd.concat(groups).reset_index(drop=True)        
-
-    
-    #save for logging purposes only, TODO log to comet?
-    training.to_csv("data/training/training.csv")
-    evaluation.to_csv("data/training/evaluation.csv")
     
     return([training.to_dict("index"),evaluation.to_dict("index")])
     

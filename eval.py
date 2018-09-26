@@ -31,54 +31,42 @@ if __name__ == "__main__" and __package__ is None:
     import keras_retinanet.bin  # noqa: F401
     __package__ = "keras_retinanet.bin"
 
-# Change these to absolute imports if you copy this script outside the keras_retinanet package.
 from keras_retinanet import models
 from keras_retinanet.utils.eval import evaluate
-from keras_retinanet.utils.eval import JaccardEvaluate, neonRecall
 from keras_retinanet.utils.keras_version import check_keras_version
-from keras_retinanet.preprocessing import onthefly
+
+#Custom Generator
+from DeepForest.onthefly_generator import OnTheFlyGenerator
+
+#Custom callback
+from DeepForest.evaluation import neonRecall, Jaccard
 
 def get_session():
     """ Construct a modified tf session.
     """
-    DeepForest_config = tf.DeepForest_configProto()
-    DeepForest_config.gpu_options.allow_growth = True
-    return tf.Session(DeepForest_config=DeepForest_config)
+    config = tf.ConfigProto()
+    config.gpu_options.allow_growth = True
+    return tf.Session(config=config)
 
-def create_generator(args,DeepForest_config):
+def create_generator(args,config):
     """ Create generators for training and validation.
     """
-    # create random transform generator for augmenting training data
-    if args.random_transform:
-        transform_generator = random_transform_generator(
-            min_rotation=-0.1,
-            max_rotation=0.1,
-            min_translation=(-0.1, -0.1),
-            max_translation=(0.1, 0.1),
-            min_shear=-0.1,
-            max_shear=0.1,
-            min_scaling=(0.9, 0.9),
-            max_scaling=(1.1, 1.1),
-            flip_x_chance=0.5,
-            flip_y_chance=0.5,
-        )
-    else:
-        transform_generator = random_transform_generator(flip_x_chance=0.5)
 
     #Split training and test data - hardcoded paths set below.
-    train,test=preprocess.split_training(args.annotations,DeepForest_DeepForest_config,single_tile=True,experiment=None)
+    _,test=preprocess.split_training(args.annotations,DeepForest_config,single_tile=False,experiment=None)
 
     #Training Generator
     generator =  OnTheFlyGenerator(
         args.annotations,
-        train,
+        test,
         batch_size=args.batch_size,
-        base_dir=DeepForest_DeepForest_config["rgb_tile_dir"],
-        DeepForest_DeepForest_config=DeepForest_DeepForest_config,
+        base_dir=DeepForest_config["rgb_tile_dir"],
+        DeepForest_config=DeepForest_config,
         group_method="none",
         shuffle_groups=False)
     
     return(generator)
+
 
 def parse_args(args):
     """ Parse the arguments.
@@ -165,41 +153,33 @@ def main(DeepForest_config,experiment,args=None):
     if site == "OSBS":
 
         #Ground truth scores
-        jaccard_scores = JaccardEvaluate(
-            generator,
-            model,
-            iou_threshold=args.iou_threshold,
+        jaccard=Jaccard(
+            generator=generator,
+            model=model,            
             score_threshold=args.score_threshold,
-            max_detections=args.max_detections,
-            suppression_threshold=args.suppression_threshold,
-            save_path=args.save_path + dirname,
+            save_path=args.save_path,
             experiment=experiment,
-            DeepForest_config=DeepForest_config
+            DeepForest_config=self.DeepForest_config
         )
+        print(f" Mean IoU: {jaccard:.2f}")
         
-        print("Mean IoU = %.3f" % (jaccard_scores))
+        experiment.log_metric("Mean IoU", jaccard)               
         
-        #Log results
-        experiment.log_metric("Mean IoU", jaccard_scores)    
-        
-    ##Neon plot recall rate
-    recall = neonRecall(
+    #Neon plot recall rate
+    recall=neonRecall(
         site,
         generator,
-        model,
-        iou_threshold=args.iou_threshold,
+        model,            
         score_threshold=args.score_threshold,
-        max_detections=args.max_detections,
-        suppression_threshold=args.suppression_threshold,
-        save_path=args.save_path + dirname,
+        save_path=args.save_path,
         experiment=experiment,
         DeepForest_config=DeepForest_config
-    )    
+    )
+    
+    experiment.log_metric("Recall", recall)       
     
     print(f" Recall: {recall:.2f}")
-    
-    experiment.log_metric("Recall", recall)    
-    
+        
     #Logs the number of train and eval "trees"
     ntrees=[len(x) for x in generator.annotation_dict.values()]
     experiment.log_parameter("Number of Trees", ntrees)    

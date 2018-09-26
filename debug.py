@@ -29,7 +29,7 @@ from keras_retinanet.utils.anchors import anchors_for_shape
 #Custom Generator
 from DeepForest.onthefly_generator import OnTheFlyGenerator
 
-def create_generator(args,config):
+def create_generator(args,DeepForest_config):
     """ Create generators for training and validation.
     """
     # create random transform generator for augmenting training data
@@ -50,7 +50,10 @@ def create_generator(args,config):
         transform_generator = random_transform_generator(flip_x_chance=0.5)
 
     #Split training and test data - hardcoded paths set below.
-    train,test=preprocess.split_training(args.annotations,DeepForest_config,single_tile=True,experiment=None)
+    train,test=preprocess.split_training(args.annotations,
+                                         DeepForest_config,
+                                         single_tile=True,
+                                         experiment=None)
 
     #Training Generator
     generator =  OnTheFlyGenerator(
