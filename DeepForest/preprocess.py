@@ -174,8 +174,8 @@ def split_training(annotations_path,DeepForest_config,experiment,single_tile=Fal
         #Split training and testing
         msk = np.random.rand(len(tile_data)) < 1-(float(DeepForest_config["validation_percent"])/100)
                 
-        train = tile_data[msk]
-        test=tile_data[~msk]    
+        training = tile_data[msk]
+        evaluation=tile_data[~msk]    
     else:
         
         #select a validation tile, record in log.

@@ -13,6 +13,7 @@ preprocess:
 hand_annotations: /Users/ben/Documents/DeepForest/data/SJER/annotations/2017_SJER_2_259000_4110000_image.xml
 
 #Training
+training_images: All
 rgb_tile_dir: /Users/ben/Documents/DeepForest/data/SJER/
 snapshot: snapshots/resnet50_onthefly_10.h5
 batch_size: 1      
@@ -24,6 +25,7 @@ shuffle_training: True
 nms_threshold: 0.5   
 
 #Evaluation
+evaluation_images: All
 validation_percent: 50
 evaluation_tile_dir: /Users/ben/Documents/DeepForest/data/SJER/
 save_image_path: snapshots/
