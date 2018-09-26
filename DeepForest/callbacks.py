@@ -35,6 +35,7 @@ class jaccardCallback(keras.callbacks.Callback):
     def on_epoch_end(self, epoch, logs=None):
         logs = logs or {}
 
+        print("Computing OSBS ground truth IoU")
         jaccard=Jaccard(
             generator=self.generator,
             model=self.model,            
@@ -43,6 +44,8 @@ class jaccardCallback(keras.callbacks.Callback):
             experiment=self.experiment,
             DeepForest_config=self.DeepForest_config
         )
+        
+        print(f" Mean IoU: {jaccard:.2f}")
         
         self.experiment.log_metric("Jaccard", jaccard)               
         
@@ -81,6 +84,8 @@ class recallCallback(keras.callbacks.Callback):
     def on_epoch_end(self, epoch, logs=None):
         logs = logs or {}
 
+        print("Computing Recall")
+        
         recall=neonRecall(
             self.site,
             self.generator,
@@ -90,6 +95,8 @@ class recallCallback(keras.callbacks.Callback):
             experiment=self.experiment,
             DeepForest_config=self.DeepForest_config
         )
+        
+        print(f" Recall: {recall:.2f}")
         
         self.experiment.log_metric("Recall", recall)       
 
