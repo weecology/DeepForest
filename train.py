@@ -442,6 +442,7 @@ if __name__ == '__main__':
     from DeepForest import preprocess
     import random
     
+    #Set seed
     np.random.seed(2)
 
     #save time for logging
