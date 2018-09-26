@@ -234,9 +234,7 @@ def create_generators(args,DeepForest_config):
         base_dir=DeepForest_config["rgb_tile_dir"],
         DeepForest_config=DeepForest_config,
         group_method="none",
-        shuffle_groups=False,
-        shuffle_tiles=DeepForest_config["shuffle_training"]            
-    )
+        shuffle_groups=False)
 
     #Validation Generator        
 
@@ -247,9 +245,7 @@ def create_generators(args,DeepForest_config):
     base_dir=DeepForest_config["evaluation_tile_dir"],
     DeepForest_config=DeepForest_config,
     group_method="none",
-    shuffle_groups=False,
-    shuffle_tiles=DeepForest_config["shuffle_eval"]
-)
+    shuffle_groups=False)
 
 
     return train_generator, validation_generator

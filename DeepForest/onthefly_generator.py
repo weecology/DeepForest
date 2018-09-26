@@ -175,7 +175,6 @@ class OnTheFlyGenerator(Generator):
         window_dict,
         DeepForest_config,
         base_dir=None,
-        shuffle_tiles=False,
         **kwargs
     ):
         """ Initialize a CSV data generator.
@@ -193,7 +192,6 @@ class OnTheFlyGenerator(Generator):
         self.DeepForest_config=DeepForest_config
         self.rgb_tile_dir=base_dir
         self.rgb_res=DeepForest_config['rgb_res']
-        self.shuffle=shuffle_tiles
         
         #Holder for image path, keep from reloading same image to save time.
         self.previous_image_path=None
@@ -311,7 +309,8 @@ class OnTheFlyGenerator(Generator):
         boxes=np.copy(self.annotation_dict[key])
         
         #Convert to float if needed
-        #boxes=boxes.astype(float)
+        if not boxes.dtype==np.float64:   
+            boxes=boxes.astype("float64")
         
         #TODO test that the error is here.
         return boxes
