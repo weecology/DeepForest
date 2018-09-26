@@ -204,7 +204,7 @@ def split_training(annotations_path,DeepForest_config,experiment,single_tile=Fal
         if not DeepForest_config["evaluation_images"]=="All":
             
             #Select first n windows, reorder to preserve tile order.
-            evaluation=evaluation.head(n=DeepForest_config["training_images"])
+            evaluation=evaluation.head(n=DeepForest_config["evaluation_images"])
             groups = [df for _, df in evaluation.groupby('image')]
             groups=[x.sample(frac=1) for x in groups]
             evaluation=pd.concat(groups).reset_index(drop=True)        
