@@ -207,7 +207,7 @@ if __name__ == '__main__':
     experiment.log_parameter("Start Time", dirname)
 
     #Log site
-    site=os.path.split(os.path.normpath(DeepForest_config["evaluation_tile_dir"]))[1]
+    site=DeepForest_config["evaluation_site"]
     experiment.log_parameter("Site", site)
 
     #Load hand annotated data

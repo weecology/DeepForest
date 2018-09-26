@@ -22,6 +22,7 @@ shuffle_training: False
 single_tile: False
 
 #Evaluation
+evaluation_site: OSBS
 evaluation_images: 2
 evaluation_tile_dir: data/OSBS/
 save_image_path: None
