@@ -23,4 +23,4 @@ echo $PYTHONPATH
 
 cd /home/b.weinstein/DeepForest
 
-python retrain.py
+python train.py --mode retrain

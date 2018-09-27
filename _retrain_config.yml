@@ -18,7 +18,7 @@ training_images: All
 rgb_tile_dir: /home/b.weinstein/DeepForest/data/SJER/
 snapshot: None
 batch_size: 1      
-epochs: 1
+epochs: 10
 save_snapshot_path: /orange/ewhite/b.weinstein/retinanet/snapshots/
 backbone: resnet50
 shuffle_training: False
@@ -29,7 +29,7 @@ nms_threshold: 0.5
 #Evaluation
 #Neon site to evaluate
 evaluation_site: SJER
-validation_percent: 50
+validation_percent: 5
 evaluation_tile_dir: /home/b.weinstein/DeepForest/data/SJER/
 save_image_path: /orange/ewhite/b.weinstein/retinanet/snapshots/
 

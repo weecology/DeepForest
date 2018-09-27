@@ -183,7 +183,7 @@ def create_callbacks(model, training_model, prediction_model, validation_generat
         checkpoint = keras.callbacks.ModelCheckpoint(
             os.path.join(
                 args.snapshot_path,
-                '{backbone}_{dataset_type}_{{epoch:02d}}.h5'.format(backbone=args.backbone, dataset_type=args.dataset_type)
+                '{backbone}_{{epoch:02d}}.h5'.format(backbone=args.backbone)
             ),
             verbose=1,
             save_best_only=True,
@@ -310,16 +310,10 @@ def parse_args(args):
     """ Parse the arguments.
     """
     parser     = argparse.ArgumentParser(description='Simple training script for training a RetinaNet network.')
-    subparsers = parser.add_subparsers(help='Arguments for specific dataset types.', dest='dataset_type')
-    subparsers.required = True
 
 
     def csv_list(string):
         return string.split(',')
-
-    #On the fly parser
-    csv_parser = subparsers.add_parser('onthefly')
-    csv_parser.add_argument('annotations', help='Path to CSV file containing annotations for training.')
     
     group = parser.add_mutually_exclusive_group()
     group.add_argument('--snapshot',          help='Resume training from a snapshot.')
@@ -437,6 +431,14 @@ def main(args=None,data=None,DeepForest_config=None,experiment=None):
     
 if __name__ == '__main__':
     
+    import argparse
+    
+    #Set training or training
+    mode_parser     = argparse.ArgumentParser(description='Retinanet training or finetuning?')
+    mode_parser.add_argument('--mode', help='train or retrain?' )
+    
+    mode=mode_parser.parse_args()
+    
     import os
     import pandas as pd
     import glob
@@ -445,37 +447,38 @@ if __name__ == '__main__':
     from DeepForest.config import load_config
     from DeepForest import preprocess
 
-    #Load DeepForest_config file
-    DeepForest_config=load_config("train")
+    #set experiment and log configs
+    experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2",project_name='deepforest-retinanet')
 
     #save time for logging
     dirname=datetime.now().strftime("%Y%m%d_%H%M%S")
-
-    #set experiment and log configs
-    experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2",project_name='deepforest-retinanet')
-    experiment.log_multiple_params(DeepForest_config)
     experiment.log_parameter("Start Time", dirname)
+
+    #Load DeepForest_config and data file based on training or retraining mode
+    
+    if mode.mode == "train":
+        DeepForest_config=load_config("train")
+        data=preprocess.load_data(DeepForest_config["training_csvs"],DeepForest_config["rgb_res"])
+        
+    if mode.mode == "retrain":
+        DeepForest_config=load_config("retrain")        
+        data=preprocess.load_xml(DeepForest_config["hand_annotations"],DeepForest_config["rgb_res"])
+
+    experiment.log_multiple_params(DeepForest_config)
 
     #Log site
     site=DeepForest_config["evaluation_site"]
     experiment.log_parameter("Site", site)
-
-    #Load hand annotated data
-    data=preprocess.load_data(DeepForest_config["training_csvs"],DeepForest_config["rgb_res"])
-
+    
     ##Preprocess Filters##
     if DeepForest_config['preprocess']['zero_area']:
         data=preprocess.zero_area(data)
-
-    #Write training and evaluation data to file for annotations
-    data.to_csv("data/training/annotations.csv")
 
     #pass an args object instead of using command line    
     args = [
         "--epochs",str(DeepForest_config["epochs"]),
         "--batch-size",str(DeepForest_config['batch_size']),
-        "--backbone",str(DeepForest_config["backbone"]),
-        'onthefly',"data/training/annotations.csv",
+        "--backbone",str(DeepForest_config["backbone"])
     ]
 
     #Create log directory if saving snapshots

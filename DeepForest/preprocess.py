@@ -119,10 +119,10 @@ def load_xml(path,res):
     frame=frame.set_index(frame.index.values)
 
     ##Match expectations of naming, no computation needed for hand annotations
-    frame['origin_xmin']=frame["xmin"]
-    frame['origin_xmax']=frame["xmax"]
-    frame['origin_ymin']=frame["ymin"]
-    frame['origin_ymax']= frame["ymax"]  
+    frame['origin_xmin']=frame["xmin"].astype(float)
+    frame['origin_xmax']=frame["xmax"].astype(float)
+    frame['origin_ymin']=frame["ymin"].astype(float)
+    frame['origin_ymax']= frame["ymax"].astype(float)
     
     return(frame)
 

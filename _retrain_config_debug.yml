@@ -14,7 +14,7 @@ hand_annotations: /Users/ben/Documents/DeepForest/data/SJER/annotations/2017_SJE
 single_tile: True
 
 #Training
-training_images: All
+training_images: 2
 rgb_tile_dir: /Users/ben/Documents/DeepForest/data/SJER/
 snapshot: snapshots/resnet50_onthefly_10.h5
 batch_size: 1      
@@ -28,7 +28,7 @@ nms_threshold: 0.5
 
 #Evaluation
 evaluation_site: SJER
-validation_percent: 50
+validation_percent: 2
 evaluation_tile_dir: /Users/ben/Documents/DeepForest/data/SJER/
 save_image_path: snapshots/
 

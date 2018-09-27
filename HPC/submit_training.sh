@@ -23,4 +23,4 @@ echo $PYTHONPATH
 
 cd /home/b.weinstein/DeepForest
 
-python train.py --min_size 800
+python train.py --mode train
