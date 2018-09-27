@@ -169,10 +169,12 @@ def split_training(annotations_path,DeepForest_config,experiment,single_tile=Fal
         #Shuffle data if needed
         if DeepForest_config["shuffle_training"]:
             tile_data.sample(frac=1)
+        else:
+            print("set seed")
+            np.random.seed(2)
             
         #Split training and testing
         msk = np.random.rand(len(tile_data)) < 1-(float(DeepForest_config["validation_percent"])/100)
-                
         training = tile_data[msk]
         evaluation=tile_data[~msk]    
     else:
@@ -193,19 +195,24 @@ def split_training(annotations_path,DeepForest_config,experiment,single_tile=Fal
         
         if not DeepForest_config["training_images"]=="All":
             
-            #Shuffle if desired
+            #Shuffle if desired - preserve groups of images.
             if DeepForest_config["shuffle_training"]:
-                training.sample(frac=1)
+                groups = [df for _, df in training.groupby('image')]
+                groups=[x.sample(frac=1) for x in groups]      
+                random.shuffle(groups)
+                training=pd.concat(groups).reset_index(drop=True)
                 
             #Select first n windows, reorder to preserve tile order.
             training=training.head(n=DeepForest_config["training_images"])
-            groups = [df for _, df in training.groupby('image')]
-            
-            groups=[x.sample(frac=1) for x in groups]
-            training=pd.concat(groups).reset_index(drop=True)
+            print(training)
+
         
         if not DeepForest_config["evaluation_images"]=="All":
             
+            #Shuffle if desired
+            if DeepForest_config["shuffle_eval"]:
+                evaluation.sample(frac=1)
+                
             #Select first n windows, reorder to preserve tile order.
             evaluation=evaluation.head(n=DeepForest_config["evaluation_images"])
             groups = [df for _, df in evaluation.groupby('image')]

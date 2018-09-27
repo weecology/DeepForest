@@ -442,13 +442,11 @@ if __name__ == '__main__':
     import numpy as np
     from datetime import datetime
     from DeepForest.config import load_config
+    from DeepForest import preprocess
 
     #Load DeepForest_config file
     DeepForest_config=load_config("train")
 
-    from DeepForest import preprocess
-    import random
-    
     #save time for logging
     dirname=datetime.now().strftime("%Y%m%d_%H%M%S")
 

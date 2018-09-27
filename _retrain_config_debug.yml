@@ -21,7 +21,7 @@ batch_size: 1
 epochs: 1
 save_snapshot_path: snapshots/
 backbone: resnet50
-shuffle_training: False
+shuffle_training: True
 
 #Non-max suppression, threshold for the IoU value to determine when a box should be suppressed.
 nms_threshold: 0.5   

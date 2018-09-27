@@ -161,24 +161,34 @@ def main(DeepForest_config,args=None):
 
 if __name__ == '__main__':
 
+    mode= "train"
+    
     import numpy as np
     from DeepForest import preprocess    
     from DeepForest.config import load_config        
     
     #Load DeepForest_config file
-    DeepForest_config=load_config("retrain")
+    DeepForest_config=load_config(mode)
+      
+    if mode == "retrain":
+         
+        #Load hand annotated data
+        data=preprocess.load_xml(DeepForest_config["hand_annotations"],DeepForest_config["rgb_res"])
     
-    np.random.seed(2)    
-    
-    #Load hand annotated data
-    data=preprocess.load_xml(DeepForest_config["hand_annotations"],DeepForest_config["rgb_res"])
-
+    if mode=="train":
+        
+        #Load psuedo-labels
+        data=preprocess.load_data(DeepForest_config["training_csvs"],DeepForest_config["rgb_res"])        
+            
     ##Preprocess Filters##
     if DeepForest_config['preprocess']['zero_area']:
-        data=preprocess.zero_area(data)
-
+        data=preprocess.zero_area(data)    
+    
     #Write training and evaluation data to file for annotations
     data.to_csv("data/training/annotations.csv")
     
     main(DeepForest_config=DeepForest_config)
     
+        
+        
+         
