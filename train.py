@@ -208,11 +208,16 @@ def create_callbacks(model, training_model, prediction_model, validation_generat
     site=DeepForest_config["evaluation_site"]
     
     #if site=="OSBS":
-        #jaccard=jaccardCallback(validation_generator,DeepForest_config=DeepForest_config,experiment=experiment)        
+        #jaccard=jaccardCallback(validation_generator,DeepForest_config=DeepForest_config,save_path=args.save_path,,experiment=experiment)        
         #jaccard = RedirectModel(jaccard, prediction_model)
         #callbacks.append(jaccard)
         
-    recall=recallCallback(site=site,generator=validation_generator,DeepForest_config=DeepForest_config,experiment=experiment)
+    recall=recallCallback(site=site,
+                          generator=validation_generator,
+                          save_path=args.save_path,
+                          DeepForest_config=DeepForest_config,
+                          experiment=experiment)
+    
     recall = RedirectModel(recall, prediction_model)
     
     callbacks.append(recall)
