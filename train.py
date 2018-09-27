@@ -454,6 +454,9 @@ if __name__ == '__main__':
     dirname=datetime.now().strftime("%Y%m%d_%H%M%S")
     experiment.log_parameter("Start Time", dirname)
 
+    #log training mode
+    experiment.log_parameter("Training Mode",mode.mode)
+    
     #Load DeepForest_config and data file based on training or retraining mode
     
     if mode.mode == "train":
