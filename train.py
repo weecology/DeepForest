@@ -248,6 +248,9 @@ def create_generators(args,DeepForest_config):
     #Split training and test data - hardcoded paths set below.
     train,test=preprocess.split_training(args.annotations,DeepForest_config,single_tile=DeepForest_config["single_tile"],experiment=experiment)
 
+    Experiment.log_dataset_hash(train)
+    Experiment.log_dataset_hash(test)
+    
     #Training Generator
     train_generator = OnTheFlyGenerator(
         args.annotations,
