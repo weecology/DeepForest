@@ -249,7 +249,6 @@ def create_generators(args,DeepForest_config):
     train,test=preprocess.split_training(args.annotations,DeepForest_config,single_tile=DeepForest_config["single_tile"],experiment=experiment)
 
     experiment.log_dataset_hash(data=train)
-    experiment.log_dataset_hash(data=test)
     
     #Training Generator
     train_generator = OnTheFlyGenerator(

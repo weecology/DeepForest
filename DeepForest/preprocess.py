@@ -142,10 +142,6 @@ def split_training(annotations_path,DeepForest_config,experiment,single_tile=Fal
     Divide windows into training and testing split. Assumes that all tiles have the same size.
     '''
     
-    #Set seed
-    if not DeepForest_config["shuffle_training"]:
-        np.random.seed(2)
-        
     #Read image
     #Read annotations into pandas dataframe
     data=pd.read_csv(annotations_path,index_col=0)    
@@ -181,11 +177,14 @@ def split_training(annotations_path,DeepForest_config,experiment,single_tile=Fal
         evaluation=tile_data[~msk]    
     else:
         
-        #select a validation tile, record in log.
-        eval_tile=random.sample(all_images,1)[0]
+        #select a validation tile, record in log.        
+        if DeepForest_config["shuffle_eval"]:
+            eval_tile=random.sample(all_images,1)[0]
+        else:
+            eval_tile=all_images[1]
         
         #Log if not debugging.
-        if experiment:
+        if not experiment==None:
             experiment.log_parameter(eval_tile,"Evaluation Tile")
         
         #Split data based on samples

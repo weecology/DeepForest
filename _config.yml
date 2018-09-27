@@ -26,6 +26,7 @@ evaluation_site: OSBS
 evaluation_images: 2
 evaluation_tile_dir: /orange/ewhite/NeonData/SJER/DP1.30010.001/2017/FullSite/D17/2017_SJER_2/L3/Camera/Mosaic/V02/
 save_image_path: /orange/ewhite/b.weinstein/retinanet/snapshots/
+shuffle_eval: False
 
 #Ground truth
 #Path, passed to glob for wildcards
