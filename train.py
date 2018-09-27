@@ -225,7 +225,7 @@ def create_callbacks(model, training_model, prediction_model, validation_generat
     return callbacks
 
 
-def create_generators(args,DeepForest_config):
+def create_generators(args,data,DeepForest_config):
     """ Create generators for training and validation.
     """
     # create random transform generator for augmenting training data
@@ -246,16 +246,18 @@ def create_generators(args,DeepForest_config):
         transform_generator = random_transform_generator(flip_x_chance=0.5)
 
     #Split training and test data - hardcoded paths set below.
-    train,test=preprocess.split_training(args.annotations,DeepForest_config,single_tile=DeepForest_config["single_tile"],experiment=experiment)
+    train,test=preprocess.split_training(data,
+                                         DeepForest_config,
+                                         single_tile=DeepForest_config["single_tile"],
+                                         experiment=experiment)
 
     experiment.log_dataset_hash(data=train)
     
     #Training Generator
     train_generator = OnTheFlyGenerator(
-        args.annotations,
+        data,
         train,
         batch_size=args.batch_size,
-        base_dir=DeepForest_config["rgb_tile_dir"],
         DeepForest_config=DeepForest_config,
         group_method="none",
         shuffle_groups=False)
@@ -263,10 +265,9 @@ def create_generators(args,DeepForest_config):
     #Validation Generator        
 
     validation_generator=OnTheFlyGenerator(
-    args.annotations,
+    data,
     test,
     batch_size=args.batch_size,
-    base_dir=DeepForest_config["evaluation_tile_dir"],
     DeepForest_config=DeepForest_config,
     group_method="none",
     shuffle_groups=False)
@@ -348,7 +349,7 @@ def parse_args(args):
     return check_args(parser.parse_args(args))
 
 
-def main(args=None,DeepForest_config=None,experiment=None):
+def main(args=None,data=None,DeepForest_config=None,experiment=None):
     # parse arguments
     if args is None:
         args = sys.argv[1:]
@@ -366,7 +367,7 @@ def main(args=None,DeepForest_config=None,experiment=None):
     keras.backend.tensorflow_backend.set_session(get_session())
 
     # create the generators
-    train_generator, validation_generator = create_generators(args,DeepForest_config=DeepForest_config)
+    train_generator, validation_generator = create_generators(args,data,DeepForest_config=DeepForest_config)
     
     # create the model
     if args.snapshot is not None:
@@ -507,4 +508,4 @@ if __name__ == '__main__':
         args=["--save-path"] + args        
 
     #Run training, and pass comet experiment   
-    main(args,DeepForest_config,experiment)
+    main(args,data,DeepForest_config,experiment)

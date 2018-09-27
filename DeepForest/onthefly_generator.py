@@ -20,6 +20,149 @@ import cv2
 import slidingwindow as sw
 import itertools
 
+class OnTheFlyGenerator(Generator):
+    """ Generate data for a custom CSV dataset.
+
+    See https://github.com/fizyr/keras-retinanet#csv-datasets for more information.
+    """
+
+    def __init__(
+        self,
+        data,
+        window_dict,
+        DeepForest_config,
+        **kwargs
+    ):
+        """ Initialize a CSV data generator.
+
+        """
+        self.image_names = []
+        self.image_data  = {}
+        
+        #Store DeepForest_config and resolution
+        self.DeepForest_config=DeepForest_config
+        self.rgb_res=DeepForest_config['rgb_res']
+        self.base_dir=DeepForest_config["rgb_tile_dir"]
+        
+        #Holder for image path, keep from reloading same image to save time.
+        self.previous_image_path=None
+        
+        #Holder for previous annotations, after epoch > 1
+        self.annotation_dict={}
+        
+        #Read annotations into pandas dataframe
+        self.annotation_list=data  
+
+        #Compute sliding windows, assumed that all objects are the same extent and resolution
+        self.windows=compute_windows( self.base_dir+ self.annotation_list.rgb_path.unique()[0], DeepForest_config["patch_size"], DeepForest_config["patch_overlap"])
+        
+        #Read classes
+        self.classes=_read_classes(data=self.annotation_list)  
+        
+        #Create label dict
+        self.labels = {}
+        for key, value in self.classes.items():
+            self.labels[value] = key        
+        
+        #Create list of sliding windows to select
+        self.image_data=window_dict
+        self.image_names = list(self.image_data.keys())
+        
+        super(OnTheFlyGenerator, self).__init__(**kwargs)
+          
+        
+    def size(self):
+        """ Size of the dataset.
+        """
+        return len(self.image_names)
+
+    def num_classes(self):
+        """ Number of classes in the dataset.
+        """
+        return max(self.classes.values()) + 1
+
+    def name_to_label(self, name):
+        """ Map name to label.
+        """
+        return self.classes[name]
+
+    def label_to_name(self, label):
+        """ Map label to name.
+        """
+        return self.labels[label]
+    
+    def image_aspect_ratio(self, image_index):
+        """ Compute the aspect ratio for an image with image_index.
+        """
+        # PIL is fast for metadata
+        image = Image.open(self.image_path(image_index))
+        return float(image.width) / float(image.height)
+
+    def load_image(self, image_index):
+        """ Load an image at the image_index.
+        
+        """
+        
+        #Select sliding window and tile
+        image_name=self.image_names[image_index]        
+        row=self.image_data[image_name]
+                
+        #Open image to crop
+        ##Check if image the is same as previous draw from generator, this will save time.
+        if not row["image"] == self.previous_image_path:
+            print("Loading new tile: %s" %(row["image"]))
+            im = Image.open(self.base_dir+row["image"])
+            self.numpy_image = np.array(im)    
+        
+        #Load rgb image and get crop
+        image=retrieve_window(numpy_image=self.numpy_image,index=row["windows"],windows=self.windows)
+        
+
+        #BGR order
+        image=image[:,:,::-1].copy()
+        
+        #Store if needed for show, in RGB color space.
+        self.image=image        
+        
+        #Save image path for next evaluation to check
+        self.previous_image_path = row["image"]
+        
+        return image
+
+    def load_annotations(self, image_index):
+        """ Load annotations for an image_index.
+        """
+        
+        #Find the original data and crop
+        image_name=self.image_names[image_index]
+        row=self.image_data[image_name]
+        
+        #Look for annotations in previous epoch
+        key=row["image"]+"_"+str(row["windows"])
+        
+        if key in self.annotation_dict:
+            boxes=self.annotation_dict[key]
+        else:
+            #Which annotations fall into that crop?
+            self.annotation_dict[key]=fetch_annotations(image=self.base_dir+row["image"],
+                                           index=row["windows"],
+                                           annotations=self.annotation_list,
+                                           windows=self.windows,
+                                           offset=(self.DeepForest_config["patch_size"] * 0.1)/self.rgb_res,
+                                           patch_size=self.DeepForest_config["patch_size"])
+
+        #Index
+        boxes=np.copy(self.annotation_dict[key])
+        
+        #Convert to float if needed
+        if not boxes.dtype==np.float64:   
+            boxes=boxes.astype("float64")
+        
+        return boxes
+    
+
+#Utility functions
+
 def expand_grid(data_dict):
     rows = itertools.product(*data_dict.values())
     return pd.DataFrame.from_records(rows, columns=data_dict.keys())
@@ -161,155 +304,3 @@ def box_overlap(row,window):
 
     overlap = intersection_area / float(box_area)
     return overlap
-
-
-class OnTheFlyGenerator(Generator):
-    """ Generate data for a custom CSV dataset.
-
-    See https://github.com/fizyr/keras-retinanet#csv-datasets for more information.
-    """
-
-    def __init__(
-        self,
-        csv_data_file,
-        window_dict,
-        DeepForest_config,
-        base_dir=None,
-        **kwargs
-    ):
-        """ Initialize a CSV data generator.
-
-        Args
-            csv_data_file: Path to the CSV annotations file.
-            csv_class_file: Path to the CSV classes file.
-            base_dir: Directory w.r.t. where the files are to be searched (defaults to the directory containing the csv_data_file).
-        """
-        self.image_names = []
-        self.image_data  = {}
-        self.base_dir    = base_dir
-        
-        #Store DeepForest_config and resolution
-        self.DeepForest_config=DeepForest_config
-        self.rgb_tile_dir=base_dir
-        self.rgb_res=DeepForest_config['rgb_res']
-        
-        #Holder for image path, keep from reloading same image to save time.
-        self.previous_image_path=None
-        
-        #Holder for previous annotations, after epoch > 1
-        self.annotation_dict={}
-        
-        # Take base_dir from annotations file if not explicitly specified.
-        if self.base_dir is None:
-            self.base_dir = os.path.dirname(csv_data_file)
-        
-        #Read annotations into pandas dataframe
-        self.annotation_list=pd.read_csv(csv_data_file,index_col=0)    
-
-        #Compute sliding windows, assumed that all objects are the same extent and resolution
-        self.windows=compute_windows(base_dir + self.annotation_list.rgb_path.unique()[0], DeepForest_config["patch_size"], DeepForest_config["patch_overlap"])
-        
-        #Read classes
-        self.classes=_read_classes(data=self.annotation_list)  
-        
-        #Create label dict
-        self.labels = {}
-        for key, value in self.classes.items():
-            self.labels[value] = key        
-        
-        #Create list of sliding windows to select
-        self.image_data=window_dict
-        self.image_names = list(self.image_data.keys())
-        
-        super(OnTheFlyGenerator, self).__init__(**kwargs)
-          
-        
-    def size(self):
-        """ Size of the dataset.
-        """
-        return len(self.image_names)
-
-    def num_classes(self):
-        """ Number of classes in the dataset.
-        """
-        return max(self.classes.values()) + 1
-
-    def name_to_label(self, name):
-        """ Map name to label.
-        """
-        return self.classes[name]
-
-    def label_to_name(self, label):
-        """ Map label to name.
-        """
-        return self.labels[label]
-    
-    def image_aspect_ratio(self, image_index):
-        """ Compute the aspect ratio for an image with image_index.
-        """
-        # PIL is fast for metadata
-        image = Image.open(self.image_path(image_index))
-        return float(image.width) / float(image.height)
-
-    def load_image(self, image_index):
-        """ Load an image at the image_index.
-        
-        """
-        
-        #Select sliding window and tile
-        image_name=self.image_names[image_index]        
-        row=self.image_data[image_name]
-                
-        #Open image to crop
-        ##Check if image the is same as previous draw from generator, this will save time.
-        if not row["image"] == self.previous_image_path:
-            print("Loading new tile: %s" %(row["image"]))
-            im = Image.open(self.base_dir+row["image"])
-            self.numpy_image = np.array(im)    
-        
-        #Load rgb image and get crop
-        image=retrieve_window(numpy_image=self.numpy_image,index=row["windows"],windows=self.windows)
-        
-
-        #BGR order
-        image=image[:,:,::-1].copy()
-        
-        #Store if needed for show, in RGB color space.
-        self.image=image        
-        
-        #Save image path for next evaluation to check
-        self.previous_image_path = row["image"]
-        
-        return image
-
-    def load_annotations(self, image_index):
-        """ Load annotations for an image_index.
-        """
-        
-        #Find the original data and crop
-        image_name=self.image_names[image_index]
-        row=self.image_data[image_name]
-        
-        #Look for annotations in previous epoch
-        key=row["image"]+"_"+str(row["windows"])
-        
-        if key in self.annotation_dict:
-            boxes=self.annotation_dict[key]
-        else:
-            #Which annotations fall into that crop?
-            self.annotation_dict[key]=fetch_annotations(image=self.base_dir+row["image"],
-                                           index=row["windows"],
-                                           annotations=self.annotation_list,
-                                           windows=self.windows,
-                                           offset=(self.DeepForest_config["patch_size"] * 0.1)/self.rgb_res,
-                                           patch_size=self.DeepForest_config["patch_size"])
-
-        #Index
-        boxes=np.copy(self.annotation_dict[key])
-        
-        #Convert to float if needed
-        if not boxes.dtype==np.float64:   
-            boxes=boxes.astype("float64")
-        
-        return boxes
-    

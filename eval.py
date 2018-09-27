@@ -48,19 +48,18 @@ def get_session():
     config.gpu_options.allow_growth = True
     return tf.Session(config=config)
 
-def create_generator(args,config):
+def create_generator(args,data,config):
     """ Create generators for training and validation.
     """
 
     #Split training and test data - hardcoded paths set below.
-    _,test=preprocess.split_training(args.annotations,DeepForest_config,single_tile=DeepForest_config["single_tile"],experiment=None)
+    _,test=preprocess.split_training(data,DeepForest_config,single_tile=DeepForest_config["single_tile"],experiment=None)
 
     #Training Generator
     generator =  OnTheFlyGenerator(
-        args.annotations,
+        data,
         test,
         batch_size=args.batch_size,
-        base_dir=DeepForest_config["rgb_tile_dir"],
         DeepForest_config=DeepForest_config,
         group_method="none",
         shuffle_groups=False)
@@ -96,7 +95,7 @@ def parse_args(args):
     return parser.parse_args(args)
 
 
-def main(DeepForest_config,experiment,args=None):
+def main(data,DeepForest_config,experiment,args=None):
     # parse arguments
     if args is None:
         args = sys.argv[1:]
@@ -120,7 +119,7 @@ def main(DeepForest_config,experiment,args=None):
         os.makedirs(args.save_path + dirname)
 
     # create the generator
-    generator = create_generator(args,DeepForest_config)
+    generator = create_generator(args,data,DeepForest_config)
 
     # load the model
     print('Loading model, this may take a second...')
@@ -217,8 +216,5 @@ if __name__ == '__main__':
     if DeepForest_config['preprocess']['zero_area']:
         data=preprocess.zero_area(data)
 
-    #Write training and evaluation data to file for annotations
-    data.to_csv("data/training/evaluation.csv")
-
     #Run training, and pass comet experiment   
-    main(DeepForest_config,experiment)
+    main(data,DeepForest_config,experiment)

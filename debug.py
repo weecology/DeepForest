@@ -29,7 +29,7 @@ from keras_retinanet.utils.anchors import anchors_for_shape
 #Custom Generator
 from DeepForest.onthefly_generator import OnTheFlyGenerator
 
-def create_generator(args,DeepForest_config):
+def create_generator(args,main,DeepForest_config):
     """ Create generators for training and validation.
     """
     # create random transform generator for augmenting training data
@@ -50,17 +50,16 @@ def create_generator(args,DeepForest_config):
         transform_generator = random_transform_generator(flip_x_chance=0.5)
 
     #Split training and test data - hardcoded paths set below.
-    train,test=preprocess.split_training(args.annotations,
+    train,test=preprocess.split_training(data,
                                          DeepForest_config,
                                          single_tile=DeepForest_config["single_tile"],
                                          experiment=None)
 
     #Training Generator
     generator =  OnTheFlyGenerator(
-        args.annotations,
+        data,
         train,
         batch_size=args.batch_size,
-        base_dir=DeepForest_config["rgb_tile_dir"],
         DeepForest_config=DeepForest_config,
         group_method="none",
         shuffle_groups=False)
@@ -140,14 +139,14 @@ def run(generator, args):
     return True
 
 
-def main(DeepForest_config,args=None):
+def main(DeepForest_config,data,args=None):
     # parse arguments
     if args is None:
         args = sys.argv[1:]
     args = parse_args(args)
 
     # create the generator
-    generator = create_generator(args,DeepForest_config)
+    generator = create_generator(args,data,DeepForest_config)
 
     # create the display window
     cv2.namedWindow('Image', cv2.WINDOW_NORMAL)
@@ -184,10 +183,8 @@ if __name__ == '__main__':
     if DeepForest_config['preprocess']['zero_area']:
         data=preprocess.zero_area(data)    
     
-    #Write training and evaluation data to file for annotations
-    data.to_csv("data/training/annotations.csv")
-    
-    main(DeepForest_config=DeepForest_config)
+    #Run    
+    main(data=data,DeepForest_config=DeepForest_config)
     
         
         

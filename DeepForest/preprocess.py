@@ -136,17 +136,13 @@ def expand_grid(data_dict):
     rows = itertools.product(*data_dict.values())
     return pd.DataFrame.from_records(rows, columns=data_dict.keys())
 
-def split_training(annotations_path,DeepForest_config,experiment,single_tile=False):
+def split_training(data,DeepForest_config,experiment,single_tile=False):
     
     '''
     Divide windows into training and testing split. Assumes that all tiles have the same size.
     '''
     
-    #Read image
-    #Read annotations into pandas dataframe
-    data=pd.read_csv(annotations_path,index_col=0)    
-            
-    #Compute sliding windows, assumed that all objects are the same extent and resolution
+    #Compute list of sliding windows, assumed that all objects are the same extent and resolution
     base_dir=DeepForest_config["evaluation_tile_dir"]
     image_path=os.path.join(base_dir, data.rgb_path.unique()[0])
     windows=compute_windows(image=image_path, pixels=DeepForest_config["patch_size"], overlap=DeepForest_config["patch_overlap"])
@@ -170,7 +166,6 @@ def split_training(annotations_path,DeepForest_config,experiment,single_tile=Fal
         if DeepForest_config["shuffle_training"]:
             tile_data.sample(frac=1)
         else:
-            print("set seed")
             np.random.seed(2)
             
         #Split training and testing
@@ -204,8 +199,6 @@ def split_training(annotations_path,DeepForest_config,experiment,single_tile=Fal
                 
             #Select first n windows, reorder to preserve tile order.
             training=training.head(n=DeepForest_config["training_images"])
-            print(training)
-
         
         if not DeepForest_config["evaluation_images"]=="All":
             
