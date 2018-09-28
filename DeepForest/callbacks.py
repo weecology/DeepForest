@@ -1,6 +1,7 @@
 import keras
 
 from .evaluation import neonRecall, Jaccard
+from keras_retinanet.utils.eval import evaluate
 
 class jaccardCallback(keras.callbacks.Callback):
     """ Evaluation callback for arbitrary datasets.
