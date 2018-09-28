@@ -70,17 +70,10 @@ def create_generator(args,data,config):
 def parse_args(args):
     """ Parse the arguments.
     """
+    
     parser     = argparse.ArgumentParser(description='Evaluation script for a RetinaNet network.')
     parser.add_argument('--batch-size',      help='Size of the batches.', default=1, type=int)
-    
-    subparsers = parser.add_subparsers(help='Arguments for specific dataset types.', dest='dataset_type')
-    subparsers.required = True
-
-    #On the fly parser
-    otf_parser = subparsers.add_parser('onthefly')
-    otf_parser.add_argument('annotations', help='Path to CSV file containing annotations for training.')
-    
-    parser.add_argument('model',             help='Path to RetinaNet model.')
+    parser.add_argument('--model',             help='Path to RetinaNet model.')
     parser.add_argument('--convert-model',   help='Convert the model to an inference model (ie. the input is a training model).', action='store_true')
     parser.add_argument('--backbone',        help='The backbone of the model.', default='resnet50')
     parser.add_argument('--gpu',             help='Id of the GPU to use (as reported by nvidia-smi).')
@@ -123,9 +116,9 @@ def main(data,DeepForest_config,experiment,args=None):
 
     # load the model
     print('Loading model, this may take a second...')
-    model = models.load_model(args.model, backbone_name=args.backbone, convert=args.convert_model)
+    model = models.load_model(args.model, backbone_name=args.backbone, convert=args.convert_model,nms_threshold=DeepForest_config["nms_threshold"])
 
-    print(model.summary())
+    #print(model.summary())
 
     average_precisions = evaluate(
         generator,
@@ -149,20 +142,20 @@ def main(data,DeepForest_config,experiment,args=None):
     experiment.log_metric("mAP", precision / present_classes)    
 
     #Use field collected polygons only for Florida site
-    if site == "OSBS":
+    #if site == "OSBS":
 
-        #Ground truth scores
-        jaccard=Jaccard(
-            generator=generator,
-            model=model,            
-            score_threshold=args.score_threshold,
-            save_path=args.save_path,
-            experiment=experiment,
-            DeepForest_config=DeepForest_config
-        )
-        print(f" Mean IoU: {jaccard:.2f}")
+        ##Ground truth scores
+        #jaccard=Jaccard(
+            #generator=generator,
+            #model=model,            
+            #score_threshold=args.score_threshold,
+            #save_path=args.save_path,
+            #experiment=experiment,
+            #DeepForest_config=DeepForest_config
+        #)
+        #print(f" Mean IoU: {jaccard:.2f}")
         
-        experiment.log_metric("Mean IoU", jaccard)               
+        #experiment.log_metric("Mean IoU", jaccard)               
         
     #Neon plot recall rate
     recall=neonRecall(
@@ -185,36 +178,61 @@ def main(data,DeepForest_config,experiment,args=None):
     
 if __name__ == '__main__':
     
+    import argparse
+    
+    #Set training or training
+    mode_parser     = argparse.ArgumentParser(description='Retinanet training or finetuning?')
+    mode_parser.add_argument('--mode', help='train or retrain?' )
+    
+    mode=mode_parser.parse_args()
+    
     import os
     import pandas as pd
     import glob
     import numpy as np
     from datetime import datetime
-    
     from DeepForest.config import load_config
     from DeepForest import preprocess
 
-    #Load DeepForest_config file
-    DeepForest_config=load_config("train")
+    #set experiment and log configs
+    experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2",project_name='deepforest-retinanet')
 
     #save time for logging
     dirname=datetime.now().strftime("%Y%m%d_%H%M%S")
-
-    #set experiment and log configs
-    experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2",project_name='deepforest-retinanet')
-    experiment.log_multiple_params(DeepForest_config)
     experiment.log_parameter("Start Time", dirname)
+
+    #log training mode
+    experiment.log_parameter("Training Mode",mode.mode)
+    
+    #Load DeepForest_config and data file based on training or retraining mode
+    
+    if mode.mode == "train":
+        DeepForest_config=load_config("train")
+        data=preprocess.load_data(DeepForest_config["training_csvs"],DeepForest_config["rgb_res"])
+        
+    if mode.mode == "retrain":
+        DeepForest_config=load_config("retrain")        
+        data=preprocess.load_xml(DeepForest_config["hand_annotations"],DeepForest_config["rgb_res"])
+
+    experiment.log_multiple_params(DeepForest_config)
 
     #Log site
     site=DeepForest_config["evaluation_site"]
     experiment.log_parameter("Site", site)
-
-    #Load hand annotated data
-    data=preprocess.load_data(DeepForest_config["training_csvs"],DeepForest_config["rgb_res"])
-
+    
     ##Preprocess Filters##
     if DeepForest_config['preprocess']['zero_area']:
         data=preprocess.zero_area(data)
 
+    #pass an args object instead of using command line        
+    args = [
+        "--batch-size",str(DeepForest_config['batch_size']),
+        '--score-threshold', '0.05',
+        '--suppression-threshold','0.1', 
+        '--save-path', 'snapshots/images/', 
+        '--model', 'snapshots/resnet50_onthefly_10.h5', 
+        '--convert-model'
+    ]
+       
     #Run training, and pass comet experiment   
-    main(data,DeepForest_config,experiment)
+    main(data,DeepForest_config,experiment,args)

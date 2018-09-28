@@ -57,7 +57,7 @@ from keras_retinanet .utils.transform import random_transform_generator
 from DeepForest.onthefly_generator import OnTheFlyGenerator
 
 #Custom Callbacks
-from DeepForest.callbacks import jaccardCallback, recallCallback
+from DeepForest.callbacks import jaccardCallback, recallCallback,handmAP
 
 def makedirs(path):
     # Intended behavior: try to create the directory,
@@ -222,6 +222,29 @@ def create_callbacks(model, training_model, prediction_model, validation_generat
     
     callbacks.append(recall)
     
+    #Optional compute mean average precision on hand annotated crops
+    if DeepForest_config["hand_maP"]:
+        
+        #Load hand annotations
+        data=preprocess.load_xml(DeepForest_config["hand_annotations"],DeepForest_config["rgb_res"])
+        
+        #Enforce the single tile cut in a new dict
+        hand_dict=DeepForest_config.copy()
+        hand_dict["single_tile"]=True
+        
+        #Create just the validation generator
+        _, validation_generator = create_generators(args,data,DeepForest_config=hand_dict)
+        
+        hand_evaluation = handmAP(validation_generator, 
+                                  tensorboard=tensorboard_callback,
+                                  experiment=experiment,
+                                  save_path=args.save_path,
+                                  score_threshold=args.score_threshold,
+                                  DeepForest_config=DeepForest_config)
+    
+        hand_evaluation = RedirectModel(hand_evaluation, prediction_model)
+        callbacks.append(hand_evaluation)        
+        
     return callbacks
 
 
