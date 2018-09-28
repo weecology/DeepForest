@@ -34,4 +34,8 @@ itc_path: /home/b.weinstein/TreeSegmentation/data/ITCs/*/*.shp
 itc_tile_path: /home/b.weinstein/TreeSegmentation/data/2017/Camera/L3/
 
 #Non-max suppression, threshold for the IoU value to determine when a box should be suppressed.
-nms_threshold: 0.5   
+nms_threshold: 0.5
+hand_maP: False
+
+#Only honored if hand_maP is true, for eval only.
+hand_annotations: /home/b.weinstein/DeepForest/data/SJER/annotations/2017_SJER_2_259000_4110000_image.xml
