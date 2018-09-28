@@ -103,9 +103,6 @@ class recallCallback(keras.callbacks.Callback):
 
 
 #Hand annotated mAP
-
-from ..utils.eval import evaluate
-
 class handmAP(keras.callbacks.Callback):
     """ Evaluation callback for arbitrary datasets.
     """
