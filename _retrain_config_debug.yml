@@ -36,3 +36,4 @@ save_image_path: snapshots/
 #Path, passed to glob for wildcards
 itc_path: /Users/ben/Documents/TreeSegmentation/data/ITCs/*/*.shp
 itc_tile_path: /Users/ben/Documents/TreeSegmentation/data/2017/Camera/L3/
+hand_maP: False
