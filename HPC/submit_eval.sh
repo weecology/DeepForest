@@ -13,7 +13,7 @@
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:tesla:1
 
-export  HDF5_USE_FILE_LOCKING=FALSE
+#export  HDF5_USE_FILE_LOCKING=FALSE
 
 ml git
 ml geos/3.6.2
