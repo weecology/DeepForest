@@ -230,7 +230,7 @@ if __name__ == '__main__':
         '--score-threshold', '0.05',
         '--suppression-threshold','0.1', 
         '--save-path', 'snapshots/images/', 
-        '--model', 'snapshots/resnet50_onthefly_10.h5', 
+        '--model', '/orange/ewhite/b.weinstein/retinanet/snapshots/20180929_145238/resnet50_27.h5', 
         '--convert-model'
     ]
        

@@ -23,4 +23,4 @@ echo $PYTHONPATH
 
 cd /home/b.weinstein/DeepForest
 
-python eval.py --mode train
+python eval.py --mode retrain
