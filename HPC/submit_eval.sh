@@ -23,4 +23,4 @@ echo $PYTHONPATH
 
 cd /home/b.weinstein/DeepForest
 
-python eval.py --score-threshold 0.05 --save-path snapshots/images/ onthefly data/training/evaluation.csv /orange/ewhite/b.weinstein/retinanet/snapshots/20180807_154329/resnet50_onthefly_10.h5 --convert-model
+python eval.py --mode train
