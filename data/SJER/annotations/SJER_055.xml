@@ -1,5 +1,5 @@
 <annotation>
-    <folder>L3</folder>
+    <folder>SJER</folder>
     <filename>SJER_055.tif</filename>
     <size>
         <width>400</width>
@@ -9,6 +9,18 @@
     <object>
         <name>Tree</name>
         <bndbox>
+            <xmin>140</xmin>
+            <ymin>349</ymin>
+            <xmax>177</xmax>
+            <ymax>392</ymax>
+        </bndbox>
+    </object>
+    <object>
+        <name>Tree</name>
+        <pose>Unspecified</pose>
+        <truncated>0</truncated>
+        <difficult>0</difficult>
+        <bndbox>
             <xmin>184</xmin>
             <ymin>2</ymin>
             <xmax>243</xmax>
@@ -17,6 +29,9 @@
     </object>
     <object>
         <name>Tree</name>
+        <pose>Unspecified</pose>
+        <truncated>0</truncated>
+        <difficult>0</difficult>
         <bndbox>
             <xmin>248</xmin>
             <ymin>376</ymin>
@@ -26,6 +41,9 @@
     </object>
     <object>
         <name>Tree</name>
+        <pose>Unspecified</pose>
+        <truncated>0</truncated>
+        <difficult>0</difficult>
         <bndbox>
             <xmin>2</xmin>
             <ymin>58</ymin>
@@ -35,6 +53,9 @@
     </object>
     <object>
         <name>Tree</name>
+        <pose>Unspecified</pose>
+        <truncated>0</truncated>
+        <difficult>0</difficult>
         <bndbox>
             <xmin>31</xmin>
             <ymin>3</ymin>
@@ -44,6 +65,9 @@
     </object>
     <object>
         <name>Tree</name>
+        <pose>Unspecified</pose>
+        <truncated>0</truncated>
+        <difficult>0</difficult>
         <bndbox>
             <xmin>122</xmin>
             <ymin>105</ymin>
@@ -53,6 +77,9 @@
     </object>
     <object>
         <name>Tree</name>
+        <pose>Unspecified</pose>
+        <truncated>0</truncated>
+        <difficult>0</difficult>
         <bndbox>
             <xmin>58</xmin>
             <ymin>47</ymin>
@@ -62,6 +89,9 @@
     </object>
     <object>
         <name>Tree</name>
+        <pose>Unspecified</pose>
+        <truncated>0</truncated>
+        <difficult>0</difficult>
         <bndbox>
             <xmin>290</xmin>
             <ymin>2</ymin>
@@ -71,6 +101,9 @@
     </object>
     <object>
         <name>Tree</name>
+        <pose>Unspecified</pose>
+        <truncated>0</truncated>
+        <difficult>0</difficult>
         <bndbox>
             <xmin>230</xmin>
             <ymin>229</ymin>
@@ -80,6 +113,9 @@
     </object>
     <object>
         <name>Tree</name>
+        <pose>Unspecified</pose>
+        <truncated>0</truncated>
+        <difficult>0</difficult>
         <bndbox>
             <xmin>49</xmin>
             <ymin>202</ymin>
@@ -89,6 +125,9 @@
     </object>
     <object>
         <name>Tree</name>
+        <pose>Unspecified</pose>
+        <truncated>0</truncated>
+        <difficult>0</difficult>
         <bndbox>
             <xmin>233</xmin>
             <ymin>162</ymin>
@@ -98,6 +137,9 @@
     </object>
     <object>
         <name>Tree</name>
+        <pose>Unspecified</pose>
+        <truncated>0</truncated>
+        <difficult>0</difficult>
         <bndbox>
             <xmin>200</xmin>
             <ymin>118</ymin>
@@ -107,6 +149,9 @@
     </object>
     <object>
         <name>Tree</name>
+        <pose>Unspecified</pose>
+        <truncated>0</truncated>
+        <difficult>0</difficult>
         <bndbox>
             <xmin>156</xmin>
             <ymin>156</ymin>
@@ -116,6 +161,9 @@
     </object>
     <object>
         <name>Tree</name>
+        <pose>Unspecified</pose>
+        <truncated>0</truncated>
+        <difficult>0</difficult>
         <bndbox>
             <xmin>326</xmin>
             <ymin>116</ymin>
@@ -125,6 +173,9 @@
     </object>
     <object>
         <name>Tree</name>
+        <pose>Unspecified</pose>
+        <truncated>0</truncated>
+        <difficult>0</difficult>
         <bndbox>
             <xmin>2</xmin>
             <ymin>144</ymin>
@@ -134,6 +185,9 @@
     </object>
     <object>
         <name>Tree</name>
+        <pose>Unspecified</pose>
+        <truncated>0</truncated>
+        <difficult>0</difficult>
         <bndbox>
             <xmin>192</xmin>
             <ymin>41</ymin>

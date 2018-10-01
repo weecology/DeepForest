@@ -1,5 +1,5 @@
 <annotation>
-    <folder>L3</folder>
+    <folder>SJER</folder>
     <filename>SJER_021.tif</filename>
     <size>
         <width>400</width>
@@ -8,6 +8,18 @@
     <segmented>0</segmented>
     <object>
         <name>Tree</name>
+        <bndbox>
+            <xmin>286</xmin>
+            <ymin>25</ymin>
+            <xmax>375</xmax>
+            <ymax>134</ymax>
+        </bndbox>
+    </object>
+    <object>
+        <name>Tree</name>
+        <pose>Unspecified</pose>
+        <truncated>0</truncated>
+        <difficult>0</difficult>
         <bndbox>
             <xmin>19</xmin>
             <ymin>94</ymin>

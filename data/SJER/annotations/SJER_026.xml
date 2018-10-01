@@ -1,0 +1,27 @@
+<annotation>
+    <folder>SJER</folder>
+    <filename>SJER_026.tif</filename>
+    <size>
+        <width>400</width>
+        <height>400</height>
+    </size>
+    <segmented>0</segmented>
+    <object>
+        <name>Tree</name>
+        <bndbox>
+            <xmin>12</xmin>
+            <ymin>224</ymin>
+            <xmax>38</xmax>
+            <ymax>247</ymax>
+        </bndbox>
+    </object>
+    <object>
+        <name>Tree</name>
+        <bndbox>
+            <xmin>311</xmin>
+            <ymin>89</ymin>
+            <xmax>400</xmax>
+            <ymax>220</ymax>
+        </bndbox>
+    </object>
+</annotation>

@@ -1,5 +1,5 @@
 <annotation>
-    <folder>L3</folder>
+    <folder>SJER</folder>
     <filename>SJER_063.tif</filename>
     <size>
         <width>400</width>
@@ -9,6 +9,18 @@
     <object>
         <name>Tree</name>
         <bndbox>
+            <xmin>124</xmin>
+            <ymin>5</ymin>
+            <xmax>153</xmax>
+            <ymax>35</ymax>
+        </bndbox>
+    </object>
+    <object>
+        <name>Tree</name>
+        <pose>Unspecified</pose>
+        <truncated>0</truncated>
+        <difficult>0</difficult>
+        <bndbox>
             <xmin>234</xmin>
             <ymin>68</ymin>
             <xmax>302</xmax>
@@ -17,6 +29,9 @@
     </object>
     <object>
         <name>Tree</name>
+        <pose>Unspecified</pose>
+        <truncated>0</truncated>
+        <difficult>0</difficult>
         <bndbox>
             <xmin>215</xmin>
             <ymin>37</ymin>
@@ -26,6 +41,9 @@
     </object>
     <object>
         <name>Tree</name>
+        <pose>Unspecified</pose>
+        <truncated>0</truncated>
+        <difficult>0</difficult>
         <bndbox>
             <xmin>135</xmin>
             <ymin>88</ymin>
@@ -35,6 +53,9 @@
     </object>
     <object>
         <name>Tree</name>
+        <pose>Unspecified</pose>
+        <truncated>0</truncated>
+        <difficult>0</difficult>
         <bndbox>
             <xmin>146</xmin>
             <ymin>161</ymin>
@@ -44,6 +65,9 @@
     </object>
     <object>
         <name>Tree</name>
+        <pose>Unspecified</pose>
+        <truncated>0</truncated>
+        <difficult>0</difficult>
         <bndbox>
             <xmin>289</xmin>
             <ymin>336</ymin>
@@ -53,6 +77,9 @@
     </object>
     <object>
         <name>Tree</name>
+        <pose>Unspecified</pose>
+        <truncated>0</truncated>
+        <difficult>0</difficult>
         <bndbox>
             <xmin>308</xmin>
             <ymin>136</ymin>
@@ -62,6 +89,9 @@
     </object>
     <object>
         <name>Tree</name>
+        <pose>Unspecified</pose>
+        <truncated>0</truncated>
+        <difficult>0</difficult>
         <bndbox>
             <xmin>260</xmin>
             <ymin>133</ymin>
@@ -71,6 +101,9 @@
     </object>
     <object>
         <name>Tree</name>
+        <pose>Unspecified</pose>
+        <truncated>0</truncated>
+        <difficult>0</difficult>
         <bndbox>
             <xmin>56</xmin>
             <ymin>62</ymin>
@@ -80,6 +113,9 @@
     </object>
     <object>
         <name>Tree</name>
+        <pose>Unspecified</pose>
+        <truncated>0</truncated>
+        <difficult>0</difficult>
         <bndbox>
             <xmin>154</xmin>
             <ymin>254</ymin>
@@ -89,6 +125,9 @@
     </object>
     <object>
         <name>Tree</name>
+        <pose>Unspecified</pose>
+        <truncated>0</truncated>
+        <difficult>0</difficult>
         <bndbox>
             <xmin>1</xmin>
             <ymin>332</ymin>

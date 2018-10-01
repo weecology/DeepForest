@@ -1,5 +1,5 @@
 <annotation>
-    <folder>L3</folder>
+    <folder>SJER</folder>
     <filename>SJER_003.tif</filename>
     <size>
         <width>400</width>
@@ -9,6 +9,18 @@
     <object>
         <name>Tree</name>
         <bndbox>
+            <xmin>147</xmin>
+            <ymin>190</ymin>
+            <xmax>304</xmax>
+            <ymax>322</ymax>
+        </bndbox>
+    </object>
+    <object>
+        <name>Tree</name>
+        <pose>Unspecified</pose>
+        <truncated>0</truncated>
+        <difficult>0</difficult>
+        <bndbox>
             <xmin>51</xmin>
             <ymin>321</ymin>
             <xmax>116</xmax>
@@ -17,6 +29,9 @@
     </object>
     <object>
         <name>Tree</name>
+        <pose>Unspecified</pose>
+        <truncated>0</truncated>
+        <difficult>0</difficult>
         <bndbox>
             <xmin>315</xmin>
             <ymin>184</ymin>
@@ -26,6 +41,9 @@
     </object>
     <object>
         <name>Tree</name>
+        <pose>Unspecified</pose>
+        <truncated>0</truncated>
+        <difficult>0</difficult>
         <bndbox>
             <xmin>305</xmin>
             <ymin>81</ymin>
@@ -35,6 +53,9 @@
     </object>
     <object>
         <name>Tree</name>
+        <pose>Unspecified</pose>
+        <truncated>0</truncated>
+        <difficult>0</difficult>
         <bndbox>
             <xmin>108</xmin>
             <ymin>48</ymin>
