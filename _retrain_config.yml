@@ -17,7 +17,7 @@ single_tile: True
 training_images: All
 rgb_tile_dir: /home/b.weinstein/DeepForest/data/SJER/
 snapshot: None
-batch_size: 1      
+batch_size: 5      
 epochs: 10
 save_snapshot_path: /orange/ewhite/b.weinstein/retinanet/snapshots/
 backbone: resnet50
