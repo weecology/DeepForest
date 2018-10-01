@@ -103,7 +103,7 @@ class recallCallback(keras.callbacks.Callback):
 
 
 #Hand annotated mAP
-class handmAP(keras.callbacks.Callback):
+class NEONmAP(keras.callbacks.Callback):
     """ Evaluation callback for arbitrary datasets.
     """
 
@@ -174,4 +174,4 @@ class handmAP(keras.callbacks.Callback):
         logs['mAP'] = self.mean_ap
 
         if self.verbose == 1:
-            print('mAP: {:.4f}'.format(self.mean_ap))
+            print('NEON mAP: {:.4f}'.format(self.mean_ap))

@@ -89,15 +89,28 @@ def load_xml(path,res):
     ymax=[]
     label=[]
     
-    #Construct frame
-    for tree in tile_xml:
-        xmin.append(tree["bndbox"]["xmin"])
-        xmax.append(tree["bndbox"]["xmax"])
-        ymin.append(tree["bndbox"]["ymin"])
-        ymax.append(tree["bndbox"]["ymax"])
-        label.append(tree['name'])
+    if type(tile_xml) == list:
         
-    treeID=np.arange(len(tile_xml))
+        treeID=np.arange(len(tile_xml))
+        
+        #Construct frame if multiple trees
+        for tree in tile_xml:
+            xmin.append(tree["bndbox"]["xmin"])
+            xmax.append(tree["bndbox"]["xmax"])
+            ymin.append(tree["bndbox"]["ymin"])
+            ymax.append(tree["bndbox"]["ymax"])
+            label.append(tree['name'])
+    else:
+        
+        #One tree
+        treeID=0
+        
+        xmin.append(tile_xml["bndbox"]["xmin"])
+        xmax.append(tile_xml["bndbox"]["xmax"])
+        ymin.append(tile_xml["bndbox"]["ymin"])
+        ymax.append(tile_xml["bndbox"]["ymax"])
+        label.append(tile_xml['name'])        
+        
     rgb_path=doc["annotation"]["filename"]
     
     #bounds
@@ -214,4 +227,32 @@ def split_training(data,DeepForest_config,experiment,single_tile=False):
     
     return([training.to_dict("index"),evaluation.to_dict("index")])
     
+def NEON_annotations(site,DeepForest_config):
+   
+    glob_path=os.path.join("data",site,"annotations") + "/" + site + "*.xml"
+    xmls=glob.glob(glob_path)
     
+    annotations=[]
+    for xml in xmls:
+        r=load_xml(xml,DeepForest_config["rgb_res"])
+        annotations.append(r)
+
+    data=pd.concat(annotations)
+    
+    #Compute list of sliding windows, assumed that all objects are the same extent and resolution
+    image_path=os.path.join("data",site, data.rgb_path.unique()[0])
+    windows=compute_windows(image=image_path, pixels=DeepForest_config["patch_size"], overlap=DeepForest_config["patch_overlap"])
+    
+    #Compute Windows
+    #Create dictionary of windows for each image
+    tile_windows={}
+    
+    all_images=list(data.rgb_path.unique())
+
+    tile_windows["image"]=all_images
+    tile_windows["windows"]=np.arange(0,len(windows))
+    
+    #Expand grid
+    tile_data=expand_grid(tile_windows)    
+    
+    return [data,tile_data.to_dict("index")]

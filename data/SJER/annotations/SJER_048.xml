@@ -8,6 +8,9 @@
     <segmented>0</segmented>
     <object>
         <name>Tree</name>
+        <pose>Unspecified</pose>
+        <truncated>0</truncated>
+        <difficult>0</difficult>
         <bndbox>
             <xmin>117</xmin>
             <ymin>258</ymin>
@@ -23,8 +26,8 @@
         <bndbox>
             <xmin>106</xmin>
             <ymin>87</ymin>
-            <xmax>176</xmax>
-            <ymax>150</ymax>
+            <xmax>236</xmax>
+            <ymax>182</ymax>
         </bndbox>
     </object>
     <object>

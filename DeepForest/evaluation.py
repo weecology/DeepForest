@@ -64,7 +64,7 @@ def neonRecall(
         plot_data=site_data[site_data["plotID"]==plot]
 
         #load plot image
-        tile="data/" + site + "/2017/" + plot + ".tif"
+        tile="data/" + site + "/" + plot + ".tif"
         numpy_image=load_image(tile)
 
         #Gather detections

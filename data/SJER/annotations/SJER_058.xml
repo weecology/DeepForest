@@ -9,6 +9,108 @@
     <object>
         <name>Tree</name>
         <bndbox>
+            <xmin>118</xmin>
+            <ymin>251</ymin>
+            <xmax>149</xmax>
+            <ymax>277</ymax>
+        </bndbox>
+    </object>
+    <object>
+        <name>Tree</name>
+        <bndbox>
+            <xmin>99</xmin>
+            <ymin>280</ymin>
+            <xmax>127</xmax>
+            <ymax>324</ymax>
+        </bndbox>
+    </object>
+    <object>
+        <name>Tree</name>
+        <bndbox>
+            <xmin>114</xmin>
+            <ymin>217</ymin>
+            <xmax>140</xmax>
+            <ymax>244</ymax>
+        </bndbox>
+    </object>
+    <object>
+        <name>Tree</name>
+        <bndbox>
+            <xmin>56</xmin>
+            <ymin>253</ymin>
+            <xmax>82</xmax>
+            <ymax>287</ymax>
+        </bndbox>
+    </object>
+    <object>
+        <name>Tree</name>
+        <bndbox>
+            <xmin>142</xmin>
+            <ymin>287</ymin>
+            <xmax>165</xmax>
+            <ymax>309</ymax>
+        </bndbox>
+    </object>
+    <object>
+        <name>Tree</name>
+        <bndbox>
+            <xmin>112</xmin>
+            <ymin>336</ymin>
+            <xmax>152</xmax>
+            <ymax>375</ymax>
+        </bndbox>
+    </object>
+    <object>
+        <name>Tree</name>
+        <bndbox>
+            <xmin>155</xmin>
+            <ymin>309</ymin>
+            <xmax>188</xmax>
+            <ymax>348</ymax>
+        </bndbox>
+    </object>
+    <object>
+        <name>Tree</name>
+        <bndbox>
+            <xmin>63</xmin>
+            <ymin>301</ymin>
+            <xmax>99</xmax>
+            <ymax>345</ymax>
+        </bndbox>
+    </object>
+    <object>
+        <name>Tree</name>
+        <bndbox>
+            <xmin>57</xmin>
+            <ymin>348</ymin>
+            <xmax>112</xmax>
+            <ymax>385</ymax>
+        </bndbox>
+    </object>
+    <object>
+        <name>Tree</name>
+        <bndbox>
+            <xmin>158</xmin>
+            <ymin>250</ymin>
+            <xmax>206</xmax>
+            <ymax>282</ymax>
+        </bndbox>
+    </object>
+    <object>
+        <name>Tree</name>
+        <bndbox>
+            <xmin>256</xmin>
+            <ymin>362</ymin>
+            <xmax>325</xmax>
+            <ymax>396</ymax>
+        </bndbox>
+    </object>
+    <object>
+        <name>Tree</name>
+        <pose>Unspecified</pose>
+        <truncated>0</truncated>
+        <difficult>0</difficult>
+        <bndbox>
             <xmin>104</xmin>
             <ymin>79</ymin>
             <xmax>237</xmax>
@@ -17,6 +119,9 @@
     </object>
     <object>
         <name>Tree</name>
+        <pose>Unspecified</pose>
+        <truncated>0</truncated>
+        <difficult>0</difficult>
         <bndbox>
             <xmin>286</xmin>
             <ymin>108</ymin>
@@ -26,6 +131,9 @@
     </object>
     <object>
         <name>Tree</name>
+        <pose>Unspecified</pose>
+        <truncated>0</truncated>
+        <difficult>0</difficult>
         <bndbox>
             <xmin>238</xmin>
             <ymin>171</ymin>
@@ -35,6 +143,9 @@
     </object>
     <object>
         <name>Tree</name>
+        <pose>Unspecified</pose>
+        <truncated>0</truncated>
+        <difficult>0</difficult>
         <bndbox>
             <xmin>91</xmin>
             <ymin>7</ymin>
@@ -44,6 +155,9 @@
     </object>
     <object>
         <name>Tree</name>
+        <pose>Unspecified</pose>
+        <truncated>0</truncated>
+        <difficult>0</difficult>
         <bndbox>
             <xmin>329</xmin>
             <ymin>38</ymin>
@@ -53,6 +167,9 @@
     </object>
     <object>
         <name>Tree</name>
+        <pose>Unspecified</pose>
+        <truncated>0</truncated>
+        <difficult>0</difficult>
         <bndbox>
             <xmin>175</xmin>
             <ymin>353</ymin>
@@ -62,6 +179,9 @@
     </object>
     <object>
         <name>Tree</name>
+        <pose>Unspecified</pose>
+        <truncated>0</truncated>
+        <difficult>0</difficult>
         <bndbox>
             <xmin>184</xmin>
             <ymin>19</ymin>

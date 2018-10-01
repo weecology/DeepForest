@@ -57,7 +57,7 @@ from keras_retinanet .utils.transform import random_transform_generator
 from DeepForest.onthefly_generator import OnTheFlyGenerator
 
 #Custom Callbacks
-from DeepForest.callbacks import jaccardCallback, recallCallback,handmAP
+from DeepForest.callbacks import jaccardCallback, recallCallback,NEONmAP
 
 def makedirs(path):
     # Intended behavior: try to create the directory,
@@ -132,6 +132,22 @@ def create_models(backbone_retinanet, num_classes, weights, multi_gpu=0, freeze_
 
     return model, training_model, prediction_model
 
+def create_NEON_generator(args,site,DeepForest_config):
+    """ Create generators for training and validation.
+    """
+
+    annotations,windows=preprocess.NEON_annotations(site,DeepForest_config)
+
+    #Training Generator
+    generator =  OnTheFlyGenerator(
+        annotations,
+        windows,
+        batch_size=args.batch_size,
+        DeepForest_config=DeepForest_config,
+        group_method="none",
+        shuffle_groups=False)
+    
+    return(generator)
 
 def create_callbacks(model, training_model, prediction_model, validation_generator, args,experiment,DeepForest_config):
     """ Creates the callbacks to use during training.
@@ -222,28 +238,19 @@ def create_callbacks(model, training_model, prediction_model, validation_generat
     
     callbacks.append(recall)
     
-    #Optional compute mean average precision on hand annotated crops
-    if DeepForest_config["hand_maP"]:
-        
-        #Load hand annotations
-        data=preprocess.load_xml(DeepForest_config["hand_annotations"],DeepForest_config["rgb_res"])
-        
-        #Enforce the single tile cut in a new dict
-        hand_dict=DeepForest_config.copy()
-        hand_dict["single_tile"]=True
-        
-        #Create just the validation generator
-        _, validation_generator = create_generators(args,data,DeepForest_config=hand_dict)
-        
-        hand_evaluation = handmAP(validation_generator, 
-                                  tensorboard=tensorboard_callback,
-                                  experiment=experiment,
-                                  save_path=args.save_path,
-                                  score_threshold=args.score_threshold,
-                                  DeepForest_config=DeepForest_config)
+    #Neon mean IoU precision
+    #create the NEON mAP generator 
+    NEON_generator = create_NEON_generator(args,site,DeepForest_config)
     
-        hand_evaluation = RedirectModel(hand_evaluation, prediction_model)
-        callbacks.append(hand_evaluation)        
+    neon_evaluation = NEONmAP(validation_generator, 
+                              tensorboard=tensorboard_callback,
+                              experiment=experiment,
+                              save_path=args.save_path,
+                              score_threshold=args.score_threshold,
+                              DeepForest_config=DeepForest_config)
+
+    neon_evaluation = RedirectModel(neon_evaluation, prediction_model)
+    callbacks.append(neon_evaluation)  
         
     return callbacks
 

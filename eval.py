@@ -48,6 +48,23 @@ def get_session():
     config.gpu_options.allow_growth = True
     return tf.Session(config=config)
 
+def create_NEON_generator(args,site,DeepForest_config):
+    """ Create generators for training and validation.
+    """
+
+    annotations,windows=preprocess.NEON_annotations(site,DeepForest_config)
+
+    #Training Generator
+    generator =  OnTheFlyGenerator(
+        annotations,
+        windows,
+        batch_size=args.batch_size,
+        DeepForest_config=DeepForest_config,
+        group_method="none",
+        shuffle_groups=False)
+    
+    return(generator)
+
 def create_generator(args,data,config):
     """ Create generators for training and validation.
     """
@@ -111,22 +128,83 @@ def main(data,DeepForest_config,experiment,args=None):
     if args.save_path is not None and not os.path.exists(args.save_path + dirname):
         os.makedirs(args.save_path + dirname)
 
-    # create the generator
+    # create the testing generators
     generator = create_generator(args,data,DeepForest_config)
 
+    #create the NEON mAP generator 
+    NEON_generator = create_NEON_generator(args,site,DeepForest_config)
+    
     # load the model
     print('Loading model, this may take a second...')
     model = models.load_model(args.model, backbone_name=args.backbone, convert=args.convert_model,nms_threshold=DeepForest_config["nms_threshold"])
 
     #print(model.summary())
 
+    #average_precisions = evaluate(
+        #generator,
+        #model,
+        #iou_threshold=args.iou_threshold,
+        #score_threshold=args.score_threshold,
+        #max_detections=args.max_detections,
+        #save_path=args.save_path + dirname
+    #)
+
+    ## print evaluation
+    #present_classes = 0
+    #precision = 0
+    #for label, (average_precision, num_annotations) in average_precisions.items():
+        #print('{:.0f} instances of class'.format(num_annotations),
+              #generator.label_to_name(label), 'with average precision: {:.4f}'.format(average_precision))
+        #if num_annotations > 0:
+            #present_classes += 1
+            #precision       += average_precision
+    #print('mAP: {:.4f}'.format(precision / present_classes))
+    #experiment.log_metric("mAP", precision / present_classes)    
+
+    ##Use field collected polygons only for Florida site
+    ##if site == "OSBS":
+
+        ###Ground truth scores
+        ##jaccard=Jaccard(
+            ##generator=generator,
+            ##model=model,            
+            ##score_threshold=args.score_threshold,
+            ##save_path=args.save_path,
+            ##experiment=experiment,
+            ##DeepForest_config=DeepForest_config
+        ##)
+        ##print(f" Mean IoU: {jaccard:.2f}")
+        
+        ##experiment.log_metric("Mean IoU", jaccard)               
+        
+    ##Neon plot recall rate
+    #recall=neonRecall(
+        #site,
+        #generator,
+        #model,            
+        #score_threshold=args.score_threshold,
+        #save_path=args.save_path,
+        #experiment=experiment,
+        #DeepForest_config=DeepForest_config
+    #)
+    
+    #experiment.log_metric("Recall", recall)       
+    
+    #print(f" Recall: {recall:.2f}")
+        
+    ##Logs the number of train and eval "trees"
+    #ntrees=[len(x) for x in generator.annotation_dict.values()]
+    #experiment.log_parameter("Number of Trees", ntrees)    
+    
+    #NEON plot mAP
     average_precisions = evaluate(
-        generator,
+        NEON_generator,
         model,
         iou_threshold=args.iou_threshold,
         score_threshold=args.score_threshold,
         max_detections=args.max_detections,
-        save_path=args.save_path + dirname
+        save_path=args.save_path + dirname,
+        experiment=experiment
     )
 
     # print evaluation
@@ -138,43 +216,9 @@ def main(data,DeepForest_config,experiment,args=None):
         if num_annotations > 0:
             present_classes += 1
             precision       += average_precision
-    print('mAP: {:.4f}'.format(precision / present_classes))
-    experiment.log_metric("mAP", precision / present_classes)    
-
-    #Use field collected polygons only for Florida site
-    #if site == "OSBS":
-
-        ##Ground truth scores
-        #jaccard=Jaccard(
-            #generator=generator,
-            #model=model,            
-            #score_threshold=args.score_threshold,
-            #save_path=args.save_path,
-            #experiment=experiment,
-            #DeepForest_config=DeepForest_config
-        #)
-        #print(f" Mean IoU: {jaccard:.2f}")
-        
-        #experiment.log_metric("Mean IoU", jaccard)               
-        
-    #Neon plot recall rate
-    recall=neonRecall(
-        site,
-        generator,
-        model,            
-        score_threshold=args.score_threshold,
-        save_path=args.save_path,
-        experiment=experiment,
-        DeepForest_config=DeepForest_config
-    )
+    print('NEON mAP: {:.4f}'.format(precision / present_classes))
+    experiment.log_metric("NEON_mAP", precision / present_classes)        
     
-    experiment.log_metric("Recall", recall)       
-    
-    print(f" Recall: {recall:.2f}")
-        
-    #Logs the number of train and eval "trees"
-    ntrees=[len(x) for x in generator.annotation_dict.values()]
-    experiment.log_parameter("Number of Trees", ntrees)    
     
 if __name__ == '__main__':
     
@@ -230,7 +274,7 @@ if __name__ == '__main__':
         '--score-threshold', '0.05',
         '--suppression-threshold','0.1', 
         '--save-path', 'snapshots/images/', 
-        '--model', '/orange/ewhite/b.weinstein/retinanet/snapshots/20180929_145238/resnet50_27.h5', 
+        '--model', '/Users/ben/Documents/DeepForest/snapshots/resnet50_onthefly_10.h5', 
         '--convert-model'
     ]
        
