@@ -1,0 +1,36 @@
+<annotation>
+    <folder>OSBS</folder>
+    <filename>OSBS_023.tif</filename>
+    <size>
+        <width>400</width>
+        <height>400</height>
+    </size>
+    <segmented>0</segmented>
+    <object>
+        <name>Tree</name>
+        <bndbox>
+            <xmin>8</xmin>
+            <ymin>267</ymin>
+            <xmax>137</xmax>
+            <ymax>390</ymax>
+        </bndbox>
+    </object>
+    <object>
+        <name>Tree</name>
+        <bndbox>
+            <xmin>44</xmin>
+            <ymin>213</ymin>
+            <xmax>92</xmax>
+            <ymax>259</ymax>
+        </bndbox>
+    </object>
+    <object>
+        <name>Tree</name>
+        <bndbox>
+            <xmin>154</xmin>
+            <ymin>207</ymin>
+            <xmax>301</xmax>
+            <ymax>388</ymax>
+        </bndbox>
+    </object>
+</annotation>
