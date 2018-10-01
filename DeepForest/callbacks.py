@@ -107,7 +107,7 @@ class NEONmAP(keras.callbacks.Callback):
     """ Evaluation callback for arbitrary datasets.
     """
 
-    def __init__(self, generator, iou_threshold=0.5, score_threshold=0.05, max_detections=100, suppression_threshold=0.2,save_path=None, tensorboard=None, weighted_average=False, verbose=1,experiment=None,DeepForest_config=None):
+    def __init__(self, generator, iou_threshold=0.5, score_threshold=0.05, max_detections=100, suppression_threshold=0.2,save_path=None, weighted_average=False, verbose=1,experiment=None,DeepForest_config=None):
         """ Evaluate a given dataset using a given model at the end of every epoch during training.
 
         # Arguments
@@ -117,7 +117,6 @@ class NEONmAP(keras.callbacks.Callback):
             max_detections  : The maximum number of detections to use per image.
             suppression_threshold:  Percent overlap allowed among boxes
             save_path       : The path to save images with visualized detections to.
-            tensorboard     : Instance of keras.callbacks.TensorBoard used to log the mAP value.
             verbose         : Set the verbosity level, by default this is set to 1.
             Experiment   : Comet ml experiment for online logging
         """
@@ -127,7 +126,6 @@ class NEONmAP(keras.callbacks.Callback):
         self.max_detections  = max_detections
         self.suppression_threshold=suppression_threshold
         self.save_path       = save_path
-        self.tensorboard     = tensorboard
         self.weighted_average = weighted_average
         self.verbose         = verbose
         self.experiment = experiment
@@ -159,19 +157,12 @@ class NEONmAP(keras.callbacks.Callback):
             total_instances.append(num_annotations)
             precisions.append(average_precision)
         if self.weighted_average:
-            self.mean_ap = sum([a * b for a, b in zip(total_instances, precisions)]) / sum(total_instances)
+            self.mean_neon_ap = sum([a * b for a, b in zip(total_instances, precisions)]) / sum(total_instances)
         else:
-            self.mean_ap = sum(precisions) / sum(x > 0 for x in total_instances)
-
-        if self.tensorboard is not None and self.tensorboard.writer is not None:
-            import tensorflow as tf
-            summary = tf.Summary()
-            summary_value = summary.value.add()
-            summary_value.simple_value = self.mean_ap
-            summary_value.tag = "mAP"
-            self.tensorboard.writer.add_summary(summary, epoch)
-
-        logs['mAP'] = self.mean_ap
+            self.mean_neon_ap = sum(precisions) / sum(x > 0 for x in total_instances)
 
         if self.verbose == 1:
             print('NEON mAP: {:.4f}'.format(self.mean_ap))
+        
+        self.experiment.log_metric("Neon mAP", self.mean_neon_ap)       
+        

@@ -243,7 +243,6 @@ def create_callbacks(model, training_model, prediction_model, validation_generat
     NEON_generator = create_NEON_generator(args,site,DeepForest_config)
     
     neon_evaluation = NEONmAP(validation_generator, 
-                              tensorboard=tensorboard_callback,
                               experiment=experiment,
                               save_path=args.save_path,
                               score_threshold=args.score_threshold,
