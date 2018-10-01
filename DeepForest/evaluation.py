@@ -65,7 +65,12 @@ def neonRecall(
 
         #load plot image
         tile="data/" + site + "/" + plot + ".tif"
-        numpy_image=load_image(tile)
+        
+        #Check if file exists, if not, skip
+        if os.path.exists(tile):
+            numpy_image=load_image(tile)
+        else:
+            continue
 
         #Gather detections
         final_boxes=predict_tile(numpy_image,generator,model,score_threshold,max_detections,suppression_threshold)            
