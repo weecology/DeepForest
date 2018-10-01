@@ -162,7 +162,7 @@ class NEONmAP(keras.callbacks.Callback):
             self.mean_neon_ap = sum(precisions) / sum(x > 0 for x in total_instances)
 
         if self.verbose == 1:
-            print('NEON mAP: {:.4f}'.format(self.mean_ap))
+            print('NEON mAP: {:.4f}'.format(self.mean_neon_ap))
         
         self.experiment.log_metric("Neon mAP", self.mean_neon_ap)       
         

@@ -16,8 +16,10 @@
 #maybe export  HDF5_USE_FILE_LOCKING=FALSE for saving paths.
 
 ml git
-ml geos/3.6.2
 ml tensorflow/1.10.1
+ml geos/3.6.2
+
+echo $PYTHONPATH
 export PYTHONPATH=${PYTHONPATH}:/home/b.weinstein/miniconda3/envs/DeepForest/lib/python3.6/site-packages/
 echo $PYTHONPATH
 
