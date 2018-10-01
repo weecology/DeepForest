@@ -119,6 +119,7 @@ def create_models(backbone_retinanet, num_classes, weights, multi_gpu=0, freeze_
         training_model = model
 
     # make prediction model
+    print("Making prediction model with nms = %.2f" % nms_threshold )
     prediction_model = retinanet_bbox(model=model,nms_threshold=nms_threshold)
 
     # compile model
@@ -415,7 +416,7 @@ def main(args=None,data=None,DeepForest_config=None,experiment=None):
         )
 
     # print model summary
-    print(model.summary())
+    #print(model.summary())
 
     # this lets the generator compute backbone layer shapes using the actual backbone model
     if 'vgg' in args.backbone or 'densenet' in args.backbone:
