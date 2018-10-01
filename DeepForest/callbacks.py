@@ -133,7 +133,7 @@ class NEONmAP(keras.callbacks.Callback):
         self.experiment = experiment
         self.DeepForest_config = DeepForest_config
 
-        super(Evaluate, self).__init__()
+        super(NEONmAP, self).__init__()
 
     def on_epoch_end(self, epoch, logs=None):
         logs = logs or {}

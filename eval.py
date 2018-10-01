@@ -140,61 +140,61 @@ def main(data,DeepForest_config,experiment,args=None):
 
     #print(model.summary())
 
-    #average_precisions = evaluate(
-        #generator,
-        #model,
-        #iou_threshold=args.iou_threshold,
-        #score_threshold=args.score_threshold,
-        #max_detections=args.max_detections,
-        #save_path=args.save_path + dirname
-    #)
+    average_precisions = evaluate(
+        generator,
+        model,
+        iou_threshold=args.iou_threshold,
+        score_threshold=args.score_threshold,
+        max_detections=args.max_detections,
+        save_path=args.save_path + dirname
+    )
 
-    ## print evaluation
-    #present_classes = 0
-    #precision = 0
-    #for label, (average_precision, num_annotations) in average_precisions.items():
-        #print('{:.0f} instances of class'.format(num_annotations),
-              #generator.label_to_name(label), 'with average precision: {:.4f}'.format(average_precision))
-        #if num_annotations > 0:
-            #present_classes += 1
-            #precision       += average_precision
-    #print('mAP: {:.4f}'.format(precision / present_classes))
-    #experiment.log_metric("mAP", precision / present_classes)    
+    # print evaluation
+    present_classes = 0
+    precision = 0
+    for label, (average_precision, num_annotations) in average_precisions.items():
+        print('{:.0f} instances of class'.format(num_annotations),
+              generator.label_to_name(label), 'with average precision: {:.4f}'.format(average_precision))
+        if num_annotations > 0:
+            present_classes += 1
+            precision       += average_precision
+    print('mAP: {:.4f}'.format(precision / present_classes))
+    experiment.log_metric("mAP", precision / present_classes)    
 
-    ##Use field collected polygons only for Florida site
-    ##if site == "OSBS":
+    #Use field collected polygons only for Florida site
+    #if site == "OSBS":
 
-        ###Ground truth scores
-        ##jaccard=Jaccard(
-            ##generator=generator,
-            ##model=model,            
-            ##score_threshold=args.score_threshold,
-            ##save_path=args.save_path,
-            ##experiment=experiment,
-            ##DeepForest_config=DeepForest_config
-        ##)
-        ##print(f" Mean IoU: {jaccard:.2f}")
+        ##Ground truth scores
+        #jaccard=Jaccard(
+            #generator=generator,
+            #model=model,            
+            #score_threshold=args.score_threshold,
+            #save_path=args.save_path,
+            #experiment=experiment,
+            #DeepForest_config=DeepForest_config
+        #)
+        #print(f" Mean IoU: {jaccard:.2f}")
         
-        ##experiment.log_metric("Mean IoU", jaccard)               
+        #experiment.log_metric("Mean IoU", jaccard)               
         
-    ##Neon plot recall rate
-    #recall=neonRecall(
-        #site,
-        #generator,
-        #model,            
-        #score_threshold=args.score_threshold,
-        #save_path=args.save_path,
-        #experiment=experiment,
-        #DeepForest_config=DeepForest_config
-    #)
+    #Neon plot recall rate
+    recall=neonRecall(
+        site,
+        generator,
+        model,            
+        score_threshold=args.score_threshold,
+        save_path=args.save_path,
+        experiment=experiment,
+        DeepForest_config=DeepForest_config
+    )
     
-    #experiment.log_metric("Recall", recall)       
+    experiment.log_metric("Recall", recall)       
     
-    #print(f" Recall: {recall:.2f}")
+    print(f" Recall: {recall:.2f}")
         
-    ##Logs the number of train and eval "trees"
-    #ntrees=[len(x) for x in generator.annotation_dict.values()]
-    #experiment.log_parameter("Number of Trees", ntrees)    
+    #Logs the number of train and eval "trees"
+    ntrees=[len(x) for x in generator.annotation_dict.values()]
+    experiment.log_parameter("Number of Trees", ntrees)    
     
     #NEON plot mAP
     average_precisions = evaluate(
