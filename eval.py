@@ -204,7 +204,8 @@ def main(data,DeepForest_config,experiment,args=None):
         score_threshold=args.score_threshold,
         max_detections=args.max_detections,
         save_path=args.save_path + dirname,
-        experiment=experiment
+        experiment=experiment,
+        base_dir=os.path.join(site,"data")        
     )
 
     # print evaluation
