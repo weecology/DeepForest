@@ -31,7 +31,7 @@ class OnTheFlyGenerator(Generator):
         data,
         window_dict,
         DeepForest_config,
-        base_dir=None
+        base_dir=None,
         **kwargs
     ):
         """ Initialize a CSV data generator.
@@ -121,7 +121,6 @@ class OnTheFlyGenerator(Generator):
         
         #Load rgb image and get crop
         image=retrieve_window(numpy_image=self.numpy_image,index=row["windows"],windows=self.windows)
-        
 
         #BGR order
         image=image[:,:,::-1].copy()
@@ -141,6 +140,12 @@ class OnTheFlyGenerator(Generator):
         #Find the original data and crop
         image_name=self.image_names[image_index]
         row=self.image_data[image_name]
+        
+        #Check for blank image, if so, enforce no annotations
+        remove_annotations=image_is_blank(self.image)
+        
+        if remove_annotations:
+            return np.zeros((1, 5))
         
         #Look for annotations in previous epoch
         key=row["image"]+"_"+str(row["windows"])
@@ -167,6 +172,26 @@ class OnTheFlyGenerator(Generator):
     
 
 #Utility functions
+
+def normalize(image):
+    
+    #Range normalize for all channels 
+    
+    v_min = image.min(axis=(0, 1), keepdims=True)
+    v_max = image.max(axis=(0, 1), keepdims=True)
+    normalized_image=(v - v_min)/(v_max - v_min)
+    
+    return normalized_image
+
+def image_is_blank(image):
+    
+    is_zero=image.sum(2)==0
+    is_zero=is_zero.sum()/is_zero.size
+    
+    if is_zero > 0.05:
+        return True
+    else:
+        return False
 
 def expand_grid(data_dict):
     rows = itertools.product(*data_dict.values())

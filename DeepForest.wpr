@@ -6,7 +6,7 @@
 [project attributes]
 proj.file-type = 'shared'
 proj.launch-config = {loc('debug.py'): ('project',
-        (u'--mode retrain',
+        (u'--mode train',
          '')),
                       loc('eval.py'): ('project',
                                        (u'--mode train',
