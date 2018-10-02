@@ -71,21 +71,15 @@ def parse_args(args):
     """ Parse the arguments.
     """
     parser     = argparse.ArgumentParser(description='Debug script for a RetinaNet network.')
-    subparsers = parser.add_subparsers(help='Arguments for specific dataset types.', dest='dataset_type')
-    subparsers.required = True
 
     def csv_list(string):
         return string.split(',')
-
-    #On the fly parser
-    otf_parser = subparsers.add_parser('onthefly')
-    otf_parser.add_argument('annotations', help='Path to CSV file containing annotations for training.')
 
     parser.add_argument('-l', '--loop', help='Loop forever, even if the dataset is exhausted.', action='store_true')
     parser.add_argument('--batch-size',      help='Size of the batches.', default=1, type=int)    
     parser.add_argument('--no-resize', help='Disable image resizing.', dest='resize', action='store_false')
     parser.add_argument('--anchors', help='Show positive anchors on the image.', action='store_true')
-    parser.add_argument('--annotations', help='Show annotations on the image. Green annotations have anchors, red annotations don\'t and therefore don\'t contribute to training.', action='store_true')
+    parser.add_argument('--annotations', help='Show annotations on the image. Green annotations have anchors, red annotations don\'t and therefore don\'t contribute to training.', action='store_false')
     parser.add_argument('--random-transform', help='Randomly transform image and annotations.', action='store_true')
     parser.add_argument('--image-min-side', help='Rescale the image so the smallest side is min_side.', type=int, default=800)
     parser.add_argument('--image-max-side', help='Rescale the image if the largest side is larger than max_side.', type=int, default=1333)
@@ -159,22 +153,26 @@ def main(DeepForest_config,data,args=None):
 
 
 if __name__ == '__main__':
-
-    mode= "train"
     
     import numpy as np
     from DeepForest import preprocess    
     from DeepForest.config import load_config        
     
+    #Set training or training
+    mode_parser     = argparse.ArgumentParser(description='Retinanet training or finetuning?')
+    mode_parser.add_argument('--mode', help='train or retrain?' )
+    
+    mode=mode_parser.parse_args()
+    
     #Load DeepForest_config file
-    DeepForest_config=load_config(mode)
+    DeepForest_config=load_config(mode.mode)
       
-    if mode == "retrain":
+    if mode.mode == "retrain":
          
         #Load hand annotated data
         data=preprocess.load_xml(DeepForest_config["hand_annotations"],DeepForest_config["rgb_res"])
     
-    if mode=="train":
+    if mode.mode=="train":
         
         #Load psuedo-labels
         data=preprocess.load_data(DeepForest_config["training_csvs"],DeepForest_config["rgb_res"])        
@@ -183,8 +181,13 @@ if __name__ == '__main__':
     if DeepForest_config['preprocess']['zero_area']:
         data=preprocess.zero_area(data)    
     
+        #pass an args object instead of using command line        
+        args = [
+            "--batch-size",str(DeepForest_config['batch_size'])
+            ]
+        
     #Run    
-    main(data=data,DeepForest_config=DeepForest_config)
+    main(args=args,data=data,DeepForest_config=DeepForest_config)
     
         
         

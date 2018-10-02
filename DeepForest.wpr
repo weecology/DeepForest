@@ -6,7 +6,7 @@
 [project attributes]
 proj.file-type = 'shared'
 proj.launch-config = {loc('debug.py'): ('project',
-        (u'--annotations onthefly data/training/annotations.csv ',
+        (u'--mode retrain',
          '')),
                       loc('eval.py'): ('project',
                                        (u'--mode train',
