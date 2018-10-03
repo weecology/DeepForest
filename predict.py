@@ -17,6 +17,14 @@ import time
 # set tf backend to allow memory to grow, instead of claiming everything
 import tensorflow as tf
 
+#parse args
+import argparse
+
+#Set training or training
+mode_parser     = argparse.ArgumentParser(description='Prediction of a new image')
+mode_parser.add_argument('--model', help='path to training model' )
+args=mode_parser.parse_args()
+
 def get_session():
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
@@ -27,19 +35,16 @@ keras.backend.tensorflow_backend.set_session(get_session())
 
 # adjust this to point to your downloaded/trained model
 # models can be downloaded here: https://github.com/fizyr/keras-retinanet/releases
-model_path = os.path.join('snapshots', 'resnet50_onthefly_10.h5')
 
 # load retinanet model
-model = models.load_model(model_path, backbone_name='resnet50')
-
 # if the model is not converted to an inference model, use the line below
 # see: https://github.com/fizyr/keras-retinanet#converting-a-training-model-to-inference-model
-model = models.load_model(model_path, backbone_name='resnet50', convert=True)
+model = models.load_model(args.model, backbone_name='resnet50', convert=True,nms_threshold=0.1)
 
 labels_to_names = {0: 'Tree'}
 
 # load image
-image = read_image_bgr("data/OSBS/OSBS_007.tif")
+image = read_image_bgr("data/SJER/SJER_056.tif")
 
 # copy to draw on
 draw = image.copy()
@@ -60,7 +65,7 @@ boxes /= scale
 # visualize detections
 for box, score, label in zip(boxes[0], scores[0], labels[0]):
     # scores are sorted so we can break
-    if score < 0.5:
+    if score < 0.1:
         break
         
     color = label_color(label)
