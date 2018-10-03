@@ -47,7 +47,7 @@ class OnTheFlyGenerator(Generator):
         if not base_dir:
             self.base_dir=DeepForest_config["rgb_tile_dir"]
         else:
-            self.base_dir = base_dir
+            self.base_dir = base_dir + "/"
             
         #Holder for image path, keep from reloading same image to save time.
         self.previous_image_path=None
