@@ -258,9 +258,9 @@ def predict_tile(numpy_image,generator,model,score_threshold,max_detections,supp
         return None
 
     #Non-max supression
-    all_boxes=np.concatenate(plot_detections)
-    final_box_index=non_max_suppression(all_boxes[:,:4], overlapThresh=suppression_threshold)
-    final_boxes=all_boxes[final_box_index,:]
+    final_boxes=np.concatenate(plot_detections)
+    #final_box_index=non_max_suppression(all_boxes[:,:4], overlapThresh=suppression_threshold)
+    #final_boxes=all_boxes[final_box_index,:]
     return final_boxes
 
 def create_polygon(row,bounds,cell_size):
