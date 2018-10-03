@@ -213,7 +213,8 @@ def predict_tile(numpy_image,generator,model,score_threshold,max_detections,supp
         raw_image=retrieve_window(numpy_image,window)
 
         #utilize the generator to scale?
-        image, scale = generator.resize_image(raw_image)
+        image        = generator.preprocess_image(raw_image)        
+        image, scale = generator.resize_image(image)
 
         # run network
         boxes, scores, labels = model.predict_on_batch(np.expand_dims(image, axis=0))[:3]
@@ -258,9 +259,9 @@ def predict_tile(numpy_image,generator,model,score_threshold,max_detections,supp
 
     #Non-max supression
     all_boxes=np.concatenate(plot_detections)
-    #final_box_index=non_max_suppression(all_boxes[:,:4], overlapThresh=suppression_threshold)
-    #final_boxes=all_boxes[final_box_index,:]
-    return plot_detections
+    final_box_index=non_max_suppression(all_boxes[:,:4], overlapThresh=suppression_threshold)
+    final_boxes=all_boxes[final_box_index,:]
+    return final_boxes
 
 def create_polygon(row,bounds,cell_size):
 
