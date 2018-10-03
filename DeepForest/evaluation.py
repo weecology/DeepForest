@@ -57,6 +57,9 @@ def neonRecall(
 
     #Get remaining plots
     plots=site_data.plotID.unique()
+    
+    #TODO remove
+    plots=["SJER_012"]
 
     point_contains=[]
     for plot in plots:
@@ -216,6 +219,7 @@ def predict_tile(numpy_image,generator,model,score_threshold,max_detections,supp
         image, scale = generator.resize_image(image)
 
         # run network
+        print("predict tile image shape is %s"  %(image.shape))
         boxes, scores, labels = model.predict_on_batch(np.expand_dims(image, axis=0))[:3]
 
         # correct boxes for image scale
@@ -235,23 +239,24 @@ def predict_tile(numpy_image,generator,model,score_threshold,max_detections,supp
         image_scores     = scores[scores_sort]
         image_labels     = labels[0, indices[scores_sort]]
         image_detections = np.concatenate([image_boxes, np.expand_dims(image_scores, axis=1), np.expand_dims(image_labels, axis=1)], axis=1)        
+        
+        #if multiple windows align detections to original image
 
+        if len(windows)> 1:
+            x,y,w,h=window.getRect()
+            
+            #boxes are in form x1, y1, x2, y2        
+            image_detections[:,0] = image_detections[:,0] + x 
+            image_detections[:,1] = image_detections[:,1] + y 
+            image_detections[:,2] = image_detections[:,2] + x 
+            image_detections[:,3] = image_detections[:,3] + y 
+    
         #Collect detection across windows
         plot_detections.append(image_detections)                
     
-    #if multiple windows, perform additional non-max suppression
-    if len(plot_detections)> 1:
-        #align detections to original image
-        x,y,w,h=window.getRect()
-        
-        #boxes are in form x1, y1, x2, y2        
-        image_detections[:,0] = image_detections[:,0] + x 
-        image_detections[:,1] = image_detections[:,1] + y 
-        image_detections[:,2] = image_detections[:,2] + x 
-        image_detections[:,3] = image_detections[:,3] + y 
-        
-        #Non-max supression
-        final_boxes=np.concatenate(plot_detections)
+    if len(plot_detections) > 1:   
+        #Non-max suppression across windows
+        all_boxes=np.concatenate(plot_detections)
         final_box_index=non_max_suppression(all_boxes[:,:4], overlapThresh=suppression_threshold)
         final_boxes=all_boxes[final_box_index,:]
     else:
