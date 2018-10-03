@@ -212,31 +212,44 @@ def predict_tile(numpy_image,generator,model,score_threshold,max_detections,supp
     #Prediction for each window
     for window in windows:
         raw_image=retrieve_window(numpy_image,window)
-        
-        image_detections=_get_detections(generator, model, score_threshold=score_threshold, max_detections=max_detections, save_path=None,experiment=None)
-            
-        #Stop if no predictions
-        if len(image_detections)==0:
-            continue
+        image        = generator.preprocess_image(raw_image)
+        image, scale = generator.resize_image(image)
 
+        # run network
+        boxes, scores, labels = model.predict_on_batch(np.expand_dims(image, axis=0))[:3]
+
+        # correct boxes for image scale
+        boxes /= scale
+
+        # select indices which have a score above the threshold
+        indices = np.where(scores[0, :] > score_threshold)[0]
+
+        # select those scores
+        scores = scores[0][indices]
+
+        # find the order with which to sort the scores
+        scores_sort = np.argsort(-scores)[:max_detections]
+
+        # select detections
+        image_boxes      = boxes[0, indices[scores_sort], :]
+        image_scores     = scores[scores_sort]
+        image_labels     = labels[0, indices[scores_sort]]
+        image_detections = np.concatenate([image_boxes, np.expand_dims(image_scores, axis=1), np.expand_dims(image_labels, axis=1)], axis=1)        
+
+        #Collect detection across windows
+        plot_detections.append(image_detections)                
+    
+    #if multiple windows, perform additional non-max suppression
+    if len(plot_detections)> 1:
         #align detections to original image
         x,y,w,h=window.getRect()
-
-        #boxes are in form x1, y1, x2, y2
+        
+        #boxes are in form x1, y1, x2, y2        
         image_detections[:,0] = image_detections[:,0] + x 
         image_detections[:,1] = image_detections[:,1] + y 
         image_detections[:,2] = image_detections[:,2] + x 
         image_detections[:,3] = image_detections[:,3] + y 
-
-        #Collect detection across windows
-        plot_detections.append(image_detections)                
-
-    ##If no predictions in any window TODO?
-    #if len(plot_detections)==0:
-        #return None
-    
-    #if multiple windows, perform additional non-max suppression
-    if len(plot_detections)> 1:
+        
         #Non-max supression
         final_boxes=np.concatenate(plot_detections)
         final_box_index=non_max_suppression(all_boxes[:,:4], overlapThresh=suppression_threshold)
