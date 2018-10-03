@@ -147,7 +147,7 @@ def create_NEON_generator(args,site,DeepForest_config):
         DeepForest_config=DeepForest_config,
         group_method="none",
         shuffle_groups=False,
-        base_dir=os.path.join("data","site")
+        base_dir=os.path.join("data",site)
     )
     
     return(generator)
