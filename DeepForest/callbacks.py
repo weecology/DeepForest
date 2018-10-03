@@ -55,7 +55,7 @@ class recallCallback(keras.callbacks.Callback):
     """ Evaluation callback for arbitrary datasets.
     """
 
-    def __init__(self, site,generator, iou_threshold=0.5, score_threshold=0.05, max_detections=100, suppression_threshold=0.2,save_path=None, weighted_average=False, verbose=1,experiment=None,DeepForest_config=None):
+    def __init__(self, site,generator, score_threshold=0.05, max_detections=100, suppression_threshold=0.2,save_path=None, weighted_average=False, verbose=1,experiment=None,DeepForest_config=None):
         """ Evaluate a given dataset using a given model at the end of every epoch during training.
 
         # Arguments
@@ -70,7 +70,6 @@ class recallCallback(keras.callbacks.Callback):
         """
         self.site                = site
         self.generator       = generator
-        self.iou_threshold   = iou_threshold
         self.score_threshold = score_threshold
         self.max_detections  = max_detections
         self.suppression_threshold=suppression_threshold
@@ -92,7 +91,6 @@ class recallCallback(keras.callbacks.Callback):
             self.generator,
             self.model,            
             score_threshold=self.score_threshold,
-            iou_threshold=self.iou_threshold,            
             save_path=self.save_path,
             max_detections=self.max_detections,
             experiment=self.experiment,
