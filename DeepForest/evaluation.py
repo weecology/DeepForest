@@ -58,9 +58,6 @@ def neonRecall(
     #Get remaining plots
     plots=site_data.plotID.unique()
     
-    #TODO remove
-    plots=["SJER_012"]
-
     point_contains=[]
     for plot in plots:
 
@@ -219,7 +216,6 @@ def predict_tile(numpy_image,generator,model,score_threshold,max_detections,supp
         image, scale = generator.resize_image(image)
 
         # run network
-        print("predict tile image shape is %s"  %(image.shape))
         boxes, scores, labels = model.predict_on_batch(np.expand_dims(image, axis=0))[:3]
 
         # correct boxes for image scale
@@ -386,7 +382,7 @@ def Jaccard(
 
             #Save image and send it to logger
             if save_path is not None:
-                draw_detections(numpy_image, final_boxes[:,:4], final_boxes[:,4], final_boxes[:,5], label_to_name=generator.label_to_name,score_threshold=0.05)
+                draw_detections(numpy_image, final_boxes[:,:4], final_boxes[:,4], final_boxes[:,5], label_to_name=generator.label_to_name,score_threshold=score_threshold)
                 cv2.imwrite(os.path.join(save_path, '{}.png'.format(plot)), numpy_image)
                 if experiment:              
                     experiment.log_image(os.path.join(save_path, '{}.png'.format(plot)),file_name=str(plot)+"groundtruth")
