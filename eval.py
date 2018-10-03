@@ -205,7 +205,7 @@ def main(data,DeepForest_config,experiment,args=None):
         max_detections=args.max_detections,
         save_path=args.save_path + dirname,
         experiment=experiment,
-        base_dir=os.path.join(site,"data/")        
+        base_dir=os.path.join("data",site)        
     )
 
     # print evaluation
