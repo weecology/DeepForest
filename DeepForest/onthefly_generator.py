@@ -145,7 +145,7 @@ class OnTheFlyGenerator(Generator):
         remove_annotations=image_is_blank(self.image)
         
         if remove_annotations:
-            return np.zeros((1, 5))
+            return np.zeros((0, 5))
         
         #Look for annotations in previous epoch
         key=row["image"]+"_"+str(row["windows"])
