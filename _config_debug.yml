@@ -1,7 +1,7 @@
 #Config file for DeepMeerkat train.py on local OSX
 
 #SlidingWindow
-patch_size: 400
+patch_size: 200
 patch_overlap: 0.05
 rgb_res: 0.1
 
@@ -20,6 +20,7 @@ save_snapshot_path: None
 backbone: resnet50
 shuffle_training: False
 single_tile: False
+score_threshold: 0.1
 
 #Evaluation
 evaluation_site: OSBS

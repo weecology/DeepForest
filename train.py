@@ -235,6 +235,7 @@ def create_callbacks(model, training_model, prediction_model, validation_generat
                           generator=validation_generator,
                           save_path=args.save_path,
                           DeepForest_config=DeepForest_config,
+                          score_threshold=args.score_threshold,
                           experiment=experiment)
     
     recall = RedirectModel(recall, prediction_model)
@@ -513,7 +514,8 @@ if __name__ == '__main__':
     args = [
         "--epochs",str(DeepForest_config["epochs"]),
         "--batch-size",str(DeepForest_config['batch_size']),
-        "--backbone",str(DeepForest_config["backbone"])
+        "--backbone",str(DeepForest_config["backbone"]),
+        "--score-threshold",str(DeepForest_config["score_threshold"])
     ]
 
     #Create log directory if saving snapshots
