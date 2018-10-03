@@ -215,31 +215,35 @@ def predict_tile(numpy_image,generator,model,score_threshold,max_detections,supp
         
         image_detections=_get_detections(generator, model, score_threshold=score_threshold, max_detections=max_detections, save_path=None,experiment=None)
             
-        ##Stop if no predictions
-        #if len(image_detections)==0:
-            #continue
+        #Stop if no predictions
+        if len(image_detections)==0:
+            continue
 
-        ##align detections to original image
-        #x,y,w,h=window.getRect()
+        #align detections to original image
+        x,y,w,h=window.getRect()
 
-        ##boxes are in form x1, y1, x2, y2
-        #image_detections[:,0] = image_detections[:,0] + x 
-        #image_detections[:,1] = image_detections[:,1] + y 
-        #image_detections[:,2] = image_detections[:,2] + x 
-        #image_detections[:,3] = image_detections[:,3] + y 
+        #boxes are in form x1, y1, x2, y2
+        image_detections[:,0] = image_detections[:,0] + x 
+        image_detections[:,1] = image_detections[:,1] + y 
+        image_detections[:,2] = image_detections[:,2] + x 
+        image_detections[:,3] = image_detections[:,3] + y 
 
-        ##Collect detection across windows
-        #plot_detections.append(image_detections)                
+        #Collect detection across windows
+        plot_detections.append(image_detections)                
 
-    ##If no predictions in any window
+    ##If no predictions in any window TODO?
     #if len(plot_detections)==0:
         #return None
-
-    #Non-max supression
-    #final_boxes=np.concatenate(plot_detections)
-    #final_box_index=non_max_suppression(all_boxes[:,:4], overlapThresh=suppression_threshold)
-    #final_boxes=all_boxes[final_box_index,:]
-    return image_detections
+    
+    #if multiple windows, perform additional non-max suppression
+    if len(plot_detections)> 1:
+        #Non-max supression
+        final_boxes=np.concatenate(plot_detections)
+        final_box_index=non_max_suppression(all_boxes[:,:4], overlapThresh=suppression_threshold)
+        final_boxes=all_boxes[final_box_index,:]
+    else:
+        final_boxes = plot_detections[0]
+    return final_boxes
 
 def create_polygon(row,bounds,cell_size):
 
