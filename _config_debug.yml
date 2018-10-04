@@ -10,12 +10,12 @@ preprocess:
           zero_area: True
 
 #Training
-training_images: All
+training_images: 2
 training_csvs: data/OSBS/
 rgb_tile_dir: data/OSBS/
 snapshot: None
 batch_size: 1      
-epochs: 1
+epochs: 2
 save_snapshot_path: None
 backbone: resnet50
 shuffle_training: False

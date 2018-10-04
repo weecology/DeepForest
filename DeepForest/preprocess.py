@@ -225,7 +225,8 @@ def split_training(data,DeepForest_config,experiment,single_tile=False):
             groups=[x.sample(frac=1) for x in groups]
             evaluation=pd.concat(groups).reset_index(drop=True)        
     
-    return([training.to_dict("index"),evaluation.to_dict("index")])
+    #Write training to file to view 
+    return([training ,evaluation])
     
 def NEON_annotations(site,DeepForest_config):
    
@@ -255,4 +256,4 @@ def NEON_annotations(site,DeepForest_config):
     #Expand grid
     tile_data=expand_grid(tile_windows)    
     
-    return [data,tile_data.to_dict("index")]
+    return [data,tile_data]

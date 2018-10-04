@@ -146,7 +146,6 @@ def create_NEON_generator(args,site,DeepForest_config):
         batch_size=args.batch_size,
         DeepForest_config=DeepForest_config,
         group_method="none",
-        shuffle_groups=False,
         base_dir=os.path.join("data",site)
     )
     
@@ -286,14 +285,17 @@ def create_generators(args,data,DeepForest_config):
 
     experiment.log_dataset_hash(data=train)
     
+    #Write out for debug
+    if args.save_path:
+        train.to_csv(os.path.join(args.save_path,'training_dict.csv'), header=False)
+           
     #Training Generator
     train_generator = OnTheFlyGenerator(
         data,
         train,
         batch_size=args.batch_size,
         DeepForest_config=DeepForest_config,
-        group_method="none",
-        shuffle_groups=False)
+        group_method="none")
 
     #Validation Generator        
 
@@ -302,8 +304,7 @@ def create_generators(args,data,DeepForest_config):
     test,
     batch_size=args.batch_size,
     DeepForest_config=DeepForest_config,
-    group_method="none",
-    shuffle_groups=False)
+    group_method="none")
 
     return train_generator, validation_generator
 
@@ -453,8 +454,8 @@ def main(args=None,data=None,DeepForest_config=None,experiment=None):
         generator=train_generator,
         steps_per_epoch=train_generator.size()/DeepForest_config["batch_size"],
         epochs=args.epochs,
-        verbose=1,
-        callbacks=callbacks,
+        verbose=1
+        #callbacks=callbacks
     )
 
     #Log number of trees trained on

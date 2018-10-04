@@ -29,7 +29,7 @@ class OnTheFlyGenerator(Generator):
     def __init__(
         self,
         data,
-        window_dict,
+        windowdf,
         DeepForest_config,
         base_dir=None,
         **kwargs
@@ -39,6 +39,8 @@ class OnTheFlyGenerator(Generator):
         """
         self.image_names = []
         self.image_data  = {}
+        
+        self.windowdf=windowdf
         
         #Store DeepForest_config and resolution
         self.DeepForest_config=DeepForest_config
@@ -69,17 +71,19 @@ class OnTheFlyGenerator(Generator):
         for key, value in self.classes.items():
             self.labels[value] = key        
         
-        #Create list of sliding windows to select
-        self.image_data=window_dict
-        self.image_names = list(self.image_data.keys())
+        #Create list of sliding windows to select        
+        #self.image_data, self.image_names =self.shuffle_groups(self.windowdf)
         
         super(OnTheFlyGenerator, self).__init__(**kwargs)
-          
-        
+                        
     def size(self):
         """ Size of the dataset.
         """
-        return len(self.image_names)
+   
+        image_data= self.windowdf.to_dict("index")
+        image_names = list(image_data.keys())
+        
+        return len(image_names)
 
     def num_classes(self):
         """ Number of classes in the dataset.
@@ -133,6 +137,29 @@ class OnTheFlyGenerator(Generator):
         
         return image
 
+    def shuffle_groups(self,windowdf):
+        
+        '''
+        Define image data and names based on grouping of tiles for computational efficiency 
+        '''
+        
+        #group by tile
+        groups = [df for _, df in windowdf.groupby('image')]
+        
+        #Shuffle order of windows within a tile
+        groups=[x.sample(frac=1) for x in groups]      
+        
+        #Shuffle order of tiles
+        random.shuffle(groups)
+        
+        #Bring back together
+        newdf=pd.concat(groups).reset_index(drop=True)
+        
+        image_data=newdf.to_dict("index")
+        image_names = list(image_data.keys())
+        
+        return(image_data,image_names)
+        
     def load_annotations(self, image_index):
         """ Load annotations for an image_index.
         """
