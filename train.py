@@ -146,7 +146,8 @@ def create_NEON_generator(args,site,DeepForest_config):
         batch_size=args.batch_size,
         DeepForest_config=DeepForest_config,
         group_method="none",
-        base_dir=os.path.join("data",site)
+        base_dir=os.path.join("data",site),
+        name="NEON_validation"
     )
     
     return(generator)
@@ -295,7 +296,9 @@ def create_generators(args,data,DeepForest_config):
         train,
         batch_size=args.batch_size,
         DeepForest_config=DeepForest_config,
-        group_method="none")
+        group_method="none",
+    shuffle_tile_epoch=True,
+    name="training")
 
     #Validation Generator        
 
@@ -304,7 +307,8 @@ def create_generators(args,data,DeepForest_config):
     test,
     batch_size=args.batch_size,
     DeepForest_config=DeepForest_config,
-    group_method="none")
+    group_method="none",
+    name="validation")
 
     return train_generator, validation_generator
 
@@ -449,13 +453,15 @@ def main(args=None,data=None,DeepForest_config=None,experiment=None):
     else:
         print("Test passed: No overlapping data in training and validation")
         
-    # start training
+    #start training
     training_model.fit_generator(
         generator=train_generator,
         steps_per_epoch=train_generator.size()/DeepForest_config["batch_size"],
         epochs=args.epochs,
-        verbose=1
-        #callbacks=callbacks
+        verbose=1,
+        use_multiprocessing=True,
+        shuffle=False,
+        callbacks=callbacks
     )
 
     #Log number of trees trained on

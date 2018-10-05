@@ -32,6 +32,8 @@ class OnTheFlyGenerator(Generator):
         windowdf,
         DeepForest_config,
         base_dir=None,
+        shuffle_tile_epoch=False,
+        name=None,
         **kwargs
     ):
         """ Initialize a CSV data generator.
@@ -39,8 +41,11 @@ class OnTheFlyGenerator(Generator):
         """
         self.image_names = []
         self.image_data  = {}
-        
+        self.name=name
         self.windowdf=windowdf
+        
+        #Shuffle at the end of an epoch
+        self.shuffle_tile_epoch=shuffle_tile_epoch
         
         #Store DeepForest_config and resolution
         self.DeepForest_config=DeepForest_config
@@ -361,3 +366,4 @@ def box_overlap(row,window):
 
     overlap = intersection_area / float(box_area)
     return overlap
+
