@@ -77,7 +77,7 @@ class OnTheFlyGenerator(Generator):
             self.labels[value] = key        
         
         #Create list of sliding windows to select        
-        #self.image_data, self.image_names =self.shuffle_groups(self.windowdf)
+        self.image_data, self.image_names =self.define_groups(self.windowdf,shuffle=False)
         
         super(OnTheFlyGenerator, self).__init__(**kwargs)
                         
@@ -142,7 +142,7 @@ class OnTheFlyGenerator(Generator):
         
         return image
 
-    def shuffle_groups(self,windowdf):
+    def define_groups(self,windowdf,shuffle=False):
         
         '''
         Define image data and names based on grouping of tiles for computational efficiency 
@@ -151,11 +151,12 @@ class OnTheFlyGenerator(Generator):
         #group by tile
         groups = [df for _, df in windowdf.groupby('image')]
         
-        #Shuffle order of windows within a tile
-        groups=[x.sample(frac=1) for x in groups]      
-        
-        #Shuffle order of tiles
-        random.shuffle(groups)
+        if shuffle:
+            #Shuffle order of windows within a tile
+            groups=[x.sample(frac=1) for x in groups]      
+            
+            #Shuffle order of tiles
+            random.shuffle(groups)
         
         #Bring back together
         newdf=pd.concat(groups).reset_index(drop=True)

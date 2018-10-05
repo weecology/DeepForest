@@ -10,7 +10,7 @@ preprocess:
           zero_area: True
 
 #Training
-training_images: 20
+training_images: 11
 training_csvs: data/OSBS/
 rgb_tile_dir: data/OSBS/
 snapshot: None
