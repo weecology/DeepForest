@@ -44,6 +44,9 @@ class OnTheFlyGenerator(Generator):
         self.name=name
         self.windowdf=windowdf
         
+        #Holder for the group order, after shuffling we can still recover loss -> window
+        self.group_order = {}
+        
         #Shuffle at the end of an epoch
         self.shuffle_tile_epoch=shuffle_tile_epoch
         
@@ -165,7 +168,7 @@ class OnTheFlyGenerator(Generator):
         image_names = list(image_data.keys())
         
         return(image_data,image_names)
-        
+    
     def load_annotations(self, image_index):
         """ Load annotations for an image_index.
         """
