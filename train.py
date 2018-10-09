@@ -459,8 +459,8 @@ def main(args=None,data=None,DeepForest_config=None,experiment=None):
         steps_per_epoch=train_generator.size()/DeepForest_config["batch_size"],
         epochs=args.epochs,
         verbose=1,
-        shuffle=False
-        #callbacks=callbacks
+        shuffle=False,
+        callbacks=callbacks
     )
     
 
