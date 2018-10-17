@@ -60,8 +60,7 @@ def create_NEON_generator(args,site,DeepForest_config):
         windows,
         batch_size=args.batch_size,
         DeepForest_config=DeepForest_config,
-        group_method="none",
-        shuffle_groups=False)
+        group_method="none")
     
     return(generator)
 
@@ -78,8 +77,7 @@ def create_generator(args,data,config):
         test,
         batch_size=args.batch_size,
         DeepForest_config=DeepForest_config,
-        group_method="none",
-        shuffle_groups=False)
+        group_method="none")
     
     return(generator)
 
