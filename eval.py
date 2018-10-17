@@ -274,7 +274,7 @@ if __name__ == '__main__':
         '--score-threshold', str(DeepForest_config['score_threshold']),
         '--suppression-threshold','0.1', 
         '--save-path', 'snapshots/images/', 
-        '--model', '/Users/ben/Downloads/resnet50_17.h5', 
+        '--model', '/orange/ewhite/b.weinstein/retinanet/snapshots/20181005_134715/resnet50_04.h5', 
         '--convert-model'
     ]
        
