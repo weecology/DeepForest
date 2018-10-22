@@ -61,8 +61,7 @@ def create_generator(args,main,DeepForest_config):
         train,
         batch_size=args.batch_size,
         DeepForest_config=DeepForest_config,
-        group_method="none",
-        shuffle_groups=False)
+        group_method="none")
     
     return(generator)
 

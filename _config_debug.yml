@@ -1,7 +1,7 @@
 #Config file for DeepMeerkat train.py on local OSX
 
 #SlidingWindow
-patch_size: 200
+patch_size: 400
 patch_overlap: 0.05
 rgb_res: 0.1
 
@@ -11,21 +11,21 @@ preprocess:
 
 #Training
 training_images: 2
-training_csvs: data/OSBS/
-rgb_tile_dir: data/OSBS/
+training_csvs: /Users/ben/Documents/DeepForest/snapshots/NEON_D17_SJER_DP1_254000_4108000_classified_point_cloud_colorized.csv
+rgb_tile_dir: /Users/ben/Downloads/
 snapshot: None
 batch_size: 1      
 epochs: 2
 save_snapshot_path: None
 backbone: resnet50
 shuffle_training: False
-single_tile: False
+single_tile: True
 score_threshold: 0.1
 
 #Evaluation
-evaluation_site: OSBS
-evaluation_images: 2
-evaluation_tile_dir: data/OSBS/
+evaluation_site: SJER
+evaluation_images: 10
+evaluation_tile_dir: /Users/ben/Downloads/
 save_image_path: None
 shuffle_eval: False
 

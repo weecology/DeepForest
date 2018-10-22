@@ -191,7 +191,7 @@ def main(data,DeepForest_config,experiment,args=None):
     print(f" Recall: {recall:.2f}")
         
     #Logs the number of train and eval "trees"
-    ntrees=[len(x) for x in generator.annotation_dict.values()]
+    ntrees=sum([len(x) for x in generator.annotation_dict.values()])
     experiment.log_parameter("Number of Trees", ntrees)    
     
     #NEON plot mAP

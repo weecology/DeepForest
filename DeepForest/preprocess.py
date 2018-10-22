@@ -145,6 +145,10 @@ def compute_windows(image,pixels=250,overlap=0.05):
     windows = sw.generate(numpy_image, sw.DimOrder.HeightWidthChannel, pixels,overlap )
     return(windows)
 
+def retrieve_window(numpy_image,index,windows):
+    crop=numpy_image[windows[index].indices()]
+    return(crop)
+
 def expand_grid(data_dict):
     rows = itertools.product(*data_dict.values())
     return pd.DataFrame.from_records(rows, columns=data_dict.keys())
