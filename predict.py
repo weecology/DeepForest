@@ -87,7 +87,7 @@ if args.single_image:
         caption = "{} {:.3f}".format(labels_to_names[label], score)
         draw_caption(draw, b, caption)
         
-    cv2.imwrite("/Users/Ben/Downloads/test.png",draw)
+    #cv2.imwrite("/Users/Ben/Downloads/test.png",draw)
 else:
     
     from DeepForest.config import load_config
@@ -135,7 +135,7 @@ else:
             
             caption = "{} {:.3f}".format(labels_to_names[label], score)
             draw_caption(draw, b, caption)
-            cv2.imwrite("/Users/Ben/Downloads/" + os.path.splitext(tile_windows["image"])[0]+ "_" +  str(index) + ".png",draw)
+            #cv2.imwrite("/Users/Ben/Downloads/" + os.path.splitext(tile_windows["image"])[0]+ "_" +  str(index) + ".png",draw)
     
     
 #plt.figure(figsize=(15, 15))
