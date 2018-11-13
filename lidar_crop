@@ -1,0 +1,21 @@
+'''
+Read in dat
+'''
+
+
+import pyfor
+
+#Get window
+windows[index].getRect()
+
+#Find geographic coordinates of the rgb tile 
+
+#Read lidar tile
+
+#Clip to geographic extent
+
+#Normalize ground points
+
+#Compute Canopy Model in desired resolution
+
+#plot viewer

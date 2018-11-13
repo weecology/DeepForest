@@ -1,0 +1,41 @@
+#Config file for DeepMeerkat train.py on local OSX
+
+#SlidingWindow
+patch_size: 400
+patch_overlap: 0.05
+rgb_res: 0.1
+
+#Preprocessing routines
+preprocess:
+          zero_area: True
+
+#Training
+training_images: 2
+training_csvs: data/SJER/
+rgb_tile_dir: data/SJER/
+snapshot: None
+batch_size: 1      
+epochs: 2
+save_snapshot_path: None
+backbone: resnet50
+shuffle_training: False
+single_tile: True
+score_threshold: 0.2
+
+#Evaluation
+evaluation_site: SJER
+evaluation_images: 3
+evaluation_tile_dir: data/SJER/
+save_image_path: None
+shuffle_eval: False
+
+#Ground truth
+#Path, passed to glob for wildcards
+itc_path: /Users/ben/Documents/TreeSegmentation/data/ITCs/*/*.shp
+itc_tile_path: /Users/ben/Documents/TreeSegmentation/data/2017/Camera/L3/
+
+#Non-max suppression, threshold for the IoU value to determine when a box should be suppressed.
+nms_threshold: 0.15
+
+#For hand annotation neon_MAP
+validation_percent: 5

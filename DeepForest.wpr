@@ -1,0 +1,26 @@
+#!wing
+#!version=6.0
+##################################################################
+# Wing IDE project file                                          #
+##################################################################
+[project attributes]
+proj.file-type = 'shared'
+proj.launch-config = {loc('debug.py'): ('project',
+        (u'--mode train',
+         '')),
+                      loc('eval.py'): ('project',
+                                       (u'--mode train',
+        '')),
+                      loc('evaluate.py'): ('project',
+        (u'--logdir=logs/20180524-065707',
+         '')),
+                      loc('predict.py'): ('project',
+        (u'--model /Users/ben/Documents/DeepForest/snapshots/fullmodel.h5 --image /Users/ben/Downloads/2018_SJER_3_254000_4108000_image.tif',
+         '')),
+                      loc('train.py'): ('project',
+        (u'--mode train\n',
+         '')),
+                      loc('../keras-retinanet/keras_retinanet/bin/train.py'): ('p'\
+        'roject',
+        (u'csv /Users/Ben/Documents/keras-retinanet/tests/test-data/annotations.csv /Users/Ben/Documents/keras-retinanet/tests/test-data/classes.csv',
+         ''))}
