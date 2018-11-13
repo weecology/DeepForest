@@ -19,3 +19,16 @@ Some key dependencies that have some build specific installs include
 conda env create --name DeepForest -f=environment.yml
 ```
 
+All configurations are in the _config.yml 
+
+## Training
+
+```
+python train.py
+```
+
+## Evalution
+
+```
+python eval.py
+```
