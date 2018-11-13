@@ -32,3 +32,13 @@ python train.py
 ```
 python eval.py
 ```
+
+# Results
+
+![Alt text](/Figures/Conceptual.png?raw=true "Conceptual Figure")
+
+Figure 1. A conceptual figure of the proposed pipeline. A LIDAR-based unsupervised classification generates initial training data for a self-supervised RGB deep learning model. The model is then retrained based on a small number of hand-annotated trees to create the full model.
+
+![Alt text](/Figures/Panel.png?raw=true "Conceptual Figure")
+
+Figure 2. Predicted individual tree crowns for the unsupervised lidar, self-supervised RGB and full model for two NEON tower plots (SJER_015, SJER_053) at the San Joaquin, CA site. For the full model, the field-collected tree centroids are shown in red points. NEON field teams only label a subset of trees (and only those with DBH > 10cm), leading to a smaller number of ground truth points than observed trees in a plot image.  
