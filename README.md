@@ -35,7 +35,9 @@ python eval.py
 
 # Results
 
-<img src="/Figures/Conceptual.png" width="300" height="500"/>
+<div align="center">
+<img src="/Figures/Conceptual.png" width="400" height="600"/>
+</div>
 
 Figure 1. A conceptual figure of the proposed pipeline. A LIDAR-based unsupervised classification generates initial training data for a self-supervised RGB deep learning model. The model is then retrained based on a small number of hand-annotated trees to create the full model.
 
