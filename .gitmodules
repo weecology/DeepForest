@@ -1,0 +1,6 @@
+[submodule "NeonTreeEvaluation"]
+	path = NeonTreeEvaluation
+	url = git@github.com:weecology/NeonTreeEvaluation.git
+[submodule "data"]
+	path = data
+	url = git@github.com:weecology/NeonTreeEvaluation.git

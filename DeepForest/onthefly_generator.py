@@ -20,6 +20,10 @@ import cv2
 import slidingwindow as sw
 import itertools
 
+from lidar_crop import compute_chm
+from matplotlib import pyplot
+
+
 class OnTheFlyGenerator(Generator):
     """ Generate data for a custom CSV dataset.
 
@@ -43,6 +47,7 @@ class OnTheFlyGenerator(Generator):
         self.image_data  = {}
         self.name=name
         self.windowdf=windowdf
+        self.lidar_path=DeepForest_config["lidar_path"]
         
         #Holder for the group order, after shuffling we can still recover loss -> window
         self.group_order = {}
@@ -142,6 +147,18 @@ class OnTheFlyGenerator(Generator):
         
         #Save image path for next evaluation to check
         self.previous_image_path = row["image"]
+        
+        #LIDAR CHM
+        CHM=compute_chm(annotations=self.annotation_list, row=row, windows=self.windows, rgb_res=self.rgb_res, lidar_path=self.lidar_path)
+        
+        #fig, ax = pyplot.subplots()
+        #ax.imshow(image[:,:,::-1])
+        #ax.matshow(CHM.array,alpha=0.3)
+        #pyplot.show()
+        
+        #Append to bottom of image
+        CHM.array.shape
+        #append_channel(CHM,image)
         
         return image
 

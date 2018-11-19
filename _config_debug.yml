@@ -18,9 +18,12 @@ batch_size: 1
 epochs: 2
 save_snapshot_path: None
 backbone: resnet50
-shuffle_training: False
+shuffle_training: True
 single_tile: True
 score_threshold: 0.2
+
+#LIDAR
+lidar_path: data/SJER/
 
 #Evaluation
 evaluation_site: SJER
@@ -39,3 +42,4 @@ nms_threshold: 0.15
 
 #For hand annotation neon_MAP
 validation_percent: 5
+
