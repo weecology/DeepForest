@@ -1,4 +1,3 @@
-name: retinanet
 channels:
   - anaconda
   - defaults
