@@ -20,7 +20,7 @@ import cv2
 import slidingwindow as sw
 import itertools
 
-from lidar_crop import compute_chm
+from lidar_crop import compute_chm, pad_array
 from matplotlib import pyplot
 
 
@@ -150,17 +150,20 @@ class OnTheFlyGenerator(Generator):
         CHM=compute_chm(annotations=self.annotation_list, row=row, windows=self.windows, rgb_res=self.rgb_res, lidar_path=self.lidar_path)
         
         #TO BE FIXED, flip matrix to top left 0,0 origin see https://github.com/brycefrank/pyfor/issues/26#issuecomment-440380719
-        CHM=np.flip(CHM,0)
-                   
-        #fig, ax = pyplot.subplots()
-        #ax.imshow(image[:,:,::-1])
-        #ax.matshow(CHM.array,alpha=0.4)
-        #pyplot.show()
+        chm_flipped=np.flip(CHM.array,0)
         
-        #TODO check if arrays are same shape. If not, pad.
+        #Check if arrays are same shape. If not, pad.
         
+        if not chm_flipped.shape==image.shape:
+            padded_chm=pad_array(image=image,chm=chm_flipped)
+            
+            #fig, ax = pyplot.subplots()
+            #ax.imshow(image[:,:,::-1])
+            #ax.matshow(padded_chm,alpha=0.4)
+            #pyplot.show()
+                        
         #Append to bottom of image
-        four_channel_image=np.dstack(image,CHM)
+        four_channel_image=np.dstack((image,padded_chm))
         
         return four_channel_image
 

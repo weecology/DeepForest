@@ -106,6 +106,31 @@ def find_lidar_file(image_path,lidar_path):
         raise(FileNotFoundError)
     return laz_path
 
+def pad_array(image,chm):
+    h,w=np.subtract(image.shape[0:2],chm.shape[0:2] )
+    
+    #distribute evenly to both sides as possible
+    left = 0
+    right = 0
+    top=0
+    bottom=0
+    
+    #allocate padding 'evenly'
+    for x in np.arange(h):
+        if x % 2 ==0:
+            left +=1
+        else:
+            right +=1
+    
+    for x in np.arange(w):
+        if x % 2 ==0:
+            bottom +=1
+        else:
+            top +=1        
+    #pad
+    padded=np.pad(chm,((left,right),(top,bottom)),"constant")
+    
+    return padded    
 
 if __name__=="__main__":
     lidar_path="/Users/ben/Documents/DeepForest/data/NEON_D03_OSBS_DP1_407000_3291000_classified_point_cloud.laz"
