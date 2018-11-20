@@ -1,0 +1,54 @@
+name: DeepLidar
+channels:
+  - anaconda
+  - defaults
+dependencies:
+  - blas
+  - ca-certificates
+  - certifi
+  - dbus
+  - expat
+  - fontconfig
+  - freetype
+  - gettext
+  - glib
+  - gst-plugins-base
+  - gstreamer
+  - icu
+  - intel-openmp
+  - jpeg
+  - libedit
+  - libffi
+  - libgcc-ng
+  - libgfortran
+  - libgfortran-ng
+  - libiconv
+  - libpng
+  - libstdcxx-ng
+  - libuuid
+  - libxcb
+  - libxml2
+  - mkl
+  - mkl_fft
+  - mkl_random
+  - ncurses
+  - numpy
+  - numpy-base
+  - openssl
+  - pcre
+  - pip
+  - pyopengl
+  - pyqt
+  - pyqtgraph
+  - python
+  - qt
+  - readline
+  - setuptools
+  - sip
+  - sqlite
+  - tk
+  - wheel
+  - xz
+  - zlib
+prefix: /home/b.weinstein/miniconda3/envs/DeepLidar
+
