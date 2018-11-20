@@ -36,6 +36,7 @@ def get_window_extent(annotations,row,windows,rgb_res):
     #Set tile extent to convert to UTMs, flipped origin from R to Python
     tile_xmin=tile_annotations.tile_xmin.unique()[0]
     tile_ymax=tile_annotations.tile_ymax.unique()[0]
+    tile_ymin=tile_annotations.tile_ymin.unique()[0]
     
     #Get window cartesian coordinates
     x,y,w,h= windows[row["windows"]].getRect()
@@ -105,10 +106,6 @@ def find_lidar_file(image_path,lidar_path):
         raise(FileNotFoundError)
     return laz_path
 
-def append_channel(CHM,image):
-    """Bind the canopy height model and the RGB image to create four channel array 
-    """
-    pass
 
 if __name__=="__main__":
     lidar_path="/Users/ben/Documents/DeepForest/data/NEON_D03_OSBS_DP1_407000_3291000_classified_point_cloud.laz"

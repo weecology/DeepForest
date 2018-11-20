@@ -122,9 +122,7 @@ class OnTheFlyGenerator(Generator):
 
     def load_image(self, image_index):
         """ Load an image at the image_index.
-        
         """
-        
         #Select sliding window and tile
         image_name=self.image_names[image_index]        
         row=self.image_data[image_name]
@@ -151,16 +149,20 @@ class OnTheFlyGenerator(Generator):
         #LIDAR CHM
         CHM=compute_chm(annotations=self.annotation_list, row=row, windows=self.windows, rgb_res=self.rgb_res, lidar_path=self.lidar_path)
         
+        #TO BE FIXED, flip matrix to top left 0,0 origin see https://github.com/brycefrank/pyfor/issues/26#issuecomment-440380719
+        CHM=np.flip(CHM,0)
+                   
         #fig, ax = pyplot.subplots()
         #ax.imshow(image[:,:,::-1])
-        #ax.matshow(CHM.array,alpha=0.3)
+        #ax.matshow(CHM.array,alpha=0.4)
         #pyplot.show()
         
-        #Append to bottom of image
-        CHM.array.shape
-        #append_channel(CHM,image)
+        #TODO check if arrays are same shape. If not, pad.
         
-        return image
+        #Append to bottom of image
+        four_channel_image=np.dstack(image,CHM)
+        
+        return four_channel_image
 
     def define_groups(self,windowdf,shuffle=False):
         
