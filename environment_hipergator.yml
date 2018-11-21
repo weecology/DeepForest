@@ -185,5 +185,6 @@ dependencies:
     - sphinxcontrib-websupport==1.1.0
     - websocket-client==0.54.0
     - wurlitzer==1.0.2
+    - xmltodict==0.11.0
 prefix: /home/b.weinstein/miniconda/envs/DeepLidar
 
