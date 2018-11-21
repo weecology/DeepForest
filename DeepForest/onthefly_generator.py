@@ -149,21 +149,23 @@ class OnTheFlyGenerator(Generator):
         #LIDAR CHM
         CHM=compute_chm(annotations=self.annotation_list, row=row, windows=self.windows, rgb_res=self.rgb_res, lidar_path=self.lidar_path)
         
-        #TO BE FIXED, flip matrix to top left 0,0 origin see https://github.com/brycefrank/pyfor/issues/26#issuecomment-440380719
-        chm_flipped=np.flip(CHM.array,0)
+        #Renamed for legacy reasons, just want the array.
+        chm=CHM.array
         
         #Check if arrays are same shape. If not, pad.
-        
-        if not chm_flipped.shape==image.shape:
-            padded_chm=pad_array(image=image,chm=chm_flipped)
+        if not chm.shape==image.shape:
+            padded_chm=pad_array(image=image,chm=chm)
             
             #fig, ax = pyplot.subplots()
             #ax.imshow(image[:,:,::-1])
             #ax.matshow(padded_chm,alpha=0.4)
             #pyplot.show()
-                        
-        #Append to bottom of image
-        four_channel_image=np.dstack((image,padded_chm))
+                            
+            #Append to bottom of image
+            four_channel_image=np.dstack((image,padded_chm))
+        else:
+            four_channel_image=np.dstack((image,chm))
+            
         
         return four_channel_image
 
