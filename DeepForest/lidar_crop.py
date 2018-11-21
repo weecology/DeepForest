@@ -139,7 +139,7 @@ def pad_array(image,chm):
     
     return padded    
 
-def bind_array(chm,image):
+def bind_array(image,chm):
     '''
     Bind the rgb image and the lidar canopy height model
     Pad with zeros if needed
