@@ -20,7 +20,7 @@ import cv2
 import slidingwindow as sw
 import itertools
 
-from lidar_crop import compute_chm, pad_array
+from DeepForest.lidar_crop import compute_chm, pad_array
 from matplotlib import pyplot
 
 
