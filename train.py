@@ -488,7 +488,7 @@ if __name__ == '__main__':
     from DeepForest import preprocess
 
     #set experiment and log configs
-    experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2",project_name='deepforest-retinanet',log_code=False)
+    experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2",project_name='deeplidar',log_code=False)
 
     #save time for logging
     dirname=datetime.now().strftime("%Y%m%d_%H%M%S")
