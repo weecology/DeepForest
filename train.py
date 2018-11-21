@@ -35,6 +35,9 @@ import keras.preprocessing.image
 from keras.utils import multi_gpu_model
 import tensorflow as tf
 
+import warnings
+warnings.simplefilter(action='ignore', category=UserWarning)
+
 # Allow relative imports when being executed as script.
 if __name__ == "__main__" and __package__ is None:
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'keras-retinanet ', 'keras-retinanet '))

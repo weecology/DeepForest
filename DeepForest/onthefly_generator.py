@@ -20,7 +20,7 @@ import cv2
 import slidingwindow as sw
 import itertools
 
-from DeepForest.lidar_crop import compute_chm, pad_array, fetch_lidar_tile
+from DeepForest.lidar_crop import compute_chm, pad_array, fetch_lidar_tile, bind_array
 from matplotlib import pyplot
 
 
@@ -157,19 +157,8 @@ class OnTheFlyGenerator(Generator):
         #Renamed for legacy reasons, just want the array.
         chm=CHM.array
         
-        #Check if arrays are same shape. If not, pad.
-        if not chm.shape==image.shape:
-            padded_chm=pad_array(image=image,chm=chm)
-            
-            #fig, ax = pyplot.subplots()
-            #ax.imshow(image[:,:,::-1])
-            #ax.matshow(padded_chm,alpha=0.4)
-            #pyplot.show()
-                            
-            #Append to bottom of image
-            four_channel_image=np.dstack((image,padded_chm))
-        else:
-            four_channel_image=np.dstack((image,chm))
+        #Bind RGB and LIDAR arrays
+        four_channel_image=bind_array(image,chm)
             
         
         return four_channel_image
@@ -235,7 +224,6 @@ class OnTheFlyGenerator(Generator):
         
         return boxes
     
-
 #Utility functions
 
 def normalize(image):
@@ -287,7 +275,6 @@ def _read_classes(data):
         classes[row.label] = row.numeric_label
     
     return(classes)
-
     
 def fetch_annotations(image,index,annotations,windows,offset,patch_size):
     '''

@@ -139,5 +139,25 @@ def pad_array(image,chm):
     
     return padded    
 
+def bind_array(chm,image):
+    '''
+    Bind the rgb image and the lidar canopy height model
+    Pad with zeros if needed
+    '''
+    
+    #Check if arrays are same shape. If not, pad.
+    if not chm.shape==image.shape:
+        padded_chm=pad_array(image=image,chm=chm)
+        
+        #fig, ax = pyplot.subplots()
+        #ax.imshow(image[:,:,::-1])
+        #ax.matshow(padded_chm,alpha=0.4)
+        #pyplot.show()
+                        
+        #Append to bottom of image
+        four_channel_image=np.dstack((image,padded_chm))
+    else:
+        four_channel_image=np.dstack((image,chm))    
+    return four_channel_image
 if __name__=="__main__":
     lidar_path="/Users/ben/Documents/DeepForest/data/NEON_D03_OSBS_DP1_407000_3291000_classified_point_cloud.laz"

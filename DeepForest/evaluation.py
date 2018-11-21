@@ -25,6 +25,9 @@ from matplotlib import pyplot
 from keras_retinanet.utils.visualization import draw_detections, draw_annotations, draw_ground_overlap
 from keras_retinanet.utils.eval import _get_detections
 
+#Lidar 
+from DeepForest.lidar_crop import compute_chm, pad_array, fetch_lidar_tile, bind_array
+
 def neonRecall(
     site,
     generator,
@@ -72,9 +75,20 @@ def neonRecall(
             numpy_image=load_image(tile)
         else:
             continue
-
+        
+        #load plot lidar
+        lidar="data/" + site + "/" + plot + ".laz"
+        
+        #Compute canopt height model
+        pc=pyfor.cloud.Cloud(lidar)
+        pc.extension=".las"    
+        chm = pc.chm(cell_size = rgb_res , interp_method = "nearest", pit_filter = "median", kernel_size = 11)
+        
+        #Bind image and tile
+        four_channel_image=bind_array(tile,chm.array)
+        
         #Gather detections
-        final_boxes=predict_tile(numpy_image,generator,model,score_threshold,max_detections,suppression_threshold)            
+        final_boxes=predict_tile(four_channel_image,generator,model,score_threshold,max_detections,suppression_threshold)            
 
         #If empty, skip.
         if final_boxes is None:
