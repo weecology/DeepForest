@@ -10,7 +10,7 @@ preprocess:
           zero_area: True
 
 #Training
-training_csvs: /home/b.weinstein/TreeSegmentation/analysis/Results/detection_boxes/SJER/
+training_csvs: /home/b.weinstein/TreeSegmentation/analysis/Results/detection_boxes/SJER/2018/
 rgb_tile_dir: /orange/ewhite/NeonData/SJER/DP3.30010.001/2018/FullSite/D17/2018_SJER_3/L3/Camera/Mosaic/V01/
 training_images: 100
 snapshot: None
