@@ -21,6 +21,6 @@ ml tensorflow/1.10.1
 export PYTHONPATH=${PYTHONPATH}:/home/b.weinstein/miniconda3/envs/DeepLidar/lib/python3.6/site-packages/
 echo $PYTHONPATH
 
-cd /home/b.weinstein/DeepForest
+cd /home/b.weinstein/DeepLidar
 
 python train.py --mode train

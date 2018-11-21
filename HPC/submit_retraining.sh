@@ -23,9 +23,9 @@ sleep 10
 module list
 
 echo $PYTHONPATH
-export PYTHONPATH=${PYTHONPATH}:/home/b.weinstein/miniconda3/envs/DeepForest/lib/python3.6/site-packages/
+export PYTHONPATH=${PYTHONPATH}:/home/b.weinstein/miniconda3/envs/DeepLidar/lib/python3.6/site-packages/
 echo $PYTHONPATH
 
-cd /home/b.weinstein/DeepForest
+cd /home/b.weinstein/DeepLidar
 
 python train.py --mode retrain
