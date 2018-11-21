@@ -49,7 +49,16 @@ def get_window_extent(annotations,row,windows,rgb_res):
     
     return(window_utm_xmin,window_utm_xmax,window_utm_ymin,window_utm_ymax)
 
-def compute_chm(annotations,row,windows,rgb_res,lidar_path):
+def fetch_lidar_tile(row,lidar_path):
+    
+    laz_path=find_lidar_file(image_path=row["image"],lidar_path=lidar_path)
+    
+    pc=pyfor.cloud.Cloud(laz_path)
+    pc.extension=".las"    
+    
+    return pc
+
+def compute_chm(lidar_tile,annotations,row,windows,rgb_res):
     """
     Computer a canopy height model based on the available laz file to align with the RGB data
     """
@@ -63,17 +72,11 @@ def compute_chm(annotations,row,windows,rgb_res,lidar_path):
     ymin=ymin - rgb_res/2
     ymax=ymax + rgb_res/2
     
-    laz_path=find_lidar_file(image_path=row["image"],lidar_path=lidar_path)
-    
-    pc=pyfor.cloud.Cloud(laz_path)
-    pc.extension=".las"
-    
-    #Clip lidar to geographic extent
-        
     #Create shapely polygon for clipping
     poly=createPolygon(xmin, xmax, ymin,ymax)
     
-    clipped=pc.clip(poly)
+    #Clip lidar to geographic extent    
+    clipped=lidar_tile.clip(poly)
     
     #TODO normalize properly, for now just subtract min value, see https://github.com/brycefrank/pyfor/issues/25
     clipped.data.points.z =  clipped.data.points.z  -  clipped.data.points.z.min()

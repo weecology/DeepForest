@@ -20,7 +20,7 @@ import cv2
 import slidingwindow as sw
 import itertools
 
-from DeepForest.lidar_crop import compute_chm, pad_array
+from DeepForest.lidar_crop import compute_chm, pad_array, fetch_lidar_tile
 from matplotlib import pyplot
 
 
@@ -132,7 +132,12 @@ class OnTheFlyGenerator(Generator):
         if not row["image"] == self.previous_image_path:
             print("Loading new tile: %s" %(row["image"]))
             im = Image.open(self.base_dir+row["image"])
+            
+            #Read numpy array for RGB
             self.numpy_image = np.array(im)    
+            
+            #Finding the corresponding lidar tile
+            self.lidar_tile=fetch_lidar_tile(row,self.lidar_path)
         
         #Load rgb image and get crop
         image=retrieve_window(numpy_image=self.numpy_image,index=row["windows"],windows=self.windows)
@@ -147,7 +152,7 @@ class OnTheFlyGenerator(Generator):
         self.previous_image_path = row["image"]
         
         #LIDAR CHM
-        CHM=compute_chm(annotations=self.annotation_list, row=row, windows=self.windows, rgb_res=self.rgb_res, lidar_path=self.lidar_path)
+        CHM=compute_chm(lidar_tile=self.lidar_tile,annotations=self.annotation_list, row=row, windows=self.windows, rgb_res=self.rgb_res)
         
         #Renamed for legacy reasons, just want the array.
         chm=CHM.array
