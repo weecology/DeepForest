@@ -98,13 +98,16 @@ def find_lidar_file(image_path,lidar_path):
     match=re.findall(pattern,image_path)[0]
     
     #Look for index in available laz
+    laz_path=None
     for x in laz_files:
         if match in x:
             laz_path=x
-    
-    #Raise if no file
+
+    #Raise if no file found
     if not laz_path:
-        raise(FileNotFoundError)
+        print("No matching lidar file, check the lidar path: %s" %(lidar_path))
+        FileNotFoundError
+    
     return laz_path
 
 def pad_array(image,chm):
