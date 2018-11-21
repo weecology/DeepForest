@@ -20,6 +20,7 @@ save_snapshot_path: /orange/ewhite/b.weinstein/retinanet/snapshots/
 backbone: resnet50
 shuffle_training: False
 single_tile: False
+score_threshold: 0.2
 
 #Evaluation
 evaluation_site: SJER
