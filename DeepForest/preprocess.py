@@ -189,6 +189,14 @@ def split_training(data,DeepForest_config,experiment,single_tile=False):
         msk = np.random.rand(len(tile_data)) < 1-(float(DeepForest_config["validation_percent"])/100)
         training = tile_data[msk]
         evaluation=tile_data[~msk]    
+        
+        if not DeepForest_config["training_images"]=="All":
+            print("Limiting tile data set to %d images based on Training images config - only use for debugging on single tile" %(DeepForest_config["training_images"]))
+            training=training.head(n=DeepForest_config["training_images"])
+            
+        if not DeepForest_config["training_images"]=="All":
+            print("Limiting tile data set to %d images based on Evaluation images config - only use for debugging on single tile" %(DeepForest_config["evaluation_images"]))
+            evaluation=evaluation.head(n=DeepForest_config["evaluation_images"])        
     else:
         
         #select a validation tile, record in log.        

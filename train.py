@@ -278,7 +278,7 @@ def create_generators(args,data,DeepForest_config):
     else:
         transform_generator = random_transform_generator(flip_x_chance=0.5)
 
-    #Split training and test data - hardcoded paths set below.
+    #Split training and test data
     train,test=preprocess.split_training(data,
                                          DeepForest_config,
                                          single_tile=DeepForest_config["single_tile"],
