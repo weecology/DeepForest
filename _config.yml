@@ -10,7 +10,7 @@ preprocess:
           zero_area: True
 
 #Training
-training_csvs: /home/b.weinstein/TreeSegmentation/analysis/Results/detection_boxes/SJER/
+training_csvs: /home/b.weinstein/TreeSegmentation/analysis/Results/detection_boxes/SJER/2018/
 rgb_tile_dir: /orange/ewhite/NeonData/SJER/DP3.30010.001/2018/FullSite/D17/2018_SJER_3/L3/Camera/Mosaic/V01/
 training_images: 100
 snapshot: None
@@ -20,6 +20,7 @@ save_snapshot_path: /orange/ewhite/b.weinstein/retinanet/snapshots/
 backbone: resnet50
 shuffle_training: False
 single_tile: False
+score_threshold: 0.2
 
 #Evaluation
 evaluation_site: SJER
@@ -35,3 +36,6 @@ itc_tile_path: /home/b.weinstein/TreeSegmentation/data/2017/Camera/L3/
 
 #Non-max suppression, threshold for the IoU value to determine when a box should be suppressed.
 nms_threshold: 0.4
+
+#LIDAR
+lidar_path: data/SJER/
