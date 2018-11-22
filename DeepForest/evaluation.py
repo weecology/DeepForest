@@ -76,12 +76,16 @@ def neonRecall(
         else:
             continue
         
-        #load plot lidar
+        #load plot lidar, if it exists
         lidar="data/" + site + "/" + plot + ".laz"
         
+        if os.path.exists(lidar):
+                pc=pyfor.cloud.Cloud(lidar)
+                pc.extension=".las"  
+        else:
+            continue
+                
         #Compute canopt height model
-        pc=pyfor.cloud.Cloud(lidar)
-        pc.extension=".las"    
         chm = pc.chm(cell_size = DeepForest_config["rgb_res"] , interp_method = "nearest", pit_filter = "median", kernel_size = 11)
         
         #Bind image and tile
@@ -231,7 +235,6 @@ def predict_tile(numpy_image,generator,model,score_threshold,max_detections,supp
         image, scale = generator.resize_image(image)
 
         # run network
-        #TODO start here, check preprocess.
         boxes, scores, labels = model.predict_on_batch(np.expand_dims(image, axis=0))[:3]
 
         # correct boxes for image scale
