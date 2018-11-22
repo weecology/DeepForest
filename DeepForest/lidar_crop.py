@@ -51,7 +51,14 @@ def get_window_extent(annotations,row,windows,rgb_res):
 
 def fetch_lidar_tile(row,lidar_path):
     
-    laz_path=find_lidar_file(image_path=row["image"],lidar_path=lidar_path)
+    #first try identical name - this isn't great practice here, needs to be improved
+    
+    direct_filename=os.path.join(lidar_path,os.path.splitext(row["image"])[0] + ".laz")
+
+    if os.path.exists(direct_filename):
+        laz_path=direct_filename
+    else:
+        laz_path=find_lidar_file(image_path=row["image"],lidar_path=lidar_path)
     
     pc=pyfor.cloud.Cloud(laz_path)
     pc.extension=".las"    
