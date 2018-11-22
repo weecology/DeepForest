@@ -138,6 +138,10 @@ class OnTheFlyGenerator(Generator):
             
             #Finding the corresponding lidar tile
             self.lidar_tile=fetch_lidar_tile(row,self.lidar_path)
+            
+            #If doesn't exist, skip
+            if self.lidar_tile == None:
+                return None
         
         #Load rgb image and get crop
         image=retrieve_window(numpy_image=self.numpy_image,index=row["windows"],windows=self.windows)

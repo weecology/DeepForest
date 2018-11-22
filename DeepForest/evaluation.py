@@ -104,7 +104,7 @@ def neonRecall(
     
         #Save image and send it to logger
         if save_path is not None:
-            draw_detections(numpy_image, final_boxes[:,:4], final_boxes[:,4], final_boxes[:,5], label_to_name=generator.label_to_name,score_threshold=0.05)
+            draw_detections(numpy_image, final_boxes[:,:4], final_boxes[:,4], final_boxes[:,5], label_to_name=generator.label_to_name,score_threshold=score_threshold)
     
             #add points
             x=(plot_data.UTM_E- bounds.left).values/0.1

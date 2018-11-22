@@ -60,6 +60,10 @@ def fetch_lidar_tile(row,lidar_path):
         laz_path=direct_filename
     else:
         laz_path=find_lidar_file(image_path=row["image"],lidar_path=lidar_path)
+        
+        #Skip if no path found
+        if laz_path == None:
+            return None
     
     pc=pyfor.cloud.Cloud(laz_path)
     pc.extension=".las"    
@@ -106,7 +110,12 @@ def find_lidar_file(image_path,lidar_path):
     
     #extract geoindex
     pattern=r"(\d+_\d+)_image"
-    match=re.findall(pattern,image_path)[0]
+    match=re.findall(pattern,image_path)
+    
+    if len(match)>0:
+        match=match[0]
+    else:
+        return None
     
     #Look for index in available laz
     laz_path=None
