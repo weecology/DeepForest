@@ -82,7 +82,7 @@ def neonRecall(
         #Compute canopt height model
         pc=pyfor.cloud.Cloud(lidar)
         pc.extension=".las"    
-        chm = pc.chm(cell_size = rgb_res , interp_method = "nearest", pit_filter = "median", kernel_size = 11)
+        chm = pc.chm(cell_size = DeepForest_config["rgb_res"] , interp_method = "nearest", pit_filter = "median", kernel_size = 11)
         
         #Bind image and tile
         four_channel_image=bind_array(tile,chm.array)
