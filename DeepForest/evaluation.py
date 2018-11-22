@@ -109,7 +109,7 @@ def neonRecall(
                 cv2.circle(numpy_image,(int(x[i]),int(y[i])), 5, (0,0,255), 1)
     
             #TODO check which channels to write.
-            cv2.imwrite(os.path.join(save_path, '{}_NeonPlot.png'.format(plot)), numpy_image[:3])
+            cv2.imwrite(os.path.join(save_path, '{}_NeonPlot.png'.format(plot)), numpy_image[:,:,:3])
             if experiment:
                 experiment.log_image(os.path.join(save_path, '{}_NeonPlot.png'.format(plot)),file_name=str(plot))            
     
