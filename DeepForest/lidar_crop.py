@@ -9,6 +9,7 @@ from matplotlib import pyplot
 import re
 import glob 
 import numpy as np
+import os
 
 def createPolygon(xmin,xmax,ymin,ymax):
     '''
