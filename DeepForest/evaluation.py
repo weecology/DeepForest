@@ -108,7 +108,8 @@ def neonRecall(
             for i in np.arange(len(x)):
                 cv2.circle(numpy_image,(int(x[i]),int(y[i])), 5, (0,0,255), 1)
     
-            cv2.imwrite(os.path.join(save_path, '{}_NeonPlot.png'.format(plot)), numpy_image)
+            #TODO check which channels to write.
+            cv2.imwrite(os.path.join(save_path, '{}_NeonPlot.png'.format(plot)), numpy_image[:3])
             if experiment:
                 experiment.log_image(os.path.join(save_path, '{}_NeonPlot.png'.format(plot)),file_name=str(plot))            
     
@@ -230,6 +231,7 @@ def predict_tile(numpy_image,generator,model,score_threshold,max_detections,supp
         image, scale = generator.resize_image(image)
 
         # run network
+        #TODO start here, check preprocess.
         boxes, scores, labels = model.predict_on_batch(np.expand_dims(image, axis=0))[:3]
 
         # correct boxes for image scale
