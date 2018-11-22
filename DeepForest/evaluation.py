@@ -85,7 +85,7 @@ def neonRecall(
         chm = pc.chm(cell_size = DeepForest_config["rgb_res"] , interp_method = "nearest", pit_filter = "median", kernel_size = 11)
         
         #Bind image and tile
-        four_channel_image=bind_array(tile,chm.array)
+        four_channel_image=bind_array(numpy_image,chm.array)
         
         #Gather detections
         final_boxes=predict_tile(four_channel_image,generator,model,score_threshold,max_detections,suppression_threshold)            
