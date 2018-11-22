@@ -4,9 +4,9 @@ import cv2
 import random
 import numpy as np
 import rasterio
-
 import slidingwindow as sw
 import fiona
+import pyfor
 
 #Plotting and polygon overlap
 from shapely.ops import cascaded_union
