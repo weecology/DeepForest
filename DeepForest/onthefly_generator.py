@@ -138,10 +138,6 @@ class OnTheFlyGenerator(Generator):
             
             #Finding the corresponding lidar tile
             self.lidar_tile=fetch_lidar_tile(row,self.lidar_path)
-            
-            #If doesn't exist, skip
-            if self.lidar_tile == None:
-                return None
         
         #Load rgb image and get crop
         image=retrieve_window(numpy_image=self.numpy_image,index=row["windows"],windows=self.windows)
@@ -154,6 +150,10 @@ class OnTheFlyGenerator(Generator):
         
         #Save image path for next evaluation to check
         self.previous_image_path = row["image"]
+        
+        #If not lidar, skip
+        if self.lidar_tile == None:
+            return None        
         
         #LIDAR CHM
         CHM=compute_chm(lidar_tile=self.lidar_tile,annotations=self.annotation_list, row=row, windows=self.windows, rgb_res=self.rgb_res)
