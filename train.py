@@ -228,11 +228,6 @@ def create_callbacks(model, training_model, prediction_model, validation_generat
     
     #Neon Callbacks
     site=DeepForest_config["evaluation_site"]
-    
-    #if site=="OSBS":
-        #jaccard=jaccardCallback(validation_generator,DeepForest_config=DeepForest_config,save_path=args.save_path,experiment=experiment)        
-        #jaccard = RedirectModel(jaccard, prediction_model)
-        #callbacks.append(jaccard)
         
     recall=recallCallback(site=site,
                           generator=validation_generator,
