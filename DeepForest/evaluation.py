@@ -125,6 +125,12 @@ def neonRecall(
             draw_annotations(chm, generator.load_annotations(i), label_to_name=generator.label_to_name)
             draw_detections(chm, image_boxes, image_scores, image_labels, label_to_name=generator.label_to_name,score_threshold=score_threshold)            
         
+            #add points
+            x=(plot_data.UTM_E- bounds.left).values/0.1
+            y=(bounds.top - plot_data.UTM_N).values/0.1
+            for i in np.arange(len(x)):
+                cv2.circle(chm,(int(x[i]),int(y[i])), 5, (0,0,255), 1)
+                
             #Format name and save
             image_name=generator.image_names[i]        
             row=generator.image_data[image_name]             

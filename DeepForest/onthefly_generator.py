@@ -158,13 +158,9 @@ class OnTheFlyGenerator(Generator):
         #LIDAR CHM
         CHM=compute_chm(lidar_tile=self.lidar_tile,annotations=self.annotation_list, row=row, windows=self.windows, rgb_res=self.rgb_res)
         
-        #Renamed for legacy reasons, just want the array.
-        chm=CHM.array
-        
         #Bind RGB and LIDAR arrays
-        four_channel_image=bind_array(image,chm)
+        four_channel_image=bind_array(image,CHM.array)
             
-        
         return four_channel_image
 
     def define_groups(self,windowdf,shuffle=False):
