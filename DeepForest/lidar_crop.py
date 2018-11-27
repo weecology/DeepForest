@@ -68,6 +68,17 @@ def fetch_lidar_tile(row,lidar_path):
     pc=pyfor.cloud.Cloud(laz_path)
     pc.extension=".las"    
     
+    #normalize and filter
+    #TODO confirm see https://github.com/brycefrank/pyfor/issues/29
+    zhang_filter=pyfor.ground_filter.Zhang2003(pc, cell_size=1)
+    zhang_filter.normalize()    
+    
+    #TODO Quick filter for unreasonable points.
+    pc.filter(min = -5, max = pc.data.points.z.quantile(0.995), dim = "z")    
+    
+    #Check dim
+    assert (not pc.data.points.shape[0] == 0), "Lidar tile is empty!"
+        
     return pc
 
 def compute_chm(lidar_tile,annotations,row,windows,rgb_res):
@@ -90,14 +101,10 @@ def compute_chm(lidar_tile,annotations,row,windows,rgb_res):
     #Clip lidar to geographic extent    
     clipped=lidar_tile.clip(poly)
     
-    #TODO normalize properly, for now just subtract min value, see https://github.com/brycefrank/pyfor/issues/25
-    clipped.data.points.z =  clipped.data.points.z  -  clipped.data.points.z.min()
-    #clipped.normalize(1)
-    
-    #Quick filter for unreasonable points.
-    clipped.filter(min = -5, max = 100, dim = "z")
-    
     chm = clipped.chm(cell_size = rgb_res , interp_method = "nearest", pit_filter = "median", kernel_size = 11)
+    
+    #remove understory noise, anything under 2m.
+    chm.array[chm.array < 2] = 0
     
     return chm
 
