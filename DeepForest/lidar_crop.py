@@ -69,12 +69,12 @@ def fetch_lidar_tile(row,lidar_path):
     pc.extension=".las"    
     
     #normalize and filter
-    #TODO see https://github.com/brycefrank/pyfor/issues/29
-    pc.data.points.z =  pc.data.points.z  -  pc.data.points.z.min()
-    #pc.normalize(1)
+    #TODO confirm see https://github.com/brycefrank/pyfor/issues/29
+    zhang_filter=pyfor.ground_filter.Zhang2003(pc, cell_size=1)
+    zhang_filter.normalize()    
     
     #TODO Quick filter for unreasonable points.
-    pc.filter(min = -5, max = 100, dim = "z")    
+    pc.filter(min = -5, max = pc.data.points.z.quantile(0.99), dim = "z")    
     
     #Check dim
     assert (not pc.data.points.shape[0] == 0), "Lidar tile is empty!"
