@@ -74,7 +74,7 @@ def fetch_lidar_tile(row,lidar_path):
     zhang_filter.normalize()    
     
     #TODO Quick filter for unreasonable points.
-    pc.filter(min = -5, max = pc.data.points.z.quantile(0.99), dim = "z")    
+    pc.filter(min = -5, max = pc.data.points.z.quantile(0.995), dim = "z")    
     
     #Check dim
     assert (not pc.data.points.shape[0] == 0), "Lidar tile is empty!"
