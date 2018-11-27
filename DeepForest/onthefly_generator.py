@@ -138,6 +138,11 @@ class OnTheFlyGenerator(Generator):
             
             #Finding the corresponding lidar tile
             lidar_filepath=Lidar.fetch_lidar_filename(row,self.lidar_path)
+            
+            #If no lidar file, skip
+            if lidar_filepath == None:
+                return None
+            
             self.lidar_tile=Lidar.load_lidar(lidar_filepath)
             
         #Load rgb image and get crop
@@ -151,10 +156,6 @@ class OnTheFlyGenerator(Generator):
         
         #Save image path for next evaluation to check
         self.previous_image_path = row["image"]
-        
-        #If not lidar, skip
-        if self.lidar_tile == None:
-            return None        
         
         #LIDAR CHM
         CHM=Lidar.compute_chm(lidar_tile=self.lidar_tile,annotations=self.annotation_list, row=row, windows=self.windows, rgb_res=self.rgb_res)
