@@ -20,7 +20,7 @@ import cv2
 import slidingwindow as sw
 import itertools
 
-from DeepForest.lidar_crop import compute_chm, pad_array, fetch_lidar_tile, bind_array
+from DeepForest import Lidar
 from matplotlib import pyplot
 
 
@@ -137,8 +137,9 @@ class OnTheFlyGenerator(Generator):
             self.numpy_image = np.array(im)    
             
             #Finding the corresponding lidar tile
-            self.lidar_tile=fetch_lidar_tile(row,self.lidar_path)
-        
+            lidar_filepath=Lidar.fetch_lidar_filename(row,self.lidar_path)
+            self.lidar_tile=Lidar.load_lidar(lidar_filepath)
+            
         #Load rgb image and get crop
         image=retrieve_window(numpy_image=self.numpy_image,index=row["windows"],windows=self.windows)
 
@@ -156,10 +157,10 @@ class OnTheFlyGenerator(Generator):
             return None        
         
         #LIDAR CHM
-        CHM=compute_chm(lidar_tile=self.lidar_tile,annotations=self.annotation_list, row=row, windows=self.windows, rgb_res=self.rgb_res)
+        CHM=Lidar.compute_chm(lidar_tile=self.lidar_tile,annotations=self.annotation_list, row=row, windows=self.windows, rgb_res=self.rgb_res)
         
         #Bind RGB and LIDAR arrays
-        four_channel_image=bind_array(image,CHM.array)
+        four_channel_image=Lidar.bind_array(image,CHM.array)
             
         return four_channel_image
 

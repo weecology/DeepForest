@@ -1,95 +1,24 @@
 '''
-Sample point clouds for pointnet
+Crop lidar canopy height model from NEON tile and sliding window coordinates
 '''
 
-import h5py as h5
-import numpy as np
-import pyfor
-import open3d
-from scipy.stats import gaussian_kde
-from scipy.spatial import distance
-import matplotlib.pyplot as plt
 import pandas as pd
+import pyfor
 from shapely import geometry
+from matplotlib import pyplot
+import re
+import glob 
+import numpy as np
+import os
 
-def preprocess(lidar_path,bounding_box_path,num_points,view=False):
-    '''
-    Read in file, filter out ground, crop each tree, normalize to unit sphere and sample points
-    path: Location of raw lidar tile
-    num_points: Number of points to sample
-    view: Visualize result in 3d plot
-    '''
-    
-    # read bounding box
-    bbox=pd.read_csv(bounding_box_path)
-    
-    # Read Lidar tile
-    cloud=loadLidar(lidar_path)
-        
-    #filter out bare earth
-    cloud.filter(min = 3, max = 200, dim = "z")
-    
-    #Crop out tree
-    trees=[]
-    for index,row in bbox.iterrows():
-        
-        print(index)
-        #Create Polygon
-        features=createPolygon(row)        
-        
-        #Crop
-        clipped=cloud.clip(features)
-        
-        #Create numpy array
-        clipped_numpy=clipped.las.points.iloc[:,0:3].values
-        trees.append(clipped_numpy)
-    
-    
-    #Subsampling on each tree
-    sampled_trees=[]
-    
-    for tree in trees:
-        sampled_trees.append(sample(tree,num_points,view))
-    
-    #get labels for each tree
-    labels=bbox['label'].values
-    
-    return(sampled_trees,labels)
-    
-    # save as h5 file
-    #save_h5(h5_filename, data, label)
-
-## Load lidar
-def loadLidar(path):
-    pc = pyfor.cloud.Cloud(path)
-    pc.normalize(0.5)
-    return(pc)
-    
-def normalize(d):
-    # d is a (n x dimension) np array
-    d -= np.min(d, axis=0)
-    d /= np.ptp(d, axis=0)
-    return d
-
-def min_distance(d):
-    #compute pairwise distances and convert into square.
-    distances=distance.pdist(d)
-    distances=distance.squareform(distances)
-    np.fill_diagonal(distances, np.inf)
-    
-    #min distance
-    mind=distances.argmin(axis=0)
-    return(mind)
-
-def createPolygon(row):
+def createPolygon(xmin,xmax,ymin,ymax):
     '''
     Convert a pandas row into a polygon bounding box
     ''' 
-    
-    p1 = geometry.Point(row.xmin,row.ymin)
-    p2 = geometry.Point(row.xmin,row.ymax)
-    p3 = geometry.Point(row.xmax,row.ymin)
-    p4 = geometry.Point(row.xmax,row.ymax)
+    p1 = geometry.Point(xmin,ymax)
+    p2 = geometry.Point(xmax,ymax)
+    p3 = geometry.Point(xmax,ymin)
+    p4 = geometry.Point(xmin,ymin)
     
     pointList = [p1, p2, p3, p4, p1]
     
@@ -97,47 +26,165 @@ def createPolygon(row):
     
     return poly
 
-def sample(tree,num_points,view):
+
+def get_window_extent(annotations,row,windows,rgb_res):
     '''
-    Grid Sample and weigthed sampling to create standard array
-    tree: a 3d numpy array
+    Get the geographic coordinates of the sliding window.
+    Be careful that the ymin in the geographic data refers to the utm (bottom) and the ymin in the cartesian refers to origin (top). 
     '''
+    #Select tile from annotations to get extent
+    tile_annotations=annotations[annotations["rgb_path"]==row["image"]]
     
-    # normalize
-    normal_xyz=normalize(tree)
+    #Set tile extent to convert to UTMs, flipped origin from R to Python
+    tile_xmin=tile_annotations.tile_xmin.unique()[0]
+    tile_ymax=tile_annotations.tile_ymax.unique()[0]
+    tile_ymin=tile_annotations.tile_ymin.unique()[0]
     
-    #convert to open3d format
-    pcd = open3d.PointCloud()
-    pcd.points = open3d.Vector3dVector(normal_xyz)
+    #Get window cartesian coordinates
+    x,y,w,h= windows[row["windows"]].getRect()
     
-    #subsample on fine grid
-    downpcd = open3d.voxel_down_sample(pcd, voxel_size = 0.05)
+    window_utm_xmin=x * rgb_res + tile_xmin
+    window_utm_xmax=(x+w) * rgb_res + tile_xmin
+    window_utm_ymin=tile_ymax - (y * rgb_res)
+    window_utm_ymax= tile_ymax - ((y+h) * rgb_res)
     
-    #Minimum distances among points
-    dat=np.asarray(downpcd.points)
-    d=min_distance(dat)
-        
-    #Sample points weighted by min distance.
-    #If num points is more than available, replace=T
-    if(d.shape[0]>num_points):
-        rows=np.random.choice(d.shape[0],size=num_points,replace=False)
+    return(window_utm_xmin,window_utm_xmax,window_utm_ymin,window_utm_ymax)
+
+def fetch_lidar_filename(row,lidar_path):
+    
+    #first try identical name - this isn't great practice here, needs to be improved
+    
+    direct_filename=os.path.join(lidar_path,os.path.splitext(row["image"])[0] + ".laz")
+
+    if os.path.exists(direct_filename):
+        laz_path=direct_filename
     else:
-        rows=np.random.choice(d.shape[0],size=num_points,replace=True)        
+        laz_path=find_lidar_file(image_path=row["image"],lidar_path=lidar_path)
+        
+        #Skip if no path found
+        if laz_path == None:
+            return None
+    return laz_path
+        
+def load_lidar(laz_path):
     
-    sampled = open3d.PointCloud()
-    sampled.points = open3d.Vector3dVector(dat[rows,])
+    pc=pyfor.cloud.Cloud(laz_path)
+    pc.extension=".las"    
     
-    #View result if interested
-    if view:
-        pcd.paint_uniform_color([0.1,0.1,0.9])
-        downpcd.paint_uniform_color([0.1,0.9,0.1])
-        sampled.paint_uniform_color([0.9,0.1,0.1])
-        open3d.draw_geometries([pcd+sampled+downpcd]) 
+    #normalize and filter
+    #TODO confirm see https://github.com/brycefrank/pyfor/issues/29
+    zhang_filter=pyfor.ground_filter.Zhang2003(pc, cell_size=1)
+    zhang_filter.normalize()    
     
-    #Return as numpy array
-    return(np.asarray(sampled.points))
+    #Quick filter for unreasonable points.
+    pc.filter(min = -5, max = pc.data.points.z.quantile(0.995), dim = "z")    
     
+    #Check dim
+    assert (not pc.data.points.shape[0] == 0), "Lidar tile is empty!"
+        
+    return pc
+
+def compute_chm(lidar_tile,annotations,row,windows,rgb_res):
+    """
+    Computer a canopy height model based on the available laz file to align with the RGB data
+    """
+    #Find geographic coordinates of the rgb tile
+    xmin,xmax,ymin,ymax=get_window_extent(annotations=annotations, row=row, windows=windows,rgb_res=rgb_res)
+
+    #Add a small buffer based on rgb res
+    xmin=xmin - rgb_res/2
+    xmax=xmax + rgb_res/2
+    
+    ymin=ymin - rgb_res/2
+    ymax=ymax + rgb_res/2
+    
+    #Create shapely polygon for clipping
+    poly=createPolygon(xmin, xmax, ymin,ymax)
+    
+    #Clip lidar to geographic extent    
+    clipped=lidar_tile.clip(poly)
+    
+    chm = clipped.chm(cell_size = rgb_res , interp_method = "nearest", pit_filter = "median", kernel_size = 11)
+    
+    #remove understory noise, anything under 2m.
+    chm.array[chm.array < 2] = 0
+    
+    return chm
+
+def find_lidar_file(image_path,lidar_path):
+    """
+    Find the lidar file that matches RGB tile
+    """
+    #Look for lidar tile
+    laz_files=glob.glob(lidar_path + "*.laz")
+    
+    #extract geoindex
+    pattern=r"(\d+_\d+)_image"
+    match=re.findall(pattern,image_path)
+    
+    if len(match)>0:
+        match=match[0]
+    else:
+        return None
+    
+    #Look for index in available laz
+    laz_path=None
+    for x in laz_files:
+        if match in x:
+            laz_path=x
+
+    #Raise if no file found
+    if not laz_path:
+        print("No matching lidar file, check the lidar path: %s" %(lidar_path))
+        FileNotFoundError
+    
+    return laz_path
+
+def pad_array(image,chm):
+    h,w=np.subtract(image.shape[0:2],chm.shape[0:2] )
+    
+    #distribute evenly to both sides as possible
+    left = 0
+    right = 0
+    top=0
+    bottom=0
+    
+    #allocate padding 'evenly'
+    for x in np.arange(h):
+        if x % 2 ==0:
+            left +=1
+        else:
+            right +=1
+    
+    for x in np.arange(w):
+        if x % 2 ==0:
+            bottom +=1
+        else:
+            top +=1        
+    #pad
+    padded=np.pad(chm,((left,right),(top,bottom)),"constant")
+    
+    return padded    
+
+def bind_array(image,chm):
+    '''
+    Bind the rgb image and the lidar canopy height model
+    Pad with zeros if needed
+    '''
+    
+    #Check if arrays are same shape. If not, pad.
+    if not chm.shape==image.shape:
+        padded_chm=pad_array(image=image,chm=chm)
+        
+        #fig, ax = pyplot.subplots()
+        #ax.imshow(image[:,:,::-1])
+        #ax.matshow(padded_chm,alpha=0.4)
+        #pyplot.show()
+                        
+        #Append to bottom of image
+        four_channel_image=np.dstack((image,padded_chm))
+    else:
+        four_channel_image=np.dstack((image,chm))    
+    return four_channel_image
 if __name__=="__main__":
-    lidar_path="../data/OSBS_003.laz"    
-    bounding_box_path="../data/bounding_boxes_OSBS_003.csv"
-    trees=preprocess(lidar_path,bounding_box_path,num_points=100,view=True)    
+    lidar_path="/Users/ben/Documents/DeepForest/data/NEON_D03_OSBS_DP1_407000_3291000_classified_point_cloud.laz"

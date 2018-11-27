@@ -26,7 +26,7 @@ from keras_retinanet.utils.visualization import draw_detections, draw_annotation
 from keras_retinanet.utils.eval import _get_detections
 
 #Lidar 
-from DeepForest.lidar_crop import compute_chm, pad_array, fetch_lidar_tile, bind_array
+from DeepForest import Lidar 
 
 def neonRecall(
     site,
@@ -77,11 +77,11 @@ def neonRecall(
             continue
         
         #load plot lidar, if it exists
-        lidar="data/" + site + "/" + plot + ".laz"
+        lidar_path="data/" + site + "/" + plot + ".laz"
         
-        if os.path.exists(lidar):
-                pc=pyfor.cloud.Cloud(lidar)
-                pc.extension=".las"  
+        if os.path.exists(lidar_path):
+            #Load point cloud
+            pc=Lidar.load_lidar(lidar_path)
         else:
             continue
                 
@@ -89,7 +89,7 @@ def neonRecall(
         CHM = pc.chm(cell_size = DeepForest_config["rgb_res"] , interp_method = "nearest", pit_filter = "median", kernel_size = 11)
         
         #Bind image and tile
-        four_channel_image=bind_array(numpy_image,CHM.array)
+        four_channel_image=Lidar.bind_array(numpy_image,CHM.array)
         
         #Gather detections
         final_boxes=predict_tile(four_channel_image,generator,model,score_threshold,max_detections,suppression_threshold)            
@@ -131,16 +131,13 @@ def neonRecall(
                 cv2.circle(chm,(int(x[i]),int(y[i])), 5, (0,0,255), 1)
                 
             #Format name and save
-            image_name=generator.image_names[i]        
-            row=generator.image_data[image_name]             
-            lfname=os.path.splitext(row["image"])[0] + "_" + str(row["windows"]) +"_lidar"
-        
+                
             #Write CHM
-            cv2.imwrite(os.path.join(save_path, '{}_NeonPlot.png'.format(lfname)), chm)
+            cv2.imwrite(os.path.join(save_path, '{}_lidar_NeonPlot.png'.format(plot)), chm)
             
             if experiment:
                 experiment.log_image(os.path.join(save_path, '{}_NeonPlot.png'.format(plot)),file_name=str(plot))            
-                experiment.log_image(os.path.join(save_path, '{}_NeonPlot.png'.format(lfname)),file_name=lfname)
+                experiment.log_image(os.path.join(save_path, '{}_lidar_NeonPlot.png'.format(plot)),file_name=str(plot+"_lidar"))
     
         projected_boxes = []
         for row in  final_boxes:
@@ -244,7 +241,6 @@ def non_max_suppression(boxes, overlapThresh):
     # return the indices for only the bounding boxes that were picked using the
     # integer data type
     return pick
-
 
 def predict_tile(numpy_image,generator,model,score_threshold,max_detections,suppression_threshold):
     #get sliding windows
