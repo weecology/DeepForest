@@ -122,7 +122,6 @@ def neonRecall(
             chm = np.array(chm * 255, dtype = np.uint8)
             chm=cv2.applyColorMap(chm, cv2.COLORMAP_JET)
         
-            draw_annotations(chm, generator.load_annotations(i), label_to_name=generator.label_to_name)
             draw_detections(chm, image_boxes, image_scores, image_labels, label_to_name=generator.label_to_name,score_threshold=score_threshold)            
         
             #add points
