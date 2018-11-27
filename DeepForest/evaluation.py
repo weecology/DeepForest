@@ -86,10 +86,10 @@ def neonRecall(
             continue
                 
         #Compute canopt height model
-        chm = pc.chm(cell_size = DeepForest_config["rgb_res"] , interp_method = "nearest", pit_filter = "median", kernel_size = 11)
+        CHM = pc.chm(cell_size = DeepForest_config["rgb_res"] , interp_method = "nearest", pit_filter = "median", kernel_size = 11)
         
         #Bind image and tile
-        four_channel_image=bind_array(numpy_image,chm.array)
+        four_channel_image=bind_array(numpy_image,CHM.array)
         
         #Gather detections
         final_boxes=predict_tile(four_channel_image,generator,model,score_threshold,max_detections,suppression_threshold)            
@@ -112,10 +112,30 @@ def neonRecall(
             for i in np.arange(len(x)):
                 cv2.circle(numpy_image,(int(x[i]),int(y[i])), 5, (0,0,255), 1)
     
-            #TODO check which channels to write.
+            #Write RGB
             cv2.imwrite(os.path.join(save_path, '{}_NeonPlot.png'.format(plot)), numpy_image[:,:,:3])
+            
+            #Write LIDAR
+            chm = CHM.array.astype(np.float32) # convert to float
+            chm -= chm.min() # ensure the minimal value is 0.0
+            chm /= chm.max() # maximum value in chm is now 1.0
+            chm = np.array(chm * 255, dtype = np.uint8)
+            chm=cv2.applyColorMap(chm, cv2.COLORMAP_JET)
+        
+            draw_annotations(chm, generator.load_annotations(i), label_to_name=generator.label_to_name)
+            draw_detections(chm, image_boxes, image_scores, image_labels, label_to_name=generator.label_to_name,score_threshold=score_threshold)            
+        
+            #Format name and save
+            image_name=generator.image_names[i]        
+            row=generator.image_data[image_name]             
+            lfname=os.path.splitext(row["image"])[0] + "_" + str(row["windows"]) +"_lidar"
+        
+            #Write CHM
+            cv2.imwrite(os.path.join(save_path, '{}_NeonPlot.png'.format(lfname)), chm)
+            
             if experiment:
                 experiment.log_image(os.path.join(save_path, '{}_NeonPlot.png'.format(plot)),file_name=str(plot))            
+                experiment.log_image(os.path.join(save_path, '{}_NeonPlot.png'.format(lfname)),file_name=lfname)
     
         projected_boxes = []
         for row in  final_boxes:
