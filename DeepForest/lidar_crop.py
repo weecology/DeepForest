@@ -73,10 +73,12 @@ def fetch_lidar_tile(row,lidar_path):
     pc.data.points.z =  pc.data.points.z  -  pc.data.points.z.min()
     #pc.normalize(1)
     
-    
-    #Quick filter for unreasonable points.
+    #TODO Quick filter for unreasonable points.
     pc.filter(min = -5, max = 100, dim = "z")    
     
+    #Check dim
+    assert (not pc.data.points.shape[0] == 0), "Lidar tile is empty!"
+        
     return pc
 
 def compute_chm(lidar_tile,annotations,row,windows,rgb_res):
