@@ -80,11 +80,7 @@ def load_lidar(laz_path):
     
     #Check dim
     assert (not pc.data.points.shape[0] == 0), "Lidar tile is empty!"
-    
-    #Compute CHM
-    #LIDAR CHM
-    CHM=compute_chm(lidar_tile= pc, annotations=self.annotation_list, row=row, windows=self.windows, rgb_res=self.rgb_res)
-    
+
     return pc
 
 def compute_chm(lidar_tile,annotations,row,windows,rgb_res):
