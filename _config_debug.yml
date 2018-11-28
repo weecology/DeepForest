@@ -10,7 +10,7 @@ preprocess:
           zero_area: True
 
 #Training
-training_images: 2
+training_images: 10
 training_csvs: data/SJER/
 rgb_tile_dir: data/SJER/
 snapshot: None
