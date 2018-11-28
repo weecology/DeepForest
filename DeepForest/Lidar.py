@@ -50,15 +50,15 @@ def get_window_extent(annotations,row,windows,rgb_res):
     
     return(window_utm_xmin,window_utm_xmax,window_utm_ymin,window_utm_ymax)
 
-def fetch_lidar_filename(row,lidar_path):
+def fetch_lidar_filename(row,lidar_path,site):
     
-    #first try identical name - this isn't great practice here, needs to be improved
-    direct_filename=os.path.join(lidar_path,os.path.splitext(row["image"])[0] + ".laz")
+    #first try identical name - this isn't great practice here, needs to be improved. How to direct the lidar path to the right directory?
+    direct_filename=os.path.join("data" ,site,os.path.splitext(row["image"])[0] + ".laz")
 
     if os.path.exists(direct_filename):
-        print("Filename: %s does not exist, searching within %s" %(direct_filename,lidar_path))
         laz_path=direct_filename
     else:
+        print("Filename: %s does not exist, searching within %s" %(direct_filename,lidar_path))        
         laz_path=find_lidar_file(image_path=row["image"],lidar_path=lidar_path)
         
     return laz_path

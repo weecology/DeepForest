@@ -49,6 +49,9 @@ class OnTheFlyGenerator(Generator):
         self.windowdf=windowdf
         self.lidar_path=DeepForest_config["lidar_path"]
         
+        #Evaluation site
+        self.site=DeepForest_config["evaluation_site"]
+        
         #Holder for the group order, after shuffling we can still recover loss -> window
         self.group_order = {}
         
@@ -126,7 +129,7 @@ class OnTheFlyGenerator(Generator):
         #Select sliding window and tile
         image_name=self.image_names[image_index]        
         row=self.image_data[image_name]
-                
+        
         #Open image to crop
         ##Check if image the is same as previous draw from generator, this will save time.
         if not row["image"] == self.previous_image_path:
@@ -137,7 +140,7 @@ class OnTheFlyGenerator(Generator):
             self.numpy_image = np.array(im)    
             
             #Finding the corresponding lidar tile
-            lidar_filepath=Lidar.fetch_lidar_filename(row,self.lidar_path)
+            lidar_filepath=Lidar.fetch_lidar_filename(row,self.lidar_path,self.site)
             
             self.lidar_tile=Lidar.load_lidar(lidar_filepath)
             
