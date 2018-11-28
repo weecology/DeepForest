@@ -134,6 +134,8 @@ class NEONmAP(keras.callbacks.Callback):
     def on_epoch_end(self, epoch, logs=None):
         logs = logs or {}
 
+        print("computing NEON mAP scores")
+        
         # run evaluation
         average_precisions = evaluate(
             self.generator,

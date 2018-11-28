@@ -56,6 +56,7 @@ def fetch_lidar_filename(row,lidar_path):
     direct_filename=os.path.join(lidar_path,os.path.splitext(row["image"])[0] + ".laz")
 
     if os.path.exists(direct_filename):
+        print("Filename: %s does not exist, searching within %s" %(direct_filename,lidar_path))
         laz_path=direct_filename
     else:
         laz_path=find_lidar_file(image_path=row["image"],lidar_path=lidar_path)
