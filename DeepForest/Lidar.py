@@ -78,8 +78,8 @@ def load_lidar(laz_path):
     pc.filter(min = -5, max = pc.data.points.z.quantile(0.995), dim = "z")    
     
     #Check dim
-    assert (not pc.data.points.shape[0] == 0), "Lidar tile is empty!"    
-           
+    assert (not pc.data.points.shape[0] == 0), "Lidar tile is empty!"
+
     return pc
 
 def crop_chm(chm,annotations,row,windows,rgb_res):
