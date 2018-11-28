@@ -63,10 +63,13 @@ def fetch_lidar_filename(row,lidar_path):
     return laz_path
         
 def load_lidar(laz_path):
-    
-    pc=pyfor.cloud.Cloud(laz_path)
-    pc.extension=".las"    
-    
+        
+    try:
+        pc=pyfor.cloud.Cloud(laz_path)
+        pc.extension=".las"    
+    except:
+        print("Failed loading path: %s" %(laz_path))        
+        
     #normalize and filter
     #TODO confirm see https://github.com/brycefrank/pyfor/issues/29
     zhang_filter=pyfor.ground_filter.Zhang2003(pc, cell_size=1)
