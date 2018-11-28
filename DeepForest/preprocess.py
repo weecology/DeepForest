@@ -14,7 +14,7 @@ from PIL import Image
 import slidingwindow as sw
 import itertools
 
-def load_data(data_dir,res):
+def load_data(data_dir,res,lidar_path):
     '''
     data_dir: path to .csv files. Optionall can be a path to a specific .csv file.
     res: Cell resolution of the rgb imagery
@@ -43,6 +43,12 @@ def load_data(data_dir,res):
     data['origin_ymin']=(data['tile_ymax']-data['ymax'])/res
     data['origin_ymax']= (data['tile_ymax']-data['ymax']+ data['ymax'] - data['ymin'])/res  
         
+    #Check for lidar tiles
+    data=check_for_lidar(data=data,lidar_path=lidar_path)
+    
+    #Check for remaining data
+    assert(data.shape[0] > 0),"No training data remaining after ingestion, check lidar paths"
+    
     return(data)
     
 def zero_area(data):
@@ -121,6 +127,8 @@ def load_xml(path,res):
     with rasterio.open(full_path) as dataset:
         bounds=dataset.bounds         
     
+    #TODO find lidar path for annotations
+    
     frame=pd.DataFrame({"treeID":treeID,"xmin":xmin,"xmax":xmax,"ymin":ymin,"ymax":ymax,"rgb_path":rgb_path,"label":label,
                         "numeric_label":0,
                         "tile_xmin":bounds.left,
@@ -137,7 +145,7 @@ def load_xml(path,res):
     frame['origin_ymin']=frame["ymin"].astype(float)
     frame['origin_ymax']= frame["ymax"].astype(float)
     
-    return(frame)
+    return(data)
 
 def compute_windows(image,pixels=250,overlap=0.05):
     im = Image.open(image)
@@ -152,6 +160,19 @@ def retrieve_window(numpy_image,index,windows):
 def expand_grid(data_dict):
     rows = itertools.product(*data_dict.values())
     return pd.DataFrame.from_records(rows, columns=data_dict.keys())
+
+def check_for_lidar(data,lidar_path):
+    lidar_tiles=data.lidar_path.unique()
+    
+    lidar_exists=[]
+    for x in lidar_tiles:
+        lidar_exists.append(os.path.exists(lidar_path+x))
+    
+    #Filter data based on matching lidar tiles
+    matching_lidar=list(lidar_tiles[lidar_exists])
+    data=data[data.lidar_path.isin(matching_lidar)]
+    
+    return data
 
 def split_training(data,DeepForest_config,experiment,single_tile=False):
     

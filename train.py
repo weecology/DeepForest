@@ -499,9 +499,10 @@ if __name__ == '__main__':
     
     if mode.mode == "train":
         DeepForest_config=load_config("train")
-        data=preprocess.load_data(DeepForest_config["training_csvs"],DeepForest_config["rgb_res"])
+        data=preprocess.load_data(DeepForest_config["training_csvs"],DeepForest_config["rgb_res"],DeepForest_config["lidar_path"])
         
     if mode.mode == "retrain":
+        #TODO needs annotations to find lidar path
         DeepForest_config=load_config("retrain")        
         data=preprocess.load_xml(DeepForest_config["hand_annotations"],DeepForest_config["rgb_res"])
 

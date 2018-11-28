@@ -53,7 +53,6 @@ def get_window_extent(annotations,row,windows,rgb_res):
 def fetch_lidar_filename(row,lidar_path):
     
     #first try identical name - this isn't great practice here, needs to be improved
-    
     direct_filename=os.path.join(lidar_path,os.path.splitext(row["image"])[0] + ".laz")
 
     if os.path.exists(direct_filename):
@@ -61,9 +60,6 @@ def fetch_lidar_filename(row,lidar_path):
     else:
         laz_path=find_lidar_file(image_path=row["image"],lidar_path=lidar_path)
         
-        #Skip if no path found
-        if laz_path == None:
-            return None
     return laz_path
         
 def load_lidar(laz_path):

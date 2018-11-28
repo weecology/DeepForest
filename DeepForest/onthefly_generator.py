@@ -139,10 +139,6 @@ class OnTheFlyGenerator(Generator):
             #Finding the corresponding lidar tile
             lidar_filepath=Lidar.fetch_lidar_filename(row,self.lidar_path)
             
-            #If no lidar file, skip
-            if lidar_filepath == None:
-                return None
-            
             self.lidar_tile=Lidar.load_lidar(lidar_filepath)
             
         #Load rgb image and get crop
@@ -197,7 +193,7 @@ class OnTheFlyGenerator(Generator):
         image_name=self.image_names[image_index]
         row=self.image_data[image_name]
         
-        #Check for blank image, if so, enforce no annotations
+        #Check for blank black image, if so, enforce no annotations
         remove_annotations=image_is_blank(self.image)
         
         if remove_annotations:
