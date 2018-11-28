@@ -62,9 +62,8 @@ def fetch_lidar_filename(row,lidar_path,site):
         laz_path=find_lidar_file(image_path=row["image"],lidar_path=lidar_path)
         
     return laz_path
-        
-def load_lidar_chm(laz_path,rgb_res):
-    try:
+
+def load_lidar(laz_path):
         pc=pyfor.cloud.Cloud(laz_path)
         pc.extension=".las"    
     except FileNotFoundError:
@@ -79,17 +78,9 @@ def load_lidar_chm(laz_path,rgb_res):
     pc.filter(min = -5, max = pc.data.points.z.quantile(0.995), dim = "z")    
     
     #Check dim
-    assert (not pc.data.points.shape[0] == 0), "Lidar tile is empty!"
-    
-    #Compute CHM
-    #LIDAR CHM
-    
-    chm = pc.chm(cell_size = rgb_res , interp_method = "nearest", pit_filter = "median", kernel_size = 11)
-    
-    #remove understory noise, anything under 2m.
-    chm.array[chm.array < 2] = 0
-    
-    return chm
+    assert (not pc.data.points.shape[0] == 0), "Lidar tile is empty!"    
+           
+    return pc
 
 def crop_chm(chm,annotations,row,windows,rgb_res):
     """
