@@ -12,10 +12,10 @@ preprocess:
 #Training
 training_csvs: /home/b.weinstein/TreeSegmentation/analysis/Results/detection_boxes/SJER/2018/
 rgb_tile_dir: /orange/ewhite/NeonData/SJER/DP3.30010.001/2018/FullSite/D17/2018_SJER_3/L3/Camera/Mosaic/V01/
-training_images: 1000
+training_images: 10
 snapshot: None
 batch_size: 5      
-epochs: 10
+epochs: 2
 save_snapshot_path: /orange/ewhite/b.weinstein/retinanet/snapshots/
 backbone: resnet50
 shuffle_training: False
