@@ -145,7 +145,7 @@ def load_xml(path,res):
     frame['origin_ymin']=frame["ymin"].astype(float)
     frame['origin_ymax']= frame["ymax"].astype(float)
     
-    return(data)
+    return(frame)
 
 def compute_windows(image,pixels=250,overlap=0.05):
     im = Image.open(image)
