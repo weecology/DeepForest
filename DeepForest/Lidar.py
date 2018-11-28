@@ -83,7 +83,7 @@ def load_lidar(laz_path):
 
     return pc
 
-def crop_chm(chm,annotations,row,windows,rgb_res):
+def compute_chm(lidar_tile,annotations,row,windows,rgb_res):
     """
     Computer a canopy height model based on the available laz file to align with the RGB data
     """
@@ -101,9 +101,14 @@ def crop_chm(chm,annotations,row,windows,rgb_res):
     poly=createPolygon(xmin, xmax, ymin,ymax)
     
     #Clip lidar to geographic extent    
-    clipped=chm.clip(poly)
+    clipped=lidar_tile.clip(poly)
     
-    return clipped
+    chm = clipped.chm(cell_size = rgb_res , interp_method = "nearest", pit_filter = "median", kernel_size = 11)
+    
+    #remove understory noise, anything under 2m.
+    chm.array[chm.array < 2] = 0   
+    
+    return chm
 
 def find_lidar_file(image_path,lidar_path):
     """
