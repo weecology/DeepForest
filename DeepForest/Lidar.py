@@ -64,6 +64,7 @@ def fetch_lidar_filename(row,lidar_path,site):
     return laz_path
 
 def load_lidar(laz_path):
+    try:
         pc=pyfor.cloud.Cloud(laz_path)
         pc.extension=".las"    
     except FileNotFoundError:
