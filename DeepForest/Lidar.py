@@ -63,7 +63,7 @@ def fetch_lidar_filename(row,lidar_path,site):
         
     return laz_path
         
-def load_lidar(laz_path):
+def load_lidar_chm(laz_path,rgb_res):
     try:
         pc=pyfor.cloud.Cloud(laz_path)
         pc.extension=".las"    
@@ -83,11 +83,15 @@ def load_lidar(laz_path):
     
     #Compute CHM
     #LIDAR CHM
-    CHM=compute_chm(lidar_tile= pc, annotations=self.annotation_list, row=row, windows=self.windows, rgb_res=self.rgb_res)
     
-    return pc
+    chm = pc.chm(cell_size = rgb_res , interp_method = "nearest", pit_filter = "median", kernel_size = 11)
+    
+    #remove understory noise, anything under 2m.
+    chm.array[chm.array < 2] = 0
+    
+    return chm
 
-def compute_chm(lidar_tile,annotations,row,windows,rgb_res):
+def crop_chm(chm,annotations,row,windows,rgb_res):
     """
     Computer a canopy height model based on the available laz file to align with the RGB data
     """
@@ -105,14 +109,9 @@ def compute_chm(lidar_tile,annotations,row,windows,rgb_res):
     poly=createPolygon(xmin, xmax, ymin,ymax)
     
     #Clip lidar to geographic extent    
-    clipped=lidar_tile.clip(poly)
+    clipped=chm.clip(poly)
     
-    chm = clipped.chm(cell_size = rgb_res , interp_method = "nearest", pit_filter = "median", kernel_size = 11)
-    
-    #remove understory noise, anything under 2m.
-    chm.array[chm.array < 2] = 0
-    
-    return chm
+    return clipped
 
 def find_lidar_file(image_path,lidar_path):
     """

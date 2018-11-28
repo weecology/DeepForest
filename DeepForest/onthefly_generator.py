@@ -142,7 +142,7 @@ class OnTheFlyGenerator(Generator):
             #Finding the corresponding lidar tile
             lidar_filepath=Lidar.fetch_lidar_filename(row,self.lidar_path,self.site)
             
-            self.lidar_tile=Lidar.load_lidar(lidar_filepath)
+            self.chm=Lidar.load_lidar_chm(lidar_filepath,self.rgb_res)
             
         #Load rgb image and get crop
         image=retrieve_window(numpy_image=self.numpy_image,index=row["windows"],windows=self.windows)
@@ -156,8 +156,8 @@ class OnTheFlyGenerator(Generator):
         #Save image path for next evaluation to check
         self.previous_image_path = row["image"]
         
-        #LIDAR CHM
-        CHM=Lidar.compute_chm(lidar_tile=self.lidar_tile,annotations=self.annotation_list, row=row, windows=self.windows, rgb_res=self.rgb_res)
+        #Crop numpy array
+        Lidar.crop_chm(self.chm,annotations,row,windows,rgb_res)
         
         #Bind RGB and LIDAR arrays
         four_channel_image=Lidar.bind_array(image,CHM.array)
