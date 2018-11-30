@@ -37,6 +37,8 @@ class OnTheFlyGenerator(Generator):
         DeepForest_config,
         base_dir=None,
         shuffle_tile_epoch=False,
+        group_method="none",
+        batch_size=None,
         name=None,
         **kwargs
     ):
@@ -48,12 +50,14 @@ class OnTheFlyGenerator(Generator):
         self.name=name
         self.windowdf=windowdf
         self.lidar_path=DeepForest_config["lidar_path"]
+        self.batch_size=batch_size
         
         #Evaluation site
         self.site=DeepForest_config["evaluation_site"]
         
         #Holder for the group order, after shuffling we can still recover loss -> window
         self.group_order = {}
+        self.group_method=group_method
         
         #Shuffle at the end of an epoch
         self.shuffle_tile_epoch=shuffle_tile_epoch
