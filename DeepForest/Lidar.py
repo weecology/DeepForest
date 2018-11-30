@@ -52,6 +52,11 @@ def get_window_extent(annotations,row,windows,rgb_res):
     return(window_utm_xmin,window_utm_xmax,window_utm_ymin,window_utm_ymax)
 
 def fetch_lidar_filename(row,lidar_path,site):
+    """
+    Find lidar path in a directory.
+    param: row a dictionary with image "key" for filename to be searched for
+    return: string location on disk
+    """
     
     #first try identical name - this isn't great practice here, needs to be improved. How to direct the lidar path to the right directory?
     direct_filename=os.path.join("data" ,site,os.path.splitext(row["image"])[0] + ".laz")
@@ -65,6 +70,12 @@ def fetch_lidar_filename(row,lidar_path,site):
     return laz_path
 
 def load_lidar(laz_path):
+    """
+    Load lidar tile from file based on path name
+    param: A string of the file path of the lidar tile
+    return: A pyfor point cloud
+    """
+    
     try:
         pc=pyfor.cloud.Cloud(laz_path)
         pc.extension=".las"    
@@ -142,6 +153,11 @@ def find_lidar_file(image_path,lidar_path):
     return laz_path
 
 def pad_array(image,chm):
+    """
+    Enforce the same data structure between the rgb image and the canopy height model. 
+    Add 0's around the edge to fix shape
+    """
+    
     h,w=np.subtract(image.shape[0:2],chm.shape[0:2] )
     
     #distribute evenly to both sides as possible

@@ -65,7 +65,7 @@ from keras_retinanet .utils.transform import random_transform_generator
 from DeepForest.onthefly_generator import OnTheFlyGenerator
 
 #Custom Callbacks
-from DeepForest.callbacks import jaccardCallback, recallCallback,NEONmAP
+from DeepForest.callbacks import recallCallback,NEONmAP
 
 def makedirs(path):
     # Intended behavior: try to create the directory,
@@ -159,107 +159,6 @@ def create_NEON_generator(args,site,DeepForest_config):
     )
     
     return(generator)
-
-def create_callbacks(model, training_model, prediction_model, validation_generator, args,experiment,DeepForest_config):
-    """ Creates the callbacks to use during training.
-
-    Args
-        model: The base model.
-        training_model: The model that is used for training.
-        prediction_model: The model that should be used for validation.
-        validation_generator: The generator for creating validation data.
-        args: parseargs args object.
-
-    Returns:
-        A list of callbacks used for training.
-    """
-    callbacks = []
-
-    tensorboard_callback = None
-
-    if args.tensorboard_dir:
-        tensorboard_callback = keras.callbacks.TensorBoard(
-            log_dir                = args.tensorboard_dir,
-            histogram_freq         = 0,
-            batch_size             = args.batch_size,
-            write_graph            = True,
-            write_grads            = False,
-            write_images           = False,
-            embeddings_freq        = 0,
-            embeddings_layer_names = None,
-            embeddings_metadata    = None
-        )
-        callbacks.append(tensorboard_callback)
-
-    if args.evaluation and validation_generator:
-        
-        evaluation = Evaluate(validation_generator, 
-                              tensorboard=tensorboard_callback,
-                              experiment=experiment,
-                              save_path=args.save_path,
-                              score_threshold=args.score_threshold,
-                              DeepForest_config=DeepForest_config)
-        
-        evaluation = RedirectModel(evaluation, prediction_model)
-        callbacks.append(evaluation)
-
-    # save the model
-    if args.snapshots:
-        # ensure directory created first; otherwise h5py will error after epoch.
-        makedirs(args.snapshot_path)
-        checkpoint = keras.callbacks.ModelCheckpoint(
-            os.path.join(
-                args.snapshot_path,
-                '{backbone}_{{epoch:02d}}.h5'.format(backbone=args.backbone)
-            ),
-            verbose=1,
-            save_best_only=True,
-             monitor="mAP",
-             mode='max'
-        )
-        checkpoint = RedirectModel(checkpoint, model)
-        callbacks.append(checkpoint)
-
-    callbacks.append(keras.callbacks.ReduceLROnPlateau(
-        monitor  = 'loss',
-        factor   = 0.1,
-        patience = 2,
-        verbose  = 1,
-        mode     = 'auto',
-        epsilon  = 0.0001,
-        cooldown = 0,
-        min_lr   = 0
-    ))
-    
-    #Neon Callbacks
-    site=DeepForest_config["evaluation_site"]
-        
-    recall=recallCallback(site=site,
-                          generator=validation_generator,
-                          save_path=args.save_path,
-                          DeepForest_config=DeepForest_config,
-                          score_threshold=args.score_threshold,
-                          experiment=experiment)
-    
-    recall = RedirectModel(recall, prediction_model)
-    
-    callbacks.append(recall)
-    
-    #Neon mean IoU precision
-    #create the NEON mAP generator 
-    NEON_generator = create_NEON_generator(args,site,DeepForest_config)
-    
-    neon_evaluation = NEONmAP(NEON_generator, 
-                              experiment=experiment,
-                              save_path=args.save_path,
-                              score_threshold=args.score_threshold,
-                              DeepForest_config=DeepForest_config)
-
-    neon_evaluation = RedirectModel(neon_evaluation, prediction_model)
-    callbacks.append(neon_evaluation)  
-        
-    return callbacks
-
 
 def create_generators(args,data,DeepForest_config):
     """ Create generators for training and validation.
@@ -435,18 +334,7 @@ def main(args=None,data=None,DeepForest_config=None,experiment=None):
         train_generator.compute_anchor_targets = compute_anchor_targets
         if validation_generator is not None:
             validation_generator.compute_anchor_targets = compute_anchor_targets
-
-    # create the callbacks
-    callbacks = create_callbacks(
-        model,
-        training_model,
-        prediction_model,
-        validation_generator,
-        args,
-        experiment,
-        DeepForest_config
-    )
-    
+            
     matched=[]
     for entry in validation_generator.image_data.values():
         test=entry in train_generator.image_data.values() 
@@ -464,8 +352,9 @@ def main(args=None,data=None,DeepForest_config=None,experiment=None):
         epochs=args.epochs,
         verbose=1,
         shuffle=False,
-    callbacks=callbacks
+    callbacks=None
     )
+    
     cp.disable()
     
 
