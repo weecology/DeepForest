@@ -89,6 +89,7 @@ class OnTheFlyGenerator(Generator):
         
         #Create list of sliding windows to select        
         self.image_data, self.image_names =self.define_groups(self.windowdf,shuffle=False)
+        self.group_images()
         
         super(OnTheFlyGenerator, self).__init__(**kwargs)
                         
