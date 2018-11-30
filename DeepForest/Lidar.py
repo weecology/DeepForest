@@ -10,7 +10,7 @@ import re
 import glob 
 import numpy as np
 import os
-from scipy.signal import medfilt
+from scipy.signal import medfilt2d
 
 def createPolygon(xmin,xmax,ymin,ymax):
     '''
@@ -72,7 +72,6 @@ def load_lidar(laz_path):
         print("Failed loading path: %s" %(laz_path))
         
     #normalize and filter
-    #TODO confirm see https://github.com/brycefrank/pyfor/issues/29
     zhang_filter=pyfor.ground_filter.Zhang2003(pc, cell_size=1)
     zhang_filter.normalize()    
     
@@ -81,7 +80,7 @@ def load_lidar(laz_path):
     
     #Check dim
     assert (not pc.data.points.shape[0] == 0), "Lidar tile is empty!"
-
+    
     return pc
 
 def compute_chm(lidar_tile,annotations,row,windows,rgb_res):
@@ -103,14 +102,13 @@ def compute_chm(lidar_tile,annotations,row,windows,rgb_res):
     
     #Clip lidar to geographic extent    
     clipped=lidar_tile.clip(poly)
-    
-    chm = clipped.chm(cell_size = rgb_res , interp_method = "nearest")
-    
+        
     #Median filter
-    chm.array = medfilt(chm.array, kernel_size=11)
+    chm =clipped.chm(cell_size = 0.1 , interp_method = "nearest")
+    chm.array = medfilt2d(chm.array, kernel_size=11)
     
     #remove understory noise, anything under 2m.
-    chm.array[chm.array < 2] = 0   
+    chm.array[clipped.array < 2] = 0   
     
     return chm
 

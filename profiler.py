@@ -2,17 +2,6 @@
 
 import cProfile, pstats
 cp = cProfile.Profile()
-
-#from DeepForest import Lidar
-#from matplotlib import pyplot
-
-#lidar_tile=Lidar.load_lidar("/Users/ben/Documents/DeepLidar/data/SJER/SJER_002.laz")
-
-#cp.enable()
-#chm = lidar_tile.chm(cell_size = 0.1 , interp_method = "nearest")
-#chm.plot(block=True)
-#cp.disable()
-
 from DeepForest import onthefly_generator,preprocess, config
 
 #Load data
