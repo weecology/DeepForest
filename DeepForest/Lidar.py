@@ -108,7 +108,7 @@ def compute_chm(lidar_tile,annotations,row,windows,rgb_res):
     chm.array = medfilt2d(chm.array, kernel_size=11)
     
     #remove understory noise, anything under 2m.
-    chm.array[clipped.array < 2] = 0   
+    chm.array[chm.array < 2] = 0   
     
     return chm
 
