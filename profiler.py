@@ -353,7 +353,7 @@ def main(args=None,data=None,DeepForest_config=None,experiment=None):
         verbose=1,
         shuffle=False,
     callbacks=None,
-    workers=2
+    workers=1
     )
     
     cp.disable()
