@@ -38,7 +38,6 @@ class OnTheFlyGenerator(Generator):
         base_dir=None,
         shuffle_tile_epoch=False,
         group_method="none",
-        batch_size=None,
         name=None,
         **kwargs
     ):
@@ -50,7 +49,7 @@ class OnTheFlyGenerator(Generator):
         self.name=name
         self.windowdf=windowdf
         self.lidar_path=DeepForest_config["lidar_path"]
-        self.batch_size=batch_size
+        self.batch_size=DeepForest_config["batch_size"]
         
         #Evaluation site
         self.site=DeepForest_config["evaluation_site"]

@@ -14,8 +14,8 @@ training_images: 20
 training_csvs: data/SJER/
 rgb_tile_dir: data/SJER/
 snapshot: None
-batch_size: 1      
-epochs: 2
+batch_size: 5     
+epochs: 1
 save_snapshot_path: None
 backbone: resnet50
 shuffle_training: True
