@@ -170,12 +170,14 @@ def pad_array(image,chm):
     for x in np.arange(h):
         if x % 2 ==0:
             left +=1
+            
         else:
             right +=1
     
     for x in np.arange(w):
         if x % 2 ==0:
             bottom +=1
+            
         else:
             top +=1        
     #pad
@@ -193,15 +195,9 @@ def bind_array(image,chm):
     if not chm.shape==image.shape:
         padded_chm=pad_array(image=image,chm=chm)
         
-        #fig, ax = pyplot.subplots()
-        #ax.imshow(image[:,:,::-1])
-        #ax.matshow(padded_chm,alpha=0.4)
-        #pyplot.show()
-                        
         #Append to bottom of image
         four_channel_image=np.dstack((image,padded_chm))
+        
     else:
         four_channel_image=np.dstack((image,chm))    
     return four_channel_image
-if __name__=="__main__":
-    lidar_path="/Users/ben/Documents/DeepForest/data/NEON_D03_OSBS_DP1_407000_3291000_classified_point_cloud.laz"

@@ -352,7 +352,8 @@ def main(args=None,data=None,DeepForest_config=None,experiment=None):
         epochs=args.epochs,
         verbose=1,
         shuffle=False,
-    callbacks=None
+    callbacks=None,
+    workers=0
     )
     
     cp.disable()
