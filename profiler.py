@@ -199,7 +199,7 @@ def create_generators(args,data,DeepForest_config):
         batch_size=args.batch_size,
         DeepForest_config=DeepForest_config,
         group_method="none",
-    shuffle_tile_epoch=True,
+    shuffle_tile_epoch=False,
     name="training")
 
     #Validation Generator        

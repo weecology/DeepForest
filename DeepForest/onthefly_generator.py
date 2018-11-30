@@ -312,7 +312,6 @@ def fetch_annotations(image,index,annotations,windows,offset,patch_size):
         (annotations.window_ymax < (patch_size+ offset))
                      ]
     
-    #Crop with copy to avoid view warning
     overlapping_boxes=d[d.apply(box_overlap,window=window_coords,axis=1) > 0.5].copy()
     
     #If boxes fall off edge, clip to window extent    
