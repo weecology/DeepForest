@@ -458,7 +458,7 @@ def main(args=None,data=None,DeepForest_config=None,experiment=None):
         epochs=args.epochs,
         verbose=1,
         shuffle=False,
-        callbacks=callbacks
+    callbacks=callbacks
     )
     
 
