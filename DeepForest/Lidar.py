@@ -10,6 +10,7 @@ import re
 import glob 
 import numpy as np
 import os
+from scipy.signal import medfilt
 
 def createPolygon(xmin,xmax,ymin,ymax):
     '''
@@ -103,7 +104,10 @@ def compute_chm(lidar_tile,annotations,row,windows,rgb_res):
     #Clip lidar to geographic extent    
     clipped=lidar_tile.clip(poly)
     
-    chm = clipped.chm(cell_size = rgb_res , interp_method = "nearest", pit_filter = "median", kernel_size = 11)
+    chm = clipped.chm(cell_size = rgb_res , interp_method = "nearest")
+    
+    #Median filter
+    chm.array = medfilt(chm.array, kernel_size=11)
     
     #remove understory noise, anything under 2m.
     chm.array[chm.array < 2] = 0   
