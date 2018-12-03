@@ -490,7 +490,7 @@ if __name__ == '__main__':
     experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2",project_name='deeplidar',log_code=False)
 
     #save time for logging
-    dirname=args.dir
+    dirname=mode.dir
     experiment.log_parameter("Start Time", dirname)
 
     #log training mode
