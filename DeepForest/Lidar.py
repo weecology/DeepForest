@@ -94,7 +94,7 @@ def load_lidar(laz_path):
     
     return pc
 
-def compute_chm(lidar_tile,annotations,row,windows,rgb_res):
+def compute_chm(lidar_tile,annotations,row,windows,rgb_res,kernel_size):
     """
     Computer a canopy height model based on the available laz file to align with the RGB data
     """
@@ -116,7 +116,7 @@ def compute_chm(lidar_tile,annotations,row,windows,rgb_res):
         
     #Median filter
     chm =clipped.chm(cell_size = 0.1 , interp_method = "nearest")
-    chm.array = medfilt2d(chm.array, kernel_size=11)
+    chm.array = medfilt2d(chm.array, kernel_size=kernel_size)
     
     #remove understory noise, anything under 2m.
     chm.array[chm.array < 2] = 0   

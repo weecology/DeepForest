@@ -50,6 +50,7 @@ class OnTheFlyGenerator(Generator):
         self.windowdf=windowdf
         self.lidar_path=DeepForest_config["lidar_path"]
         self.batch_size=DeepForest_config["batch_size"]
+        self.kernel_size=DeepForest_config["kernel_size"]
         
         #Evaluation site
         self.site=DeepForest_config["evaluation_site"]
@@ -161,7 +162,7 @@ class OnTheFlyGenerator(Generator):
         self.previous_image_path = row["image"]
         
         #Crop numpy array
-        CHM=Lidar.compute_chm(lidar_tile=self.lidar_tile,annotations=self.annotation_list, row=row, windows=self.windows, rgb_res=self.rgb_res)
+        CHM=Lidar.compute_chm(lidar_tile=self.lidar_tile,annotations=self.annotation_list, row=row, windows=self.windows, rgb_res=self.rgb_res,kernel_size=self.kernel_size)
         
         #Bind RGB and LIDAR arrays
         four_channel_image=Lidar.bind_array(image,CHM.array)
