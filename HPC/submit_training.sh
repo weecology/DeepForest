@@ -1,5 +1,5 @@
 #!/bin/bash
-stamp=date "+%Y_%m_%d_%H_%M_%S" # time stamp
+stamp=date "+%Y%m%d_%H%M%S" # time stamp
 
 #SBATCH --job-name=DeepForest   # Job name
 #SBATCH --mail-type=END               # Mail events (NONE, BEGIN, END, FAIL, AL$
@@ -28,4 +28,4 @@ sleep 2
 cd /home/b.weinstein/DeepLidar
 which python
 
-python train.py --mode train
+python train.py --mode train --dir $stamp

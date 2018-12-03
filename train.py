@@ -474,6 +474,7 @@ if __name__ == '__main__':
     #Set training or training
     mode_parser     = argparse.ArgumentParser(description='Retinanet training or finetuning?')
     mode_parser.add_argument('--mode', help='train or retrain?' )
+    mode_parser.add_argument('--dir', help='destination dir on HPC' )
     
     mode=mode_parser.parse_args()
     
@@ -489,7 +490,7 @@ if __name__ == '__main__':
     experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2",project_name='deeplidar',log_code=False)
 
     #save time for logging
-    dirname=datetime.now().strftime("%Y%m%d_%H%M%S")
+    dirname=args.dir
     experiment.log_parameter("Start Time", dirname)
 
     #log training mode
