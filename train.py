@@ -459,7 +459,7 @@ def main(args=None,data=None,DeepForest_config=None,experiment=None):
         verbose=1,
         shuffle=False,
         callbacks=callbacks,
-        workers=DeepForest_config["batch_size"]
+        workers=DeepForest_config["workers"]
     )
     
 
