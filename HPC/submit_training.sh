@@ -1,5 +1,5 @@
 #!/bin/bash
-stamp=date "+%Y%m%d_%H%M%S" # time stamp
+stamp=$(date +%Y%m%d_%H%M%S) # time stamp
 
 #SBATCH --job-name=DeepForest   # Job name
 #SBATCH --mail-type=END               # Mail events (NONE, BEGIN, END, FAIL, AL$
