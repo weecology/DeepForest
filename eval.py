@@ -221,6 +221,8 @@ if __name__ == '__main__':
     #Set training or training
     mode_parser     = argparse.ArgumentParser(description='Retinanet training or finetuning?')
     mode_parser.add_argument('--mode', help='train or retrain?' )
+    mode_parser.add_argument('--dir', help='destination dir' )    
+    mode_parser.add_argument('--saved_model', help='train or retrain?' )    
     
     mode=mode_parser.parse_args()
     
@@ -233,10 +235,10 @@ if __name__ == '__main__':
     from DeepForest import preprocess
 
     #set experiment and log configs
-    experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2",project_name='deeplidar')
+    experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2",project_name='deeplidar',log_code=False)
 
     #save time for logging
-    dirname=datetime.now().strftime("%Y%m%d_%H%M%S")
+    dirname=mode.dir
     experiment.log_parameter("Start Time", dirname)
 
     #log training mode
@@ -246,7 +248,7 @@ if __name__ == '__main__':
     
     if mode.mode == "train":
         DeepForest_config=load_config("train")
-        data=preprocess.load_data(DeepForest_config["training_csvs"],DeepForest_config["rgb_res"])
+        data=preprocess.load_data(DeepForest_config["training_csvs"],DeepForest_config["rgb_res"],lidar_path=DeepForest_config["lidar_path"])
         
     if mode.mode == "retrain":
         DeepForest_config=load_config("retrain")        
@@ -268,7 +270,7 @@ if __name__ == '__main__':
         '--score-threshold', str(DeepForest_config['score_threshold']),
         '--suppression-threshold','0.1', 
         '--save-path', 'snapshots/images/', 
-        '--model', '/Users/ben/Documents/DeepForest/snapshots/handannotatedonly.h5', 
+        '--model', mode.saved_model, 
         '--convert-model'
     ]
        
