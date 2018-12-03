@@ -34,3 +34,5 @@ nms_threshold: 0.15
 
 #LIDAR
 lidar_path: /orange/ewhite/NeonData/SJER/DP1.30003.001/2018/FullSite/D17/2018_SJER_3/L1/DiscreteLidar/ClassifiedPointCloud/
+kernel_size: 5
+workers: 1
