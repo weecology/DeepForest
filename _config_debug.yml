@@ -10,11 +10,11 @@ preprocess:
           zero_area: True
 
 #Training
-training_images: 5
+training_images: 6
 training_csvs: data/SJER/
 rgb_tile_dir: data/SJER/
 snapshot: None
-batch_size: 5     
+batch_size: 6     
 epochs: 1
 save_snapshot_path: None
 backbone: resnet50

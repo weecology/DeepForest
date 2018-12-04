@@ -20,10 +20,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-
-#Import logger.
-from comet_ml import Experiment
-
 import cProfile, pstats
 cp = cProfile.Profile()
 
@@ -162,9 +158,7 @@ def create_generators(args,data,DeepForest_config):
     train,test=preprocess.split_training(data,
                                          DeepForest_config,
                                          single_tile=DeepForest_config["single_tile"],
-                                         experiment=experiment)
-
-    experiment.log_dataset_hash(data=train)
+                                         experiment=None)
     
     #Write out for debug
     if args.save_path:
@@ -330,7 +324,8 @@ def main(args=None,data=None,DeepForest_config=None,experiment=None):
         verbose=1,
         shuffle=False,
     callbacks=None,
-    workers=1
+    workers=2,
+    use_multiprocessing=True
     )
     
     cp.disable()
@@ -354,26 +349,16 @@ if __name__ == '__main__':
     from DeepForest.config import load_config
     from DeepForest import preprocess
 
-    #set experiment and log configs
-    experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2",project_name='deeplidar',log_code=False)
-
     #save time for logging
     dirname=datetime.now().strftime("%Y%m%d_%H%M%S")
-    experiment.log_parameter("Start Time", dirname)
-
-    #log training mode
-    experiment.log_parameter("Training Mode",mode.mode)
     
     #Load DeepForest_config and data file based on training or retraining mode
 
     DeepForest_config=load_config("train")
     data=preprocess.load_data(DeepForest_config["training_csvs"],DeepForest_config["rgb_res"],DeepForest_config["lidar_path"])
 
-    experiment.log_multiple_params(DeepForest_config)
-
     #Log site
     site=DeepForest_config["evaluation_site"]
-    experiment.log_parameter("Site", site)
     
     ##Preprocess Filters##
     if DeepForest_config['preprocess']['zero_area']:
@@ -391,9 +376,6 @@ if __name__ == '__main__':
     if not DeepForest_config["save_snapshot_path"]=="None":
         snappath=DeepForest_config["save_snapshot_path"]+ dirname
         os.mkdir(snappath)
-
-        #Log to comet
-        experiment.log_parameter("snapshot_dir",snappath)        
 
     #if no snapshots, add arg to front, will ignore path above
     if DeepForest_config["save_snapshot_path"]=="None":
@@ -417,7 +399,7 @@ if __name__ == '__main__':
         args=["--save-path"] + args        
 
     #Run training, and pass comet experiment   
-    main(args,data,DeepForest_config,experiment)
+    main(args,data,DeepForest_config)
 
 stats = pstats.Stats(cp)
 stats.strip_dirs()
