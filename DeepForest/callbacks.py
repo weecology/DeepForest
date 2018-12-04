@@ -102,6 +102,25 @@ class recallCallback(keras.callbacks.Callback):
         self.experiment.log_metric("Recall", recall)       
 
 
+class shuffle_inputs(keras.callbacks.Callback):
+    """Randomize order of tiles and windows
+    """
+
+    def __init__(self, generator):
+        """ 
+        # Arguments
+            generator       : The generator that represents the dataset to evaluate.
+        """
+        self.generator       = generator
+        super(shuffle_inputs, self).__init__()
+        
+    #Before epoch, randomize tile order
+    def on_epoch_begin(self,epoch,logs=None):
+            print("Shuffling and recomputing batches by tile")  
+            self.generator.image_data, self.generator.image_names =self.generator.define_groups(self.generator.windowdf,shuffle=True)
+            self.generator.group_images()
+            print(self.generator.groups)
+
 #Hand annotated mAP
 class NEONmAP(keras.callbacks.Callback):
     """ Evaluation callback for arbitrary datasets.
@@ -130,7 +149,7 @@ class NEONmAP(keras.callbacks.Callback):
         self.DeepForest_config = DeepForest_config
 
         super(NEONmAP, self).__init__()
-
+            
     def on_epoch_end(self, epoch, logs=None):
         logs = logs or {}
 

@@ -60,7 +60,7 @@ from keras_retinanet .utils.transform import random_transform_generator
 from DeepForest.onthefly_generator import OnTheFlyGenerator
 
 #Custom Callbacks
-from DeepForest.callbacks import jaccardCallback, recallCallback,NEONmAP
+from DeepForest.callbacks import shuffle_inputs,recallCallback,NEONmAP
 
 def makedirs(path):
     # Intended behavior: try to create the directory,
@@ -155,7 +155,7 @@ def create_NEON_generator(args,site,DeepForest_config):
     
     return(generator)
 
-def create_callbacks(model, training_model, prediction_model, validation_generator, args,experiment,DeepForest_config):
+def create_callbacks(model, training_model, prediction_model, train_generator,validation_generator, args,experiment,DeepForest_config):
     """ Creates the callbacks to use during training.
 
     Args
@@ -225,6 +225,10 @@ def create_callbacks(model, training_model, prediction_model, validation_generat
         cooldown = 0,
         min_lr   = 0
     ))
+    
+    #Shuffle inputs callback
+    #shuffler=shuffle_inputs(train_generator)
+    #callbacks.append(shuffler)
     
     #Neon Callbacks
     site=DeepForest_config["evaluation_site"]
@@ -436,6 +440,7 @@ def main(args=None,data=None,DeepForest_config=None,experiment=None):
         model,
         training_model,
         prediction_model,
+        train_generator,        
         validation_generator,
         args,
         experiment,
@@ -462,7 +467,6 @@ def main(args=None,data=None,DeepForest_config=None,experiment=None):
         workers=DeepForest_config["workers"]
     )
     
-
     #Log number of trees trained on
     #Logs the number of train and eval "trees"
     ntrees=sum([len(x) for x in train_generator.annotation_dict.values()])
@@ -491,7 +495,11 @@ if __name__ == '__main__':
     experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2",project_name='deeplidar',log_code=False)
 
     #save time for logging
-    dirname=os.path.split(mode.dir)[-1]
+    if mode.dir:
+        dirname=os.path.split(mode.dir)[-1]
+    else:
+        dirname= datetime.now().strftime("%Y%m%d_%H%M%S")
+        
     experiment.log_parameter("Start Time", dirname)
 
     #log training mode

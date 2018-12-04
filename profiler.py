@@ -64,9 +64,6 @@ from keras_retinanet .utils.transform import random_transform_generator
 #Custom Generator
 from DeepForest.onthefly_generator import OnTheFlyGenerator
 
-#Custom Callbacks
-from DeepForest.callbacks import recallCallback,NEONmAP
-
 def makedirs(path):
     # Intended behavior: try to create the directory,
     # pass if the directory exists already, fails otherwise.
@@ -140,25 +137,6 @@ def create_models(backbone_retinanet, num_classes, weights, multi_gpu=0, freeze_
     )
 
     return model, training_model, prediction_model
-
-def create_NEON_generator(args,site,DeepForest_config):
-    """ Create generators for training and validation.
-    """
-
-    annotations,windows=preprocess.NEON_annotations(site,DeepForest_config)
-
-    #Training Generator
-    generator =  OnTheFlyGenerator(
-        annotations,
-        windows,
-        batch_size=args.batch_size,
-        DeepForest_config=DeepForest_config,
-        group_method="none",
-        base_dir=os.path.join("data",site),
-        name="NEON_validation"
-    )
-    
-    return(generator)
 
 def create_generators(args,data,DeepForest_config):
     """ Create generators for training and validation.
@@ -282,7 +260,6 @@ def parse_args(args):
 
     return check_args(parser.parse_args(args))
 
-
 def main(args=None,data=None,DeepForest_config=None,experiment=None):
     # parse arguments
     if args is None:
@@ -353,18 +330,11 @@ def main(args=None,data=None,DeepForest_config=None,experiment=None):
         verbose=1,
         shuffle=False,
     callbacks=None,
-    workers=8,
-    use_multiprocessing=False,
-    max_queue_size=20
+    workers=1
     )
     
     cp.disable()
     
-
-    #Log number of trees trained on
-    #Logs the number of train and eval "trees"
-    ntrees=sum([len(x) for x in train_generator.annotation_dict.values()])
-    experiment.log_parameter("Number of Training Trees", ntrees)
     
 if __name__ == '__main__':
     

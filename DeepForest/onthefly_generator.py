@@ -91,16 +91,15 @@ class OnTheFlyGenerator(Generator):
         for key, value in self.classes.items():
             self.labels[value] = key        
         
-        #Create list of sliding windows to select        
-        self.image_data, self.image_names =self.define_groups(self.windowdf,shuffle=False)
-        self.group_images()
-        
         super(OnTheFlyGenerator, self).__init__(**kwargs)
                         
+    def __len__(self):
+        """Number of batches for generator"""
+        return len(self.groups)
+         
     def size(self):
         """ Size of the dataset.
         """
-   
         image_data= self.windowdf.to_dict("index")
         image_names = list(image_data.keys())
         

@@ -10,7 +10,7 @@ preprocess:
           zero_area: True
 
 #Training
-training_images: 20
+training_images: 5
 training_csvs: data/SJER/
 rgb_tile_dir: data/SJER/
 snapshot: None
@@ -24,6 +24,8 @@ score_threshold: 0.2
 
 #LIDAR
 lidar_path: data/SJER/
+kernel_size: 3
+workers: 1
 
 #Evaluation
 evaluation_site: SJER
