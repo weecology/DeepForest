@@ -324,8 +324,8 @@ def main(args=None,data=None,DeepForest_config=None,experiment=None):
         verbose=1,
         shuffle=False,
     callbacks=None,
-    workers=2,
-    use_multiprocessing=True
+    workers=5,
+    use_multiprocessing=False
     )
     
     cp.disable()
