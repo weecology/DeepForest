@@ -324,7 +324,7 @@ def main(args=None,data=None,DeepForest_config=None,experiment=None):
         verbose=1,
         shuffle=False,
     callbacks=None,
-    workers=5,
+    workers=DeepForest_config["workers"],
     use_multiprocessing=False
     )
     
