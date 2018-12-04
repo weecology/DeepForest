@@ -152,7 +152,7 @@ class OnTheFlyGenerator(Generator):
         image=retrieve_window(numpy_image=self.numpy_image,index=row["windows"],windows=self.windows)
 
         #BGR order
-        image=image[:,:,::-1].copy()
+        image=image[:,:,::-1]
         
         #Store if needed for show, in RGB color space.
         self.image=image        

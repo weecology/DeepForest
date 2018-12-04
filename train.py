@@ -464,7 +464,9 @@ def main(args=None,data=None,DeepForest_config=None,experiment=None):
         verbose=1,
         shuffle=False,
         callbacks=callbacks,
-        workers=DeepForest_config["workers"]
+        workers=DeepForest_config["workers"],
+        use_multiprocessing=DeepForest_config["use_multiprocessing"],
+        max_queue_size=DeepForest_config["max_queue_size"]
     )
     
     #Log number of trees trained on

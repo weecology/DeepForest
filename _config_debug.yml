@@ -14,7 +14,7 @@ training_images: 6
 training_csvs: data/SJER/
 rgb_tile_dir: data/SJER/
 snapshot: None
-batch_size: 6     
+batch_size: 1   
 epochs: 1
 save_snapshot_path: None
 backbone: resnet50
@@ -25,7 +25,9 @@ score_threshold: 0.2
 #LIDAR
 lidar_path: data/SJER/
 kernel_size: 3
-workers: 1
+workers: 2
+use_multiprocessing: False
+max_queue_size: 20
 
 #Evaluation
 evaluation_site: SJER
