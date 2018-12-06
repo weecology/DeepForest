@@ -385,6 +385,7 @@ def parse_args(args):
 
 def main(args=None,data=None,DeepForest_config=None,experiment=None):
     # parse arguments
+    print("parsing arguments")
     if args is None:
         args = sys.argv[1:]
     args = parse_args(args)
@@ -393,14 +394,18 @@ def main(args=None,data=None,DeepForest_config=None,experiment=None):
     backbone = models.backbone(args.backbone)
 
     # make sure keras is the minimum required version
+    print("Get keras version")
     check_keras_version()
 
     # optionally choose specific GPU
     if args.gpu:
         os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
+        
+    print("Get session")
     keras.backend.tensorflow_backend.set_session(get_session())
 
     # create the generators
+    print("Creating generators")
     train_generator, validation_generator = create_generators(args,data,DeepForest_config=DeepForest_config)
     
     # create the model
