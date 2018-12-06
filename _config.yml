@@ -14,8 +14,8 @@ training_csvs: /home/b.weinstein/TreeSegmentation/analysis/Results/detection_box
 rgb_tile_dir: /orange/ewhite/NeonData/SJER/DP3.30010.001/2018/FullSite/D17/2018_SJER_3/L3/Camera/Mosaic/V01/
 training_images: 10
 snapshot: None
-batch_size: 5      
-epochs: 10
+batch_size: 6      
+epochs: 20
 save_snapshot_path: /orange/ewhite/b.weinstein/retinanet/snapshots/
 backbone: resnet50
 shuffle_training: False
@@ -37,4 +37,4 @@ lidar_path: /orange/ewhite/NeonData/SJER/DP1.30003.001/2018/FullSite/D17/2018_SJ
 kernel_size: 5
 workers: 1
 use_multiprocessing: False
-max_queue_size: 20
+max_queue_size: 10
