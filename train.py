@@ -20,7 +20,7 @@ limitations under the License.
 """
 
 #Import logger.
-from comet_ml import Experiment
+#from comet_ml import Experiment
 
 #keras-retinanet imports
 
@@ -499,7 +499,7 @@ if __name__ == '__main__':
     from DeepForest import preprocess
 
     #set experiment and log configs
-    experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2",project_name='deeplidar',log_code=False)
+    #experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2",project_name='deeplidar',log_code=False)
 
     #save time for logging
     if mode.dir:
@@ -507,10 +507,10 @@ if __name__ == '__main__':
     else:
         dirname= datetime.now().strftime("%Y%m%d_%H%M%S")
         
-    experiment.log_parameter("Start Time", dirname)
+    #experiment.log_parameter("Start Time", dirname)
 
     #log training mode
-    experiment.log_parameter("Training Mode",mode.mode)
+    #experiment.log_parameter("Training Mode",mode.mode)
     
     #Load DeepForest_config and data file based on training or retraining mode
     
@@ -523,11 +523,11 @@ if __name__ == '__main__':
         DeepForest_config=load_config("retrain")        
         data=preprocess.load_xml(DeepForest_config["hand_annotations"],DeepForest_config["rgb_res"])
 
-    experiment.log_multiple_params(DeepForest_config)
+    #experiment.log_multiple_params(DeepForest_config)
 
     #Log site
     site=DeepForest_config["evaluation_site"]
-    experiment.log_parameter("Site", site)
+    #experiment.log_parameter("Site", site)
     
     ##Preprocess Filters##
     if DeepForest_config['preprocess']['zero_area']:
@@ -547,7 +547,7 @@ if __name__ == '__main__':
         os.mkdir(snappath)
 
         #Log to comet
-        experiment.log_parameter("snapshot_dir",snappath)        
+        #experiment.log_parameter("snapshot_dir",snappath)        
 
     #if no snapshots, add arg to front, will ignore path above
     if DeepForest_config["save_snapshot_path"]=="None":
@@ -571,4 +571,4 @@ if __name__ == '__main__':
         args=["--save-path"] + args        
 
     #Run training, and pass comet experiment   
-    main(args,data,DeepForest_config,experiment)
+    main(args,data,DeepForest_config,experiment=None)
