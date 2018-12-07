@@ -234,6 +234,9 @@ def split_training(data,DeepForest_config,experiment,single_tile=False):
         evaluation=tile_data[tile_data.image==eval_tile]
         training=tile_data[~(tile_data.image==eval_tile)]
         
+        #Make sure training is sorted by image
+        training.sort_values(by="image")
+        
         if not DeepForest_config["training_images"]=="All":
             
             #Shuffle if desired - preserve groups of images.
@@ -247,6 +250,7 @@ def split_training(data,DeepForest_config,experiment,single_tile=False):
             training=training.head(n=DeepForest_config["training_images"])
         
         if not DeepForest_config["evaluation_images"]=="All":
+            
             
             #Shuffle if desired
             if DeepForest_config["shuffle_eval"]:
