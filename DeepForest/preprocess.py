@@ -165,7 +165,7 @@ def check_for_lidar(data,lidar_path):
     lidar_tiles=data.lidar_path.unique()
     
     lidar_exists=[]
-    for x in lidar_tiles:
+    for x in list(lidar_tiles):
         lidar_exists.append(os.path.exists(lidar_path+x))
     
     #Filter data based on matching lidar tiles

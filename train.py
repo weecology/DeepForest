@@ -20,7 +20,7 @@ limitations under the License.
 """
 
 #Import logger.
-#from comet_ml import Experiment
+from comet_ml import Experiment
 
 #keras-retinanet imports
 
@@ -226,10 +226,6 @@ def create_callbacks(model, training_model, prediction_model, train_generator,va
         min_lr   = 0
     ))
     
-    #Shuffle inputs callback
-    #shuffler=shuffle_inputs(train_generator)
-    #callbacks.append(shuffler)
-    
     #Neon Callbacks
     site=DeepForest_config["evaluation_site"]
         
@@ -284,9 +280,7 @@ def create_generators(args,data,DeepForest_config):
     train,test=preprocess.split_training(data,
                                          DeepForest_config,
                                          single_tile=DeepForest_config["single_tile"],
-                                         experiment=experiment)
-
-    experiment.log_dataset_hash(data=train)
+                                         experiment=None)
     
     #Write out for debug
     if args.save_path:
@@ -499,7 +493,7 @@ if __name__ == '__main__':
     from DeepForest import preprocess
 
     #set experiment and log configs
-    #experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2",project_name='deeplidar',log_code=False)
+    experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2",project_name='deeplidar',log_code=False)
 
     #save time for logging
     if mode.dir:
@@ -507,27 +501,30 @@ if __name__ == '__main__':
     else:
         dirname= datetime.now().strftime("%Y%m%d_%H%M%S")
         
-    #experiment.log_parameter("Start Time", dirname)
+    experiment.log_parameter("Start Time", dirname)
 
     #log training mode
-    #experiment.log_parameter("Training Mode",mode.mode)
+    experiment.log_parameter("Training Mode",mode.mode)
     
     #Load DeepForest_config and data file based on training or retraining mode
     
     if mode.mode == "train":
         DeepForest_config=load_config("train")
-        data=preprocess.load_data(DeepForest_config["training_csvs"],DeepForest_config["rgb_res"],DeepForest_config["lidar_path"])
+        data=preprocess.load_data(
+            data_dir=DeepForest_config["training_csvs"],
+            res=DeepForest_config["rgb_res"],
+            lidar_path=DeepForest_config["lidar_path"])
         
     if mode.mode == "retrain":
         #TODO needs annotations to find lidar path
         DeepForest_config=load_config("retrain")        
         data=preprocess.load_xml(DeepForest_config["hand_annotations"],DeepForest_config["rgb_res"])
 
-    #experiment.log_multiple_params(DeepForest_config)
+    experiment.log_multiple_params(DeepForest_config)
 
     #Log site
     site=DeepForest_config["evaluation_site"]
-    #experiment.log_parameter("Site", site)
+    experiment.log_parameter("Site", site)
     
     ##Preprocess Filters##
     if DeepForest_config['preprocess']['zero_area']:
@@ -547,7 +544,7 @@ if __name__ == '__main__':
         os.mkdir(snappath)
 
         #Log to comet
-        #experiment.log_parameter("snapshot_dir",snappath)        
+        experiment.log_parameter("snapshot_dir",snappath)        
 
     #if no snapshots, add arg to front, will ignore path above
     if DeepForest_config["save_snapshot_path"]=="None":
@@ -571,4 +568,4 @@ if __name__ == '__main__':
         args=["--save-path"] + args        
 
     #Run training, and pass comet experiment   
-    main(args,data,DeepForest_config,experiment=None)
+    main(args,data,DeepForest_config,experiment=experiment)
