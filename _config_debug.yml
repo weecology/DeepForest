@@ -42,3 +42,5 @@ nms_threshold: 0.15
 #For hand annotation neon_MAP
 validation_percent: 5
 
+#save images for generation
+h5_dir: /Users/Ben/Downloads/
