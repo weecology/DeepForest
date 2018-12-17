@@ -5,6 +5,9 @@ from dask import compute, delayed
 import subprocess
 import socket
 
+import logging
+logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
+
 def find_csvs():
     """
     Find training csvs on path
@@ -49,8 +52,10 @@ def run_HPC(data_paths):
     from dask_jobqueue import SLURMCluster
     from dask.distributed import Client
     from dask import delayed
+    cluster = SLURMCluster(processes=1,queue='hpg2-compute',cores=1, memory='8GB', walltime='144:00:00',project)
     
-    cluster = SLURMCluster(processes=1,queue='hpg2-compute',cores=1, memory='8GB', walltime='144:00:00')
+    print(cluster.job_script())
+    
     dask_client = Client(cluster)
         
     #Start dask dashboard? Not clear yet.
