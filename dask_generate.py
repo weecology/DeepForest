@@ -49,7 +49,7 @@ def run_HPC(data_paths):
     from dask_jobqueue import SLURMCluster
     from dask.distributed import Client
     from dask import delayed
-    cluster = SLURMCluster(processes=1,queue='hpg2-compute', threads=2, memory='4GB', walltime='144:00:00')
+    cluster = SLURMCluster(processes=2,queue='hpg2-compute',cores=2, memory='8GB', walltime='144:00:00')
     
     #Load config
     DeepForest_config = config.load_config("train")
@@ -87,7 +87,7 @@ def run_HPC(data_paths):
 if __name__ == "__main__":
     
     #Local Debugging
-    data_paths=find_csvs()
+    data_paths=find_csvs()[:2]
 
     print("{s} csv files found for training".format(s=len(data_paths)))
     
