@@ -67,7 +67,7 @@ def run_HPC(data_paths):
     dask_client = Client(cluster)
         
     #Start dask dashboard? Not clear yet.
-    host = client.run_on_scheduler(socket.gethostname)        
+    host = dask_client.run_on_scheduler(socket.gethostname)        
     dask_client.run_on_scheduler(start_tunnel)    
     
     # Local threading/processes, set scheduler.
