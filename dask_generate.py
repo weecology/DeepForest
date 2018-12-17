@@ -56,7 +56,7 @@ def run_HPC(data_paths):
     #job args
     extra_args=[
         "--error=/home/b.weinstein/logs/dask-worker--${JOB_ID}",
-        "--account=ewhite"
+        "--account=ewhite",
         "--output=/home/b.weinstein/logs/dask-worker--${JOB_ID}"
     ]
     
