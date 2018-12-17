@@ -1,6 +1,6 @@
 import glob
-from DeepForest import config
-#from DeepForest import Generate,config
+#from DeepForest import config
+from DeepForest import Generate,config
 from dask import compute, delayed
 
 import subprocess
