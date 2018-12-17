@@ -34,10 +34,11 @@ def run_local(data_paths):
 ### HiperGator ####
 
 #Start juypter notebook to watch
-def start_tunnel():
+def start_tunnel(host):
     """
     Start a juypter session and ssh tunnel to view task progress
     """
+    host = socket.gethostname()        
     proc = subprocess.Popen(['jupyter', 'lab', '--ip', host, '--no-browser'])
     print("To tunnel into dask dashboard:")
     print("ssh -N -L 8888:%s:8888 -l b.weinstein hpg2.rc.ufl.edu" % (host))
@@ -67,8 +68,7 @@ def run_HPC(data_paths):
     dask_client = Client(cluster)
         
     #Start dask dashboard? Not clear yet.
-    host = dask_client.run_on_scheduler(socket.gethostname)        
-    dask_client.run_on_scheduler(start_tunnel)    
+    dask_client.run_on_scheduler(start_tunnel,host)    
     
     # Local threading/processes, set scheduler.
     values = [delayed(Generate.run)(x) for x in data_paths]
