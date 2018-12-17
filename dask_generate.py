@@ -5,6 +5,7 @@ from dask import compute, delayed
 
 import subprocess
 import socket
+import os
 
 import logging
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
@@ -39,6 +40,8 @@ def start_tunnel():
     Start a juypter session and ssh tunnel to view task progress
     """
     host = socket.gethostname()        
+    #Unset env
+    del os.environ['XDG_RUNTIME_DIR']
     proc = subprocess.Popen(['jupyter', 'lab', '--notebook-dir', '/home/b.weinstein/logs/', '--ip', host, '--no-browser'])
     print("To tunnel into dask dashboard:")
     print("ssh -N -L 8888:%s:8888 -l b.weinstein hpg2.rc.ufl.edu" % (host))
@@ -55,12 +58,10 @@ def run_HPC(data_paths):
     
     #job args
     extra_args=[
-        "--error=/home/b.weinstein/logs/dask-worker.err",
-        "--account=ewhite",
-        "--output=/home/b.weinstein/logs/dask-worker.out"
+        "--account=ewhite"
     ]
     
-    cluster = SLURMCluster(processes=1,queue='hpg2-compute',cores=1, memory='12GB', walltime='48:00:00',job_extra=extra_args,local_directory="/home/b.weinstein/logs/")
+    cluster = SLURMCluster(processes=1,queue='hpg2-compute',cores=1, memory='20GB', walltime='48:00:00',job_extra=extra_args,local_directory="/home/b.weinstein/logs/")
     
     print(cluster.job_script())
     cluster.scale(2)
