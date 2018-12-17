@@ -39,7 +39,7 @@ def start_tunnel():
     Start a juypter session and ssh tunnel to view task progress
     """
     host = socket.gethostname()        
-    proc = subprocess.Popen(['jupyter', 'lab', '--ip', host, '--no-browser'])
+    proc = subprocess.Popen(['jupyter', 'lab', '--notebook-dir /home/b.weinstein/logs/' '--ip', host, '--no-browser'])
     print("To tunnel into dask dashboard:")
     print("ssh -N -L 8888:%s:8888 -l b.weinstein hpg2.rc.ufl.edu" % (host))
     
