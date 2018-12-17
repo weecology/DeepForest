@@ -11,5 +11,11 @@
 #SBATCH --output=/home/b.weinstein/logs/Dask.out   # Standard output and error log
 #SBATCH --error=/home/b.weinstein/logs/Dask.err
 
-conda activate DeepLidar
+ml git
+ml geos/3.6.2
+ml tensorflow/1.10.1
+export PATH=${PATH}:/home/b.weinstein/miniconda/envs/DeepLidar/bin/
+export PYTHONPATH=${PYTHONPATH}:/home/b.weinstein/miniconda/envs/DeepLidar/lib/python3.6/site-packages/
+sleep 2
+
 python /home/b.weinstein/DeepLidar/dask_generate.py
