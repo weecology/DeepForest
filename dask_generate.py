@@ -60,9 +60,9 @@ def run_HPC(data_paths):
     
     #job args
     extra_args=[
-        "--error=/home/b.weinstein/logs/dask-worker--${JOB_ID}.err",
+        "--error=/home/b.weinstein/logs/dask-worker-%j.err",
         "--account=ewhite",
-        "--output=/home/b.weinstein/logs/dask-worker--${JOB_ID}.out"
+        "--output=/home/b.weinstein/logs/dask-worker-%j.out"
     ]
     
     cluster = SLURMCluster(processes=1,queue='hpg2-compute',cores=1, memory='20GB', walltime='48:00:00',job_extra=extra_args,local_directory="/home/b.weinstein/logs/")
