@@ -57,8 +57,8 @@ def run_HPC(data_paths):
     print('Starting up workers')
     workers = []
     for _ in range(DeepForest_config.num_hipergator_workers):
-        workers.extend(cluster.start_workers(1))
-        sleep(60)
+        workers.extend(cluster.scale(1))
+        sleep(60) #How long to wait?
     dask_client = Client(cluster)
     
     wait_time=0
