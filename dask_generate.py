@@ -1,5 +1,6 @@
 import glob
-from DeepForest import Generate,config
+from DeepForest import config
+#from DeepForest import Generate,config
 from dask import compute, delayed
 
 import subprocess
@@ -55,12 +56,12 @@ def run_HPC(data_paths):
     
     #job args
     extra_args=[
-        "--error=/home/b.weinstein/logs/dask-worker--${JOB_ID}",
+        "--error=/home/b.weinstein/logs/dask-worker.err",
         "--account=ewhite",
-        "--output=/home/b.weinstein/logs/dask-worker--${JOB_ID}"
+        "--output=/home/b.weinstein/logs/dask-worker.out}"
     ]
     
-    cluster = SLURMCluster(processes=1,queue='hpg2-compute',cores=1, memory='8GB', walltime='144:00:00',job_extra=extra_args)
+    cluster = SLURMCluster(processes=1,queue='hpg2-compute',cores=1, memory='8GB', walltime='48:00:00',job_extra=extra_args,local_directory="/home/b.weinstein/logs/")
     
     print(cluster.job_script())
     
