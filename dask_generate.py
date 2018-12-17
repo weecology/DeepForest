@@ -40,11 +40,13 @@ def start_tunnel():
     Start a juypter session and ssh tunnel to view task progress
     """
     host = socket.gethostname()        
+    print("To tunnel into dask dashboard:")
+    print("ssh -N -L 8888:%s:8888 -l b.weinstein hpg2.rc.ufl.edu" % (host))
+    
     #Unset env
     del os.environ['XDG_RUNTIME_DIR']
     proc = subprocess.Popen(['jupyter', 'lab', '--notebook-dir', '/home/b.weinstein/logs/', '--ip', host, '--no-browser'])
-    print("To tunnel into dask dashboard:")
-    print("ssh -N -L 8888:%s:8888 -l b.weinstein hpg2.rc.ufl.edu" % (host))
+
     
 def run_HPC(data_paths):
         
@@ -58,7 +60,9 @@ def run_HPC(data_paths):
     
     #job args
     extra_args=[
-        "--account=ewhite"
+        "--error=/home/b.weinstein/logs/dask-worker--${JOB_ID}.err",
+        "--account=ewhite",
+        "--output=/home/b.weinstein/logs/dask-worker--${JOB_ID}.out"
     ]
     
     cluster = SLURMCluster(processes=1,queue='hpg2-compute',cores=1, memory='20GB', walltime='48:00:00',job_extra=extra_args,local_directory="/home/b.weinstein/logs/")
