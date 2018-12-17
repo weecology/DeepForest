@@ -58,6 +58,10 @@ def run_HPC(data_paths):
     from dask.distributed import Client
     from dask import delayed
     
+    DeepForest_config = config.load_config("train")
+    
+    num_workers=DeepForest_config["num_hipergator_workers"]
+    
     #job args
     extra_args=[
         "--error=/home/b.weinstein/logs/dask-worker-%j.err",
@@ -68,7 +72,7 @@ def run_HPC(data_paths):
     cluster = SLURMCluster(processes=1,queue='hpg2-compute',cores=1, memory='20GB', walltime='48:00:00',job_extra=extra_args,local_directory="/home/b.weinstein/logs/")
     
     print(cluster.job_script())
-    cluster.scale(2)
+    cluster.scale(num_workers)
     
     dask_client = Client(cluster)
         
@@ -85,7 +89,7 @@ def run_HPC(data_paths):
 if __name__ == "__main__":
     
     #Local Debugging
-    data_paths=find_csvs()[:2]
+    data_paths=find_csvs()
 
     print("{s} csv files found for training".format(s=len(data_paths)))
     

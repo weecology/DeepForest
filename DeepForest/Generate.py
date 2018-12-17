@@ -47,8 +47,8 @@ def run(tile):
     
     #Generate crops and annotations
     labels={}
-    #for i in range(generator.size()):
-    for i in range(3):
+    
+    for i in range(generator.size()):
         
         #Load images
         image=generator.load_image(i)
