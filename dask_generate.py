@@ -49,33 +49,12 @@ def run_HPC(data_paths):
     from dask_jobqueue import SLURMCluster
     from dask.distributed import Client
     from dask import delayed
+    
     cluster = SLURMCluster(processes=2,queue='hpg2-compute',cores=2, memory='8GB', walltime='144:00:00')
-    
-    #Load config
-    DeepForest_config = config.load_config("train")
-    
-    print('Starting up workers')
-    workers = []
-    for _ in range(DeepForest_config["num_hipergator_workers"]):
-        workers.extend(cluster.scale(1))
-        sleep(60) #How long to wait?
     dask_client = Client(cluster)
-    
-    wait_time=0
-    while len(dask_client.scheduler_info()['workers']) < DeepForest_config["num_hipergator_workers"]:
-        print('waiting on workers: {s} sec. so far'.format(s=wait_time))
-        sleep(10)
-        wait_time+=10
         
-        # If 5 minutes goes by try adding them again
-        if wait_time > 300:
-            workers.extend(cluster.start_workers(1))
-    
-    print('All workers accounted for')
-    
     #Start dask dashboard? Not clear yet.
-    client.run_on_scheduler(start_tunnel)    
-    #start_tunnel(dask_scheduler)
+    dask_client.run_on_scheduler(start_tunnel)    
     
     # Local threading/processes, set scheduler.
     values = [delayed(Generate.run)(x) for x in data_paths]
