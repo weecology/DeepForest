@@ -74,7 +74,7 @@ def run_HPC(data_paths):
     values = [delayed(Generate.run)(x) for x in data_paths]
     
     #Compute tiles    
-    results = compute(*values, scheduler='processes')    
+    results = compute(*values,scheduler=dask_client)    
     return results
 
 if __name__ == "__main__":
