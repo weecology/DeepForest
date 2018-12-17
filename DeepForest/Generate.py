@@ -11,31 +11,28 @@ from DeepForest import onthefly_generator, preprocess,config
 def parse_args():    
     
     #Set tile from command line args
-    parser     = argparse.ArgumentParser(description='Generate crops for training')
+    parser = argparse.ArgumentParser(description='Generate crops for training')
     parser.add_argument('--tile', help='filename of the LIDAR tile to process' )
-    args=parser.parse_args()    
+    args = parser.parse_args()    
     
     return args
 
-def run():
+def run(tile):
     #Load config
-    DeepForest_config=config.load_config("train")
-    
-    #parse args
-    args=parse_args()
+    DeepForest_config = config.load_config("train")
     
     #Read in data
-    data=preprocess.load_data(data_dir=args.tile, res=0.1, lidar_path=DeepForest_config["lidar_path"])
+    data = preprocess.load_data(data_dir=tile, res=0.1, lidar_path=DeepForest_config["lidar_path"])
     
     #Create windows
-    windows=preprocess.create_windows(data,DeepForest_config)
+    windows = preprocess.create_windows(data,DeepForest_config)
     
     #Create generate
-    generator=onthefly_generator.OnTheFlyGenerator(data, windows, DeepForest_config)
+    generator = onthefly_generator.OnTheFlyGenerator(data, windows, DeepForest_config)
     
     #Get tile filename for storing
-    tilename=os.path.split(args.tile)[-1]
-    tilename=os.path.splitext(tilename)[0]
+    tilename = os.path.split(tile)[-1]
+    tilename = os.path.splitext(tilename)[0]
     
     #Create h5 dataset    
     # open a hdf5 file and create arrays
@@ -78,7 +75,10 @@ def run():
     hdf5_file.close()
     
 if __name__ == "__main__":
-    run()
+    
+    #parse args if run directly
+    args=parse_args()
+    run(args.tile)
 
 
     
