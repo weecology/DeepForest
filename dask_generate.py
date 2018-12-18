@@ -1,14 +1,13 @@
 import glob
-#from DeepForest import config
-from DeepForest import Generate,config
-from dask import compute, delayed
-
 import subprocess
 import socket
 import os
 
 import logging
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
+
+from DeepForest import Generate,config
+from dask import compute, delayed
 
 def find_csvs():
     """
@@ -32,9 +31,6 @@ def run_local(data_paths):
     
     return results
     
-### HiperGator ####
-
-#Start juypter notebook to watch
 def start_tunnel():
     """
     Start a juypter session and ssh tunnel to view task progress
@@ -47,7 +43,6 @@ def start_tunnel():
     del os.environ['XDG_RUNTIME_DIR']
     proc = subprocess.Popen(['jupyter', 'lab', '--notebook-dir', '/home/b.weinstein/logs/', '--ip', host, '--no-browser'])
 
-    
 def run_HPC(data_paths):
         
     #################
@@ -69,7 +64,14 @@ def run_HPC(data_paths):
         "--output=/home/b.weinstein/logs/dask-worker-%j.out"
     ]
     
-    cluster = SLURMCluster(processes=1,queue='hpg2-compute',cores=1, memory='20GB', walltime='48:00:00',job_extra=extra_args,local_directory="/home/b.weinstein/logs/")
+    cluster = SLURMCluster(
+        processes=1,
+        queue='hpg2-compute',
+        cores=1, 
+        memory='20GB', 
+        walltime='48:00:00',
+        job_extra=extra_args,
+        local_directory="/home/b.weinstein/logs/",death_timeout=300)
     
     print(cluster.job_script())
     cluster.scale(num_workers)
@@ -89,7 +91,7 @@ def run_HPC(data_paths):
 if __name__ == "__main__":
     
     #Local Debugging
-    data_paths=find_csvs()
+    data_paths=find_csvs()[:3]
 
     print("{s} csv files found for training".format(s=len(data_paths)))
     

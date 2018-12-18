@@ -2,7 +2,7 @@
 
 #Data generation
 tmp_path: /ufrc/ewhite/b.weinstein/DeepLidar
-num_hipergator_workers: 10
+num_hipergator_workers: 3
 h5_dir: /orange/ewhite/b.weinstein/training_h5s/
 
 #SlidingWindow
