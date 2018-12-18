@@ -38,7 +38,7 @@ def start_tunnel():
     """
     host = socket.gethostname()        
     print("To tunnel into dask dashboard:")
-    print("ssh -N -L 8888:%s:8888 -l b.weinstein hpg2.rc.ufl.edu" % (host))
+    print("ssh -N -L 8787:%s:8787 -l b.weinstein hpg2.rc.ufl.edu" % (host))
     
     #Unset env
     del os.environ['XDG_RUNTIME_DIR']
