@@ -2,6 +2,7 @@ import glob
 import subprocess
 import socket
 import os
+import sys
 
 import logging
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
@@ -42,6 +43,9 @@ def start_tunnel():
     #Unset env
     del os.environ['XDG_RUNTIME_DIR']
     proc = subprocess.Popen(['jupyter', 'lab', '--notebook-dir', '/home/b.weinstein/logs/', '--ip', host, '--no-browser'])
+    
+    #flush system
+    sys.stdout.flush()
 
 def run_HPC(data_paths):
         
@@ -91,7 +95,7 @@ def run_HPC(data_paths):
 if __name__ == "__main__":
     
     #Local Debugging
-    data_paths=find_csvs()[:3]
+    data_paths=find_csvs()
 
     print("{s} csv files found for training".format(s=len(data_paths)))
     

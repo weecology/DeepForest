@@ -50,6 +50,8 @@ def run(tile):
     
     for i in range(generator.size()):
         
+        print("window {i} from tile {tilename}".format(i=i,tilename=tilename))
+
         #Load images
         image=generator.load_image(i)
         hdf5_file["train_imgs"][i,...] = image        
