@@ -148,7 +148,12 @@ def load_xml(path,res):
     return(frame)
 
 def compute_windows(image,pixels=250,overlap=0.05):
-    im = Image.open(image)
+    
+    #try to open file, if corrupt raise error
+    try:
+        im = Image.open(image)
+    except IOError:
+        print('An error occured trying to read the file.')
     numpy_image = np.array(im)    
     windows = sw.generate(numpy_image, sw.DimOrder.HeightWidthChannel, pixels,overlap )
     return(windows)
