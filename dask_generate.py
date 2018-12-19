@@ -88,10 +88,10 @@ def run_HPC(data_paths):
     results =  dask_client.map(Generate.run,data_paths)
     
     ## Local threading/processes, set scheduler.
-    #values = [delayed(Generate.run)(x) for x in data_paths]
+    values = [delayed(Generate.run)(x) for x in data_paths]
     
     ##Compute tiles    
-    #results = compute(*values,scheduler=dask_client)    
+    results = compute(*values,scheduler=dask_client)    
     return results
 
 if __name__ == "__main__":

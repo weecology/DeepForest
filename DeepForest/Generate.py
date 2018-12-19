@@ -76,6 +76,9 @@ def run(tile):
     #Need to close h5py?
     hdf5_file.close()
     
+    #flush system
+    sys.stdout.flush()
+    
 if __name__ == "__main__":
     
     #parse args if run directly
