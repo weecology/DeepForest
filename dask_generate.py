@@ -41,8 +41,8 @@ def start_tunnel():
     print("ssh -N -L 8787:%s:8787 -l b.weinstein hpg2.rc.ufl.edu" % (host))
     
     #Unset env
-    del os.environ['XDG_RUNTIME_DIR']
-    proc = subprocess.Popen(['jupyter', 'lab', '--notebook-dir', '/home/b.weinstein/logs/', '--ip', host, '--no-browser'])
+    #del os.environ['XDG_RUNTIME_DIR']
+    #proc = subprocess.Popen(['jupyter', 'lab', '--notebook-dir', '/home/b.weinstein/logs/', '--ip', host, '--no-browser'])
     
     #flush system
     sys.stdout.flush()
@@ -84,9 +84,7 @@ def run_HPC(data_paths):
         
     #Start dask dashboard? Not clear yet.
     dask_client.run_on_scheduler(start_tunnel)  
-    
-    #results =  dask_client.map(Generate.run,data_paths)
-    
+        
     ### Local threading/processes, set scheduler.
     values = [delayed(Generate.run)(x) for x in data_paths]
     
@@ -101,8 +99,8 @@ if __name__ == "__main__":
 
     print("{s} csv files found for training".format(s=len(data_paths)))
     
-    #run_local(data_paths)
+    run_local(data_paths)
     
     #On Hypergator
-    run_HPC(data_paths)
+    #run_HPC(data_paths)
     
