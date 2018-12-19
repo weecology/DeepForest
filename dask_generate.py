@@ -91,6 +91,7 @@ def run_HPC(data_paths):
     
     futures = dask_client.map(Generate.run, data_paths)
     
+    futures
     #futures.result()
 
 
