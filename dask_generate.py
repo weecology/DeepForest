@@ -24,14 +24,12 @@ def run_local(data_paths):
     Run training processes on local laptop
     """
     
-    #Local threading/processes, set scheduler.
-    values = [delayed(Generate.run)(x) for x in data_paths]
+    ##Local threading/processes, set scheduler.
+    #values = [delayed(Generate.run)(x) for x in data_paths]
     
-    #Compute tiles    
-    results = compute(*values, scheduler='processes')    
-    
-    return results
-    
+    ##Compute tiles    
+    #results = compute(*values, scheduler='processes')    
+        
 def start_tunnel():
     """
     Start a juypter session and ssh tunnel to view task progress
@@ -93,7 +91,7 @@ def run_HPC(data_paths):
     
     futures = dask_client.map(Generate.run, data_paths)
     
-    futures.result()
+    #futures.result()
 
 
 if __name__ == "__main__":
