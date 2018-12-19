@@ -148,13 +148,7 @@ def load_xml(path,res):
     return(frame)
 
 def compute_windows(image,pixels=250,overlap=0.05):
-    
-    #try to open file, if corrupt raise error
-    try:
-        im = Image.open(image)
-    except:
-        #Not great practice, but having trouble with dask error handling https://github.com/dask/distributed/issues/1469
-        return None
+    im = Image.open(image)
     numpy_image = np.array(im)    
     windows = sw.generate(numpy_image, sw.DimOrder.HeightWidthChannel, pixels,overlap )
     return(windows)
@@ -311,10 +305,6 @@ def create_windows(data,DeepForest_config):
     image_path=os.path.join(base_dir, data.rgb_path.unique()[0])
     windows=compute_windows(image=image_path, pixels=DeepForest_config["patch_size"], overlap=DeepForest_config["patch_overlap"])
     
-    #To remove when dask error handling is resolved.
-    if windows is None:
-        return None
-        
     #Compute Windows
     #Create dictionary of windows for each image
     tile_windows={}

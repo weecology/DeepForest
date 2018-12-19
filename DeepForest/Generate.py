@@ -27,11 +27,6 @@ def run(tile):
     #Create windows
     windows = preprocess.create_windows(data,DeepForest_config)
     
-    #Error handling in dask isn't working well, catch corrupt file reading
-    if windows is None:
-        print("Corrupt image")
-        return None
-    
     #Create generate
     generator = onthefly_generator.OnTheFlyGenerator(data, windows, DeepForest_config)
     
