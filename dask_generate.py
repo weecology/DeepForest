@@ -4,8 +4,8 @@ import socket
 import os
 import sys
 
-import logging
-logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
+#import logging
+#logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 
 from DeepForest import Generate,config
 from dask import compute, delayed
@@ -87,11 +87,11 @@ def run_HPC(data_paths):
     
     results =  dask_client.map(Generate.run,data_paths)
     
-    ## Local threading/processes, set scheduler.
-    values = [delayed(Generate.run)(x) for x in data_paths]
+    ### Local threading/processes, set scheduler.
+    #values = [delayed(Generate.run)(x) for x in data_paths]
     
-    ##Compute tiles    
-    results = compute(*values,scheduler=dask_client)    
+    ###Compute tiles    
+    #results = compute(*values,scheduler=dask_client)    
     return results
 
 if __name__ == "__main__":
