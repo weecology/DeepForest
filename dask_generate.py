@@ -85,7 +85,7 @@ def run_HPC(data_paths):
     #Start dask dashboard? Not clear yet.
     dask_client.run_on_scheduler(start_tunnel)  
     
-    dask_client.map(Generate.run,data_paths)
+    results =  dask_client.map(Generate.run,data_paths)
     
     ## Local threading/processes, set scheduler.
     #values = [delayed(Generate.run)(x) for x in data_paths]
