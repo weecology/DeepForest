@@ -452,7 +452,7 @@ def main(args=None,data=None,DeepForest_config=None,experiment=None):
     
     #Log number of trees trained on
     #Logs the number of train and eval "trees"
-    ntrees = sum([len(x) for x in train_generator.annotation_dict.values()])
+    ntrees = train_generator.annotations.shape[0]
     experiment.log_parameter("Number of Training Trees", ntrees)
     
 if __name__ == '__main__':
@@ -502,7 +502,7 @@ if __name__ == '__main__':
     experiment.log_multiple_params(DeepForest_config)
 
     #Log site
-    site=DeepForest_config["evaluation_site"]
+    site = DeepForest_config["evaluation_site"]
     experiment.log_parameter("Site", site)
 
     #pass an args object instead of using command line    
