@@ -80,6 +80,8 @@ def run(tile):
     #flush system
     sys.stdout.flush()
     
+    return True
+    
 if __name__ == "__main__":
     
     #parse args if run directly
