@@ -28,6 +28,9 @@ def run(tile):
     #Create windows
     windows = preprocess.create_windows(data,DeepForest_config)
     
+    if windows is None:
+        return None
+    
     #Create generate
     generator = onthefly_generator.OnTheFlyGenerator(data, windows, DeepForest_config)
     
@@ -79,7 +82,6 @@ def run(tile):
     
     #flush system
     sys.stdout.flush()
-        
 if __name__ == "__main__":
     
     #parse args if run directly

@@ -151,7 +151,7 @@ def compute_windows(image,pixels=250,overlap=0.05):
     try:
         im = Image.open(image)
     except:
-        raise IOError("Invalid image {}".format(image))
+        return None
     numpy_image = np.array(im)    
     windows = sw.generate(numpy_image, sw.DimOrder.HeightWidthChannel, pixels,overlap )
     return(windows)
@@ -306,7 +306,12 @@ def create_windows(data,DeepForest_config):
     #Compute list of sliding windows, assumed that all objects are the same extent and resolution
     base_dir=DeepForest_config["evaluation_tile_dir"]
     image_path=os.path.join(base_dir, data.rgb_path.unique()[0])
+    
     windows=compute_windows(image=image_path, pixels=DeepForest_config["patch_size"], overlap=DeepForest_config["patch_overlap"])
+    
+    #if none
+    if windows is None:
+        return None
     
     #Compute Windows
     #Create dictionary of windows for each image
