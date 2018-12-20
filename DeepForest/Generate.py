@@ -6,8 +6,12 @@ import numpy as np
 import os
 import h5py
 import pandas as pd
-from DeepForest import onthefly_generator, preprocess,config
+import onthefly_generator, preprocess,config
 import sys
+
+#supress warnings
+import warnings
+warnings.simplefilter("ignore")
 
 def parse_args():    
     
@@ -18,9 +22,11 @@ def parse_args():
     
     return args
 
-def run(tile):
-    #Load config
-    DeepForest_config = config.load_config("train")
+def run(tile,DeepForest_config):
+    
+    """Crop 4 channel arrays from RGB and LIDAR CHM
+    tile: the CSV training file containing the tree detections
+    """
     
     #Read in data
     data = preprocess.load_data(data_dir=tile, res=0.1, lidar_path=DeepForest_config["lidar_path"])
@@ -29,6 +35,7 @@ def run(tile):
     windows = preprocess.create_windows(data,DeepForest_config)
     
     if windows is None:
+        print("Invalid window")
         return None
     
     #Create generate
@@ -50,29 +57,29 @@ def run(tile):
     hdf5_file.create_dataset("train_imgs", train_shape, dtype='f')
     
     #Generate crops and annotations
-    labels={}
+    labels = {}
     
     for i in range(generator.size()):
         
         print("window {i} from tile {tilename}".format(i=i,tilename=tilename))
 
         #Load images
-        image=generator.load_image(i)
+        image = generator.load_image(i)
         hdf5_file["train_imgs"][i,...] = image        
         
         #Load annotations and write a pandas frame
-        label=generator.load_annotations(i)
-        labeldf=pd.DataFrame(label)
+        label = generator.load_annotations(i)
+        labeldf = pd.DataFrame(label)
         
         #Add tilename and window ID
-        labeldf['tile']=tilename
-        labeldf['window']=i
+        labeldf['tile'] = tilename
+        labeldf['window'] = i
         
         #add to labels
-        labels[i]=labeldf
+        labels[i] = labeldf
     
     #Write labels to pandas frame
-    labeldf=pd.concat(labels,ignore_index=True)
+    labeldf = pd.concat(labels,ignore_index=True)
     
     csv_filename = os.path.join(DeepForest_config["h5_dir"], tilename + ".csv")    
     labeldf.to_csv(csv_filename,index=False)
@@ -82,11 +89,18 @@ def run(tile):
     
     #flush system
     sys.stdout.flush()
-if __name__ == "__main__":
     
-    #parse args if run directly
+if __name__ == "__main__":
+    import yaml
+    
+    #parse args
     args=parse_args()
-    run(args.tile)
+    
+    #load config
+    with open('../_config_debug.yml', 'r') as f:
+        DeepForest_config = yaml.load(f)    
+    
+    run(args.tile,DeepForest_config)
 
 
     

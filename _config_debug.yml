@@ -1,5 +1,9 @@
 #Config file for DeepMeerkat train.py on local OSX
 
+#Data generation
+num_hipergator_workers: 20
+h5_dir: /Users/Ben/Downloads/
+
 #SlidingWindow
 patch_size: 400
 patch_overlap: 0.05
@@ -11,30 +15,22 @@ preprocess:
 
 #Training
 training_images: 6
-training_csvs: data/SJER/
-rgb_tile_dir: data/SJER/
+training_csvs: ../data/SJER/
+rgb_tile_dir: ../data/SJER/
 snapshot: None
 batch_size: 1   
 epochs: 1
 save_snapshot_path: None
 backbone: resnet50
 shuffle_training: True
-single_tile: True
 score_threshold: 0.2
-
-#LIDAR
-lidar_path: data/SJER/
-kernel_size: 3
-workers: 2
-use_multiprocessing: False
-max_queue_size: 20
 
 #Evaluation
 evaluation_site: SJER
 evaluation_images: 3
-evaluation_tile_dir: data/SJER/
+evaluation_tile_dir: ../data/SJER/
 save_image_path: snapshots/images/
-shuffle_eval: False
+shuffle_evaluation: False
 
 #Non-max suppression, threshold for the IoU value to determine when a box should be suppressed.
 nms_threshold: 0.15
@@ -42,5 +38,9 @@ nms_threshold: 0.15
 #For hand annotation neon_MAP
 validation_percent: 5
 
-#save images for generation
-h5_dir: /Users/Ben/Downloads/
+#LIDAR
+lidar_path: ../data/SJER/
+kernel_size: 5
+workers: 1
+use_multiprocessing: False
+max_queue_size: 10

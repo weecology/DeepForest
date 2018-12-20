@@ -5,7 +5,10 @@
 ##################################################################
 [project attributes]
 proj.file-type = 'shared'
-proj.launch-config = {loc('Generate.py'): ('project',
+proj.launch-config = {loc('DeepForest/Generate.py'): ('project',
+        (u'--tile /Users/ben/Documents/DeepLidar/data/SJER/NEON_D17_SJER_DP1_258000_4106000_classified_point_cloud_colorized.csv',
+         '')),
+                      loc('Generate.py'): ('project',
         (u'--tile /Users/ben/Documents/DeepLidar/data/SJER/NEON_D17_SJER_DP1_257000_4110000_classified_point_cloud_colorized.csv',
          '')),
                       loc('dask_generate.py'): ('project',

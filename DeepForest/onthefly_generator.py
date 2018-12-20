@@ -20,9 +20,8 @@ import cv2
 import slidingwindow as sw
 import itertools
 
-from DeepForest import Lidar
+import Lidar
 from matplotlib import pyplot
-
 
 class OnTheFlyGenerator(Generator):
     """ Generate data for a custom CSV dataset.
