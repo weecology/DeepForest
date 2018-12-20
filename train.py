@@ -140,8 +140,8 @@ def create_models(backbone_retinanet, num_classes, weights, multi_gpu=0, freeze_
 def create_NEON_generator(args,site,DeepForest_config):
     """ Create generators for training and validation.
     """
-    annotations,windows=preprocess.NEON_annotations(site,DeepForest_config)
-
+    annotations, windows=preprocess.NEON_annotations(site, DeepForest_config)
+    
     #Training Generator
     generator =  OnTheFlyGenerator(
         annotations,

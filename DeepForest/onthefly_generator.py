@@ -135,9 +135,9 @@ class OnTheFlyGenerator(Generator):
         
         #Open image to crop
         ##Check if image the is same as previous draw from generator, this will save time.
-        if not row["image"] == self.previous_image_path:
-            print("Loading new tile: %s" %(row["image"]))
-            im = Image.open(self.base_dir+row["image"])
+        if not row["tile"] == self.previous_image_path:
+            print("Loading new tile: %s" %(row["tile"]))
+            im = Image.open(self.base_dir+row["tile"])
             
             #Read numpy array for RGB
             self.numpy_image = np.array(im)    
@@ -148,7 +148,7 @@ class OnTheFlyGenerator(Generator):
             self.lidar_tile=Lidar.load_lidar(lidar_filepath)
             
         #Load rgb image and get crop
-        image=retrieve_window(numpy_image=self.numpy_image,index=row["windows"],windows=self.windows)
+        image=retrieve_window(numpy_image=self.numpy_image,index=row["window"],windows=self.windows)
 
         #BGR order
         image=image[:,:,::-1]
@@ -157,7 +157,7 @@ class OnTheFlyGenerator(Generator):
         self.image=image        
         
         #Save image path for next evaluation to check
-        self.previous_image_path = row["image"]
+        self.previous_image_path = row["tile"]
         
         #Crop numpy array
         CHM=Lidar.compute_chm(lidar_tile=self.lidar_tile,annotations=self.annotation_list, row=row, windows=self.windows, rgb_res=self.rgb_res,kernel_size=self.kernel_size)
@@ -206,14 +206,14 @@ class OnTheFlyGenerator(Generator):
             return np.zeros((0, 5))
         
         #Look for annotations in previous epoch
-        key=row["image"]+"_"+str(row["windows"])
+        key=row["tile"]+"_"+str(row["window"])
         
         if key in self.annotation_dict:
             boxes=self.annotation_dict[key]
         else:
             #Which annotations fall into that crop?
-            self.annotation_dict[key]=fetch_annotations(image=self.base_dir+row["image"],
-                                           index=row["windows"],
+            self.annotation_dict[key]=fetch_annotations(image=self.base_dir+row["tile"],
+                                           index=row["window"],
                                            annotations=self.annotation_list,
                                            windows=self.windows,
                                            offset=(self.DeepForest_config["patch_size"] * 0.1)/self.rgb_res,
@@ -258,7 +258,7 @@ def expand_grid(data_dict):
 def compute_windows(image,pixels=250,overlap=0.05):
     im = Image.open(image)
     numpy_image = np.array(im)    
-    windows = sw.generate(numpy_image, sw.DimOrder.HeightWidthChannel, pixels,overlap )
+    windows = sw.generate(numpy_image, sw.DimOrder.HeightWidthChannel, pixels, overlap)
     return(windows)
 
 #Get image from tile and window index

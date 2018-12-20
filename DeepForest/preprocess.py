@@ -250,15 +250,15 @@ def NEON_annotations(site,DeepForest_config):
     
     all_images=list(data.rgb_path.unique())
 
-    tile_windows["image"]=all_images
-    tile_windows["windows"]=np.arange(0,len(windows))
+    tile_windows["tile"]=all_images
+    tile_windows["window"]=np.arange(0,len(windows))
     
     #Expand grid
     tile_data=expand_grid(tile_windows)    
     
     return [data,tile_data]
 
-def create_windows(data,DeepForest_config):
+def create_windows(data, DeepForest_config):
     """
     Generate windows for a specific tile
     """
@@ -279,8 +279,8 @@ def create_windows(data,DeepForest_config):
     
     all_images=list(data.rgb_path.unique())
 
-    tile_windows["image"]=all_images
-    tile_windows["windows"]=np.arange(0,len(windows))
+    tile_windows["tile"]=all_images
+    tile_windows["window"]=np.arange(0,len(windows))
     
     #Expand grid
     tile_data=expand_grid(tile_windows)    

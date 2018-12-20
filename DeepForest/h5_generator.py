@@ -151,9 +151,9 @@ class H5Generator(Generator):
         row=self.image_data[image_name]
        
         #Find annotations
-        annotations=self.annotations.loc[(self.annotations["tile"] == row["tile"]) & (self.annotations["tile"] == row["window"])]
+        annotations=self.annotations.loc[(self.annotations["tile"] == row["tile"]) & (self.annotations["window"] == row["window"])]
         
-        return annotations[["0","1","2","3","4"]].values()
+        return annotations[["0","1","2","3","4"]].values
     
         
     def define_groups(self,windowdf,shuffle=False):
@@ -187,6 +187,7 @@ def image_is_blank(image):
     if is_zero > 0.05:
         return True
     else:
+        
         return False
     
 if __name__=="__main__":
