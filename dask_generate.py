@@ -89,8 +89,8 @@ def run_HPC(data_paths):
     ###Compute tiles    
     try:
         compute(*values,scheduler='distributed')    
-    except:
-        print("I caught an error")
+    except Exception as e:
+        print(e)
     
     #futures = dask_client.map(Generate.run, data_paths)
 
