@@ -21,7 +21,6 @@ import cv2
 import slidingwindow as sw
 import itertools
 
-import Lidar
 from matplotlib import pyplot
 
 class H5Generator(Generator):
@@ -150,14 +149,17 @@ class H5Generator(Generator):
         #Select sliding window and tile
         image_name=self.image_names[image_index]        
         row=self.image_data[image_name]
-        self.annotations.loc[(self.annotations["tile"] == row["tile"]) & (self.annotations["tile"] == row["window"])]
+       
+        #Find annotations
+        annotations=self.annotations.loc[(self.annotations["tile"] == row["tile"]) & (self.annotations["tile"] == row["window"])]
+        
+        return annotations[["0","1","2","3","4"]].values()
+    
         
     def define_groups(self,windowdf,shuffle=False):
-        
         '''
         Define image data and names based on grouping of tiles for computational efficiency 
         '''
-        
         #group by tile
         groups = [df for _, df in windowdf.groupby('tile')]
         
@@ -188,6 +190,7 @@ def image_is_blank(image):
         return False
     
 if __name__=="__main__":
+    
     import yaml
     import preprocess
     
@@ -199,9 +202,7 @@ if __name__=="__main__":
     data=preprocess.load_csvs(h5_dir=DeepForest_config["h5_dir"])
     
     #Split training and test data
-    train , test = preprocess.split_training(data,
-                                         DeepForest_config,
-                                         experiment=None)
+    train, test = preprocess.split_training(data, DeepForest_config, experiment=None)
     
     generator=H5Generator(train, DeepForest_config)
     

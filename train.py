@@ -57,10 +57,11 @@ from keras_retinanet .utils.model import freeze as freeze_model
 from keras_retinanet .utils.transform import random_transform_generator
 
 #Custom Generator
+from DeepForest.h5_generator import H5Generator
 from DeepForest.onthefly_generator import OnTheFlyGenerator
 
 #Custom Callbacks
-from DeepForest.callbacks import shuffle_inputs,recallCallback,NEONmAP
+from DeepForest.callbacks import shuffle_inputs, recallCallback, NEONmAP
 
 def makedirs(path):
     # Intended behavior: try to create the directory,
@@ -139,7 +140,6 @@ def create_models(backbone_retinanet, num_classes, weights, multi_gpu=0, freeze_
 def create_NEON_generator(args,site,DeepForest_config):
     """ Create generators for training and validation.
     """
-
     annotations,windows=preprocess.NEON_annotations(site,DeepForest_config)
 
     #Training Generator
@@ -240,7 +240,6 @@ def create_callbacks(model, training_model, prediction_model, train_generator,va
     
     callbacks.append(recall)
     
-    #Neon mean IoU precision
     #create the NEON mAP generator 
     NEON_generator = create_NEON_generator(args,site,DeepForest_config)
     
@@ -277,34 +276,17 @@ def create_generators(args,data,DeepForest_config):
         transform_generator = random_transform_generator(flip_x_chance=0.5)
 
     #Split training and test data
-    train,test=preprocess.split_training(data,
-                                         DeepForest_config,
-                                         single_tile=DeepForest_config["single_tile"],
-                                         experiment=None)
+    train, test=preprocess.split_training(data, DeepForest_config, experiment=None)
     
     #Write out for debug
     if args.save_path:
         train.to_csv(os.path.join(args.save_path,'training_dict.csv'), header=False)
            
     #Training Generator
-    train_generator = OnTheFlyGenerator(
-        data,
-        train,
-        batch_size=args.batch_size,
-        DeepForest_config=DeepForest_config,
-        group_method="none",
-    shuffle_tile_epoch=True,
-    name="training")
+    train_generator = H5Generator(train, batch_size = args.batch_size, DeepForest_config=DeepForest_config, group_method="none", shuffle_tile_epoch=True, name="training")
 
     #Validation Generator        
-
-    validation_generator=OnTheFlyGenerator(
-    data,
-    test,
-    batch_size=args.batch_size,
-    DeepForest_config=DeepForest_config,
-    group_method="none",
-    name="validation")
+    validation_generator=H5Generator(test, batch_size=args.batch_size, DeepForest_config=DeepForest_config, group_method="none", name="validation")
 
     return train_generator, validation_generator
 
@@ -510,10 +492,7 @@ if __name__ == '__main__':
     
     if mode.mode == "train":
         DeepForest_config=load_config("train")
-        data=preprocess.load_data(
-            data_dir=DeepForest_config["training_csvs"],
-            res=DeepForest_config["rgb_res"],
-            lidar_path=DeepForest_config["lidar_path"])
+        data=preprocess.load_csvs(DeepForest_config["h5_dir"])
         
     if mode.mode == "retrain":
         #TODO needs annotations to find lidar path
@@ -525,10 +504,6 @@ if __name__ == '__main__':
     #Log site
     site=DeepForest_config["evaluation_site"]
     experiment.log_parameter("Site", site)
-    
-    ##Preprocess Filters##
-    if DeepForest_config['preprocess']['zero_area']:
-        data=preprocess.zero_area(data)
 
     #pass an args object instead of using command line    
     args = [

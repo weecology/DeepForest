@@ -23,8 +23,8 @@ def load_csvs(h5_dir):
     if os.path.isdir(h5_dir):
         #Gather list of csvs
         data_paths=glob.glob(h5_dir+"/*.csv")
-        dataframes = (pd.read_csv(f) for f in data_paths)
-        data = pd.concat(dataframes, ignore_index=False)      
+        dataframes = (pd.read_csv(f,index_col=None) for f in data_paths)
+        data = pd.concat(dataframes, ignore_index=True)      
         
     else:
         data=pd.read_csv(h5_dir)
@@ -171,11 +171,15 @@ def check_for_lidar(data,lidar_path):
     
     return data
 
-def split_training(data,DeepForest_config,experiment):
+def split_training(csv_data,DeepForest_config,experiment):
     
     '''
     Divide windows into training and testing split.
     '''
+    
+    #reduce the data frame into tiles and windows
+    windowdf=csv_data[["tile","window"]]
+    data=windowdf.drop_duplicates()
     
     #More than one tile in training data?
     single_tile =  len(data.tile.unique()) == 1

@@ -20,7 +20,7 @@ import cv2
 import slidingwindow as sw
 import itertools
 
-import Lidar
+from . import Lidar
 from matplotlib import pyplot
 
 class OnTheFlyGenerator(Generator):
