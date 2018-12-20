@@ -83,16 +83,16 @@ def run_HPC(data_paths):
     #Start dask dashboard? Not clear yet.
     dask_client.run_on_scheduler(start_tunnel)  
         
-    #### Local threading/processes, set scheduler.
-    #values = [delayed(Generate.run)(x) for x in data_paths]
+    ### Local threading/processes, set scheduler.
+    values = [delayed(Generate.run)(x) for x in data_paths]
     
-    ####Compute tiles    
-    #compute(*values,scheduler='distributed')    
+    ###Compute tiles    
+    try:
+        compute(*values,scheduler='distributed')    
+    except:
+        print("I caught an error")
     
-    futures = dask_client.map(Generate.run, data_paths)
-    
-    futures
-    #futures.result()
+    #futures = dask_client.map(Generate.run, data_paths)
 
 
 if __name__ == "__main__":
