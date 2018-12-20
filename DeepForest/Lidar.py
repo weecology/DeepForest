@@ -34,7 +34,7 @@ def get_window_extent(annotations,row,windows,rgb_res):
     Be careful that the ymin in the geographic data refers to the utm (bottom) and the ymin in the cartesian refers to origin (top). 
     '''
     #Select tile from annotations to get extent
-    tile_annotations=annotations[annotations["rgb_path"]==row["image"]]
+    tile_annotations=annotations[annotations["rgb_path"]==row["tile"]]
     
     #Set tile extent to convert to UTMs, flipped origin from R to Python
     tile_xmin=tile_annotations.tile_xmin.unique()[0]
@@ -42,7 +42,7 @@ def get_window_extent(annotations,row,windows,rgb_res):
     tile_ymin=tile_annotations.tile_ymin.unique()[0]
     
     #Get window cartesian coordinates
-    x,y,w,h= windows[row["windows"]].getRect()
+    x,y,w,h= windows[row["window"]].getRect()
     
     window_utm_xmin=x * rgb_res + tile_xmin
     window_utm_xmax=(x+w) * rgb_res + tile_xmin
@@ -54,18 +54,18 @@ def get_window_extent(annotations,row,windows,rgb_res):
 def fetch_lidar_filename(row,lidar_path,site):
     """
     Find lidar path in a directory.
-    param: row a dictionary with image "key" for filename to be searched for
+    param: row a dictionary with tile "key" for filename to be searched for
     return: string location on disk
     """
     
     #first try identical name - this isn't great practice here, needs to be improved. How to direct the lidar path to the right directory?
-    direct_filename=os.path.join("data" ,site,os.path.splitext(row["image"])[0] + ".laz")
+    direct_filename=os.path.join("data" ,site,os.path.splitext(row["tile"])[0] + ".laz")
 
     if os.path.exists(direct_filename):
         laz_path=direct_filename
     else:
         print("Filename: %s does not exist, searching within %s" %(direct_filename,lidar_path))        
-        laz_path=find_lidar_file(image_path=row["image"],lidar_path=lidar_path)
+        laz_path=find_lidar_file(image_path=row["tile"],lidar_path=lidar_path)
         
     return laz_path
 

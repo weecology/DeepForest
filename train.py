@@ -132,7 +132,7 @@ def create_models(backbone_retinanet, num_classes, weights, multi_gpu=0, freeze_
             'regression'    : losses.smooth_l1(),
             'classification': losses.focal()
         },
-        optimizer=keras.optimizers.adam(lr=1e-5, clipnorm=0.001)
+        optimizer = keras.optimizers.adam(lr=1e-5, clipnorm=0.001)
     )
 
     return model, training_model, prediction_model
@@ -140,7 +140,7 @@ def create_models(backbone_retinanet, num_classes, weights, multi_gpu=0, freeze_
 def create_NEON_generator(args,site,DeepForest_config):
     """ Create generators for training and validation.
     """
-    annotations, windows=preprocess.NEON_annotations(site, DeepForest_config)
+    annotations, windows = preprocess.NEON_annotations(site, DeepForest_config)
     
     #Training Generator
     generator =  OnTheFlyGenerator(
@@ -241,7 +241,7 @@ def create_callbacks(model, training_model, prediction_model, train_generator,va
     callbacks.append(recall)
     
     #create the NEON mAP generator 
-    NEON_generator = create_NEON_generator(args,site,DeepForest_config)
+    NEON_generator = create_NEON_generator(args, site, DeepForest_config)
     
     neon_evaluation = NEONmAP(NEON_generator, 
                               experiment=experiment,
@@ -276,7 +276,7 @@ def create_generators(args,data,DeepForest_config):
         transform_generator = random_transform_generator(flip_x_chance=0.5)
 
     #Split training and test data
-    train, test=preprocess.split_training(data, DeepForest_config, experiment=None)
+    train, test = preprocess.split_training(data, DeepForest_config, experiment=None)
     
     #Write out for debug
     if args.save_path:
@@ -452,7 +452,7 @@ def main(args=None,data=None,DeepForest_config=None,experiment=None):
     
     #Log number of trees trained on
     #Logs the number of train and eval "trees"
-    ntrees=sum([len(x) for x in train_generator.annotation_dict.values()])
+    ntrees = sum([len(x) for x in train_generator.annotation_dict.values()])
     experiment.log_parameter("Number of Training Trees", ntrees)
     
 if __name__ == '__main__':
@@ -479,9 +479,9 @@ if __name__ == '__main__':
 
     #save time for logging
     if mode.dir:
-        dirname=os.path.split(mode.dir)[-1]
+        dirname = os.path.split(mode.dir)[-1]
     else:
-        dirname= datetime.now().strftime("%Y%m%d_%H%M%S")
+        dirname = datetime.now().strftime("%Y%m%d_%H%M%S")
         
     experiment.log_parameter("Start Time", dirname)
 
@@ -491,13 +491,13 @@ if __name__ == '__main__':
     #Load DeepForest_config and data file based on training or retraining mode
     
     if mode.mode == "train":
-        DeepForest_config=load_config("train")
-        data=preprocess.load_csvs(DeepForest_config["h5_dir"])
+        DeepForest_config = load_config("train")
+        data = preprocess.load_csvs(DeepForest_config["h5_dir"])
         
     if mode.mode == "retrain":
         #TODO needs annotations to find lidar path
-        DeepForest_config=load_config("retrain")        
-        data=preprocess.load_xml(DeepForest_config["hand_annotations"],DeepForest_config["rgb_res"])
+        DeepForest_config = load_config("retrain")        
+        data = preprocess.load_xml(DeepForest_config["hand_annotations"],DeepForest_config["rgb_res"])
 
     experiment.log_multiple_params(DeepForest_config)
 

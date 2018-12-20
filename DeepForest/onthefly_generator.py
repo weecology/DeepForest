@@ -174,7 +174,7 @@ class OnTheFlyGenerator(Generator):
         '''
         
         #group by tile
-        groups = [df for _, df in windowdf.groupby('image')]
+        groups = [df for _, df in windowdf.groupby('tile')]
         
         if shuffle:
             #Shuffle order of windows within a tile
