@@ -31,7 +31,7 @@ evaluation_site: SJER
 evaluation_images: 50
 evaluation_tile_dir: /ufrc/ewhite/b.weinstein/NeonData/SJER/DP3.30010.001/2018/FullSite/D17/2018_SJER_3/L3/Camera/Mosaic/V01/
 save_image_path: /orange/ewhite/b.weinstein/retinanet/snapshots/
-shuffle_eval: False
+shuffle_evaluation: False
 
 #Non-max suppression, threshold for the IoU value to determine when a box should be suppressed.
 nms_threshold: 0.15
