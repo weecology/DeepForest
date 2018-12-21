@@ -84,7 +84,7 @@ def run_HPC(data_paths):
     dask_client.run_on_scheduler(start_tunnel)  
         
     ### Local threading/processes, set scheduler.
-    values = [delayed(Generate.run)(x) for x in data_paths]
+    values = [delayed(Generate.run)(x,DeepForest_config) for x in data_paths]
     
     ###Compute tiles    
     try:
