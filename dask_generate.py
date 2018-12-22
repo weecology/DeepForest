@@ -52,8 +52,7 @@ def run_HPC(data_paths):
     #################
     
     from dask_jobqueue import SLURMCluster
-    from dask.distributed import Client
-    from dask import delayed
+    from dask.distributed import Client, wait
     
     DeepForest_config = config.load_config("train")
     
