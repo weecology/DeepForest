@@ -90,6 +90,8 @@ def run(tile,DeepForest_config):
     #flush system
     sys.stdout.flush()
     
+    return "{} completed".format(tilename)
+    
 if __name__ == "__main__":
     import yaml
     
