@@ -4,8 +4,8 @@ import socket
 import os
 import sys
 
-import logging
-logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
+#import logging
+#logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 
 from DeepForest import Generate,config
 from dask import compute, delayed
@@ -23,12 +23,13 @@ def run_local(data_paths):
     """
     Run training processes on local laptop
     """
+    from dask.distributed import Client, wait    
     
-    #Local threading/processes, set scheduler.
-    values = [delayed(Generate.run)(x) for x in data_paths]
+    DeepForest_config = config.load_config("train")
     
-    #Compute tiles    
-    results = compute(*values, scheduler='processes')    
+    dask_client = Client()    
+    futures = dask_client.map(Generate.run, data_paths,DeepForest_config=DeepForest_config)
+    wait(futures)
         
 def start_tunnel():
     """
@@ -91,7 +92,7 @@ def run_HPC(data_paths):
     #except Exception as e:
         #print(e)
     
-    futures = dask_client.map(Generate.run, data_paths)
+    futures = dask_client.map(Generate.run, data_paths,DeepForest_config=DeepForest_config)
     wait(futures)
 
 
@@ -102,8 +103,8 @@ if __name__ == "__main__":
 
     print("{s} csv files found for training".format(s=len(data_paths)))
     
-    #run_local(data_paths)
+    run_local(data_paths)
     
     #On Hypergator
-    run_HPC(data_paths)
+    #run_HPC(data_paths)
     
