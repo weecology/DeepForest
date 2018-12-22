@@ -70,7 +70,7 @@ def run_HPC(data_paths):
         processes=1,
         queue='hpg2-compute',
         cores=1, 
-        memory='15GB', 
+        memory='20GB', 
         walltime='48:00:00',
         job_extra=extra_args,
         local_directory="/home/b.weinstein/logs/",death_timeout=300)
@@ -103,8 +103,8 @@ if __name__ == "__main__":
 
     print("{s} csv files found for training".format(s=len(data_paths)))
     
-    run_local(data_paths)
+    #run_local(data_paths)
     
     #On Hypergator
-    #run_HPC(data_paths)
+    run_HPC(data_paths)
     
