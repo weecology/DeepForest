@@ -34,7 +34,6 @@ class H5Generator(Generator):
         data,
         DeepForest_config,
         base_dir=None,
-        shuffle_tile_epoch=False,
         group_method="none",
         name=None,
         **kwargs
@@ -46,7 +45,7 @@ class H5Generator(Generator):
         self.image_data  = {}
         self.name=name
         self.windowdf=data
-        
+                
         #Evaluation site
         self.site=DeepForest_config["evaluation_site"]
         
@@ -72,6 +71,9 @@ class H5Generator(Generator):
         self.labels = {}
         for key, value in self.classes.items():
             self.labels[value] = key        
+        
+        #Set groups at first order.
+        self.define_groups(self.windowdf,shuffle=False)
         
         super(H5Generator, self).__init__(**kwargs)
                         
@@ -156,7 +158,7 @@ class H5Generator(Generator):
         return annotations[["0","1","2","3","4"]].values
     
         
-    def define_groups(self,windowdf,shuffle=False):
+    def define_groups(self, windowdf, shuffle=False):
         '''
         Define image data and names based on grouping of tiles for computational efficiency 
         '''
@@ -165,7 +167,7 @@ class H5Generator(Generator):
         
         if shuffle:
             #Shuffle order of windows within a tile
-            groups=[x.sample(frac=1) for x in groups]      
+            groups = [x.sample(frac=1) for x in groups]      
             
             #Shuffle order of tiles
             random.shuffle(groups)
@@ -176,7 +178,7 @@ class H5Generator(Generator):
         image_data=newdf.to_dict("index")
         image_names = list(image_data.keys())
         
-        return(image_data,image_names)
+        return(image_data, image_names)
     
 #Utility functions
 def image_is_blank(image):

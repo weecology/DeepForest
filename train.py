@@ -283,7 +283,7 @@ def create_generators(args,data,DeepForest_config):
         train.to_csv(os.path.join(args.save_path,'training_dict.csv'), header=False)
            
     #Training Generator
-    train_generator = H5Generator(train, batch_size = args.batch_size, DeepForest_config=DeepForest_config, group_method="none", shuffle_tile_epoch=True, name="training")
+    train_generator = H5Generator(train, batch_size = args.batch_size, DeepForest_config=DeepForest_config, group_method="none", name="training")
 
     #Validation Generator        
     validation_generator = H5Generator(test, batch_size = args.batch_size, DeepForest_config=DeepForest_config, group_method="none", name="validation")
