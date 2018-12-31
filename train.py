@@ -279,7 +279,7 @@ def create_generators(args, data, DeepForest_config):
     train, test = preprocess.split_training(data, DeepForest_config, experiment=None)
     
     #Log number of trees trained on
-    ntrees = training.shape[0]
+    ntrees = train.shape[0]
     experiment.log_parameter("Number of Training Trees", ntrees)
     
     #Write out for debug
