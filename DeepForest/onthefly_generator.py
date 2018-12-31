@@ -162,6 +162,10 @@ class OnTheFlyGenerator(Generator):
         #Crop numpy array
         CHM=Lidar.compute_chm(lidar_tile=self.lidar_tile,annotations=self.annotation_list, row=row, windows=self.windows, rgb_res=self.rgb_res,kernel_size=self.kernel_size)
         
+        #If empty, return None
+        if CHM is None:
+            return None
+        
         #Bind RGB and LIDAR arrays
         four_channel_image=Lidar.bind_array(image,CHM.array)
             

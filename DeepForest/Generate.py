@@ -65,6 +65,11 @@ def run(tile,DeepForest_config):
 
         #Load images
         image = generator.load_image(i)
+        
+        #If image window is corrupt (RGB/LIDAR missing), go to next tile, it won't be in labeldf
+        if image is None:
+            continue
+            
         hdf5_file["train_imgs"][i,...] = image        
         
         #Load annotations and write a pandas frame

@@ -82,16 +82,7 @@ def run_HPC(data_paths):
         
     #Start dask dashboard? Not clear yet.
     dask_client.run_on_scheduler(start_tunnel)  
-        
-    #### Local threading/processes, set scheduler.
-    #values = [delayed(Generate.run)(x,DeepForest_config) for x in data_paths]
-    
-    ####Compute tiles    
-    #try:
-        #compute(*values,scheduler='distributed')    
-    #except Exception as e:
-        #print(e)
-    
+            
     futures = dask_client.map(Generate.run, data_paths,DeepForest_config=DeepForest_config)
     wait(futures)
 

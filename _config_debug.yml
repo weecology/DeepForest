@@ -15,8 +15,8 @@ preprocess:
 
 #Training
 training_images: 6
-training_csvs: data/SJER/
-rgb_tile_dir: data/SJER/
+training_csvs: data/TEAK/
+rgb_tile_dir: data/TEAK/
 snapshot: None
 batch_size: 1   
 epochs: 2
@@ -26,9 +26,9 @@ shuffle_training: True
 score_threshold: 0.2
 
 #Evaluation
-evaluation_site: SJER
+evaluation_site: TEAK
 evaluation_images: 3
-evaluation_tile_dir: data/SJER/
+evaluation_tile_dir: data/TEAK/
 save_image_path: snapshots/images/
 shuffle_evaluation: False
 
@@ -39,7 +39,7 @@ nms_threshold: 0.15
 validation_percent: 5
 
 #LIDAR
-lidar_path: data/SJER/
+lidar_path: data/TEAK/
 kernel_size: 5
 workers: 1
 use_multiprocessing: False
