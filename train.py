@@ -255,7 +255,7 @@ def create_callbacks(model, training_model, prediction_model, train_generator,va
     return callbacks
 
 
-def create_generators(args,data,DeepForest_config):
+def create_generators(args, data, DeepForest_config):
     """ Create generators for training and validation.
     """
     # create random transform generator for augmenting training data
@@ -278,6 +278,10 @@ def create_generators(args,data,DeepForest_config):
     #Split training and test data
     train, test = preprocess.split_training(data, DeepForest_config, experiment=None)
     
+    #Log number of trees trained on
+    ntrees = training.shape[0]
+    experiment.log_parameter("Number of Training Trees", ntrees)
+    
     #Write out for debug
     if args.save_path:
         train.to_csv(os.path.join(args.save_path,'training_dict.csv'), header=False)
@@ -286,7 +290,7 @@ def create_generators(args,data,DeepForest_config):
     train_generator = H5Generator(train, batch_size = args.batch_size, DeepForest_config=DeepForest_config, group_method="none", name="training")
 
     #Validation Generator        
-    validation_generator = H5Generator(test, batch_size = args.batch_size, DeepForest_config=DeepForest_config, group_method="none", name="validation")
+    validation_generator = H5Generator(test, batch_size=args.batch_size, DeepForest_config=DeepForest_config, group_method="none", name="validation")
 
     return train_generator, validation_generator
 
@@ -382,7 +386,7 @@ def main(args=None,data=None,DeepForest_config=None,experiment=None):
 
     # create the generators
     print("Creating generators")
-    train_generator, validation_generator = create_generators(args,data,DeepForest_config=DeepForest_config)
+    train_generator, validation_generator = create_generators(args, data, DeepForest_config=DeepForest_config)
     
     # create the model
     if args.snapshot is not None:
@@ -450,10 +454,6 @@ def main(args=None,data=None,DeepForest_config=None,experiment=None):
         max_queue_size=DeepForest_config["max_queue_size"]
     )
     
-    #Log number of trees trained on
-    #Logs the number of train and eval "trees"
-    ntrees = train_generator.annotations.shape[0]
-    experiment.log_parameter("Number of Training Trees", ntrees)
     
 if __name__ == '__main__':
     

@@ -13,6 +13,7 @@ import rasterio
 from PIL import Image
 import slidingwindow as sw
 import itertools
+import warnings
 
 def load_csvs(h5_dir):
     """
@@ -203,7 +204,10 @@ def split_training(csv_data,DeepForest_config,experiment):
         #Training samples
         if not DeepForest_config["training_images"]=="All":
             num_training_images = DeepForest_config["training_images"]
-        
+            
+            if num_training_images > training:
+                raise ValueError("Number of training samples greater than available windows")
+                
             #Optional shuffle
             if DeepForest_config["shuffle_training"]:
                 training.sample(frac=1)
@@ -212,7 +216,7 @@ def split_training(csv_data,DeepForest_config,experiment):
             training=training.iloc[0:num_training_images]
         
         #Ensure training is sorted by image
-        training.sort_values(by="tile")            
+        training.sort_values(by="tile", inplace=True)            
         
         #evaluation samples
         if not DeepForest_config["evaluation_images"]=="All":
