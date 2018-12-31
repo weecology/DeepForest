@@ -277,20 +277,16 @@ def create_generators(args, data, DeepForest_config):
 
     #Split training and test data
     train, test = preprocess.split_training(data, DeepForest_config, experiment=None)
-    
-    #Log number of trees trained on
-    ntrees = train.shape[0]
-    experiment.log_parameter("Number of Training Trees", ntrees)
-    
+
     #Write out for debug
     if args.save_path:
         train.to_csv(os.path.join(args.save_path,'training_dict.csv'), header=False)
            
     #Training Generator
-    train_generator = H5Generator(train, batch_size = args.batch_size, DeepForest_config=DeepForest_config, group_method="none", name="training")
+    train_generator = H5Generator(train, batch_size = args.batch_size, DeepForest_config = DeepForest_config, group_method="none", name = "training")
 
     #Validation Generator        
-    validation_generator = H5Generator(test, batch_size=args.batch_size, DeepForest_config=DeepForest_config, group_method="none", name="validation")
+    validation_generator = H5Generator(test, batch_size = args.batch_size, DeepForest_config = DeepForest_config, group_method = "none", name = "validation")
 
     return train_generator, validation_generator
 
@@ -363,7 +359,7 @@ def parse_args(args):
     return check_args(parser.parse_args(args))
 
 
-def main(args=None,data=None,DeepForest_config=None,experiment=None):
+def main(args=None, data=None, DeepForest_config=None, experiment=None):
     # parse arguments
     print("parsing arguments")
     if args is None:
@@ -437,10 +433,10 @@ def main(args=None,data=None,DeepForest_config=None,experiment=None):
         test=entry in train_generator.image_data.values() 
         matched.append(test)
     if sum(matched) > 0:
-        raise Exception("%.2f percent of validation windows are in training data" %(100*sum(matched)/train_generator.size()))
+        raise Exception("%.2f percent of validation windows are in training data" % (100 * sum(matched)/train_generator.size()))
     else:
         print("Test passed: No overlapping data in training and validation")
-        
+    
     #start training
     training_model.fit_generator(
         generator=train_generator,
@@ -453,6 +449,9 @@ def main(args=None,data=None,DeepForest_config=None,experiment=None):
         use_multiprocessing=DeepForest_config["use_multiprocessing"],
         max_queue_size=DeepForest_config["max_queue_size"]
     )
+    
+    #Log number of trees trained on
+    experiment.log_parameter("Number of Training Trees", train_generator.total_annotations)    
     
     
 if __name__ == '__main__':
@@ -543,4 +542,4 @@ if __name__ == '__main__':
         args=["--save-path"] + args        
 
     #Run training, and pass comet experiment   
-    main(args,data,DeepForest_config,experiment=experiment)
+    main(args, data, DeepForest_config, experiment=experiment)

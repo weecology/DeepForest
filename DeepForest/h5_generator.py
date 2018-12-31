@@ -45,7 +45,10 @@ class H5Generator(Generator):
         self.image_data  = {}
         self.name=name
         self.windowdf=data
-                
+        
+        #Running total of annotations
+        self.total_annotations
+        
         #Evaluation site
         self.site=DeepForest_config["evaluation_site"]
         
@@ -155,6 +158,9 @@ class H5Generator(Generator):
         #Find annotations
         annotations=self.annotations.loc[(self.annotations["tile"] == row["tile"]) & (self.annotations["window"] == row["window"])]
         
+        #Add annotations to the counter
+        self.total_annotations += len(annotations)
+            
         return annotations[["0","1","2","3","4"]].values
     
         

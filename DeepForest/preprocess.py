@@ -172,10 +172,12 @@ def check_for_lidar(data,lidar_path):
     
     return data
 
-def split_training(csv_data,DeepForest_config,experiment):
+def split_training(csv_data, DeepForest_config, experiment):
     
     '''
-    Divide windows into training and testing split.
+    Divide windows into training and testing split
+    csv_data: a pandas dataframe created by DeepForest Generate Run
+    experiment: The comet experiment object
     '''
     
     #reduce the data frame into tiles and windows
