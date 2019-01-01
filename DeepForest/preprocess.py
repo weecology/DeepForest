@@ -207,7 +207,7 @@ def split_training(csv_data, DeepForest_config, experiment):
         if not DeepForest_config["training_images"]=="All":
             num_training_images = DeepForest_config["training_images"]
             
-            if num_training_images > training:
+            if num_training_images > len(training):
                 raise ValueError("Number of training samples greater than available windows")
                 
             #Optional shuffle
