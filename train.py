@@ -384,6 +384,9 @@ def main(args=None, data=None, DeepForest_config=None, experiment=None):
     print("Creating generators")
     train_generator, validation_generator = create_generators(args, data, DeepForest_config=DeepForest_config)
     
+    #Log number of trees trained on
+    experiment.log_parameter("Number of Training Trees", train_generator.total_trees)    
+       
     # create the model
     if args.snapshot is not None:
         print('Loading model, this may take a secondkeras-retinanet.\n')
@@ -449,10 +452,7 @@ def main(args=None, data=None, DeepForest_config=None, experiment=None):
         use_multiprocessing=DeepForest_config["use_multiprocessing"],
         max_queue_size=DeepForest_config["max_queue_size"]
     )
-    
-    #Log number of trees trained on
-    experiment.log_parameter("Number of Training Trees", train_generator.total_annotations)    
-    
+     
     
 if __name__ == '__main__':
     

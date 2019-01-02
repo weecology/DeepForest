@@ -46,9 +46,6 @@ class H5Generator(Generator):
         self.name=name
         self.windowdf=data
         
-        #Running total of annotations
-        self.total_annotations
-        
         #Evaluation site
         self.site=DeepForest_config["evaluation_site"]
         
@@ -78,6 +75,9 @@ class H5Generator(Generator):
         #Set groups at first order.
         self.define_groups(self.windowdf,shuffle=False)
         
+        #report total number of annotations
+        self.total_trees=self.total_annotations()
+                
         super(H5Generator, self).__init__(**kwargs)
                         
     def __len__(self):
@@ -107,6 +107,23 @@ class H5Generator(Generator):
         """
         return self.labels[label]
 
+    def total_annotations(self):
+        """ Find the total number of annotations for the dataset
+        """
+        #Find matching annotations        
+        tiles=self.windowdf["tile"].unique()
+        
+        total_annotations=0
+        
+        #Select annotations
+        for tilename in tiles:
+            csv_name = os.path.join(self.DeepForest_config["h5_dir"],tilename+'.csv')
+            annotations = pd.read_csv(csv_name)
+            selected_annotations = pd.merge(self.windowdf, annotations)
+            total_annotations += len(selected_annotations)        
+            
+        return(total_annotations)
+        
     def load_image(self, image_index):
         """ Load an image at the image_index.
         """
@@ -157,9 +174,6 @@ class H5Generator(Generator):
        
         #Find annotations
         annotations=self.annotations.loc[(self.annotations["tile"] == row["tile"]) & (self.annotations["window"] == row["window"])]
-        
-        #Add annotations to the counter
-        self.total_annotations += len(annotations)
             
         return annotations[["0","1","2","3","4"]].values
     
