@@ -1,4 +1,4 @@
-i# This file may be used to create an environment using:
+# This file may be used to create an environment using:
 # $ conda create --name <env> --file <this file>
 # platform: linux-64
 absl-py=0.2.1=py36_0
