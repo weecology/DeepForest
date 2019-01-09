@@ -21,6 +21,14 @@ conda env create --name DeepForest -f=environment.yml
 
 All configurations are in the _config.yml 
 
+Additional Dependencies
+
+This branch matches the keras_retinanet instance found here: https://github.com/bw4sz/keras-retinanet/tree/master
+
+```
+pip install .
+```
+
 ## Training
 
 ```
