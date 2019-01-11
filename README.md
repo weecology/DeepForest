@@ -9,15 +9,11 @@ Remote sensing has the potential to transform the speed, scale, and cost of biod
 
 DeepForest uses conda environments to manage python dependencies
 
-Some key dependencies that have some build specific installs include
-
-* OpenCV
-* Tensorflow
-* GDAL
-
 ```
 conda env create --name DeepForest -f=environment.yml
 ```
+
+This contains builds for everything but keras and tensorflow, which require OS specific builds.
 
 All configurations are in the _config.yml 
 
