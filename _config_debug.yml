@@ -14,7 +14,7 @@ preprocess:
           zero_area: True
 
 #Training
-training_images: 6
+training_images: 2
 training_csvs: data/TEAK/
 rgb_tile_dir: data/TEAK/
 snapshot: None

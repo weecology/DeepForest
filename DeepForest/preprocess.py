@@ -159,16 +159,16 @@ def expand_grid(data_dict):
     return pd.DataFrame.from_records(rows, columns=data_dict.keys())
 
 def check_for_lidar(data,lidar_path):
-    lidar_tiles=data.lidar_path.unique()
+    lidar_tiles = data.lidar_path.unique()
     
-    lidar_exists=[]
+    lidar_exists = []
     for x in list(lidar_tiles):
-        does_exist=os.path.exists(os.path.join(lidar_path,x))
+        does_exist = os.path.exists(os.path.join(lidar_path,x))
         lidar_exists.append(does_exist)
     
     #Filter data based on matching lidar tiles
-    matching_lidar=list(lidar_tiles[lidar_exists])
-    data=data[data.lidar_path.isin(matching_lidar)]
+    matching_lidar = list(lidar_tiles[lidar_exists])
+    data = data[data.lidar_path.isin(matching_lidar)]
     
     return data
 
@@ -234,21 +234,25 @@ def split_training(csv_data, DeepForest_config, experiment):
     #Write training to file to view 
     return([training, evaluation])
     
-def NEON_annotations(site,DeepForest_config):
-   
-    glob_path=os.path.join("data",site,"annotations") + "/" + site + "*.xml"
-    xmls=glob.glob(glob_path)
+def NEON_annotations(site, DeepForest_config):
+    '''
+    Create a keras generator for the hand annotated tower plots. Used for the mAP and recall callback.
+    site: Four letter site code
+    '''
+
+    glob_path = os.path.join("data",site,"annotations") + "/" + site + "*.xml"
+    xmls = glob.glob(glob_path)
     
     annotations=[]
     for xml in xmls:
-        r=load_xml(xml,DeepForest_config["rgb_res"])
+        r=load_xml(xml, DeepForest_config["rgb_res"])
         annotations.append(r)
 
     data=pd.concat(annotations)
     
     #Compute list of sliding windows, assumed that all objects are the same extent and resolution
-    image_path=os.path.join("data",site, data.rgb_path.unique()[0])
-    windows=compute_windows(image=image_path, pixels=DeepForest_config["patch_size"], overlap=DeepForest_config["patch_overlap"])
+    image_path = os.path.join("data",site, data.rgb_path.unique()[0])
+    windows = compute_windows(image=image_path, pixels=DeepForest_config["patch_size"], overlap=DeepForest_config["patch_overlap"])
     
     #Compute Windows
     #Create dictionary of windows for each image
@@ -257,12 +261,12 @@ def NEON_annotations(site,DeepForest_config):
     all_images=list(data.rgb_path.unique())
 
     tile_windows["tile"]=all_images
-    tile_windows["window"]=np.arange(0,len(windows))
+    tile_windows["window"]=np.arange(0, len(windows))
     
     #Expand grid
     tile_data=expand_grid(tile_windows)    
     
-    return [data,tile_data]
+    return [data, tile_data]
 
 def create_windows(data, DeepForest_config):
     """

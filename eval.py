@@ -1,19 +1,5 @@
 #!/usr/bin/env python
 
-"""
-FCopyright 2017-2018 Fizyr (https://fizyr.com)
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-    http://www.apache.org/licenses/LICENSE-2.0
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-"""
-
 #Log training
 from comet_ml import Experiment
 
@@ -39,7 +25,7 @@ from keras_retinanet.utils.keras_version import check_keras_version
 from DeepForest.onthefly_generator import OnTheFlyGenerator
 
 #Custom callback
-from DeepForest.evaluation import neonRecall, Jaccard
+from DeepForest.evaluation import neonRecall
 
 def get_session():
     """ Construct a modified tf session.
@@ -48,28 +34,27 @@ def get_session():
     config.gpu_options.allow_growth = True
     return tf.Session(config=config)
 
-def create_NEON_generator(args,site,DeepForest_config):
+def create_NEON_generator(args, site, DeepForest_config):
     """ Create generators for training and validation.
     """
-
-    annotations,windows=preprocess.NEON_annotations(site,DeepForest_config)
+    annotations, windows = preprocess.NEON_annotations(site, DeepForest_config)
 
     #Training Generator
     generator =  OnTheFlyGenerator(
         annotations,
         windows,
-        batch_size=args.batch_size,
-        DeepForest_config=DeepForest_config,
+        batch_size = args.batch_size,
+        DeepForest_config = DeepForest_config,
         group_method="none")
     
     return(generator)
 
-def create_generator(args,data,config):
+def create_generator(args, data, config):
     """ Create generators for training and validation.
     """
 
     #Split training and test data - hardcoded paths set below.
-    _,test=preprocess.split_training(data,DeepForest_config,single_tile=DeepForest_config["single_tile"],experiment=None)
+    _ , test = preprocess.split_training(data,DeepForest_config,single_tile=DeepForest_config["single_tile"],experiment=None)
 
     #Training Generator
     generator =  OnTheFlyGenerator(
@@ -130,7 +115,10 @@ def main(data,DeepForest_config,experiment,args=None):
     #generator = create_generator(args,data,DeepForest_config)
 
     #create the NEON mAP generator 
-    NEON_generator = create_NEON_generator(args,site,DeepForest_config)
+    NEON_generator = create_NEON_generator(args, site, DeepForest_config)
+    
+    #create the NEON recall generator     
+    NEON_generator_recall = create_NEON_generator(args, site, DeepForest_config)
     
     # load the model
     print('Loading model, this may take a second...')
@@ -157,38 +145,22 @@ def main(data,DeepForest_config,experiment,args=None):
             #present_classes += 1
             #precision       += average_precision
     #print('mAP: {:.4f}'.format(precision / present_classes))
-    #experiment.log_metric("mAP", precision / present_classes)    
-
-    #Use field collected polygons only for Florida site
-    #if site == "OSBS":
-
-        ##Ground truth scores
-        #jaccard=Jaccard(
-            #generator=generator,
-            #model=model,            
-            #score_threshold=args.score_threshold,
-            #save_path=args.save_path,
-            #experiment=experiment,
-            #DeepForest_config=DeepForest_config
-        #)
-        #print(f" Mean IoU: {jaccard:.2f}")
+    #experiment.log_metric("mAP", precision / present_classes)                 
         
-        #experiment.log_metric("Mean IoU", jaccard)               
-        
-    #Neon plot recall rate
-    #recall=neonRecall(
-        #site,
-        #generator,
-        #model,            
-        #score_threshold=args.score_threshold,
-        #save_path=args.save_path,
-        #experiment=experiment,
-        #DeepForest_config=DeepForest_config
-    #)
+   # Neon plot recall rate
+    recall=neonRecall(
+        site,
+        NEON_generator_recall,
+        model,            
+        score_threshold=args.score_threshold,
+        save_path=args.save_path,
+        experiment=experiment,
+        DeepForest_config=DeepForest_config
+    )
     
-    #experiment.log_metric("Recall", recall)       
+    experiment.log_metric("Recall", recall)
     
-    #print(f" Recall: {recall:.2f}")
+    print("Recall is {}".format(recall))
         
     #NEON plot mAP
     average_precisions = evaluate(

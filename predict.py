@@ -26,7 +26,6 @@ from DeepForest.preprocess import compute_windows, retrieve_window
 import pandas as pd
 from PIL import Image
 
-
 #Set training or training
 mode_parser     = argparse.ArgumentParser(description='Prediction of a new image')
 mode_parser.add_argument('--model', help='path to training model' )
@@ -136,7 +135,6 @@ else:
             caption = "{} {:.3f}".format(labels_to_names[label], score)
             draw_caption(draw, b, caption)
             cv2.imwrite("/Users/Ben/Downloads/" + os.path.splitext(tile_windows["image"])[0]+ "_" +  str(index) + ".png",draw)
-    
     
 #plt.figure(figsize=(15, 15))
 #plt.axis('off')

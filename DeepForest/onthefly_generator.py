@@ -167,7 +167,7 @@ class OnTheFlyGenerator(Generator):
             return None
         
         #Bind RGB and LIDAR arrays
-        four_channel_image=Lidar.bind_array(image,CHM.array)
+        four_channel_image=Lidar.bind_array(image, CHM.array)
             
         return four_channel_image
 

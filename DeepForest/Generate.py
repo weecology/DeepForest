@@ -84,7 +84,7 @@ def run(tile,DeepForest_config):
         labels[i] = labeldf
     
     #Write labels to pandas frame
-    labeldf = pd.concat(labels,ignore_index=True)
+    labeldf = pd.concat(labels, ignore_index=True)
     
     csv_filename = os.path.join(DeepForest_config["h5_dir"], tilename + ".csv")    
     labeldf.to_csv(csv_filename,index=False)

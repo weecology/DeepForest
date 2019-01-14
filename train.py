@@ -488,7 +488,6 @@ if __name__ == '__main__':
     experiment.log_parameter("Training Mode",mode.mode)
     
     #Load DeepForest_config and data file based on training or retraining mode
-    
     if mode.mode == "train":
         DeepForest_config = load_config("train")
         data = preprocess.load_csvs(DeepForest_config["h5_dir"])
