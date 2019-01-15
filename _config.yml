@@ -1,7 +1,7 @@
 #Config file for DeepMeerkat train.py on HiPerGator
 
 #Data generation
-num_hipergator_workers: 20
+num_hipergator_workers: 25
 h5_dir: /orange/ewhite/b.weinstein/training_h5s/
 
 #SlidingWindow
@@ -14,8 +14,8 @@ preprocess:
           zero_area: True
 
 #Training
-training_csvs: /home/b.weinstein/TreeSegmentation/analysis/Results/detection_boxes/SJER/2018/
-rgb_tile_dir: /ufrc/ewhite/b.weinstein/NeonData/SJER/DP3.30010.001/2018/FullSite/D17/2018_SJER_3/L3/Camera/Mosaic/V01/
+training_csvs: /home/b.weinstein/TreeSegmentation/analysis/Results/detection_boxes/TEAK/2018/
+rgb_tile_dir: /orange/ewhite/NeonData/TEAK/DP3.30010.001/2018/FullSite/D17/2018_TEAK_3/L3/Camera/Mosaic/V01/
 training_images: 10
 snapshot: None
 batch_size: 6      
@@ -27,9 +27,9 @@ single_tile: False
 score_threshold: 0.15
 
 #Evaluation
-evaluation_site: SJER
+evaluation_site: TEAK
 evaluation_images: 50
-evaluation_tile_dir: /ufrc/ewhite/b.weinstein/NeonData/SJER/DP3.30010.001/2018/FullSite/D17/2018_SJER_3/L3/Camera/Mosaic/V01/
+evaluation_tile_dir: /orange/ewhite/NeonData/TEAK/DP3.30010.001/2018/FullSite/D17/2018_TEAK_3/L3/Camera/Mosaic/V01/
 save_image_path: /orange/ewhite/b.weinstein/retinanet/snapshots/
 shuffle_evaluation: False
 
@@ -37,7 +37,7 @@ shuffle_evaluation: False
 nms_threshold: 0.15
 
 #LIDAR
-lidar_path: /ufrc/ewhite/b.weinstein/NeonData/SJER/DP1.30003.001/2018/FullSite/D17/2018_SJER_3/L1/DiscreteLidar/ClassifiedPointCloud/
+lidar_path: /orange/ewhite/NeonData/TEAK/DP1.30003.001/2018/FullSite/D17/2018_TEAK_3/L1/DiscreteLidar/ClassifiedPointCloud/
 kernel_size: 5
 workers: 1
 use_multiprocessing: False
