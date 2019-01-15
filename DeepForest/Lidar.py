@@ -94,7 +94,7 @@ def load_lidar(laz_path):
     
     return pc
 
-def compute_chm(lidar_tile,annotations,row,windows,rgb_res,kernel_size):
+def compute_chm(lidar_tile, annotations, row,windows, rgb_res, kernel_size):
     """
     Computer a canopy height model based on the available laz file to align with the RGB data
     """

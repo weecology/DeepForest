@@ -153,6 +153,9 @@ def create_NEON_generator(args,site,DeepForest_config):
         name="NEON_validation"
     )
     
+    #set lidar and rgb path
+    generator.lidar_path = os.path.join("data",site)    
+    
     return(generator)
 
 def create_callbacks(model, training_model, prediction_model, train_generator,validation_generator, args,experiment,DeepForest_config):
