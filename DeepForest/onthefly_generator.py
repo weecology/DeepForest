@@ -80,7 +80,7 @@ class OnTheFlyGenerator(Generator):
         self.annotation_list=data  
 
         #Compute sliding windows, assumed that all objects are the same extent and resolution
-        self.windows=compute_windows( self.base_dir+ self.annotation_list.rgb_path.unique()[0], DeepForest_config["patch_size"], DeepForest_config["patch_overlap"])
+        self.windows=compute_windows(self.base_dir+ self.annotation_list.rgb_path.unique()[0], DeepForest_config["patch_size"], DeepForest_config["patch_overlap"])
         
         #Read classes
         self.classes=_read_classes(data=self.annotation_list)  
@@ -143,12 +143,12 @@ class OnTheFlyGenerator(Generator):
             self.numpy_image = np.array(im)    
             
             #Finding the corresponding lidar tile
-            lidar_filepath=Lidar.fetch_lidar_filename(row,self.lidar_path,self.site)
+            lidar_filepath=Lidar.fetch_lidar_filename(row,self.lidar_path, self.site)
             
             self.lidar_tile=Lidar.load_lidar(lidar_filepath)
             
         #Load rgb image and get crop
-        image=retrieve_window(numpy_image=self.numpy_image,index=row["window"],windows=self.windows)
+        image=retrieve_window(numpy_image=self.numpy_image, index=row["window"], windows=self.windows)
 
         #BGR order
         image=image[:,:,::-1]
@@ -160,7 +160,7 @@ class OnTheFlyGenerator(Generator):
         self.previous_image_path = row["tile"]
         
         #Crop numpy array
-        CHM=Lidar.compute_chm(lidar_tile=self.lidar_tile,annotations=self.annotation_list, row=row, windows=self.windows, rgb_res=self.rgb_res,kernel_size=self.kernel_size)
+        CHM=Lidar.compute_chm(lidar_tile=self.lidar_tile, annotations=self.annotation_list, row=row, windows=self.windows, rgb_res=self.rgb_res,kernel_size=self.kernel_size)
         
         #If empty, return None
         if CHM is None:

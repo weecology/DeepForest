@@ -6,7 +6,7 @@ import numpy as np
 import os
 import h5py
 import pandas as pd
-from . import onthefly_generator, preprocess,config
+import onthefly_generator, preprocess, config
 import sys
 
 #supress warnings
@@ -51,7 +51,7 @@ def run(tile,DeepForest_config):
     hdf5_file = h5py.File(h5_filename, mode='w')    
     
     #A 4 channel image of square patch size.
-    train_shape = (generator.size(),DeepForest_config["patch_size"],DeepForest_config["patch_size"],4)
+    train_shape = (generator.size(),DeepForest_config["patch_size"], DeepForest_config["patch_size"], 4)
     
     #Create h5 dataset to fill
     hdf5_file.create_dataset("train_imgs", train_shape, dtype='f')
@@ -61,7 +61,7 @@ def run(tile,DeepForest_config):
     
     for i in range(generator.size()):
         
-        print("window {i} from tile {tilename}".format(i=i,tilename=tilename))
+        print("window {i} from tile {tilename}".format(i=i, tilename=tilename))
 
         #Load images
         image = generator.load_image(i)
@@ -107,7 +107,7 @@ if __name__ == "__main__":
     with open('../_config_debug.yml', 'r') as f:
         DeepForest_config = yaml.load(f)    
     
-    run(args.tile,DeepForest_config)
+    run(args.tile, DeepForest_config)
 
 
     

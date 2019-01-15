@@ -105,7 +105,7 @@ def neonRecall(
         #Find geographic bounds
         tile_path=generator.lidar_path + generator.image_data[i]["tile"]
         with rasterio.open(tile_path) as dataset:
-            bounds=dataset.bounds   
+            bounds = dataset.bounds   
     
         #Save image and send it to logger
         if save_path is not None:

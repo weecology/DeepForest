@@ -68,10 +68,6 @@ def load_data(data_dir,res,lidar_path):
     assert(data.shape[0] > 0),"No training data remaining after ingestion, check lidar paths"
     
     return(data)
-    
-def zero_area(data):
-    data=data[data.xmin!=data.xmax]    
-    return(data)
 
 def load_xml(path,res):
 
@@ -181,8 +177,8 @@ def split_training(csv_data, DeepForest_config, experiment):
     '''
     
     #reduce the data frame into tiles and windows
-    windowdf=csv_data[["tile","window"]]
-    data=windowdf.drop_duplicates()
+    windowdf = csv_data[["tile","window"]]
+    data = windowdf.drop_duplicates()
     
     #More than one tile in training data?
     single_tile =  len(data.tile.unique()) == 1
@@ -190,8 +186,8 @@ def split_training(csv_data, DeepForest_config, experiment):
     if single_tile:        
         #Select n% as validation
         msk = np.random.rand(len(data)) < 1-(float(DeepForest_config["validation_percent"])/100)
-        training = tile_data[msk]
-        evaluation=tile_data[~msk]     
+        training = data[msk]
+        evaluation=data[~msk]     
         
     else:
         #Select one validation tile

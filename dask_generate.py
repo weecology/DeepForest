@@ -7,7 +7,7 @@ import sys
 #import logging
 #logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 
-from DeepForest import Generate,config
+from DeepForest import Generate, config
 from dask import compute, delayed
 
 def find_csvs():

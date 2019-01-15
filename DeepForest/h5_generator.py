@@ -128,8 +128,8 @@ class H5Generator(Generator):
         """ Load an image at the image_index.
         """
         #Select sliding window and tile
-        image_name=self.image_names[image_index]        
-        row=self.image_data[image_name]
+        image_name = self.image_names[image_index]        
+        row = self.image_data[image_name]
         
         #Open image to crop
         ##Check if tile the is same as previous draw from generator, this will save time.
@@ -141,22 +141,22 @@ class H5Generator(Generator):
             tilename = os.path.split(row["tile"])[-1]
             tilename = os.path.splitext(tilename)[0]                        
             
-            h5_name = os.path.join(self.DeepForest_config["h5_dir"],tilename+'.h5')
-            csv_name = os.path.join(self.DeepForest_config["h5_dir"],tilename+'.csv')
+            h5_name = os.path.join(self.DeepForest_config["h5_dir"], tilename+'.h5')
+            csv_name = os.path.join(self.DeepForest_config["h5_dir"], tilename+'.csv')
             
             #Read h5 
             self.hf = h5py.File(h5_name, 'r')
-            train_addrs=self.hf['train_imgs']
+            train_addrs = self.hf['train_imgs']
             
             #Read corresponding csv labels
-            self.annotations=pd.read_csv(csv_name)
+            self.annotations = pd.read_csv(csv_name)
             
         #read image from h5
-        window=row["window"]
-        image=self.hf["train_imgs"][window,...]
+        window = row["window"]
+        image = self.hf["train_imgs"][window,...]
         
         #Store RGB if needed for show, in RGB color space.
-        self.image=image[:,:,:3]        
+        self.image = image[:,:,:3]        
         
         #Save image path for next evaluation to check
         self.previous_image_path = row["tile"]
@@ -169,11 +169,11 @@ class H5Generator(Generator):
         '''
         
         #Select sliding window and tile
-        image_name=self.image_names[image_index]        
-        row=self.image_data[image_name]
+        image_name = self.image_names[image_index]        
+        row = self.image_data[image_name]
        
         #Find annotations
-        annotations=self.annotations.loc[(self.annotations["tile"] == row["tile"]) & (self.annotations["window"] == row["window"])]
+        annotations = self.annotations.loc[(self.annotations["tile"] == row["tile"]) & (self.annotations["window"] == row["window"])]
             
         return annotations[["0","1","2","3","4"]].values
     

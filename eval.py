@@ -8,6 +8,9 @@ import os
 import sys
 from datetime import datetime
 
+import warnings
+warnings.simplefilter("ignore")
+
 import keras
 import tensorflow as tf
 
@@ -23,6 +26,7 @@ from keras_retinanet.utils.keras_version import check_keras_version
 
 #Custom Generator
 from DeepForest.onthefly_generator import OnTheFlyGenerator
+from DeepForest.h5_generator import H5Generator
 
 #Custom callback
 from DeepForest.evaluation import neonRecall
@@ -54,16 +58,17 @@ def create_generator(args, data, config):
     """
 
     #Split training and test data - hardcoded paths set below.
-    _ , test = preprocess.split_training(data,DeepForest_config,single_tile=DeepForest_config["single_tile"],experiment=None)
+    _ , test = preprocess.split_training(data, DeepForest_config, experiment=None)
 
     #Training Generator
-    generator =  OnTheFlyGenerator(
-        data,
+    generator =  H5Generator(
         test,
         batch_size=args.batch_size,
         DeepForest_config=DeepForest_config,
-        group_method="none")
-    
+        group_method="none",
+        name = "validation"
+    )
+        
     return(generator)
 
 
@@ -88,7 +93,7 @@ def parse_args(args):
     return parser.parse_args(args)
 
 
-def main(data,DeepForest_config,experiment,args=None):
+def main(data, DeepForest_config, experiment,args=None):
     # parse arguments
     if args is None:
         args = sys.argv[1:]
@@ -112,7 +117,7 @@ def main(data,DeepForest_config,experiment,args=None):
         os.makedirs(args.save_path + dirname)
 
     # create the testing generators
-    #generator = create_generator(args,data,DeepForest_config)
+    generator = create_generator(args, data, DeepForest_config)
 
     #create the NEON mAP generator 
     NEON_generator = create_NEON_generator(args, site, DeepForest_config)
@@ -126,41 +131,41 @@ def main(data,DeepForest_config,experiment,args=None):
 
     #print(model.summary())
 
-    #average_precisions = evaluate(
-        #generator,
-        #model,
-        #iou_threshold=args.iou_threshold,
-        #score_threshold=args.score_threshold,
-        #max_detections=args.max_detections,
-        #save_path=args.save_path + dirname
-    #)
+    average_precisions = evaluate(
+        generator,
+        model,
+        iou_threshold=args.iou_threshold,
+        score_threshold=args.score_threshold,
+        max_detections=args.max_detections,
+        save_path=args.save_path + dirname
+    )
 
     ## print evaluation
-    #present_classes = 0
-    #precision = 0
-    #for label, (average_precision, num_annotations) in average_precisions.items():
-        #print('{:.0f} instances of class'.format(num_annotations),
-              #generator.label_to_name(label), 'with average precision: {:.4f}'.format(average_precision))
-        #if num_annotations > 0:
-            #present_classes += 1
-            #precision       += average_precision
-    #print('mAP: {:.4f}'.format(precision / present_classes))
-    #experiment.log_metric("mAP", precision / present_classes)                 
+    present_classes = 0
+    precision = 0
+    for label, (average_precision, num_annotations) in average_precisions.items():
+        print('{:.0f} instances of class'.format(num_annotations),
+              generator.label_to_name(label), 'with average precision: {:.4f}'.format(average_precision))
+        if num_annotations > 0:
+            present_classes += 1
+            precision       += average_precision
+    print('mAP: {:.4f}'.format(precision / present_classes))
+    experiment.log_metric("mAP", precision / present_classes)                 
         
    # Neon plot recall rate
-    recall=neonRecall(
-        site,
-        NEON_generator_recall,
-        model,            
-        score_threshold=args.score_threshold,
-        save_path=args.save_path,
-        experiment=experiment,
-        DeepForest_config=DeepForest_config
-    )
+    #recall=neonRecall(
+        #site,
+        #NEON_generator_recall,
+        #model,            
+        #score_threshold=args.score_threshold,
+        #save_path=args.save_path,
+        #experiment=experiment,
+        #DeepForest_config=DeepForest_config
+    #)
     
-    experiment.log_metric("Recall", recall)
+    #experiment.log_metric("Recall", recall)
     
-    print("Recall is {}".format(recall))
+    #print("Recall is {}".format(recall))
         
     #NEON plot mAP
     average_precisions = evaluate(
@@ -170,7 +175,7 @@ def main(data,DeepForest_config,experiment,args=None):
         score_threshold=args.score_threshold,
         max_detections=args.max_detections,
         save_path=args.save_path + dirname,
-        experiment=experiment,
+        experiment=experiment
     )
 
     # print evaluation
@@ -196,7 +201,7 @@ if __name__ == '__main__':
     mode_parser.add_argument('--dir', help='destination dir' )    
     mode_parser.add_argument('--saved_model', help='train or retrain?' )    
     
-    mode=mode_parser.parse_args()
+    mode = mode_parser.parse_args()
     
     import os
     import pandas as pd
@@ -210,21 +215,20 @@ if __name__ == '__main__':
     experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2",project_name='deeplidar',log_code=False)
 
     #save time for logging
-    dirname=mode.dir
+    dirname = mode.dir
     experiment.log_parameter("Start Time", dirname)
 
     #log training mode
     experiment.log_parameter("Training Mode",mode.mode)
     
     #Load DeepForest_config and data file based on training or retraining mode
-    
     if mode.mode == "train":
-        DeepForest_config=load_config("train")
-        data=preprocess.load_data(DeepForest_config["training_csvs"],DeepForest_config["rgb_res"],lidar_path=DeepForest_config["lidar_path"])
-        
+        DeepForest_config = load_config("train")
+        data = preprocess.load_csvs(DeepForest_config["h5_dir"])
+                
     if mode.mode == "retrain":
-        DeepForest_config=load_config("retrain")        
-        data=preprocess.load_xml(DeepForest_config["hand_annotations"],DeepForest_config["rgb_res"])
+        DeepForest_config = load_config("retrain")        
+        data=preprocess.load_xml(DeepForest_config["hand_annotations"], DeepForest_config["rgb_res"])
 
     experiment.log_multiple_params(DeepForest_config)
 
@@ -232,10 +236,6 @@ if __name__ == '__main__':
     site=DeepForest_config["evaluation_site"]
     experiment.log_parameter("Site", site)
     
-    ##Preprocess Filters##
-    if DeepForest_config['preprocess']['zero_area']:
-        data=preprocess.zero_area(data)
-
     #pass an args object instead of using command line        
     args = [
         "--batch-size",str(DeepForest_config['batch_size']),
@@ -247,4 +247,4 @@ if __name__ == '__main__':
     ]
        
     #Run training, and pass comet experiment   
-    main(data,DeepForest_config,experiment,args)
+    main(data, DeepForest_config, experiment, args)

@@ -61,7 +61,7 @@ from DeepForest.h5_generator import H5Generator
 from DeepForest.onthefly_generator import OnTheFlyGenerator
 
 #Custom Callbacks
-from DeepForest.callbacks import shuffle_inputs, recallCallback, NEONmAP
+from DeepForest.callbacks import recallCallback, NEONmAP
 
 def makedirs(path):
     # Intended behavior: try to create the directory,
@@ -228,9 +228,11 @@ def create_callbacks(model, training_model, prediction_model, train_generator,va
     
     #Neon Callbacks
     site=DeepForest_config["evaluation_site"]
-        
+    
+    NEON_recall_generator = create_NEON_generator(args, site, DeepForest_config)
+    
     recall=recallCallback(site=site,
-                          generator=validation_generator,
+                          generator=NEON_recall_generator,
                           save_path=args.save_path,
                           DeepForest_config=DeepForest_config,
                           score_threshold=args.score_threshold,
@@ -240,7 +242,7 @@ def create_callbacks(model, training_model, prediction_model, train_generator,va
     
     callbacks.append(recall)
     
-    #create the NEON mAP generator 
+    #create the NEON generator 
     NEON_generator = create_NEON_generator(args, site, DeepForest_config)
     
     neon_evaluation = NEONmAP(NEON_generator, 
@@ -349,7 +351,7 @@ def parse_args(args):
     parser.add_argument('--no-evaluation',   help='Disable per epoch evaluation.', dest='evaluation', action='store_false')
     parser.add_argument('--freeze-backbone', help='Freeze training of backbone layers.', action='store_true')
     parser.add_argument('--random-transform', help='Randomly transform image and annotations.', action='store_true')
-    parser.add_argument('--image-min-side', help='Rescale the image so the smallest side is min_side.', type=int, default=800)
+    parser.add_argument('--image-min-side', help='Rescale the image so the smallest side is min_side.', type=int, default=400)
     parser.add_argument('--image-max-side', help='Rescale the image if the largest side is larger than max_side.', type=int, default=1333)
     
     #Comet ml image viewer
@@ -474,7 +476,7 @@ if __name__ == '__main__':
     from DeepForest import preprocess
 
     #set experiment and log configs
-    experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2",project_name='deeplidar',log_code=False)
+    experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2", project_name='deeplidar', log_code=False)
 
     #save time for logging
     if mode.dir:
@@ -485,7 +487,7 @@ if __name__ == '__main__':
     experiment.log_parameter("Start Time", dirname)
 
     #log training mode
-    experiment.log_parameter("Training Mode",mode.mode)
+    experiment.log_parameter("Training Mode", mode.mode)
     
     #Load DeepForest_config and data file based on training or retraining mode
     if mode.mode == "train":
@@ -495,7 +497,7 @@ if __name__ == '__main__':
     if mode.mode == "retrain":
         #TODO needs annotations to find lidar path
         DeepForest_config = load_config("retrain")        
-        data = preprocess.load_xml(DeepForest_config["hand_annotations"],DeepForest_config["rgb_res"])
+        data = preprocess.load_xml(DeepForest_config["hand_annotations"], DeepForest_config["rgb_res"])
 
     experiment.log_multiple_params(DeepForest_config)
 
@@ -512,7 +514,7 @@ if __name__ == '__main__':
     ]
 
     #Create log directory if saving snapshots
-    if not DeepForest_config["save_snapshot_path"]=="None":
+    if not DeepForest_config["save_snapshot_path"] == "None":
         snappath=DeepForest_config["save_snapshot_path"]+ dirname
         os.mkdir(snappath)
 
@@ -520,16 +522,16 @@ if __name__ == '__main__':
         experiment.log_parameter("snapshot_dir",snappath)        
 
     #if no snapshots, add arg to front, will ignore path above
-    if DeepForest_config["save_snapshot_path"]=="None":
-        args=["--no-snapshots"] + args
+    if DeepForest_config["save_snapshot_path"] == "None":
+        args = ["--no-snapshots"] + args
     else:
-        args=[snappath] + args
-        args=["--snapshot-path"] + args
+        args = [snappath] + args
+        args = ["--snapshot-path"] + args
 
     #Restart from a preview snapshot?
-    if not DeepForest_config["snapshot"]=="None":
-        args= [DeepForest_config["snapshot"]] + args
-        args=["--snapshot"] + args
+    if not DeepForest_config["snapshot"] == "None":
+        args = [DeepForest_config["snapshot"]] + args
+        args = ["--snapshot"] + args
 
     #Create log directory if saving eval images, add to arguments
     if not DeepForest_config["save_image_path"]=="None":
