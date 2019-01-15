@@ -176,7 +176,7 @@ def neonRecall(
 #Processing Functions
 
 #IoU for non-rectangular polygons
-def compute_windows(numpy_image,pixels=400,overlap=0.05):
+def compute_windows(numpy_image, pixels=400, overlap=0.05):
     windows = sw.generate(numpy_image, sw.DimOrder.HeightWidthChannel, pixels,overlap )
     return(windows)
 

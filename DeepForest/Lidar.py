@@ -78,7 +78,8 @@ def load_lidar(laz_path):
     
     try:
         pc=pyfor.cloud.Cloud(laz_path)
-        pc.extension=".las"    
+        pc.extension=".las"
+        
     except FileNotFoundError:
         print("Failed loading path: %s" %(laz_path))
         
@@ -127,7 +128,7 @@ def compute_chm(lidar_tile, annotations, row,windows, rgb_res, kernel_size):
     
     return chm
 
-def find_lidar_file(image_path,lidar_path):
+def find_lidar_file(image_path, lidar_path):
     """
     Find the lidar file that matches RGB tile
     """
@@ -156,7 +157,7 @@ def find_lidar_file(image_path,lidar_path):
     
     return laz_path
 
-def pad_array(image,chm):
+def pad_array(image, chm):
     """
     Enforce the same data structure between the rgb image and the canopy height model. 
     Add 0's around the edge to fix shape
@@ -197,6 +198,8 @@ def bind_array(image,chm):
     
     #Check if arrays are same shape. If not, pad.
     if not chm.shape == image.shape:
+        
+        print("Padding array")
         padded_chm = pad_array(image=image, chm=chm)
         
         #Append to bottom of image

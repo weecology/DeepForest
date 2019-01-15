@@ -51,6 +51,8 @@ def create_NEON_generator(args, site, DeepForest_config):
         DeepForest_config = DeepForest_config,
         group_method="none")
     
+    generator.lidar_path = "data/" + site + "/"
+    
     return(generator)
 
 def create_generator(args, data, config):
