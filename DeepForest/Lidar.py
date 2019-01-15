@@ -199,7 +199,7 @@ def bind_array(image,chm):
     #Check if arrays are same shape. If not, pad.
     if not chm.shape == image.shape:
         
-        print("Padding array")
+        print("CHM shape is {}, padding array".format(chm.shape))
         padded_chm = pad_array(image=image, chm=chm)
         
         #Append to bottom of image

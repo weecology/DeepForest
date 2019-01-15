@@ -36,8 +36,6 @@ class recallCallback(keras.callbacks.Callback):
         
     def on_epoch_end(self, epoch, logs=None):
         logs = logs or {}
-
-        print("Computing Recall")
         
         recall=neonRecall(
             self.site,
@@ -50,7 +48,7 @@ class recallCallback(keras.callbacks.Callback):
             DeepForest_config=self.DeepForest_config
         )
         
-        print(f" Recall: {recall:.2f}")
+        print("Recall is {}".format(recall))
         
         self.experiment.log_metric("Recall", recall)       
 
