@@ -6,7 +6,7 @@ import numpy as np
 import os
 import h5py
 import pandas as pd
-import onthefly_generator, preprocess, config
+from DeepForest import onthefly_generator, preprocess, config
 import sys
 
 #supress warnings
