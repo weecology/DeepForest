@@ -89,7 +89,7 @@ def parse_args(args):
     parser.add_argument('--max-detections',  help='Max Detections per image (defaults to 100).', default=100, type=int)
     parser.add_argument('--suppression-threshold',  help='Permitted overlap among predictions', default=0.2, type=float)
     parser.add_argument('--save-path',       help='Path for saving images with detections (doesn\'t work for COCO).')
-    parser.add_argument('--image-min-side',  help='Rescale the image so the smallest side is min_side.', type=int, default=800)
+    parser.add_argument('--image-min-side',  help='Rescale the image so the smallest side is min_side.', type=int, default=400)
     parser.add_argument('--image-max-side',  help='Rescale the image if the largest side is larger than max_side.', type=int, default=1333)
 
     return parser.parse_args(args)

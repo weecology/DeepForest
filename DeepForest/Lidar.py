@@ -84,11 +84,10 @@ def load_lidar(laz_path):
         print("Failed loading path: %s" %(laz_path))
         
     #normalize and filter
-    zhang_filter = pyfor.ground_filter.Zhang2003(pc, cell_size=1)
-    zhang_filter.normalize()    
+    pc.normalize(1)    
     
     #Quick filter for unreasonable points.
-    pc.filter(min = -5, max = pc.data.points.z.quantile(0.995), dim = "z")    
+    pc.filter(min = -1, max = pc.data.points.z.quantile(0.995), dim = "z")    
     
     #Check dim
     assert (not pc.data.points.shape[0] == 0), "Lidar tile is empty!"
@@ -120,8 +119,10 @@ def compute_chm(lidar_tile, annotations, row,windows, rgb_res, kernel_size):
         return None
         
     #Median filter
-    chm = clipped.chm(cell_size = 0.1 , interp_method = "nearest")
-    chm.array = medfilt2d(chm.array, kernel_size=kernel_size)
+    chm = clipped.chm(cell_size = 0.1 , interp_method = "nearest" )
+    
+    if not kernel_size == None:
+        chm.array = medfilt2d(chm.array, kernel_size=kernel_size)
     
     #remove understory noise, anything under 2m.
     chm.array[chm.array < 2] = 0   
