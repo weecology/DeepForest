@@ -166,9 +166,12 @@ class OnTheFlyGenerator(Generator):
         if CHM is None:
             return None
         
+        #!Checking RGB only, remove on full run!
+        CHM.array = np.empty(shape=(400,400))
+        
         #Bind RGB and LIDAR arrays
         four_channel_image=Lidar.bind_array(image, CHM.array)
-            
+        
         return four_channel_image
 
     def define_groups(self,windowdf,shuffle=False):
