@@ -167,10 +167,10 @@ class OnTheFlyGenerator(Generator):
             return None
         
         #!Checking RGB only, remove on full run!
-        CHM.array = np.empty(shape=(400,400))
+        blank_array = np.zeros(shape=(400,400))
         
         #Bind RGB and LIDAR arrays
-        four_channel_image=Lidar.bind_array(image, CHM.array)
+        four_channel_image=Lidar.bind_array(image, blank_array)
         
         return four_channel_image
 

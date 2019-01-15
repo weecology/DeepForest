@@ -32,7 +32,7 @@ def run(tile,DeepForest_config):
     data = preprocess.load_data(data_dir=tile, res=0.1, lidar_path=DeepForest_config["lidar_path"])
     
     #Create windows
-    windows = preprocess.create_windows(data,DeepForest_config)
+    windows = preprocess.create_windows(data, DeepForest_config)
     
     if windows is None:
         print("Invalid window")

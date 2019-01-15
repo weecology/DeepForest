@@ -2,7 +2,7 @@
 
 #Data generation
 num_hipergator_workers: 25
-h5_dir: /orange/ewhite/b.weinstein/training_h5s/
+h5_dir: /orange/ewhite/b.weinstein/training_h5s/TEAK/
 
 #SlidingWindow
 patch_size: 400
@@ -23,7 +23,6 @@ epochs: 20
 save_snapshot_path: /orange/ewhite/b.weinstein/retinanet/snapshots/
 backbone: resnet50
 shuffle_training: False
-single_tile: False
 score_threshold: 0.15
 
 #Evaluation
