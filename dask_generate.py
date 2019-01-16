@@ -16,6 +16,10 @@ def find_csvs():
     
     return data_paths
 
+def run_test(data_paths):
+    DeepForest_config = config.load_config("train")    
+    Generate.run(data_paths[0], DeepForest_config)
+    
 def run_local(data_paths):
     """
     Run training processes on local laptop
