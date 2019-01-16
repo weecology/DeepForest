@@ -6,8 +6,9 @@ import numpy as np
 import os
 import h5py
 import pandas as pd
-from DeepForest import onthefly_generator, preprocess, config
+from . import onthefly_generator, preprocess, config
 import sys
+import gc
 
 #supress warnings
 import warnings
@@ -51,7 +52,7 @@ def run(tile,DeepForest_config):
     hdf5_file = h5py.File(h5_filename, mode='w')    
     
     #A 4 channel image of square patch size.
-    train_shape = (generator.size(),DeepForest_config["patch_size"], DeepForest_config["patch_size"], 4)
+    train_shape = (generator.size(), DeepForest_config["patch_size"], DeepForest_config["patch_size"], 4)
     
     #Create h5 dataset to fill
     hdf5_file.create_dataset("train_imgs", train_shape, dtype='f')
@@ -94,6 +95,9 @@ def run(tile,DeepForest_config):
     
     #flush system
     sys.stdout.flush()
+    
+    #force garbage collect
+    gc.collect()
     
     return "{} completed".format(tilename)
     
