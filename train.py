@@ -542,4 +542,4 @@ if __name__ == '__main__':
     experiment.log_parameter("Site", site)
     
     #Run training, and pass comet experiment   
-    main(args, data, DeepForest_config, experiment=None)
+    main(args, data, DeepForest_config, experiment=experiment)
