@@ -16,6 +16,8 @@ Some key dependencies that have some build specific installs include
 conda env create --name DeepForest -f=environment.yml
 ```
 
+Depending on conda env, you may need to download laszip directly see: https://stackoverflow.com/questions/49500149/laspy-cannot-find-laszip-when-is-installed-from-source-laszip-is-in-path
+
 All configurations are in the _config.yml 
 
 ## Training
