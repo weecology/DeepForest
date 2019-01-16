@@ -12,9 +12,8 @@
 #SBATCH --error=/home/b.weinstein/logs/Dask.err
 
 ml git
-ml geos/3.6.2
-ml tensorflow/1.10.1
-export PATH=${PATH}:/home/b.weinstein/miniconda/envs/DeepLidar/bin/
+ml geos
+ml tensorflow
 export PYTHONPATH=${PYTHONPATH}:/home/b.weinstein/miniconda/envs/DeepLidar/lib/python3.6/site-packages/
 sleep 2
 
