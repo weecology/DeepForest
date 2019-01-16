@@ -14,12 +14,11 @@
 #SBATCH --gres=gpu:tesla:1
 
 ml git
-ml geos/3.6.2
-ml tensorflow/1.10.1
+ml geos
+ml tensorflow
 export PATH=${PATH}:/home/b.weinstein/miniconda/envs/DeepLidar/bin/
 export PYTHONPATH=${PYTHONPATH}:/home/b.weinstein/miniconda/envs/DeepLidar/lib/python3.6/site-packages/
 echo $PYTHONPATH
-sleep 2
 
 cd /home/b.weinstein/DeepLidar
 which python
