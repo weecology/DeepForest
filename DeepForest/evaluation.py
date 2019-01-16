@@ -5,13 +5,9 @@ import random
 import numpy as np
 import rasterio
 import slidingwindow as sw
-import fiona
-import pyfor
 
 #Plotting and polygon overlap
-from shapely.ops import cascaded_union
-from shapely.geometry import box
-from shapely.geometry import shape
+from shapely.geometry import box, shape
 from rtree import index
 from scipy.optimize import linear_sum_assignment
 from itertools import chain
