@@ -16,14 +16,14 @@ preprocess:
 #Training
 training_csvs: /home/b.weinstein/TreeSegmentation/analysis/Results/detection_boxes/TEAK/2018/
 rgb_tile_dir: /orange/ewhite/NeonData/TEAK/DP3.30010.001/2018/FullSite/D17/2018_TEAK_3/L3/Camera/Mosaic/V01/
-training_images: 10
+training_images: 1000
 snapshot: None
 batch_size: 6      
-epochs: 20
+epochs: 10
 save_snapshot_path: /orange/ewhite/b.weinstein/retinanet/snapshots/
 backbone: resnet50
 shuffle_training: False
-score_threshold: 0.15
+score_threshold: 0.20
 
 #Evaluation
 evaluation_site: TEAK
