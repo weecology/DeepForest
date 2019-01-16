@@ -128,7 +128,6 @@ class OnTheFlyGenerator(Generator):
         """ Load an image at the image_index.
         """
         #Select sliding window and tile
-        print(self.image_names)
         image_name=self.image_names[image_index]        
         row=self.image_data[image_name]
         
