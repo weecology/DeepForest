@@ -14,6 +14,7 @@
 #SBATCH --gres=gpu:tesla:1
 
 ml git
+ml gcc
 ml geos
 ml tensorflow
 export PATH=${PATH}:/home/b.weinstein/miniconda/envs/DeepLidar/bin/

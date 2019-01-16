@@ -20,6 +20,12 @@ Depending on conda env, you may need to download laszip directly see: https://st
 
 All configurations are in the _config.yml 
 
+Generate data
+
+```
+python dask_generate.py
+```
+
 ## Training
 
 ```
