@@ -18,7 +18,7 @@ import cv2
 import slidingwindow as sw
 import itertools
 
-from . import Lidar
+from DeepForest import Lidar
 from matplotlib import pyplot
 
 class OnTheFlyGenerator(Generator):
