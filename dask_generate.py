@@ -28,7 +28,7 @@ def run_local(data_paths):
     DeepForest_config = config.load_config("train")
     
     dask_client = Client()    
-    futures = dask_client.map(Generate.run, data_paths,DeepForest_config=DeepForest_config)
+    futures = dask_client.map(Generate.run, data_paths, DeepForest_config=DeepForest_config)
     wait(futures)
         
 def start_tunnel():
@@ -90,8 +90,8 @@ if __name__ == "__main__":
 
     print("{s} csv files found for training".format(s=len(data_paths)))
     
-    #run_local(data_paths)
+    run_local(data_paths)
     
     #On Hypergator
-    run_HPC(data_paths)
+    #run_HPC(data_paths)
     
