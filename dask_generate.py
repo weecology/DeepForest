@@ -39,10 +39,6 @@ def start_tunnel():
     print("To tunnel into dask dashboard:")
     print("ssh -N -L 8787:%s:8787 -l b.weinstein hpg2.rc.ufl.edu" % (host))
     
-    #Unset env
-    #del os.environ['XDG_RUNTIME_DIR']
-    #proc = subprocess.Popen(['jupyter', 'lab', '--notebook-dir', '/home/b.weinstein/logs/', '--ip', host, '--no-browser'])
-    
     #flush system
     sys.stdout.flush()
 
@@ -83,7 +79,7 @@ def run_HPC(data_paths):
     #Start dask dashboard? Not clear yet.
     dask_client.run_on_scheduler(start_tunnel)  
             
-    futures = dask_client.map(Generate.run, data_paths,DeepForest_config=DeepForest_config)
+    futures = dask_client.map(Generate.run, data_paths, DeepForest_config=DeepForest_config)
     wait(futures)
 
 
