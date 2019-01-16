@@ -100,18 +100,7 @@ def run(tile,DeepForest_config):
     gc.collect()
     
     return "{} completed".format(tilename)
-    
-if __name__ == "__main__":
-    import yaml
-    
-    #parse args
-    args=parse_args()
-    
-    #load config
-    with open('_config.yml', 'r') as f:
-        DeepForest_config = yaml.load(f)    
-    
-    run(args.tile, DeepForest_config)
+
 
 
     
