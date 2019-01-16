@@ -390,7 +390,8 @@ def main(args=None, data=None, DeepForest_config=None, experiment=None):
     train_generator, validation_generator = create_generators(args, data, DeepForest_config=DeepForest_config)
     
     #Log number of trees trained on
-    #experiment.log_parameter("Number of Training Trees", train_generator.total_trees)    
+    if experiment:
+        experiment.log_parameter("Number of Training Trees", train_generator.total_trees)    
        
     # create the model
     if args.snapshot is not None:
