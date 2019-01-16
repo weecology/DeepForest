@@ -158,7 +158,7 @@ def create_NEON_generator(args,site,DeepForest_config):
     
     return(generator)
 
-def create_callbacks(model, training_model, prediction_model, train_generator, validation_generator, args,experiment,DeepForest_config):
+def create_callbacks(model, training_model, prediction_model, train_generator, validation_generator, args, experiment,DeepForest_config):
     """ Creates the callbacks to use during training.
 
     Args
@@ -390,7 +390,7 @@ def main(args=None, data=None, DeepForest_config=None, experiment=None):
     train_generator, validation_generator = create_generators(args, data, DeepForest_config=DeepForest_config)
     
     #Log number of trees trained on
-    experiment.log_parameter("Number of Training Trees", train_generator.total_trees)    
+    #experiment.log_parameter("Number of Training Trees", train_generator.total_trees)    
        
     # create the model
     if args.snapshot is not None:
