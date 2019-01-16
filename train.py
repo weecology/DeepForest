@@ -20,7 +20,7 @@ limitations under the License.
 """
 
 #Import logger.
-#from comet_ml import Experiment
+from comet_ml import Experiment
 
 #keras-retinanet imports
 
@@ -480,7 +480,7 @@ if __name__ == '__main__':
     from DeepForest import preprocess
 
     #set experiment and log configs
-    #experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2", project_name='deeplidar', log_code=False)
+    experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2", project_name='deeplidar', log_code=False)
 
     #save time for logging
     if mode.dir:
@@ -536,10 +536,10 @@ if __name__ == '__main__':
         args=["--save-path"] + args        
 
     #log params
-    #experiment.log_parameters(DeepForest_config)    
-    #experiment.log_parameter("Start Time", dirname)    
-    #experiment.log_parameter("Training Mode", mode.mode)
-    #experiment.log_parameter("Site", site)
+    experiment.log_parameters(DeepForest_config)    
+    experiment.log_parameter("Start Time", dirname)    
+    experiment.log_parameter("Training Mode", mode.mode)
+    experiment.log_parameter("Site", site)
     
     #Run training, and pass comet experiment   
     main(args, data, DeepForest_config, experiment=None)
