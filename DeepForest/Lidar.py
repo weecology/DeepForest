@@ -121,7 +121,7 @@ def compute_chm(lidar_tile, annotations, row,windows, rgb_res, kernel_size):
     #Median filter
     chm = clipped.chm(cell_size = 0.1 , interp_method = "nearest" )
     
-    if not kernel_size == None:
+    if not kernel_size == 'None':
         chm.array = medfilt2d(chm.array, kernel_size=kernel_size)
     
     #remove understory noise, anything under 2m.

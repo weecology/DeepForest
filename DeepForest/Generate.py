@@ -104,7 +104,7 @@ if __name__ == "__main__":
     args=parse_args()
     
     #load config
-    with open('../_config_debug.yml', 'r') as f:
+    with open('_config.yml', 'r') as f:
         DeepForest_config = yaml.load(f)    
     
     run(args.tile, DeepForest_config)

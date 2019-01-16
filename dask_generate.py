@@ -69,7 +69,7 @@ def run_HPC(data_paths):
         memory='15GB', 
         walltime='48:00:00',
         job_extra=extra_args,
-        local_directory="/home/b.weinstein/logs/",death_timeout=300)
+        local_directory="/home/b.weinstein/logs/", death_timeout=300)
     
     print(cluster.job_script())
     cluster.scale(num_workers)

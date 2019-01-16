@@ -4,8 +4,6 @@ On the fly generator. Crop out portions of a large image, and pass boxes and ann
 import pandas as pd
 
 from keras_retinanet.preprocessing.generator import Generator
-from keras_retinanet.utils.image import read_image_bgr
-from keras_retinanet.utils.visualization import draw_annotations
 
 import numpy as np
 from PIL import Image
