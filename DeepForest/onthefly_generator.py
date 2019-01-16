@@ -160,21 +160,21 @@ class OnTheFlyGenerator(Generator):
         self.previous_image_path = row["tile"]
         
         #Crop numpy array
-        CHM=Lidar.compute_chm(lidar_tile=self.lidar_tile, annotations=self.annotation_list, row=row, windows=self.windows, rgb_res=self.rgb_res,kernel_size=self.kernel_size)
+        CHM=Lidar.compute_chm(lidar_tile=self.lidar_tile, annotations=self.annotation_list, row=row, windows=self.windows, rgb_res=self.rgb_res, kernel_size=self.kernel_size)
         
         #If empty, return None
         if CHM is None:
             return None
         
         #!Checking RGB only, remove on full run!
-        blank_array = np.zeros(shape=(400,400))
+        #blank_array = np.zeros(shape=(400,400))
         
         #Bind RGB and LIDAR arrays
-        four_channel_image=Lidar.bind_array(image, blank_array)
+        four_channel_image=Lidar.bind_array(image, CHM.array)
         
         return four_channel_image
 
-    def define_groups(self,windowdf,shuffle=False):
+    def define_groups(self, windowdf, shuffle=False):
         
         '''
         Define image data and names based on grouping of tiles for computational efficiency 
