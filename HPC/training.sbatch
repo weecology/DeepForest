@@ -19,7 +19,7 @@ ml tensorflow
 export PATH=${PATH}:/home/b.weinstein/miniconda/envs/DeepLidar/bin/
 export PYTHONPATH=${PYTHONPATH}:/home/b.weinstein/miniconda/envs/DeepLidar/lib/python3.6/site-packages/
 echo $PYTHONPATH
-
+    
 cd /home/b.weinstein/DeepLidar
 which python
 

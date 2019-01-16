@@ -20,7 +20,7 @@ limitations under the License.
 """
 
 #Import logger.
-from comet_ml import Experiment
+#from comet_ml import Experiment
 
 #keras-retinanet imports
 
@@ -479,18 +479,13 @@ if __name__ == '__main__':
     from DeepForest import preprocess
 
     #set experiment and log configs
-    experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2", project_name='deeplidar', log_code=False)
+    #experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2", project_name='deeplidar', log_code=False)
 
     #save time for logging
     if mode.dir:
         dirname = os.path.split(mode.dir)[-1]
     else:
         dirname = datetime.now().strftime("%Y%m%d_%H%M%S")
-        
-    experiment.log_parameter("Start Time", dirname)
-
-    #log training mode
-    experiment.log_parameter("Training Mode", mode.mode)
     
     #Load DeepForest_config and data file based on training or retraining mode
     if mode.mode == "train":
@@ -502,11 +497,8 @@ if __name__ == '__main__':
         DeepForest_config = load_config("retrain")        
         data = preprocess.load_xml(DeepForest_config["hand_annotations"], DeepForest_config["rgb_res"])
 
-    experiment.log_multiple_params(DeepForest_config)
-
     #Log site
     site = DeepForest_config["evaluation_site"]
-    experiment.log_parameter("Site", site)
 
     #pass an args object instead of using command line    
     args = [
@@ -519,10 +511,7 @@ if __name__ == '__main__':
     #Create log directory if saving snapshots
     if not DeepForest_config["save_snapshot_path"] == "None":
         snappath=DeepForest_config["save_snapshot_path"]+ dirname
-        os.mkdir(snappath)
-
-        #Log to comet
-        experiment.log_parameter("snapshot_dir",snappath)        
+        os.mkdir(snappath)  
 
     #if no snapshots, add arg to front, will ignore path above
     if DeepForest_config["save_snapshot_path"] == "None":
@@ -545,5 +534,11 @@ if __name__ == '__main__':
         args= [save_image_path] + args
         args=["--save-path"] + args        
 
+    #log params
+    #experiment.log_parameters(DeepForest_config)    
+    #experiment.log_parameter("Start Time", dirname)    
+    #experiment.log_parameter("Training Mode", mode.mode)
+    #experiment.log_parameter("Site", site)
+    
     #Run training, and pass comet experiment   
-    main(args, data, DeepForest_config, experiment=experiment)
+    main(args, data, DeepForest_config, experiment=None)
