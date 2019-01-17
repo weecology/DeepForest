@@ -11,6 +11,7 @@
 #SBATCH --output=/home/b.weinstein/logs/Dask.out   # Standard output and error log
 #SBATCH --error=/home/b.weinstein/logs/Dask.err
 
+ml gcc
 ml git
 ml geos
 ml tensorflow

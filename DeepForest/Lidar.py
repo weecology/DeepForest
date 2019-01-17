@@ -119,7 +119,7 @@ def compute_chm(lidar_tile, annotations, row,windows, rgb_res, kernel_size):
         return None
         
     #Median filter
-    chm = clipped.chm(cell_size = 0.1 , interp_method = "nearest" )
+    chm = clipped.chm(cell_size = 0.1 , interp_method = "nearest" )    
     
     if not kernel_size == 'None':
         chm.array = medfilt2d(chm.array, kernel_size=kernel_size)
