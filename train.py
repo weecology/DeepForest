@@ -506,7 +506,6 @@ if __name__ == '__main__':
         "--epochs",str(DeepForest_config["epochs"]),
         "--batch-size",str(DeepForest_config['batch_size']),
         "--backbone",str(DeepForest_config["backbone"]),
-        "--no-weights",
         "--score-threshold",str(DeepForest_config["score_threshold"])
     ]
 

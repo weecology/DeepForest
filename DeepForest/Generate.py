@@ -88,7 +88,7 @@ def run(tile,DeepForest_config):
     labeldf = pd.concat(labels, ignore_index=True)
     
     csv_filename = os.path.join(DeepForest_config["h5_dir"], tilename + ".csv")    
-    labeldf.to_csv(csv_filename,index=False)
+    labeldf.to_csv(csv_filename, index=False)
     
     #Need to close h5py?
     hdf5_file.close()

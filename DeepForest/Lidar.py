@@ -12,6 +12,11 @@ import numpy as np
 import os
 from scipy.signal import medfilt2d
 
+#random color
+import random
+
+r = lambda: random.randint(0,255)
+
 def createPolygon(xmin,xmax,ymin,ymax):
     '''
     Convert a pandas row into a polygon bounding box
@@ -117,7 +122,7 @@ def compute_chm(lidar_tile, annotations, row,windows, rgb_res, kernel_size):
     if len(clipped.data.points) ==0:
         print("Window {s} from tile {r} has no LIDAR points".format(s=row["window"], r=row["tile"]))
         return None
-        
+    
     #Median filter
     chm = clipped.chm(cell_size = 0.1 , interp_method = "nearest" )    
     
@@ -125,10 +130,31 @@ def compute_chm(lidar_tile, annotations, row,windows, rgb_res, kernel_size):
         chm.array = medfilt2d(chm.array, kernel_size=kernel_size)
     
     #remove understory noise, anything under 2m.
-    chm.array[chm.array < 2] = 0   
+    chm.array[chm.array < 1.5] = 0   
     
     return chm
 
+def watershed():
+    chm = clipped.chm(cell_size = 0.5 , interp_method = "nearest" )        
+    segmentation = chm.watershed_seg(min_distance=2, threshold_abs=2)    
+    final_segments = segmentation.segments[segmentation.segments["raster_val"] > 0]
+    
+    from matplotlib import colors as mcolors
+    from matplotlib import pyplot as plt
+    colors = dict(mcolors.CSS4_COLORS)    
+    colors=list(colors.keys())
+    
+    final_segments["color"] = "red"
+    for index, row in final_segments.iterrows():
+        final_segments.loc[index,"color"] = colors[random.randint(0,len(colors))]
+    
+    #flip y axis?
+    #rasterize? https://gis.stackexchange.com/questions/151339/rasterize-a-shapefile-with-geopandas-or-fiona-python
+    fig, ax = plt.subplots()
+    ax.set_aspect('equal')
+    geopandas.plotting.plot_polygon_collection(ax, geoms=final_segments['geometry'], color=final_segments['color'])    
+                
+                           
 def find_lidar_file(image_path, lidar_path):
     """
     Find the lidar file that matches RGB tile

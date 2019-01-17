@@ -24,7 +24,7 @@ def load_csvs(h5_dir):
     if os.path.isdir(h5_dir):
         #Gather list of csvs
         data_paths=glob.glob(h5_dir+"/*.csv")
-        dataframes = (pd.read_csv(f,index_col=None) for f in data_paths)
+        dataframes = (pd.read_csv(f, index_col=None) for f in data_paths)
         data = pd.concat(dataframes, ignore_index=True)      
         
     else:
@@ -38,12 +38,12 @@ def load_data(data_dir,res,lidar_path):
     res: Cell resolution of the rgb imagery
     '''
     
-    if(os.path.splitext(data_dir)[-1]==".csv"):
-        data=pd.read_csv(data_dir,index_col=0)
+    if(os.path.splitext(data_dir)[-1] == ".csv"):
+        data=pd.read_csv(data_dir, index_col=0)
     else:
         #Gather list of csvs
-        data_paths=glob.glob(data_dir+"/*.csv")
-        dataframes = (pd.read_csv(f,index_col=0) for f in data_paths)
+        data_paths = glob.glob(data_dir+"/*.csv")
+        dataframes = (pd.read_csv(f, index_col=0) for f in data_paths)
         data = pd.concat(dataframes, ignore_index=False)
     
     #Modify indices, which came from R, zero indexed in python

@@ -20,8 +20,10 @@ for f in files:
     except Exception as e:
         print("{f} failed with error message {e}".format(f=f,e=e))
         counter +=1
-        #TODO remove csv files as well
-        os.remove(f)
+        filpath=os.path.splitext(f)[0]
+        to_delete_csv=filpath + ".csv"
+        #os.remove(to_delete_csv)
+        #os.remove(f)
 
 print("deleted {x} corrupt files out of {y} total".format(x=counter,y=len(files)))
 
@@ -47,5 +49,5 @@ for f in tiles:
     except:
         to_delete=os.path.join(DeepForest_config["h5_dir"],f) + ".csv"
         print("removing {}".format(to_delete))        
-        #os.remove(to_delete)
+        os.remove(to_delete)
         
