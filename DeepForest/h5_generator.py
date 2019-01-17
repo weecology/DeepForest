@@ -113,11 +113,12 @@ class H5Generator(Generator):
         #Find matching annotations        
         tiles=self.windowdf["tile"].unique()
         
+        print("There are {} unique tiles".format(len(tiles)))
         total_annotations=0
         
         #Select annotations
         for tilename in tiles:
-            csv_name = os.path.join(self.DeepForest_config["h5_dir"],tilename+'.csv')
+            csv_name = os.path.join(self.DeepForest_config["h5_dir"], tilename+'.csv')
             annotations = pd.read_csv(csv_name)
             selected_annotations = pd.merge(self.windowdf, annotations)
             total_annotations += len(selected_annotations)        
