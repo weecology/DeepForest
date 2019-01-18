@@ -33,7 +33,7 @@ def createPolygon(xmin,xmax,ymin,ymax):
     return poly
 
 
-def get_window_extent(annotations,row,windows,rgb_res):
+def get_window_extent(annotations, row, windows, rgb_res):
     '''
     Get the geographic coordinates of the sliding window.
     Be careful that the ymin in the geographic data refers to the utm (bottom) and the ymin in the cartesian refers to origin (top). 
@@ -49,12 +49,12 @@ def get_window_extent(annotations,row,windows,rgb_res):
     #Get window cartesian coordinates
     x,y,w,h= windows[row["window"]].getRect()
     
-    window_utm_xmin =x * rgb_res + tile_xmin
-    window_utm_xmax =(x+w) * rgb_res + tile_xmin
-    window_utm_ymin =tile_ymax - (y * rgb_res)
+    window_utm_xmin = x * rgb_res + tile_xmin
+    window_utm_xmax = (x+w) * rgb_res + tile_xmin
+    window_utm_ymin = tile_ymax - (y * rgb_res)
     window_utm_ymax= tile_ymax - ((y+h) * rgb_res)
     
-    return(window_utm_xmin,window_utm_xmax,window_utm_ymin,window_utm_ymax)
+    return(window_utm_xmin, window_utm_xmax, window_utm_ymin, window_utm_ymax)
 
 def fetch_lidar_filename(row,lidar_path,site):
     """
@@ -113,10 +113,10 @@ def compute_chm(lidar_tile, annotations, row,windows, rgb_res, kernel_size):
     ymax = ymax + rgb_res/2
     
     #Create shapely polygon for clipping
-    poly=createPolygon(xmin, xmax, ymin, ymax)
+    poly = createPolygon(xmin, xmax, ymin, ymax)
     
     #Clip lidar to geographic extent    
-    clipped=lidar_tile.clip(poly)
+    clipped = lidar_tile.clip(poly)
         
     #If there are no points within the clip, return None and continue to next window
     if len(clipped.data.points) ==0:
@@ -135,12 +135,16 @@ def compute_chm(lidar_tile, annotations, row,windows, rgb_res, kernel_size):
     return chm
 
 def watershed():
+    
+    from matplotlib import colors as mcolors
+    from matplotlib import pyplot as plt
+    from geopandas.plotting import plot_polygon_collection
+    
     chm = clipped.chm(cell_size = 0.5 , interp_method = "nearest" )        
     segmentation = chm.watershed_seg(min_distance=2, threshold_abs=2)    
     final_segments = segmentation.segments[segmentation.segments["raster_val"] > 0]
     
-    from matplotlib import colors as mcolors
-    from matplotlib import pyplot as plt
+
     colors = dict(mcolors.CSS4_COLORS)    
     colors=list(colors.keys())
     
@@ -152,9 +156,20 @@ def watershed():
     #rasterize? https://gis.stackexchange.com/questions/151339/rasterize-a-shapefile-with-geopandas-or-fiona-python
     fig, ax = plt.subplots()
     ax.set_aspect('equal')
-    geopandas.plotting.plot_polygon_collection(ax, geoms=final_segments['geometry'], color=final_segments['color'])    
-                
-                           
+    plot_polygon_collection(ax, geoms=final_segments['geometry'], color=final_segments['color'])    
+    
+    return watershed_features
+
+def rasterize_watershed():
+    
+    from rasterio import features
+    
+    watershed_raster = np.zeros(shape=chm.array.shape)
+    
+    #this is where we create a generator of geom, value pairs to use in rasterizing
+    shapes = ((geom,value) for geom, value in zip(final_segments.geometry, final_segments.raster_val))
+    burned = features.rasterize(shapes=shapes, fill=0, out=watershed_raster)
+         
 def find_lidar_file(image_path, lidar_path):
     """
     Find the lidar file that matches RGB tile

@@ -71,7 +71,7 @@ def run(tile,DeepForest_config):
         if image is None:
             continue
             
-        hdf5_file["train_imgs"][i,...] = image        
+        hdf5_file["train_imgs"][i, ...] = image        
         
         #Load annotations and write a pandas frame
         label = generator.load_annotations(i)

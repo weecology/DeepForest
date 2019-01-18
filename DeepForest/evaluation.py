@@ -7,25 +7,23 @@ import rasterio
 import slidingwindow as sw
 
 #Plotting and polygon overlap
-from shapely.geometry import box, shape
+from shapely.geometry import box, shape, Point
 from rtree import index
-from scipy.optimize import linear_sum_assignment
-from itertools import chain
 from PIL import Image
+import geopandas as gp
 
 #NEON recall rate
 import pandas as pd
-from shapely.geometry import Point
 from matplotlib import pyplot
 
-from keras_retinanet.utils.visualization import draw_detections, draw_annotations, draw_ground_overlap
+from keras_retinanet.utils.visualization import draw_detections, draw_annotations
 from keras_retinanet.utils.eval import _get_detections
 
-#Lidar 
+#DeepForest
 from DeepForest import Lidar 
+from DeepForest import postprocessing
+from DeepForest import onthefly_generator
 
-#Generators
-from . import onthefly_generator
 
 def neonRecall(
     site,
@@ -100,12 +98,24 @@ def neonRecall(
         
         #Find geographic bounds
         tile_path=generator.lidar_path + generator.image_data[i]["tile"]
+        
         with rasterio.open(tile_path) as dataset:
             bounds = dataset.bounds   
     
+        #drape boxes
+        #find lidar tilename
+        tilename = generator.image_data[i]["tile"]
+        tilename = os.path.splitext(tilename)[0]
+        
+        #Drape predictions over cloud
+        labeled_point_cloud = postprocessing.drape_boxes(boxes = image_boxes, tilename = tilename, lidar_dir = DeepForest_config["lidar_path"] )
+        
+        #Get the convex hulls
+        tree_hulls = postprocessing.cloud_to_polygons(labeled_point_cloud)
+        
         #Save image and send it to logger
         if save_path is not None:
-            draw_detections(raw_image, image_boxes, image_scores, image_labels, label_to_name=generator.label_to_name,score_threshold=score_threshold, color = (80,127,255))
+            draw_detections(raw_image, image_boxes, image_scores, image_labels, label_to_name=generator.label_to_name, score_threshold=score_threshold, color = (80,127,255))
     
             #add points
             plotID = os.path.splitext(generator.image_data[i]["tile"])[0]
@@ -141,35 +151,46 @@ def neonRecall(
                 experiment.log_image(os.path.join(save_path, '{}_NeonPlot.png'.format(plotID)),file_name=str(plotID))            
                 experiment.log_image(os.path.join(save_path, '{}_lidar_NeonPlot.png'.format(plotID)),file_name=str(plotID+"_lidar"))
     
-        projected_boxes = []
-        for row in  image_boxes:
-            #Add utm bounds and create a shapely polygon
-            pbox=create_polygon(row, bounds, cell_size=0.1)
-            projected_boxes.append(pbox)
+    #Calculate recall
+    recall = calculate_recall(tree_hulls, plot_data)
+
+    return(recall)
+
+#Processing Functions
+
+def calculate_recall(hulldf, plot_data):
+        
+    s = gp.GeoSeries(map(Point, zip(plot_data.UTM_E, plot_data.UTM_N)))
     
-        #for each point, is it within a prediction?
-        for index, tree in plot_data.iterrows():
-            p=Point(tree.UTM_E, tree.UTM_N)
+    hulldf 
+    #Calculate recall
+    projected_boxes = []
     
-            within_polygon=[]
-    
-            for prediction in projected_boxes:
-                within_polygon.append(p.within(prediction))
-    
-            #Check for overlapping polygon, add it to list
-            is_within = sum(within_polygon) > 0
-            point_contains.append(is_within)
+    for row in  image_boxes:
+        #Add utm bounds and create a shapely polygon
+        pbox=create_polygon(row, bounds, cell_size=0.1)
+        projected_boxes.append(pbox)
+
+    #for each point, is it within a prediction?
+    for index, tree in plot_data.iterrows():
+        p=Point(tree.UTM_E, tree.UTM_N)
+
+        within_polygon=[]
+
+        for prediction in projected_boxes:
+            within_polygon.append(p.within(prediction))
+
+        #Check for overlapping polygon, add it to list
+        is_within = sum(within_polygon) > 0
+        point_contains.append(is_within)
 
     if len(point_contains)==0:
         recall = None
         
     else:
         ## Recall rate for plot
-        recall = sum(point_contains)/len(point_contains)
-
-    return(recall)
-
-#Processing Functions
+        recall = sum(point_contains)/len(point_contains)    
+        return recall
 
 #IoU for non-rectangular polygons
 def compute_windows(numpy_image, pixels=400, overlap=0.05):
@@ -293,7 +314,7 @@ def predict_tile(numpy_image, generator, model, score_threshold, max_detections,
         final_boxes = plot_detections[0]
     return final_boxes
 
-def create_polygon(row,bounds,cell_size):
+def create_polygon(row, bounds, cell_size):
 
     #boxes are in form x1, y1, x2, y2, add the origin utm extent
     x1= (row[0]*cell_size) + bounds.left
@@ -305,7 +326,7 @@ def create_polygon(row,bounds,cell_size):
 
     return(b)
 
-def IoU_polygon(a,b):
+def IoU_polygon(a, b):
 
     #Area of predicted box
     predicted_area=b.area
@@ -320,7 +341,7 @@ def IoU_polygon(a,b):
 
     return iou
 
-def calculateIoU(itcs,predictions):
+def calculateIoU(itcs, predictions):
 
     '''
     1) Find overlap among polygons efficiently 

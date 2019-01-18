@@ -32,7 +32,7 @@ def load_csvs(h5_dir):
 
     return data
     
-def load_data(data_dir,res,lidar_path):
+def load_data(data_dir, res, lidar_path):
     '''
     data_dir: path to .csv files. Optionall can be a path to a specific .csv file.
     res: Cell resolution of the rgb imagery
@@ -62,7 +62,7 @@ def load_data(data_dir,res,lidar_path):
     data['origin_ymax']= (data['tile_ymax']-data['ymax']+ data['ymax'] - data['ymin'])/res  
         
     #Check for lidar tiles
-    data=check_for_lidar(data=data,lidar_path=lidar_path)
+    data=check_for_lidar(data=data, lidar_path=lidar_path)
     
     #Check for remaining data
     assert(data.shape[0] > 0),"No training data remaining after ingestion, check lidar paths"

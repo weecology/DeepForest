@@ -164,7 +164,7 @@ class H5Generator(Generator):
             
         return image
     
-    def load_annotations(self,image_index):
+    def load_annotations(self, image_index):
         '''
         Load annotations from csv file
         '''

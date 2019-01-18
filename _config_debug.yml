@@ -36,7 +36,7 @@ shuffle_evaluation: False
 nms_threshold: 0.15
 
 #For hand annotation neon_MAP
-validation_percent: 5
+validation_percent: 2
 
 #LIDAR
 lidar_path: /Users/Ben/Documents/DeepLidar/data/TEAK/

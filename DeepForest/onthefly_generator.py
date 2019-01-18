@@ -164,9 +164,6 @@ class OnTheFlyGenerator(Generator):
         if CHM is None:
             return None
         
-        #!Checking RGB only, remove on full run!
-        #blank_array = np.zeros(shape=(400,400))
-        
         #Bind RGB and LIDAR arrays
         four_channel_image=Lidar.bind_array(image, CHM.array)
         
@@ -194,7 +191,7 @@ class OnTheFlyGenerator(Generator):
         image_data=newdf.to_dict("index")
         image_names = list(image_data.keys())
         
-        return(image_data,image_names)
+        return(image_data, image_names)
     
     def load_annotations(self, image_index):
         """ Load annotations for an image_index.
