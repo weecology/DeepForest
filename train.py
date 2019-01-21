@@ -35,9 +35,6 @@ import keras.preprocessing.image
 from keras.utils import multi_gpu_model
 import tensorflow as tf
 
-import warnings
-warnings.simplefilter(action='ignore', category=UserWarning)
-
 # Allow relative imports when being executed as script.
 if __name__ == "__main__" and __package__ is None:
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'keras-retinanet ', 'keras-retinanet '))
@@ -54,7 +51,6 @@ from keras_retinanet .models.retinanet import retinanet_bbox
 from keras_retinanet .utils.anchors import make_shapes_callback, anchor_targets_bbox
 from keras_retinanet .utils.keras_version import check_keras_version
 from keras_retinanet .utils.model import freeze as freeze_model
-from keras_retinanet .utils.transform import random_transform_generator
 
 #Custom Generator
 from DeepForest.h5_generator import H5Generator
@@ -124,7 +120,7 @@ def create_models(backbone_retinanet, num_classes, weights, multi_gpu=0, freeze_
 
     # make prediction model
     print("Making prediction model with nms = %.2f" % nms_threshold )
-    prediction_model = retinanet_bbox(model=model,nms_threshold=nms_threshold)
+    prediction_model = retinanet_bbox(model=model, nms_threshold=nms_threshold)
 
     # compile model
     training_model.compile(
@@ -263,22 +259,6 @@ def create_callbacks(model, training_model, prediction_model, train_generator, v
 def create_generators(args, data, DeepForest_config):
     """ Create generators for training and validation.
     """
-    # create random transform generator for augmenting training data
-    if args.random_transform:
-        transform_generator = random_transform_generator(
-            min_rotation=-0.1,
-            max_rotation=0.1,
-            min_translation=(-0.1, -0.1),
-            max_translation=(0.1, 0.1),
-            min_shear=-0.1,
-            max_shear=0.1,
-            min_scaling=(0.9, 0.9),
-            max_scaling=(1.1, 1.1),
-            flip_x_chance=0.5,
-            flip_y_chance=0.5,
-        )
-    else:
-        transform_generator = random_transform_generator(flip_x_chance=0.5)
 
     #Split training and test data
     train, test = preprocess.split_training(data, DeepForest_config, experiment=None)
@@ -403,6 +383,8 @@ def main(args=None, data=None, DeepForest_config=None, experiment=None):
         weights = args.weights
         # default to imagenet if nothing else is specified
         if weights is None and args.imagenet_weights:
+            
+            print("Loading imagenet weights")
             weights = backbone.download_imagenet()
 
         print('Creating model, this may take a secondkeras-retinanet .')
@@ -506,6 +488,7 @@ if __name__ == '__main__':
         "--epochs",str(DeepForest_config["epochs"]),
         "--batch-size",str(DeepForest_config['batch_size']),
         "--backbone",str(DeepForest_config["backbone"]),
+        "--no-weights",
         "--score-threshold",str(DeepForest_config["score_threshold"])
     ]
 

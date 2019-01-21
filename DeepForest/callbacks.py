@@ -77,7 +77,7 @@ class NEONmAP(keras.callbacks.Callback):
     """ Evaluation callback for arbitrary datasets.
     """
 
-    def __init__(self, generator, iou_threshold=0.5, score_threshold=0.05, max_detections=100,save_path=None, weighted_average=False, verbose=1,experiment=None,DeepForest_config=None):
+    def __init__(self, generator, iou_threshold=0.5, score_threshold=0.05, max_detections=100, save_path=None, weighted_average=False, verbose=1, experiment=None, DeepForest_config=None):
         """ Evaluate a given dataset using a given model at the end of every epoch during training.
 
         # Arguments

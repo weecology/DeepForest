@@ -22,8 +22,14 @@ for f in files:
         counter +=1
         filpath=os.path.splitext(f)[0]
         to_delete_csv=filpath + ".csv"
-        #os.remove(to_delete_csv)
-        #os.remove(f)
+        try:
+            os.remove(to_delete_csv)
+        except Exception as e:
+            print(e)
+        try: 
+            os.remove(f)
+        except Exception as e:
+            print(e)
 
 print("deleted {x} corrupt files out of {y} total".format(x=counter,y=len(files)))
 

@@ -108,10 +108,10 @@ def neonRecall(
         tilename = os.path.splitext(tilename)[0]
         
         #Drape predictions over cloud
-        labeled_point_cloud = postprocessing.drape_boxes(boxes = image_boxes, tilename = tilename, lidar_dir = DeepForest_config["lidar_path"] )
+        #labeled_point_cloud = postprocessing.drape_boxes(boxes = image_boxes, tilename = tilename, lidar_dir = DeepForest_config["lidar_path"] )
         
         #Get the convex hulls
-        tree_hulls = postprocessing.cloud_to_polygons(labeled_point_cloud)
+        #tree_hulls = postprocessing.cloud_to_polygons(labeled_point_cloud)
         
         #Save image and send it to logger
         if save_path is not None:
@@ -162,7 +162,6 @@ def calculate_recall(hulldf, plot_data):
         
     s = gp.GeoSeries(map(Point, zip(plot_data.UTM_E, plot_data.UTM_N)))
     
-    hulldf 
     #Calculate recall
     projected_boxes = []
     

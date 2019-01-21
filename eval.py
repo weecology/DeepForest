@@ -125,7 +125,7 @@ def main(data, DeepForest_config, experiment,args=None):
     #NEON_generator = create_NEON_generator(args, site, DeepForest_config)
     
     #create the NEON recall generator     
-    NEON_generator_recall = create_NEON_generator(args, site, DeepForest_config)
+    #NEON_generator_recall = create_NEON_generator(args, site, DeepForest_config)
     
     # load the model
     print('Loading model, this may take a second...')
