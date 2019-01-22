@@ -45,17 +45,14 @@ class H5Generator(Generator):
         self.image_data  = {}
         self.name=name
         self.windowdf=data
-        
-        #Evaluation site
+        self.DeepForest_config = DeepForest_config
         self.site=DeepForest_config["evaluation_site"]
-        
+                
         #Holder for the group order, after shuffling we can still recover loss -> window
         self.group_order = {}
         self.group_method=group_method
         
-        #Store DeepForest_config and resolution
-        self.DeepForest_config = DeepForest_config
-        
+        #Define base directory        
         if not base_dir:
             self.base_dir = DeepForest_config["rgb_tile_dir"]
         else:
@@ -73,7 +70,7 @@ class H5Generator(Generator):
             self.labels[value] = key        
         
         #Set groups at first order.
-        self.define_groups(self.windowdf, shuffle=False)
+        self.define_groups(shuffle=False)
         
         #report total number of annotations
         self.total_trees=self.total_annotations()
@@ -115,18 +112,40 @@ class H5Generator(Generator):
         
         print("There are {} unique tiles".format(len(tiles)))
         total_annotations=0
-        
-        print(tiles)
-        
+                
         #Select annotations
         for tilename in tiles:
             csv_name = os.path.join(self.DeepForest_config["h5_dir"], str(tilename)+'.csv')
             annotations = pd.read_csv(csv_name)
             selected_annotations = pd.merge(self.windowdf, annotations)
             total_annotations += len(selected_annotations)        
-            
-        return(total_annotations)
         
+        print("There are a total of {} tree annotations".format(total_annotations))       
+        
+        return(total_annotations)
+    
+    def define_groups(self, shuffle=False):
+        '''
+        Define image data and names based on grouping of tiles for computational efficiency 
+        '''
+        #group by tile
+        groups = [df for _, df in self.windowdf.groupby('tile')]
+        
+        if shuffle:
+            #Shuffle order of windows within a tile
+            groups = [x.sample(frac=1) for x in groups]      
+            
+            #Shuffle order of tiles
+            random.shuffle(groups)
+        
+        #Bring back together
+        newdf=pd.concat(groups).reset_index(drop=True)
+        
+        image_data=newdf.to_dict("index")
+        image_names = list(image_data.keys())
+        
+        return(image_data, image_names)
+    
     def load_image(self, image_index):
         """ Load an image at the image_index.
         """
@@ -170,7 +189,6 @@ class H5Generator(Generator):
         '''
         Load annotations from csv file
         '''
-        
         #Select sliding window and tile
         image_name = self.image_names[image_index]        
         row = self.image_data[image_name]
@@ -179,41 +197,6 @@ class H5Generator(Generator):
         annotations = self.annotations.loc[(self.annotations["tile"] == row["tile"]) & (self.annotations["window"] == row["window"])]
             
         return annotations[["0","1","2","3","4"]].values
-    
-        
-    def define_groups(self, windowdf, shuffle=False):
-        '''
-        Define image data and names based on grouping of tiles for computational efficiency 
-        '''
-        #group by tile
-        groups = [df for _, df in windowdf.groupby('tile')]
-        
-        if shuffle:
-            #Shuffle order of windows within a tile
-            groups = [x.sample(frac=1) for x in groups]      
-            
-            #Shuffle order of tiles
-            random.shuffle(groups)
-        
-        #Bring back together
-        newdf=pd.concat(groups).reset_index(drop=True)
-        
-        image_data=newdf.to_dict("index")
-        image_names = list(image_data.keys())
-        
-        return(image_data, image_names)
-    
-#Utility functions
-def image_is_blank(image):
-    
-    is_zero=image.sum(2)==0
-    is_zero=is_zero.sum()/is_zero.size
-    
-    if is_zero > 0.05:
-        return True
-    else:
-        
-        return False
     
 if __name__=="__main__":
     

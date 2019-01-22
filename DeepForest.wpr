@@ -33,7 +33,7 @@ proj.launch-config = {loc('../DeepForest/predict.py'): ('project',
         (u'--model /Users/ben/Documents/DeepForest/snapshots/fullmodel.h5 --image /Users/ben/Downloads/2018_SJER_3_254000_4108000_image.tif',
          '')),
                       loc('train.py'): ('project',
-        (u'--mode retrain\n',
+        (u'--mode train\n',
          '')),
                       loc('../DeepMeerkat/training/Classification/CreateDocs.py'): ('p'\
         'roject',
