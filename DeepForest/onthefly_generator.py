@@ -92,6 +92,29 @@ class OnTheFlyGenerator(Generator):
         
         return len(image_names)
     
+    def define_groups(self, shuffle=False):
+        
+        '''
+        Define image data and names based on grouping of tiles for computational efficiency 
+        '''
+        #group by tile
+        groups = [df for _, df in self.windowdf.groupby('tile')]
+        
+        if shuffle:
+            #Shuffle order of windows within a tile
+            groups=[x.sample(frac=1) for x in groups]      
+            
+            #Shuffle order of tiles
+            random.shuffle(groups)
+        
+        #Bring back together
+        newdf = pd.concat(groups).reset_index(drop=True)
+        
+        image_data = newdf.to_dict("index")
+        image_names = list(image_data.keys())
+        
+        return(image_data, image_names)
+    
     def read_classes(self):
         """ 
         Number of annotation classes
@@ -162,25 +185,22 @@ class OnTheFlyGenerator(Generator):
         
         return lidar_filepath
 
-    def load_lidar(self):
+    def load_lidar_tile(self):
         '''Load a point cloud into memory from file
         '''
+        self.lidar_filepath=self.fetch_lidar_filename()        
         lidar_tile=Lidar.load_lidar(self.lidar_filepath)
         
         return lidar_tile
     
-    def load_lidar_and_rgb(self):
-        """Load both the lidar and rgb tiles for a new crop
-        """
-        #Read numpy array for RGB            
+    def load_rgb_tile(self):
+        ''''
+        Read RGB tile from file
+        '''
         im = Image.open(self.base_dir+self.row["tile"])
         numpy_image = np.array(im)    
-    
-        #Finding the corresponding lidar tile and load it
-        self.lidar_filepath=self.fetch_lidar_filename()
-        lidar_tile=self.load_lidar()
         
-        return numpy_image, lidar_tile
+        return numpy_image
         
     def compute_CHM(self):
         '''' Compute a canopy height model on loaded point cloud
@@ -210,18 +230,18 @@ class OnTheFlyGenerator(Generator):
         self.previous_image_path = self.row["tile"]
         
         #Crop Las
-        self.clipped_las = self.clip_las()
+        #self.clipped_las = self.clip_las()
         
-        #Crop numpy array
-        self.CHM = self.compute_CHM()
+        ##Crop numpy array
+        #self.CHM = self.compute_CHM()
         
-        #If empty, return None
-        if self.CHM is None:
-            return None
+        ##If empty, return None
+        #if self.CHM is None:
+            #return None
         
-        four_channel_image = self.bind_array()
+        #four_channel_image = self.bind_array()
         
-        return four_channel_image
+        return image
     
     def load_image(self, image_index):
         """ Load an image at the image_index.
@@ -232,39 +252,19 @@ class OnTheFlyGenerator(Generator):
         
         ##Check if image the is same as previous draw from generator
         if not self.row["tile"] == self.previous_image_path:
-            print("Loading new tile: %s" %(self.row["tile"]))
-            self.numpy_image, self.lidar_tile = self.load_lidar_and_rgb()
-        
+            
+            print("Loading new tile {}".format(self.row["tile"]))
+            
+            self.numpy_image = self.load_rgb_tile()
+            self.lidar_tile = self.load_lidar_tile()
+            
         #Load a new crop from generator
-        four_channel_image = self.load_new_crop()
+        three_channel_image = self.load_new_crop()
         
-        if four_channel_image is None:
+        if three_channel_image is None:
             return None
         else: 
-            return four_channel_image
-
-    def define_groups(self, shuffle=False):
-        
-        '''
-        Define image data and names based on grouping of tiles for computational efficiency 
-        '''
-        #group by tile
-        groups = [df for _, df in self.windowdf.groupby('tile')]
-        
-        if shuffle:
-            #Shuffle order of windows within a tile
-            groups=[x.sample(frac=1) for x in groups]      
-            
-            #Shuffle order of tiles
-            random.shuffle(groups)
-        
-        #Bring back together
-        newdf = pd.concat(groups).reset_index(drop=True)
-        
-        image_data = newdf.to_dict("index")
-        image_names = list(image_data.keys())
-        
-        return(image_data, image_names)
+            return three_channel_image
     
     def fetch_annotations(self):
         '''

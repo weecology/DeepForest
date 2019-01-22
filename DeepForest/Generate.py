@@ -8,7 +8,6 @@ import h5py
 import pandas as pd
 from DeepForest import onthefly_generator, preprocess, config
 import sys
-import gc
 
 #supress warnings
 import warnings
@@ -23,7 +22,7 @@ def parse_args():
     
     return args
 
-def run(tile,DeepForest_config, mode="train"):
+def run(tile, DeepForest_config, mode="train"):
     
     """Crop 4 channel arrays from RGB and LIDAR CHM
     tile: the CSV training file containing the tree detections
@@ -34,16 +33,16 @@ def run(tile,DeepForest_config, mode="train"):
         #Read in data
         data = preprocess.load_data(data_dir=tile, res=0.1, lidar_path=DeepForest_config["lidar_path"])
         
-        if windows is None:
-            print("Invalid window")
-            return None
-        
     if mode == "retrain":
         DeepForest_config = load_config("retrain")        
         data = preprocess.load_xml(DeepForest_config["hand_annotations"], DeepForest_config["rgb_res"])
-    
+            
     #Create windows
     windows = preprocess.create_windows(data, DeepForest_config)    
+    
+    if windows is None:
+        print("Invalid window")
+        return None
     
     #Create generate
     generator = onthefly_generator.OnTheFlyGenerator(data, windows, DeepForest_config)
@@ -57,8 +56,8 @@ def run(tile,DeepForest_config, mode="train"):
     h5_filename = os.path.join(DeepForest_config["h5_dir"], tilename + ".h5")
     hdf5_file = h5py.File(h5_filename, mode='w')    
     
-    #A 4 channel image of square patch size.
-    train_shape = (generator.size(), DeepForest_config["patch_size"], DeepForest_config["patch_size"], 4)
+    #A 3 channel image of square patch size.
+    train_shape = (generator.size(), DeepForest_config["patch_size"], DeepForest_config["patch_size"], 3)
     
     #Create h5 dataset to fill
     hdf5_file.create_dataset("train_imgs", train_shape, dtype='f')
@@ -72,7 +71,7 @@ def run(tile,DeepForest_config, mode="train"):
 
         #Load images
         image = generator.load_image(i)
-        
+               
         #If image window is corrupt (RGB/LIDAR missing), go to next tile, it won't be in labeldf
         if image is None:
             continue
@@ -101,9 +100,6 @@ def run(tile,DeepForest_config, mode="train"):
     
     #flush system
     sys.stdout.flush()
-    
-    #force garbage collect
-    gc.collect()
     
     return "{} completed".format(tilename)
 
