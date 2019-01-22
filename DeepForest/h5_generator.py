@@ -116,7 +116,13 @@ class H5Generator(Generator):
         #Select annotations
         for tilename in tiles:
             csv_name = os.path.join(self.DeepForest_config["h5_dir"], str(tilename)+'.csv')
-            annotations = pd.read_csv(csv_name)
+            
+            try:
+                annotations = pd.read_csv(csv_name)
+            except Exception as e:
+                print(e)
+                print("The csv named {} from tilename {} encountered an error".format(csv_name, tilename))
+                
             selected_annotations = pd.merge(self.windowdf, annotations)
             total_annotations += len(selected_annotations)        
         

@@ -23,7 +23,6 @@ limitations under the License.
 from comet_ml import Experiment
 
 #keras-retinanet imports
-
 import argparse
 import functools
 import os
@@ -34,6 +33,10 @@ import keras
 import keras.preprocessing.image
 from keras.utils import multi_gpu_model
 import tensorflow as tf
+
+#supress warnings
+import warnings
+warnings.simplefilter("ignore")
 
 # Allow relative imports when being executed as script.
 if __name__ == "__main__" and __package__ is None:
