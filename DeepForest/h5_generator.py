@@ -111,7 +111,7 @@ class H5Generator(Generator):
         tiles=self.windowdf["tile"].unique()
         
         print("There are {} unique tiles".format(len(tiles)))
-        total_annotations=0
+        total_annotations = 0
                 
         #Select annotations
         for tilename in tiles:

@@ -197,33 +197,33 @@ def split_training(csv_data, DeepForest_config, experiment):
         if not experiment==None:
             experiment.log_parameter(eval_tile,"Evaluation Tile")
             
-        #Training samples
-        if not DeepForest_config["training_images"]=="All":
-            num_training_images = DeepForest_config["training_images"]
+    #Select n Training samples
+    if not DeepForest_config["training_images"]=="All":
+        num_training_images = DeepForest_config["training_images"]
+        
+        if num_training_images > len(training):
+            raise ValueError("Number of training samples greater than available windows")
             
-            if num_training_images > len(training):
-                raise ValueError("Number of training samples greater than available windows")
-                
-            #Optional shuffle
-            if DeepForest_config["shuffle_training"]:
-                training.sample(frac=1)
-                
-            #Select subset of training windows
-            training=training.iloc[0:num_training_images]
+        #Optional shuffle
+        if DeepForest_config["shuffle_training"]:
+            training.sample(frac=1)
+            
+        #Select subset of training windows
+        training=training.iloc[0:num_training_images]
         
         #Ensure training is sorted by image
         training.sort_values(by="tile", inplace=True)            
         
-        #evaluation samples
-        if not DeepForest_config["evaluation_images"]=="All":
-            num_evaluation_images = DeepForest_config["evaluation_images"]
-        
-            #Optional shuffle
-            if DeepForest_config["shuffle_evaluation"]:
-                evaluation.sample(frac=1)
-                
-            #Select subset of evaluation windows
-            evaluation=evaluation.iloc[0:num_evaluation_images]
+    #evaluation samples
+    if not DeepForest_config["evaluation_images"]=="All":
+        num_evaluation_images = DeepForest_config["evaluation_images"]
+    
+        #Optional shuffle
+        if DeepForest_config["shuffle_evaluation"]:
+            evaluation.sample(frac=1)
+            
+        #Select subset of evaluation windows
+        evaluation=evaluation.iloc[0:num_evaluation_images]
     
     #Write training to file to view 
     return([training, evaluation])
