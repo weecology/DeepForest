@@ -1,7 +1,7 @@
 #Config file for DeepMeerkat train.py on HiPerGator
 
 #Data generation
-num_hipergator_workers: 20
+num_hipergator_workers: 25
 h5_dir: /orange/ewhite/b.weinstein/training_h5s/TEAK/
 
 #SlidingWindow
