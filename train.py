@@ -225,21 +225,21 @@ def create_callbacks(model, training_model, prediction_model, train_generator, v
         min_lr   = 0
     ))
     
-    #Neon Callbacks
-    site=DeepForest_config["evaluation_site"]
+    #Neon Callbacks - TODO integration of las snapping.
+    #site=DeepForest_config["evaluation_site"]
     
-    NEON_recall_generator = create_NEON_generator(args, site, DeepForest_config)
+    #NEON_recall_generator = create_NEON_generator(args, site, DeepForest_config)
     
-    recall=recallCallback(site=site,
-                          generator=NEON_recall_generator,
-                          save_path=args.save_path,
-                          DeepForest_config=DeepForest_config,
-                          score_threshold=args.score_threshold,
-                          experiment=experiment)
+    #recall=recallCallback(site=site,
+                          #generator=NEON_recall_generator,
+                          #save_path=args.save_path,
+                          #DeepForest_config=DeepForest_config,
+                          #score_threshold=args.score_threshold,
+                          #experiment=experiment)
     
-    recall = RedirectModel(recall, prediction_model)
+    #recall = RedirectModel(recall, prediction_model)
     
-    callbacks.append(recall)
+    #callbacks.append(recall)
     
     #create the NEON generator 
     NEON_generator = create_NEON_generator(args, site, DeepForest_config)
@@ -488,7 +488,6 @@ if __name__ == '__main__':
         "--epochs",str(DeepForest_config["epochs"]),
         "--batch-size",str(DeepForest_config['batch_size']),
         "--backbone",str(DeepForest_config["backbone"]),
-        "--no-weights",
         "--score-threshold",str(DeepForest_config["score_threshold"])
     ]
 

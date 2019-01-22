@@ -115,9 +115,7 @@ def load_xml(path,res):
 
     with rasterio.open(full_path) as dataset:
         bounds=dataset.bounds         
-    
-    #TODO find lidar path for annotations
-    
+        
     frame=pd.DataFrame({"treeID":treeID,"xmin":xmin,"xmax":xmax,"ymin":ymin,"ymax":ymax,"rgb_path":rgb_path,"label":label,
                         "numeric_label":0,
                         "tile_xmin":bounds.left,
@@ -129,14 +127,14 @@ def load_xml(path,res):
     frame=frame.set_index(frame.index.values)
 
     ##Match expectations of naming, no computation needed for hand annotations
-    frame['origin_xmin']=frame["xmin"].astype(float)
-    frame['origin_xmax']=frame["xmax"].astype(float)
-    frame['origin_ymin']=frame["ymin"].astype(float)
-    frame['origin_ymax']= frame["ymax"].astype(float)
+    frame['origin_xmin'] = frame["xmin"].astype(float)
+    frame['origin_xmax'] = frame["xmax"].astype(float)
+    frame['origin_ymin'] = frame["ymin"].astype(float)
+    frame['origin_ymax'] = frame["ymax"].astype(float)
     
     return(frame)
 
-def compute_windows(image,pixels=250,overlap=0.05):
+def compute_windows(image,pixels=250, overlap=0.05):
     try:
         im = Image.open(image)
     except:

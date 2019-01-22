@@ -17,7 +17,7 @@ import random
 
 r = lambda: random.randint(0,255)
 
-def createPolygon(xmin,xmax,ymin,ymax):
+def createPolygon(xmin, xmax, ymin, ymax):
     '''
     Convert a pandas row into a polygon bounding box
     ''' 
@@ -56,7 +56,7 @@ def get_window_extent(annotations, row, windows, rgb_res):
     
     return(window_utm_xmin, window_utm_xmax, window_utm_ymin, window_utm_ymax)
 
-def fetch_lidar_filename(row,lidar_path,site):
+def fetch_lidar_filename(row, lidar_path, site):
     """
     Find lidar path in a directory.
     param: row a dictionary with tile "key" for filename to be searched for
@@ -99,10 +99,8 @@ def load_lidar(laz_path):
     
     return pc
 
-def compute_chm(lidar_tile, annotations, row,windows, rgb_res, kernel_size):
-    """
-    Computer a canopy height model based on the available laz file to align with the RGB data
-    """
+def clip_las(lidar_tile, annotations, row, windows, rgb_res):
+    
     #Find geographic coordinates of the rgb tile
     xmin, xmax, ymin, ymax = get_window_extent(annotations=annotations, row=row, windows=windows, rgb_res=rgb_res)
 
@@ -117,20 +115,27 @@ def compute_chm(lidar_tile, annotations, row,windows, rgb_res, kernel_size):
     
     #Clip lidar to geographic extent    
     clipped = lidar_tile.clip(poly)
-        
+    
+    return clipped
+
+def compute_chm(clipped_las, kernel_size, min_threshold = 3):
+    """
+    Computer a canopy height model based on the available laz file to align with the RGB data
+    """
+
     #If there are no points within the clip, return None and continue to next window
-    if len(clipped.data.points) ==0:
+    if len(clipped_las.data.points) ==0:
         print("Window {s} from tile {r} has no LIDAR points".format(s=row["window"], r=row["tile"]))
         return None
     
     #Median filter
-    chm = clipped.chm(cell_size = 0.1 , interp_method = "nearest" )    
+    chm = clipped_las.chm(cell_size = 0.1 , interp_method = "nearest" )    
     
     if not kernel_size == 'None':
         chm.array = medfilt2d(chm.array, kernel_size=kernel_size)
     
     #remove understory noise, anything under 2m.
-    chm.array[chm.array < 1.5] = 0   
+    chm.array[chm.array < min_threshold] = 0   
     
     return chm
 

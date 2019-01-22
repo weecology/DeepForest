@@ -23,21 +23,27 @@ def parse_args():
     
     return args
 
-def run(tile,DeepForest_config):
+def run(tile,DeepForest_config, mode="train"):
     
     """Crop 4 channel arrays from RGB and LIDAR CHM
     tile: the CSV training file containing the tree detections
+    mode: train or retrain. train loads data from the csv files from R, retrain from the xml hand annotations
     """
     
-    #Read in data
-    data = preprocess.load_data(data_dir=tile, res=0.1, lidar_path=DeepForest_config["lidar_path"])
+    if mode == "train":
+        #Read in data
+        data = preprocess.load_data(data_dir=tile, res=0.1, lidar_path=DeepForest_config["lidar_path"])
+        
+        if windows is None:
+            print("Invalid window")
+            return None
+        
+    if mode == "retrain":
+        DeepForest_config = load_config("retrain")        
+        data = preprocess.load_xml(DeepForest_config["hand_annotations"], DeepForest_config["rgb_res"])
     
     #Create windows
-    windows = preprocess.create_windows(data, DeepForest_config)
-    
-    if windows is None:
-        print("Invalid window")
-        return None
+    windows = preprocess.create_windows(data, DeepForest_config)    
     
     #Create generate
     generator = onthefly_generator.OnTheFlyGenerator(data, windows, DeepForest_config)
