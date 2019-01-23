@@ -156,7 +156,12 @@ class H5Generator(Generator):
         """ Load an image at the image_index.
         """
         #Select sliding window and tile
-        image_name = self.image_names[image_index]        
+        try:
+            image_name = self.image_names[image_index]
+        except Exception as e:
+            print("Failed on image index {}".format(image_index))
+            raise e
+        
         row = self.image_data[image_name]
         
         #Open image to crop
