@@ -40,7 +40,8 @@ def run(tile=None, DeepForest_config=None, mode="train"):
         tilename = os.path.splitext(tilename)[0]
             
         #Create windows
-        windows = preprocess.create_windows(data, DeepForest_config, base_dir = DeepForest_config["eval_tile_dir"])            
+        base_dir = DeepForest_config["eval_tile_dir"]
+        windows = preprocess.create_windows(data, DeepForest_config, base_dir = base_dir)            
         
     if mode == "retrain":
         #Load xml annotations and find the directory of .tif files
@@ -51,14 +52,14 @@ def run(tile=None, DeepForest_config=None, mode="train"):
         base_dir = os.path.dirname(os.path.dirname(DeepForest_config["hand_annotations"]))
         
         #Create windows
-        windows = preprocess.create_windows(data, DeepForest_config, base_dir=base_dir) 
+        windows = preprocess.create_windows(data, DeepForest_config, base_dir = base_dir) 
         
     if windows is None:
         print("Invalid window")
         return None
     
     #Create generate
-    generator = onthefly_generator.OnTheFlyGenerator(data, windows, DeepForest_config)
+    generator = onthefly_generator.OnTheFlyGenerator(data, windows, DeepForest_config, base_dir = base_dir)
     
     #Create h5 dataset    
     # open a hdf5 file and create arrays

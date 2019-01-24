@@ -157,7 +157,7 @@ class OnTheFlyGenerator(Generator):
         Create a sliding window object
         '''
         #Load tile
-        image = self.base_dir+ self.annotation_list.rgb_path.unique()[0]
+        image = self.base_dir + self.annotation_list.rgb_path.unique()[0]
         im = Image.open(image)
         numpy_image = np.array(im)    
         
@@ -327,7 +327,6 @@ class OnTheFlyGenerator(Generator):
     def load_annotations(self, image_index):
         """ Load annotations for an image_index.
         """
-        
         #Find the original data and crop
         image_name = self.image_names[image_index]
         row = self.image_data[image_name]
