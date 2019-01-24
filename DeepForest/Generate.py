@@ -38,14 +38,19 @@ def run(tile=None, DeepForest_config=None, mode="train"):
         #Get tile filename for storing
         tilename = os.path.split(tile)[-1]
         tilename = os.path.splitext(tilename)[0]
+            
+        #Create windows
+        windows = preprocess.create_windows(data, DeepForest_config, basedir = DeepForest_config["eval_tile_dir"])            
         
     if mode == "retrain":
+        #Load xml annotations and find the directory of .tif files
         data = preprocess.load_xml(DeepForest_config["hand_annotations"], DeepForest_config["rgb_res"])
         tilename = "hand_annotations"
+        base_dir = os.path.split(DeepForest_config["hand_annotations"])[0]
         
-    #Create windows
-    windows = preprocess.create_windows(data, DeepForest_config)    
-    
+        #Create windows
+        windows = preprocess.create_windows(data, DeepForest_config, basedir=base_dir) 
+        
     if windows is None:
         print("Invalid window")
         return None
