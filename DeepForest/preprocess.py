@@ -253,7 +253,7 @@ def NEON_annotations(site, DeepForest_config):
     
     annotations=[]
     for xml in xmls:
-        r=load_xml(xml, DeepForest_config["rgb_res"])
+        r = load_xml(xml, DeepForest_config["rgb_res"])
         annotations.append(r)
 
     data=pd.concat(annotations)
@@ -266,10 +266,10 @@ def NEON_annotations(site, DeepForest_config):
     #Create dictionary of windows for each image
     tile_windows={}
     
-    all_images=list(data.rgb_path.unique())
+    all_images = list(data.rgb_path.unique())
 
-    tile_windows["tile"]=all_images
-    tile_windows["window"]=np.arange(0, len(windows))
+    tile_windows["tile"] = all_images
+    tile_windows["window"] = np.arange(0, len(windows))
     
     #Expand grid
     tile_data=expand_grid(tile_windows)    
