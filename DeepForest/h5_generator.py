@@ -160,6 +160,7 @@ class H5Generator(Generator):
             image_name = self.image_names[image_index]
         except Exception as e:
             print("Failed on image index {}".format(image_index))
+            print("There are {} names in the image names object".format(len(self.image_names)))
         
         row = self.image_data[image_name]
         
