@@ -13,6 +13,7 @@ import rasterio
 from PIL import Image
 import slidingwindow as sw
 import itertools
+import re
 import warnings
 
 def load_csvs(h5_dir):
@@ -22,7 +23,16 @@ def load_csvs(h5_dir):
     #If a single file, read, if a a dir, loop through files
     if os.path.isdir(h5_dir):
         #Gather list of csvs
-        data_paths=glob.glob(h5_dir+"/*.csv")
+        data_paths = glob.glob(h5_dir + "/*.csv")
+        
+        #Make sure hand_annotations are not in list, they must be supplied directly.
+        regex = re.compile(r'hand_annotations')        
+        
+        for csv in data_paths:
+            print(csv)
+            if regex.search(csv):
+                data_paths.remove(csv)
+                
         dataframes = (pd.read_csv(f, index_col=None) for f in data_paths)
         data = pd.concat(dataframes, ignore_index=True)      
         
