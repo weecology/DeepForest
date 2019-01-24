@@ -49,7 +49,6 @@ def run(tile=None, DeepForest_config=None, mode="train"):
 
         #get base_dir up from annotations, up one dir
         base_dir = os.path.dirname(os.path.dirname(DeepForest_config["hand_annotations"]))
-        base_dir = os.path.dirname(os.path.dirname(base_dir))
         
         #Create windows
         windows = preprocess.create_windows(data, DeepForest_config, base_dir=base_dir) 
