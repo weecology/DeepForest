@@ -22,21 +22,27 @@ def parse_args():
     
     return args
 
-def run(tile, DeepForest_config, mode="train"):
+def run(tile=None, DeepForest_config=None, mode="train"):
     
     """Crop 4 channel arrays from RGB and LIDAR CHM
     tile: the CSV training file containing the tree detections
     mode: train or retrain. train loads data from the csv files from R, retrain from the xml hand annotations
     """
     
+    DeepForest_config = config.load_config()            
+    
     if mode == "train":
         #Read in data
         data = preprocess.load_data(data_dir=tile, res=0.1, lidar_path=DeepForest_config["lidar_path"])
         
+        #Get tile filename for storing
+        tilename = os.path.split(tile)[-1]
+        tilename = os.path.splitext(tilename)[0]
+        
     if mode == "retrain":
-        DeepForest_config = load_config("retrain")        
         data = preprocess.load_xml(DeepForest_config["hand_annotations"], DeepForest_config["rgb_res"])
-            
+        tilename = "hand_annotations"
+        
     #Create windows
     windows = preprocess.create_windows(data, DeepForest_config)    
     
@@ -46,10 +52,6 @@ def run(tile, DeepForest_config, mode="train"):
     
     #Create generate
     generator = onthefly_generator.OnTheFlyGenerator(data, windows, DeepForest_config)
-    
-    #Get tile filename for storing
-    tilename = os.path.split(tile)[-1]
-    tilename = os.path.splitext(tilename)[0]
     
     #Create h5 dataset    
     # open a hdf5 file and create arrays

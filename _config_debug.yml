@@ -24,6 +24,7 @@ save_snapshot_path: None
 backbone: resnet50
 shuffle_training: False
 score_threshold: 0.2
+hand_annotations: /Users/ben/Documents/DeepLidar/data/TEAK/annotations/2018_TEAK_3_315000_4094000_image_crop.xml
 
 #Evaluation
 evaluation_site: TEAK

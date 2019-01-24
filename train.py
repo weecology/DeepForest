@@ -262,7 +262,6 @@ def create_callbacks(model, training_model, prediction_model, train_generator, v
 def create_generators(args, data, DeepForest_config):
     """ Create generators for training and validation.
     """
-
     #Split training and test data
     train, test = preprocess.split_training(data, DeepForest_config, experiment=None)
 
@@ -463,6 +462,10 @@ if __name__ == '__main__':
     from datetime import datetime
     from DeepForest.config import load_config
     from DeepForest import preprocess
+    from DeepForest import Generate
+
+    #load config
+    DeepForest_config = load_config()
 
     #set experiment and log configs
     experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2", project_name='deeplidar', log_code=False)
@@ -475,14 +478,20 @@ if __name__ == '__main__':
     
     #Load DeepForest_config and data file based on training or retraining mode
     if mode.mode == "train":
-        DeepForest_config = load_config("train")
         data = preprocess.load_csvs(DeepForest_config["h5_dir"])
         
     if mode.mode == "retrain":
-        #TODO needs annotations to find lidar path
-        DeepForest_config = load_config("retrain")        
+        #Load annotations
         data = preprocess.load_xml(DeepForest_config["hand_annotations"], DeepForest_config["rgb_res"])
 
+        #Check if hand annotations have been generated. If not create H5 files.
+        path_to_handannotations = os.path.join(DeepForest_config["h5_dir"],"hand_annotations.csv") 
+        
+        if not os.path.exists(path_to_handannotations):
+            Generate.run(DeepForest_config=DeepForest_config, mode="retrain")
+        
+        data = preprocess.load_csvs(path_to_handannotations)
+            
     #Log site
     site = DeepForest_config["evaluation_site"]
 

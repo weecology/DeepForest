@@ -256,7 +256,7 @@ class OnTheFlyGenerator(Generator):
             print("Loading new tile {}".format(self.row["tile"]))
             
             self.numpy_image = self.load_rgb_tile()
-            self.lidar_tile = self.load_lidar_tile()
+            #self.lidar_tile = self.load_lidar_tile()
             
         #Load a new crop from generator
         three_channel_image = self.load_new_crop()
