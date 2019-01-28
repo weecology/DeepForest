@@ -239,10 +239,9 @@ class OnTheFlyGenerator(Generator):
         #Crop numpy array
         self.CHM = self.compute_CHM()
     
-        
         four_channel_image = self.bind_array()
         
-        return image
+        return four_channel_image
     
     def load_image(self, image_index):
         """ Load an image at the image_index.
