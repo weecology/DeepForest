@@ -400,7 +400,7 @@ def main(args=None, data=None, DeepForest_config=None, experiment=None):
         )
 
     # print model summary
-    #print(model.summary())
+    print(model.summary())
 
     # this lets the generator compute backbone layer shapes using the actual backbone model
     if 'vgg' in args.backbone or 'densenet' in args.backbone:
@@ -520,6 +520,10 @@ if __name__ == '__main__':
         args = [DeepForest_config["snapshot"]] + args
         args = ["--snapshot"] + args
 
+    #Use imagenet weights?
+    if not DeepForest_config["imagenet_weights"]:
+        args = ["--no-weights"] + args
+  
     #Create log directory if saving eval images, add to arguments
     if not DeepForest_config["save_image_path"]=="None":
         save_image_path=DeepForest_config["save_image_path"]+ dirname

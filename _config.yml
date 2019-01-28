@@ -19,6 +19,7 @@ hand_annotations: /home/b.weinstein/DeepLidar/data/TEAK/annotations/2018_TEAK_3_
 rgb_tile_dir: /orange/ewhite/NeonData/TEAK/DP3.30010.001/2018/FullSite/D17/2018_TEAK_3/L3/Camera/Mosaic/V01/
 training_images: All
 snapshot: None
+imagenet_weights: True
 batch_size: 20      
 epochs: 1
 save_snapshot_path: /orange/ewhite/b.weinstein/retinanet/snapshots/
