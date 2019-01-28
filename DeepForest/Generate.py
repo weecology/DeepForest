@@ -40,7 +40,7 @@ def run(tile=None, DeepForest_config=None, mode="train"):
         tilename = os.path.splitext(tilename)[0]
             
         #Create windows
-        base_dir = DeepForest_config["eval_tile_dir"]
+        base_dir = DeepForest_config["evaluation_tile_dir"]
         windows = preprocess.create_windows(data, DeepForest_config, base_dir = base_dir)            
         
     if mode == "retrain":
