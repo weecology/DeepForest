@@ -39,12 +39,6 @@ def sample(n=50):
         #Load image - done for side effects
         four_channel = generator.load_image(i)
         
-        #Check if its blank
-        is_blank = utils.image_is_blank(four_channel[:,:,:3])
-        
-        if is_blank:
-            continue
-        
         #name RGB
         tilename = os.path.splitext(generator.image_data[i]["tile"])[0]
         tilename = tilename + "_" + str(generator.image_data[i]["window"]) + ".tif"
