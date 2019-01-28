@@ -10,13 +10,13 @@ def find_csvs():
     """
     Find training csvs on path
     """
-    DeepForest_config = config.load_config("train")
+    DeepForest_config = config.load_config()
     data_paths = glob.glob(DeepForest_config['training_csvs']+"/*.csv")
     
     return data_paths
 
 def run_test(data_paths):
-    DeepForest_config = config.load_config("train")    
+    DeepForest_config = config.load_config()    
     Generate.run(data_paths[0], DeepForest_config)
     
 def run_local(data_paths):
@@ -25,7 +25,7 @@ def run_local(data_paths):
     """
     from dask.distributed import Client, wait    
     
-    DeepForest_config = config.load_config("train")
+    DeepForest_config = config.load_config()
     
     dask_client = Client()    
     futures = dask_client.map(Generate.run, data_paths, DeepForest_config=DeepForest_config)
@@ -51,7 +51,7 @@ def run_HPC(data_paths):
     from dask_jobqueue import SLURMCluster
     from dask.distributed import Client, wait
     
-    DeepForest_config = config.load_config("train")
+    DeepForest_config = config.load_config()
     
     num_workers=DeepForest_config["num_hipergator_workers"]
     
@@ -66,7 +66,7 @@ def run_HPC(data_paths):
         processes=1,
         queue='hpg2-compute',
         cores=1, 
-        memory='12GB', 
+        memory='11GB', 
         walltime='48:00:00',
         job_extra=extra_args,
         local_directory="/home/b.weinstein/logs/", death_timeout=300)
@@ -92,7 +92,7 @@ if __name__ == "__main__":
 
     print("{s} csv files found for training".format(s=len(data_paths)))
     
-    run_test(data_paths)
+    #run_test(data_paths)
     
     #On Hypergator
-    #run_HPC(data_paths)
+    run_HPC(data_paths)
