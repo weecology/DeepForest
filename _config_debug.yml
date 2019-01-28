@@ -20,6 +20,7 @@ rgb_tile_dir: /Users/Ben/Documents/DeepLidar/data/TEAK/
 snapshot: None
 batch_size: 1   
 epochs: 2
+imagenet_weights: True
 save_snapshot_path: None
 backbone: resnet50
 shuffle_training: False
