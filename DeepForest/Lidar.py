@@ -117,7 +117,7 @@ def clip_las(lidar_tile, annotations, row, windows, rgb_res):
     clipped = lidar_tile.clip(poly)
     
     #If there are no points within the clip, return None and continue to next window
-    if len(clipped.data.points) ==0:
+    if len(clipped.data.points) == 0:
         print("Window {s} from tile {r} has no LIDAR points".format(s=row["window"], r=row["tile"]))
         return None
     else:    

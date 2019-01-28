@@ -4,20 +4,26 @@ from DeepForest import config
 from DeepForest import onthefly_generator
 from DeepForest import preprocess
 from DeepForest import Lidar
+from DeepForest import utils
 import pyfor
+import warnings
+import sys
 
+if not sys.warnoptions:
+    warnings.simplefilter("ignore")
+    
 def sample(n=50):
     """
     Grab n random images from across the site
     """
     #Load config
-    DeepForest_config = config.load_config("train")
+    DeepForest_config = config.load_config()
     
     #Read in data
     data = preprocess.load_data(data_dir=DeepForest_config['training_csvs'], res=0.1, lidar_path=DeepForest_config["lidar_path"])
     
     #Create windows
-    windows = preprocess.create_windows(data, DeepForest_config)
+    windows = preprocess.create_windows(data, DeepForest_config,base_dir = DeepForest_config["evaluation_tile_dir"])
     
     selected_windows = windows[["tile","window"]].drop_duplicates().sample(n=n)
         
@@ -27,6 +33,12 @@ def sample(n=50):
         
         #Load image - done for side effects
         four_channel = generator.load_image(i)
+        
+        #Check if its blank
+        is_blank = utils.image_is_blank(four_channel[:,:,:3])
+        
+        if is_blank:
+            continue
         
         #name RGB
         tilename = os.path.splitext(generator.image_data[i]["tile"])[0]
@@ -42,6 +54,7 @@ def sample(n=50):
         filename = os.path.join("data",DeepForest_config["evaluation_site"], tilename)        
         
         #Write .laz
+        generator.clipped_las.write(filename)
         
 if __name__ == "__main__":
-    sample(n=25)
+    sample(n=50)
