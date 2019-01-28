@@ -1,8 +1,8 @@
 #Config file for DeepMeerkat train.py on HiPerGator
 
 #Data generation
-num_hipergator_workers: 25
-h5_dir: /orange/ewhite/b.weinstein/training_h5s/TEAK/
+num_hipergator_workers: 40
+h5_dir: /orange/ewhite/b.weinstein/training_h5s/TEAK/FourChannel/
 
 #SlidingWindow
 patch_size: 400
@@ -20,7 +20,7 @@ rgb_tile_dir: /orange/ewhite/NeonData/TEAK/DP3.30010.001/2018/FullSite/D17/2018_
 training_images: All
 snapshot: None
 batch_size: 20      
-epochs: 1
+epochs: 40
 save_snapshot_path: /orange/ewhite/b.weinstein/retinanet/snapshots/
 backbone: resnet50
 shuffle_training: False
@@ -41,7 +41,7 @@ nms_threshold: 0.15
 
 #LIDAR
 lidar_path: /orange/ewhite/NeonData/TEAK/DP1.30003.001/2018/FullSite/D17/2018_TEAK_3/L1/DiscreteLidar/ClassifiedPointCloud/
-kernel_size: None
+kernel_size: 15
 workers: 1
 use_multiprocessing: False
 max_queue_size: 10
