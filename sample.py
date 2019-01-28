@@ -29,6 +29,11 @@ def sample(n=50):
         
     generator = onthefly_generator.OnTheFlyGenerator(data=data, windowdf=selected_windows, DeepForest_config = DeepForest_config)
     
+    folder_dir = os.path.join("data",DeepForest_config["evaluation_site"],"samples")
+    
+    if not os.path.exists(folder_dir):
+        os.mkdir(folder_dir)
+                 
     for i in range(generator.size()):
         
         #Load image - done for side effects
@@ -43,7 +48,7 @@ def sample(n=50):
         #name RGB
         tilename = os.path.splitext(generator.image_data[i]["tile"])[0]
         tilename = tilename + "_" + str(generator.image_data[i]["window"]) + ".tif"
-        filename = os.path.join("data",DeepForest_config["evaluation_site"], tilename)
+        filename = os.path.join(folder_dir, tilename)
         
         #Write
         cv2.imwrite(filename, generator.image)
@@ -51,7 +56,7 @@ def sample(n=50):
         #name .laz
         tilename = os.path.splitext(generator.image_data[i]["tile"])[0]
         tilename = tilename + "_" + str(generator.image_data[i]["window"]) + ".laz"
-        filename = os.path.join("data",DeepForest_config["evaluation_site"], tilename)        
+        filename = os.path.join(folder_dir, tilename)        
         
         #Write .laz
         generator.clipped_las.write(filename)
