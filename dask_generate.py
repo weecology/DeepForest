@@ -86,6 +86,9 @@ if __name__ == "__main__":
     
     #Local Debugging
     data_paths=find_csvs()
+    
+    #Optionally limit
+    data_paths = data_paths[:100]
 
     print("{s} csv files found for training".format(s=len(data_paths)))
     
