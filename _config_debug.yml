@@ -14,7 +14,7 @@ preprocess:
           zero_area: True
 
 #Training
-training_images: 2
+training_images: All
 training_csvs: /Users/Ben/Documents/DeepLidar/data/TEAK/
 rgb_tile_dir: /Users/Ben/Documents/DeepLidar/data/TEAK/
 snapshot: None
@@ -37,7 +37,7 @@ shuffle_evaluation: False
 nms_threshold: 0.15
 
 #For hand annotation neon_MAP
-validation_percent: 2
+validation_percent: 5
 
 #LIDAR
 lidar_path: /Users/Ben/Documents/DeepLidar/data/TEAK/
