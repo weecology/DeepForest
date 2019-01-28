@@ -116,18 +116,18 @@ def clip_las(lidar_tile, annotations, row, windows, rgb_res):
     #Clip lidar to geographic extent    
     clipped = lidar_tile.clip(poly)
     
-    return clipped
+    #If there are no points within the clip, return None and continue to next window
+    if len(clipped_las.data.points) ==0:
+        print("Window {s} from tile {r} has no LIDAR points".format(s=row["window"], r=row["tile"]))
+        return None
+    else:    
+        return clipped
 
 def compute_chm(clipped_las, kernel_size, min_threshold = 3):
     """
     Computer a canopy height model based on the available laz file to align with the RGB data
     """
 
-    #If there are no points within the clip, return None and continue to next window
-    if len(clipped_las.data.points) ==0:
-        print("Window {s} from tile {r} has no LIDAR points".format(s=row["window"], r=row["tile"]))
-        return None
-    
     #Median filter
     chm = clipped_las.chm(cell_size = 0.1 , interp_method = "nearest" )    
     

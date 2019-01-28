@@ -232,12 +232,13 @@ class OnTheFlyGenerator(Generator):
         #Crop Las
         self.clipped_las = self.clip_las()
         
+        #If empty, return None
+        if self.clipped_las is None:
+            return None
+        
         #Crop numpy array
         self.CHM = self.compute_CHM()
-        
-        #If empty, return None
-        if self.CHM is None:
-            return None
+    
         
         four_channel_image = self.bind_array()
         
