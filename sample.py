@@ -39,6 +39,9 @@ def sample(n=50):
         #Load image - done for side effects
         four_channel = generator.load_image(i)
         
+        if generator.clipped_las == None:
+            continue
+            
         #name RGB
         tilename = os.path.splitext(generator.image_data[i]["tile"])[0]
         tilename = tilename + "_" + str(generator.image_data[i]["window"]) + ".tif"
@@ -51,6 +54,7 @@ def sample(n=50):
         tilename = os.path.splitext(generator.image_data[i]["tile"])[0]
         tilename = tilename + "_" + str(generator.image_data[i]["window"]) + ".laz"
         filename = os.path.join(folder_dir, tilename)        
+        
         
         #Write .laz
         generator.clipped_las.write(filename)
