@@ -516,13 +516,13 @@ if __name__ == '__main__':
         args = ["--snapshot-path"] + args
 
     #Restart from a preview snapshot?
-    if not DeepForest_config["snapshot"] == "None":
-        args = [DeepForest_config["snapshot"]] + args
-        args = ["--snapshot"] + args
+    if not DeepForest_config["weights"] == "None":
+        args = [DeepForest_config["weights"]] + args
+        args = ["--weights"] + args
 
     #Use imagenet weights?
-    if not DeepForest_config["imagenet_weights"]:
-        args = ["--no-weights"] + args
+    if not DeepForest_config["imagenet_weights"] and DeepForest_config["weights"] == "None":
+        args = ["--imagenet-weights"] + args
   
     #Create log directory if saving eval images, add to arguments
     if not DeepForest_config["save_image_path"]=="None":
@@ -533,6 +533,10 @@ if __name__ == '__main__':
         args= [save_image_path] + args
         args=["--save-path"] + args        
 
+    #Use imagenet weights?
+    if DeepForest_config["num_GPUs"] > 1:
+        args = ["--multi-gpu-force", "--multi-gpu", str(DeepForest_config["num_GPUs"])] + args    
+        
     #log params
     experiment.log_parameters(DeepForest_config)    
     experiment.log_parameter("Start Time", dirname)    
