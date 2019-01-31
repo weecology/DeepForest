@@ -1,7 +1,7 @@
 #Config file for DeepMeerkat train.py on HiPerGator
 
 #Data generation
-num_hipergator_workers: 40
+num_hipergator_workers: 20
 h5_dir: /orange/ewhite/b.weinstein/training_h5s/TEAK/FourChannel/
 
 #SlidingWindow
@@ -14,13 +14,14 @@ preprocess:
           zero_area: True
 
 #Training
+num_GPUs: 1
 training_csvs: /home/b.weinstein/TreeSegmentation/analysis/Results/detection_boxes/TEAK/2018/
 hand_annotations: /home/b.weinstein/DeepLidar/data/TEAK/annotations/2018_TEAK_3_315000_4094000_image_crop.xml
 rgb_tile_dir: /orange/ewhite/NeonData/TEAK/DP3.30010.001/2018/FullSite/D17/2018_TEAK_3/L3/Camera/Mosaic/V01/
 training_images: All
-snapshot: None
-imagenet_weights: True
-batch_size: 20      
+weights: /orange/ewhite/b.weinstein/retinanet/snapshots/20190130_125044/resnet50_03.h5
+imagenet_weights: False
+batch_size: 25      
 epochs: 40
 save_snapshot_path: /orange/ewhite/b.weinstein/retinanet/snapshots/
 backbone: resnet50
