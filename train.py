@@ -522,7 +522,8 @@ if __name__ == '__main__':
 
     #Use imagenet weights?
     if not DeepForest_config["imagenet_weights"] and DeepForest_config["weights"] == "None":
-        args = ["--imagenet-weights"] + args
+        print("Turning off imagenet weights")
+        args = ["--no-weights"] + args
   
     #Create log directory if saving eval images, add to arguments
     if not DeepForest_config["save_image_path"]=="None":
