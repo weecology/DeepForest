@@ -74,29 +74,7 @@ for image_path in images:
     
     # correct for image scale
     boxes /= scale
-    
-    #drape boxes
-    #get image name
-    image_name = os.path.splitext(os.path.basename(image_path))[0]
-    
-    #only pass score threshold boxes
-    quality_boxes = []
-    for box, score, label in zip(boxes[0], scores[0], labels[0]):
-        quality_boxes.append(box)
-        # scores are sorted so we can break
-        if score < args.score_threshold:
-            break
-        
-    pc = postprocessing.drape_boxes(boxes=quality_boxes, tilename=image_name, lidar_dir=DeepForest_config["lidar_path"])
-    new_boxes = postprocessing.cloud_to_box(pc)
-        
-    #view
-    #pc.data.points.user_data.fillna(0, inplace=True)    
-    #pc.write("/Users/Ben/Desktop/test.laz")
-    
-    #cmap=utils._discrete_cmap(n_bin= len(pc.data.points.user_data.unique()), base_cmap="Spectral_r")
-    #pyfor.rasterizer.Grid(pc, cell_size=1).raster("max", "user_data").plot(cmap=cmap)
-    
+       
     # visualize ld detections
     for box, score, label in zip(boxes[0], scores[0], labels[0]):
         # scores are sorted so we can break
@@ -110,20 +88,39 @@ for image_path in images:
         
         caption = "{} {:.2f}".format(labels_to_names[label], score)
         draw_caption(draw, b, caption)
-    
-    # visualize detections
-    for box, score, label in zip(new_boxes[0], scores[0], labels[0]):
+        
+    #only pass score threshold boxes
+    quality_boxes = []
+    for box, score, label in zip(boxes[0], scores[0], labels[0]):
+        quality_boxes.append(box)
         # scores are sorted so we can break
         if score < args.score_threshold:
             break
+    
+    #drape boxes
+    #get image name
+    image_name = os.path.splitext(os.path.basename(image_path))[0]     
+    pc = postprocessing.drape_boxes(boxes=quality_boxes, tilename=image_name, lidar_dir=DeepForest_config["lidar_path"])
+    
+    #Skip if point density is too low    
+    if pc:
+        
+        #Get new bounding boxes
+        new_boxes = postprocessing.cloud_to_box(pc)    
+        
+        # visualize detections
+        for box, score, label in zip(new_boxes[0], scores[0], labels[0]):
+            # scores are sorted so we can break
+            if score < args.score_threshold:
+                break
+                
+            color = label_color(label)
             
-        color = label_color(label)
-        
-        b = box.astype(int)
-        draw_box(draw, b, color=(0,90,255))
-        
-        caption = "{} {:.2f}".format(labels_to_names[label], score)
-        draw_caption(draw, b, caption)    
+            b = box.astype(int)
+            draw_box(draw, b, color=(0,90,255))
+            
+            #caption = "{} {:.2f}".format(labels_to_names[label], score)
+            #draw_caption(draw, b, caption)    
     
     #Write .shp of predictions?
     filename =  os.path.join(args.output_dir, image_name + ".tif")

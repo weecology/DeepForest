@@ -255,3 +255,26 @@ def bind_array(image,chm):
         four_channel_image = np.dstack((image, chm))    
         
     return four_channel_image
+
+def check_density(pc):
+    ''''
+    Check the point density of a pyfor point cloud
+    returns: density in points/m^2
+    '''
+    #number of points
+    n_points =  pc.data.points.shape[0]
+    
+    #area
+    xmin = pc.data.x.min()
+    xmax = pc.data.x.max()
+    
+    ymin = pc.data.y.min()
+    ymax = pc.data.y.max()
+    
+    area = (xmax - xmin) * (ymax - ymin)
+    
+    density = n_points / area
+    
+    return density
+     
+     

@@ -24,6 +24,14 @@ def drape_boxes(boxes, tilename, lidar_dir):
     #Load cloud
     pc = Lidar.load_lidar(lidar_path)
     
+    density = Lidar.check_density(pc)
+    
+    print("Point density is {:.2f}".format(density))
+    
+    if density < 4:
+        print("Point density of {:.2f} is too low, skipping image {}".format(density, tilename))
+        return None
+    
     #reset user_data column
     pc.data.points.user_data =  np.nan
         
