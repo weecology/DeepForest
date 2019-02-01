@@ -1,6 +1,7 @@
 """
 Utility functions for reading and cleaning images
 """
+import numpy as np
 
 #Utility functions
 
@@ -84,3 +85,13 @@ def box_overlap(row, window):
 
     overlap = intersection_area / float(box_area)
     return overlap
+
+def _discrete_cmap(n_bin, base_cmap=None):
+    """Create an N-bin discrete colormap from the specified input map"""
+    import matplotlib.pyplot as plt
+    from matplotlib.colors import LinearSegmentedColormap
+
+    base = plt.cm.get_cmap(base_cmap)
+    color_list = base(np.linspace(0, 1, n_bin))
+    cmap_name = base.name + str(n_bin)
+    return LinearSegmentedColormap.from_list(cmap_name, color_list, n_bin)

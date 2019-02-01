@@ -5,7 +5,7 @@ from DeepForest import config
 
 
 #Load config
-DeepForest_config = config.load_config("train")
+DeepForest_config = config.load_config()
 pattern=os.path.join(DeepForest_config["h5_dir"],"*.h5")
 
 files=glob.glob(pattern)
@@ -23,11 +23,13 @@ for f in files:
         filpath=os.path.splitext(f)[0]
         to_delete_csv=filpath + ".csv"
         try:
-            os.remove(to_delete_csv)
+            pass
+            #os.remove(to_delete_csv)
         except Exception as e:
             print(e)
         try: 
-            os.remove(f)
+            pass
+            #os.remove(f)
         except Exception as e:
             print(e)
 

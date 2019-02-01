@@ -43,7 +43,7 @@ nms_threshold: 0.15
 validation_percent: 5
 
 #LIDAR
-lidar_path: /Users/Ben/Documents/DeepLidar/data/TEAK/
+lidar_path: /Users/Ben/Documents/DeepLidar/data/TEAK/samples/
 kernel_size: 15
 workers: 1
 use_multiprocessing: False

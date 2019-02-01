@@ -24,7 +24,6 @@ from DeepForest import Lidar
 from DeepForest import postprocessing
 from DeepForest import onthefly_generator
 
-
 def neonRecall(
     site,
     generator,
@@ -68,10 +67,7 @@ def neonRecall(
             print("Empty image, skipping")
             continue
         
-        else:
-            #Make a copy of the chm for plotting
-            chm=raw_image[:,:,3].copy()
-        
+
         image        = generator.preprocess_image(raw_image)
         image, scale = generator.resize_image(image)
 
@@ -102,17 +98,6 @@ def neonRecall(
         with rasterio.open(tile_path) as dataset:
             bounds = dataset.bounds   
     
-        #drape boxes
-        #find lidar tilename
-        tilename = generator.image_data[i]["tile"]
-        tilename = os.path.splitext(tilename)[0]
-        
-        #Drape predictions over cloud
-        #labeled_point_cloud = postprocessing.drape_boxes(boxes = image_boxes, tilename = tilename, lidar_dir = DeepForest_config["lidar_path"] )
-        
-        #Get the convex hulls
-        #tree_hulls = postprocessing.cloud_to_polygons(labeled_point_cloud)
-        
         #Save image and send it to logger
         if save_path is not None:
             draw_detections(raw_image, image_boxes, image_scores, image_labels, label_to_name=generator.label_to_name, score_threshold=score_threshold, color = (80,127,255))
@@ -129,27 +114,10 @@ def neonRecall(
     
             #Write RGB
             cv2.imwrite(os.path.join(save_path, '{}_NeonPlot.png'.format(plotID)), raw_image[:,:,:3])
-            
-            #Write LIDAR
-            chm -= chm.min() # ensure the minimal value is 0.0
-            chm /= chm.max() # maximum value in chm is now 1.0
-            chm = np.array(chm * 255, dtype = np.uint8)
-            chm=cv2.applyColorMap(chm, cv2.COLORMAP_JET)
-        
-            draw_detections(chm, image_boxes, image_scores, image_labels, label_to_name=generator.label_to_name,score_threshold=score_threshold, color = (80,127,255))
-               
-            #add points
-            for i in np.arange(len(x)):
-                cv2.circle(chm, (int(x[i]),int(y[i])), 2, (0,0,255), -1)
                 
             #Format name and save
-                
-            #Write CHM
-            cv2.imwrite(os.path.join(save_path, '{}_lidar_NeonPlot.png'.format(plotID)), chm)
-            
             if experiment:
                 experiment.log_image(os.path.join(save_path, '{}_NeonPlot.png'.format(plotID)),file_name=str(plotID))            
-                experiment.log_image(os.path.join(save_path, '{}_lidar_NeonPlot.png'.format(plotID)),file_name=str(plotID+"_lidar"))
     
     #Calculate recall
     recall = calculate_recall(tree_hulls, plot_data)

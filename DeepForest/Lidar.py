@@ -17,6 +17,31 @@ import random
 
 r = lambda: random.randint(0,255)
 
+def load_lidar(laz_path):
+    """
+    Load lidar tile from file based on path name
+    param: A string of the file path of the lidar tile
+    return: A pyfor point cloud
+    """
+    
+    try:
+        pc=pyfor.cloud.Cloud(laz_path)
+        pc.extension=".las"
+        
+    except FileNotFoundError:
+        print("Failed loading path: %s" %(laz_path))
+        
+    #normalize and filter
+    pc.normalize(1)    
+    
+    #Quick filter for unreasonable points.
+    pc.filter(min = -1, max = pc.data.points.z.quantile(0.995), dim = "z")    
+    
+    #Check dim
+    assert (not pc.data.points.shape[0] == 0), "Lidar tile is empty!"
+    
+    return pc
+
 def createPolygon(xmin, xmax, ymin, ymax):
     '''
     Convert a pandas row into a polygon bounding box
@@ -73,31 +98,6 @@ def fetch_lidar_filename(row, lidar_path, site):
         laz_path = find_lidar_file(image_path=row["tile"],lidar_path=lidar_path)
         
     return laz_path
-
-def load_lidar(laz_path):
-    """
-    Load lidar tile from file based on path name
-    param: A string of the file path of the lidar tile
-    return: A pyfor point cloud
-    """
-    
-    try:
-        pc=pyfor.cloud.Cloud(laz_path)
-        pc.extension=".las"
-        
-    except FileNotFoundError:
-        print("Failed loading path: %s" %(laz_path))
-        
-    #normalize and filter
-    pc.normalize(1)    
-    
-    #Quick filter for unreasonable points.
-    pc.filter(min = -1, max = pc.data.points.z.quantile(0.995), dim = "z")    
-    
-    #Check dim
-    assert (not pc.data.points.shape[0] == 0), "Lidar tile is empty!"
-    
-    return pc
 
 def clip_las(lidar_tile, annotations, row, windows, rgb_res):
     
