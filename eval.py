@@ -21,7 +21,6 @@ if __name__ == "__main__" and __package__ is None:
     __package__ = "keras_retinanet.bin"
 
 from keras_retinanet import models
-from keras_retinanet.utils.eval import evaluate
 from keras_retinanet.utils.keras_version import check_keras_version
 
 #Custom Generator
@@ -30,6 +29,7 @@ from DeepForest.h5_generator import H5Generator
 
 #Custom callback
 from DeepForest.evaluation import neonRecall
+from DeepForest.evalmAP import evaluate
 
 def get_session():
     """ Construct a modified tf session.
@@ -122,10 +122,7 @@ def main(data, DeepForest_config, experiment,args=None):
     generator = create_generator(args, data, DeepForest_config)
 
     #create the NEON mAP generator 
-    #NEON_generator = create_NEON_generator(args, site, DeepForest_config)
-    
-    #create the NEON recall generator     
-    #NEON_generator_recall = create_NEON_generator(args, site, DeepForest_config)
+    NEON_generator = create_NEON_generator(args, site, DeepForest_config)
     
     # load the model
     print('Loading model, this may take a second...')
@@ -133,64 +130,49 @@ def main(data, DeepForest_config, experiment,args=None):
 
     #print(model.summary())
 
-    #average_precisions = evaluate(
-        #generator,
-        #model,
-        #iou_threshold=args.iou_threshold,
-        #score_threshold=args.score_threshold,
-        #max_detections=args.max_detections,
-        #save_path=args.save_path + dirname
-    #)
-
-    ### print evaluation
-    #present_classes = 0
-    #precision = 0
-    #for label, (average_precision, num_annotations) in average_precisions.items():
-        #print('{:.0f} instances of class'.format(num_annotations),
-              #generator.label_to_name(label), 'with average precision: {:.4f}'.format(average_precision))
-        #if num_annotations > 0:
-            #present_classes += 1
-            #precision       += average_precision
-    #print('mAP: {:.4f}'.format(precision / present_classes))
-    #experiment.log_metric("mAP", precision / present_classes)                 
-    
-   # Neon plot recall rate
-    recall=neonRecall(
-        site,
-        NEON_generator_recall,
-        model,            
+    average_precisions = evaluate(
+        generator,
+        model,
+        iou_threshold=args.iou_threshold,
         score_threshold=args.score_threshold,
-        save_path=args.save_path,
-        experiment=experiment,
-        DeepForest_config=DeepForest_config
+        max_detections=args.max_detections,
+        save_path=args.save_path + dirname
     )
-    
-    experiment.log_metric("Recall", recall)
-    
-    print("Recall is {}".format(recall))
-        
-    ##NEON plot mAP
-    #average_precisions = evaluate(
-        #NEON_generator,
-        #model,
-        #iou_threshold=args.iou_threshold,
-        #score_threshold=args.score_threshold,
-        #max_detections=args.max_detections,
-        #save_path=args.save_path + dirname +"/mimic/",
-        #experiment=experiment
-    #)
 
     ## print evaluation
-    #present_classes = 0
-    #precision = 0
-    #for label, (average_precision, num_annotations) in average_precisions.items():
-        #print('{:.0f} instances of class'.format(num_annotations),
-              #NEON_generator.label_to_name(label), 'with average precision: {:.4f}'.format(average_precision))
-        #if num_annotations > 0:
-            #present_classes += 1
-            #precision       += average_precision
-    #print('NEON mAP: {:.4f}'.format(precision / present_classes))
-    #experiment.log_metric("NEON_mAP", precision / present_classes)        
+    present_classes = 0
+    precision = 0
+    for label, (average_precision, num_annotations) in average_precisions.items():
+        print('{:.0f} instances of class'.format(num_annotations),
+              generator.label_to_name(label), 'with average precision: {:.3f}'.format(average_precision))
+        if num_annotations > 0:
+            present_classes += 1
+            precision       += average_precision
+    print('mAP: {:.3f}'.format(precision / present_classes))
+    experiment.log_metric("mAP", precision / present_classes)                 
+        
+    #NEON plot mAP
+    average_precisions = evaluate(
+        NEON_generator,
+        model,
+        iou_threshold=args.iou_threshold,
+        score_threshold=args.score_threshold,
+        max_detections=args.max_detections,
+        save_path=args.save_path + dirname,
+        experiment=experiment
+    )
+
+    # print evaluation
+    present_classes = 0
+    precision = 0
+    for label, (average_precision, num_annotations) in average_precisions.items():
+        print('{:.0f} instances of class'.format(num_annotations),
+              NEON_generator.label_to_name(label), 'with average precision: {:.4f}'.format(average_precision))
+        if num_annotations > 0:
+            present_classes += 1
+            precision       += average_precision
+    print('NEON mAP: {:.4f}'.format(precision / present_classes))
+    experiment.log_metric("NEON_mAP", precision / present_classes)        
     
     
 if __name__ == '__main__':
@@ -222,17 +204,17 @@ if __name__ == '__main__':
 
     #log training mode
     experiment.log_parameter("Training Mode",mode.mode)
+
+    DeepForest_config = load_config()
     
     #Load DeepForest_config and data file based on training or retraining mode
     if mode.mode == "train":
-        DeepForest_config = load_config("train")
         data = preprocess.load_csvs(DeepForest_config["h5_dir"])
                 
     if mode.mode == "retrain":
-        DeepForest_config = load_config("retrain")        
         data=preprocess.load_xml(DeepForest_config["hand_annotations"], DeepForest_config["rgb_res"])
 
-    experiment.log_multiple_params(DeepForest_config)
+    experiment.log_parameters(DeepForest_config)
 
     #Log site
     site=DeepForest_config["evaluation_site"]

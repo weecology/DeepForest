@@ -10,19 +10,21 @@ import geopandas as gp
 from shapely import geometry
 from DeepForest import Lidar 
 
-def drape_boxes(boxes, tilename, lidar_dir):
+def drape_boxes(boxes, tilename=None, lidar_dir=None, pc=None):
     '''
     boxes: predictions from retinanet
     cloud: pyfor cloud used to generate canopy height model
     tilename: name of the .laz file, without extension.
     lidar_dir: Where to look for lidar tile
+    pc: Optional point cloud from memory, on the fly generation
     '''
     
-    #Find lidar path
-    lidar_path = os.path.join(lidar_dir, tilename) + ".laz"
-    
-    #Load cloud
-    pc = Lidar.load_lidar(lidar_path)
+    if not pc:
+        #Find lidar path
+        lidar_path = os.path.join(lidar_dir, tilename) + ".laz"
+        
+        #Load cloud
+        pc = Lidar.load_lidar(lidar_path)
     
     density = Lidar.check_density(pc)
     
@@ -50,11 +52,6 @@ def drape_boxes(boxes, tilename, lidar_dir):
     #remove ground points    
     pc.data.points.loc[pc.data.points.z < 2, "user_data"] = np.nan
     
-    #TODO snap points to closest tree based on distance tolerance?
-            
-    #View results        
-    #pyfor.rasterizer.Grid(pc, cell_size=1).raster("max", "user_data").plot()
-
     return pc
 
     
@@ -108,7 +105,6 @@ def cloud_to_box(pc):
         
     #pass as numpy array of 3 dim
     tree_boxes =np.array(tree_boxes)
-    tree_boxes = np.expand_dims(tree_boxes, 0)
     
     return tree_boxes
     

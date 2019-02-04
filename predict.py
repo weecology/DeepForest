@@ -107,6 +107,8 @@ for image_path in images:
     if pc:
         #Get new bounding boxes
         new_boxes = postprocessing.cloud_to_box(pc)    
+        #expends 3dim
+        new_boxes = np.expand_dims(new_boxes, 0)
         
         # visualize detections
         for box, score, label in zip(new_boxes[0], scores[0], labels[0]):

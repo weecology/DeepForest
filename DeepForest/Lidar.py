@@ -17,6 +17,25 @@ import random
 
 r = lambda: random.randint(0,255)
 
+
+def fetch_lidar_filename(row, lidar_path, site):
+    """
+    Find lidar path in a directory.
+    param: row a dictionary with tile "key" for filename to be searched for
+    return: string location on disk
+    """
+    
+    #first try identical name - this isn't great practice here, needs to be improved. How to direct the lidar path to the right directory?
+    direct_filename = os.path.join("data" ,site,os.path.splitext(row["tile"])[0] + ".laz")
+
+    if os.path.exists(direct_filename):
+        laz_path = direct_filename
+    else:
+        print("Filename: %s does not exist, searching within %s" %(direct_filename,lidar_path))        
+        laz_path = find_lidar_file(image_path=row["tile"],lidar_path=lidar_path)
+        
+    return laz_path
+
 def load_lidar(laz_path):
     """
     Load lidar tile from file based on path name
@@ -83,24 +102,6 @@ def get_window_extent(annotations, row, windows, rgb_res):
     window_utm_ymax= tile_ymax - ((y+h) * rgb_res)
     
     return(window_utm_xmin, window_utm_xmax, window_utm_ymin, window_utm_ymax)
-
-def fetch_lidar_filename(row, lidar_path, site):
-    """
-    Find lidar path in a directory.
-    param: row a dictionary with tile "key" for filename to be searched for
-    return: string location on disk
-    """
-    
-    #first try identical name - this isn't great practice here, needs to be improved. How to direct the lidar path to the right directory?
-    direct_filename = os.path.join("data" ,site,os.path.splitext(row["tile"])[0] + ".laz")
-
-    if os.path.exists(direct_filename):
-        laz_path = direct_filename
-    else:
-        print("Filename: %s does not exist, searching within %s" %(direct_filename,lidar_path))        
-        laz_path = find_lidar_file(image_path=row["tile"],lidar_path=lidar_path)
-        
-    return laz_path
 
 def clip_las(lidar_tile, annotations, row, windows, rgb_res):
     

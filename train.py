@@ -49,7 +49,6 @@ from keras_retinanet  import layers  # noqa: F401
 from keras_retinanet  import losses
 from keras_retinanet  import models
 from keras_retinanet .callbacks import RedirectModel
-from keras_retinanet .callbacks.eval import Evaluate
 from keras_retinanet .models.retinanet import retinanet_bbox
 from keras_retinanet .utils.anchors import make_shapes_callback, anchor_targets_bbox
 from keras_retinanet .utils.keras_version import check_keras_version
@@ -60,7 +59,7 @@ from DeepForest.h5_generator import H5Generator
 from DeepForest.onthefly_generator import OnTheFlyGenerator
 
 #Custom Callbacks
-from DeepForest.callbacks import recallCallback, NEONmAP
+from DeepForest.callbacks import recallCallback, NEONmAP, Evaluate
 
 def makedirs(path):
     # Intended behavior: try to create the directory,
