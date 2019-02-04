@@ -32,10 +32,13 @@ def load_lidar(laz_path):
         print("Failed loading path: %s" %(laz_path))
         
     #normalize and filter
-    pc.normalize(1)    
+    try: 
+        pc.normalize(1)
+    except:
+        print("No vertical objects in image, skipping normalization")
     
     #Quick filter for unreasonable points.
-    pc.filter(min = -1, max = pc.data.points.z.quantile(0.995), dim = "z")    
+    pc.filter(min = -1, max = 100 , dim = "z")    
     
     #Check dim
     assert (not pc.data.points.shape[0] == 0), "Lidar tile is empty!"

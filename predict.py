@@ -28,7 +28,7 @@ from PIL import Image
 mode_parser     = argparse.ArgumentParser(description='Prediction of a new image')
 mode_parser.add_argument('--model', help='path to training model' )
 mode_parser.add_argument('--image', help='image or directory of images to predict' )
-mode_parser.add_argument('--score_threshold', default=0.2)
+mode_parser.add_argument('--score_threshold', default=0.25)
 mode_parser.add_argument('--nms_threshold', default=0.1)
 mode_parser.add_argument('--output_dir', default="snapshots/images/")
 
@@ -56,7 +56,8 @@ else:
     images=args.image
     
 for image_path in images:
-        
+    print(image_path)
+
     # load image
     image = read_image_bgr(image_path)
     
@@ -104,7 +105,6 @@ for image_path in images:
     
     #Skip if point density is too low    
     if pc:
-        
         #Get new bounding boxes
         new_boxes = postprocessing.cloud_to_box(pc)    
         
