@@ -21,7 +21,7 @@ import cv2
 import slidingwindow as sw
 import itertools
 
-from matplotlib import pyplot
+from DeepForest import Lidar
 
 class H5Generator(Generator):
     """ Generate data for a custom CSV dataset.
@@ -116,7 +116,6 @@ class H5Generator(Generator):
         #Select annotations
         for tilename in tiles:
             csv_name = os.path.join(self.DeepForest_config["h5_dir"], str(tilename)+'.csv')
-            
             try:
                 annotations = pd.read_csv(csv_name)
             except Exception as e:
@@ -144,13 +143,25 @@ class H5Generator(Generator):
             #Shuffle order of tiles
             random.shuffle(groups)
         
-        #Bring back together
+        #Bring pandas frame back together
         newdf=pd.concat(groups).reset_index(drop=True)
-        
         image_data=newdf.to_dict("index")
         image_names = list(image_data.keys())
         
         return(image_data, image_names)
+    
+    def fetch_lidar_filename(self):           
+        lidar_filepath=Lidar.fetch_lidar_filename(self.row, self.DeepForest_config["lidar_path"], self.DeepForest_config["evaluation_site"])
+        
+        return lidar_filepath
+
+    def load_lidar_tile(self):
+        '''Load a point cloud into memory from file
+        '''
+        self.lidar_filepath=self.fetch_lidar_filename()        
+        lidar_tile=Lidar.load_lidar(self.lidar_filepath)
+        
+        return lidar_tile  
     
     def load_image(self, image_index):
         """ Load an image at the image_index.
@@ -162,16 +173,16 @@ class H5Generator(Generator):
             print("Failed on image index {}".format(image_index))
             print("There are {} names in the image names object".format(len(self.image_names)))
         
-        row = self.image_data[image_name]
+        self.row = self.image_data[image_name]
         
         #Open image to crop
         ##Check if tile the is same as previous draw from generator, this will save time.
-        if not row["tile"] == self.previous_image_path:
+        if not self.row["tile"] == self.previous_image_path:
             
-            print("Loading new lidar tile: %s" %(row["tile"]))
+            print("Loading new tile: %s" %(self.row["tile"]))
             
             #tilename for h5 and csv files
-            tilename = os.path.split(row["tile"])[-1]
+            tilename = os.path.split(self.row["tile"])[-1]
             tilename = os.path.splitext(tilename)[0]                        
             
             h5_name = os.path.join(self.DeepForest_config["h5_dir"], tilename+'.h5')
@@ -185,14 +196,14 @@ class H5Generator(Generator):
             self.annotations = pd.read_csv(csv_name)
             
         #read image from h5
-        window = row["window"]
+        window = self.row["window"]
         image = self.hf["train_imgs"][window,...]
         
         #Store RGB if needed for show, in RGB color space.
         self.image = image[:,:,:3]        
         
         #Save image path for next evaluation to check
-        self.previous_image_path = row["tile"]
+        self.previous_image_path = self.row["tile"]
             
         return image
     
@@ -202,10 +213,10 @@ class H5Generator(Generator):
         '''
         #Select sliding window and tile
         image_name = self.image_names[image_index]        
-        row = self.image_data[image_name]
+        self.row = self.image_data[image_name]
        
         #Find annotations
-        annotations = self.annotations.loc[(self.annotations["tile"] == row["tile"]) & (self.annotations["window"] == row["window"])]
+        annotations = self.annotations.loc[(self.annotations["tile"] == self.row["tile"]) & (self.annotations["window"] == self.row["window"])]
             
         return annotations[["0","1","2","3","4"]].values
     

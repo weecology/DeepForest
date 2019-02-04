@@ -224,62 +224,63 @@ def non_max_suppression(boxes, overlapThresh):
     # integer data type
     return pick
 
-def predict_tile(numpy_image, generator, model, score_threshold, max_detections, suppression_threshold):
-    #get sliding windows
-    windows=compute_windows(numpy_image)
+#Deprecated, needs to be reassessed.
+#def predict_tile(numpy_image, generator, model, score_threshold, max_detections, suppression_threshold):
+    ##get sliding windows
+    #windows=compute_windows(numpy_image)
 
-    #holder for all detections among windows within tile
-    plot_detections=[]
+    ##holder for all detections among windows within tile
+    #plot_detections=[]
 
-    #Prediction for each window
-    for window in windows:
-        raw_image = retrieve_window(numpy_image,window)
-        image        = generator.preprocess_image(raw_image)
-        image, scale = generator.resize_image(image)
+    ##Prediction for each window
+    #for window in windows:
+        #raw_image = retrieve_window(numpy_image,window)
+        #image        = generator.preprocess_image(raw_image)
+        #image, scale = generator.resize_image(image)
 
-        # run network
-        boxes, scores, labels = model.predict_on_batch(np.expand_dims(image, axis=0))[:3]
+        ## run network
+        #boxes, scores, labels = model.predict_on_batch(np.expand_dims(image, axis=0))[:3]
 
-        # correct boxes for image scale
-        boxes /= scale
+        ## correct boxes for image scale
+        #boxes /= scale
 
-        # select indices which have a score above the threshold
-        indices = np.where(scores[0, :] > score_threshold)[0]
+        ## select indices which have a score above the threshold
+        #indices = np.where(scores[0, :] > score_threshold)[0]
 
-        # select those scores
-        scores = scores[0][indices]
+        ## select those scores
+        #scores = scores[0][indices]
 
-        # find the order with which to sort the scores
-        scores_sort = np.argsort(-scores)[:max_detections]
+        ## find the order with which to sort the scores
+        #scores_sort = np.argsort(-scores)[:max_detections]
 
-        # select detections
-        image_boxes      = boxes[0, indices[scores_sort], :]
-        image_scores     = scores[scores_sort]
-        image_labels     = labels[0, indices[scores_sort]]
-        image_detections = np.concatenate([image_boxes, np.expand_dims(image_scores, axis=1), np.expand_dims(image_labels, axis=1)], axis=1)        
+        ## select detections
+        #image_boxes      = boxes[0, indices[scores_sort], :]
+        #image_scores     = scores[scores_sort]
+        #image_labels     = labels[0, indices[scores_sort]]
+        #image_detections = np.concatenate([image_boxes, np.expand_dims(image_scores, axis=1), np.expand_dims(image_labels, axis=1)], axis=1)        
         
-        #if multiple windows align detections to original image
+        ##if multiple windows align detections to original image
 
-        if len(windows)> 1:
-            x,y,w,h=window.getRect()
+        #if len(windows)> 1:
+            #x,y,w,h=window.getRect()
             
-            #boxes are in form x1, y1, x2, y2        
-            image_detections[:,0] = image_detections[:,0] + x 
-            image_detections[:,1] = image_detections[:,1] + y 
-            image_detections[:,2] = image_detections[:,2] + x 
-            image_detections[:,3] = image_detections[:,3] + y 
+            ##boxes are in form x1, y1, x2, y2        
+            #image_detections[:,0] = image_detections[:,0] + x 
+            #image_detections[:,1] = image_detections[:,1] + y 
+            #image_detections[:,2] = image_detections[:,2] + x 
+            #image_detections[:,3] = image_detections[:,3] + y 
     
-        #Collect detection across windows
-        plot_detections.append(image_detections)                
+        ##Collect detection across windows
+        #plot_detections.append(image_detections)                
     
-    if len(plot_detections) > 1:   
-        #Non-max suppression across windows
-        all_boxes=np.concatenate(plot_detections)
-        final_box_index=non_max_suppression(all_boxes[:,:4], overlapThresh=suppression_threshold)
-        final_boxes=all_boxes[final_box_index,:]
-    else:
-        final_boxes = plot_detections[0]
-    return final_boxes
+    #if len(plot_detections) > 1:   
+        ##Non-max suppression across windows
+        #all_boxes=np.concatenate(plot_detections)
+        #final_box_index=non_max_suppression(all_boxes[:,:4], overlapThresh=suppression_threshold)
+        #final_boxes=all_boxes[final_box_index,:]
+    #else:
+        #final_boxes = plot_detections[0]
+    #return final_boxes
 
 def create_polygon(row, bounds, cell_size):
 

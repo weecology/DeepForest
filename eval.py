@@ -23,11 +23,9 @@ if __name__ == "__main__" and __package__ is None:
 from keras_retinanet import models
 from keras_retinanet.utils.keras_version import check_keras_version
 
-#Custom Generator
+#Custom Generators and callbacks
 from DeepForest.onthefly_generator import OnTheFlyGenerator
 from DeepForest.h5_generator import H5Generator
-
-#Custom callback
 from DeepForest.evaluation import neonRecall
 from DeepForest.evalmAP import evaluate
 
@@ -37,6 +35,7 @@ def get_session():
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
     return tf.Session(config=config)
+
 
 def create_NEON_generator(args, site, DeepForest_config):
     """ Create generators for training and validation.
@@ -54,6 +53,7 @@ def create_NEON_generator(args, site, DeepForest_config):
     generator.lidar_path = "data/" + site + "/"
     
     return(generator)
+
 
 def create_generator(args, data, config):
     """ Create generators for training and validation.
@@ -198,14 +198,13 @@ if __name__ == '__main__':
     #set experiment and log configs
     experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2",project_name='deeplidar',log_code=False)
 
-    #save time for logging
+    DeepForest_config = load_config()
+
+    #Log parameters
     dirname = mode.dir
     experiment.log_parameter("Start Time", dirname)
-
-    #log training mode
     experiment.log_parameter("Training Mode",mode.mode)
-
-    DeepForest_config = load_config()
+    experiment.log_parameters(DeepForest_config)
     
     #Load DeepForest_config and data file based on training or retraining mode
     if mode.mode == "train":
@@ -213,8 +212,6 @@ if __name__ == '__main__':
                 
     if mode.mode == "retrain":
         data=preprocess.load_xml(DeepForest_config["hand_annotations"], DeepForest_config["rgb_res"])
-
-    experiment.log_parameters(DeepForest_config)
 
     #Log site
     site=DeepForest_config["evaluation_site"]
