@@ -260,20 +260,28 @@ def bind_array(image,chm):
         
     return four_channel_image
 
-def check_density(pc):
+def check_density(pc, bounds=[]):
     ''''
     Check the point density of a pyfor point cloud
+    bounds: a utm array [xmin, xmax, ymin,ymax] to limit density search
     returns: density in points/m^2
     '''
-    #number of points
-    n_points =  pc.data.points.shape[0]
-    
-    #area
-    xmin = pc.data.x.min()
-    xmax = pc.data.x.max()
-    
-    ymin = pc.data.y.min()
-    ymax = pc.data.y.max()
+    if len(bounds)> 0:
+        #Filter by utm bounds, find points in crop
+        xmin, xmax, ymin, ymax = bounds
+        filtered_points = pc.data.points[(pc.data.points.x > xmin) & (pc.data.points.x < xmax)  & (pc.data.points.y > ymin) & (pc.data.points.y < ymax)]
+        n_points = filtered_points.shape[0]
+        
+    else:
+        #number of points
+        n_points =  pc.data.points.shape[0]
+        
+        #area
+        xmin = pc.data.x.min()
+        xmax = pc.data.x.max()
+
+        ymin = pc.data.y.min()
+        ymax = pc.data.y.max()
     
     area = (xmax - xmin) * (ymax - ymin)
     

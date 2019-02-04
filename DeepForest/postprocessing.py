@@ -10,12 +10,13 @@ import geopandas as gp
 from shapely import geometry
 from DeepForest import Lidar 
 
-def drape_boxes(boxes, tilename=None, lidar_dir=None, pc=None):
+def drape_boxes(boxes, tilename=None, lidar_dir=None, pc=None, bounds=None):
     '''
     boxes: predictions from retinanet
     cloud: pyfor cloud used to generate canopy height model
     tilename: name of the .laz file, without extension.
     lidar_dir: Where to look for lidar tile
+    utm_coords: optional array of utm coordinates (xmin,xmax,ymin,ymax) to limit check density
     pc: Optional point cloud from memory, on the fly generation
     '''
     
@@ -27,6 +28,8 @@ def drape_boxes(boxes, tilename=None, lidar_dir=None, pc=None):
         pc = Lidar.load_lidar(lidar_path)
     
     #The tile could be the full time, so let's check just the 400 pixel crop we are interested    
+    density = Lidar.check_density(pc, bounds=bounds)
+    
     print("Point density is {:.2f}".format(density))
     
     if density < 4:
@@ -53,10 +56,11 @@ def drape_boxes(boxes, tilename=None, lidar_dir=None, pc=None):
     
     return pc    
     
-def find_utm_coords(box, pc, rgb_res = 0.1):
+def find_utm_coords(box, pc, rgb_res = 0.1, bounds = []):
     
     """
     Turn cartesian coordinates back to projected utm
+    bounds: an optional offset for finding the position of a window within the data
     """
     
     xmin = box[0]
@@ -64,14 +68,18 @@ def find_utm_coords(box, pc, rgb_res = 0.1):
     xmax = box[2]
     ymax = box[3]
     
-    tile_xmin = pc.data.points.x.min()
-    tile_ymax = pc.data.points.y.max()
-    
+    #add offset if needed
+    if len(bounds) > 0:
+        tile_xmin, _ , _ , tile_ymax = bounds   
+    else:
+        tile_xmin = pc.data.points.x.min()
+        tile_ymax = pc.data.points.y.max()
+        
     window_utm_xmin = xmin * rgb_res + tile_xmin
     window_utm_xmax = xmax * rgb_res + tile_xmin
     window_utm_ymin = tile_ymax - (ymin * rgb_res)
-    window_utm_ymax= tile_ymax - (ymax* rgb_res) 
-    
+    window_utm_ymax= tile_ymax - (ymax* rgb_res)     
+        
     return(window_utm_xmin, window_utm_xmax, window_utm_ymin, window_utm_ymax)
 
 def cloud_to_box(pc):
