@@ -72,6 +72,9 @@ def run(tile=None, DeepForest_config=None, mode="train"):
     #Create h5 dataset to fill
     hdf5_file.create_dataset("train_imgs", train_shape, dtype='f')
     
+    #Create h5 dataset of utm positions, xmin,xmax,ymin,ymax
+    hdf5_file.create_dataset("utm_coords", (generator.size(),4) , dtype='f')
+    
     #Generate crops and annotations
     labels = {}
     
@@ -96,15 +99,18 @@ def run(tile=None, DeepForest_config=None, mode="train"):
         labeldf['tile'] = tilename
         labeldf['window'] = i
         
+        #Add utm position
+        hdf5_file["utm_coords"][i,...] = generator.utm_from_window()
+        
         #add to labels
         labels[i] = labeldf
     
     #Write labels to pandas frame
     labeldf = pd.concat(labels, ignore_index=True)
-    
     csv_filename = os.path.join(DeepForest_config["h5_dir"], tilename + ".csv")    
     labeldf.to_csv(csv_filename, index=False)
     
+    #Write geographic position 
     #Need to close h5py?
     hdf5_file.close()
     

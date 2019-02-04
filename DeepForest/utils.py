@@ -4,7 +4,6 @@ Utility functions for reading and cleaning images
 import numpy as np
 
 #Utility functions
-
 def normalize(image):
     
     #Range normalize for all channels 

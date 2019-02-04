@@ -26,8 +26,7 @@ def drape_boxes(boxes, tilename=None, lidar_dir=None, pc=None):
         #Load cloud
         pc = Lidar.load_lidar(lidar_path)
     
-    density = Lidar.check_density(pc)
-    
+    #The tile could be the full time, so let's check just the 400 pixel crop we are interested    
     print("Point density is {:.2f}".format(density))
     
     if density < 4:
@@ -52,10 +51,9 @@ def drape_boxes(boxes, tilename=None, lidar_dir=None, pc=None):
     #remove ground points    
     pc.data.points.loc[pc.data.points.z < 2, "user_data"] = np.nan
     
-    return pc
-
+    return pc    
     
-def find_utm_coords(box,  pc, rgb_res = 0.1):
+def find_utm_coords(box, pc, rgb_res = 0.1):
     
     """
     Turn cartesian coordinates back to projected utm

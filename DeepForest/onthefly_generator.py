@@ -1,26 +1,22 @@
 """
 On the fly generator. Crop out portions of a large image, and pass boxes and annotations. This follows the csv_generator template. Satifies the format in generator.py
 """
-import pandas as pd
-
-from keras_retinanet.preprocessing.generator import Generator
-
-import numpy as np
-from PIL import Image
-from six import raise_from
 import random
-
+import itertools
 import csv
 import sys
 import os.path
-
 import cv2
+import rasterio
+import pandas as pd
+import numpy as np
+from PIL import Image
+from six import raise_from
 import slidingwindow as sw
-import itertools
-
 from DeepForest import Lidar
 from DeepForest import utils
 from matplotlib import pyplot
+from keras_retinanet.preprocessing.generator import Generator
 
 class OnTheFlyGenerator(Generator):
     """ Generate data for a custom CSV dataset.
@@ -357,6 +353,25 @@ class OnTheFlyGenerator(Generator):
         
         return boxes
 
-
-
-
+    def utm_from_window(self):
+        """Given the current window crop, get the utm position from the rasterio metadata
+        returns: utm bounds"""
+        x,y,h,w = self.windows[self.row["window"]].getRect()
+        x = x * self.rgb_res
+        y = y * self.rgb_res
+        
+        with rasterio.open(self.base_dir+self.row["tile"]) as dataset:
+            self.utm_bounds = dataset.bounds   
+        
+        utm_xmin = self.utm_bounds.left + x
+        utm_xmax = self.utm_bounds.left + x + (self.DeepForest_config["patch_size"] * self.rgb_res)
+        
+        utm_ymax = self.utm_bounds.top - y
+        utm_ymin = self.utm_bounds.top - y - (self.DeepForest_config["patch_size"] * self.rgb_res)
+        
+        return (utm_xmin, utm_xmax, utm_ymin, utm_ymax)
+        
+            
+        
+        
+        

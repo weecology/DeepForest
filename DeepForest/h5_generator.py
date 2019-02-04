@@ -159,9 +159,15 @@ class H5Generator(Generator):
         '''Load a point cloud into memory from file
         '''
         self.lidar_filepath=self.fetch_lidar_filename()        
-        lidar_tile=Lidar.load_lidar(self.lidar_filepath)
+        self.lidar_tile=Lidar.load_lidar(self.lidar_filepath)
         
-        return lidar_tile  
+        return self.lidar_tile  
+    
+    def clip_las(self):
+        '''' Inherit LIDAR methods for Class
+        '''
+        clipped_las = Lidar.clip_las(lidar_tile=self.lidar_tile, annotations=self.annotation_list, row=self.row, windows=self.windows, rgb_res=self.rgb_res)
+        return clipped_las
     
     def load_image(self, image_index):
         """ Load an image at the image_index.
@@ -219,6 +225,20 @@ class H5Generator(Generator):
         annotations = self.annotations.loc[(self.annotations["tile"] == self.row["tile"]) & (self.annotations["window"] == self.row["window"])]
             
         return annotations[["0","1","2","3","4"]].values
+    
+    def compute_windows(self):
+        ''''
+        Create a sliding window object for reference
+        '''
+        #Load tile
+        image = self.base_dir + self.annotation_list.rgb_path.unique()[0]
+        im = Image.open(image)
+        numpy_image = np.array(im)    
+        
+        #Generate sliding windows
+        windows = sw.generate(numpy_image, sw.DimOrder.HeightWidthChannel,  self.DeepForest_config["patch_size"], self.DeepForest_config["patch_overlap"])
+        
+        return(windows)
     
 if __name__=="__main__":
     
