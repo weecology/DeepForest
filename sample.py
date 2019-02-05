@@ -36,8 +36,11 @@ def sample(n=50):
                  
     for i in range(generator.size()):
         
-        #Load image - done for side effects
-        three_channel = generator.load_image(i)
+        #Load image - done for side effects, allow to skip bad tiles.
+        try:
+            three_channel = generator.load_image(i)
+        except:
+            continue
         
         #load lidar
         generator.load_lidar_tile()
