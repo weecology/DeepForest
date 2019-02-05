@@ -37,8 +37,11 @@ def sample(n=50):
     for i in range(generator.size()):
         
         #Load image - done for side effects
-        four_channel = generator.load_image(i)
+        three_channel = generator.load_image(i)
         
+        #load lidar
+        generator.load_lidar_tile()
+        generator.clip_las()
         if generator.clipped_las == None:
             continue
             
@@ -54,7 +57,6 @@ def sample(n=50):
         tilename = os.path.splitext(generator.image_data[i]["tile"])[0]
         tilename = tilename + "_" + str(generator.image_data[i]["window"]) + ".laz"
         filename = os.path.join(folder_dir, tilename)        
-        
         
         #Write .laz
         generator.clipped_las.write(filename)
