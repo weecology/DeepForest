@@ -31,7 +31,7 @@ num_GPUs: 1
 
 #Evaluation
 evaluation_site: TEAK
-evaluation_images: 30
+evaluation_images: All
 evaluation_tile_dir: /Users/Ben/Documents/DeepLidar/data/TEAK/
 save_image_path: snapshots/images/
 shuffle_evaluation: False
@@ -40,7 +40,7 @@ shuffle_evaluation: False
 nms_threshold: 0.15
 
 #For hand annotation neon_MAP
-validation_percent: 5
+validation_percent: 100
 
 #LIDAR
 lidar_path: /Users/Ben/Documents/DeepLidar/data/TEAK/

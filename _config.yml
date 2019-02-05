@@ -36,7 +36,7 @@ save_image_path: /orange/ewhite/b.weinstein/retinanet/snapshots/
 shuffle_evaluation: False
 
 #For hand annotation neon_MAP
-validation_percent: 10
+validation_percent: 100
 
 #Non-max suppression, threshold for the IoU value to determine when a box should be suppressed.
 nms_threshold: 0.15

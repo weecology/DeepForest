@@ -173,8 +173,8 @@ class OnTheFlyGenerator(Generator):
     def clip_las(self):
         '''' Inherit LIDAR methods for Class
         '''
-        clipped_las = Lidar.clip_las(lidar_tile=self.lidar_tile, annotations=self.annotation_list, row=self.row, windows=self.windows, rgb_res=self.rgb_res)
-        return clipped_las
+        self.clipped_las = Lidar.clip_las(lidar_tile=self.lidar_tile, annotations=self.annotation_list, row=self.row, windows=self.windows, rgb_res=self.rgb_res)
+        return self.clipped_las
     
     def fetch_lidar_filename(self):           
         lidar_filepath=Lidar.fetch_lidar_filename(self.row, self.DeepForest_config["lidar_path"], self.DeepForest_config["evaluation_site"])
@@ -185,9 +185,9 @@ class OnTheFlyGenerator(Generator):
         '''Load a point cloud into memory from file
         '''
         self.lidar_filepath=self.fetch_lidar_filename()        
-        lidar_tile=Lidar.load_lidar(self.lidar_filepath)
+        self.lidar_tile=Lidar.load_lidar(self.lidar_filepath)
         
-        return lidar_tile
+        return self.lidar_tile
     
     def load_rgb_tile(self):
         ''''

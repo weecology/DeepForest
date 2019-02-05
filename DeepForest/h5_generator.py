@@ -160,14 +160,6 @@ class H5Generator(Generator):
         '''
         self.lidar_filepath=self.fetch_lidar_filename()        
         self.lidar_tile=Lidar.load_lidar(self.lidar_filepath)
-        
-        return self.lidar_tile  
-    
-    def clip_las(self):
-        '''' Inherit LIDAR methods for Class
-        '''
-        clipped_las = Lidar.clip_las(lidar_tile=self.lidar_tile, annotations=self.annotation_list, row=self.row, windows=self.windows, rgb_res=self.rgb_res)
-        return clipped_las
     
     def load_image(self, image_index):
         """ Load an image at the image_index.
