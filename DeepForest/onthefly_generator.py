@@ -1,6 +1,8 @@
 """
-On the fly generator. Crop out portions of a large image, and pass boxes and annotations. This follows the csv_generator template. Satifies the format in generator.py
+On the fly self. Crop out portions of a large image, and pass boxes and annotations. This follows the csv_self template. Satifies the format in self.py
 """
+import keras
+import tensorflow as tf
 import random
 import itertools
 import csv
@@ -13,10 +15,11 @@ import numpy as np
 from PIL import Image
 from six import raise_from
 import slidingwindow as sw
-from DeepForest import Lidar
-from DeepForest import utils
+from DeepForest import Lidar, postprocessing, utils
 from matplotlib import pyplot
 from keras_retinanet.preprocessing.generator import Generator
+from keras_retinanet.utils.image import preprocess_image, resize_image
+from keras_retinanet import models
 
 class OnTheFlyGenerator(Generator):
     """ Generate data for a custom CSV dataset.
@@ -35,7 +38,7 @@ class OnTheFlyGenerator(Generator):
         name=None,
         **kwargs
     ):
-        """ Initialize a data generator.
+        """ Initialize a data self.
 
         """
         #Assign config and intiliaze values
@@ -50,6 +53,9 @@ class OnTheFlyGenerator(Generator):
         self.group_method=group_method
         self.shuffle_tile_epoch=shuffle_tile_epoch
         self.annotation_list = data  
+        
+        #Tensorflow prediction session
+        self.session_exists = False
         
         #Set destination directory
         if not base_dir:
@@ -77,7 +83,7 @@ class OnTheFlyGenerator(Generator):
         super(OnTheFlyGenerator, self).__init__(**kwargs)
                         
     def __len__(self):
-        """Number of batches for generator"""
+        """Number of batches for self"""
         return len(self.groups)
          
     def size(self):
@@ -226,20 +232,6 @@ class OnTheFlyGenerator(Generator):
         self.previous_image_path = self.row["tile"]
         
         return image
-        
-        ##Crop Las
-        #self.clipped_las = self.clip_las()
-        
-        ##If empty, return None
-        #if self.clipped_las is None:
-            #return None
-        
-        ##Crop numpy array
-        #self.CHM = self.compute_CHM()
-    
-        #four_channel_image = self.bind_array()
-        
-        #return four_channel_image
     
     def load_image(self, image_index):
         """ Load an image at the image_index.
@@ -248,7 +240,7 @@ class OnTheFlyGenerator(Generator):
         image_name = self.image_names[image_index]        
         self.row = self.image_data[image_name]
         
-        ##Check if image the is same as previous draw from generator
+        ##Check if image the is same as previous draw from self
         if not self.row["tile"] == self.previous_image_path:
             
             print("Loading new tile {}".format(self.row["tile"]))
@@ -256,7 +248,7 @@ class OnTheFlyGenerator(Generator):
             self.numpy_image = self.load_rgb_tile()
             #self.lidar_tile = self.load_lidar_tile()
             
-        #Load a new crop from generator
+        #Load a new crop from self
         three_channel_image = self.load_new_crop()
         
         if three_channel_image is None:
@@ -327,7 +319,7 @@ class OnTheFlyGenerator(Generator):
         """
         #Find the original data and crop
         image_name = self.image_names[image_index]
-        row = self.image_data[image_name]
+        self.row = self.image_data[image_name]
         
         #Check for blank black image, if so, enforce no annotations
         remove_annotations = utils.image_is_blank(self.image)
@@ -336,7 +328,7 @@ class OnTheFlyGenerator(Generator):
             return np.zeros((0, 5))
         
         #Look for annotations in previous epoch
-        key=row["tile"]+"_"+str(row["window"])
+        key = self.row["tile"]+"_"+str(self.row["window"])
         
         if key in self.annotation_dict:
             boxes=self.annotation_dict[key]
@@ -370,8 +362,72 @@ class OnTheFlyGenerator(Generator):
         utm_ymin = self.utm_bounds.top - y - (self.DeepForest_config["patch_size"] * self.rgb_res)
         
         return (utm_xmin, utm_xmax, utm_ymin, utm_ymax)
+   
+    #Prediction methods
+    def get_session(self):
+        config = tf.ConfigProto()
+        config.gpu_options.allow_growth = True
+        return tf.Session(config=config)
+    
+    def tf_session(self):
+        # set the modified tf session as backend in keras        
+        keras.backend.tensorflow_backend.set_session(self.get_session())        
         
+        #flag for session setting
+        self.session_exists = True
+        
+    def predict(self, model):
+        '''
+        Generic prediction function for bounding box prediction
+        model: a loaded model of form retinanet saved model
+        '''
+                
+        #Get a new tensorflow session if not previously set 
+        if not self.session_exists:
+            self.tf_session()
             
+        # load retinanet model
+        model = models.load_model(model, backbone_name='resnet50', convert=True, nms_threshold=self.DeepForest_config["nms_threshold"])
+        labels_to_names = {0: 'Tree'}
+                   
+        # preprocess image for network
+        image = preprocess_image(self.image)
+        image, scale = resize_image(img = image, min_side = 400)
         
+        # process image
+        boxes, scores, labels = model.predict_on_batch(np.expand_dims(image, axis=0))
+        
+        # correct for image scale
+        boxes /= scale
+            
+        #only pass score threshold boxes
+        quality_boxes = []
+        for box, score, label in zip(boxes[0], scores[0], labels[0]):
+            quality_boxes.append(box)
+            # scores are sorted so we can break
+            if score < self.DeepForest_config["score_threshold"]:
+                break
+        
+        ###Drape boxes on lidar cloud###
+        #Load tile
+        self.load_lidar_tile()
+        
+        #The tile could be the full tile, so let's check just the 400 pixel crop we are interested    
+        density = Lidar.check_density(self.lidar_tile)
+    
+        print("Point density is {:.2f}".format(density))
+    
+        if density > 4:
+            #find window utm coordinates
+            pc = postprocessing.drape_boxes(boxes=quality_boxes, pc = self.lidar_tile)     
+    
+            #Get new bounding boxes
+            new_boxes = postprocessing.cloud_to_box(pc)    
+            new_scores = scores[:new_boxes.shape[0]]
+            new_labels = labels[:new_boxes.shape[0]]          
+        else:
+            print("Point density of {:.2f} is too low, skipping image {}".format(density, self.row["tile"]))        
+                   
+        return [new_boxes, new_scores, new_labels]       
         
         

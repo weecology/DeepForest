@@ -100,8 +100,8 @@ for image_path in images:
     
     #drape boxes
     #get image name
-    image_name = os.path.splitext(os.path.basename(image_path))[0]     
-    pc = postprocessing.drape_boxes(boxes=quality_boxes, tilename=image_name, lidar_dir=DeepForest_config["lidar_path"])
+    generator.load_lidar_tile()
+    pc = postprocessing.drape_boxes(boxes=quality_boxes, lidar_dir=DeepForest_config["lidar_path"])
     
     #Skip if point density is too low    
     if pc:

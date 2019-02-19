@@ -2,6 +2,29 @@
 Utility functions for reading and cleaning images
 """
 import numpy as np
+import keras
+from keras_retinanet import models
+from keras_retinanet.utils.image import read_image_bgr, preprocess_image, resize_image
+import matplotlib.pyplot as plt
+import os
+import numpy as np
+import time
+import pandas as pd
+import geopandas as gp
+
+# set tf backend to allow memory to grow, instead of claiming everything
+import tensorflow as tf
+
+#parse args
+import argparse
+import glob
+
+#DeepForest
+from DeepForest import onthefly_generator, config
+from DeepForest.preprocess import compute_windows, retrieve_window
+from DeepForest import postprocessing
+from shapely import geometry
+import rtree
 
 #Utility functions
 def normalize(image):
@@ -94,3 +117,73 @@ def _discrete_cmap(n_bin, base_cmap=None):
     color_list = base(np.linspace(0, 1, n_bin))
     cmap_name = base.name + str(n_bin)
     return LinearSegmentedColormap.from_list(cmap_name, color_list, n_bin)
+
+def boxes_to_polygon(boxes):
+    """Turn the results of a retinanet bounding box array to a shapely geometry object"""
+    
+    polygons = []
+    
+    for box in boxes:
+        
+        #Construct polygon
+        xmin = box[0]
+        ymin = box[1]
+        xmax = box[2]
+        ymax = box[3]        
+        
+        top_left = [xmin, ymin]
+        top_right = [xmax, ymin]
+        bottom_left = [xmin, ymax]
+        bottom_right = [xmax, ymax]
+        polygon = geometry.Polygon([top_left, bottom_left, bottom_right, top_right])
+        polygons.append(polygon)
+        
+    polygons = gp.GeoSeries(polygons)
+    
+    return polygons
+
+def match_polygons(prediction_df, annotation_df):
+    """
+    Match polygons (shapely objects) based on area of overlap
+    """
+
+    '''
+    1) Find overlap among polygons efficiently 
+    2) Calulate a cost matrix of overlap, with rows as itcs and columns as predictions
+    3) Hungarian matching for pairing
+    4) Calculate intersection over union (IoU)
+    '''
+    
+    #for each annotation, which predictions overlap
+    possible_matches_index = list(prediction_df.sindex.intersection(annotation_df.geometry[0].bounds))
+    
+    possible_matches_index = list(prediction_df.sindex.intersection(annotation_df.bounds[0]))
+
+    for pos, cell in enumerate(prediction_df.geometry):
+        # assuming cell is a shapely object
+        idx.insert(pos, cell.bounds)
+
+    overlap_dict={}
+
+    #select predictions that overlap with the polygons
+    matched=[prediction_df.geometry[x] for x in idx.intersection(prediction_df.geometry.bounds)]
+
+    #Create a container
+    cost_matrix=np.zeros((len(itc_polygons),len(matched)))
+
+    for x,poly in enumerate(itc_polygons):    
+        for y,match in enumerate(matched):
+            cost_matrix[x,y]= poly.intersection(match).area
+
+    #Assign polygon pairs
+    assignments=linear_sum_assignment(-1 *cost_matrix)
+
+    iou_list=[]
+
+    for i in np.arange(len(assignments[0])):        
+        a=itc_polygons[assignments[0][i]]
+        b=matched[assignments[1][i]]
+        iou=IoU_polygon(a,b)
+        iou_list.append(iou)
+
+    return(iou_list)

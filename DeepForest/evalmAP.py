@@ -100,12 +100,19 @@ def _get_detections(generator, model, score_threshold=0.05, max_detections=100, 
         image_detections = np.concatenate([image_boxes, np.expand_dims(image_scores, axis=1), np.expand_dims(image_labels, axis=1)], axis=1)
         
         #drape boxes
-        #get lidar cloud if a new tile
-        if not hasattr(generator, 'lidar_tile'):
+        #get lidar cloud if a new tile, or if not the same tile as previous image.
+        if i == 0:
+            generator.load_lidar_tile()
+        elif not generator.image_data[i]["tile"] == generator.image_data[i-1]["tile"]:
             generator.load_lidar_tile()
         
-        #The tile could be the full time, so let's check just the 400 pixel crop we are interested    
-        bounds = generator.hf["utm_coords"][generator.row["window"],]        
+        #The tile could be the full tile, so let's check just the 400 pixel crop we are interested    
+        #Not the best structure, but the on-the-fly generator always has 0 bounds
+        if hasattr(generator, 'hf'):
+            bounds = generator.hf["utm_coords"][generator.row["window"],]    
+        else:
+            bounds=[]
+            
         density = Lidar.check_density(generator.lidar_tile, bounds=bounds)
         
         print("Point density is {:.2f}".format(density))
@@ -169,7 +176,7 @@ def _get_annotations(generator):
         for label in range(generator.num_classes()):
             all_annotations[i][label] = annotations[annotations[:, 4] == label, :4].copy()
 
-        #print('{}/{}'.format(i + 1, generator.size()), end='\r')
+        print('{}/{}'.format(i + 1, generator.size()), end='\r')
 
     return all_annotations
 

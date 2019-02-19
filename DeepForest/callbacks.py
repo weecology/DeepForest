@@ -3,7 +3,7 @@ Callback for evaluation. Modified in part from keras-retinanet by FizyR.
 '''
 import keras
 from .evaluation import neonRecall
-from Deepforest.eval import evaluate         
+from .evalmAP import evaluate         
 
 class Evaluate(keras.callbacks.Callback):
     """ Evaluation callback for arbitrary datasets.

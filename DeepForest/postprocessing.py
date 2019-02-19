@@ -10,14 +10,11 @@ import geopandas as gp
 from shapely import geometry
 from DeepForest import Lidar 
 
-def drape_boxes(boxes, pc, tilename=None, lidar_dir=None, bounds=[]):
+def drape_boxes(boxes, pc, bounds=[]):
     '''
     boxes: predictions from retinanet
-    cloud: pyfor cloud used to generate canopy height model
-    tilename: name of the .laz file, without extension.
-    lidar_dir: Where to look for lidar tile
-    utm_coords: optional array of utm coordinates (xmin,xmax,ymin,ymax) to limit check density
     pc: Optional point cloud from memory, on the fly generation
+    bounds: optional utm bounds to restrict utm box
     '''
     
     #reset user_data column
@@ -65,7 +62,7 @@ def find_utm_coords(box, pc, rgb_res = 0.1, bounds = []):
         
     return(window_utm_xmin, window_utm_xmax, window_utm_ymin, window_utm_ymax)
 
-def cloud_to_box(pc,bounds=[]):
+def cloud_to_box(pc, bounds=[]):
     ''''
     pc: a pyfor point cloud with labeled tree data in the 'user_data' column.
     Turn a point cloud with a "user_data" attribute into a numpy array of boxes
@@ -83,8 +80,7 @@ def cloud_to_box(pc,bounds=[]):
         points = pc.data.points.loc[pc.data.points.user_data == tree_id,["x","y"]]
         
         #turn utm to cartesian, subtract min x and max y value, divide by cell size. Max y because numpy 0,0 origin is top left. utm N is top. 
-        #TODO this is in error?
-        #FIND UTM coords here?
+        #FIND UTM coords here
         if len(bounds)>0:
             tile_xmin, _ , _ , tile_ymax = bounds     
             points.x = points.x - tile_xmin

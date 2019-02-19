@@ -20,18 +20,21 @@ limitations under the License.
 """
 
 #Import logger.
-from comet_ml import Experiment
-
+if __name__ == "__main__":
+    from comet_ml import Experiment
+    
 #keras-retinanet imports
+import keras
+import keras.preprocessing.image
+from keras.utils import multi_gpu_model
 import argparse
 import functools
 import os
 import sys
 import warnings
-
-import keras
-import keras.preprocessing.image
-from keras.utils import multi_gpu_model
+import pandas as pd
+import glob
+import numpy as np
 import tensorflow as tf
 
 #supress warnings
@@ -44,8 +47,7 @@ if __name__ == "__main__" and __package__ is None:
     import keras_retinanet.bin  # noqa: F401
     __package__ = "keras_retinanet.bin"
 
-# Change these to absolute imports if you copy this script outside the keras_retinanet package.
-from keras_retinanet  import layers  # noqa: F401
+from keras_retinanet  import layers 
 from keras_retinanet  import losses
 from keras_retinanet  import models
 from keras_retinanet .callbacks import RedirectModel
@@ -57,6 +59,10 @@ from keras_retinanet .utils.model import freeze as freeze_model
 #Custom Generator
 from DeepForest.h5_generator import H5Generator
 from DeepForest.onthefly_generator import OnTheFlyGenerator
+from datetime import datetime
+from DeepForest.config import load_config
+from DeepForest import preprocess
+from DeepForest import Generate
 
 #Custom Callbacks
 from DeepForest.callbacks import recallCallback, NEONmAP, Evaluate
@@ -135,7 +141,7 @@ def create_models(backbone_retinanet, num_classes, weights, multi_gpu=0, freeze_
 
     return model, training_model, prediction_model
 
-def create_NEON_generator(args,site,DeepForest_config):
+def create_NEON_generator(args, site, DeepForest_config):
     """ Create generators for training and validation.
     """
     annotations, windows = preprocess.NEON_annotations(site, DeepForest_config)
@@ -454,14 +460,6 @@ if __name__ == '__main__':
     
     mode=mode_parser.parse_args()
     
-    import os
-    import pandas as pd
-    import glob
-    import numpy as np
-    from datetime import datetime
-    from DeepForest.config import load_config
-    from DeepForest import preprocess
-    from DeepForest import Generate
 
     #load config
     DeepForest_config = load_config()
