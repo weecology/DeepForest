@@ -18,7 +18,7 @@ import argparse
 import glob
 
 #DeepForest
-from DeepForest import onthefly_generator, config
+from DeepForest import onthefly_generator, config, Lidar
 from DeepForest.preprocess import compute_windows, retrieve_window
 from DeepForest import postprocessing, utils
 import pandas as pd
@@ -54,7 +54,7 @@ if os.path.isdir(args.image):
     images=glob.glob(os.path.join(args.image,"*.tif"))
 else:
     images=args.image
-    
+
 for image_path in images:
     print(image_path)
 
@@ -99,9 +99,11 @@ for image_path in images:
             break
     
     #drape boxes
-    #get image name
-    generator.load_lidar_tile()
-    pc = postprocessing.drape_boxes(boxes=quality_boxes, lidar_dir=DeepForest_config["lidar_path"])
+    #get image name and load point cloud
+    image_name = os.path.splitext(os.path.basename(image_path))[0] 
+    point_cloud_filename= os.path.join(DeepForest_config["lidar_path"] + image_name) + ".laz"
+    pc = Lidar.load_lidar(point_cloud_filename)
+    pc = postprocessing.drape_boxes(boxes=quality_boxes, pc=pc)
     
     #Skip if point density is too low    
     if pc:

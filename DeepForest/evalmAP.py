@@ -109,7 +109,7 @@ def _get_detections(generator, model, score_threshold=0.05, max_detections=100, 
         #The tile could be the full tile, so let's check just the 400 pixel crop we are interested    
         #Not the best structure, but the on-the-fly generator always has 0 bounds
         if hasattr(generator, 'hf'):
-            bounds = generator.hf["utm_coords"][generator.row["window"],]    
+            bounds = generator.hf["utm_coords"][generator.row["window"]]    
         else:
             bounds=[]
             
@@ -117,7 +117,7 @@ def _get_detections(generator, model, score_threshold=0.05, max_detections=100, 
         
         print("Point density is {:.2f}".format(density))
                 
-        if density > 4:
+        if density > generator.DeepForest_config["min_density"]:
             #find window utm coordinates
             print("Bounds for image {}, window {}, are {}".format(generator.row["tile"], generator.row["window"], bounds))
             pc = postprocessing.drape_boxes(boxes=image_boxes, pc = generator.lidar_tile, bounds=bounds)     
@@ -126,13 +126,15 @@ def _get_detections(generator, model, score_threshold=0.05, max_detections=100, 
             new_boxes = postprocessing.cloud_to_box(pc, bounds)    
             new_scores = image_scores[:new_boxes.shape[0]]
             new_labels = image_labels[:new_boxes.shape[0]]          
+            image_detections = np.concatenate([new_boxes, np.expand_dims(new_scores, axis=1), np.expand_dims(new_labels, axis=1)], axis=1)
+            
         else:
             print("Point density of {:.2f} is too low, skipping image {}".format(density, generator.row["tile"]))        
 
         if save_path is not None:
             draw_annotations(raw_image, generator.load_annotations(i), label_to_name=generator.label_to_name)
             draw_detections(raw_image, image_boxes, image_scores, image_labels, label_to_name=generator.label_to_name,score_threshold=score_threshold)
-            if density > 4:
+            if density > generator.DeepForest_config["min_density"]:
                 draw_detections(raw_image, new_boxes, new_scores, new_labels, label_to_name=generator.label_to_name,score_threshold=score_threshold, color=(0,0,0))            
             
             #name image
@@ -149,8 +151,6 @@ def _get_detections(generator, model, score_threshold=0.05, max_detections=100, 
         # copy detections to all_detections
         for label in range(generator.num_classes()):
             all_detections[i][label] = image_detections[image_detections[:, -1] == label, :-1]
-
-        #print('{}/{}'.format(i + 1, generator.size()), end='\r')
 
     return all_detections
 
@@ -175,8 +175,6 @@ def _get_annotations(generator):
         # copy detections to all_annotations
         for label in range(generator.num_classes()):
             all_annotations[i][label] = annotations[annotations[:, 4] == label, :4].copy()
-
-        print('{}/{}'.format(i + 1, generator.size()), end='\r')
 
     return all_annotations
 

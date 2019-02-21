@@ -70,6 +70,7 @@ def cloud_to_box(pc, bounds=[]):
     tree_boxes = [ ]
     
     tree_ids = pc.data.points.user_data.dropna().unique()
+    
     #Try to follow order of input boxes, start at Tree 1.
     tree_ids.sort()
     
@@ -81,7 +82,7 @@ def cloud_to_box(pc, bounds=[]):
         
         #turn utm to cartesian, subtract min x and max y value, divide by cell size. Max y because numpy 0,0 origin is top left. utm N is top. 
         #FIND UTM coords here
-        if len(bounds)>0:
+        if len(bounds) > 0:
             tile_xmin, _ , _ , tile_ymax = bounds     
             points.x = points.x - tile_xmin
             points.y = tile_ymax - points.y 
@@ -89,14 +90,19 @@ def cloud_to_box(pc, bounds=[]):
             points.x = points.x - pc.data.points.x.min()
             points.y = pc.data.points.y.max() - points.y 
         
-        points =  points.values/ 0.1
+            points =  points.values/ 0.1
         
         s = gp.GeoSeries(map(geometry.Point, zip(points[:,0], points[:,1])))
-        point_collection = geometry.MultiPoint(list(s))
+        point_collection = geometry.MultiPoint(list(s))        
         point_bounds = point_collection.bounds
+        
+        #if no area, remove treeID, just a single lidar point.
+        if point_bounds[0] == point_bounds[2]:
+            continue
+        
         tree_boxes.append(point_bounds)
         
-    #pass as numpy array of 3 dim
+    #pass as numpy array
     tree_boxes =np.array(tree_boxes)
     
     return tree_boxes

@@ -9,6 +9,9 @@ import geopandas as gp
 import pandas as pd
 from shapely.strtree import STRtree
 import numpy as np
+from matplotlib import pyplot as plt
+from matplotlib import patches
+from scipy.optimize import linear_sum_assignment
 
 parser     = argparse.ArgumentParser(description='Prediction of a new image')
 parser.add_argument('--model', help='path to training model' )
@@ -25,7 +28,7 @@ neon_generator = create_NEON_generator(args, DeepForest_config["evaluation_site"
 #Get detections and annotations
 model = models.load_model(args.model, backbone_name='resnet50', convert=True, nms_threshold=DeepForest_config["nms_threshold"])
 labels_to_names = {0: 'Tree'}
-all_detections = evalmAP._get_detections(neon_generator, model, score_threshold=DeepForest_config["score_threshold"])
+all_detections = evalmAP._get_detections(neon_generator, model, score_threshold=DeepForest_config["score_threshold"], save_path ="/Users/Ben/Downloads/")
 all_annotations = evalmAP._get_annotations(neon_generator)
 
 #Loop through images and match boxes.
@@ -39,30 +42,48 @@ for i in range(neon_generator.size()):
     prediction_polygons = utils.boxes_to_polygon(detections)
     annotation_polygons = utils.boxes_to_polygon(annotations)
     
-    #Create pandas object to hold area calculation
-    area_df = pd.DataFrame()
+    #Create overlap matrix
+    cost_matrix=np.zeros((len(annotation_polygons), len(prediction_polygons)))
+
+    for x, poly in enumerate(annotation_polygons):    
+        for y, match in enumerate(prediction_polygons):
+            cost_matrix[x,y]= poly.intersection(match).area
+
+    #Assign polygon pairs
+    assignments = linear_sum_assignment(-1 *cost_matrix)
     
-    #create prediction spatial index
-    #from shapely.strtree import STRtree
-    spatial_index = STRtree(prediction_polygons)
-    
-    for annotation in annotation_polygons:
-        results = spatial_index.query(annotation)
+    for k in np.arange(len(assignments[0])):        
+        annotation=annotation_polygons[assignments[0][k]]
+        overlapping_prediction=prediction_polygons[assignments[1][k]]
         
-        #for each result calculate area of overlap
-        areas = []
-        for result in results:
-            areas.append(annotation.intersection(result).area)
-            
-        if len(areas) > 0:
-            #select best overlap
-            overlapping_prediction = results[np.argmax(areas)]
-            
+        #If the assignment doesn't overlap by more than 10%, set to 0 for bad prediction
+        if overlapping_prediction.intersection(annotation).area/overlapping_prediction.area < 0.10:
+            area_results.append([0, annotation.area])         
+        else:
+            #plot if ugly
+            #if (overlapping_prediction.area - annotation.area )/ overlapping_prediction.area * 100 > 50:
+                
+                #image = neon_generator.load_image(i)
+                #fig, ax = plt.subplots(1)
+                
+                ##prediction
+                #x, y = overlapping_prediction.exterior.coords.xy
+                #points = np.array([x, y], np.int32).T
+                #polygon_shape = patches.Polygon(points, linewidth=1, edgecolor='r', facecolor='none')
+                #ax.add_patch(polygon_shape)
+                
+                ##annotation
+                #x, y = annotation.exterior.coords.xy
+                #points = np.array([x, y], np.int32).T
+                #polygon_shape = patches.Polygon(points, linewidth=1, edgecolor='blue', facecolor='none')
+                #ax.add_patch(polygon_shape)
+                
+                #ax.imshow(image[:,:,::-1])   
+                #plt.show(block=True)
+                
             #get area 
             area_results.append([overlapping_prediction.area, annotation.area])
-        else:
-            area_results.append([0, annotation.area])
-    
+
 area_df =pd.DataFrame(area_results, columns=["prediction","annotation"])    
-area_df.to_csv("/Users/Ben/Dropbox/Weecology/NEON/prediction_area_SJER_fullmodel.csv")
+area_df.to_csv("/Users/Ben/Dropbox/Weecology/NEON/prediction_area_TEAK_fullmodel.csv")
 

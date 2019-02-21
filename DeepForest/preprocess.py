@@ -78,7 +78,7 @@ def load_data(data_dir, res, lidar_path):
     
     return(data)
 
-def load_xml(path, res):
+def load_xml(path, dirname, res):
 
     #parse
     with open(path) as fd:
@@ -120,7 +120,7 @@ def load_xml(path, res):
     #bounds
     
     #read in tile to get dimensions
-    full_path=os.path.join("data",doc["annotation"]["folder"] ,rgb_path)
+    full_path=os.path.join(dirname, rgb_path)
 
     with rasterio.open(full_path) as dataset:
         bounds=dataset.bounds         
@@ -253,13 +253,13 @@ def NEON_annotations(site, DeepForest_config):
     
     annotations=[]
     for xml in xmls:
-        r = load_xml(xml, DeepForest_config["rgb_res"])
+        r = load_xml(xml, dirname=DeepForest_config["rgb_tile_dir"], res=DeepForest_config["rgb_res"])
         annotations.append(r)
 
     data=pd.concat(annotations)
     
     #Compute list of sliding windows, assumed that all objects are the same extent and resolution
-    image_path = os.path.join("data",site, data.rgb_path.unique()[0])
+    image_path = os.path.join("data",site, "plots", data.rgb_path.unique()[0])
     windows = compute_windows(image=image_path, pixels=DeepForest_config["patch_size"], overlap=DeepForest_config["patch_overlap"])
     
     #Compute Windows

@@ -25,8 +25,8 @@ def fetch_lidar_filename(row, lidar_path, site):
     return: string location on disk
     """
     
-    #first try identical name - this isn't great practice here, needs to be improved. How to direct the lidar path to the right directory?
-    direct_filename = os.path.join("data" ,site,os.path.splitext(row["tile"])[0] + ".laz")
+    #How to direct the lidar path to the right directory?
+    direct_filename = os.path.join(lidar_path, os.path.splitext(row["tile"])[0] + ".laz")
 
     if os.path.exists(direct_filename):
         laz_path = direct_filename
