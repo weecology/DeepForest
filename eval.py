@@ -174,7 +174,6 @@ def main(data, DeepForest_config, experiment,args=None):
     print('NEON mAP: {:.3f}'.format(precision / present_classes))
     experiment.log_metric("NEON mAP", precision / present_classes)        
     
-    
 if __name__ == '__main__':
     
     import argparse

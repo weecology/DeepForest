@@ -90,9 +90,9 @@ def cloud_to_box(pc, bounds=[]):
             points.x = points.x - pc.data.points.x.min()
             points.y = pc.data.points.y.max() - points.y 
         
-            points =  points.values/ 0.1
+            points =  points/ 0.1
         
-        s = gp.GeoSeries(map(geometry.Point, zip(points[:,0], points[:,1])))
+        s = gp.GeoSeries(map(geometry.Point, zip(points.x, points.y)))
         point_collection = geometry.MultiPoint(list(s))        
         point_bounds = point_collection.bounds
         
