@@ -47,7 +47,6 @@ def run(tile=None, DeepForest_config=None, mode="train"):
         #Load xml annotations and find the directory of .tif files
         data = preprocess.load_xml(DeepForest_config["hand_annotations"], dirname=DeepForest_config["rgb_tile_dir"], res=DeepForest_config["rgb_res"])
 
-        #TODO this needs to be checked, how can it look up the lidar tile to correspond if the csv doesn't have the fullpath?
         #TODO what if there are multiple tilenames? this should be a dictionary, not a single value?
         tilename = os.path.splitext(os.path.basename(DeepForest_config["hand_annotations"]))[0]
         
@@ -58,7 +57,7 @@ def run(tile=None, DeepForest_config=None, mode="train"):
         windows = preprocess.create_windows(data, DeepForest_config, base_dir = base_dir) 
         
     if windows is None:
-        print("Invalid window")
+        print("Invalid window, cannot find {} in {}".format(tilename,base_dir))
         return None
     
     #Create generate
