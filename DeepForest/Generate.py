@@ -49,12 +49,9 @@ def run(tile=None, DeepForest_config=None, mode="train"):
 
         #TODO what if there are multiple tilenames? this should be a dictionary, not a single value?
         tilename = os.path.splitext(os.path.basename(DeepForest_config["hand_annotations"]))[0]
-        
-        #get base_dir up from annotations, up one dir
-        base_dir = os.path.dirname(os.path.dirname(DeepForest_config["hand_annotations"]))
-        
+
         #Create windows
-        windows = preprocess.create_windows(data, DeepForest_config, base_dir = base_dir) 
+        windows = preprocess.create_windows(data, DeepForest_config, base_dir =  DeepForest_config["rgb_tile_dir"]) 
         
     if windows is None:
         print("Invalid window, cannot find {} in {}".format(tilename,base_dir))
