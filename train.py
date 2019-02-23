@@ -482,8 +482,8 @@ if __name__ == '__main__':
         path_to_handannotations = os.path.join(DeepForest_config["h5_dir"], tilename) + ".csv"             
                 
         if not os.path.exists(path_to_handannotations):
+            print("Generating hand annotated data from tile {}".format(tilename))
             Generate.run(DeepForest_config=DeepForest_config, mode="retrain")
-        
         data = preprocess.load_csvs(path_to_handannotations)
             
     #Log site
