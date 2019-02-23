@@ -459,7 +459,6 @@ if __name__ == '__main__':
     
     mode=mode_parser.parse_args()
     
-
     #load config
     DeepForest_config = load_config()
 
@@ -479,8 +478,9 @@ if __name__ == '__main__':
     if mode.mode == "retrain":
         #Load annotations
         #Check if hand annotations have been generated. If not create H5 files.
-        path_to_handannotations = os.path.join(DeepForest_config["h5_dir"], "hand_annotations.csv") 
-        
+        tilename = os.path.splitext(os.path.basename(DeepForest_config["hand_annotations"]))[0]
+        path_to_handannotations = os.path.join(DeepForest_config["h5_dir"], tilename) + ".csv"             
+                
         if not os.path.exists(path_to_handannotations):
             Generate.run(DeepForest_config=DeepForest_config, mode="retrain")
         
