@@ -478,8 +478,6 @@ if __name__ == '__main__':
         
     if mode.mode == "retrain":
         #Load annotations
-        data = preprocess.load_xml(DeepForest_config["hand_annotations"], DeepForest_config["rgb_res"])
-
         #Check if hand annotations have been generated. If not create H5 files.
         path_to_handannotations = os.path.join(DeepForest_config["h5_dir"], "hand_annotations.csv") 
         

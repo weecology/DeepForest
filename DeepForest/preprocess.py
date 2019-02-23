@@ -247,19 +247,29 @@ def NEON_annotations(site, DeepForest_config):
     Create a keras generator for the hand annotated tower plots. Used for the mAP and recall callback.
     site: Four letter site code
     '''
-
-    glob_path = os.path.join("data",site,"annotations") + "/" + site + "*.xml"
-    xmls = glob.glob(glob_path)
+    
+    #Find all images and annotations for each with full path
+    images_to_find_xml = glob.glob(DeepForest_config["evaluation_tile_dir"] + "/*.tif")
+    corresponding_xml=[os.path.splitext(os.path.basename(x))[0] + ".xml"  for x in images_to_find_xml]
+    full_path_xml = []
+    for x in corresponding_xml:
+        full_path_xml.append(os.path.join("data", site, "annotations",x))
+        
+    glob_path = os.path.join("data", site, "annotations") + "/*.xml"
+    available_xmls = glob.glob(glob_path)
+    
+    #matched xmls
+    matched_xmls = set(full_path_xml) & set(available_xmls)
     
     annotations=[]
-    for xml in xmls:
-        r = load_xml(xml, dirname=DeepForest_config["rgb_tile_dir"], res=DeepForest_config["rgb_res"])
+    for xml in matched_xmls:
+        r = load_xml(xml, dirname=DeepForest_config["evaluation_tile_dir"], res=DeepForest_config["rgb_res"])
         annotations.append(r)
 
     data=pd.concat(annotations)
     
     #Compute list of sliding windows, assumed that all objects are the same extent and resolution
-    image_path = os.path.join("data",site, "plots", data.rgb_path.unique()[0])
+    image_path = os.path.join(DeepForest_config["evaluation_tile_dir"], data.rgb_path.unique()[0])
     windows = compute_windows(image=image_path, pixels=DeepForest_config["patch_size"], overlap=DeepForest_config["patch_overlap"])
     
     #Compute Windows

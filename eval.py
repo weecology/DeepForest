@@ -48,9 +48,8 @@ def create_NEON_generator(args, site, DeepForest_config):
         windows,
         batch_size = args.batch_size,
         DeepForest_config = DeepForest_config,
+        base_dir=DeepForest_config["evaluation_tile_dir"],
         group_method="none")
-    
-    generator.lidar_path = "data/" + site + "/"
     
     return(generator)
 
@@ -68,6 +67,7 @@ def create_generator(args, data, config):
         batch_size=args.batch_size,
         DeepForest_config=DeepForest_config,
         group_method="none",
+        base_dir=DeepForest_config["rgb_tile_dir"],
         name = "validation"
     )
         
@@ -172,7 +172,7 @@ def main(data, DeepForest_config, experiment,args=None):
             present_classes += 1
             precision       += average_precision
     print('NEON mAP: {:.3f}'.format(precision / present_classes))
-    experiment.log_metric("NEON_mAP", precision / present_classes)        
+    experiment.log_metric("NEON mAP", precision / present_classes)        
     
     
 if __name__ == '__main__':
@@ -193,7 +193,7 @@ if __name__ == '__main__':
     import numpy as np
     from datetime import datetime
     from DeepForest.config import load_config
-    from DeepForest import preprocess
+    from DeepForest import preprocess, Generate
 
     #set experiment and log configs
     experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2",project_name='deeplidar',log_code=False)
@@ -211,8 +211,14 @@ if __name__ == '__main__':
         data = preprocess.load_csvs(DeepForest_config["h5_dir"])
                 
     if mode.mode == "retrain":
-        data=preprocess.load_xml(DeepForest_config["hand_annotations"], DeepForest_config["rgb_res"])
-
+        #Check for hand annotations h5 file manifest
+        tilename = os.path.splitext(os.path.basename(DeepForest_config["hand_annotations"]))[0]
+        path_to_handannotations = os.path.join(DeepForest_config["h5_dir"], tilename) + ".csv"             
+        
+        if not os.path.exists(path_to_handannotations):
+            Generate.run(DeepForest_config=DeepForest_config, mode="retrain")        
+        data = preprocess.load_csvs(path_to_handannotations)
+            
     #Log site
     site=DeepForest_config["evaluation_site"]
     experiment.log_parameter("Site", site)

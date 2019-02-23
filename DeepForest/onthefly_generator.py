@@ -60,6 +60,10 @@ class OnTheFlyGenerator(Generator):
         #Set destination directory
         if not base_dir:
             self.base_dir=DeepForest_config["rgb_tile_dir"]
+            self.lidar_path = DeepForest_config["rgb_tile_dir"]
+        else:
+            self.base_dir=base_dir
+            self.lidar_path=base_dir
             
         #Holder for image path, keep from reloading same image to save time.
         self.previous_image_path = None
@@ -157,7 +161,7 @@ class OnTheFlyGenerator(Generator):
         Create a sliding window object
         '''
         #Load tile
-        image = self.base_dir + self.annotation_list.rgb_path.unique()[0]
+        image = os.path.join(self.base_dir, self.annotation_list.rgb_path.unique()[0])
         im = Image.open(image)
         numpy_image = np.array(im)    
         
@@ -181,7 +185,7 @@ class OnTheFlyGenerator(Generator):
         return self.clipped_las
     
     def fetch_lidar_filename(self):           
-        lidar_filepath=Lidar.fetch_lidar_filename(self.row, self.DeepForest_config["lidar_path"], self.DeepForest_config["evaluation_site"])
+        lidar_filepath=Lidar.fetch_lidar_filename(self.row, self.base_dir)
         
         return lidar_filepath
 
@@ -197,7 +201,8 @@ class OnTheFlyGenerator(Generator):
         ''''
         Read RGB tile from file
         '''
-        im = Image.open(self.base_dir+self.row["tile"])
+        filename = os.path.join(self.base_dir, self.row["tile"])
+        im = Image.open(filename)
         numpy_image = np.array(im)    
         
         return numpy_image
@@ -260,7 +265,7 @@ class OnTheFlyGenerator(Generator):
         Note that the window method is calculated once in train.py, this assumes all tiles have the same size and resolution
         offset: Number of meters to add to box edge to look for annotations
         '''
-        image = self.base_dir + self.row["tile"]
+        image = os.path.join(self.base_dir, self.row["tile"])
         index = self.row["window"]
         annotations = self.annotation_list
         windows = self.windows
@@ -286,8 +291,10 @@ class OnTheFlyGenerator(Generator):
         annotations["window_ymax"] = annotations["origin_ymax"]- window_coords["y1"]
     
         #Quickly subset a reasonable set of annotations based on sliding window
+        tilename = os.path.basename(image)
+        
         d=annotations[ 
-            (annotations["rgb_path"]==image.split("/")[-1]) &
+            (annotations.rgb_path == tilename) &
             (annotations.window_xmin > -offset) &  
             (annotations.window_ymin > -offset)  &
             (annotations.window_xmax < (patch_size+ offset)) &
@@ -321,7 +328,7 @@ class OnTheFlyGenerator(Generator):
         
         #Check for blank black image, if so, enforce no annotations
         remove_annotations = utils.image_is_blank(self.image)
-        
+    
         if remove_annotations:
             return np.zeros((0, 5))
         
@@ -350,7 +357,9 @@ class OnTheFlyGenerator(Generator):
         x = x * self.rgb_res
         y = y * self.rgb_res
         
-        with rasterio.open(self.base_dir+self.row["tile"]) as dataset:
+        filename = os.path.join(self.base_dir, self.row["tile"])
+        
+        with rasterio.open(filename) as dataset:
             self.utm_bounds = dataset.bounds   
         
         utm_xmin = self.utm_bounds.left + x

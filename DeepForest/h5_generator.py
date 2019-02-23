@@ -56,7 +56,7 @@ class H5Generator(Generator):
         if not base_dir:
             self.base_dir = DeepForest_config["rgb_tile_dir"]
         else:
-            self.base_dir = base_dir + "/"
+            self.base_dir = base_dir
             
         #Holder for image path, keep from reloading same image to save time.
         self.previous_image_path=None
@@ -115,7 +115,7 @@ class H5Generator(Generator):
                 
         #Select annotations
         for tilename in tiles:
-            csv_name = os.path.join(self.DeepForest_config["h5_dir"], str(tilename)+'.csv')
+            csv_name = os.path.join(self.DeepForest_config["h5_dir"], os.path.splitext(tilename)[0]+'.csv')
             try:
                 annotations = pd.read_csv(csv_name)
             except Exception as e:
@@ -151,10 +151,14 @@ class H5Generator(Generator):
         return(image_data, image_names)
     
     def fetch_lidar_filename(self):           
-        lidar_filepath=Lidar.fetch_lidar_filename(self.row, self.DeepForest_config["lidar_path"], self.DeepForest_config["evaluation_site"])
+        lidar_filepath=Lidar.fetch_lidar_filename(self.row, self.base_dir)
         
-        return lidar_filepath
-
+        if lidar_filepath:
+            return lidar_filepath
+        else:
+            print("Lidar file {} cannot be found in {}".format(self.row["tile"], self.base_dir))
+            raise IOError 
+        
     def load_lidar_tile(self):
         '''Load a point cloud into memory from file
         '''

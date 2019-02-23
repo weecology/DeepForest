@@ -6,7 +6,7 @@ import numpy as np
 import os
 import h5py
 import pandas as pd
-from DeepForest import onthefly_generator, preprocess, config
+from . import onthefly_generator, preprocess, config
 import sys
 
 #supress warnings
@@ -45,9 +45,12 @@ def run(tile=None, DeepForest_config=None, mode="train"):
         
     if mode == "retrain":
         #Load xml annotations and find the directory of .tif files
-        data = preprocess.load_xml(DeepForest_config["hand_annotations"], DeepForest_config["rgb_res"])
-        tilename = "hand_annotations"
+        data = preprocess.load_xml(DeepForest_config["hand_annotations"], dirname=DeepForest_config["rgb_tile_dir"], res=DeepForest_config["rgb_res"])
 
+        #TODO this needs to be checked, how can it look up the lidar tile to correspond if the csv doesn't have the fullpath?
+        #TODO what if there are multiple tilenames? this should be a dictionary, not a single value?
+        tilename = os.path.splitext(os.path.basename(DeepForest_config["hand_annotations"]))[0]
+        
         #get base_dir up from annotations, up one dir
         base_dir = os.path.dirname(os.path.dirname(DeepForest_config["hand_annotations"]))
         
@@ -96,7 +99,8 @@ def run(tile=None, DeepForest_config=None, mode="train"):
         labeldf = pd.DataFrame(label)
         
         #Add tilename and window ID
-        labeldf['tile'] = tilename
+        labeldf['tile'] = generator.row["tile"]
+        
         labeldf['window'] = i
         
         #Add utm position

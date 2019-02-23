@@ -17,8 +17,36 @@ import random
 
 r = lambda: random.randint(0,255)
 
+def find_lidar_file(image_path, dirname):
+    """
+    Find the lidar file that matches RGB tile
+    """
+    #Look for lidar tile
+    laz_files = glob.glob(dirname + "*.laz")
+    
+    #extract geoindex
+    pattern = r"(\d+_\d+)_image"
+    match = re.findall(pattern, image_path)
+    
+    if len(match)>0:
+        match = match[0]
+    else:
+        return None
+    
+    #Look for index in available laz
+    laz_path = None
+    for x in laz_files:
+        if match in x:
+            laz_path = x
 
-def fetch_lidar_filename(row, lidar_path, site):
+    #Raise if no file found
+    if not laz_path:
+        print("No matching lidar file, check the lidar path: %s" %(dirname))
+        FileNotFoundError
+    
+    return laz_path
+
+def fetch_lidar_filename(row, dirname):
     """
     Find lidar path in a directory.
     param: row a dictionary with tile "key" for filename to be searched for
@@ -26,13 +54,13 @@ def fetch_lidar_filename(row, lidar_path, site):
     """
     
     #How to direct the lidar path to the right directory?
-    direct_filename = os.path.join(lidar_path, os.path.splitext(row["tile"])[0] + ".laz")
+    direct_filename = os.path.join(dirname, os.path.splitext(row["tile"])[0] + ".laz")
 
     if os.path.exists(direct_filename):
         laz_path = direct_filename
     else:
-        print("Filename: %s does not exist, searching within %s" %(direct_filename,lidar_path))        
-        laz_path = find_lidar_file(image_path=row["tile"],lidar_path=lidar_path)
+        print("Filename: %s does not exist, searching within %s" %(direct_filename, dirname))        
+        laz_path = find_lidar_file(image_path=row["tile"], dirname=dirname)
         
     return laz_path
 
@@ -179,35 +207,6 @@ def rasterize_watershed():
     shapes = ((geom,value) for geom, value in zip(final_segments.geometry, final_segments.raster_val))
     burned = features.rasterize(shapes=shapes, fill=0, out=watershed_raster)
          
-def find_lidar_file(image_path, lidar_path):
-    """
-    Find the lidar file that matches RGB tile
-    """
-    #Look for lidar tile
-    laz_files = glob.glob(lidar_path + "*.laz")
-    
-    #extract geoindex
-    pattern = r"(\d+_\d+)_image"
-    match = re.findall(pattern,image_path)
-    
-    if len(match)>0:
-        match = match[0]
-    else:
-        return None
-    
-    #Look for index in available laz
-    laz_path = None
-    for x in laz_files:
-        if match in x:
-            laz_path = x
-
-    #Raise if no file found
-    if not laz_path:
-        print("No matching lidar file, check the lidar path: %s" %(lidar_path))
-        FileNotFoundError
-    
-    return laz_path
-
 def pad_array(image, chm):
     """
     Enforce the same data structure between the rgb image and the canopy height model. 
