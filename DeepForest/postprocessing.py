@@ -33,7 +33,7 @@ def drape_boxes(boxes, pc, bounds=[]):
         tree_counter +=1 
         
     #remove ground points    
-    pc.data.points.loc[pc.data.points.z < 2, "user_data"] = np.nan
+    pc.data.points.loc[pc.data.points.z < 2.5, "user_data"] = np.nan
     
     return pc    
     

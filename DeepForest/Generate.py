@@ -54,11 +54,11 @@ def run(tile=None, DeepForest_config=None, mode="train"):
         windows = preprocess.create_windows(data, DeepForest_config, base_dir =  DeepForest_config["rgb_tile_dir"]) 
         
     if windows is None:
-        print("Invalid window, cannot find {} in {}".format(tilename,base_dir))
+        print("Invalid window, cannot find {} in {}".format(tilename, DeepForest_config["rgb_tile_dir"]))
         return None
     
     #Create generate
-    generator = onthefly_generator.OnTheFlyGenerator(data, windows, DeepForest_config, base_dir = base_dir)
+    generator = onthefly_generator.OnTheFlyGenerator(data, windows, DeepForest_config, base_dir = DeepForest_config["rgb_tile_dir"])
     
     #Create h5 dataset    
     # open a hdf5 file and create arrays
