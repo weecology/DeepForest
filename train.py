@@ -153,7 +153,8 @@ def create_NEON_generator(args, site, DeepForest_config):
         batch_size=args.batch_size,
         DeepForest_config=DeepForest_config,
         group_method="none",
-        name="NEON_validation"
+        name="NEON_validation",
+        base_dir=DeepForest_config["evaluation_tile_dir"]
     )
     
     #set lidar and rgb path
