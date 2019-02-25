@@ -64,6 +64,13 @@ class Evaluate(keras.callbacks.Callback):
             self.mean_ap = sum([a * b for a, b in zip(total_instances, precisions)]) / sum(total_instances)
         else:
             self.mean_ap = sum(precisions) / sum(x > 0 for x in total_instances)
+        
+        logs['mAP'] = self.mean_ap
+
+        if self.verbose == 1:
+            print('mAP: {:.3f}'.format(self.mean_ap))             
+        
+        self.experiment.log_metric("mAP", self.mean_ap)       
             
 # Neon Recall 
 class recallCallback(keras.callbacks.Callback):
