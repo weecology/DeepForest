@@ -121,6 +121,9 @@ def main(data, DeepForest_config, experiment,args=None):
     # create the testing generators
     generator = create_generator(args, data, DeepForest_config)
 
+    #Evaluation metrics
+    site=DeepForest_config["evaluation_site"]
+    
     #create the NEON mAP generator 
     NEON_generator = create_NEON_generator(args, site, DeepForest_config)
     
@@ -130,6 +133,22 @@ def main(data, DeepForest_config, experiment,args=None):
 
     #print(model.summary())
 
+    NEON_recall_generator = create_NEON_generator(args, site, DeepForest_config)
+
+    recall=neonRecall(
+        site,
+        NEON_recall_generator,
+        model,            
+        score_threshold=args.score_threshold,
+        save_path=args.save_path + dirname,
+        max_detections=args.max_detections,
+        DeepForest_config=DeepForest_config
+    )
+    
+    print("Recall is {}".format(recall))
+    
+    experiment.log_metric("Recall", recall)       
+    
     average_precisions = evaluate(
         generator,
         model,

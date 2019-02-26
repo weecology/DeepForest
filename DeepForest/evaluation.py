@@ -94,21 +94,54 @@ def neonRecall(
         image_detections = np.concatenate([image_boxes, np.expand_dims(image_scores, axis=1), np.expand_dims(image_labels, axis=1)], axis=1)
         
         #Find geographic bounds
-        tile_path=generator.lidar_path + generator.image_data[i]["tile"]
+        tile_path=generator.base_dir + generator.image_data[i]["tile"]
         
         with rasterio.open(tile_path) as dataset:
-            bounds = dataset.bounds   
+            tile_bounds = dataset.bounds   
     
+        #drape boxes
+        #get lidar cloud if a new tile, or if not the same tile as previous image.
+        if i == 0:
+            generator.load_lidar_tile()
+        elif not generator.image_data[i]["tile"] == generator.image_data[i-1]["tile"]:
+            generator.load_lidar_tile()
+        
+        #The tile could be the full tile, so let's check just the 400 pixel crop we are interested    
+        #Not the best structure, but the on-the-fly generator always has 0 bounds
+        if hasattr(generator, 'hf'):
+            bounds = generator.hf["utm_coords"][generator.row["window"]]    
+        else:
+            bounds=[]
+            
+        density = Lidar.check_density(generator.lidar_tile, bounds=bounds)
+        
+        print("Point density is {:.2f}".format(density))
+                
+        if density > generator.DeepForest_config["min_density"]:
+            #find window utm coordinates
+            print("Bounds for image {}, window {}, are {}".format(generator.row["tile"], generator.row["window"], bounds))
+            pc = postprocessing.drape_boxes(boxes=image_boxes, pc = generator.lidar_tile, bounds=bounds)     
+            
+            #Get new bounding boxes
+            new_boxes = postprocessing.cloud_to_box(pc, bounds)    
+            new_scores = image_scores[:new_boxes.shape[0]]
+            new_labels = image_labels[:new_boxes.shape[0]]          
+            image_detections = np.concatenate([new_boxes, np.expand_dims(new_scores, axis=1), np.expand_dims(new_labels, axis=1)], axis=1)
+            
+        else:
+            print("Point density of {:.2f} is too low, skipping image {}".format(density, generator.row["tile"]))        
+
+        #add spatial NEON points
+        plotID = os.path.splitext(generator.image_data[i]["tile"])[0]
+        plot_data = site_data[site_data.plotID == plotID]
+
         #Save image and send it to logger
         if save_path is not None:
             draw_detections(raw_image, image_boxes, image_scores, image_labels, label_to_name=generator.label_to_name, score_threshold=score_threshold, color = (80,127,255))
     
-            #add points
-            plotID = os.path.splitext(generator.image_data[i]["tile"])[0]
-            plot_data = site_data[site_data.plotID == plotID]
             
-            x = (plot_data.UTM_E - bounds.left).values / 0.1
-            y = (bounds.top - plot_data.UTM_N).values / 0.1
+            x = (plot_data.UTM_E - tile_bounds.left).values / 0.1
+            y = (tile_bounds.top - plot_data.UTM_N).values / 0.1
             
             for i in np.arange(len(x)):
                 cv2.circle(raw_image,(int(x[i]),int(y[i])), 2, (0,0,255), -1)
@@ -118,47 +151,41 @@ def neonRecall(
                 
             #Format name and save
             if experiment:
-                experiment.log_image(os.path.join(save_path, '{}_NeonPlot.png'.format(plotID)),file_name=str(plotID))            
-    
-    #Calculate recall
-    recall = calculate_recall(tree_hulls, plot_data)
-
-    return(recall)
-
-#Processing Functions
-
-def calculate_recall(hulldf, plot_data):
+                experiment.log_image(os.path.join(save_path, '{}_NeonPlot.png'.format(plotID)),file_name=str(plotID))
         
-    s = gp.GeoSeries(map(Point, zip(plot_data.UTM_E, plot_data.UTM_N)))
+        #calculate recall
+            s = gp.GeoSeries(map(Point, zip(plot_data.UTM_E, plot_data.UTM_N)))
     
-    #Calculate recall
-    projected_boxes = []
+        #Calculate recall
+        projected_boxes = []
+        
+        for row in  image_boxes:
+            #Add utm bounds and create a shapely polygon
+            pbox=create_polygon(row, tile_bounds, cell_size=0.1)
+            projected_boxes.append(pbox)
     
-    for row in  image_boxes:
-        #Add utm bounds and create a shapely polygon
-        pbox=create_polygon(row, bounds, cell_size=0.1)
-        projected_boxes.append(pbox)
-
-    #for each point, is it within a prediction?
-    for index, tree in plot_data.iterrows():
-        p=Point(tree.UTM_E, tree.UTM_N)
-
-        within_polygon=[]
-
-        for prediction in projected_boxes:
-            within_polygon.append(p.within(prediction))
-
-        #Check for overlapping polygon, add it to list
-        is_within = sum(within_polygon) > 0
-        point_contains.append(is_within)
-
+        #for each point, is it within a prediction?
+        for index, tree in plot_data.iterrows():
+            p=Point(tree.UTM_E, tree.UTM_N)
+    
+            within_polygon=[]
+    
+            for prediction in projected_boxes:
+                within_polygon.append(p.within(prediction))
+    
+            #Check for overlapping polygon, add it to list
+            is_within = sum(within_polygon) > 0
+            point_contains.append(is_within)
+                
+    #sum recall across plots
     if len(point_contains)==0:
         recall = None
-        
     else:
         ## Recall rate for plot
         recall = sum(point_contains)/len(point_contains)    
-        return recall
+        
+    return(recall)
+
 
 #IoU for non-rectangular polygons
 def compute_windows(numpy_image, pixels=400, overlap=0.05):

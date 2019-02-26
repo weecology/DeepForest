@@ -26,7 +26,7 @@ save_snapshot_path: None
 backbone: resnet50
 shuffle_training: False
 score_threshold: 0.2
-hand_annotations: /Users/ben/Documents/DeepLidar/data/SJER/annotations/2017_SJER_2_259000_4110000_image.xml
+hand_annotations: /Users/ben/Documents/DeepLidar/data/SJER/annotations/2018_SJER_3_259000_4110000_image.xml
 num_GPUs: 1
 
 #Evaluation
