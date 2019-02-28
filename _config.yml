@@ -12,11 +12,14 @@ rgb_res: 0.1
 preprocess:
           zero_area: True
 
+#Hand annotations
+hand_annotations: /Users/ben/Documents/DeepLidar/data/SJER/training/
+retraining_h5_dir: /orange/ewhite/b.weinstein/training_h5s/SJER/handannotation/
+
 #Training
 num_GPUs: 1
 training_h5_dir: /orange/ewhite/b.weinstein/training_h5s/SJER/
 training_csvs: /home/b.weinstein/TreeSegmentation/analysis/Results/detection_boxes/SJER/2018/
-hand_annotations: /home/b.weinstein/DeepLidar/data/SJER/annotations/2018_SJER_3_259000_4110000_image.xml
 rgb_tile_dir: /home/b.weinstein/DeepLidar/data/SJER/training/
 training_images: All
 weights: /orange/ewhite/b.weinstein/retinanet/snapshots/20190131_145805/resnet50_08.h5
@@ -42,7 +45,6 @@ validation_percent: 5
 nms_threshold: 0.1
 
 #LIDAR
-retraining_h5_dir: /orange/ewhite/b.weinstein/training_h5s/SJER/handannotation/
 lidar_path: /ufrc/ewhite/b.weinstein/NeonData/SJER/DP1.30003.001/2018/FullSite/D17/2018_SJER_3/L1/DiscreteLidar/ClassifiedPointCloud/
 workers: 1
 use_multiprocessing: False
