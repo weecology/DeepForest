@@ -152,7 +152,7 @@ def main(data, DeepForest_config, experiment,args=None):
         DeepForest_config=DeepForest_config
     )
     
-    print("Recall is {}".format(recall))
+    print("Recall is {0.3f}".format(recall))
     
     experiment.log_metric("Recall", recall)       
     
