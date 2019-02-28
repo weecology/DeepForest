@@ -13,7 +13,7 @@ preprocess:
           zero_area: True
 
 #Hand annotations
-hand_annotations: /Users/ben/Documents/DeepLidar/data/SJER/training/
+hand_annotations: /home/b.weinstein/DeepLidar/data/SJER/training/
 retraining_h5_dir: /orange/ewhite/b.weinstein/training_h5s/SJER/handannotation/
 
 #Training
