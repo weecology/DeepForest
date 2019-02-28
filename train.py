@@ -230,21 +230,21 @@ def create_callbacks(model, training_model, prediction_model, train_generator, v
         min_lr   = 0
     ))
     
-    #Neon Callbacks - TODO integration of las snapping.
-    #site=DeepForest_config["evaluation_site"]
+    #Neon Callbacks
+    site=DeepForest_config["evaluation_site"]
     
-    #NEON_recall_generator = create_NEON_generator(args, site, DeepForest_config)
+    NEON_recall_generator = create_NEON_generator(args, site, DeepForest_config)
     
-    #recall=recallCallback(site=site,
-                          #generator=NEON_recall_generator,
-                          #save_path=args.save_path,
-                          #DeepForest_config=DeepForest_config,
-                          #score_threshold=args.score_threshold,
-                          #experiment=experiment)
+    recall=recallCallback(site=site,
+                          generator=NEON_recall_generator,
+                          save_path=args.save_path,
+                          DeepForest_config=DeepForest_config,
+                          score_threshold=args.score_threshold,
+                          experiment=experiment)
     
-    #recall = RedirectModel(recall, prediction_model)
+    recall = RedirectModel(recall, prediction_model)
     
-    #callbacks.append(recall)
+    callbacks.append(recall)
     
     #create the NEON generator 
     NEON_generator = create_NEON_generator(args, site, DeepForest_config)
@@ -264,6 +264,7 @@ def create_callbacks(model, training_model, prediction_model, train_generator, v
 def create_generators(args, data, DeepForest_config):
     """ Create generators for training and validation.
     """
+
     #Split training and test data
     train, test = preprocess.split_training(data, DeepForest_config, experiment=None)
 
@@ -271,11 +272,17 @@ def create_generators(args, data, DeepForest_config):
     if args.save_path:
         train.to_csv(os.path.join(args.save_path,'training_dict.csv'), header=False)
            
+    #Set the h5 dir based on training or retraining
+    if DeepForest_config["mode"] == "train":
+        h5_dir = DeepForest_config["training_h5_dir"]
+    else:
+        h5_dir = DeepForest_config["retraining_h5_dir"]
+        
     #Training Generator
-    train_generator = H5Generator(train, batch_size = args.batch_size, DeepForest_config = DeepForest_config, group_method="none", name = "training")
+    train_generator = H5Generator(train, batch_size = args.batch_size, h5_dir = h5_dir, DeepForest_config = DeepForest_config, group_method="none", name = "training")
 
     #Validation Generator        
-    validation_generator = H5Generator(test, batch_size = args.batch_size, DeepForest_config = DeepForest_config, group_method = "none", name = "validation")
+    validation_generator = H5Generator(test, batch_size = args.batch_size, h5_dir = h5_dir, DeepForest_config = DeepForest_config, group_method = "none", name = "validation")
 
     return train_generator, validation_generator
 
@@ -471,28 +478,47 @@ if __name__ == '__main__':
     
     #Load DeepForest_config and data file based on training or retraining mode
     if mode.mode == "train":
-        data = preprocess.load_csvs(DeepForest_config["h5_dir"])
+        DeepForest_config["mode"] = "train"        
+        data = preprocess.load_csvs(DeepForest_config["training_h5_dir"])
         
     if mode.mode == "retrain":
+        DeepForest_config["mode"] = "retrain"
         #Load annotations
         #Check if hand annotations have been generated. If not create H5 files.
-        tilename = os.path.splitext(os.path.basename(DeepForest_config["hand_annotations"]))[0]
-        path_to_handannotations = os.path.join(DeepForest_config["h5_dir"], tilename) + ".csv"             
+        path_to_handannotations = []
+        if os.path.isdir(DeepForest_config["hand_annotations"]):
+            tilenames = glob.glob(DeepForest_config["hand_annotations"] + "*.tif")
+        else:
+            tilenames = [os.path.splitext(os.path.basename(DeepForest_config["hand_annotations"]))[0]]
+            
+        for x in tilenames:
+            tilename = os.path.splitext(os.path.basename(x))[0]                
+            tilename = os.path.join(DeepForest_config["retraining_h5_dir"], tilename) + ".csv"
+            path_to_handannotations.append(os.path.join(DeepForest_config["retraining_h5_dir"], tilename))            
                 
-        if not os.path.exists(path_to_handannotations):
-            print("Generating hand annotated data from tile {}".format(tilename))
-            Generate.run(DeepForest_config=DeepForest_config, mode="retrain")
-        data = preprocess.load_csvs(path_to_handannotations)
+        #for each annotation, check if exists in h5 dir
+        for index, path in enumerate(path_to_handannotations):
+            if not os.path.exists(path):
+                #Generate xml name, assumes 
+                annotation_dir = os.path.join(os.path.dirname(os.path.dirname(DeepForest_config["hand_annotations"])),"annotations")
+                annotation_xmls = os.path.splitext(os.path.basename(tilenames[index]))[0] + ".xml"
+                full_xml_path = os.path.join(annotation_dir, annotation_xmls )
+                
+                print("Generating hand annotated data from tile {}".format(tilename))                
+                Generate.run(tile_xml = full_xml_path, mode="retrain")
+        
+        #retrain csvs have hand_annotation added to distinguish them
+        data = preprocess.load_csvs(csv_list=path_to_handannotations)
             
     #Log site
     site = DeepForest_config["evaluation_site"]
 
     #pass an args object instead of using command line    
     args = [
-        "--epochs",str(DeepForest_config["epochs"]),
-        "--batch-size",str(DeepForest_config['batch_size']),
-        "--backbone",str(DeepForest_config["backbone"]),
-        "--score-threshold",str(DeepForest_config["score_threshold"])
+        "--epochs", str(DeepForest_config["epochs"]),
+        "--batch-size", str(DeepForest_config['batch_size']),
+        "--backbone", str(DeepForest_config["backbone"]),
+        "--score-threshold", str(DeepForest_config["score_threshold"])
     ]
 
     #Create log directory if saving snapshots

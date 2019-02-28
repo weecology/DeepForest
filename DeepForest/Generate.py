@@ -8,6 +8,7 @@ import h5py
 import pandas as pd
 from . import onthefly_generator, preprocess, config
 import sys
+import glob
 
 #supress warnings
 import warnings
@@ -22,10 +23,11 @@ def parse_args():
     
     return args
 
-def run(tile=None, DeepForest_config=None, mode="train"):
+def run(tile_csv=None, tile_xml = None, mode="train"):
     
     """Crop 4 channel arrays from RGB and LIDAR CHM
-    tile: the CSV training file containing the tree detections
+    tile_csv: the CSV training file containing the tree detections
+    tile_xml: the xml training file for hand annotations (mode==retrain)
     mode: train or retrain. train loads data from the csv files from R, retrain from the xml hand annotations
     """
     
@@ -33,26 +35,30 @@ def run(tile=None, DeepForest_config=None, mode="train"):
     
     if mode == "train":
         #Read in data
-        data = preprocess.load_data(data_dir=tile, res=0.1, lidar_path=DeepForest_config["lidar_path"])
+        data = preprocess.load_data(data_dir=tile_csv, res=0.1, lidar_path=DeepForest_config["lidar_path"])
         
         #Get tile filename for storing
-        tilename = os.path.split(tile)[-1]
+        tilename = os.path.split(tile_csv)[-1]
         tilename = os.path.splitext(tilename)[0]
             
         #Create windows
         base_dir = DeepForest_config["evaluation_tile_dir"]
-        windows = preprocess.create_windows(data, DeepForest_config, base_dir = base_dir)            
+        windows = preprocess.create_windows(data, DeepForest_config, base_dir = base_dir)   
+        
+        #Destination dir
+        destination_dir = DeepForest_config["training_h5_dir"]
         
     if mode == "retrain":
-        #Load xml annotations and find the directory of .tif files
-        data = preprocess.load_xml(DeepForest_config["hand_annotations"], dirname=DeepForest_config["rgb_tile_dir"], res=DeepForest_config["rgb_res"])
-
-        #TODO what if there are multiple tilenames? this should be a dictionary, not a single value?
-        tilename = os.path.splitext(os.path.basename(DeepForest_config["hand_annotations"]))[0]
+        #Load xml annotations
+        data = preprocess.load_xml(path=tile_xml, dirname=DeepForest_config["rgb_tile_dir"], res=DeepForest_config["rgb_res"])
+        tilename = os.path.splitext(os.path.basename(tile_xml))[0] 
 
         #Create windows
         windows = preprocess.create_windows(data, DeepForest_config, base_dir =  DeepForest_config["rgb_tile_dir"]) 
-        
+
+        #destination dir
+        destination_dir = DeepForest_config["retraining_h5_dir"]
+    
     if windows is None:
         print("Invalid window, cannot find {} in {}".format(tilename, DeepForest_config["rgb_tile_dir"]))
         return None
@@ -62,7 +68,7 @@ def run(tile=None, DeepForest_config=None, mode="train"):
     
     #Create h5 dataset    
     # open a hdf5 file and create arrays
-    h5_filename = os.path.join(DeepForest_config["h5_dir"], tilename + ".h5")
+    h5_filename = os.path.join(destination_dir, tilename + ".h5")
     hdf5_file = h5py.File(h5_filename, mode='w')    
     
     #A 3 channel image of square patch size.
@@ -107,7 +113,7 @@ def run(tile=None, DeepForest_config=None, mode="train"):
     
     #Write labels to pandas frame
     labeldf = pd.concat(labels, ignore_index=True)
-    csv_filename = os.path.join(DeepForest_config["h5_dir"], tilename + ".csv")    
+    csv_filename = os.path.join(destination_dir, tilename + ".csv")    
     labeldf.to_csv(csv_filename, index=False)
     
     #Write geographic position 

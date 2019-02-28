@@ -79,7 +79,7 @@ def run_HPC(data_paths):
     #Start dask dashboard? Not clear yet.
     dask_client.run_on_scheduler(start_tunnel)  
             
-    futures = dask_client.map(Generate.run, data_paths, DeepForest_config=DeepForest_config)
+    futures = dask_client.map(Generate.run, data_paths)
     wait(futures)
 
 if __name__ == "__main__":

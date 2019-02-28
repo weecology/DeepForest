@@ -33,6 +33,7 @@ class H5Generator(Generator):
         self,
         data,
         DeepForest_config,
+        h5_dir,        
         base_dir=None,
         group_method="none",
         name=None,
@@ -47,7 +48,8 @@ class H5Generator(Generator):
         self.windowdf=data
         self.DeepForest_config = DeepForest_config
         self.site=DeepForest_config["evaluation_site"]
-                
+        self.h5_dir = h5_dir
+        
         #Holder for the group order, after shuffling we can still recover loss -> window
         self.group_order = {}
         self.group_method=group_method
@@ -110,12 +112,11 @@ class H5Generator(Generator):
         #Find matching annotations        
         tiles=self.windowdf["tile"].unique()
         
-        print("There are {} unique tiles".format(len(tiles)))
         total_annotations = 0
                 
         #Select annotations
         for tilename in tiles:
-            csv_name = os.path.join(self.DeepForest_config["h5_dir"], os.path.splitext(tilename)[0]+'.csv')
+            csv_name = os.path.join(self.h5_dir, os.path.splitext(tilename)[0]+'.csv')
             try:
                 annotations = pd.read_csv(csv_name)
             except Exception as e:
@@ -125,7 +126,7 @@ class H5Generator(Generator):
             selected_annotations = pd.merge(self.windowdf, annotations)
             total_annotations += len(selected_annotations)        
         
-        print("There are a total of {} tree annotations".format(total_annotations))       
+        print("There are a total of {} tree annotations in the {} generator".format(total_annotations,self.name))       
         
         return(total_annotations)
     
@@ -187,8 +188,8 @@ class H5Generator(Generator):
             tilename = os.path.split(self.row["tile"])[-1]
             tilename = os.path.splitext(tilename)[0]                        
             
-            h5_name = os.path.join(self.DeepForest_config["h5_dir"], tilename+'.h5')
-            csv_name = os.path.join(self.DeepForest_config["h5_dir"], tilename+'.csv')
+            h5_name = os.path.join(self.h5_dir, tilename+'.h5')
+            csv_name = os.path.join(self.h5_dir, tilename+'.csv')
             
             #Read h5 
             self.hf = h5py.File(h5_name, 'r')
@@ -246,7 +247,7 @@ if __name__=="__main__":
         DeepForest_config = yaml.load(f)    
     
     #Load data
-    data=preprocess.load_csvs(h5_dir=DeepForest_config["h5_dir"])
+    data=preprocess.load_csvs(h5_dir=DeepForest_config["training_h5_dir"])
     
     #Split training and test data
     train, test = preprocess.split_training(data, DeepForest_config, experiment=None)

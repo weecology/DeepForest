@@ -97,7 +97,6 @@ class OnTheFlyGenerator(Generator):
         return len(image_names)
     
     def define_groups(self, shuffle=False):
-        
         '''
         Define image data and names based on grouping of tiles for computational efficiency 
         '''

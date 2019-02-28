@@ -58,12 +58,19 @@ def create_generator(args, data, config):
     """ Create generators for training and validation.
     """
 
+    #Set the h5 dir based on training or retraining
+    if DeepForest_config["mode"] == "train":
+        h5_dir = DeepForest_config["training_h5_dir"]
+    else:
+        h5_dir = DeepForest_config["retraining_h5_dir"]
+        
     #Split training and test data - hardcoded paths set below.
     _ , test = preprocess.split_training(data, DeepForest_config, experiment=None)
 
     #Training Generator
     generator =  H5Generator(
         test,
+        h5_dir = h5_dir,
         batch_size=args.batch_size,
         DeepForest_config=DeepForest_config,
         group_method="none",
@@ -221,21 +228,42 @@ if __name__ == '__main__':
     #Log parameters
     dirname = mode.dir
     experiment.log_parameter("Start Time", dirname)
-    experiment.log_parameter("Training Mode",mode.mode)
+    experiment.log_parameter("Training Mode", mode.mode)
     experiment.log_parameters(DeepForest_config)
     
     #Load DeepForest_config and data file based on training or retraining mode
     if mode.mode == "train":
-        data = preprocess.load_csvs(DeepForest_config["h5_dir"])
-                
-    if mode.mode == "retrain":
-        #Check for hand annotations h5 file manifest
-        tilename = os.path.splitext(os.path.basename(DeepForest_config["hand_annotations"]))[0]
-        path_to_handannotations = os.path.join(DeepForest_config["h5_dir"], tilename) + ".csv"             
+        DeepForest_config["mode"] = "train"        
+        data = preprocess.load_csvs(DeepForest_config["training_h5_dir"])
         
-        if not os.path.exists(path_to_handannotations):
-            Generate.run(DeepForest_config=DeepForest_config, mode="retrain")        
-        data = preprocess.load_csvs(path_to_handannotations)
+    if mode.mode == "retrain":
+        DeepForest_config["mode"] = "retrain"
+        #Load annotations
+        #Check if hand annotations have been generated. If not create H5 files.
+        path_to_handannotations = []
+        if os.path.isdir(DeepForest_config["hand_annotations"]):
+            tilenames = glob.glob(DeepForest_config["hand_annotations"] + "*.tif")
+        else:
+            tilenames = [os.path.splitext(os.path.basename(DeepForest_config["hand_annotations"]))[0]]
+            
+        for x in tilenames:
+            tilename = os.path.splitext(os.path.basename(x))[0]                
+            tilename = os.path.join(DeepForest_config["retraining_h5_dir"], tilename) + ".csv"
+            path_to_handannotations.append(os.path.join(DeepForest_config["retraining_h5_dir"], tilename))            
+                
+        #for each annotation, check if exists in h5 dir
+        for index, path in enumerate(path_to_handannotations):
+            if not os.path.exists(path):
+                #Generate xml name, assumes 
+                annotation_dir = os.path.join(os.path.dirname(os.path.dirname(DeepForest_config["hand_annotations"])),"annotations")
+                annotation_xmls = os.path.splitext(os.path.basename(tilenames[index]))[0] + ".xml"
+                full_xml_path = os.path.join(annotation_dir, annotation_xmls )
+                
+                print("Generating hand annotated data from tile {}".format(tilename))                
+                Generate.run(tile_xml = full_xml_path, mode="retrain")
+        
+        #retrain csvs have hand_annotation added to distinguish them
+        data = preprocess.load_csvs(csv_list=path_to_handannotations)
             
     #Log site
     site=DeepForest_config["evaluation_site"]
