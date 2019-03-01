@@ -33,7 +33,7 @@ score_threshold: 0.20
 
 #Evaluation
 evaluation_site: SJER
-evaluation_images: 50
+evaluation_images: 0
 evaluation_tile_dir: /home/b.weinstein/DeepLidar/data/SJER/plots/
 save_image_path: /orange/ewhite/b.weinstein/retinanet/snapshots/
 shuffle_evaluation: False

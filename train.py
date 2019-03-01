@@ -282,7 +282,7 @@ def create_generators(args, data, DeepForest_config):
     train_generator = H5Generator(train, batch_size = args.batch_size, h5_dir = h5_dir, DeepForest_config = DeepForest_config, group_method="none", name = "training")
 
     #Validation Generator, check that it exists
-    if not test == None:
+    if test is not None:
         validation_generator = H5Generator(test, batch_size = args.batch_size, h5_dir = h5_dir, DeepForest_config = DeepForest_config, group_method = "none", name = "validation")
     else:
         validation_generator = None
