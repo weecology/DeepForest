@@ -281,9 +281,12 @@ def create_generators(args, data, DeepForest_config):
     #Training Generator
     train_generator = H5Generator(train, batch_size = args.batch_size, h5_dir = h5_dir, DeepForest_config = DeepForest_config, group_method="none", name = "training")
 
-    #Validation Generator        
-    validation_generator = H5Generator(test, batch_size = args.batch_size, h5_dir = h5_dir, DeepForest_config = DeepForest_config, group_method = "none", name = "validation")
-
+    #Validation Generator, check that it exists
+    if not test == None:
+        validation_generator = H5Generator(test, batch_size = args.batch_size, h5_dir = h5_dir, DeepForest_config = DeepForest_config, group_method = "none", name = "validation")
+    else:
+        validation_generator = None
+        
     return train_generator, validation_generator
 
 
@@ -430,14 +433,16 @@ def main(args=None, data=None, DeepForest_config=None, experiment=None):
         DeepForest_config
     )
     
-    matched=[]
-    for entry in validation_generator.image_data.values():
-        test=entry in train_generator.image_data.values() 
-        matched.append(test)
-    if sum(matched) > 0:
-        raise Exception("%.2f percent of validation windows are in training data" % (100 * sum(matched)/train_generator.size()))
-    else:
-        print("Test passed: No overlapping data in training and validation")
+    #Make sure no overlapping data
+    if validation_generator:
+        matched=[]
+        for entry in validation_generator.image_data.values():
+            test=entry in train_generator.image_data.values() 
+            matched.append(test)
+        if sum(matched) > 0:
+            raise Exception("%.2f percent of validation windows are in training data" % (100 * sum(matched)/train_generator.size()))
+        else:
+            print("Test passed: No overlapping data in training and validation")
     
     #start training
     training_model.fit_generator(

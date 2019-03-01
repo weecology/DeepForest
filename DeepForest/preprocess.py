@@ -99,11 +99,9 @@ def load_xmls(path, h5_dirname, rgb_tile_dir, rgb_res):
         return data
     
 def load_xml(path, dirname, res):
-    
     """
     Load a single .xml annotations
     """
-
     #parse
     with open(path) as fd:
         doc = xmltodict.parse(fd.read())
@@ -129,7 +127,6 @@ def load_xml(path, dirname, res):
             ymax.append(tree["bndbox"]["ymax"])
             label.append(tree['name'])
     else:
-        
         #One tree
         treeID=0
         
@@ -224,14 +221,20 @@ def split_training(csv_data, DeepForest_config, experiment):
         training = data[msk]
         evaluation=data[~msk]     
     else:
-        #Select one validation tile
-        eval_tile = data.tile.unique()[1]
-        evaluation = data[data["tile"] == eval_tile]
-        training = data[~(data["tile"] == eval_tile)]
         
-        #Log 
-        if not experiment==None:
-            experiment.log_parameter(eval_tile, "Evaluation Tile")
+        
+        #Select one validation tile if validation is requested, if no validation data, take all tiles.        
+        if DeepForest_config["evaluation_images"] == 0:
+            training=data
+            evaluation = None
+        else:
+            eval_tile = data.tile.unique()[1]
+            evaluation = data[data["tile"] == eval_tile]
+            training = data[~(data["tile"] == eval_tile)]
+        
+            #Log 
+            if not experiment==None:
+                experiment.log_parameter(eval_tile, "Evaluation Tile")
             
     #Select n Training samples
     if not DeepForest_config["training_images"]=="All":
@@ -251,7 +254,7 @@ def split_training(csv_data, DeepForest_config, experiment):
         training.sort_values(by="tile", inplace=True)            
         
     #evaluation samples
-    if not DeepForest_config["evaluation_images"]=="All":
+    if not DeepForest_config["evaluation_images"] in ["All",0]:
         num_evaluation_images = DeepForest_config["evaluation_images"]
     
         #Optional shuffle
