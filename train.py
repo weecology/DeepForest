@@ -174,22 +174,6 @@ def create_callbacks(model, training_model, prediction_model, train_generator, v
     """
     callbacks = []
 
-    tensorboard_callback = None
-
-    if args.tensorboard_dir:
-        tensorboard_callback = keras.callbacks.TensorBoard(
-            log_dir                = args.tensorboard_dir,
-            histogram_freq         = 0,
-            batch_size             = args.batch_size,
-            write_graph            = True,
-            write_grads            = False,
-            write_images           = False,
-            embeddings_freq        = 0,
-            embeddings_layer_names = None,
-            embeddings_metadata    = None
-        )
-        callbacks.append(tensorboard_callback)
-
     if args.evaluation and validation_generator:
         
         evaluation = Evaluate(validation_generator, 
@@ -211,10 +195,11 @@ def create_callbacks(model, training_model, prediction_model, train_generator, v
                 args.snapshot_path,
                 '{backbone}_{{epoch:02d}}.h5'.format(backbone=args.backbone)
             ),
-            verbose=1,
-            save_best_only=True,
-             monitor="mAP",
-             mode='max'
+            verbose=1
+            #,
+            #save_best_only=True,
+            # monitor="mAP",
+            # mode='max'
         )
         checkpoint = RedirectModel(checkpoint, model)
         callbacks.append(checkpoint)
