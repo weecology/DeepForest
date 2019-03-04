@@ -178,6 +178,105 @@ def _get_annotations(generator):
 
     return all_annotations
 
+def evaluate_pr(
+    generator,
+    model,
+    iou_threshold=0.5,
+    score_threshold=0.05,
+    max_detections=100,
+    save_path=None,
+    experiment=None
+):
+    """ Evaluate the precision and recall for given dataset using a given model at a given threshold
+
+    # Arguments
+        generator       : The generator that represents the dataset to evaluate.
+        model           : The model to evaluate.
+        iou_threshold   : The threshold used to consider when a detection is positive or negative.
+        score_threshold : The score confidence threshold to use for detections.
+        max_detections  : The maximum number of detections to use per image.
+        save_path       : The path to save images with visualized detections to.
+        experiment     : Comet ml experiment to evaluate
+    # Returns
+        A tuple of recall and precision
+    """
+
+    # gather all detections and annotations
+    all_detections     = _get_detections(generator, model, score_threshold=score_threshold, max_detections=max_detections, save_path=save_path, experiment=experiment)
+    all_annotations    = _get_annotations(generator)
+    average_precisions = {}
+
+    # all_detections = pickle.load(open('all_detections.pkl', 'rb'))
+    # all_annotations = pickle.load(open('all_annotations.pkl', 'rb'))
+    # pickle.dump(all_detections, open('all_detections.pkl', 'wb'))
+    # pickle.dump(all_annotations, open('all_annotations.pkl', 'wb'))
+
+    # process detections and annotations
+    for label in range(generator.num_classes()):
+        false_positives = np.zeros((0,))
+        true_positives  = np.zeros((0,))
+        scores          = np.zeros((0,))
+        num_annotations = 0.0
+
+        for i in range(generator.size()):
+            detections           = all_detections[i][label]
+            annotations          = all_annotations[i][label]
+            num_annotations     += annotations.shape[0]
+            detected_annotations = []
+
+            try:
+                _ = len(detections)
+            except:
+                print("No detections")
+                continue
+            
+            for d in detections:
+                scores = np.append(scores, d[4])
+
+                if annotations.shape[0] == 0:
+                    false_positives = np.append(false_positives, 1)
+                    true_positives  = np.append(true_positives, 0)
+                    continue
+
+                overlaps            = compute_overlap(np.expand_dims(d, axis=0), annotations)
+                assigned_annotation = np.argmax(overlaps, axis=1)
+                max_overlap         = overlaps[0, assigned_annotation]
+
+                if max_overlap >= iou_threshold and assigned_annotation not in detected_annotations:
+                    false_positives = np.append(false_positives, 0)
+                    true_positives  = np.append(true_positives, 1)
+                    detected_annotations.append(assigned_annotation)
+                else:
+                    false_positives = np.append(false_positives, 1)
+                    true_positives  = np.append(true_positives, 0)
+
+        # no annotations -> AP for this class is 0 (is this correct?)
+        if num_annotations == 0:
+            average_precisions[label] = 0, 0
+            continue
+
+        # sort by score
+        indices         = np.argsort(-scores)
+        false_positives = false_positives[indices]
+        true_positives  = true_positives[indices]
+
+        # compute false positives and true positives
+        false_positives = np.cumsum(false_positives)
+        true_positives  = np.cumsum(true_positives)
+
+        # compute recall and precision
+        recall    = true_positives / num_annotations
+        precision = true_positives / np.maximum(true_positives + false_positives, np.finfo(np.float64).eps)
+        
+        if len(recall) > 0:
+            print(f"At score threshold {score_threshold}, the IoU recall is {recall[-1]} and precision is {precision[-1]}")
+        else:
+            print("None of the annotations exceeded score threshold")
+            recall = [0]
+            precision = [0]
+
+    return [recall[-1], precision[-1]]
+
 def evaluate(
     generator,
     model,
@@ -187,7 +286,7 @@ def evaluate(
     save_path=None,
     experiment=None
 ):
-    """ Evaluate a given dataset using a given model.
+    """ Evaluate the mAP for given dataset using a given model.
 
     # Arguments
         generator       : The generator that represents the dataset to evaluate.
@@ -278,4 +377,5 @@ def evaluate(
         average_precisions[label] = average_precision, num_annotations
 
     return average_precisions
+
 

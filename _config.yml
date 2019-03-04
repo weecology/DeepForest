@@ -1,9 +1,9 @@
 #Config file for DeepMeerkat train.py on HiPerGator
 
-#Data generation
+#Data generation - the number of workers for dask session 
 num_hipergator_workers: 20
 
-#SlidingWindow
+#Sliding Window Size and Ovelap
 patch_size: 400
 patch_overlap: 0.05
 rgb_res: 0.1
@@ -12,7 +12,7 @@ rgb_res: 0.1
 preprocess:
           zero_area: True
 
-#Hand annotations
+#Hand annotation location
 hand_annotations: /home/b.weinstein/DeepLidar/data/SJER/training/
 retraining_h5_dir: /orange/ewhite/b.weinstein/training_h5s/SJER/handannotation/
 
@@ -46,7 +46,9 @@ nms_threshold: 0.1
 
 #LIDAR
 lidar_path: /ufrc/ewhite/b.weinstein/NeonData/SJER/DP1.30003.001/2018/FullSite/D17/2018_SJER_3/L1/DiscreteLidar/ClassifiedPointCloud/
+min_density: 100
+
+#Keras
 workers: 1
 use_multiprocessing: False
 max_queue_size: 10
-min_density: 100

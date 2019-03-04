@@ -142,7 +142,7 @@ def main(data, DeepForest_config, experiment,args=None):
 
     NEON_recall_generator = create_NEON_generator(args, site, DeepForest_config)
 
-    recall=neonRecall(
+    recall = neonRecall(
         site,
         NEON_recall_generator,
         model,            
@@ -152,7 +152,7 @@ def main(data, DeepForest_config, experiment,args=None):
         DeepForest_config=DeepForest_config
     )
     
-    print("Recall is {0.3f}".format(recall))
+    print("Recall is {:0.3f}".format(recall))
     
     experiment.log_metric("Recall", recall)       
     
@@ -197,8 +197,11 @@ def main(data, DeepForest_config, experiment,args=None):
         if num_annotations > 0:
             present_classes += 1
             precision       += average_precision
+    NEON_map = precision / present_classes
     print('NEON mAP: {:.3f}'.format(precision / present_classes))
     experiment.log_metric("NEON mAP", precision / present_classes)        
+    
+    return [recall, NEON_map]
     
 if __name__ == '__main__':
     
