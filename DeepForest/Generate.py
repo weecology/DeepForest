@@ -66,7 +66,11 @@ def run(tile_csv=None, tile_xml = None, mode="train"):
         return None
     
     #Create generate
-    generator = onthefly_generator.OnTheFlyGenerator(data, windows, DeepForest_config, base_dir = DeepForest_config["rgb_tile_dir"])
+    generator = onthefly_generator.OnTheFlyGenerator(data,
+                                                     windows,
+                                                     DeepForest_config,
+                                                     base_dir = DeepForest_config["rgb_tile_dir"],
+                                                     lidar_dir = DeepForest_config["lidar_dir"])
     
     #Create h5 dataset    
     # open a hdf5 file and create arrays
