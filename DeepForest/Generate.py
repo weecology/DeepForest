@@ -38,7 +38,7 @@ def run(tile_csv=None, tile_xml = None, mode="train"):
         base_dir = DeepForest_config["rgb_tile_dir"]
         lidar_dir= DeepForest_config["lidar_dir"]
         
-        data = preprocess.load_data(data_dir=tile_csv, res=0.1, lidar_path=base_dir)
+        data = preprocess.load_data(data_dir=tile_csv, res=0.1, lidar_path=lidar_dir)
         
         #Get tile filename for storing
         tilename = data.rgb_path.unique()[0]
