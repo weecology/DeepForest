@@ -49,6 +49,7 @@ def create_NEON_generator(args, site, DeepForest_config):
         batch_size = args.batch_size,
         DeepForest_config = DeepForest_config,
         base_dir=DeepForest_config["evaluation_tile_dir"],
+        lidar_dir=DeepForest_config["evaluation_lidar_dir"],
         group_method="none")
     
     return(generator)

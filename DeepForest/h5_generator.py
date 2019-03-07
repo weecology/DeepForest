@@ -35,6 +35,7 @@ class H5Generator(Generator):
         DeepForest_config,
         h5_dir,        
         base_dir=None,
+        lidar_dir=None,
         group_method="none",
         name=None,
         **kwargs
@@ -54,11 +55,13 @@ class H5Generator(Generator):
         self.group_order = {}
         self.group_method=group_method
         
-        #Define base directory        
+        #Set base directory
         if not base_dir:
-            self.base_dir = DeepForest_config["rgb_tile_dir"]
+            self.base_dir=DeepForest_config["rgb_tile_dir"]
+            self.lidar_path = DeepForest_config["lidar_dir"]
         else:
-            self.base_dir = base_dir
+            self.base_dir=base_dir
+            self.lidar_path=lidar_dir
             
         #Holder for image path, keep from reloading same image to save time.
         self.previous_image_path=None
@@ -152,12 +155,12 @@ class H5Generator(Generator):
         return(image_data, image_names)
     
     def fetch_lidar_filename(self):           
-        lidar_filepath=Lidar.fetch_lidar_filename(self.row, self.base_dir)
+        lidar_filepath=Lidar.fetch_lidar_filename(self.row, self.lidar_path)
         
         if lidar_filepath:
             return lidar_filepath
         else:
-            print("Lidar file {} cannot be found in {}".format(self.row["tile"], self.base_dir))
+            print("Lidar file {} cannot be found in {}".format(self.row["tile"], self.lidar_path))
             raise IOError 
         
     def load_lidar_tile(self):
