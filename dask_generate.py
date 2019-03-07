@@ -52,7 +52,7 @@ def run_HPC(data_paths):
     from dask.distributed import Client, wait
     
     DeepForest_config = config.load_config()
-    num_workers=DeepForest_config["num_hipergator_workers"]
+    num_workers = DeepForest_config["num_hipergator_workers"]
     
     #job args
     extra_args=[
