@@ -161,7 +161,6 @@ def create_callbacks(model, training_model, prediction_model, train_generator, v
     if args.evaluation and validation_generator:
         
         evaluation = Evaluate(validation_generator, 
-                              tensorboard=tensorboard_callback,
                               experiment=experiment,
                               save_path=args.save_path,
                               score_threshold=args.score_threshold,
@@ -209,6 +208,8 @@ def create_callbacks(model, training_model, prediction_model, train_generator, v
                           save_path=args.save_path,
                           DeepForest_config=DeepForest_config,
                           score_threshold=args.score_threshold,
+                          base_dir=DeepForest_config["evaluation_tile_dir"],
+                          lidar_dir=DeepForest_config["evaluation_lidar_dir"],
                           experiment=experiment)
     
     recall = RedirectModel(recall, prediction_model)
