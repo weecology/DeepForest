@@ -74,7 +74,8 @@ def create_generator(args, data, config):
         batch_size=args.batch_size,
         DeepForest_config=DeepForest_config,
         group_method="none",
-        base_dir=DeepForest_config["rgb_tile_dir"],
+        base_dir=DeepForest_config["evaluation_tile_dir"],
+        lidar_dir=DeepForest_config["evaluation_lidar_dir"],
         name = "validation"
     )
         

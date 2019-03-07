@@ -180,10 +180,10 @@ def create_callbacks(model, training_model, prediction_model, train_generator, v
                 '{backbone}_{{epoch:02d}}.h5'.format(backbone=args.backbone)
             ),
             verbose=1
-            #,
-            #save_best_only=True,
-            # monitor="mAP",
-            # mode='max'
+            ,
+            save_best_only=True,
+            monitor="mAP",
+            mode='max'
         )
         checkpoint = RedirectModel(checkpoint, model)
         callbacks.append(checkpoint)
@@ -248,11 +248,23 @@ def create_generators(args, data, DeepForest_config):
         h5_dir = DeepForest_config["retraining_h5_dir"]
         
     #Training Generator
-    train_generator = H5Generator(train, batch_size = args.batch_size, h5_dir = h5_dir, DeepForest_config = DeepForest_config, group_method="none", name = "training")
+    train_generator = H5Generator(train, 
+                                  batch_size = args.batch_size, 
+                                  h5_dir = h5_dir, 
+                                  DeepForest_config = DeepForest_config, 
+                                  group_method="none", 
+                                  name = "training")
 
     #Validation Generator, check that it exists
     if test is not None:
-        validation_generator = H5Generator(test, batch_size = args.batch_size, h5_dir = h5_dir, DeepForest_config = DeepForest_config, group_method = "none", name = "validation")
+        validation_generator = H5Generator(test, 
+                                           batch_size = args.batch_size, 
+                                           h5_dir = h5_dir, 
+                                           DeepForest_config = DeepForest_config, 
+                                           group_method = "none", 
+                                           name = "validation", 
+                                           base_dir= DeepForest_config["evaluation_tile_dir"], 
+                                           lidar_dir=DeepForest_config["evaluation_lidar_dir"])
     else:
         validation_generator = None
         

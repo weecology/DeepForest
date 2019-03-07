@@ -33,6 +33,7 @@ class OnTheFlyGenerator(Generator):
         windowdf,
         DeepForest_config,
         base_dir=None,
+        lidar_dir=None,
         shuffle_tile_epoch=False,
         group_method="none",
         name=None,
@@ -60,10 +61,10 @@ class OnTheFlyGenerator(Generator):
         #Set destination directory
         if not base_dir:
             self.base_dir=DeepForest_config["rgb_tile_dir"]
-            self.lidar_path = DeepForest_config["rgb_tile_dir"]
+            self.lidar_path = DeepForest_config["lidar_dir"]
         else:
             self.base_dir=base_dir
-            self.lidar_path=base_dir
+            self.lidar_path=lidar_dir
             
         #Holder for image path, keep from reloading same image to save time.
         self.previous_image_path = None
@@ -184,7 +185,7 @@ class OnTheFlyGenerator(Generator):
         return self.clipped_las
     
     def fetch_lidar_filename(self):           
-        lidar_filepath=Lidar.fetch_lidar_filename(self.row, self.base_dir)
+        lidar_filepath=Lidar.fetch_lidar_filename(self.row, self.lidar_path)
         
         return lidar_filepath
 

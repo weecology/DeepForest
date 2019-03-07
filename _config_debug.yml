@@ -16,6 +16,7 @@ preprocess:
 training_h5_dir: /Users/Ben/Downloads/training/
 training_csvs: /Users/Ben/Documents/DeepLidar/data/SJER/training/
 rgb_tile_dir: /Users/Ben/Documents/DeepLidar/data/SJER/training/
+lidar_dir: /Users/Ben/Documents/DeepLidar/data/SJER/training/
 training_images: All
 batch_size: 2   
 epochs: 2
@@ -35,6 +36,7 @@ retraining_h5_dir: /Users/Ben/Downloads/
 evaluation_site: SJER
 evaluation_images: 10
 evaluation_tile_dir: /Users/Ben/Documents/DeepLidar/data/SJER/plots/
+evaluation_lidar_dir: /Users/Ben/Documents/DeepLidar/data/SJER/plots/
 save_image_path: snapshots/images/
 shuffle_evaluation: False
 
