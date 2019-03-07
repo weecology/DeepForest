@@ -138,7 +138,8 @@ def create_NEON_generator(args, site, DeepForest_config):
         DeepForest_config=DeepForest_config,
         group_method="none",
         name="NEON_validation",
-        base_dir=DeepForest_config["evaluation_tile_dir"]
+        base_dir=DeepForest_config["evaluation_tile_dir"],
+        lidar_dir=DeepForest_config["evaluation_lidar_dir"]        
     )
         
     return(generator)
