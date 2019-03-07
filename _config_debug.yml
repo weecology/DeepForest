@@ -13,8 +13,8 @@ preprocess:
           zero_area: True
 
 ##Training
-training_h5_dir: /Users/Ben/Downloads/
-training_csvs: /Users/Ben/Documents/DeepLidar/data/SJER/
+training_h5_dir: /Users/Ben/Downloads/training/
+training_csvs: /Users/Ben/Documents/DeepLidar/data/SJER/training/
 rgb_tile_dir: /Users/Ben/Documents/DeepLidar/data/SJER/training/
 training_images: All
 batch_size: 2   
@@ -46,6 +46,7 @@ validation_percent: 2
 
 #LIDAR
 workers: 1
+kernel_size: 5
 use_multiprocessing: False
 max_queue_size: 10
 min_density: 100

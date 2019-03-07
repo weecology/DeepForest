@@ -50,5 +50,6 @@ min_density: 100
 
 #Keras
 workers: 1
+kernel_size: 5
 use_multiprocessing: False
 max_queue_size: 10

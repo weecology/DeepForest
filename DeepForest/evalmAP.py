@@ -145,8 +145,27 @@ def _get_detections(generator, model, score_threshold=0.05, max_detections=100, 
             #Write RGB
             cv2.imwrite(os.path.join(save_path, '{}.png'.format(fname)), raw_image)
             
+            #Write LIDAR
+            chm = chm.astype(np.float32) # convert to float
+            chm -= chm.min() # ensure the minimal value is 0.0
+            chm /= chm.max() # maximum value in chm is now 1.0
+            chm = np.array(chm * 255, dtype = np.uint8)
+            chm=cv2.applyColorMap(chm, cv2.COLORMAP_JET)
+        
+            draw_annotations(chm, generator.load_annotations(i), label_to_name=generator.label_to_name)
+            draw_detections(chm, image_boxes, image_scores, image_labels, label_to_name=generator.label_to_name,score_threshold=score_threshold)            
+        
+            #Format name and save
+            image_name=generator.image_names[i]        
+            row=generator.image_data[image_name]             
+            lfname=os.path.splitext(row["tile"])[0] + "_" + str(row["window"]) +"_lidar"
+        
+            #Write CHM
+            cv2.imwrite(os.path.join(save_path, '{}.png'.format(lfname)), chm)            
+            
             if experiment:
                 experiment.log_image(os.path.join(save_path, '{}.png'.format(fname)), file_name=fname)                
+                experiment.log_image(os.path.join(save_path, '{}.png'.format(lfname)),file_name=lfname)      
 
         # copy detections to all_detections
         for label in range(generator.num_classes()):

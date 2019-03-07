@@ -233,8 +233,20 @@ class OnTheFlyGenerator(Generator):
         #Save image path for next evaluation to check
         self.previous_image_path = self.row["tile"]
         
-        return image
+        #Crop Las
+        self.clipped_las = self.clip_las()
+        
+        #If empty, return None
+        if self.clipped_las is None:
+            return None
+        
+        #Crop numpy array
+        self.CHM = self.compute_CHM()
     
+        four_channel_image = self.bind_array()
+        
+        return four_channel_image
+        
     def load_image(self, image_index):
         """ Load an image at the image_index.
         """
@@ -248,15 +260,15 @@ class OnTheFlyGenerator(Generator):
             print("Loading new tile {}".format(self.row["tile"]))
             
             self.numpy_image = self.load_rgb_tile()
-            #self.lidar_tile = self.load_lidar_tile()
+            self.lidar_tile = self.load_lidar_tile()
             
         #Load a new crop from self
-        three_channel_image = self.load_new_crop()
+        four_channel_image = self.load_new_crop()
         
-        if three_channel_image is None:
+        if four_channel_image is None:
             return None
         else: 
-            return three_channel_image
+            return four_channel_image
     
     def fetch_annotations(self):
         '''

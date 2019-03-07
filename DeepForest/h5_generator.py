@@ -111,7 +111,6 @@ class H5Generator(Generator):
         """
         #Find matching annotations        
         tiles=self.windowdf["tile"].unique()
-        
         total_annotations = 0
                 
         #Select annotations
@@ -126,7 +125,7 @@ class H5Generator(Generator):
             selected_annotations = pd.merge(self.windowdf, annotations)
             total_annotations += len(selected_annotations)        
         
-        print("There are a total of {} tree annotations in the {} generator".format(total_annotations,self.name))       
+        print("There are a total of {} tree annotations in the {} generator".format(total_annotations, self.name))       
         
         return(total_annotations)
     

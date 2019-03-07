@@ -317,8 +317,8 @@ def create_windows(data, DeepForest_config, base_dir):
     """
     
     #Compute list of sliding windows, assumed that all objects are the same extent and resolution        
-    image_path=os.path.join(base_dir, data.rgb_path.unique()[0])
-    windows=compute_windows(image=image_path, pixels=DeepForest_config["patch_size"], overlap=DeepForest_config["patch_overlap"])
+    image_path = os.path.join(base_dir, data.rgb_path.unique()[0])
+    windows = compute_windows(image=image_path, pixels=DeepForest_config["patch_size"], overlap=DeepForest_config["patch_overlap"])
     
     #if none
     if windows is None:
@@ -330,10 +330,10 @@ def create_windows(data, DeepForest_config, base_dir):
     
     all_images=list(data.rgb_path.unique())
 
-    tile_windows["tile"]=all_images
-    tile_windows["window"]=np.arange(0,len(windows))
+    tile_windows["tile"] = all_images
+    tile_windows["window"] = np.arange(0,len(windows))
     
     #Expand grid
-    tile_data=expand_grid(tile_windows)    
+    tile_data = expand_grid(tile_windows)    
     
     return(tile_data)

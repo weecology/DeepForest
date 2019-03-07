@@ -35,14 +35,14 @@ def run(tile_csv=None, tile_xml = None, mode="train"):
     
     if mode == "train":
         #Read in data
-        data = preprocess.load_data(data_dir=tile_csv, res=0.1, lidar_path=DeepForest_config["lidar_path"])
+        base_dir = DeepForest_config["rgb_tile_dir"]        
+        data = preprocess.load_data(data_dir=tile_csv, res=0.1, lidar_path=base_dir)
         
         #Get tile filename for storing
         tilename = os.path.split(tile_csv)[-1]
         tilename = os.path.splitext(tilename)[0]
             
         #Create windows
-        base_dir = DeepForest_config["evaluation_tile_dir"]
         windows = preprocess.create_windows(data, DeepForest_config, base_dir = base_dir)   
         
         #Destination dir
@@ -72,7 +72,7 @@ def run(tile_csv=None, tile_xml = None, mode="train"):
     hdf5_file = h5py.File(h5_filename, mode='w')    
     
     #A 3 channel image of square patch size.
-    train_shape = (generator.size(), DeepForest_config["patch_size"], DeepForest_config["patch_size"], 3)
+    train_shape = (generator.size(), DeepForest_config["patch_size"], DeepForest_config["patch_size"], 4)
     
     #Create h5 dataset to fill
     hdf5_file.create_dataset("train_imgs", train_shape, dtype='f')

@@ -26,7 +26,6 @@ def run_local(data_paths):
     from dask.distributed import Client, wait    
     
     DeepForest_config = config.load_config()
-    
     dask_client = Client()    
     futures = dask_client.map(Generate.run, data_paths, DeepForest_config=DeepForest_config)
     wait(futures)
@@ -52,7 +51,6 @@ def run_HPC(data_paths):
     from dask.distributed import Client, wait
     
     DeepForest_config = config.load_config()
-    
     num_workers=DeepForest_config["num_hipergator_workers"]
     
     #job args
@@ -89,9 +87,7 @@ if __name__ == "__main__":
     
     #Optionally limit
     #data_paths = data_paths[:100]
-
     print("{s} csv files found for training".format(s=len(data_paths)))
-    
     run_test(data_paths)
     
     #On Hypergator

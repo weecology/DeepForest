@@ -160,8 +160,7 @@ def create_callbacks(model, training_model, prediction_model, train_generator, v
 
     if args.evaluation and validation_generator:
         
-        evaluation = Evaluate(validation_generator, 
-                              tensorboard=tensorboard_callback,
+        evaluation = Evaluate(validation_generator,
                               experiment=experiment,
                               save_path=args.save_path,
                               score_threshold=args.score_threshold,

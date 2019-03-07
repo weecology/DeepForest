@@ -1,3 +1,5 @@
 snapshots/
 logs/
 data/TEAK/2018_TEAK_3_315000_4094000_image_crop.tif
+*.wpr
+*.wpu
