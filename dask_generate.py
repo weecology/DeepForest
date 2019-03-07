@@ -52,7 +52,6 @@ def run_HPC(data_paths):
     from dask.distributed import Client, wait
     
     DeepForest_config = config.load_config()
-    
     num_workers=DeepForest_config["num_hipergator_workers"]
     
     #job args
@@ -76,9 +75,8 @@ def run_HPC(data_paths):
     
     dask_client = Client(cluster)
         
-    #Start dask dashboard? Not clear yet.
+    #Start dask
     dask_client.run_on_scheduler(start_tunnel)  
-            
     futures = dask_client.map(Generate.run, data_paths)
     wait(futures)
 
