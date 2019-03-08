@@ -40,7 +40,12 @@ def get_session():
 def create_NEON_generator(args, site, DeepForest_config):
     """ Create generators for training and validation.
     """
-    annotations, windows = preprocess.NEON_annotations(site, DeepForest_config)
+    
+    #NEON dir in data/
+    plot_dir = os.path.join("data",site,"plots")  
+    
+    #Retrieve annotations
+    annotations, windows = preprocess.NEON_annotations(plot_dir, site, DeepForest_config)
 
     #Training Generator
     generator =  OnTheFlyGenerator(
@@ -48,8 +53,8 @@ def create_NEON_generator(args, site, DeepForest_config):
         windows,
         batch_size = args.batch_size,
         DeepForest_config = DeepForest_config,
-        base_dir=DeepForest_config["evaluation_tile_dir"],
-        lidar_dir=DeepForest_config["evaluation_lidar_dir"],
+        base_dir=plot_dir,
+        lidar_dir=plot_dir,
         group_method="none")
     
     return(generator)
@@ -58,7 +63,6 @@ def create_NEON_generator(args, site, DeepForest_config):
 def create_generator(args, data, config):
     """ Create generators for training and validation.
     """
-
     #Set the h5 dir based on training or retraining
     if DeepForest_config["mode"] == "train":
         h5_dir = DeepForest_config["training_h5_dir"]
@@ -259,7 +263,7 @@ if __name__ == '__main__':
         #for each annotation, check if exists in h5 dir
         for index, path in enumerate(path_to_handannotations):
             if not os.path.exists(path):
-                #Generate xml name, assumes 
+                #Generate xml name 
                 annotation_dir = os.path.join(os.path.dirname(os.path.dirname(DeepForest_config["hand_annotations"])),"annotations")
                 annotation_xmls = os.path.splitext(os.path.basename(tilenames[index]))[0] + ".xml"
                 full_xml_path = os.path.join(annotation_dir, annotation_xmls )
@@ -284,5 +288,5 @@ if __name__ == '__main__':
         '--convert-model'
     ]
        
-    #Run training, and pass comet experiment   
+    #Run training, and pass comet experiment 
     main(data, DeepForest_config, experiment, args)

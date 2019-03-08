@@ -94,7 +94,7 @@ def neonRecall(
         image_detections = np.concatenate([image_boxes, np.expand_dims(image_scores, axis=1), np.expand_dims(image_labels, axis=1)], axis=1)
         
         #Find geographic bounds
-        tile_path=generator.base_dir + generator.image_data[i]["tile"]
+        tile_path=os.path.join(generator.base_dir, generator.image_data[i]["tile"])
         
         with rasterio.open(tile_path) as dataset:
             tile_bounds = dataset.bounds   

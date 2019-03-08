@@ -166,8 +166,8 @@ class H5Generator(Generator):
     def load_lidar_tile(self):
         '''Load a point cloud into memory from file
         '''
-        self.lidar_filepath=self.fetch_lidar_filename()        
-        self.lidar_tile=Lidar.load_lidar(self.lidar_filepath)
+        self.lidar_filepath = self.fetch_lidar_filename()        
+        self.lidar_tile = Lidar.load_lidar(self.lidar_filepath)
     
     def load_image(self, image_index):
         """ Load an image at the image_index.

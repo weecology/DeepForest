@@ -35,8 +35,8 @@ retraining_h5_dir: /Users/Ben/Downloads/
 ##Evaluation
 evaluation_site: SJER
 evaluation_images: 10
-evaluation_tile_dir: /Users/Ben/Documents/DeepLidar/data/SJER/plots/
-evaluation_lidar_dir: /Users/Ben/Documents/DeepLidar/data/SJER/plots/
+evaluation_tile_dir: /Users/ben/Documents/DeepLidar/data/SJER/training/
+evaluation_lidar_dir: /Users/ben/Documents/DeepLidar/data/SJER/training/
 save_image_path: snapshots/images/
 shuffle_evaluation: False
 

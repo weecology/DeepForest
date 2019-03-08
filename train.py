@@ -130,6 +130,8 @@ def create_NEON_generator(args, site, DeepForest_config):
     """
     annotations, windows = preprocess.NEON_annotations(site, DeepForest_config)
     
+    plot_dir = os.path.join("data",site,"plots")
+    
     #Training Generator
     generator =  OnTheFlyGenerator(
         annotations,
@@ -138,8 +140,8 @@ def create_NEON_generator(args, site, DeepForest_config):
         DeepForest_config=DeepForest_config,
         group_method="none",
         name="NEON_validation",
-        base_dir=DeepForest_config["evaluation_tile_dir"],
-        lidar_dir=DeepForest_config["evaluation_lidar_dir"]        
+        base_dir=plot_dir,
+        lidar_dir=plot_dir       
     )
         
     return(generator)
@@ -198,7 +200,7 @@ def create_callbacks(model, training_model, prediction_model, train_generator, v
         cooldown = 0,
         min_lr   = 0
     ))
-    
+   
     #Neon Callbacks
     site=DeepForest_config["evaluation_site"]
     
