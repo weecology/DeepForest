@@ -116,14 +116,14 @@ if __name__ == '__main__':
     DeepForest_config = load_config("..")
 
     results = []
-    sites = ["SJER","TEAK"]
+    sites = ["TEAK","SJER"]
     for site in sites:
         #pass an args object instead of using command line        
         args = [
             "--batch-size", str(DeepForest_config['batch_size']),
             '--score-threshold', str(DeepForest_config['score_threshold']),
             '--suppression-threshold','0.1', 
-            '--save-path', 'snapshots/images/', 
+            '--save-path', '../snapshots/images/', 
             '--model', mode.saved_model, 
             '--convert-model'
         ]
@@ -131,7 +131,7 @@ if __name__ == '__main__':
         #Run eval
         DeepForest_config["evaluation_site"] = site
         recall, precision = main(DeepForest_config, args)
-        results.append({"Model": args.saved_model, "Site": site, "Recall": recall, "Precision": precision})
+        results.append({"Model": mode.saved_model, "Site": site, "Recall": recall, "Precision": precision})
         
     results = pd.DataFrame(results)
     #model name
