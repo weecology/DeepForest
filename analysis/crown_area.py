@@ -1,20 +1,22 @@
 import os
 import sys
-sys.path.insert(0, os.path.abspath('..'))
-import argparse
-from DeepForest import utils, preprocess
-from DeepForest.config import load_config
-from DeepForest import h5_generator
-from train import create_NEON_generator
-from DeepForest import evalmAP
-from keras_retinanet import models
 import geopandas as gp
 import pandas as pd
+import argparse
 from shapely.strtree import STRtree
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib import patches
 from scipy.optimize import linear_sum_assignment
+from keras_retinanet import models
+
+sys.path.insert(0, os.path.abspath('..'))
+
+from DeepForest import utils, preprocess
+from DeepForest.config import load_config
+from DeepForest import h5_generator
+from DeepForest import evalmAP
+from DeepForest.utils import create_NEON_generator
 
 parser     = argparse.ArgumentParser(description='Prediction of a new image')
 parser.add_argument('--model', help='path to training model' )
@@ -26,7 +28,7 @@ args=parser.parse_args()
 DeepForest_config = load_config(dir="..")
 
 #Load hand annotations
-neon_generator = create_NEON_generator(args, DeepForest_config["evaluation_site"], DeepForest_config)
+neon_generator = create_NEON_generator(args, DeepForest_config["evaluation_site"], DeepForest_config, dir="..")
 
 #Get detections and annotations
 model = models.load_model(args.model, backbone_name='resnet50', convert=True, nms_threshold=DeepForest_config["nms_threshold"])

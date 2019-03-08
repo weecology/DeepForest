@@ -13,13 +13,6 @@ warnings.simplefilter("ignore")
 
 import keras
 import tensorflow as tf
-
-# Allow relative imports when being executed as script.
-if __name__ == "__main__" and __package__ is None:
-    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
-    import keras_retinanet.bin  # noqa: F401
-    __package__ = "keras_retinanet.bin"
-
 from keras_retinanet import models
 from keras_retinanet.utils.keras_version import check_keras_version
 
@@ -28,6 +21,7 @@ from DeepForest.onthefly_generator import OnTheFlyGenerator
 from DeepForest.h5_generator import H5Generator
 from DeepForest.evaluation import neonRecall
 from DeepForest.evalmAP import evaluate
+from DeepForest.utils import create_NEON_generator
 
 def get_session():
     """ Construct a modified tf session.
@@ -35,29 +29,6 @@ def get_session():
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
     return tf.Session(config=config)
-
-
-def create_NEON_generator(args, site, DeepForest_config):
-    """ Create generators for training and validation.
-    """
-    
-    #NEON dir in data/
-    plot_dir = os.path.join("data",site,"plots")  
-    
-    #Retrieve annotations
-    annotations, windows = preprocess.NEON_annotations(plot_dir, site, DeepForest_config)
-
-    #Training Generator
-    generator =  OnTheFlyGenerator(
-        annotations,
-        windows,
-        batch_size = args.batch_size,
-        DeepForest_config = DeepForest_config,
-        base_dir=plot_dir,
-        lidar_dir=plot_dir,
-        group_method="none")
-    
-    return(generator)
 
 
 def create_generator(args, data, config):

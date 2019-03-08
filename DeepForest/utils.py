@@ -26,6 +26,30 @@ from DeepForest import postprocessing
 from shapely import geometry
 import rtree
 
+def create_NEON_generator(args, site, DeepForest_config, dir=None):
+    """ Create generators for training and validation.
+    """
+    plot_dir = os.path.join("../data",site,"plots")  
+    base_dir = os.path.join("data",site)
+    
+    if dir:
+        plot_dir = os.path.join(dir,plot_dir)
+        base_dir = os.path.join(dir,base_dir)
+
+    annotations, windows = preprocess.NEON_annotations(base_dir, site, DeepForest_config)
+
+    #Training Generator
+    generator =  OnTheFlyGenerator(
+        annotations,
+        windows,
+        batch_size = args.batch_size,
+        DeepForest_config = DeepForest_config,
+        base_dir=plot_dir,
+        lidar_dir=plot_dir,
+        group_method="none")
+    
+    return(generator)
+
 #Utility functions
 def normalize(image):
     

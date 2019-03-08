@@ -272,15 +272,17 @@ def NEON_annotations(base_dir, site, DeepForest_config):
     Create a keras generator for the hand annotated tower plots. Used for the mAP and recall callback.
     site: Four letter site code
     '''
+    plot_dir = os.path.join(base_dir ,"plots")
+    annotation_dir = os.path.join(base_dir ,"annotations")
     
     #Find all images and annotations for each with full path
-    images_to_find_xml = glob.glob(os.path.join(base_dir ,"*.tif"))
+    images_to_find_xml = glob.glob(plot_dir, "*.tif")
     corresponding_xml=[os.path.splitext(os.path.basename(x))[0] + ".xml"  for x in images_to_find_xml]
     full_path_xml = []
     for x in corresponding_xml:
-        full_path_xml.append(os.path.join("data", site, "annotations",x))
+        full_path_xml.append(os.path.join(annotation_dir,x))
         
-    glob_path = os.path.join("data", site, "annotations") + "/*.xml"
+    glob_path = os.path.join(annotation_dir, "/*.xml")
     available_xmls = glob.glob(glob_path)
     
     #matched xmls

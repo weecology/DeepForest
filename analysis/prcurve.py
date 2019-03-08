@@ -21,6 +21,7 @@ from DeepForest.onthefly_generator import OnTheFlyGenerator
 from DeepForest.evaluation import neonRecall
 from DeepForest.evalmAP import evaluate_pr
 from DeepForest import preprocess
+from DeepForest.utils import create_NEON_generator
 
 def get_session():
     """ Construct a modified tf session.
@@ -28,26 +29,6 @@ def get_session():
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
     return tf.Session(config=config)
-
-def create_NEON_generator(args, site, DeepForest_config):
-    """ Create generators for training and validation.
-    """
-    
-    plot_dir = os.path.join("data",site,"plots")  
-
-    annotations, windows = preprocess.NEON_annotations(plot_dir, site, DeepForest_config)
-
-    #Training Generator
-    generator =  OnTheFlyGenerator(
-        annotations,
-        windows,
-        batch_size = args.batch_size,
-        DeepForest_config = DeepForest_config,
-        base_dir=plot_dir,
-        group_method="none")
-    
-    return(generator)
-
 
 def parse_args(args):
     """ Parse the arguments.
@@ -95,7 +76,7 @@ def main(DeepForest_config, args=None):
     site=DeepForest_config["evaluation_site"]
     
     #create the NEON mAP generator 
-    NEON_generator = create_NEON_generator(args, site, DeepForest_config)
+    NEON_generator = create_NEON_generator(args, site, DeepForest_config, dir="..")
     
     # load the model
     print('Loading model, this may take a second...')

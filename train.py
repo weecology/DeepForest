@@ -25,12 +25,6 @@ import tensorflow as tf
 import warnings
 warnings.simplefilter("ignore")
 
-# Allow relative imports when being executed as script.
-if __name__ == "__main__" and __package__ is None:
-    sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'keras-retinanet ', 'keras-retinanet '))
-    import keras_retinanet.bin  # noqa: F401
-    __package__ = "keras_retinanet.bin"
-
 from keras_retinanet  import layers 
 from keras_retinanet  import losses
 from keras_retinanet  import models
@@ -47,6 +41,7 @@ from datetime import datetime
 from DeepForest.config import load_config
 from DeepForest import preprocess
 from DeepForest import Generate
+from DeepForest.utils import create_NEON_generator
 
 #Custom Callbacks
 from DeepForest.callbacks import recallCallback, NEONmAP, Evaluate
@@ -124,27 +119,6 @@ def create_models(backbone_retinanet, num_classes, weights, multi_gpu=0, freeze_
     )
 
     return model, training_model, prediction_model
-
-def create_NEON_generator(args, site, DeepForest_config):
-    """ Create generators for training and validation.
-    """
-    annotations, windows = preprocess.NEON_annotations(site, DeepForest_config)
-    
-    plot_dir = os.path.join("data",site,"plots")
-    
-    #Training Generator
-    generator =  OnTheFlyGenerator(
-        annotations,
-        windows,
-        batch_size=args.batch_size,
-        DeepForest_config=DeepForest_config,
-        group_method="none",
-        name="NEON_validation",
-        base_dir=plot_dir,
-        lidar_dir=plot_dir       
-    )
-        
-    return(generator)
 
 def create_callbacks(model, training_model, prediction_model, train_generator, validation_generator, args, experiment, DeepForest_config):
     """ Creates the callbacks to use during training.
