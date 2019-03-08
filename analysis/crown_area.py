@@ -16,7 +16,7 @@ from DeepForest import utils, preprocess
 from DeepForest.config import load_config
 from DeepForest import h5_generator
 from DeepForest import evalmAP
-from DeepForest.utils import create_NEON_generator
+from DeepForest.utils.generators import create_NEON_generator
 
 parser     = argparse.ArgumentParser(description='Prediction of a new image')
 parser.add_argument('--model', help='path to training model' )

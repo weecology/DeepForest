@@ -7,7 +7,7 @@ import random
 import itertools
 import csv
 import sys
-import os.path
+import os
 import cv2
 import rasterio
 import pandas as pd
@@ -15,7 +15,8 @@ import numpy as np
 from PIL import Image
 from six import raise_from
 import slidingwindow as sw
-from DeepForest import Lidar, postprocessing, utils
+from DeepForest import Lidar, postprocessing
+from DeepForest.utils import image_utils
 from matplotlib import pyplot
 from keras_retinanet.preprocessing.generator import Generator
 from keras_retinanet.utils.image import preprocess_image, resize_image
@@ -301,7 +302,7 @@ class OnTheFlyGenerator(Generator):
             (annotations.window_ymax < (patch_size+ offset))
                          ]
         
-        overlapping_boxes=d[d.apply(utils.box_overlap, window=window_coords, axis=1) > 0.5].copy()
+        overlapping_boxes=d[d.apply(image_utils.box_overlap, window=window_coords, axis=1) > 0.5].copy()
         
         #If boxes fall off edge, clip to window extent    
         overlapping_boxes.loc[overlapping_boxes["window_xmin"] < 0,"window_xmin"]=0
@@ -327,7 +328,7 @@ class OnTheFlyGenerator(Generator):
         self.row = self.image_data[image_name]
         
         #Check for blank black image, if so, enforce no annotations
-        remove_annotations = utils.image_is_blank(self.image)
+        remove_annotations = image_utils.image_is_blank(self.image)
     
         if remove_annotations:
             return np.zeros((0, 5))

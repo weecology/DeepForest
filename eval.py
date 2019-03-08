@@ -21,7 +21,7 @@ from DeepForest.onthefly_generator import OnTheFlyGenerator
 from DeepForest.h5_generator import H5Generator
 from DeepForest.evaluation import neonRecall
 from DeepForest.evalmAP import evaluate
-from DeepForest.utils import create_NEON_generator
+from DeepForest.utils.generators import create_NEON_generator
 
 def get_session():
     """ Construct a modified tf session.

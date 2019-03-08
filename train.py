@@ -41,7 +41,7 @@ from datetime import datetime
 from DeepForest.config import load_config
 from DeepForest import preprocess
 from DeepForest import Generate
-from DeepForest.utils import create_NEON_generator
+from DeepForest.utils.generators import create_NEON_generator
 
 #Custom Callbacks
 from DeepForest.callbacks import recallCallback, NEONmAP, Evaluate

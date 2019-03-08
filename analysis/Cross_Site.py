@@ -21,7 +21,7 @@ from DeepForest.onthefly_generator import OnTheFlyGenerator
 from DeepForest.evaluation import neonRecall
 from DeepForest.evalmAP import evaluate_pr
 from DeepForest import preprocess
-from DeepForest.utils import create_NEON_generator
+from DeepForest.utils.generators import create_NEON_generator
 
 def get_session():
     """ Construct a modified tf session.
@@ -105,8 +105,8 @@ if __name__ == '__main__':
     import argparse
     
     #Set training or training
-    mode_parser     = argparse.ArgumentParser(description='Retinanet training or finetuning?')
-    mode_parser.add_argument('--saved_model', help='train or retrain?' )    
+    mode_parser     = argparse.ArgumentParser()
+    mode_parser.add_argument('--saved_model')    
     mode = mode_parser.parse_args()
     
     import pandas as pd

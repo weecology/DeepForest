@@ -276,13 +276,13 @@ def NEON_annotations(base_dir, site, DeepForest_config):
     annotation_dir = os.path.join(base_dir ,"annotations")
     
     #Find all images and annotations for each with full path
-    images_to_find_xml = glob.glob(plot_dir, "*.tif")
+    images_to_find_xml = glob.glob(os.path.join(plot_dir, "*.tif"))
     corresponding_xml=[os.path.splitext(os.path.basename(x))[0] + ".xml"  for x in images_to_find_xml]
     full_path_xml = []
     for x in corresponding_xml:
         full_path_xml.append(os.path.join(annotation_dir,x))
         
-    glob_path = os.path.join(annotation_dir, "/*.xml")
+    glob_path = os.path.join(annotation_dir, "*.xml")
     available_xmls = glob.glob(glob_path)
     
     #matched xmls
@@ -290,13 +290,13 @@ def NEON_annotations(base_dir, site, DeepForest_config):
     
     annotations=[]
     for xml in matched_xmls:
-        r = load_xml(xml, dirname=base_dir, res=DeepForest_config["rgb_res"])
+        r = load_xml(xml, dirname=plot_dir, res=DeepForest_config["rgb_res"])
         annotations.append(r)
 
     data=pd.concat(annotations)
     
     #Compute list of sliding windows, assumed that all objects are the same extent and resolution
-    image_path = os.path.join(base_dir, data.rgb_path.unique()[0])
+    image_path = os.path.join(plot_dir, data.rgb_path.unique()[0])
     windows = compute_windows(image=image_path, pixels=DeepForest_config["patch_size"], overlap=DeepForest_config["patch_overlap"])
     
     #Compute Windows
