@@ -1,53 +1,63 @@
 #Config file for DeepMeerkat train.py on local OSX
 
-#Data generation
+#Data generation - the number of workers for dask session
 num_hipergator_workers: 20
+training_csvs:
+  - /Users/Ben/Documents/DeepLidar/data/SJER/training/
+  - /Users/Ben/Documents/DeepLidar/data/TEAK/training/
 
-#SlidingWindow
+#Keras
+workers: 1
+use_multiprocessing: False
+max_queue_size: 10
+num_GPUs: 1
+
+#Sliding Window Size and Ovelap
 patch_size: 400
 patch_overlap: 0.05
 rgb_res: 0.1
 
-##Preprocessing routines
+#Preprocessing routines
 preprocess:
-          zero_area: True
+  zero_area: True
 
-##Training
-training_h5_dir: /Users/Ben/Downloads/training/
-training_csvs: /Users/Ben/Documents/DeepLidar/data/SJER/training/
-rgb_tile_dir: /Users/Ben/Documents/DeepLidar/data/SJER/training/
-lidar_dir: /Users/Ben/Documents/DeepLidar/data/SJER/training/
+#Select sites
+hand_annotations:
+  - SJER
+pretraining_site:
+  - SJER  
+evaluation_site:
+  - SJER
+  
 training_images: All
-batch_size: 2   
-epochs: 2
+weights: /orange/ewhite/b.weinstein/retinanet/snapshots/20190131_145805/resnet50_08.h5
 imagenet_weights: False
-weights: /Users/ben/Documents/DeepLidar/snapshots/SJER_selfsupervised.h5
-save_snapshot_path: None
+batch_size: 25
+epochs: 25
+save_snapshot_path: snapshots/images/
 backbone: resnet50
 shuffle_training: False
-score_threshold: 0.2
-num_GPUs: 1
+score_threshold: 0.20
 
-##Retraining
-hand_annotations: /Users/ben/Documents/DeepLidar/data/SJER/training/
-retraining_h5_dir: /Users/Ben/Downloads/
-
-##Evaluation
-evaluation_site: SJER
-evaluation_images: 10
-evaluation_tile_dir: /Users/ben/Documents/DeepLidar/data/SJER/training/
-evaluation_lidar_dir: /Users/ben/Documents/DeepLidar/data/SJER/training/
+#Evaluation
+evaluation_images: 0
 save_image_path: snapshots/images/
 shuffle_evaluation: False
-
+validation_percent: 5 #For hand annotation neon_MAP
 #Non-max suppression, threshold for the IoU value to determine when a box should be suppressed.
-nms_threshold: 0.05
+nms_threshold: 0.1
 
-#For hand annotation neon_MAP
-validation_percent: 2
-
-#LIDAR
-workers: 1
-use_multiprocessing: False
-max_queue_size: 10
+#LIDAR density
 min_density: 100
+
+#Data Paths
+SJER:
+    RGB: /Users/Ben/Documents/DeepLidar/data/SJER/training/
+    LIDAR: /Users/Ben/Documents/DeepLidar/data/SJER/training/
+    hand_annotations: /Users/Ben/Documents/DeepLidar/data/SJER/training/
+    h5: /Users/Ben/Downloads/
+TEAK:
+    RGB: /Users/Ben/Documents/DeepLidar/data/TEAK/training/
+    LIDAR: /Users/Ben/Documents/DeepLidar/data/TEAK/training/
+    hand_annotations: /Users/Ben/Documents/DeepLidar/data/TEAK/training/
+    h5: /Users/Ben/Downloads/

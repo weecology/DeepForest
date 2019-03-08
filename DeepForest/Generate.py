@@ -34,10 +34,6 @@ def run(tile_csv=None, tile_xml = None, mode="train"):
     DeepForest_config = config.load_config()            
     
     if mode == "train":
-        #Read in data
-        base_dir = DeepForest_config["rgb_tile_dir"]
-        lidar_dir= DeepForest_config["lidar_dir"]
-        
         data = preprocess.load_data(data_dir=tile_csv, res=0.1, lidar_path=lidar_dir)
         
         #Get tile filename for storing
@@ -68,9 +64,7 @@ def run(tile_csv=None, tile_xml = None, mode="train"):
     #Create generate
     generator = onthefly_generator.OnTheFlyGenerator(data,
                                                      windows,
-                                                     DeepForest_config,
-                                                     base_dir = DeepForest_config["rgb_tile_dir"],
-                                                     lidar_dir = DeepForest_config["lidar_dir"])
+                                                     DeepForest_config)
     
     #Create h5 dataset    
     # open a hdf5 file and create arrays

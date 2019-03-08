@@ -131,7 +131,7 @@ if __name__ == '__main__':
         #Run eval
         DeepForest_config["evaluation_site"] = site
         recall, precision = main(DeepForest_config, args)
-        results.append({"Model": mode.saved_model, "Site": site, "Recall": recall, "Precision": precision})
+        results.append({"Model": mode.saved_model, "Site": site, "Recall": recall, "Precision": precision}) 
         
     results = pd.DataFrame(results)
     #model name

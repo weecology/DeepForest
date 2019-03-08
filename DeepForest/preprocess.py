@@ -30,9 +30,8 @@ def load_csvs(h5_dir=None, csv_list=None):
             dataframes = (pd.read_csv(f, index_col=None) for f in data_paths)
             data = pd.concat(dataframes, ignore_index=True)      
     else:
-        for csv in csv_list:     
-            dataframes = (pd.read_csv(f, index_col=None) for f in csv_list)
-            data = pd.concat(dataframes, ignore_index=True)      
+        dataframes = (pd.read_csv(f, index_col=None) for f in csv_list)
+        data = pd.concat(dataframes, ignore_index=True)      
  
     return data
     
@@ -200,16 +199,16 @@ def check_for_lidar(data,lidar_path):
     
     return data
 
-def split_training(csv_data, DeepForest_config, experiment):
+def split_training(data, DeepForest_config, experiment):
     
     '''
     Divide windows into training and testing split
-    csv_data: a pandas dataframe created by DeepForest Generate Run
+    data: a pandas dataframe created by DeepForest Generate Run
     experiment: The comet experiment object
     '''
     
     #reduce the data frame into tiles and windows
-    windowdf = csv_data[["tile","window"]]
+    windowdf = data[["tile","window","site"]]
     data = windowdf.drop_duplicates()
     
     #More than one tile in training data?
@@ -221,8 +220,6 @@ def split_training(csv_data, DeepForest_config, experiment):
         training = data[msk]
         evaluation=data[~msk]     
     else:
-        
-        
         #Select one validation tile if validation is requested, if no validation data, take all tiles.        
         if DeepForest_config["evaluation_images"] == 0:
             training=data

@@ -33,8 +33,6 @@ class OnTheFlyGenerator(Generator):
         data,
         windowdf,
         DeepForest_config,
-        base_dir=None,
-        lidar_dir=None,
         shuffle_tile_epoch=False,
         group_method="none",
         name=None,
@@ -58,14 +56,6 @@ class OnTheFlyGenerator(Generator):
         
         #Tensorflow prediction session
         self.session_exists = False
-        
-        #Set destination directory
-        if not base_dir:
-            self.base_dir=DeepForest_config["rgb_tile_dir"]
-            self.lidar_path = DeepForest_config["lidar_dir"]
-        else:
-            self.base_dir=base_dir
-            self.lidar_path=lidar_dir
             
         #Holder for image path, keep from reloading same image to save time.
         self.previous_image_path = None
@@ -161,13 +151,16 @@ class OnTheFlyGenerator(Generator):
         ''''
         Create a sliding window object
         '''
+        
         #Load tile
-        image = os.path.join(self.base_dir, self.annotation_list.rgb_path.unique()[0])
+        site = self.annotation_list.site.unique()[0]
+        base_dir = self.DeepForest_config[site]["RGB"]
+        image = os.path.join(base_dir, self.annotation_list.rgb_path.unique()[0])
         im = Image.open(image)
         numpy_image = np.array(im)    
         
         #Generate sliding windows
-        windows = sw.generate(numpy_image, sw.DimOrder.HeightWidthChannel,  self.DeepForest_config["patch_size"], self.DeepForest_config["patch_overlap"])
+        windows = sw.generate(numpy_image, sw.DimOrder.HeightWidthChannel, self.DeepForest_config["patch_size"], self.DeepForest_config["patch_overlap"])
         
         return(windows)
     
@@ -186,7 +179,10 @@ class OnTheFlyGenerator(Generator):
         return self.clipped_las
     
     def fetch_lidar_filename(self):           
-        lidar_filepath=Lidar.fetch_lidar_filename(self.row, self.lidar_path)
+        
+        #Set lidar path
+        lidar_path = self.DeepForest_config[self.row["site"]]["LIDAR"]
+        lidar_filepath=Lidar.fetch_lidar_filename(self.row, lidar_path)
         
         return lidar_filepath
 
@@ -202,7 +198,8 @@ class OnTheFlyGenerator(Generator):
         ''''
         Read RGB tile from file
         '''
-        filename = os.path.join(self.base_dir, self.row["tile"])
+        base_dir = self.DeepForest_config[self.row["site"]]["RGB"]
+        filename = os.path.join(base_dir, self.row["tile"])
         im = Image.open(filename)
         numpy_image = np.array(im)    
         
@@ -266,7 +263,9 @@ class OnTheFlyGenerator(Generator):
         Note that the window method is calculated once in train.py, this assumes all tiles have the same size and resolution
         offset: Number of meters to add to box edge to look for annotations
         '''
-        image = os.path.join(self.base_dir, self.row["tile"])
+        #Set site directory and look for tile
+        base_dir = self.DeepForest_config[self.row["site"]]["RGB"]
+        image = os.path.join(base_dir, self.row["tile"])
         index = self.row["window"]
         annotations = self.annotation_list
         windows = self.windows
@@ -299,8 +298,7 @@ class OnTheFlyGenerator(Generator):
             (annotations.window_xmin > -offset) &  
             (annotations.window_ymin > -offset)  &
             (annotations.window_xmax < (patch_size+ offset)) &
-            (annotations.window_ymax < (patch_size+ offset))
-                         ]
+            (annotations.window_ymax < (patch_size+ offset))]
         
         overlapping_boxes=d[d.apply(image_utils.box_overlap, window=window_coords, axis=1) > 0.5].copy()
         
@@ -358,7 +356,8 @@ class OnTheFlyGenerator(Generator):
         x = x * self.rgb_res
         y = y * self.rgb_res
         
-        filename = os.path.join(self.base_dir, self.row["tile"])
+        base_dir = self.DeepForest_config[self.row["site"]]["RGB"]        
+        filename = os.path.join(base_dir, self.row["tile"])
         
         with rasterio.open(filename) as dataset:
             self.utm_bounds = dataset.bounds   

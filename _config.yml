@@ -2,6 +2,13 @@
 
 #Data generation - the number of workers for dask session 
 num_hipergator_workers: 20
+training_csvs: /home/b.weinstein/TreeSegmentation/analysis/Results/detection_boxes/SJER/2018/
+
+#Keras
+workers: 1
+use_multiprocessing: False
+max_queue_size: 10
+num_GPUs: 1
 
 #Sliding Window Size and Ovelap
 patch_size: 400
@@ -12,16 +19,15 @@ rgb_res: 0.1
 preprocess:
           zero_area: True
 
-#Hand annotation location
-hand_annotations: /home/b.weinstein/DeepLidar/data/SJER/training/
-retraining_h5_dir: /orange/ewhite/b.weinstein/training_h5s/SJER/handannotation/
-
-#Training
-num_GPUs: 1
-training_h5_dir: /orange/ewhite/b.weinstein/training_h5s/SJER/
-training_csvs: /home/b.weinstein/TreeSegmentation/analysis/Results/detection_boxes/SJER/2018/
-rgb_tile_dir: /ufrc/ewhite/b.weinstein/NeonData/SJER/DP3.30010.001/2018/FullSite/D17/2018_SJER_3/L3/Camera/Mosaic/V01/
-lidar_dir: /ufrc/ewhite/b.weinstein/NeonData/SJER/DP1.30003.001/2018/FullSite/D17/2018_SJER_3/L1/DiscreteLidar/ClassifiedPointCloud/
+#Site Selection
+hand_annotations:
+  - SJER
+pretraining_site:
+  - SJER  
+evaluation_site:
+  - SJER
+  
+#PreTraining
 training_images: All
 weights: /orange/ewhite/b.weinstein/retinanet/snapshots/20190131_145805/resnet50_08.h5
 imagenet_weights: False
@@ -35,22 +41,22 @@ score_threshold: 0.20
 #Evaluation
 evaluation_site: SJER
 evaluation_images: 0
-evaluation_tile_dir: /ufrc/ewhite/b.weinstein/NeonData/SJER/DP3.30010.001/2018/FullSite/D17/2018_SJER_3/L3/Camera/Mosaic/V01/
-evaluation_lidar_dir: /ufrc/ewhite/b.weinstein/NeonData/SJER/DP1.30003.001/2018/FullSite/D17/2018_SJER_3/L1/DiscreteLidar/ClassifiedPointCloud/
 save_image_path: /orange/ewhite/b.weinstein/retinanet/snapshots/
 shuffle_evaluation: False
-
 #For hand annotation neon_MAP
 validation_percent: 5
-
 #Non-max suppression, threshold for the IoU value to determine when a box should be suppressed.
 nms_threshold: 0.1
 
-#LIDAR
-lidar_path: /ufrc/ewhite/b.weinstein/NeonData/SJER/DP1.30003.001/2018/FullSite/D17/2018_SJER_3/L1/DiscreteLidar/ClassifiedPointCloud/
+#LIDAR density
 min_density: 100
 
-#Keras
-workers: 1
-use_multiprocessing: False
-max_queue_size: 10
+#Data Paths
+SJER:
+          RGB: /ufrc/ewhite/b.weinstein/NeonData/SJER/DP3.30010.001/2018/FullSite/D17/2018_SJER_3/L3/Camera/Mosaic/V01/
+          LIDAR: /ufrc/ewhite/b.weinstein/NeonData/SJER/DP1.30003.001/2018/FullSite/D17/2018_SJER_3/L1/DiscreteLidar/ClassifiedPointCloud/
+          hand_annotations: /home/b.weinstein/DeepLidar/data/SJER/training/
+TEAK:
+          RGB: /orange/ewhite/NeonData/TEAK/DP3.30010.001/2018/FullSite/D17/2018_TEAK_3/L3/Camera/Mosaic/V01/
+          LIDAR: /orange/ewhite/NeonData/TEAK/DP1.30003.001/2018/FullSite/D17/2018_TEAK_3/L1/DiscreteLidar/ClassifiedPointCloud/
+          hand_annotations: /home/b.weinstein/DeepLidar/data/TEAK/training/

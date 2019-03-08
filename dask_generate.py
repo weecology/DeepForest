@@ -11,8 +11,14 @@ def find_csvs():
     Find training csvs on path
     """
     DeepForest_config = config.load_config()
-    data_paths = glob.glob(DeepForest_config['training_csvs']+"/*.csv")
     
+    data_paths = []
+    for file_path in DeepForest_config['training_csvs']:
+        search_path = os.path.join(file_path,"*.csv")
+        found_csvs = glob.glob(search_path)
+        data_paths.append(found_csvs)
+    
+    all_paths = [item for sublist in data_paths for item in sublist]
     return data_paths
 
 def run_test(data_paths):

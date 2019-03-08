@@ -215,18 +215,11 @@ def create_generators(args, data, DeepForest_config):
 
     #Write out for debug
     if args.save_path:
-        train.to_csv(os.path.join(args.save_path,'training_dict.csv'), header=False)
-           
-    #Set the h5 dir based on training or retraining
-    if DeepForest_config["mode"] == "train":
-        h5_dir = DeepForest_config["training_h5_dir"]
-    else:
-        h5_dir = DeepForest_config["retraining_h5_dir"]
+        train.to_csv(os.path.join(args.save_path,'training_dict.csv'), header=False)         
         
     #Training Generator
     train_generator = H5Generator(train, 
                                   batch_size = args.batch_size, 
-                                  h5_dir = h5_dir, 
                                   DeepForest_config = DeepForest_config, 
                                   group_method="none", 
                                   name = "training")
@@ -235,12 +228,9 @@ def create_generators(args, data, DeepForest_config):
     if test is not None:
         validation_generator = H5Generator(test, 
                                            batch_size = args.batch_size, 
-                                           h5_dir = h5_dir, 
                                            DeepForest_config = DeepForest_config, 
                                            group_method = "none", 
-                                           name = "validation", 
-                                           base_dir= DeepForest_config["evaluation_tile_dir"], 
-                                           lidar_dir=DeepForest_config["evaluation_lidar_dir"])
+                                           name = "validation")
     else:
         validation_generator = None
         
@@ -440,12 +430,22 @@ if __name__ == '__main__':
     
     #Load DeepForest_config and data file based on training or retraining mode
     if mode.mode == "train":
-        DeepForest_config["mode"] = "train"        
-        data = preprocess.load_csvs(DeepForest_config["training_h5_dir"])
+        DeepForest_config["mode"] = "train"  
+    
+        #For each training directory (optionally more than one site)
+        dataframes = []
+        for site in DeepForest_config["pretraining_site"]:
+            h5_dirname = DeepForest_config[site]["h5"]
+            df = preprocess.load_csvs(h5_dirname)
+            df["site"] = site
+            dataframes.append(df)
+            
+        #Create a dict assigning the tiles to the h5 dir
+        data = pd.concat(dataframes, ignore_index=True) 
         
     if mode.mode == "retrain":
         DeepForest_config["mode"] = "retrain"
-        #Load annotations
+        
         #Check if hand annotations have been generated. If not create H5 files.
         path_to_handannotations = []
         if os.path.isdir(DeepForest_config["hand_annotations"]):
@@ -471,10 +471,7 @@ if __name__ == '__main__':
         
         #retrain csvs have hand_annotation added to distinguish them
         data = preprocess.load_csvs(csv_list=path_to_handannotations)
-            
-    #Log site
-    site = DeepForest_config["evaluation_site"]
-
+        
     #pass an args object instead of using command line    
     args = [
         "--epochs", str(DeepForest_config["epochs"]),
@@ -522,7 +519,6 @@ if __name__ == '__main__':
     experiment.log_parameters(DeepForest_config)    
     experiment.log_parameter("Start Time", dirname)    
     experiment.log_parameter("Training Mode", mode.mode)
-    experiment.log_parameter("Site", site)
     
     #Run training, and pass comet experiment   
     main(args, data, DeepForest_config, experiment=experiment)
