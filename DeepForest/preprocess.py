@@ -313,6 +313,7 @@ def NEON_annotations(base_dir, site, DeepForest_config):
 def create_windows(data, DeepForest_config, base_dir):
     """
     Generate windows for a specific tile
+    base_dir: Location of the RGB image data
     """
     
     #Compute list of sliding windows, assumed that all objects are the same extent and resolution        
@@ -334,5 +335,10 @@ def create_windows(data, DeepForest_config, base_dir):
     
     #Expand grid
     tile_data=expand_grid(tile_windows)    
+    
+    #TODO merge with the site, check this.
+    merge_site = data["tile","site"]
+    tile_data=tile_data.merge(merge_site)
+    
     
     return(tile_data)

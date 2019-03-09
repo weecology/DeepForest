@@ -23,7 +23,7 @@ def parse_args():
     
     return args
 
-def run(tile_csv=None, tile_xml = None, mode="train"):
+def run(tile_csv=None, tile_xml = None, mode="train", site=None):
     
     """Crop 4 channel arrays from RGB and LIDAR CHM
     tile_csv: the CSV training file containing the tree detections
@@ -34,17 +34,22 @@ def run(tile_csv=None, tile_xml = None, mode="train"):
     DeepForest_config = config.load_config()            
     
     if mode == "train":
-        data = preprocess.load_data(data_dir=tile_csv, res=0.1, lidar_path=lidar_dir)
+        lidar_path = DeepForest_config[site]["LIDAR"]
+        data = preprocess.load_data(data_dir=tile_csv, res=0.1, lidar_path=lidar_path)
         
         #Get tile filename for storing
         tilename = data.rgb_path.unique()[0]
         tilename = os.path.splitext(tilename)[0]
             
+        #add site index
+        data["site"]=site
+        
         #Create windows
+        base_dir = DeepForest_config[site]["RGB"]
         windows = preprocess.create_windows(data, DeepForest_config, base_dir = base_dir)   
         
         #Destination dir
-        destination_dir = DeepForest_config["training_h5_dir"]
+        destination_dir = DeepForest_config[site]["h5"]
         
     if mode == "retrain":
         #Load xml annotations
