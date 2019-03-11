@@ -129,7 +129,7 @@ if __name__ == '__main__':
         results.append({"Threshold": score_threshold, "Recall": recall, "Precision": precision})
         
     results = pd.DataFrame(results)
+    
     #model name
     model_name = os.path.splitext(os.path.basename(mode.saved_model))[0]
-    
     results.to_csv("/Users/Ben/Dropbox/Weecology/RGB/prcurve_data" + model_name + ".csv")

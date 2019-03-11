@@ -39,12 +39,10 @@ def load_retraining_data(DeepForest_config):
     Overall function to find training data based on config file
     mode: retrain
     """    
-    
-    #for each hand_annotation site
-    dataframes = []
-    for site in DeepForest_config["hand_annotations"]:
+    #for each hand_annotation tile, check if its been generated.
+    for site in DeepForest_config["hand_annotation_site"]:
         RGB_dir = DeepForest_config[site]["hand_annotations"]
-        
+        h5_dirname = os.path.join(DeepForest_config[site]["h5"], "hand_annotations")
         #Check if hand annotations have been generated. If not create H5 files.
         path_to_handannotations = []
         if os.path.isdir(RGB_dir):
@@ -54,14 +52,13 @@ def load_retraining_data(DeepForest_config):
             
         for x in tilenames:
             tilename = os.path.splitext(os.path.basename(x))[0]                
-            tilename = os.path.join(RGB_dir, tilename) + ".csv"
+            tilename = os.path.join(h5_dirname, tilename) + ".csv"
             path_to_handannotations.append(os.path.join(RGB_dir, tilename))            
                 
         #for each annotation, check if exists in h5 dir
         for index, path in enumerate(path_to_handannotations):
             if not os.path.exists(path):
-                
-                #Generate xml name, assumes 
+                #Generate xml name, assumes annotations are one dir up from rgb dir
                 annotation_dir = os.path.join(os.path.dirname(os.path.dirname(RGB_dir)),"annotations")
                 annotation_xmls = os.path.splitext(os.path.basename(tilenames[index]))[0] + ".xml"
                 full_xml_path = os.path.join(annotation_dir, annotation_xmls )
@@ -69,17 +66,16 @@ def load_retraining_data(DeepForest_config):
                 print("Generating h5 for hand annotated data from tile {}".format(tilename))                
                 Generate.run(tile_xml = full_xml_path, mode="retrain", site = site)
         
-        #retrain csvs have hand_annotation added to distinguish them
-        df = load_csvs(csv_list=path_to_handannotations)
+    #combine data across sites        
+    dataframes = []
+    for site in DeepForest_config["hand_annotation_site"]:
+        h5_dirname = os.path.join(DeepForest_config[site]["h5"], "hand_annotations")
+        df = load_csvs(h5_dirname)
         df["site"] = site
         dataframes.append(df)
-        
-    #Create a dict assigning the tiles to the h5 dir
-    data = pd.concat(dataframes, ignore_index=True)                 
+    data = pd.concat(dataframes, ignore_index=True)      
     
-    #combine data across sites
     return data
-
 
 def load_csvs(h5_dir=None, csv_list=None):
     """
@@ -337,7 +333,7 @@ def NEON_annotations(DeepForest_config):
     '''
     Create a keras generator for the hand annotated tower plots. Used for the mAP and recall callback.
     '''
-    
+    annotations=[]    
     for site in DeepForest_config["evaluation_site"]:
         
         #Set directory to the plots 
@@ -350,6 +346,7 @@ def NEON_annotations(DeepForest_config):
         images_to_find_xml = glob.glob(os.path.join(plot_dir, "*.tif"))
         corresponding_xml=[os.path.splitext(os.path.basename(x))[0] + ".xml"  for x in images_to_find_xml]
         full_path_xml = []
+        
         for x in corresponding_xml:
             full_path_xml.append(os.path.join(annotation_dir,x))
             
@@ -359,30 +356,26 @@ def NEON_annotations(DeepForest_config):
         #matched xmls
         matched_xmls = set(full_path_xml) & set(available_xmls)
         
-        annotations=[]
         for xml in matched_xmls:
             xml_data = load_xml(xml, dirname=plot_dir, res=DeepForest_config["rgb_res"])
             #add site
             xml_data["site"] = site
             annotations.append(xml_data)
 
-    data=pd.concat(annotations)
+    data = pd.concat(annotations)
     
     #Compute list of sliding windows, assumed that all objects are the same extent and resolution
-    image_path = os.path.join(plot_dir, data.rgb_path.unique()[0])
+    image_path = os.path.join(plot_dir, data[data["site"]==site].rgb_path.unique()[0])
     windows = compute_windows(image=image_path, pixels=DeepForest_config["patch_size"], overlap=DeepForest_config["patch_overlap"])
     
-    #Compute Windows
     #Create dictionary of windows for each image
-    tile_windows={}
-    
+    tile_windows = {}
     all_images = list(data.rgb_path.unique())
-
     tile_windows["tile"] = all_images
     tile_windows["window"] = np.arange(0, len(windows))
     
-    #Expand grid
-    tile_data=expand_grid(tile_windows)    
+    #Expand all combinations
+    tile_data = expand_grid(tile_windows)    
     
     #merge site data
     merge_site = data[["rgb_path","site"]].drop_duplicates()
@@ -396,7 +389,6 @@ def create_windows(data, DeepForest_config):
     Generate windows for a specific tile
     base_dir: Location of the RGB image data
     """
-    
     #Compute list of sliding windows, assumed that all objects are the same extent and resolution     
     sample_tile = data.rgb_path[0]
     base_dir = DeepForest_config[data.site[0]]["training"]["RGB"]

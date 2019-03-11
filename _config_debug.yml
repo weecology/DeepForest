@@ -23,12 +23,13 @@ preprocess:
   zero_area: True
 
 #Select sites
-hand_annotations:
+hand_annotation_site:
   - SJER
 pretraining_site:
   - SJER
 evaluation_site:
   - SJER
+  - TEAK
 
 #Training
 training_images: 2
