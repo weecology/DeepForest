@@ -264,8 +264,7 @@ def check_args(parsed_args):
 def parse_args(args):
     """ Parse the arguments.
     """
-    parser     = argparse.ArgumentParser(description='Simple training script for training a RetinaNet network.')
-
+    parser = argparse.ArgumentParser(description='Simple training script for training a RetinaNet network.')
 
     def csv_list(string):
         return string.split(',')
