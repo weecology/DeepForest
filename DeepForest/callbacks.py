@@ -9,7 +9,7 @@ class Evaluate(keras.callbacks.Callback):
     """ Evaluation callback for arbitrary datasets.
     """
 
-    def __init__(self, generator, iou_threshold=0.5, score_threshold=0.05, max_detections=100, suppression_threshold=0.2,save_path=None, tensorboard=None, weighted_average=False, verbose=1,experiment=None,DeepForest_config=None):
+    def __init__(self, generator, iou_threshold=0.5, score_threshold=0.05, max_detections=100, suppression_threshold=0.2,save_path=None, weighted_average=False, verbose=1,experiment=None,DeepForest_config=None):
         """ Evaluate a given dataset using a given model at the end of every epoch during training.
 
         # Arguments
@@ -19,7 +19,6 @@ class Evaluate(keras.callbacks.Callback):
             max_detections  : The maximum number of detections to use per image.
             suppression_threshold:  Percent overlap allowed among boxes
             save_path       : The path to save images with visualized detections to.
-            tensorboard     : Instance of keras.callbacks.TensorBoard used to log the mAP value.
             verbose         : Set the verbosity level, by default this is set to 1.
             Experiment   : Comet ml experiment for online logging
         """
@@ -29,7 +28,6 @@ class Evaluate(keras.callbacks.Callback):
         self.max_detections  = max_detections
         self.suppression_threshold=suppression_threshold
         self.save_path       = save_path
-        self.tensorboard     = tensorboard
         self.weighted_average = weighted_average
         self.verbose         = verbose
         self.experiment = experiment
@@ -74,10 +72,9 @@ class Evaluate(keras.callbacks.Callback):
             
 # Neon Recall 
 class recallCallback(keras.callbacks.Callback):
-    """ Evaluation callback for arbitrary datasets.
+    """ Evaluation callback for NEON stem maps
     """
-
-    def __init__(self, site,generator, score_threshold=0.05, max_detections=100, suppression_threshold=0.2,save_path=None, weighted_average=False, verbose=1,experiment=None,DeepForest_config=None):
+    def __init__(self, generator=None, score_threshold=0.05, max_detections=100, suppression_threshold=0.2,save_path=None, weighted_average=False, verbose=1,experiment=None, sites=None):
         """ Evaluate a given dataset using a given model at the end of every epoch during training.
 
         # Arguments
@@ -90,7 +87,6 @@ class recallCallback(keras.callbacks.Callback):
             verbose         : Set the verbosity level, by default this is set to 1.
             Experiment   : Comet ml experiment for online logging
         """
-        self.site                = site
         self.generator       = generator
         self.score_threshold = score_threshold
         self.max_detections  = max_detections
@@ -99,7 +95,7 @@ class recallCallback(keras.callbacks.Callback):
         self.weighted_average = weighted_average
         self.verbose         = verbose
         self.experiment = experiment
-        self.DeepForest_config = DeepForest_config
+        self.sites = sites
 
         super(recallCallback, self).__init__()
         
@@ -107,14 +103,13 @@ class recallCallback(keras.callbacks.Callback):
         logs = logs or {}
         
         recall=neonRecall(
-            self.site,
+            self.sites,
             self.generator,
             self.model,            
             score_threshold=self.score_threshold,
             save_path=self.save_path,
             max_detections=self.max_detections,
             experiment=self.experiment,
-            DeepForest_config=self.DeepForest_config
         )
         
         print("Recall is {}".format(recall))

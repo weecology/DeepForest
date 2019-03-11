@@ -31,8 +31,8 @@ evaluation_site:
   - SJER
 
 #Training
-training_images: All
-weights: /orange/ewhite/b.weinstein/retinanet/snapshots/20190131_145805/resnet50_08.h5
+training_images: 2
+weights: None
 imagenet_weights: False
 batch_size: 25
 epochs: 25
@@ -41,7 +41,7 @@ shuffle_training: False
 score_threshold: 0.20
 
 #Evaluation
-evaluation_images: 10
+evaluation_images: 2
 shuffle_evaluation: False
 validation_percent: 5 #For hand annotation neon_MAP
 #Non-max suppression, threshold for the IoU value to determine when a box should be suppressed.

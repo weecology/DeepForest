@@ -176,23 +176,19 @@ def create_callbacks(model, training_model, prediction_model, train_generator, v
     ))
    
     #Neon Callbacks
-    site=DeepForest_config["evaluation_site"]
-    
-    NEON_recall_generator = create_NEON_generator(args, site, DeepForest_config)
-    
-    recall=recallCallback(site=site,
-                          generator=NEON_recall_generator,
-                          save_path=args.save_path,
-                          DeepForest_config=DeepForest_config,
-                          score_threshold=args.score_threshold,
-                          experiment=experiment)
+    NEON_recall_generator = create_NEON_generator(args.batch_size, DeepForest_config)
+    recall = recallCallback(
+        generator=NEON_recall_generator,
+        save_path=args.save_path,
+        score_threshold=args.score_threshold,
+        experiment=experiment,
+        sites=DeepForest_config["evaluation_site"]    )
     
     recall = RedirectModel(recall, prediction_model)
-    
     callbacks.append(recall)
     
     #create the NEON generator 
-    NEON_generator = create_NEON_generator(args, site, DeepForest_config)
+    NEON_generator = create_NEON_generator(args.batch_size, DeepForest_config)
     
     neon_evaluation = NEONmAP(NEON_generator, 
                               experiment=experiment,
@@ -221,7 +217,6 @@ def create_generators(args, data, DeepForest_config):
     train_generator = H5Generator(train, 
                                   batch_size = args.batch_size, 
                                   DeepForest_config = DeepForest_config, 
-                                  group_method="none", 
                                   name = "training")
 
     #Validation Generator, check that it exists
@@ -229,8 +224,7 @@ def create_generators(args, data, DeepForest_config):
         validation_generator = H5Generator(test, 
                                            batch_size = args.batch_size, 
                                            DeepForest_config = DeepForest_config, 
-                                           group_method = "none", 
-                                           name = "validation")
+                                           name = "training")
     else:
         validation_generator = None
         
@@ -404,7 +398,6 @@ def main(args=None, data=None, DeepForest_config=None, experiment=None):
         max_queue_size=DeepForest_config["max_queue_size"]
     )
      
-    
 if __name__ == '__main__':
     
     import argparse
@@ -429,48 +422,12 @@ if __name__ == '__main__':
         dirname = datetime.now().strftime("%Y%m%d_%H%M%S")
     
     #Load DeepForest_config and data file based on training or retraining mode
+    DeepForest_config["mode"] = mode.mode
     if mode.mode == "train":
-        DeepForest_config["mode"] = "train"  
-    
-        #For each training directory (optionally more than one site)
-        dataframes = []
-        for site in DeepForest_config["pretraining_site"]:
-            h5_dirname = DeepForest_config[site]["h5"]
-            df = preprocess.load_csvs(h5_dirname)
-            df["site"] = site
-            dataframes.append(df)
-            
-        #Create a dict assigning the tiles to the h5 dir
-        data = pd.concat(dataframes, ignore_index=True) 
-        
+        data = preprocess.load_training_data(DeepForest_config)
+
     if mode.mode == "retrain":
-        DeepForest_config["mode"] = "retrain"
-        
-        #Check if hand annotations have been generated. If not create H5 files.
-        path_to_handannotations = []
-        if os.path.isdir(DeepForest_config["hand_annotations"]):
-            tilenames = glob.glob(DeepForest_config["hand_annotations"] + "*.tif")
-        else:
-            tilenames = [os.path.splitext(os.path.basename(DeepForest_config["hand_annotations"]))[0]]
-            
-        for x in tilenames:
-            tilename = os.path.splitext(os.path.basename(x))[0]                
-            tilename = os.path.join(DeepForest_config["retraining_h5_dir"], tilename) + ".csv"
-            path_to_handannotations.append(os.path.join(DeepForest_config["retraining_h5_dir"], tilename))            
-                
-        #for each annotation, check if exists in h5 dir
-        for index, path in enumerate(path_to_handannotations):
-            if not os.path.exists(path):
-                #Generate xml name, assumes 
-                annotation_dir = os.path.join(os.path.dirname(os.path.dirname(DeepForest_config["hand_annotations"])),"annotations")
-                annotation_xmls = os.path.splitext(os.path.basename(tilenames[index]))[0] + ".xml"
-                full_xml_path = os.path.join(annotation_dir, annotation_xmls )
-                
-                print("Generating hand annotated data from tile {}".format(tilename))                
-                Generate.run(tile_xml = full_xml_path, mode="retrain")
-        
-        #retrain csvs have hand_annotation added to distinguish them
-        data = preprocess.load_csvs(csv_list=path_to_handannotations)
+        data = preprocess.load_retraining_data(DeepForest_config)
         
     #pass an args object instead of using command line    
     args = [
