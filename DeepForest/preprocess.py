@@ -230,7 +230,7 @@ def load_xml(path, dirname, res):
     
     return(frame)
 
-def compute_windows(image,pixels=250, overlap=0.05):
+def compute_windows(image, pixels=250, overlap=0.05):
     try:
         im = Image.open(image)
     except:

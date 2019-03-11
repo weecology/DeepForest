@@ -83,8 +83,8 @@ if __name__ == "__main__":
     
     #Optionally limit
     #data_paths = data_paths[:100]
-
-    print("{s} csv files found for training".format(s=len(data_paths)))
+    total_files = [len(data_paths[x]) for x in data_paths]
+    print("{s} csv files found for training".format(s=sum(total_files)))
     
     #run_test(data_paths)
     

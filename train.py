@@ -402,7 +402,8 @@ if __name__ == '__main__':
     
     #Set training or training
     mode_parser     = argparse.ArgumentParser(description='Retinanet training or finetuning?')
-    mode_parser.add_argument('--mode', help='train or retrain?' )
+    #TODO make required.
+    mode_parser.add_argument('--mode', help='train or retrain?')
     mode_parser.add_argument('--dir', help='destination dir on HPC' )
     
     mode=mode_parser.parse_args()
