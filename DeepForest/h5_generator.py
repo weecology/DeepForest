@@ -42,11 +42,9 @@ class H5Generator(Generator):
         """
         self.image_names = []
         self.image_data  = {}
-        self.name=name
-        self.windowdf=data
+        self.name = name
+        self.windowdf = data
         self.DeepForest_config = DeepForest_config
-        self.site=DeepForest_config["evaluation_site"]
-        self.h5_dir = h5_dir
         
         #Holder for the group order, after shuffling we can still recover loss -> window
         self.group_order = {}
@@ -67,7 +65,7 @@ class H5Generator(Generator):
         self.define_groups(shuffle=False)
         
         #report total number of annotations
-        self.total_trees=self.total_annotations()
+        self.total_trees = self.total_annotations()
                 
         super(H5Generator, self).__init__(**kwargs)
                         
@@ -102,14 +100,15 @@ class H5Generator(Generator):
         """ Find the total number of annotations for the dataset
         """
         #Find matching annotations        
-        tiles=self.windowdf["tile"].unique()
-        
+        tiles = self.windowdf[["tile","site"]].drop_duplicates()
         total_annotations = 0
                 
         #Select annotations 
         #Optionally multiple h5 dirs
-        for tilename in tiles:
-            csv_name = os.path.join(self.h5_dir, os.path.splitext(tilename)[0]+'.csv')
+        for index, row in tiles.iterrows():
+            h5_dir = self.DeepForest_config[row["site"]]["h5"]        
+            tilename = row["tile"]
+            csv_name = os.path.join(h5_dir, os.path.splitext(tilename)[0]+'.csv')
             try:
                 annotations = pd.read_csv(csv_name)
             except Exception as e:
@@ -138,15 +137,15 @@ class H5Generator(Generator):
             random.shuffle(groups)
         
         #Bring pandas frame back together
-        newdf=pd.concat(groups).reset_index(drop=True)
-        image_data=newdf.to_dict("index")
+        newdf = pd.concat(groups).reset_index(drop=True)
+        image_data = newdf.to_dict("index")
         image_names = list(image_data.keys())
         
         return(image_data, image_names)
     
     def fetch_lidar_filename(self):           
         lidar_path = self.DeepForest_config[self.row["site"]]["LIDAR"]        
-        lidar_filepath=Lidar.fetch_lidar_filename(self.row, lidar_path)
+        lidar_filepath = Lidar.fetch_lidar_filename(self.row, lidar_path)
         
         if lidar_filepath:
             return lidar_filepath
@@ -178,12 +177,15 @@ class H5Generator(Generator):
             
             print("Loading new tile: %s" %(self.row["tile"]))
             
+            #Set directory based on site
+            h5_dir = self.DeepForest_config[self.row["site"]]["h5"]
+            
             #tilename for h5 and csv files
             tilename = os.path.split(self.row["tile"])[-1]
             tilename = os.path.splitext(tilename)[0]                        
             
-            h5_name = os.path.join(self.h5_dir, tilename+'.h5')
-            csv_name = os.path.join(self.h5_dir, tilename+'.csv')
+            h5_name = os.path.join(h5_dir, tilename+'.h5')
+            csv_name = os.path.join(h5_dir, tilename+'.csv')
             
             #Read h5 
             self.hf = h5py.File(h5_name, 'r')
@@ -223,7 +225,7 @@ class H5Generator(Generator):
         '''
         #Load tile
         site = self.annotation_list.site.unique()[0]
-        base_dir = self.DeepForest_config[site]["RGB"]        
+        base_dir = self.DeepForest_config[site][self.name]["RGB"]        
         image = os.path.join(base_dir, self.annotation_list.rgb_path.unique()[0])
         im = Image.open(image)
         numpy_image = np.array(im)    

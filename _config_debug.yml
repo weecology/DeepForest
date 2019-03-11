@@ -10,6 +10,8 @@ workers: 1
 use_multiprocessing: False
 max_queue_size: 10
 num_GPUs: 1
+save_image_path: snapshots/images/
+save_snapshot_path: snapshots/images/
 
 #Sliding Window Size and Ovelap
 patch_size: 400
@@ -24,23 +26,22 @@ preprocess:
 hand_annotations:
   - SJER
 pretraining_site:
-  - SJER  
+  - SJER
 evaluation_site:
   - SJER
-  
+
+#Training
 training_images: All
 weights: /orange/ewhite/b.weinstein/retinanet/snapshots/20190131_145805/resnet50_08.h5
 imagenet_weights: False
 batch_size: 25
 epochs: 25
-save_snapshot_path: snapshots/images/
 backbone: resnet50
 shuffle_training: False
 score_threshold: 0.20
 
 #Evaluation
 evaluation_images: 0
-save_image_path: snapshots/images/
 shuffle_evaluation: False
 validation_percent: 5 #For hand annotation neon_MAP
 #Non-max suppression, threshold for the IoU value to determine when a box should be suppressed.
@@ -51,14 +52,22 @@ min_density: 100
 
 #Data Paths
 SJER:
+  h5: /Users/Ben/Downloads/
+  hand_annotations: /Users/Ben/Documents/DeepLidar/data/SJER/training/
+  training:
     RGB: /Users/Ben/Documents/DeepLidar/data/SJER/training/
     LIDAR: /Users/Ben/Documents/DeepLidar/data/SJER/training/
-    hand_annotations: /Users/Ben/Documents/DeepLidar/data/SJER/training/
-    h5: /Users/Ben/Downloads/
     training_csvs: /Users/Ben/Documents/DeepLidar/data/SJER/training/
+  evaluation:
+    RGB: /Users/Ben/Documents/DeepLidar/data/SJER/plots/
+    LIDAR: /Users/Ben/Documents/DeepLidar/data/SJER/plots/
 TEAK:
+  h5: /Users/Ben/Downloads/
+  training_csvs: /Users/Ben/Documents/DeepLidar/data/TEAK/training/
+  hand_annotations: /Users/Ben/Documents/DeepLidar/data/TEAK/training/
+  training:
     RGB: /Users/Ben/Documents/DeepLidar/data/TEAK/training/
     LIDAR: /Users/Ben/Documents/DeepLidar/data/TEAK/training/
-    hand_annotations: /Users/Ben/Documents/DeepLidar/data/TEAK/training/
-    h5: /Users/Ben/Downloads/
-    training_csvs: /Users/Ben/Documents/DeepLidar/data/TEAK/training/
+  evaluation:
+    RGB: /Users/Ben/Documents/DeepLidar/data/TEAK/plots/
+    LIDAR: /Users/Ben/Documents/DeepLidar/data/TEAK/plots/

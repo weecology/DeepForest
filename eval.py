@@ -34,24 +34,16 @@ def get_session():
 def create_generator(args, data, config):
     """ Create generators for training and validation.
     """
-    #Set the h5 dir based on training or retraining
-    if DeepForest_config["mode"] == "train":
-        h5_dir = DeepForest_config["training_h5_dir"]
-    else:
-        h5_dir = DeepForest_config["retraining_h5_dir"]
-        
+       
     #Split training and test data - hardcoded paths set below.
     _ , test = preprocess.split_training(data, DeepForest_config, experiment=None)
 
     #Training Generator
     generator =  H5Generator(
         test,
-        h5_dir = h5_dir,
         batch_size=args.batch_size,
         DeepForest_config=DeepForest_config,
         group_method="none",
-        base_dir=DeepForest_config["evaluation_tile_dir"],
-        lidar_dir=DeepForest_config["evaluation_lidar_dir"],
         name = "validation"
     )
         
@@ -103,13 +95,35 @@ def main(data, DeepForest_config, experiment,args=None):
         os.makedirs(args.save_path + dirname)
 
     # create the testing generators
-    generator = create_generator(args, data, DeepForest_config)
+    if DeepForest_config["evaluation_images"] > 0:
+        generator = create_generator(args, data, DeepForest_config)
+        
+        average_precisions = evaluate(
+            generator,
+            model,
+            iou_threshold=args.iou_threshold,
+            score_threshold=args.score_threshold,
+            max_detections=args.max_detections,
+            save_path=args.save_path + dirname
+        )
+    
+        ## print evaluation
+        present_classes = 0
+        precision = 0
+        for label, (average_precision, num_annotations) in average_precisions.items():
+            print('{:.0f} instances of class'.format(num_annotations),
+                  generator.label_to_name(label), 'with average precision: {:.3f}'.format(average_precision))
+            if num_annotations > 0:
+                present_classes += 1
+                precision       += average_precision
+        print('mAP: {:.3f}'.format(precision / present_classes))
+        experiment.log_metric("mAP", precision / present_classes)                 
 
     #Evaluation metrics
     site=DeepForest_config["evaluation_site"]
     
     #create the NEON mAP generator 
-    NEON_generator = create_NEON_generator(args, site, DeepForest_config)
+    NEON_generator = create_NEON_generator(args.batch_size, DeepForest_config)
     
     # load the model
     print('Loading model, this may take a second...')
@@ -117,7 +131,7 @@ def main(data, DeepForest_config, experiment,args=None):
 
     #print(model.summary())
 
-    NEON_recall_generator = create_NEON_generator(args, site, DeepForest_config)
+    NEON_recall_generator = create_NEON_generator(args.batch_size, DeepForest_config)
 
     recall = neonRecall(
         site,
@@ -131,28 +145,7 @@ def main(data, DeepForest_config, experiment,args=None):
     
     print("Recall is {:0.3f}".format(recall))
     
-    experiment.log_metric("Recall", recall)       
-    
-    average_precisions = evaluate(
-        generator,
-        model,
-        iou_threshold=args.iou_threshold,
-        score_threshold=args.score_threshold,
-        max_detections=args.max_detections,
-        save_path=args.save_path + dirname
-    )
-
-    ## print evaluation
-    present_classes = 0
-    precision = 0
-    for label, (average_precision, num_annotations) in average_precisions.items():
-        print('{:.0f} instances of class'.format(num_annotations),
-              generator.label_to_name(label), 'with average precision: {:.3f}'.format(average_precision))
-        if num_annotations > 0:
-            present_classes += 1
-            precision       += average_precision
-    print('mAP: {:.3f}'.format(precision / present_classes))
-    experiment.log_metric("mAP", precision / present_classes)                 
+    experiment.log_metric("Recall", recall)               
         
     #NEON plot mAP
     average_precisions = evaluate(
@@ -213,8 +206,16 @@ if __name__ == '__main__':
     
     #Load DeepForest_config and data file based on training or retraining mode
     if mode.mode == "train":
-        DeepForest_config["mode"] = "train"        
-        data = preprocess.load_csvs(DeepForest_config["training_h5_dir"])
+        DeepForest_config["mode"] = "train"  
+    
+        #For each training directory (optionally more than one site)
+        dataframes = []
+        for site in DeepForest_config["pretraining_site"]:
+            h5_dirname = DeepForest_config[site]["h5"]
+            df = preprocess.load_csvs(h5_dirname)
+            df["site"] = site
+            dataframes.append(df)
+        data = pd.concat(dataframes, ignore_index=True) 
         
     if mode.mode == "retrain":
         DeepForest_config["mode"] = "retrain"
@@ -251,9 +252,9 @@ if __name__ == '__main__':
     
     #pass an args object instead of using command line        
     args = [
-        "--batch-size",str(DeepForest_config['batch_size']),
+        "--batch-size", str(DeepForest_config['batch_size']),
         '--score-threshold', str(DeepForest_config['score_threshold']),
-        '--suppression-threshold','0.1', 
+        '--suppression-threshold', '0.1', 
         '--save-path', 'snapshots/images/', 
         '--model', mode.saved_model, 
         '--convert-model'

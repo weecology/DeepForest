@@ -218,11 +218,11 @@ def split_training(data, DeepForest_config, experiment):
         #Select n% as validation
         msk = np.random.rand(len(data)) < 1-(float(DeepForest_config["validation_percent"])/100)
         training = data[msk]
-        evaluation=data[~msk]     
+        evaluation = data[~msk]     
     else:
         #Select one validation tile if validation is requested, if no validation data, take all tiles.        
         if DeepForest_config["evaluation_images"] == 0:
-            training=data
+            training= data
             evaluation = None
         else:
             eval_tile = data.tile.unique()[1]
@@ -261,34 +261,43 @@ def split_training(data, DeepForest_config, experiment):
         #Select subset of evaluation windows
         evaluation=evaluation.iloc[0:num_evaluation_images]
     
-    #Write training to file to view 
+    #Make sure we have training data, if not raise error.
+    assert training.shape[0] > 0, "Training data is empty"
+    
     return([training, evaluation])
     
-def NEON_annotations(base_dir, site, DeepForest_config):
+def NEON_annotations(DeepForest_config):
     '''
     Create a keras generator for the hand annotated tower plots. Used for the mAP and recall callback.
-    site: Four letter site code
     '''
-    plot_dir = os.path.join(base_dir ,"plots")
-    annotation_dir = os.path.join(base_dir ,"annotations")
     
-    #Find all images and annotations for each with full path
-    images_to_find_xml = glob.glob(os.path.join(plot_dir, "*.tif"))
-    corresponding_xml=[os.path.splitext(os.path.basename(x))[0] + ".xml"  for x in images_to_find_xml]
-    full_path_xml = []
-    for x in corresponding_xml:
-        full_path_xml.append(os.path.join(annotation_dir,x))
+    for site in DeepForest_config["evaluation_site"]:
         
-    glob_path = os.path.join(annotation_dir, "*.xml")
-    available_xmls = glob.glob(glob_path)
-    
-    #matched xmls
-    matched_xmls = set(full_path_xml) & set(available_xmls)
-    
-    annotations=[]
-    for xml in matched_xmls:
-        r = load_xml(xml, dirname=plot_dir, res=DeepForest_config["rgb_res"])
-        annotations.append(r)
+        #Set directory to the plots 
+        plot_dir = DeepForest_config[site]["evaluation"]["RGB"]
+        #up one level is assumed to be annotation dir
+        base_dir = os.path.dirname(os.path.dirname(plot_dir))
+        annotation_dir = os.path.join(base_dir ,"annotations")
+        
+        #Find all images and annotations for each with full path
+        images_to_find_xml = glob.glob(os.path.join(plot_dir, "*.tif"))
+        corresponding_xml=[os.path.splitext(os.path.basename(x))[0] + ".xml"  for x in images_to_find_xml]
+        full_path_xml = []
+        for x in corresponding_xml:
+            full_path_xml.append(os.path.join(annotation_dir,x))
+            
+        glob_path = os.path.join(annotation_dir, "*.xml")
+        available_xmls = glob.glob(glob_path)
+        
+        #matched xmls
+        matched_xmls = set(full_path_xml) & set(available_xmls)
+        
+        annotations=[]
+        for xml in matched_xmls:
+            xml_data = load_xml(xml, dirname=plot_dir, res=DeepForest_config["rgb_res"])
+            #add site
+            xml_data["site"] = site
+            annotations.append(xml_data)
 
     data=pd.concat(annotations)
     
@@ -308,16 +317,23 @@ def NEON_annotations(base_dir, site, DeepForest_config):
     #Expand grid
     tile_data=expand_grid(tile_windows)    
     
+    #merge site data
+    merge_site = data[["rgb_path","site"]].drop_duplicates()
+    merge_site.columns = ["tile","site"]
+    tile_data = tile_data.merge(merge_site)
+    
     return [data, tile_data]
 
-def create_windows(data, DeepForest_config, base_dir):
+def create_windows(data, DeepForest_config):
     """
     Generate windows for a specific tile
     base_dir: Location of the RGB image data
     """
     
-    #Compute list of sliding windows, assumed that all objects are the same extent and resolution        
-    image_path=os.path.join(base_dir, data.rgb_path.unique()[0])
+    #Compute list of sliding windows, assumed that all objects are the same extent and resolution     
+    sample_tile = data.rgb_path[0]
+    base_dir = DeepForest_config[data.site[0]]["RGB"]
+    image_path=os.path.join(base_dir, sample_tile)
     windows=compute_windows(image=image_path, pixels=DeepForest_config["patch_size"], overlap=DeepForest_config["patch_overlap"])
     
     #if none
@@ -330,15 +346,15 @@ def create_windows(data, DeepForest_config, base_dir):
     
     all_images=list(data.rgb_path.unique())
 
-    tile_windows["tile"]=all_images
-    tile_windows["window"]=np.arange(0,len(windows))
+    tile_windows["tile"] = all_images
+    tile_windows["window"]=np.arange(0, len(windows))
     
     #Expand grid
     tile_data=expand_grid(tile_windows)    
     
-    #TODO merge with the site, check this.
-    merge_site = data["tile","site"]
-    tile_data=tile_data.merge(merge_site)
-    
+    #Merge with the site variable
+    merge_site = data[["rgb_path","site"]].drop_duplicates()
+    merge_site.columns = ["tile","site"]
+    tile_data = tile_data.merge(merge_site)
     
     return(tile_data)

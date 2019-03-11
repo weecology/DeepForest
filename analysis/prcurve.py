@@ -76,7 +76,7 @@ def main(DeepForest_config, args=None):
     site=DeepForest_config["evaluation_site"]
     
     #create the NEON mAP generator 
-    NEON_generator = create_NEON_generator(args, site, DeepForest_config, dir="..")
+    NEON_generator = create_NEON_generator(args.batch_size, DeepForest_config)
     
     # load the model
     print('Loading model, this may take a second...')

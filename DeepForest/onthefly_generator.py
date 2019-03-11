@@ -25,7 +25,7 @@ from keras_retinanet import models
 class OnTheFlyGenerator(Generator):
     """ Generate data for a custom CSV dataset.
 
-    See https://github.com/fizyr/keras-retinanet#csv-datasets for more information.
+    name: training or evaluation to set the directory location in config file
     """
 
     def __init__(
@@ -35,7 +35,7 @@ class OnTheFlyGenerator(Generator):
         DeepForest_config,
         shuffle_tile_epoch=False,
         group_method="none",
-        name=None,
+        name="training",
         **kwargs
     ):
         """ Initialize a data self.
@@ -53,7 +53,7 @@ class OnTheFlyGenerator(Generator):
         self.group_method=group_method
         self.shuffle_tile_epoch=shuffle_tile_epoch
         self.annotation_list = data  
-        
+                
         #Tensorflow prediction session
         self.session_exists = False
             
@@ -154,7 +154,7 @@ class OnTheFlyGenerator(Generator):
         
         #Load tile
         site = self.annotation_list.site.unique()[0]
-        base_dir = self.DeepForest_config[site]["RGB"]
+        base_dir = self.DeepForest_config[site][self.name]["RGB"]
         image = os.path.join(base_dir, self.annotation_list.rgb_path.unique()[0])
         im = Image.open(image)
         numpy_image = np.array(im)    
@@ -181,7 +181,7 @@ class OnTheFlyGenerator(Generator):
     def fetch_lidar_filename(self):           
         
         #Set lidar path
-        lidar_path = self.DeepForest_config[self.row["site"]]["LIDAR"]
+        lidar_path = self.DeepForest_config[self.row["site"]][self.name]["LIDAR"]
         lidar_filepath=Lidar.fetch_lidar_filename(self.row, lidar_path)
         
         return lidar_filepath
@@ -247,7 +247,6 @@ class OnTheFlyGenerator(Generator):
             print("Loading new tile {}".format(self.row["tile"]))
             
             self.numpy_image = self.load_rgb_tile()
-            #self.lidar_tile = self.load_lidar_tile()
             
         #Load a new crop from self
         three_channel_image = self.load_new_crop()

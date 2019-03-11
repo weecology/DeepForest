@@ -28,7 +28,7 @@ args=parser.parse_args()
 DeepForest_config = load_config(dir="..")
 
 #Load hand annotations
-neon_generator = create_NEON_generator(args, DeepForest_config["evaluation_site"], DeepForest_config, dir="..")
+neon_generator = create_NEON_generator(args.batch_size, DeepForest_config)
 
 #Get detections and annotations
 model = models.load_model(args.model, backbone_name='resnet50', convert=True, nms_threshold=DeepForest_config["nms_threshold"])

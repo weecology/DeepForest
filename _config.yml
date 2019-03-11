@@ -53,10 +53,16 @@ min_density: 100
 
 #Data Paths
 SJER:
-          RGB: /ufrc/ewhite/b.weinstein/NeonData/SJER/DP3.30010.001/2018/FullSite/D17/2018_SJER_3/L3/Camera/Mosaic/V01/
-          LIDAR: /ufrc/ewhite/b.weinstein/NeonData/SJER/DP1.30003.001/2018/FullSite/D17/2018_SJER_3/L1/DiscreteLidar/ClassifiedPointCloud/
-          hand_annotations: /home/b.weinstein/DeepLidar/data/SJER/training/
+  training:
+    RGB: /ufrc/ewhite/b.weinstein/NeonData/SJER/DP3.30010.001/2018/FullSite/D17/2018_SJER_3/L3/Camera/Mosaic/V01/
+    LIDAR: /ufrc/ewhite/b.weinstein/NeonData/SJER/DP1.30003.001/2018/FullSite/D17/2018_SJER_3/L1/DiscreteLidar/ClassifiedPointCloud/
+    hand_annotations: /home/b.weinstein/DeepLidar/data/SJER/training/
+  evaluation:
+    plots:
 TEAK:
-          RGB: /orange/ewhite/NeonData/TEAK/DP3.30010.001/2018/FullSite/D17/2018_TEAK_3/L3/Camera/Mosaic/V01/
-          LIDAR: /orange/ewhite/NeonData/TEAK/DP1.30003.001/2018/FullSite/D17/2018_TEAK_3/L1/DiscreteLidar/ClassifiedPointCloud/
-          hand_annotations: /home/b.weinstein/DeepLidar/data/TEAK/training/
+  training:
+    RGB: /orange/ewhite/NeonData/TEAK/DP3.30010.001/2018/FullSite/D17/2018_TEAK_3/L3/Camera/Mosaic/V01/
+    LIDAR: /orange/ewhite/NeonData/TEAK/DP1.30003.001/2018/FullSite/D17/2018_TEAK_3/L1/DiscreteLidar/ClassifiedPointCloud/
+    hand_annotations: /home/b.weinstein/DeepLidar/data/TEAK/training/
+  evaluation:
+    plots:
