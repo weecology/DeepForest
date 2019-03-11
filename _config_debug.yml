@@ -27,6 +27,7 @@ hand_annotation_site:
   - SJER
 pretraining_site:
   - SJER
+  - TEAK
 evaluation_site:
   - SJER
   - TEAK
