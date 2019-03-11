@@ -73,7 +73,7 @@ def run_HPC(data_paths):
     dask_client.run_on_scheduler(start_tunnel)  
     
     for site in DeepForest_config[site]['training_csvs']:
-        futures = dask_client.map(Generate.run, data_paths, site=site)
+        futures = dask_client.map(Generate.run, data_paths[site], site=site)
         wait(futures)
 
 if __name__ == "__main__":
