@@ -45,8 +45,7 @@ def run(tile_csv=None, tile_xml = None, mode="train", site=None):
         data["site"]=site
         
         #Create windows
-        base_dir = DeepForest_config[site]["training"]["RGB"]
-        windows = preprocess.create_windows(data, DeepForest_config, base_dir = base_dir)   
+        windows = preprocess.create_windows(data, DeepForest_config)   
         
         #Destination dir
         destination_dir = DeepForest_config[site]["h5"]
