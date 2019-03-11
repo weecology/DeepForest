@@ -54,7 +54,7 @@ min_density: 100
 
 #Data Paths
 SJER:
-  h5: /orange/ewhite/b.weinstein/training_h5s/TEAK/
+  h5: /orange/ewhite/b.weinstein/training_h5s/SJER/
   hand_annotations: /home/b.weinstein/DeepLidar/data/SJER/training/
   training_csvs: /home/b.weinstein/TreeSegmentation/analysis/Results/detection_boxes/SJER/2018/
   training:
