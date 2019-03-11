@@ -58,10 +58,11 @@ def run(tile_csv=None, tile_xml = None, mode="train", site=None):
         
         #Load xml annotations
         data = preprocess.load_xml(path=tile_xml, dirname=base_dir, res=DeepForest_config["rgb_res"])
+        data["site"] = site
         tilename = os.path.splitext(os.path.basename(tile_xml))[0] 
 
         #Create windows
-        windows = preprocess.create_windows(data, DeepForest_config, base_dir = base_dir) 
+        windows = preprocess.create_windows(data, DeepForest_config) 
 
         #destination dir
         destination_dir = os.path.join(DeepForest_config[site]["h5"],"hand_annotations")

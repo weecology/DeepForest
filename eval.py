@@ -172,6 +172,13 @@ def main(data, DeepForest_config, experiment,args=None):
 if __name__ == '__main__':
     
     import argparse
+    import os
+    import pandas as pd
+    import glob
+    import numpy as np
+    from datetime import datetime
+    from DeepForest.config import load_config
+    from DeepForest import preprocess, Generate    
     
     #Set training or training
     mode_parser     = argparse.ArgumentParser(description='Retinanet training or finetuning?')
@@ -180,14 +187,6 @@ if __name__ == '__main__':
     mode_parser.add_argument('--saved_model', help='train or retrain?' )    
     
     mode = mode_parser.parse_args()
-    
-    import os
-    import pandas as pd
-    import glob
-    import numpy as np
-    from datetime import datetime
-    from DeepForest.config import load_config
-    from DeepForest import preprocess, Generate
 
     #set experiment and log configs
     experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2",project_name='deeplidar',log_code=False)
@@ -195,56 +194,16 @@ if __name__ == '__main__':
     DeepForest_config = load_config()
 
     #Log parameters
-    dirname = mode.dir
-    experiment.log_parameter("Start Time", dirname)
+    experiment.log_parameter("Start Time", mode.dir)
     experiment.log_parameter("Training Mode", mode.mode)
     experiment.log_parameters(DeepForest_config)
     
-    #Load DeepForest_config and data file based on training or retraining mode
+    DeepForest_config["mode"] = mode.mode
     if mode.mode == "train":
-        DeepForest_config["mode"] = "train"  
-    
-        #For each training directory (optionally more than one site)
-        dataframes = []
-        for site in DeepForest_config["pretraining_site"]:
-            h5_dirname = DeepForest_config[site]["h5"]
-            df = preprocess.load_csvs(h5_dirname)
-            df["site"] = site
-            dataframes.append(df)
-        data = pd.concat(dataframes, ignore_index=True) 
-        
+        data = preprocess.load_training_data(DeepForest_config)
+
     if mode.mode == "retrain":
-        DeepForest_config["mode"] = "retrain"
-        #Load annotations
-        #Check if hand annotations have been generated. If not create H5 files.
-        path_to_handannotations = []
-        if os.path.isdir(DeepForest_config["hand_annotations"]):
-            tilenames = glob.glob(DeepForest_config["hand_annotations"] + "*.tif")
-        else:
-            tilenames = [os.path.splitext(os.path.basename(DeepForest_config["hand_annotations"]))[0]]
-            
-        for x in tilenames:
-            tilename = os.path.splitext(os.path.basename(x))[0]                
-            tilename = os.path.join(DeepForest_config["retraining_h5_dir"], tilename) + ".csv"
-            path_to_handannotations.append(os.path.join(DeepForest_config["retraining_h5_dir"], tilename))            
-                
-        #for each annotation, check if exists in h5 dir
-        for index, path in enumerate(path_to_handannotations):
-            if not os.path.exists(path):
-                #Generate xml name 
-                annotation_dir = os.path.join(os.path.dirname(os.path.dirname(DeepForest_config["hand_annotations"])),"annotations")
-                annotation_xmls = os.path.splitext(os.path.basename(tilenames[index]))[0] + ".xml"
-                full_xml_path = os.path.join(annotation_dir, annotation_xmls )
-                
-                print("Generating hand annotated data from tile {}".format(tilename))                
-                Generate.run(tile_xml = full_xml_path, mode="retrain")
-        
-        #retrain csvs have hand_annotation added to distinguish them
-        data = preprocess.load_csvs(csv_list=path_to_handannotations)
-            
-    #Log site
-    site=DeepForest_config["evaluation_site"]
-    experiment.log_parameter("Site", site)
+        data = preprocess.load_retraining_data(DeepForest_config)
     
     #pass an args object instead of using command line        
     args = [

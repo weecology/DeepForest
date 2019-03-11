@@ -20,6 +20,7 @@ import pandas as pd
 import glob
 import numpy as np
 import tensorflow as tf
+from datetime import datetime
 
 #supress warnings
 import warnings
@@ -37,10 +38,8 @@ from keras_retinanet .utils.model import freeze as freeze_model
 #Custom Generator
 from DeepForest.h5_generator import H5Generator
 from DeepForest.onthefly_generator import OnTheFlyGenerator
-from datetime import datetime
 from DeepForest.config import load_config
 from DeepForest import preprocess
-from DeepForest import Generate
 from DeepForest.utils.generators import create_NEON_generator
 
 #Custom Callbacks

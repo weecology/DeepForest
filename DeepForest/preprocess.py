@@ -15,7 +15,7 @@ import slidingwindow as sw
 import itertools
 import re
 import warnings
-
+from . import Generate
 
 def load_training_data(DeepForest_config):
     """
@@ -39,31 +39,45 @@ def load_retraining_data(DeepForest_config):
     Overall function to find training data based on config file
     mode: retrain
     """    
-    #Check if hand annotations have been generated. If not create H5 files.
-    path_to_handannotations = []
-    if os.path.isdir(DeepForest_config["hand_annotations"]):
-        tilenames = glob.glob(DeepForest_config["hand_annotations"] + "*.tif")
-    else:
-        tilenames = [os.path.splitext(os.path.basename(DeepForest_config["hand_annotations"]))[0]]
-        
-    for x in tilenames:
-        tilename = os.path.splitext(os.path.basename(x))[0]                
-        tilename = os.path.join(DeepForest_config["retraining_h5_dir"], tilename) + ".csv"
-        path_to_handannotations.append(os.path.join(DeepForest_config["retraining_h5_dir"], tilename))            
-            
-    #for each annotation, check if exists in h5 dir
-    for index, path in enumerate(path_to_handannotations):
-        if not os.path.exists(path):
-            #Generate xml name, assumes 
-            annotation_dir = os.path.join(os.path.dirname(os.path.dirname(DeepForest_config["hand_annotations"])),"annotations")
-            annotation_xmls = os.path.splitext(os.path.basename(tilenames[index]))[0] + ".xml"
-            full_xml_path = os.path.join(annotation_dir, annotation_xmls )
-            
-            print("Generating hand annotated data from tile {}".format(tilename))                
-            Generate.run(tile_xml = full_xml_path, mode="retrain")
     
-    #retrain csvs have hand_annotation added to distinguish them
-    data = preprocess.load_csvs(csv_list=path_to_handannotations)
+    #for each hand_annotation site
+    dataframes = []
+    for site in DeepForest_config["hand_annotations"]:
+        RGB_dir = DeepForest_config[site]["hand_annotations"]
+        
+        #Check if hand annotations have been generated. If not create H5 files.
+        path_to_handannotations = []
+        if os.path.isdir(RGB_dir):
+            tilenames = glob.glob(os.path.join(RGB_dir,"*.tif"))
+        else:
+            tilenames = [os.path.splitext(os.path.basename(RGB_dir))[0]]
+            
+        for x in tilenames:
+            tilename = os.path.splitext(os.path.basename(x))[0]                
+            tilename = os.path.join(RGB_dir, tilename) + ".csv"
+            path_to_handannotations.append(os.path.join(RGB_dir, tilename))            
+                
+        #for each annotation, check if exists in h5 dir
+        for index, path in enumerate(path_to_handannotations):
+            if not os.path.exists(path):
+                
+                #Generate xml name, assumes 
+                annotation_dir = os.path.join(os.path.dirname(os.path.dirname(RGB_dir)),"annotations")
+                annotation_xmls = os.path.splitext(os.path.basename(tilenames[index]))[0] + ".xml"
+                full_xml_path = os.path.join(annotation_dir, annotation_xmls )
+                
+                print("Generating h5 for hand annotated data from tile {}".format(tilename))                
+                Generate.run(tile_xml = full_xml_path, mode="retrain", site = site)
+        
+        #retrain csvs have hand_annotation added to distinguish them
+        df = load_csvs(csv_list=path_to_handannotations)
+        df["site"] = site
+        dataframes.append(df)
+        
+    #Create a dict assigning the tiles to the h5 dir
+    data = pd.concat(dataframes, ignore_index=True)                 
+    
+    #combine data across sites
     return data
 
 
@@ -385,7 +399,7 @@ def create_windows(data, DeepForest_config):
     
     #Compute list of sliding windows, assumed that all objects are the same extent and resolution     
     sample_tile = data.rgb_path[0]
-    base_dir = DeepForest_config[data.site[0]]["RGB"]
+    base_dir = DeepForest_config[data.site[0]]["training"]["RGB"]
     image_path=os.path.join(base_dir, sample_tile)
     windows=compute_windows(image=image_path, pixels=DeepForest_config["patch_size"], overlap=DeepForest_config["patch_overlap"])
     
