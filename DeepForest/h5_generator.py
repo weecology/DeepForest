@@ -144,7 +144,7 @@ class H5Generator(Generator):
         return(image_data, image_names)
     
     def fetch_lidar_filename(self):           
-        lidar_path = self.DeepForest_config[self.row["site"]]["LIDAR"]        
+        lidar_path = self.DeepForest_config[self.row["site"]][self.name]["LIDAR"]        
         lidar_filepath = Lidar.fetch_lidar_filename(self.row, lidar_path)
         
         if lidar_filepath:

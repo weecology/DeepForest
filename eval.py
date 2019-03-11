@@ -34,7 +34,6 @@ def get_session():
 def create_generator(args, data, config):
     """ Create generators for training and validation.
     """
-       
     #Split training and test data - hardcoded paths set below.
     _ , test = preprocess.split_training(data, DeepForest_config, experiment=None)
 
@@ -44,7 +43,7 @@ def create_generator(args, data, config):
         batch_size=args.batch_size,
         DeepForest_config=DeepForest_config,
         group_method="none",
-        name = "validation"
+        name = "training"
     )
         
     return(generator)
@@ -53,7 +52,6 @@ def create_generator(args, data, config):
 def parse_args(args):
     """ Parse the arguments.
     """
-    
     parser     = argparse.ArgumentParser(description='Evaluation script for a RetinaNet network.')
     parser.add_argument('--batch-size',      help='Size of the batches.', default=1, type=int)
     parser.add_argument('--model',             help='Path to RetinaNet model.')
@@ -94,6 +92,12 @@ def main(data, DeepForest_config, experiment,args=None):
     if args.save_path is not None and not os.path.exists(args.save_path + dirname):
         os.makedirs(args.save_path + dirname)
 
+    # load the model
+    print('Loading model, this may take a second...')
+    model = models.load_model(args.model, backbone_name=args.backbone, convert=args.convert_model, nms_threshold=DeepForest_config["nms_threshold"])
+
+    #print(model.summary())
+
     # create the testing generators
     if DeepForest_config["evaluation_images"] > 0:
         generator = create_generator(args, data, DeepForest_config)
@@ -124,13 +128,6 @@ def main(data, DeepForest_config, experiment,args=None):
     
     #create the NEON mAP generator 
     NEON_generator = create_NEON_generator(args.batch_size, DeepForest_config)
-    
-    # load the model
-    print('Loading model, this may take a second...')
-    model = models.load_model(args.model, backbone_name=args.backbone, convert=args.convert_model, nms_threshold=DeepForest_config["nms_threshold"])
-
-    #print(model.summary())
-
     NEON_recall_generator = create_NEON_generator(args.batch_size, DeepForest_config)
 
     recall = neonRecall(
@@ -139,8 +136,7 @@ def main(data, DeepForest_config, experiment,args=None):
         model,            
         score_threshold=args.score_threshold,
         save_path=args.save_path + dirname,
-        max_detections=args.max_detections,
-        DeepForest_config=DeepForest_config
+        max_detections=args.max_detections
     )
     
     print("Recall is {:0.3f}".format(recall))

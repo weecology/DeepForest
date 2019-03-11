@@ -25,157 +25,159 @@ from DeepForest import postprocessing
 from DeepForest import onthefly_generator
 
 def neonRecall(
-    site,
+    sites,
     generator,
     model,
     score_threshold=0.05,
     max_detections=100,
     suppression_threshold=0.15,
     save_path=None,
-    experiment=None,
-    DeepForest_config = None):
+    experiment=None):
 
-    #load field data
-    field_data = pd.read_csv("data/field_data.csv") 
-    field_data = field_data[field_data['UTM_E'].notnull()]
-
-    #select site
-    site_data = field_data[field_data["siteID"]==site]
-
-    #select tree species
-    specieslist = pd.read_csv("data/AcceptedSpecies.csv",encoding="utf-8")
-    specieslist =  specieslist[specieslist["siteID"] == site]
-
-    site_data = site_data[site_data["scientificName"].isin(specieslist["scientificName"].values)]
-
-    #Single bole individuals as representitve, no individualID ending in non-digits
-    site_data = site_data[site_data["individualID"].str.contains("\d$")]
-
-    #Only data within the last two years, sites can be hand managed
-    #site_data=site_data[site_data["eventID"].str.contains("2015|2016|2017|2018")]
-    
-    #Container for recall pts.
     point_contains = [ ]
+
+    for site in sites:
+        #Container for recall pts.
+        
+        #load field data
+        field_data = pd.read_csv("data/field_data.csv") 
+        field_data = field_data[field_data['UTM_E'].notnull()]
     
-    for i in range(generator.size()):
-        
-        #Load image
-        raw_image    = generator.load_image(i)
-        
-        raw_image = raw_image.copy()
-        
-        #Skip if missing a component data source
-        if raw_image is None:
-            print("Empty image, skipping")
-            continue
-        
-        image        = generator.preprocess_image(raw_image)
-        image, scale = generator.resize_image(image)
-
-        # run network
-        boxes, scores, labels = model.predict_on_batch(np.expand_dims(image, axis=0))[:3]
-
-        # correct boxes for image scale
-        boxes /= scale
-
-        # select indices which have a score above the threshold
-        indices = np.where(scores[0, :] > score_threshold)[0]
-
-        # select those scores
-        scores = scores[0][indices]
-
-        # find the order with which to sort the scores
-        scores_sort = np.argsort(-scores)[:max_detections]
-
-        # select detections
-        image_boxes      = boxes[0, indices[scores_sort], :]
-        image_scores     = scores[scores_sort]
-        image_labels     = labels[0, indices[scores_sort]]
-        image_detections = np.concatenate([image_boxes, np.expand_dims(image_scores, axis=1), np.expand_dims(image_labels, axis=1)], axis=1)
-        
-        #Find geographic bounds
-        tile_path=os.path.join(generator.base_dir, generator.image_data[i]["tile"])
-        
-        with rasterio.open(tile_path) as dataset:
-            tile_bounds = dataset.bounds   
+        #select site
+        site_data = field_data[field_data["siteID"]==site]
     
-        #drape boxes
-        #get lidar cloud if a new tile, or if not the same tile as previous image.
-        if i == 0:
-            generator.load_lidar_tile()
-        elif not generator.image_data[i]["tile"] == generator.image_data[i-1]["tile"]:
-            generator.load_lidar_tile()
+        #select tree species
+        specieslist = pd.read_csv("data/AcceptedSpecies.csv",encoding="utf-8")
+        specieslist =  specieslist[specieslist["siteID"] == site]
+    
+        site_data = site_data[site_data["scientificName"].isin(specieslist["scientificName"].values)]
+    
+        #Single bole individuals as representitve, no individualID ending in non-digits
+        site_data = site_data[site_data["individualID"].str.contains("\d$")]
+    
+        #Only data within the last two years, sites can be hand managed
+        #site_data=site_data[site_data["eventID"].str.contains("2015|2016|2017|2018")]
         
-        #The tile could be the full tile, so let's check just the 400 pixel crop we are interested    
-        #Not the best structure, but the on-the-fly generator always has 0 bounds
-        if hasattr(generator, 'hf'):
-            bounds = generator.hf["utm_coords"][generator.row["window"]]    
-        else:
-            bounds=[]
+        for i in range(generator.size()):
             
-        density = Lidar.check_density(generator.lidar_tile, bounds=bounds)
+            #Load image
+            raw_image    = generator.load_image(i)
+            
+            raw_image = raw_image.copy()
+            
+            #Skip if missing a component data source
+            if raw_image is None:
+                print("Empty image, skipping")
+                continue
+            
+            image        = generator.preprocess_image(raw_image)
+            image, scale = generator.resize_image(image)
+    
+            # run network
+            boxes, scores, labels = model.predict_on_batch(np.expand_dims(image, axis=0))[:3]
+    
+            # correct boxes for image scale
+            boxes /= scale
+    
+            # select indices which have a score above the threshold
+            indices = np.where(scores[0, :] > score_threshold)[0]
+    
+            # select those scores
+            scores = scores[0][indices]
+    
+            # find the order with which to sort the scores
+            scores_sort = np.argsort(-scores)[:max_detections]
+    
+            # select detections
+            image_boxes      = boxes[0, indices[scores_sort], :]
+            image_scores     = scores[scores_sort]
+            image_labels     = labels[0, indices[scores_sort]]
+            image_detections = np.concatenate([image_boxes, np.expand_dims(image_scores, axis=1), np.expand_dims(image_labels, axis=1)], axis=1)
+            
+            #Find geographic bounds
+            base_dir = generator.DeepForest_config[site][generator.name]["RGB"]
+            tile_path=os.path.join(base_dir, generator.image_data[i]["tile"])
+            
+            with rasterio.open(tile_path) as dataset:
+                tile_bounds = dataset.bounds   
         
-        print("Point density is {:.2f}".format(density))
+            #drape boxes
+            #get lidar cloud if a new tile, or if not the same tile as previous image.
+            if i == 0:
+                generator.load_lidar_tile()
+            elif not generator.image_data[i]["tile"] == generator.image_data[i-1]["tile"]:
+                generator.load_lidar_tile()
+            
+            #The tile could be the full tile, so let's check just the 400 pixel crop we are interested    
+            #Not the best structure, but the on-the-fly generator always has 0 bounds
+            if hasattr(generator, 'hf'):
+                bounds = generator.hf["utm_coords"][generator.row["window"]]    
+            else:
+                bounds=[]
                 
-        if density > generator.DeepForest_config["min_density"]:
-            #find window utm coordinates
-            print("Bounds for image {}, window {}, are {}".format(generator.row["tile"], generator.row["window"], bounds))
-            pc = postprocessing.drape_boxes(boxes=image_boxes, pc = generator.lidar_tile, bounds=bounds)     
+            density = Lidar.check_density(generator.lidar_tile, bounds=bounds)
             
-            #Get new bounding boxes
-            new_boxes = postprocessing.cloud_to_box(pc, bounds)    
-            new_scores = image_scores[:new_boxes.shape[0]]
-            new_labels = image_labels[:new_boxes.shape[0]]          
-            image_detections = np.concatenate([new_boxes, np.expand_dims(new_scores, axis=1), np.expand_dims(new_labels, axis=1)], axis=1)
-            
-        else:
-            print("Point density of {:.2f} is too low, skipping image {}".format(density, generator.row["tile"]))        
-
-        #add spatial NEON points
-        plotID = os.path.splitext(generator.image_data[i]["tile"])[0]
-        plot_data = site_data[site_data.plotID == plotID]
-
-        #Save image and send it to logger
-        if save_path is not None:
-            draw_detections(raw_image, image_boxes, image_scores, image_labels, label_to_name=generator.label_to_name, score_threshold=score_threshold, color = (80,127,255))
-    
-            
-            x = (plot_data.UTM_E - tile_bounds.left).values / 0.1
-            y = (tile_bounds.top - plot_data.UTM_N).values / 0.1
-            
-            for i in np.arange(len(x)):
-                cv2.circle(raw_image,(int(x[i]),int(y[i])), 2, (0,0,255), -1)
-    
-            #Write RGB
-            cv2.imwrite(os.path.join(save_path, '{}_NeonPlot.png'.format(plotID)), raw_image[:,:,:3])
+            print("Point density is {:.2f}".format(density))
+                    
+            if density > generator.DeepForest_config["min_density"]:
+                #find window utm coordinates
+                print("Bounds for image {}, window {}, are {}".format(generator.row["tile"], generator.row["window"], bounds))
+                pc = postprocessing.drape_boxes(boxes=image_boxes, pc = generator.lidar_tile, bounds=bounds)     
                 
-            #Format name and save
-            if experiment:
-                experiment.log_image(os.path.join(save_path, '{}_NeonPlot.png'.format(plotID)),file_name=str(plotID))
+                #Get new bounding boxes
+                new_boxes = postprocessing.cloud_to_box(pc, bounds)    
+                new_scores = image_scores[:new_boxes.shape[0]]
+                new_labels = image_labels[:new_boxes.shape[0]]          
+                image_detections = np.concatenate([new_boxes, np.expand_dims(new_scores, axis=1), np.expand_dims(new_labels, axis=1)], axis=1)
+                
+            else:
+                print("Point density of {:.2f} is too low, skipping image {}".format(density, generator.row["tile"]))        
+    
+            #add spatial NEON points
+            plotID = os.path.splitext(generator.image_data[i]["tile"])[0]
+            plot_data = site_data[site_data.plotID == plotID]
+    
+            #Save image and send it to logger
+            if save_path is not None:
+                draw_detections(raw_image, image_boxes, image_scores, image_labels, label_to_name=generator.label_to_name, score_threshold=score_threshold, color = (80,127,255))
         
-        #calculate recall
-            s = gp.GeoSeries(map(Point, zip(plot_data.UTM_E, plot_data.UTM_N)))
-    
-        #Calculate recall
-        projected_boxes = []
+                
+                x = (plot_data.UTM_E - tile_bounds.left).values / 0.1
+                y = (tile_bounds.top - plot_data.UTM_N).values / 0.1
+                
+                for i in np.arange(len(x)):
+                    cv2.circle(raw_image,(int(x[i]),int(y[i])), 2, (0,0,255), -1)
         
-        for row in  image_boxes:
-            #Add utm bounds and create a shapely polygon
-            pbox=create_polygon(row, tile_bounds, cell_size=0.1)
-            projected_boxes.append(pbox)
-    
-        #for each point, is it within a prediction?
-        for index, tree in plot_data.iterrows():
-            p=Point(tree.UTM_E, tree.UTM_N)
-    
-            within_polygon=[]
-    
-            for prediction in projected_boxes:
-                within_polygon.append(p.within(prediction))
-    
-            #Check for overlapping polygon, add it to list
-            is_within = sum(within_polygon) > 0
-            point_contains.append(is_within)
+                #Write RGB
+                cv2.imwrite(os.path.join(save_path, '{}_NeonPlot.png'.format(plotID)), raw_image[:,:,:3])
+                    
+                #Format name and save
+                if experiment:
+                    experiment.log_image(os.path.join(save_path, '{}_NeonPlot.png'.format(plotID)),file_name=str(plotID))
+            
+            #calculate recall
+                s = gp.GeoSeries(map(Point, zip(plot_data.UTM_E, plot_data.UTM_N)))
+        
+            #Calculate recall
+            projected_boxes = []
+            
+            for row in  image_boxes:
+                #Add utm bounds and create a shapely polygon
+                pbox=create_polygon(row, tile_bounds, cell_size=0.1)
+                projected_boxes.append(pbox)
+        
+            #for each point, is it within a prediction?
+            for index, tree in plot_data.iterrows():
+                p=Point(tree.UTM_E, tree.UTM_N)
+        
+                within_polygon=[]
+        
+                for prediction in projected_boxes:
+                    within_polygon.append(p.within(prediction))
+        
+                #Check for overlapping polygon, add it to list
+                is_within = sum(within_polygon) > 0
+                point_contains.append(is_within)
                 
     #sum recall across plots
     if len(point_contains)==0:

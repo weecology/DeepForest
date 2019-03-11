@@ -151,8 +151,7 @@ class OnTheFlyGenerator(Generator):
         ''''
         Create a sliding window object
         '''
-        
-        #Load tile
+        #Find directory and load tile
         site = self.annotation_list.site.unique()[0]
         base_dir = self.DeepForest_config[site][self.name]["RGB"]
         image = os.path.join(base_dir, self.annotation_list.rgb_path.unique()[0])
@@ -179,7 +178,7 @@ class OnTheFlyGenerator(Generator):
         return self.clipped_las
     
     def fetch_lidar_filename(self):           
-        
+
         #Set lidar path
         lidar_path = self.DeepForest_config[self.row["site"]][self.name]["LIDAR"]
         lidar_filepath=Lidar.fetch_lidar_filename(self.row, lidar_path)
@@ -198,7 +197,7 @@ class OnTheFlyGenerator(Generator):
         ''''
         Read RGB tile from file
         '''
-        base_dir = self.DeepForest_config[self.row["site"]]["RGB"]
+        base_dir = self.DeepForest_config[self.row["site"]][self.name]["RGB"]
         filename = os.path.join(base_dir, self.row["tile"])
         im = Image.open(filename)
         numpy_image = np.array(im)    
@@ -243,9 +242,7 @@ class OnTheFlyGenerator(Generator):
         
         ##Check if image the is same as previous draw from self
         if not self.row["tile"] == self.previous_image_path:
-            
             print("Loading new tile {}".format(self.row["tile"]))
-            
             self.numpy_image = self.load_rgb_tile()
             
         #Load a new crop from self
@@ -263,16 +260,15 @@ class OnTheFlyGenerator(Generator):
         offset: Number of meters to add to box edge to look for annotations
         '''
         #Set site directory and look for tile
-        base_dir = self.DeepForest_config[self.row["site"]]["RGB"]
+        base_dir = self.DeepForest_config[self.row["site"]][self.name]["RGB"]
         image = os.path.join(base_dir, self.row["tile"])
         index = self.row["window"]
         annotations = self.annotation_list
-        windows = self.windows
         offset = (self.DeepForest_config["patch_size"] * 0.1)/self.rgb_res
         patch_size = self.DeepForest_config["patch_size"]
     
         #Find index of crop and create coordinate box
-        x, y, w, h=windows[index].getRect()
+        x, y, w, h=self.windows[index].getRect()
         window_coords={}
     
         #top left
@@ -355,7 +351,7 @@ class OnTheFlyGenerator(Generator):
         x = x * self.rgb_res
         y = y * self.rgb_res
         
-        base_dir = self.DeepForest_config[self.row["site"]]["RGB"]        
+        base_dir = self.DeepForest_config[self.row["site"]][self.name]["RGB"]        
         filename = os.path.join(base_dir, self.row["tile"])
         
         with rasterio.open(filename) as dataset:
@@ -381,59 +377,5 @@ class OnTheFlyGenerator(Generator):
         
         #flag for session setting
         self.session_exists = True
-        
-    def predict(self, model):
-        '''
-        Generic prediction function for bounding box prediction
-        model: a loaded model of form retinanet saved model
-        '''
-                
-        #Get a new tensorflow session if not previously set 
-        if not self.session_exists:
-            self.tf_session()
-            
-        # load retinanet model
-        model = models.load_model(model, backbone_name='resnet50', convert=True, nms_threshold=self.DeepForest_config["nms_threshold"])
-        labels_to_names = {0: 'Tree'}
-                   
-        # preprocess image for network
-        image = preprocess_image(self.image)
-        image, scale = resize_image(img = image, min_side = 400)
-        
-        # process image
-        boxes, scores, labels = model.predict_on_batch(np.expand_dims(image, axis=0))
-        
-        # correct for image scale
-        boxes /= scale
-            
-        #only pass score threshold boxes
-        quality_boxes = []
-        for box, score, label in zip(boxes[0], scores[0], labels[0]):
-            quality_boxes.append(box)
-            # scores are sorted so we can break
-            if score < self.DeepForest_config["score_threshold"]:
-                break
-        
-        ###Drape boxes on lidar cloud###
-        #Load tile
-        self.load_lidar_tile()
-        
-        #The tile could be the full tile, so let's check just the 400 pixel crop we are interested    
-        density = Lidar.check_density(self.lidar_tile)
-    
-        print("Point density is {:.2f}".format(density))
-    
-        if density > 4:
-            #find window utm coordinates
-            pc = postprocessing.drape_boxes(boxes=quality_boxes, pc = self.lidar_tile)     
-    
-            #Get new bounding boxes
-            new_boxes = postprocessing.cloud_to_box(pc)    
-            new_scores = scores[:new_boxes.shape[0]]
-            new_labels = labels[:new_boxes.shape[0]]          
-        else:
-            print("Point density of {:.2f} is too low, skipping image {}".format(density, self.row["tile"]))        
-                   
-        return [new_boxes, new_scores, new_labels]       
         
         

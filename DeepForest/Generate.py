@@ -34,7 +34,7 @@ def run(tile_csv=None, tile_xml = None, mode="train", site=None):
     DeepForest_config = config.load_config()            
     
     if mode == "train":
-        lidar_path = DeepForest_config[site]["LIDAR"]
+        lidar_path = DeepForest_config[site]["training"]["LIDAR"]
         data = preprocess.load_data(data_dir=tile_csv, res=0.1, lidar_path=lidar_path)
         
         #Get tile filename for storing
@@ -45,31 +45,36 @@ def run(tile_csv=None, tile_xml = None, mode="train", site=None):
         data["site"]=site
         
         #Create windows
-        base_dir = DeepForest_config[site]["RGB"]
+        base_dir = DeepForest_config[site]["training"]["RGB"]
         windows = preprocess.create_windows(data, DeepForest_config, base_dir = base_dir)   
         
         #Destination dir
         destination_dir = DeepForest_config[site]["h5"]
         
     if mode == "retrain":
+        
+        #Base dir
+        base_dir = DeepForest_config[site]["training"]["RGB"]
+        
         #Load xml annotations
-        data = preprocess.load_xml(path=tile_xml, dirname=DeepForest_config["rgb_tile_dir"], res=DeepForest_config["rgb_res"])
+        data = preprocess.load_xml(path=tile_xml, dirname=base_dir, res=DeepForest_config["rgb_res"])
         tilename = os.path.splitext(os.path.basename(tile_xml))[0] 
 
         #Create windows
-        windows = preprocess.create_windows(data, DeepForest_config, base_dir =  DeepForest_config["rgb_tile_dir"]) 
+        windows = preprocess.create_windows(data, DeepForest_config, base_dir = base_dir) 
 
         #destination dir
-        destination_dir = DeepForest_config["retraining_h5_dir"]
+        destination_dir = os.path.join(DeepForest_config[site]["h5"],"hand_annotations")
     
     if windows is None:
-        print("Invalid window, cannot find {} in {}".format(tilename, DeepForest_config["rgb_tile_dir"]))
+        print("Invalid window, cannot find {} in {}".format(tilenamebase_dir))
         return None
     
     #Create generate
     generator = onthefly_generator.OnTheFlyGenerator(data,
                                                      windows,
-                                                     DeepForest_config)
+                                                     DeepForest_config,
+                                                     name="training")
     
     #Create h5 dataset    
     # open a hdf5 file and create arrays
