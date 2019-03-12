@@ -6,7 +6,7 @@ import numpy as np
 import os
 import h5py
 import pandas as pd
-from . import onthefly_generator, preprocess, config
+from . import onthefly_generator, preprocess, config, Lidar
 import sys
 import glob
 
@@ -47,6 +47,9 @@ def run(tile_csv=None, tile_xml = None, mode="train", site=None):
         #Create windows
         windows = preprocess.create_windows(data, DeepForest_config)   
         
+        #Check lidar  for point density
+        check_lidar = True
+        
         #Destination dir
         destination_dir = DeepForest_config[site]["h5"]
         
@@ -63,6 +66,8 @@ def run(tile_csv=None, tile_xml = None, mode="train", site=None):
         #Create windows
         windows = preprocess.create_windows(data, DeepForest_config) 
 
+        #Don't check lidar for density, annotations are made directly on RGB
+        check_lidar = False
         #destination dir
         destination_dir = os.path.join(DeepForest_config[site]["h5"],"hand_annotations")
     
@@ -93,6 +98,10 @@ def run(tile_csv=None, tile_xml = None, mode="train", site=None):
     #Generate crops and annotations
     labels = {}
     
+    #load first rgb and lidar tile, assumes all images in generator came from same tile, saves time
+    generator.load_image(1)
+    point_cloud = generator.load_lidar_tile(normalize=False)
+    
     for i in range(generator.size()):
         
         print("window {i} from tile {tilename}".format(i=i, tilename=tilename))
@@ -100,11 +109,18 @@ def run(tile_csv=None, tile_xml = None, mode="train", site=None):
         #Load images
         image = generator.load_image(i)
         
-        #Check if there is lidar density
-        #If image window is corrupt (RGB/LIDAR missing), go to next tile, it won't be in labeldf
+        #If image window is corrupt (RGB missing), go to next tile, it won't be in labeldf
         if image is None:
             continue
-            
+                
+        #Check if there is lidar density
+        bounds = generator.get_window_extent()
+        density = Lidar.check_density(point_cloud, bounds)
+                
+        if density < 2:
+            print("Point density is {} for window {}, skipping".format(density, tilename))
+            continue
+        
         hdf5_file["train_imgs"][i,...] = image        
         
         #Load annotations and write a pandas frame

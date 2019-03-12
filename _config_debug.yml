@@ -3,7 +3,7 @@
 #Data generation - the number of workers for dask session
 num_hipergator_workers: 20
 training_csvs:
-  - SJER
+  - TEAK
 
 #Keras
 workers: 1
@@ -24,7 +24,7 @@ preprocess:
 
 #Select sites
 hand_annotation_site:
-  - SJER
+  - TEAK
 pretraining_site:
   - SJER
   - TEAK

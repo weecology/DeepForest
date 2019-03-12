@@ -171,6 +171,11 @@ class OnTheFlyGenerator(Generator):
         crop = self.numpy_image[self.windows[index].indices()]
         return(crop)
     
+    def get_window_extent(self):
+        """Inherit LIDAR methods for Class"""
+        bounds = Lidar.get_window_extent(annotations=self.annotation_list, row=self.row, windows=self.windows, rgb_res=self.rgb_res)
+        return bounds
+    
     def clip_las(self):
         '''' Inherit LIDAR methods for Class
         '''
@@ -185,11 +190,11 @@ class OnTheFlyGenerator(Generator):
         
         return lidar_filepath
 
-    def load_lidar_tile(self):
+    def load_lidar_tile(self, normalize = True):
         '''Load a point cloud into memory from file
         '''
         self.lidar_filepath=self.fetch_lidar_filename()        
-        self.lidar_tile=Lidar.load_lidar(self.lidar_filepath)
+        self.lidar_tile=Lidar.load_lidar(self.lidar_filepath, normalize)
         
         return self.lidar_tile
     
