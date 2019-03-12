@@ -1,7 +1,7 @@
 #Config file for DeepMeerkat train.py on local OSX
 
 #Data generation - the number of workers for dask session
-num_hipergator_workers: 20
+num_hipergator_workers: 30
 training_csvs:
   - SJER
   - TEAK
