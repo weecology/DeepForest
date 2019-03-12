@@ -137,4 +137,4 @@ if __name__ == '__main__':
     #model name
     model_name = os.path.splitext(os.path.basename(mode.saved_model))[0]
     
-    results.to_csv("/Users/Ben/Dropbox/Weecology/Generalization/cross_site_" + model_name + ".csv")
+    results.to_csv("cross_site_" + model_name + ".csv")

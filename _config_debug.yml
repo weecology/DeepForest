@@ -56,10 +56,10 @@ min_density: 100
 SJER:
   h5: /Users/Ben/Downloads/
   hand_annotations: /Users/Ben/Documents/DeepLidar/data/SJER/training/
+  training_csvs: /Users/Ben/Documents/DeepLidar/data/SJER/training/
   training:
     RGB: /Users/Ben/Documents/DeepLidar/data/SJER/training/
     LIDAR: /Users/Ben/Documents/DeepLidar/data/SJER/training/
-    training_csvs: /Users/Ben/Documents/DeepLidar/data/SJER/training/
   evaluation:
     RGB: /Users/Ben/Documents/DeepLidar/data/SJER/plots/
     LIDAR: /Users/Ben/Documents/DeepLidar/data/SJER/plots/

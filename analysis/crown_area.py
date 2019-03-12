@@ -90,5 +90,8 @@ for i in range(neon_generator.size()):
             area_results.append([overlapping_prediction.area, annotation.area])
 
 area_df =pd.DataFrame(area_results, columns=["prediction","annotation"])    
-area_df.to_csv("/Users/Ben/Dropbox/Weecology/NEON/prediction_area_TEAK_fullmodel.csv")
+site = DeepForest_config["evaluation_site"][0]
+
+filname = "prediction_area" + "_" + site + "_"  + args.model + ".csv"
+area_df.to_csv(filname)
 
