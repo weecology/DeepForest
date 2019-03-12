@@ -100,7 +100,9 @@ def run(tile_csv=None, tile_xml = None, mode="train", site=None):
     
     #load first rgb and lidar tile, assumes all images in generator came from same tile, saves time
     generator.load_image(1)
-    point_cloud = generator.load_lidar_tile(normalize=False)
+    
+    if check_lidar:
+        point_cloud = generator.load_lidar_tile(normalize=False)
     
     for i in range(generator.size()):
         
@@ -114,12 +116,13 @@ def run(tile_csv=None, tile_xml = None, mode="train", site=None):
             continue
                 
         #Check if there is lidar density
-        bounds = generator.get_window_extent()
-        density = Lidar.check_density(point_cloud, bounds)
-                
-        if density < 2:
-            print("Point density is {} for window {}, skipping".format(density, tilename))
-            continue
+        if check_lidar:
+            bounds = generator.get_window_extent()
+            density = Lidar.check_density(point_cloud, bounds)
+                    
+            if density < 2:
+                print("Point density is {} for window {}, skipping".format(density, tilename))
+                continue
         
         hdf5_file["train_imgs"][i,...] = image        
         
