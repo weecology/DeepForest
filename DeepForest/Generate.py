@@ -72,7 +72,7 @@ def run(tile_csv=None, tile_xml = None, mode="train", site=None):
         destination_dir = os.path.join(DeepForest_config[site]["h5"],"hand_annotations")
     
     if windows is None:
-        print("Invalid window, cannot find {} in {}".format(tilenamebase_dir))
+        print("Invalid window, cannot find {} in {}".format(tilename, base_dir))
         return None
     
     #Create generate
