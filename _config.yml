@@ -34,18 +34,18 @@ evaluation_site:
   - TEAK
 
 #Training
-training_images: 10
+training_images: All
 weights: None
-imagenet_weights: False
-batch_size: 5
-epochs: 2
+imagenet_weights: True
+batch_size: 25
+epochs: 20
 backbone: resnet50
-shuffle_training: False
+shuffle_training: True
 score_threshold: 0.20
 
 #Evaluation
-evaluation_images: 10
-shuffle_evaluation: False
+evaluation_images: 50
+shuffle_evaluation: True
 validation_percent: 5 #For hand annotation neon_MAP
 #Non-max suppression, threshold for the IoU value to determine when a box should be suppressed.
 nms_threshold: 0.1
