@@ -305,7 +305,7 @@ def split_training(data, DeepForest_config, experiment):
             
         #Optional shuffle
         if DeepForest_config["shuffle_training"]:
-            training.sample(frac=1)
+            training = training.sample(frac=1)
             
         #Select subset of training windows
         training=training.iloc[0:num_training_images]
@@ -319,7 +319,7 @@ def split_training(data, DeepForest_config, experiment):
     
         #Optional shuffle
         if DeepForest_config["shuffle_evaluation"]:
-            evaluation.sample(frac=1)
+            evaluation = evaluation.sample(frac=1)
             
         #Select subset of evaluation windows
         evaluation=evaluation.iloc[0:num_evaluation_images]

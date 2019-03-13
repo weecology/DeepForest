@@ -39,7 +39,7 @@ imagenet_weights: False
 batch_size: 25
 epochs: 2
 backbone: resnet50
-shuffle_training: False
+shuffle_training: True
 score_threshold: 0.20
 
 #Evaluation
