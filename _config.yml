@@ -34,7 +34,7 @@ evaluation_site:
   - TEAK
 
 #Training
-training_images: All
+training_images: 1000
 weights: None
 imagenet_weights: True
 batch_size: 25
