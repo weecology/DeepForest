@@ -155,10 +155,10 @@ def create_callbacks(model, training_model, prediction_model, train_generator, v
                 '{backbone}_{{epoch:02d}}.h5'.format(backbone=args.backbone)
             ),
             verbose=1
-            ,
-            save_best_only=True,
-            monitor="mAP",
-            mode='max'
+            #,
+            #save_best_only=True,
+            #monitor="mAP",
+            #mode='max'
         )
         checkpoint = RedirectModel(checkpoint, model)
         callbacks.append(checkpoint)
@@ -384,17 +384,23 @@ def main(args=None, data=None, DeepForest_config=None, experiment=None):
             print("Test passed: No overlapping data in training and validation")
     
     #start training
-    training_model.fit_generator(
+    history = training_model.fit_generator(
         generator=train_generator,
         steps_per_epoch=train_generator.size()/DeepForest_config["batch_size"],
         epochs=args.epochs,
-        verbose=1,
+        verbose=2,
         shuffle=False,
         callbacks=callbacks,
         workers=DeepForest_config["workers"],
         use_multiprocessing=DeepForest_config["use_multiprocessing"],
         max_queue_size=DeepForest_config["max_queue_size"]
     )
+    
+    #return path snapshot of final epoch
+    saved_models = glob.glob(os.path.join(args.snapshot_path,"*.h5"))
+    saved_models.sort()
+    
+    return saved_models[-1]
      
 if __name__ == '__main__':
     
@@ -402,10 +408,8 @@ if __name__ == '__main__':
     
     #Set training or training
     mode_parser     = argparse.ArgumentParser(description='Retinanet training or finetuning?')
-    #TODO make required.
     mode_parser.add_argument('--mode', help='train or retrain?')
     mode_parser.add_argument('--dir', help='destination dir on HPC' )
-    
     mode=mode_parser.parse_args()
     
     #load config
@@ -420,9 +424,9 @@ if __name__ == '__main__':
     else:
         dirname = datetime.now().strftime("%Y%m%d_%H%M%S")
     
-    #Load DeepForest_config and data file based on training or retraining mode
+    #Load DeepForest_config and data file based on training or retraining mode. Final mode firsts run training then retrains on top.
     DeepForest_config["mode"] = mode.mode
-    if mode.mode == "train":
+    if mode.mode in ["train","final"]:
         data = preprocess.load_training_data(DeepForest_config)
 
     if mode.mode == "retrain":
@@ -449,8 +453,8 @@ if __name__ == '__main__':
         args = ["--snapshot-path"] + args
 
     #Restart from a preview snapshot?
-    if not DeepForest_config["weights"] == "None":
-        args = [DeepForest_config["weights"]] + args
+    if not DeepForest_config["weights"] == "None":            
+        args = [snapshot_path] + args
         args = ["--weights"] + args
 
     #Use imagenet weights?
@@ -477,4 +481,31 @@ if __name__ == '__main__':
     experiment.log_parameter("Training Mode", mode.mode)
     
     #Run training, and pass comet experiment   
-    main(args, data, DeepForest_config, experiment=experiment)
+    output_model = main(args, data, DeepForest_config, experiment=experiment)
+    
+    #Allow to build from the main training process
+    if mode.mode == "final":
+        
+        #Make a new dir and reformat args
+        dirname = datetime.now().strftime("%Y%m%d_%H%M%S")
+        save_image_path=DeepForest_config["save_image_path"]+ dirname
+        save_snapshot_path=DeepForest_config["save_snapshot_path"]+ dirname        
+        os.mkdir(save_image_path)
+        os.mkdir(snappath)          
+        
+        #Load retraining data
+        data = preprocess.load_retraining_data(DeepForest_config)     
+        
+        #pass an args object instead of using command line    
+        args = [
+            "--epochs", str(DeepForest_config["epochs"]),
+            "--batch-size", str(DeepForest_config['batch_size']),
+            "--backbone", str(DeepForest_config["backbone"]),
+            "--score-threshold", str(DeepForest_config["score_threshold"]),
+            "--save-path", save_image_path,
+            "--snapshot-path", save_snapshot_path,
+            "--weights", output_model
+        ]
+    
+        #Run training, and pass comet experiment class
+        main(args, data, DeepForest_config, experiment=experiment)        
