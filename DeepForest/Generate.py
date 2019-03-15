@@ -50,13 +50,14 @@ def run(tile_csv=None, tile_xml = None, mode="train", site=None):
         
         #Check lidar  for point density
         check_lidar = True
+        name = "training"
         
         #Destination dir
         destination_dir = DeepForest_config[site]["h5"]
         
     if mode == "retrain":
         #Base dir
-        base_dir = DeepForest_config[site]["hand_annotations"]
+        base_dir = DeepForest_config[site]["hand_annotations"]["RGB"]
         
         #Load xml annotations
         data = preprocess.load_xml(path=tile_xml, dirname=base_dir, res=DeepForest_config["rgb_res"])
@@ -71,6 +72,7 @@ def run(tile_csv=None, tile_xml = None, mode="train", site=None):
 
         #Don't check lidar for density, annotations are made directly on RGB
         check_lidar = False
+        name = "hand_annotations"
         
         #destination dir
         destination_dir = os.path.join(DeepForest_config[site]["h5"],"hand_annotations")
@@ -87,7 +89,7 @@ def run(tile_csv=None, tile_xml = None, mode="train", site=None):
     generator = onthefly_generator.OnTheFlyGenerator(data,
                                                      windows,
                                                      DeepForest_config,
-                                                     name="training")
+                                                     name=name)
     
     #Create h5 dataset    
     # open a hdf5 file and create arrays

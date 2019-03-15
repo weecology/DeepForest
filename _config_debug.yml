@@ -64,7 +64,8 @@ SJER:
 TEAK:
   h5: /Users/Ben/Downloads/TEAK/
   training_csvs: /Users/Ben/Documents/DeepLidar/data/TEAK/training/
-  hand_annotations: /Users/Ben/Documents/DeepLidar/data/TEAK/training/
+  hand_annotations:
+     RGB: /Users/Ben/Documents/DeepLidar/data/TEAK/training/
   training:
     RGB: /Users/Ben/Documents/DeepLidar/data/TEAK/training/
     LIDAR: /Users/Ben/Documents/DeepLidar/data/TEAK/training/
