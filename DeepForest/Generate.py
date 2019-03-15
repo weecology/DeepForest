@@ -73,6 +73,10 @@ def run(tile_csv=None, tile_xml = None, mode="train", site=None):
         
         #destination dir
         destination_dir = os.path.join(DeepForest_config[site]["h5"],"hand_annotations")
+        
+        #If dest doesn't exist, create it
+        if not os.path.exists:
+            os.mkdir(destination_dir)
     
     if windows is None:
         print("Invalid window, cannot find {} in {}".format(tilename, base_dir))
