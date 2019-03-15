@@ -532,8 +532,12 @@ if __name__ == '__main__':
             data = preprocess.load_retraining_data(DeepForest_config)     
             
             #pass an args object instead of using command line    
+            #make some hard coded assumptions
+            DeepForest_config["evaluation_images"] = 0
+            DeepForest_config["training_images"] = "All"
+            
             args = [
-                "--epochs", str(DeepForest_config["epochs"]),
+                "--epochs", str(20),
                 "--batch-size", str(DeepForest_config['batch_size']),
                 "--backbone", str(DeepForest_config["backbone"]),
                 "--score-threshold", str(DeepForest_config["score_threshold"]),
