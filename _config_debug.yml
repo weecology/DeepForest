@@ -4,7 +4,7 @@
 num_hipergator_workers: 20
 training_csvs:
   - TEAK
-  
+
 #Keras
 workers: 1
 use_multiprocessing: False
@@ -24,11 +24,11 @@ preprocess:
 
 #Select sites
 hand_annotation_site:
-  - SJER
+  - TEAK
 pretraining_site:
-  - SJER
+  - TEAK
 evaluation_site:
-  - SJER
+  - TEAK
 
 #Training
 training_images: 1
