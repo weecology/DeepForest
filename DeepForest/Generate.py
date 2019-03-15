@@ -55,7 +55,7 @@ def run(tile_csv=None, tile_xml = None, mode="train", site=None):
         
     if mode == "retrain":
         #Base dir
-        base_dir = DeepForest_config[site]["training"]["RGB"]
+        base_dir = DeepForest_config[site]["hand_annotations"]
         
         #Load xml annotations
         data = preprocess.load_xml(path=tile_xml, dirname=base_dir, res=DeepForest_config["rgb_res"])
@@ -68,6 +68,7 @@ def run(tile_csv=None, tile_xml = None, mode="train", site=None):
 
         #Don't check lidar for density, annotations are made directly on RGB
         check_lidar = False
+        
         #destination dir
         destination_dir = os.path.join(DeepForest_config[site]["h5"],"hand_annotations")
     
