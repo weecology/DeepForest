@@ -42,7 +42,7 @@ proj.launch-config = {loc('../DeepForest/predict.py'): ('project',
         (u'--model /Users/ben/Documents/DeepLidar/snapshots/SJER_20190201_150942_fullmodel.h5 --image data/SJER/plots/',
          '')),
                       loc('train.py'): ('project',
-        (u'--mode final\n',
+        (u'--mode retrain\n',
          '')),
                       loc('../DeepMeerkat/training/Classification/CreateDocs.py'): ('p'\
         'roject',

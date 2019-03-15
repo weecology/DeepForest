@@ -426,54 +426,14 @@ if __name__ == '__main__':
     
     #Load DeepForest_config and data file based on training or retraining mode. Final mode firsts run training then retrains on top.
     DeepForest_config["mode"] = mode.mode
+    
     if mode.mode in ["train","final"]:
         data = preprocess.load_training_data(DeepForest_config)
 
     if mode.mode == "retrain":
-        data = preprocess.load_retraining_data(DeepForest_config)
-        
-    #pass an args object instead of using command line    
-    args = [
-        "--epochs", str(DeepForest_config["epochs"]),
-        "--batch-size", str(DeepForest_config['batch_size']),
-        "--backbone", str(DeepForest_config["backbone"]),
-        "--score-threshold", str(DeepForest_config["score_threshold"])
-    ]
-
-    #Create log directory if saving snapshots
-    if not DeepForest_config["save_snapshot_path"] == "None":
-        snappath=DeepForest_config["save_snapshot_path"]+ dirname
-        os.mkdir(snappath)  
-
-    #if no snapshots, add arg to front, will ignore path above
-    if DeepForest_config["save_snapshot_path"] == "None":
-        args = ["--no-snapshots"] + args
-    else:
-        args = [snappath] + args
-        args = ["--snapshot-path"] + args
-
-    #Restart from a preview snapshot?
-    if not DeepForest_config["weights"] == "None":            
-        args = [snapshot_path] + args
-        args = ["--weights"] + args
-
-    #Use imagenet weights?
-    if not DeepForest_config["imagenet_weights"] and DeepForest_config["weights"] == "None":
-        print("Turning off imagenet weights")
-        args = ["--no-weights"] + args
-  
-    #Create log directory if saving eval images, add to arguments
-    if not DeepForest_config["save_image_path"]=="None":
-        save_image_path=DeepForest_config["save_image_path"]+ dirname
-        if not os.path.exists(save_image_path):
-            os.mkdir(save_image_path)
-
-        args= [save_image_path] + args
-        args=["--save-path"] + args        
-
-    #Use imagenet weights?
-    if DeepForest_config["num_GPUs"] > 1:
-        args = ["--multi-gpu-force", "--multi-gpu", str(DeepForest_config["num_GPUs"])] + args    
+        data = preprocess.load_retraining_data(DeepForest_config)   
+        for site in DeepForest_config["hand_annotation_site"]:
+            DeepForest_config[site]["h5"] = os.path.join(DeepForest_config[site]["h5"],"hand_annotations")
         
     #log params
     experiment.log_parameters(DeepForest_config)    
@@ -481,22 +441,66 @@ if __name__ == '__main__':
     experiment.log_parameter("Training Mode", mode.mode)
     
     #Run training, and pass comet experiment   
-    output_model = main(args, data, DeepForest_config, experiment=experiment)
+    if mode.mode in ["train","retrain"]:
+        #pass an args object instead of using command line    
+        args = [
+            "--epochs", str(DeepForest_config["epochs"]),
+            "--batch-size", str(DeepForest_config['batch_size']),
+            "--backbone", str(DeepForest_config["backbone"]),
+            "--score-threshold", str(DeepForest_config["score_threshold"])
+        ]
+    
+        #Create log directory if saving snapshots
+        if not DeepForest_config["save_snapshot_path"] == "None":
+            snappath=DeepForest_config["save_snapshot_path"]+ dirname
+            os.mkdir(snappath)  
+    
+        #if no snapshots, add arg to front, will ignore path above
+        if DeepForest_config["save_snapshot_path"] == "None":
+            args = ["--no-snapshots"] + args
+        else:
+            args = ["--snapshot-path", snappath] + args
+    
+        #Restart from a preview snapshot?
+        if not DeepForest_config["weights"] == "None":            
+            args = ["--weights", DeepForest_config["weights"] ] + args
+    
+        #Use imagenet weights?
+        if not DeepForest_config["imagenet_weights"] and DeepForest_config["weights"] == "None":
+            print("Turning off imagenet weights")
+            args = ["--no-weights"] + args
+      
+        #Create log directory if saving eval images, add to arguments
+        if not DeepForest_config["save_image_path"]=="None":
+            save_image_path=DeepForest_config["save_image_path"]+ dirname
+            if not os.path.exists(save_image_path):
+                os.mkdir(save_image_path)
+    
+            args= ["--save-path", save_image_path] + args
+    
+        #Use imagenet weights?
+        if DeepForest_config["num_GPUs"] > 1:
+            args = ["--multi-gpu-force", "--multi-gpu", str(DeepForest_config["num_GPUs"])] + args 
+            
+        output_model = main(args, data, DeepForest_config, experiment=experiment)
     
     #Allow to build from the main training process
     if mode.mode == "final":
         
         #Make a new dir and reformat args
         dirname = datetime.now().strftime("%Y%m%d_%H%M%S")
-        save_snapshot_path=DeepForest_config["save_snapshot_path"]+ dirname            
-        save_image_path=DeepForest_config["save_image_path"]+ dirname
+        save_snapshot_path=DeepForest_config["save_snapshot_path"] + dirname            
+        save_image_path=DeepForest_config["save_image_path"] + dirname
         os.mkdir(save_snapshot_path)        
+        
         if not os.path.exists(save_image_path):
             os.mkdir(save_image_path)        
         
         #Load retraining data
         data = preprocess.load_retraining_data(DeepForest_config)     
-        
+        for site in DeepForest_config["hand_annotation_site"]:
+            DeepForest_config[site]["h5"] = os.path.join(DeepForest_config[site]["h5"],"hand_annotations")
+            
         #pass an args object instead of using command line    
         args = [
             "--epochs", str(DeepForest_config["epochs"]),
@@ -517,8 +521,8 @@ if __name__ == '__main__':
         for site in ["TEAK","SJER"]:
             
             #Replace config file
-            DeepForest_config["hand_annotation_site"] = site
-            DeepForest_config["evaluation_site"] = site
+            DeepForest_config["hand_annotation_site"] = [site]
+            DeepForest_config["evaluation_site"] = [site]
             
             #Make a new dir and reformat args
             dirname = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -530,7 +534,9 @@ if __name__ == '__main__':
             
             #Load retraining data
             data = preprocess.load_retraining_data(DeepForest_config)     
-            
+            for site in DeepForest_config["hand_annotation_site"]:
+                DeepForest_config[site]["h5"] = os.path.join(DeepForest_config[site]["h5"],"hand_annotations")
+                
             #pass an args object instead of using command line    
             #make some hard coded assumptions
             DeepForest_config["evaluation_images"] = 0

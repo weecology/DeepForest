@@ -113,8 +113,9 @@ class H5Generator(Generator):
                 annotations = pd.read_csv(csv_name)
             except Exception as e:
                 print(e)
-                print("The csv named {} from tilename {} encountered an error".format(csv_name, tilename))
-                
+                print("The csv named {} from tilename {} encountered an error when counting annotations".format(csv_name, tilename))
+                continue
+            
             selected_annotations = pd.merge(self.windowdf, annotations)
             total_annotations += len(selected_annotations)        
         

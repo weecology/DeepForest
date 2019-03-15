@@ -43,6 +43,7 @@ def load_retraining_data(DeepForest_config):
     for site in DeepForest_config["hand_annotation_site"]:
         RGB_dir = DeepForest_config[site]["hand_annotations"]
         h5_dirname = os.path.join(DeepForest_config[site]["h5"], "hand_annotations")
+        
         #Check if hand annotations have been generated. If not create H5 files.
         path_to_handannotations = []
         if os.path.isdir(RGB_dir):

@@ -54,12 +54,12 @@ def run(tile_csv=None, tile_xml = None, mode="train", site=None):
         destination_dir = DeepForest_config[site]["h5"]
         
     if mode == "retrain":
-        
         #Base dir
         base_dir = DeepForest_config[site]["training"]["RGB"]
         
         #Load xml annotations
         data = preprocess.load_xml(path=tile_xml, dirname=base_dir, res=DeepForest_config["rgb_res"])
+            
         data["site"] = site
         tilename = os.path.splitext(os.path.basename(tile_xml))[0] 
 
