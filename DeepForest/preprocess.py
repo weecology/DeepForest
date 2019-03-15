@@ -385,14 +385,13 @@ def NEON_annotations(DeepForest_config):
     
     return [data, tile_data]
 
-def create_windows(data, DeepForest_config):
+def create_windows(data, DeepForest_config, base_dir):
     """
     Generate windows for a specific tile
     base_dir: Location of the RGB image data
     """
     #Compute list of sliding windows, assumed that all objects are the same extent and resolution     
     sample_tile = data.rgb_path[0]
-    base_dir = DeepForest_config[data.site[0]]["training"]["RGB"]
     image_path=os.path.join(base_dir, sample_tile)
     windows=compute_windows(image=image_path, pixels=DeepForest_config["patch_size"], overlap=DeepForest_config["patch_overlap"])
     

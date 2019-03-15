@@ -45,7 +45,8 @@ def run(tile_csv=None, tile_xml = None, mode="train", site=None):
         data["site"]=site
         
         #Create windows
-        windows = preprocess.create_windows(data, DeepForest_config)   
+        base_dir = DeepForest_config[site]["training"]["RGB"]  
+        windows = preprocess.create_windows(data, DeepForest_config, base_dir)   
         
         #Check lidar  for point density
         check_lidar = True
@@ -66,7 +67,7 @@ def run(tile_csv=None, tile_xml = None, mode="train", site=None):
         tilename = os.path.splitext(os.path.basename(tile_xml))[0] 
 
         #Create windows
-        windows = preprocess.create_windows(data, DeepForest_config) 
+        windows = preprocess.create_windows(data, DeepForest_config, base_dir) 
 
         #Don't check lidar for density, annotations are made directly on RGB
         check_lidar = False
