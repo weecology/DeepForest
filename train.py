@@ -441,7 +441,7 @@ if __name__ == '__main__':
     experiment.log_parameter("Training Mode", mode.mode)
     
     #Run training, and pass comet experiment   
-    if mode.mode in ["train","retrain"]:
+    if mode.mode in ["train","retrain","final"]:
         #pass an args object instead of using command line    
         args = [
             "--epochs", str(DeepForest_config["epochs"]),
