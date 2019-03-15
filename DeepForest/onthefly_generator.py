@@ -151,7 +151,7 @@ class OnTheFlyGenerator(Generator):
         ''''
         Create a sliding window object
         '''
-        #Find directory and load tile
+        #Find directory and load tile # TODO this fails for hand annotated data.
         site = self.annotation_list.site.unique()[0]
         base_dir = self.DeepForest_config[site][self.name]["RGB"]
         image = os.path.join(base_dir, self.annotation_list.rgb_path.unique()[0])
