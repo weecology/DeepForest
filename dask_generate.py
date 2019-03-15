@@ -25,6 +25,12 @@ def run_test(data_paths):
     site=DeepForest_config['training_csvs'][0]
     Generate.run(data_paths[site][0], DeepForest_config,site=site)
     
+def run_local(data_paths):
+    DeepForest_config = config.load_config()    
+    for site in DeepForest_config['training_csvs']:
+        for path in data_paths[site]:
+            Generate.run(path, DeepForest_config,site=site)
+    
 def start_tunnel():
     """
     Start a juypter session and ssh tunnel to view task progress
@@ -86,7 +92,8 @@ if __name__ == "__main__":
     total_files = [len(data_paths[x]) for x in data_paths]
     print("{s} csv files found for training".format(s=sum(total_files)))
     
-    run_test(data_paths)
+    run_local(data_paths)
+    #run_test(data_paths)
     
     #On Hypergator
     #run_HPC(data_paths)

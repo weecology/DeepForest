@@ -408,7 +408,7 @@ if __name__ == '__main__':
     
     #Set training or training
     mode_parser     = argparse.ArgumentParser(description='Retinanet training or finetuning?')
-    mode_parser.add_argument('--mode', help='train or retrain?')
+    mode_parser.add_argument('--mode', help='train, retrain, final or grid')
     mode_parser.add_argument('--dir', help='destination dir on HPC' )
     mode=mode_parser.parse_args()
     
@@ -488,10 +488,11 @@ if __name__ == '__main__':
         
         #Make a new dir and reformat args
         dirname = datetime.now().strftime("%Y%m%d_%H%M%S")
+        save_snapshot_path=DeepForest_config["save_snapshot_path"]+ dirname            
         save_image_path=DeepForest_config["save_image_path"]+ dirname
-        save_snapshot_path=DeepForest_config["save_snapshot_path"]+ dirname        
-        os.mkdir(save_image_path)
-        os.mkdir(snappath)          
+        os.mkdir(save_snapshot_path)        
+        if not os.path.exists(save_image_path):
+            os.mkdir(save_image_path)        
         
         #Load retraining data
         data = preprocess.load_retraining_data(DeepForest_config)     
@@ -508,4 +509,38 @@ if __name__ == '__main__':
         ]
     
         #Run training, and pass comet experiment class
-        main(args, data, DeepForest_config, experiment=experiment)        
+        main(args, data, DeepForest_config, experiment=experiment)  
+        
+    if mode.mode == "grid":
+        
+        #For each site, match the hand annotations with the pretraining model
+        for site in ["TEAK","SJER"]:
+            
+            #Replace config file
+            DeepForest_config["hand_annotation_site"] = site
+            DeepForest_config["evaluation_site"] = site
+            
+            #Make a new dir and reformat args
+            dirname = datetime.now().strftime("%Y%m%d_%H%M%S")
+            save_snapshot_path=DeepForest_config["save_snapshot_path"]+ dirname            
+            save_image_path=DeepForest_config["save_image_path"]+ dirname
+            os.mkdir(save_snapshot_path)        
+            if not os.path.exists(save_image_path):
+                os.mkdir(save_image_path)        
+            
+            #Load retraining data
+            data = preprocess.load_retraining_data(DeepForest_config)     
+            
+            #pass an args object instead of using command line    
+            args = [
+                "--epochs", str(DeepForest_config["epochs"]),
+                "--batch-size", str(DeepForest_config['batch_size']),
+                "--backbone", str(DeepForest_config["backbone"]),
+                "--score-threshold", str(DeepForest_config["score_threshold"]),
+                "--save-path", save_image_path,
+                "--snapshot-path", save_snapshot_path,
+                "--weights", str(DeepForest_config["weights"])
+            ]
+        
+            #Run training, and pass comet experiment class
+            main(args, data, DeepForest_config, experiment=experiment)  
