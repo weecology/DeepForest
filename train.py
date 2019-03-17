@@ -517,12 +517,19 @@ if __name__ == '__main__':
         
     if mode.mode == "grid":
         
+        #TODO  need new expewriment
         #For each site, match the hand annotations with the pretraining model
         for site in ["TEAK","SJER"]:
             
-            #Replace config file
+            #Replace config file and experiment
             DeepForest_config["hand_annotation_site"] = [site]
             DeepForest_config["evaluation_site"] = [site]
+            experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2", project_name='deeplidar', log_code=False)
+            
+            #Log experiments
+            experiment.log_parameters(DeepForest_config)    
+            experiment.log_parameter("Start Time", dirname)    
+            experiment.log_parameter("Training Mode", mode.mode)
             
             #Make a new dir and reformat args
             dirname = datetime.now().strftime("%Y%m%d_%H%M%S")
