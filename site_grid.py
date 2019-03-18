@@ -39,10 +39,10 @@ for pretraining_site in pretraining_models:
         
         #Log experiments
         experiment.log_parameters(DeepForest_config)    
+        dirname = datetime.now().strftime("%Y%m%d_%H%M%S")        
         experiment.log_parameter("Start Time", dirname)    
         
         #Make a new dir and reformat args
-        dirname = datetime.now().strftime("%Y%m%d_%H%M%S")
         save_snapshot_path = DeepForest_config["save_snapshot_path"]+ dirname            
         save_image_path = DeepForest_config["save_image_path"]+ dirname
         os.mkdir(save_snapshot_path)        
