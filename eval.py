@@ -21,7 +21,7 @@ from DeepForest.onthefly_generator import OnTheFlyGenerator
 from DeepForest.h5_generator import H5Generator
 from DeepForest.evaluation import neonRecall
 from DeepForest.evalmAP import evaluate
-from DeepForest.utils.generators import create_NEON_generator
+from DeepForest.utils.generators import create_NEON_generator, load_training_data, load_retraining_data
 
 def get_session():
     """ Construct a modified tf session.
@@ -200,10 +200,10 @@ if __name__ == '__main__':
     
     DeepForest_config["mode"] = mode.mode
     if mode.mode == "train":
-        data = preprocess.load_training_data(DeepForest_config)
+        data = load_training_data(DeepForest_config)
 
     if mode.mode == "retrain":
-        data = preprocess.load_retraining_data(DeepForest_config)
+        data = load_retraining_data(DeepForest_config)
     
     #pass an args object instead of using command line        
     args = [

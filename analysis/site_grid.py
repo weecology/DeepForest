@@ -20,7 +20,7 @@ from eval import parse_args, get_session
 DeepForest_config = load_config("..")
 
 # parse retinanet defaults arguments
-retinanet_args = parse_args(args)
+retinanet_args = parse_args()
 
 #TODO insert paths here
 pretraining_models = {"SJER":"/Users/ben/Documents/DeepLidar/snapshots/SJER_20190301_142501_handannotation.h5",
@@ -76,9 +76,9 @@ for pretraining_site in pretraining_models:
         stem_recall, mAP = eval_main(DeepForest_config, retinanet_args)
         results.append({"Evaluation Site" : site, "Pretraining Site": pretraining_site, "Stem Recall": stem_recall, "mAP": mAP})
         
-        results = pd.DataFrame(results)
-        
-        #model name
-        model_name = os.path.splitext(os.path.basename(mode.saved_model))[0]
-        results.to_csv("site_grid" + ".csv")        
+    results = pd.DataFrame(results)
+    
+    #model name
+    model_name = os.path.splitext(os.path.basename(mode.saved_model))[0]
+    results.to_csv("site_grid" + ".csv")        
         

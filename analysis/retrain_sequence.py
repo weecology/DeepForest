@@ -8,6 +8,7 @@ sys.path.append("..")
 import os
 from datetime import datetime
 import glob
+import pandas as pd
 
 #insert path 
 from DeepForest.config import load_config
@@ -20,7 +21,7 @@ from eval import parse_args
 DeepForest_config = load_config("..")
 
 # parse retinnet arguments
-retinanet_args = parse_args()
+retinanet_args = parse_args([])
 
 #find models
 models = glob.glob("/orange/ewhite/b.weinstein/retinanet/20190315_150652/*.h5")
@@ -69,5 +70,6 @@ for model in models:
     model_name = os.path.splitext(os.path.basename(model))[0]    
     results.append({"Model": model_name, "Stem Recall": stem_recall, "mAP": mAP})
 
+results = pd.DataFrame(results)
 results.to_csv("pretraining_size" + ".csv")    
     
