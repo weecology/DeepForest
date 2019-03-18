@@ -4,7 +4,6 @@ Create a "dilution curve". For example, retrain on each epoch of pretraining dat
 """
 from comet_ml import Experiment
 import sys
-sys.path.append("..")
 import os
 from datetime import datetime
 import glob
@@ -18,7 +17,7 @@ from eval import main as eval_main
 from eval import parse_args
 
 #load config
-DeepForest_config = load_config("..")
+DeepForest_config = load_config()
 
 # parse retinnet arguments
 retinanet_args = parse_args([])
@@ -39,8 +38,8 @@ for model in models:
     experiment.log_parameter("Start Time", dirname)    
     
     #Make a new dir and reformat args
-    save_snapshot_path = os.path.join("..", DeepForest_config["save_snapshot_path"], dirname)            
-    save_image_path = os.path.join("..", DeepForest_config["save_image_path"], dirname)           
+    save_snapshot_path = os.path.join(DeepForest_config["save_snapshot_path"], dirname)            
+    save_image_path = os.path.join(DeepForest_config["save_image_path"], dirname)           
     os.mkdir(save_snapshot_path)       
     
     if not os.path.exists(save_image_path):
@@ -71,5 +70,5 @@ for model in models:
     results.append({"Model": model_name, "Stem Recall": stem_recall, "mAP": mAP})
 
 results = pd.DataFrame(results)
-results.to_csv("pretraining_size" + ".csv")    
+results.to_csv("analysis/pretraining_size" + ".csv")    
     

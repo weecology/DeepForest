@@ -80,5 +80,5 @@ for pretraining_site in pretraining_models:
     
     #model name
     model_name = os.path.splitext(os.path.basename(mode.saved_model))[0]
-    results.to_csv("site_grid" + ".csv")        
+    results.to_csv("analysis/site_grid" + ".csv")        
         
