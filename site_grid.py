@@ -19,7 +19,7 @@ from eval import parse_args, get_session
 DeepForest_config = load_config()
 
 # parse retinanet defaults arguments
-retinanet_args = parse_args()
+retinanet_args = parse_args([])
 
 #TODO insert paths here
 pretraining_models = {"SJER":"/orange/ewhite/b.weinstein/retinanet/20190318_144257/resnet50_02.h5",
