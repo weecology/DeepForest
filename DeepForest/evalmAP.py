@@ -101,10 +101,11 @@ def _get_detections(generator, model, score_threshold=0.05, max_detections=100, 
         
         #drape boxes
         #get lidar cloud if a new tile, or if not the same tile as previous image.
-        if i == 0:
-            generator.load_lidar_tile()
-        elif not generator.image_data[i]["tile"] == generator.image_data[i-1]["tile"]:
-            generator.load_lidar_tile()
+        if self.with_lidar():
+            if i == 0:
+                generator.load_lidar_tile()
+            elif not generator.image_data[i]["tile"] == generator.image_data[i-1]["tile"]:
+                generator.load_lidar_tile()
         
         #The tile could be the full tile, so let's check just the 400 pixel crop we are interested    
         #Not the best structure, but the on-the-fly generator always has 0 bounds
