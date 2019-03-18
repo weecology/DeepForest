@@ -26,7 +26,8 @@ def load_retraining_data(DeepForest_config):
             tilename = os.path.splitext(os.path.basename(x))[0]                
             tilename = os.path.join(h5_dirname, tilename) + ".csv"
             path_to_handannotations.append(os.path.join(RGB_dir, tilename))            
-                
+         
+        print(path_to_handannotations)        
         #for each annotation, check if exists in h5 dir
         for index, path in enumerate(path_to_handannotations):
             if not os.path.exists(path):
