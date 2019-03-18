@@ -53,7 +53,10 @@ class OnTheFlyGenerator(Generator):
         self.group_method=group_method
         self.shuffle_tile_epoch=shuffle_tile_epoch
         self.annotation_list = data  
-                
+        
+        #Switch for prediction with lidar
+        self.with_lidar = False
+        
         #Tensorflow prediction session
         self.session_exists = False
             
@@ -183,12 +186,14 @@ class OnTheFlyGenerator(Generator):
         return self.clipped_las
     
     def fetch_lidar_filename(self):           
-
-        #Set lidar path
-        lidar_path = self.DeepForest_config[self.row["site"]][self.name]["LIDAR"]
-        lidar_filepath=Lidar.fetch_lidar_filename(self.row, lidar_path)
+        lidar_path = self.DeepForest_config[self.row["site"]][self.name]["LIDAR"]        
+        lidar_filepath = Lidar.fetch_lidar_filename(self.row, lidar_path)
         
-        return lidar_filepath
+        if lidar_filepath:
+            self.with_lidar = True
+            return lidar_filepath
+        else:
+            print("Lidar file {} cannot be found in {}".format(self.row["tile"], lidar_path))
 
     def load_lidar_tile(self, normalize = True):
         '''Load a point cloud into memory from file
