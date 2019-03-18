@@ -24,4 +24,4 @@ echo $PYTHONPATH
 cd /home/b.weinstein/DeepLidar
 which python
 
-python train.py --mode grid --dir $stamp
+python analysis/site_grid.py --dir $stamp

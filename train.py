@@ -40,7 +40,7 @@ from DeepForest.h5_generator import H5Generator
 from DeepForest.onthefly_generator import OnTheFlyGenerator
 from DeepForest.config import load_config
 from DeepForest import preprocess
-from DeepForest.utils.generators import create_NEON_generator
+from DeepForest.utils.generators import create_NEON_generator, load_training_data, load_retraining_data
 
 #Custom Callbacks
 from DeepForest.callbacks import recallCallback, NEONmAP, Evaluate
@@ -408,7 +408,7 @@ if __name__ == '__main__':
     
     #Set training or training
     mode_parser     = argparse.ArgumentParser(description='Retinanet training or finetuning?')
-    mode_parser.add_argument('--mode', help='train, retrain, final or grid')
+    mode_parser.add_argument('--mode', help='train, retrain or final')
     mode_parser.add_argument('--dir', help='destination dir on HPC' )
     mode=mode_parser.parse_args()
     
@@ -428,10 +428,10 @@ if __name__ == '__main__':
     DeepForest_config["mode"] = mode.mode
     
     if mode.mode in ["train","final"]:
-        data = preprocess.load_training_data(DeepForest_config)
+        data = load_training_data(DeepForest_config)
 
     if mode.mode == "retrain":
-        data = preprocess.load_retraining_data(DeepForest_config)   
+        data = load_retraining_data(DeepForest_config)   
         for site in DeepForest_config["hand_annotation_site"]:
             DeepForest_config[site]["h5"] = os.path.join(DeepForest_config[site]["h5"],"hand_annotations")
         
@@ -497,7 +497,7 @@ if __name__ == '__main__':
             os.mkdir(save_image_path)        
         
         #Load retraining data
-        data = preprocess.load_retraining_data(DeepForest_config)     
+        data = load_retraining_data(DeepForest_config)     
         for site in DeepForest_config["hand_annotation_site"]:
             DeepForest_config[site]["h5"] = os.path.join(DeepForest_config[site]["h5"],"hand_annotations")
             
@@ -514,50 +514,3 @@ if __name__ == '__main__':
     
         #Run training, and pass comet experiment class
         main(args, data, DeepForest_config, experiment=experiment)  
-        
-    if mode.mode == "grid":
-        
-        #TODO  need new expewriment
-        #For each site, match the hand annotations with the pretraining model
-        for site in ["TEAK","SJER"]:
-            
-            #Replace config file and experiment
-            DeepForest_config["hand_annotation_site"] = [site]
-            DeepForest_config["evaluation_site"] = [site]
-            experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2", project_name='deeplidar', log_code=False)
-            
-            #Log experiments
-            experiment.log_parameters(DeepForest_config)    
-            experiment.log_parameter("Start Time", dirname)    
-            experiment.log_parameter("Training Mode", mode.mode)
-            
-            #Make a new dir and reformat args
-            dirname = datetime.now().strftime("%Y%m%d_%H%M%S")
-            save_snapshot_path=DeepForest_config["save_snapshot_path"]+ dirname            
-            save_image_path=DeepForest_config["save_image_path"]+ dirname
-            os.mkdir(save_snapshot_path)        
-            if not os.path.exists(save_image_path):
-                os.mkdir(save_image_path)        
-            
-            #Load retraining data
-            data = preprocess.load_retraining_data(DeepForest_config)     
-            for site in DeepForest_config["hand_annotation_site"]:
-                DeepForest_config[site]["h5"] = os.path.join(DeepForest_config[site]["h5"],"hand_annotations")
-                
-            #pass an args object instead of using command line    
-            #make some hard coded assumptions
-            DeepForest_config["evaluation_images"] = 0
-            DeepForest_config["training_images"] = "All"
-            
-            args = [
-                "--epochs", str(20),
-                "--batch-size", str(DeepForest_config['batch_size']),
-                "--backbone", str(DeepForest_config["backbone"]),
-                "--score-threshold", str(DeepForest_config["score_threshold"]),
-                "--save-path", save_image_path,
-                "--snapshot-path", save_snapshot_path,
-                "--weights", str(DeepForest_config["weights"])
-            ]
-        
-            #Run training, and pass comet experiment class
-            main(args, data, DeepForest_config, experiment=experiment)  
