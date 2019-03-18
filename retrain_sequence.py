@@ -19,9 +19,6 @@ from eval import parse_args
 #load config
 DeepForest_config = load_config()
 
-# parse retinnet arguments
-retinanet_args = parse_args([])
-
 #find models
 models = glob.glob("/orange/ewhite/b.weinstein/retinanet/20190315_150652/*.h5")
 #models = glob.glob("/Users/Ben/Documents/DeepLidar/snapshots/*.h5")
@@ -65,11 +62,23 @@ for model in models:
     #Run training, and pass comet experiment class    
     model = training_main(args, data, DeepForest_config, experiment=experiment)  
     
-    retinanet_args.model = model
    
     #Format output
     experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2", project_name='deeplidar', log_code=False)      
-    experiment.log_parameter("mode","retrain_sequence")    
+    experiment.log_parameter("mode","retrain_sequence")   
+    
+    #TODO error here, try below from eval.py
+    
+    #pass an args object instead of using command line        
+    retinanet_args = [
+        "--batch-size", str(DeepForest_config['batch_size']),
+        '--score-threshold', str(DeepForest_config['score_threshold']),
+        '--suppression-threshold', '0.1', 
+        '--save-path', 'snapshots/images/', 
+        '--model', model, 
+        '--convert-model'
+    ]
+        
     stem_recall, mAP = eval_main(DeepForest_config, retinanet_args, experiment = experiment)
     
     model_name = os.path.splitext(os.path.basename(model))[0]    
