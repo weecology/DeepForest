@@ -23,8 +23,8 @@ DeepForest_config = load_config()
 retinanet_args = parse_args([])
 
 #find models
-#models = glob.glob("/orange/ewhite/b.weinstein/retinanet/20190315_150652/*.h5")
-models = glob.glob("/Users/Ben/Documents/DeepLidar/snapshots/*.h5")
+models = glob.glob("/orange/ewhite/b.weinstein/retinanet/20190315_150652/*.h5")
+#models = glob.glob("/Users/Ben/Documents/DeepLidar/snapshots/*.h5")
     
 #For each model, match the hand annotations with the pretraining model
 results = []
