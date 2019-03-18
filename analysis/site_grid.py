@@ -19,9 +19,7 @@ from eval import parse_args, get_session
 #load config
 DeepForest_config = load_config("..")
 
-# parse arguments
-if args is None:
-    args = sys.argv[1:]
+# parse retinanet defaults arguments
 retinanet_args = parse_args(args)
 
 #TODO insert paths here
@@ -46,8 +44,8 @@ for pretraining_site in pretraining_models:
         
         #Make a new dir and reformat args
         dirname = datetime.now().strftime("%Y%m%d_%H%M%S")
-        save_snapshot_path=DeepForest_config["save_snapshot_path"]+ dirname            
-        save_image_path =DeepForest_config["save_image_path"]+ dirname
+        save_snapshot_path = DeepForest_config["save_snapshot_path"]+ dirname            
+        save_image_path = DeepForest_config["save_image_path"]+ dirname
         os.mkdir(save_snapshot_path)        
         
         if not os.path.exists(save_image_path):
