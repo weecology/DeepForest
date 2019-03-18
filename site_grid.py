@@ -55,7 +55,7 @@ for pretraining_site in pretraining_models:
             DeepForest_config[site]["h5"] = os.path.join(DeepForest_config[site]["h5"],"hand_annotations")
         
         args = [
-            "--epochs", DeepForest_config['epochs'],
+            "--epochs", str(DeepForest_config['epochs']),
             "--batch-size", str(DeepForest_config['batch_size']),
             "--backbone", str(DeepForest_config["backbone"]),
             "--score-threshold", str(DeepForest_config["score_threshold"]),
@@ -72,7 +72,7 @@ for pretraining_site in pretraining_models:
         
         #Run eval
         experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2", project_name='deeplidar', log_code=False)            
-        stem_recall, mAP = eval_main(DeepForest_config, retinanet_argsexperiment)
+        stem_recall, mAP = eval_main(DeepForest_config, retinanet_args,experiment)
         results.append({"Evaluation Site" : site, "Pretraining Site": pretraining_site, "Stem Recall": stem_recall, "mAP": mAP})
         
     results = pd.DataFrame(results)
