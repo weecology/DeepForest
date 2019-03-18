@@ -19,9 +19,7 @@ from eval import parse_args
 #load config
 DeepForest_config = load_config("..")
 
-# parse arguments
-if args is None:
-    args = sys.argv[1:]
+# parse retinnet arguments
 retinanet_args = parse_args(args)
 
 #find models
