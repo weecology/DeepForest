@@ -101,7 +101,7 @@ def _get_detections(generator, model, score_threshold=0.05, max_detections=100, 
         
         #drape boxes
         #get lidar cloud if a new tile, or if not the same tile as previous image.
-        if generator.with_lidar():
+        if generator.with_lidar:
             if i == 0:
                 generator.load_lidar_tile()
             elif not generator.image_data[i]["tile"] == generator.image_data[i-1]["tile"]:
