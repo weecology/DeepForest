@@ -46,6 +46,9 @@ class H5Generator(Generator):
         self.windowdf = data
         self.DeepForest_config = DeepForest_config
         
+        #A switch to allow RGB only
+        self.with_lidar = False
+        
         #Holder for the group order, after shuffling we can still recover loss -> window
         self.group_order = {}
         self.group_method=group_method
@@ -109,6 +112,7 @@ class H5Generator(Generator):
             h5_dir = self.DeepForest_config[row["site"]]["h5"]        
             tilename = row["tile"]
             csv_name = os.path.join(h5_dir, os.path.splitext(tilename)[0]+'.csv')
+            
             try:
                 annotations = pd.read_csv(csv_name)
             except Exception as e:
@@ -149,10 +153,10 @@ class H5Generator(Generator):
         lidar_filepath = Lidar.fetch_lidar_filename(self.row, lidar_path)
         
         if lidar_filepath:
+            self.with_lidar = True
             return lidar_filepath
         else:
             print("Lidar file {} cannot be found in {}".format(self.row["tile"], lidar_path))
-            raise IOError 
         
     def load_lidar_tile(self):
         '''Load a point cloud into memory from file
@@ -176,7 +180,7 @@ class H5Generator(Generator):
         ##Check if tile the is same as previous draw from generator, this will save time.
         if not self.row["tile"] == self.previous_image_path:
             
-            print("Loading new tile: %s" %(self.row["tile"]))
+            print("Loading new tile: %s" % (self.row["tile"]))
             
             #Set directory based on site
             h5_dir = self.DeepForest_config[self.row["site"]]["h5"]
