@@ -20,7 +20,7 @@ from eval import parse_args
 DeepForest_config = load_config("..")
 
 # parse retinnet arguments
-retinanet_args = parse_args(args)
+retinanet_args = parse_args()
 
 #find models
 models = glob.glob("/orange/ewhite/b.weinstein/retinanet/20190315_150652/*.h5")
