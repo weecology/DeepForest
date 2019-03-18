@@ -25,11 +25,11 @@ preprocess:
 
 #Select sites
 hand_annotation_site:
-  - SJER
+  - TEAK
 pretraining_site:
-  - SJER
+  - TEAK
 evaluation_site:
-  - SJER
+  - TEAK
 
 #Training
 training_images: All
