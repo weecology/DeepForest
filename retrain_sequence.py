@@ -32,6 +32,7 @@ for model in models:
     
     #Replace config file and experiment
     experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2", project_name='deeplidar', log_code=False)
+    experiment.log_parameter("mode","retrain_sequence")
     
     #Log experiments
     dirname = datetime.now().strftime("%Y%m%d_%H%M%S")  
@@ -62,13 +63,13 @@ for model in models:
     ]
     
     #Run training, and pass comet experiment class    
-    experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2", project_name='deeplidar', log_code=False)    
     model = training_main(args, data, DeepForest_config, experiment=experiment)  
     
     retinanet_args.model = model
    
     #Format output
-    experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2", project_name='deeplidar', log_code=False)        
+    experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2", project_name='deeplidar', log_code=False)      
+    experiment.log_parameter("mode","retrain_sequence")    
     stem_recall, mAP = eval_main(DeepForest_config, retinanet_args, experiment = experiment)
     
     model_name = os.path.splitext(os.path.basename(model))[0]    

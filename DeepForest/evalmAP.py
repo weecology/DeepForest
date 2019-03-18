@@ -116,12 +116,10 @@ def _get_detections(generator, model, score_threshold=0.05, max_detections=100, 
         
         if generator.with_lidar:
             density = Lidar.check_density(generator.lidar_tile, bounds=bounds)
-            
-            print("Point density is {:.2f}".format(density))
-                
+                            
             if density > generator.DeepForest_config["min_density"]:
                 #find window utm coordinates
-                print("Bounds for image {}, window {}, are {}".format(generator.row["tile"], generator.row["window"], bounds))
+                #print("Bounds for image {}, window {}, are {}".format(generator.row["tile"], generator.row["window"], bounds))
                 pc = postprocessing.drape_boxes(boxes=image_boxes, pc = generator.lidar_tile, bounds=bounds)     
                 
                 #Get new bounding boxes
@@ -131,7 +129,8 @@ def _get_detections(generator, model, score_threshold=0.05, max_detections=100, 
                 image_detections = np.concatenate([image_boxes, np.expand_dims(image_scores, axis=1), np.expand_dims(image_labels, axis=1)], axis=1)
                 
             else:
-                print("Point density of {:.2f} is too low, skipping image {}".format(density, generator.row["tile"]))        
+                pass
+                #print("Point density of {:.2f} is too low, skipping image {}".format(density, generator.row["tile"]))        
 
         if save_path is not None:
             draw_annotations(raw_image, generator.load_annotations(i), label_to_name=generator.label_to_name)
