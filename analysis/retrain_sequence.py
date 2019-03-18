@@ -12,13 +12,20 @@ import glob
 #insert path 
 from DeepForest.config import load_config
 from DeepForest.utils.generators import load_retraining_data
-from train import main
+from train import main as training_main
+from eval import main as eval_main
+from eval import parse_args
 
 #load config
 DeepForest_config = load_config("..")
 
+# parse arguments
+if args is None:
+    args = sys.argv[1:]
+retinanet_args = parse_args(args)
+
 #find models
-models = glob.glob("/Users/Ben/Documents/DeepLidar/snapshots/*.h5")
+models = glob.glob("/orange/ewhite/b.weinstein/retinanet/20190315_150652/*.h5")
     
 #For each model, match the hand annotations with the pretraining model
 results = []
@@ -53,13 +60,16 @@ for model in models:
         "--weights", str(model)
     ]
     
-    #Run training, and pass comet experiment class
-    print(args)
+    #Run training, and pass comet experiment class    
+    model = training_main(args, data, DeepForest_config, experiment=experiment)  
     
-    #result = main(args, data, DeepForest_config, experiment=experiment)  
-    #recall, precision = main(DeepForest_config, args)
-    #results.append({"Model": model, "Recall": recall, "Precision": precision})
+    retinanet_args.model = model
+   
+    #Format output
+    stem_recall, mAP = eval_main(DeepForest_config, retinanet_args)
+    
+    model_name = os.path.splitext(os.path.basename(model))[0]    
+    results.append({"Model": model_name, "Stem Recall": stem_recall, "mAP": mAP})
 
-#model_name = os.path.splitext(os.path.basename(mode.saved_model))[0]
-#results.to_csv("pretraining_size" + ".csv")    
+results.to_csv("pretraining_size" + ".csv")    
     

@@ -14,6 +14,7 @@ from DeepForest.config import load_config
 from DeepForest.utils.generators import load_retraining_data
 from train import main as training_main
 from eval import main as eval_main
+from eval import parse_args, get_session
 
 #load config
 DeepForest_config = load_config("..")
@@ -21,12 +22,13 @@ DeepForest_config = load_config("..")
 # parse arguments
 if args is None:
     args = sys.argv[1:]
-args = parse_args(args)
+retinanet_args = parse_args(args)
 
 #TODO insert paths here
 pretraining_models = {"SJER":"/Users/ben/Documents/DeepLidar/snapshots/SJER_20190301_142501_handannotation.h5",
                       "TEAK":"/Users/ben/Documents/DeepLidar/snapshots/SJER_20190301_142501_handannotation.h5"}
 sites = ["TEAK","SJER"]
+
 #For each site, match the hand annotations with the pretraining model
 for pretraining_site in pretraining_models:
     
@@ -41,7 +43,6 @@ for pretraining_site in pretraining_models:
         #Log experiments
         experiment.log_parameters(DeepForest_config)    
         experiment.log_parameter("Start Time", dirname)    
-        experiment.log_parameter("Training Mode", mode.mode)
         
         #Make a new dir and reformat args
         dirname = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -71,8 +72,10 @@ for pretraining_site in pretraining_models:
         model = training_main(args, data, DeepForest_config, experiment=experiment)  
         
         #Run evaluation
+        retinanet_args.model = model
+        
         #Run eval
-        stem_recall, mAP = eval_main(DeepForest_config, args)
+        stem_recall, mAP = eval_main(DeepForest_config, retinanet_args)
         results.append({"Evaluation Site" : site, "Pretraining Site": pretraining_site, "Stem Recall": stem_recall, "mAP": mAP})
         
         results = pd.DataFrame(results)
