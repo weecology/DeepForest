@@ -62,12 +62,13 @@ for model in models:
     ]
     
     #Run training, and pass comet experiment class    
+    experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2", project_name='deeplidar', log_code=False)    
     model = training_main(args, data, DeepForest_config, experiment=experiment)  
     
     retinanet_args.model = model
    
     #Format output
-    stem_recall, mAP = eval_main(DeepForest_config, retinanet_args)
+    stem_recall, mAP = eval_main(DeepForest_config, retinanet_args, experiment = None)
     
     model_name = os.path.splitext(os.path.basename(model))[0]    
     results.append({"Model": model_name, "Stem Recall": stem_recall, "mAP": mAP})
