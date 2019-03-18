@@ -31,7 +31,6 @@ for pretraining_site in pretraining_models:
     
     pretrain_model_path = pretraining_models[pretraining_site]
     for site in sites:
-        
         #Replace config file and experiment
         DeepForest_config["hand_annotation_site"] = [site]
         DeepForest_config["evaluation_site"] = [site]
