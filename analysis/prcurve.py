@@ -6,7 +6,7 @@ import os
 import sys
 from datetime import datetime
 sys.path.insert(0, os.path.abspath('..'))
-
+sys.path.append(".")
 import warnings
 warnings.simplefilter("ignore")
 
@@ -22,33 +22,7 @@ from DeepForest.evaluation import neonRecall
 from DeepForest.evalmAP import evaluate_pr
 from DeepForest import preprocess
 from DeepForest.utils.generators import create_NEON_generator
-
-def get_session():
-    """ Construct a modified tf session.
-    """
-    config = tf.ConfigProto()
-    config.gpu_options.allow_growth = True
-    return tf.Session(config=config)
-
-def parse_args(args):
-    """ Parse the arguments.
-    """
-    
-    parser     = argparse.ArgumentParser(description='Evaluation script for a RetinaNet network.')
-    parser.add_argument('--batch-size',      help='Size of the batches.', default=1, type=int)
-    parser.add_argument('--model',             help='Path to RetinaNet model.')
-    parser.add_argument('--convert-model',   help='Convert the model to an inference model (ie. the input is a training model).', action='store_true')
-    parser.add_argument('--backbone',        help='The backbone of the model.', default='resnet50')
-    parser.add_argument('--gpu',             help='Id of the GPU to use (as reported by nvidia-smi).')
-    parser.add_argument('--score-threshold', help='Threshold on score to filter detections with (defaults to 0.05).', default=0.05, type=float)
-    parser.add_argument('--iou-threshold',   help='IoU Threshold to count for a positive detection (defaults to 0.5).', default=0.5, type=float)
-    parser.add_argument('--max-detections',  help='Max Detections per image (defaults to 100).', default=100, type=int)
-    parser.add_argument('--suppression-threshold',  help='Permitted overlap among predictions', default=0.2, type=float)
-    parser.add_argument('--save-path',       help='Path for saving images with detections (doesn\'t work for COCO).')
-    parser.add_argument('--image-min-side',  help='Rescale the image so the smallest side is min_side.', type=int, default=400)
-    parser.add_argument('--image-max-side',  help='Rescale the image if the largest side is larger than max_side.', type=int, default=1333)
-
-    return parser.parse_args(args)
+from eval import parse_args, get_session
 
 def main(DeepForest_config, args=None):
     # parse arguments
@@ -66,7 +40,7 @@ def main(DeepForest_config, args=None):
 
     #Add seperate dir
     #save time for logging
-    dirname=datetime.now().strftime("%Y%m%d_%H%M%S")
+    dirname = datetime.now().strftime("%Y%m%d_%H%M%S")
     
     # make save path if it doesn't exist
     if args.save_path is not None and not os.path.exists(args.save_path + dirname):
