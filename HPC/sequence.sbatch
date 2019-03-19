@@ -23,3 +23,5 @@ export PYTHONPATH=${PYTHONPATH}:/home/b.weinstein/miniconda/envs/DeepLidar/lib/p
 cd /home/b.weinstein/DeepLidar
 
 python retrain_sequence.py
+
+cat 
