@@ -31,6 +31,7 @@ for pretraining_site in pretraining_models:
         DeepForest_config["hand_annotation_site"] = [site]
         DeepForest_config["evaluation_site"] = [site]
         experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2", project_name='deeplidar', log_code=False)
+        experiment.log_parameter("mode","training_grid")   
         
         #Log experiments
         experiment.log_parameters(DeepForest_config)    
@@ -65,7 +66,7 @@ for pretraining_site in pretraining_models:
         
         #Run eval
         experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2", project_name='deeplidar', log_code=False)
-        experiment.log_parameter("mode","grid")
+        experiment.log_parameter("mode","evaluation_grid")
         
         args = [
             "--batch-size", str(DeepForest_config['batch_size']),

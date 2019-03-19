@@ -62,13 +62,11 @@ for model in models:
     #Run training, and pass comet experiment class    
     model = training_main(args, data, DeepForest_config, experiment=experiment)  
     
-   
     #Format output
     experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2", project_name='deeplidar', log_code=False)      
-    experiment.log_parameter("mode","retrain_sequence")   
+    experiment.log_parameter("mode","retrain_sequence_evaluation")   
     
     #TODO error here, try below from eval.py
-    
     #pass an args object instead of using command line        
     retinanet_args = [
         "--batch-size", str(DeepForest_config['batch_size']),
@@ -85,5 +83,6 @@ for model in models:
     results.append({"Model": model_name, "Stem Recall": stem_recall, "mAP": mAP})
 
 results = pd.DataFrame(results)
+print(results)
 results.to_csv("analysis/pretraining_size" + ".csv")    
     
