@@ -16,10 +16,11 @@ from train import main as training_main
 from eval import main as eval_main
 
 pretraining_models = {"SJER":"/orange/ewhite/b.weinstein/retinanet/20190318_144257/resnet50_02.h5",
-                   "TEAK":"/orange/ewhite/b.weinstein/retinanet/20190315_150652/resnet50_02.h5"}
+                   "TEAK":"/orange/ewhite/b.weinstein/retinanet/20190315_150652/resnet50_02.h5",
+                   "All": "/orange/ewhite/b.weinstein/retinanet/20190314_150323/resnet50_03.h5"}
 #pretraining_models = {"SJER" : "/Users/ben/Documents/DeepLidar/snapshots/TEAK_20190125_125012_fullmodel.h5"}
 
-sites = ["TEAK","SJER"]
+sites = [["TEAK"],["SJER"], ["SJER","TEAK"]]
 
 #For each site, match the hand annotations with the pretraining model
 results = []
@@ -32,8 +33,8 @@ for pretraining_site in pretraining_models:
         DeepForest_config = load_config()        
         
         ##Replace config file and experiment
-        DeepForest_config["hand_annotation_site"] = [site]
-        DeepForest_config["evaluation_site"] = [site]
+        DeepForest_config["hand_annotation_site"] = site
+        DeepForest_config["evaluation_site"] = site
         
         experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2", project_name='deeplidar', log_code=False)
         experiment.log_parameter("mode","training_grid")   
@@ -52,8 +53,9 @@ for pretraining_site in pretraining_models:
             os.mkdir(save_image_path)        
         
         #Load retraining data
-        data = load_retraining_data(DeepForest_config)     
-        DeepForest_config[site]["h5"] = os.path.join(DeepForest_config[site]["h5"],"hand_annotations")
+        data = load_retraining_data(DeepForest_config)
+        for x in site:
+            DeepForest_config[x]["h5"] = os.path.join(DeepForest_config[x]["h5"],"hand_annotations")
         
         args = [
             "--epochs", str(DeepForest_config['epochs']),
