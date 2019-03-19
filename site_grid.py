@@ -13,13 +13,9 @@ from DeepForest.config import load_config
 from DeepForest.utils.generators import load_retraining_data
 from train import main as training_main
 from eval import main as eval_main
-from eval import parse_args, get_session
 
 #load config
 DeepForest_config = load_config()
-
-# parse retinanet defaults arguments
-retinanet_args = parse_args([])
 
 #TODO insert paths here
 pretraining_models = {"SJER":"/orange/ewhite/b.weinstein/retinanet/20190318_144257/resnet50_02.h5",
@@ -67,13 +63,20 @@ for pretraining_site in pretraining_models:
         #Run training, and pass comet experiment class
         model = training_main(args, data, DeepForest_config, experiment=experiment)  
         
-        #Run evaluation
-        retinanet_args.model = model
-        
         #Run eval
         experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2", project_name='deeplidar', log_code=False)
         experiment.log_parameter("mode","grid")
-        stem_recall, mAP = eval_main(data, DeepForest_config, experiment, retinanet_args)
+        
+        args = [
+            "--batch-size", str(DeepForest_config['batch_size']),
+            '--score-threshold', str(DeepForest_config['score_threshold']),
+            '--suppression-threshold', '0.1', 
+            '--save-path', 'snapshots/images/', 
+            '--model', model, 
+            '--convert-model'
+        ]
+                   
+        stem_recall, mAP = eval_main(data = data, DeepForest_config = DeepForest_config, experiment = experiment, args = args)
         results.append({"Evaluation Site" : site, "Pretraining Site": pretraining_site, "Stem Recall": stem_recall, "mAP": mAP})
         
     results = pd.DataFrame(results)

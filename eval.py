@@ -69,7 +69,7 @@ def parse_args(args):
     return parser.parse_args(args)
 
 
-def main(data, DeepForest_config, experiment,args=None):
+def main(data, DeepForest_config, experiment, args=None):
     # parse arguments
     if args is None:
         args = sys.argv[1:]
