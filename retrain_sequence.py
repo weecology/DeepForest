@@ -16,16 +16,17 @@ from train import main as training_main
 from eval import main as eval_main
 from eval import parse_args
 
-#load config
-DeepForest_config = load_config()
 
 #find models
 models = glob.glob("/orange/ewhite/b.weinstein/retinanet/20190315_150652/*.h5")
 #models = glob.glob("/Users/Ben/Documents/DeepLidar/snapshots/*.h5")
-    
+        
 #For each model, match the hand annotations with the pretraining model
 results = []
 for model in models:
+    
+    #load config
+    DeepForest_config = load_config()
     
     #Replace config file and experiment
     experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2", project_name='deeplidar', log_code=False)
@@ -45,9 +46,8 @@ for model in models:
         os.mkdir(save_image_path)        
     
     #Load retraining data
-    data = load_retraining_data(DeepForest_config)     
-    for site in DeepForest_config["hand_annotation_site"]:
-        DeepForest_config[site]["h5"] = os.path.join(DeepForest_config[site]["h5"],"hand_annotations")
+    data = load_retraining_data(DeepForest_config)  
+    DeepForest_config[site]["h5"] = os.path.join(DeepForest_config[site]["h5"],"hand_annotations")
         
     args = [
         "--epochs", str(DeepForest_config['epochs']),
@@ -77,7 +77,7 @@ for model in models:
         '--convert-model'
     ]
         
-    stem_recall, mAP = eval_main(data, DeepForest_config, experiment, retinanet_args)
+    stem_recall, mAP = eval_main(data=data, DeepForest_config=DeepForest_config, experiment=experiment, args=retinanet_args)
     
     model_name = os.path.splitext(os.path.basename(model))[0]    
     results.append({"Model": model_name, "Stem Recall": stem_recall, "mAP": mAP})

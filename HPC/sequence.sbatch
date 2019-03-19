@@ -24,4 +24,4 @@ cd /home/b.weinstein/DeepLidar
 
 python retrain_sequence.py
 
-cat 
+cat analysis/pretraining_size.csv

@@ -14,31 +14,35 @@ from DeepForest.utils.generators import load_retraining_data
 from train import main as training_main
 from eval import main as eval_main
 
-#load config
-DeepForest_config = load_config()
-
-#TODO insert paths here
 pretraining_models = {"SJER":"/orange/ewhite/b.weinstein/retinanet/20190318_144257/resnet50_02.h5",
-                      "TEAK":"/orange/ewhite/b.weinstein/retinanet/20190315_150652/resnet50_02.h5"}
+                     "TEAK":"/orange/ewhite/b.weinstein/retinanet/20190315_150652/resnet50_02.h5"}
+#pretraining_models = {"SJER" : "/Users/ben/Documents/DeepLidar/snapshots/TEAK_20190125_125012_fullmodel.h5"}
+
 sites = ["TEAK","SJER"]
 
 #For each site, match the hand annotations with the pretraining model
+results = []
 for pretraining_site in pretraining_models:
     
     pretrain_model_path = pretraining_models[pretraining_site]
     for site in sites:
+        
+        #load config - clean
+        DeepForest_config = load_config()        
+        
         #Replace config file and experiment
         DeepForest_config["hand_annotation_site"] = [site]
         DeepForest_config["evaluation_site"] = [site]
+        
         experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2", project_name='deeplidar', log_code=False)
         experiment.log_parameter("mode","training_grid")   
         
-        #Log experiments
-        experiment.log_parameters(DeepForest_config)    
+        ##Log experiments
+        #experiment.log_parameters(DeepForest_config)    
         dirname = datetime.now().strftime("%Y%m%d_%H%M%S")        
         experiment.log_parameter("Start Time", dirname)    
         
-        #Make a new dir and reformat args
+        ##Make a new dir and reformat args
         save_snapshot_path = DeepForest_config["save_snapshot_path"]+ dirname            
         save_image_path = DeepForest_config["save_image_path"]+ dirname
         os.mkdir(save_snapshot_path)        
@@ -48,8 +52,7 @@ for pretraining_site in pretraining_models:
         
         #Load retraining data
         data = load_retraining_data(DeepForest_config)     
-        for site in DeepForest_config["hand_annotation_site"]:
-            DeepForest_config[site]["h5"] = os.path.join(DeepForest_config[site]["h5"],"hand_annotations")
+        DeepForest_config[site]["h5"] = os.path.join(DeepForest_config[site]["h5"],"hand_annotations")
         
         args = [
             "--epochs", str(DeepForest_config['epochs']),
@@ -62,7 +65,7 @@ for pretraining_site in pretraining_models:
         ]
     
         #Run training, and pass comet experiment class
-        model = training_main(args, data, DeepForest_config, experiment=experiment)  
+        model = training_main(args=args, data=data, DeepForest_config=DeepForest_config, experiment=experiment)  
         
         #Run eval
         experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2", project_name='deeplidar', log_code=False)
@@ -73,7 +76,7 @@ for pretraining_site in pretraining_models:
             '--score-threshold', str(DeepForest_config['score_threshold']),
             '--suppression-threshold', '0.1', 
             '--save-path', 'snapshots/images/', 
-            '--model', model, 
+            '--model', pretrain_model_path, 
             '--convert-model'
         ]
                    
