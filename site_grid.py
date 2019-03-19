@@ -7,6 +7,7 @@ import sys
 import os
 from datetime import datetime
 import glob
+import pandas as pd 
 
 #insert path 
 from DeepForest.config import load_config
@@ -15,7 +16,7 @@ from train import main as training_main
 from eval import main as eval_main
 
 pretraining_models = {"SJER":"/orange/ewhite/b.weinstein/retinanet/20190318_144257/resnet50_02.h5",
-                     "TEAK":"/orange/ewhite/b.weinstein/retinanet/20190315_150652/resnet50_02.h5"}
+                    "TEAK":"/orange/ewhite/b.weinstein/retinanet/20190315_150652/resnet50_02.h5"}
 #pretraining_models = {"SJER" : "/Users/ben/Documents/DeepLidar/snapshots/TEAK_20190125_125012_fullmodel.h5"}
 
 sites = ["TEAK","SJER"]
@@ -30,17 +31,17 @@ for pretraining_site in pretraining_models:
         #load config - clean
         DeepForest_config = load_config()        
         
-        #Replace config file and experiment
-        DeepForest_config["hand_annotation_site"] = [site]
-        DeepForest_config["evaluation_site"] = [site]
+        ##Replace config file and experiment
+        #DeepForest_config["hand_annotation_site"] = [site]
+        #DeepForest_config["evaluation_site"] = [site]
         
-        experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2", project_name='deeplidar', log_code=False)
-        experiment.log_parameter("mode","training_grid")   
+        #experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2", project_name='deeplidar', log_code=False)
+        #experiment.log_parameter("mode","training_grid")   
         
-        ##Log experiments
+        ###Log experiments
         #experiment.log_parameters(DeepForest_config)    
         dirname = datetime.now().strftime("%Y%m%d_%H%M%S")        
-        experiment.log_parameter("Start Time", dirname)    
+        #experiment.log_parameter("Start Time", dirname)    
         
         ##Make a new dir and reformat args
         save_snapshot_path = DeepForest_config["save_snapshot_path"]+ dirname            
@@ -65,7 +66,7 @@ for pretraining_site in pretraining_models:
         ]
     
         #Run training, and pass comet experiment class
-        model = training_main(args=args, data=data, DeepForest_config=DeepForest_config, experiment=experiment)  
+        #model = training_main(args=args, data=data, DeepForest_config=DeepForest_config, experiment=experiment)  
         
         #Run eval
         experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2", project_name='deeplidar', log_code=False)
