@@ -1,4 +1,4 @@
-#Config file for DeepMeerkat train.py on local OSX
+#Config file for DeepLidar
 
 #Data generation - the number of workers for dask session
 num_hipergator_workers: 30

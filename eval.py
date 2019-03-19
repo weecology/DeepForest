@@ -32,7 +32,7 @@ def get_session():
     return tf.Session(config=config)
 
 
-def create_generator(args, data, config):
+def create_generator(args, data, DeepForest_config):
     """ Create generators for training and validation.
     """
     #Split training and test data - hardcoded paths set below.

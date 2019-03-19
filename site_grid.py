@@ -15,9 +15,9 @@ from DeepForest.utils.generators import load_retraining_data
 from train import main as training_main
 from eval import main as eval_main
 
-pretraining_models = {"SJER":"/orange/ewhite/b.weinstein/retinanet/20190318_144257/resnet50_02.h5",
-                    "TEAK":"/orange/ewhite/b.weinstein/retinanet/20190315_150652/resnet50_02.h5"}
-#pretraining_models = {"SJER" : "/Users/ben/Documents/DeepLidar/snapshots/TEAK_20190125_125012_fullmodel.h5"}
+#pretraining_models = {"SJER":"/orange/ewhite/b.weinstein/retinanet/20190318_144257/resnet50_02.h5",
+#                   "TEAK":"/orange/ewhite/b.weinstein/retinanet/20190315_150652/resnet50_02.h5"}
+pretraining_models = {"SJER" : "/Users/ben/Documents/DeepLidar/snapshots/TEAK_20190125_125012_fullmodel.h5"}
 
 sites = ["TEAK","SJER"]
 
@@ -32,8 +32,8 @@ for pretraining_site in pretraining_models:
         DeepForest_config = load_config()        
         
         ##Replace config file and experiment
-        #DeepForest_config["hand_annotation_site"] = [site]
-        #DeepForest_config["evaluation_site"] = [site]
+        DeepForest_config["hand_annotation_site"] = [site]
+        DeepForest_config["evaluation_site"] = [site]
         
         #experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2", project_name='deeplidar', log_code=False)
         #experiment.log_parameter("mode","training_grid")   
