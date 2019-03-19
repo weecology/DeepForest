@@ -79,7 +79,7 @@ for model in models:
         '--convert-model'
     ]
         
-    stem_recall, mAP = eval_main(data, DeepForest_config, retinanet_args, experiment = experiment)
+    stem_recall, mAP = eval_main(data, DeepForest_config, experiment, retinanet_args)
     
     model_name = os.path.splitext(os.path.basename(model))[0]    
     results.append({"Model": model_name, "Stem Recall": stem_recall, "mAP": mAP})

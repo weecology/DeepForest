@@ -73,7 +73,7 @@ for pretraining_site in pretraining_models:
         #Run eval
         experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2", project_name='deeplidar', log_code=False)
         experiment.log_parameter("mode","grid")
-        stem_recall, mAP = eval_main(data, DeepForest_config, retinanet_args,experiment)
+        stem_recall, mAP = eval_main(data, DeepForest_config, experiment, retinanet_args)
         results.append({"Evaluation Site" : site, "Pretraining Site": pretraining_site, "Stem Recall": stem_recall, "mAP": mAP})
         
     results = pd.DataFrame(results)
