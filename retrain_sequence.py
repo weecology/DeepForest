@@ -18,9 +18,9 @@ from eval import parse_args
 
 
 #find models
-models = glob.glob("/orange/ewhite/b.weinstein/retinanet/20190315_150652/*.h5")
-#models = glob.glob("/Users/Ben/Documents/DeepLidar/snapshots/*.h5")
-        
+#models = glob.glob("/orange/ewhite/b.weinstein/retinanet/20190315_150652/*.h5")
+models = glob.glob("/Users/Ben/Documents/DeepLidar/snapshots/*.h5")
+
 #For each model, match the hand annotations with the pretraining model
 results = []
 for model in models:
@@ -47,7 +47,9 @@ for model in models:
     
     #Load retraining data
     data = load_retraining_data(DeepForest_config)  
-    DeepForest_config[site]["h5"] = os.path.join(DeepForest_config[site]["h5"],"hand_annotations")
+    sites = data.site.unique()
+    for site in sites:
+        DeepForest_config[site]["h5"] = os.path.join(DeepForest_config[site]["h5"],"hand_annotations")
         
     args = [
         "--epochs", str(DeepForest_config['epochs']),
