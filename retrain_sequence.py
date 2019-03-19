@@ -16,7 +16,6 @@ from train import main as training_main
 from eval import main as eval_main
 from eval import parse_args
 
-
 #find models
 models = glob.glob("/orange/ewhite/b.weinstein/retinanet/20190315_150652/*.h5")
 #models = glob.glob("/Users/Ben/Documents/DeepLidar/snapshots/*.h5")
@@ -62,7 +61,7 @@ for model in models:
     ]
     
     #Run training, and pass comet experiment class    
-    model = training_main(args, data, DeepForest_config, experiment=experiment)  
+    trained_model = training_main(args, data, DeepForest_config, experiment=experiment)  
     
     #Format output
     experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2", project_name='deeplidar', log_code=False)      
@@ -75,7 +74,7 @@ for model in models:
         '--score-threshold', str(DeepForest_config['score_threshold']),
         '--suppression-threshold', '0.1', 
         '--save-path', 'snapshots/images/', 
-        '--model', model, 
+        '--model', trained_model, 
         '--convert-model'
     ]
         
