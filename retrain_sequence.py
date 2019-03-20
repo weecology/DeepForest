@@ -70,7 +70,6 @@ for model in models:
     experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2", project_name='deeplidar', log_code=False)      
     experiment.log_parameter("mode","retrain_sequence_evaluation")   
     
-    #TODO error here, try below from eval.py
     #pass an args object instead of using command line        
     retinanet_args = [
         "--batch-size", str(DeepForest_config['batch_size']),
