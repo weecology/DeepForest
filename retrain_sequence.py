@@ -16,6 +16,9 @@ from train import main as training_main
 from eval import main as eval_main
 from eval import parse_args
 
+#load config
+original_DeepForest_config = load_config()
+
 #find models
 models = glob.glob("/orange/ewhite/b.weinstein/retinanet/20190315_150652/*.h5")
 #models = glob.glob("/Users/Ben/Documents/DeepLidar/snapshots/*.h5")
@@ -26,7 +29,7 @@ results = []
 for model in models:
     
     #load config
-    DeepForest_config = load_config()
+    DeepForest_config = original_DeepForest_config
     
     #Replace config file and experiment
     experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2", project_name='deeplidar', log_code=False)

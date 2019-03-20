@@ -15,6 +15,9 @@ from DeepForest.utils.generators import load_retraining_data
 from train import main as training_main
 from eval import main as eval_main
 
+#load config - clean
+original_DeepForest_config = load_config()       
+
 #pretraining_models = {"SJER":"/orange/ewhite/b.weinstein/retinanet/20190318_144257/resnet50_02.h5",
                    #"TEAK":"/orange/ewhite/b.weinstein/retinanet/20190315_150652/resnet50_02.h5",
                    #"All": "/orange/ewhite/b.weinstein/retinanet/20190314_150323/resnet50_03.h5"}
@@ -31,8 +34,8 @@ for pretraining_site in pretraining_models:
         
         print("Running pretraining site {} with hand annotations {}".format(pretraining_site, site))
         
-        #load config - clean
-        DeepForest_config = load_config()        
+        #load config - cleaned in case it was changed below
+        DeepForest_config = original_DeepForest_config      
         
         ##Replace config file and experiment
         DeepForest_config["hand_annotation_site"] = site
