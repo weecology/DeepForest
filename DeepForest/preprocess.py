@@ -30,14 +30,15 @@ def load_csvs(h5_dir=None, csv_list=None):
             dataframes = (pd.read_csv(f, index_col=None) for f in data_paths)
             data = pd.concat(dataframes, ignore_index=True)      
     else:
-        for csv in csv_list:     
-            dataframes = (pd.read_csv(f, index_col=None) for f in csv_list)
-            data = pd.concat(dataframes, ignore_index=True)      
+        dataframes = (pd.read_csv(f, index_col=None) for f in csv_list)
+        data = pd.concat(dataframes, ignore_index=True)      
  
     return data
     
+    
 def load_data(data_dir, res, lidar_path):
     '''
+    Load csv training data from TreeSegmentation R package
     data_dir: path to .csv files. Optionall can be a path to a specific .csv file.
     res: Cell resolution of the rgb imagery
     '''
@@ -168,7 +169,7 @@ def load_xml(path, dirname, res):
     
     return(frame)
 
-def compute_windows(image,pixels=250, overlap=0.05):
+def compute_windows(image, pixels=250, overlap=0.05):
     try:
         im = Image.open(image)
     except:
@@ -200,16 +201,16 @@ def check_for_lidar(data,lidar_path):
     
     return data
 
-def split_training(csv_data, DeepForest_config, experiment):
+def split_training(data, DeepForest_config, experiment):
     
     '''
     Divide windows into training and testing split
-    csv_data: a pandas dataframe created by DeepForest Generate Run
+    data: a pandas dataframe created by DeepForest Generate Run
     experiment: The comet experiment object
     '''
     
     #reduce the data frame into tiles and windows
-    windowdf = csv_data[["tile","window"]]
+    windowdf = data[["tile","window","site"]]
     data = windowdf.drop_duplicates()
     
     #More than one tile in training data?
@@ -219,13 +220,11 @@ def split_training(csv_data, DeepForest_config, experiment):
         #Select n% as validation
         msk = np.random.rand(len(data)) < 1-(float(DeepForest_config["validation_percent"])/100)
         training = data[msk]
-        evaluation=data[~msk]     
+        evaluation = data[~msk]     
     else:
-        
-        
         #Select one validation tile if validation is requested, if no validation data, take all tiles.        
         if DeepForest_config["evaluation_images"] == 0:
-            training=data
+            training= data
             evaluation = None
         else:
             eval_tile = data.tile.unique()[1]
@@ -245,7 +244,7 @@ def split_training(csv_data, DeepForest_config, experiment):
             
         #Optional shuffle
         if DeepForest_config["shuffle_training"]:
-            training.sample(frac=1)
+            training = training.sample(frac=1)
             
         #Select subset of training windows
         training=training.iloc[0:num_training_images]
@@ -259,66 +258,80 @@ def split_training(csv_data, DeepForest_config, experiment):
     
         #Optional shuffle
         if DeepForest_config["shuffle_evaluation"]:
-            evaluation.sample(frac=1)
+            evaluation = evaluation.sample(frac=1)
             
         #Select subset of evaluation windows
         evaluation=evaluation.iloc[0:num_evaluation_images]
     
-    #Write training to file to view 
+    #Make sure we have training data, if not raise error.
+    assert training.shape[0] > 0, "Training data is empty"
+    
     return([training, evaluation])
     
-def NEON_annotations(site, DeepForest_config):
+def NEON_annotations(DeepForest_config):
     '''
     Create a keras generator for the hand annotated tower plots. Used for the mAP and recall callback.
-    site: Four letter site code
     '''
-    
-    #Find all images and annotations for each with full path
-    images_to_find_xml = glob.glob(DeepForest_config["evaluation_tile_dir"] + "/*.tif")
-    corresponding_xml=[os.path.splitext(os.path.basename(x))[0] + ".xml"  for x in images_to_find_xml]
-    full_path_xml = []
-    for x in corresponding_xml:
-        full_path_xml.append(os.path.join("data", site, "annotations",x))
+    annotations=[]    
+    for site in DeepForest_config["evaluation_site"]:
         
-    glob_path = os.path.join("data", site, "annotations") + "/*.xml"
-    available_xmls = glob.glob(glob_path)
-    
-    #matched xmls
-    matched_xmls = set(full_path_xml) & set(available_xmls)
-    
-    annotations=[]
-    for xml in matched_xmls:
-        r = load_xml(xml, dirname=DeepForest_config["evaluation_tile_dir"], res=DeepForest_config["rgb_res"])
-        annotations.append(r)
+        #Set directory to the plots 
+        plot_dir = DeepForest_config[site]["evaluation"]["RGB"]
+        #up one level is assumed to be annotation dir
+        base_dir = os.path.dirname(os.path.dirname(plot_dir))
+        annotation_dir = os.path.join(base_dir ,"annotations")
+        
+        #Find all images and annotations for each with full path
+        images_to_find_xml = glob.glob(os.path.join(plot_dir, "*.tif"))
+        corresponding_xml=[os.path.splitext(os.path.basename(x))[0] + ".xml"  for x in images_to_find_xml]
+        full_path_xml = []
+        
+        for x in corresponding_xml:
+            full_path_xml.append(os.path.join(annotation_dir,x))
+            
+        glob_path = os.path.join(annotation_dir, "*.xml")
+        available_xmls = glob.glob(glob_path)
+        
+        #matched xmls
+        matched_xmls = set(full_path_xml) & set(available_xmls)
+        
+        for xml in matched_xmls:
+            xml_data = load_xml(xml, dirname=plot_dir, res=DeepForest_config["rgb_res"])
+            #add site
+            xml_data["site"] = site
+            annotations.append(xml_data)
 
-    data=pd.concat(annotations)
+    data = pd.concat(annotations)
     
     #Compute list of sliding windows, assumed that all objects are the same extent and resolution
-    image_path = os.path.join(DeepForest_config["evaluation_tile_dir"], data.rgb_path.unique()[0])
+    image_path = os.path.join(plot_dir, data[data["site"]==site].rgb_path.unique()[0])
     windows = compute_windows(image=image_path, pixels=DeepForest_config["patch_size"], overlap=DeepForest_config["patch_overlap"])
     
-    #Compute Windows
     #Create dictionary of windows for each image
-    tile_windows={}
-    
+    tile_windows = {}
     all_images = list(data.rgb_path.unique())
-
     tile_windows["tile"] = all_images
     tile_windows["window"] = np.arange(0, len(windows))
     
-    #Expand grid
-    tile_data=expand_grid(tile_windows)    
+    #Expand all combinations
+    tile_data = expand_grid(tile_windows)    
+    
+    #merge site data
+    merge_site = data[["rgb_path","site"]].drop_duplicates()
+    merge_site.columns = ["tile","site"]
+    tile_data = tile_data.merge(merge_site)
     
     return [data, tile_data]
 
 def create_windows(data, DeepForest_config, base_dir):
     """
     Generate windows for a specific tile
+    base_dir: Location of the RGB image data
     """
-    
-    #Compute list of sliding windows, assumed that all objects are the same extent and resolution        
-    image_path = os.path.join(base_dir, data.rgb_path.unique()[0])
-    windows = compute_windows(image=image_path, pixels=DeepForest_config["patch_size"], overlap=DeepForest_config["patch_overlap"])
+    #Compute list of sliding windows, assumed that all objects are the same extent and resolution     
+    sample_tile = data.rgb_path[0]
+    image_path=os.path.join(base_dir, sample_tile)
+    windows=compute_windows(image=image_path, pixels=DeepForest_config["patch_size"], overlap=DeepForest_config["patch_overlap"])
     
     #if none
     if windows is None:
@@ -331,9 +344,14 @@ def create_windows(data, DeepForest_config, base_dir):
     all_images=list(data.rgb_path.unique())
 
     tile_windows["tile"] = all_images
-    tile_windows["window"] = np.arange(0,len(windows))
+    tile_windows["window"]=np.arange(0, len(windows))
     
     #Expand grid
     tile_data = expand_grid(tile_windows)    
+    
+    #Merge with the site variable
+    merge_site = data[["rgb_path","site"]].drop_duplicates()
+    merge_site.columns = ["tile","site"]
+    tile_data = tile_data.merge(merge_site)
     
     return(tile_data)

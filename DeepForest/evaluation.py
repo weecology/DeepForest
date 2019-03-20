@@ -25,43 +25,46 @@ from DeepForest import postprocessing
 from DeepForest import onthefly_generator
 
 def neonRecall(
-    site,
+    sites,
     generator,
     model,
     score_threshold=0.05,
     max_detections=100,
     suppression_threshold=0.15,
     save_path=None,
-    experiment=None,
-    DeepForest_config = None):
+    experiment=None):
 
-    #load field data
-    field_data = pd.read_csv("data/field_data.csv") 
-    field_data = field_data[field_data['UTM_E'].notnull()]
-
-    #select site
-    site_data = field_data[field_data["siteID"]==site]
-
-    #select tree species
-    specieslist = pd.read_csv("data/AcceptedSpecies.csv",encoding="utf-8")
-    specieslist =  specieslist[specieslist["siteID"] == site]
-
-    site_data = site_data[site_data["scientificName"].isin(specieslist["scientificName"].values)]
-
-    #Single bole individuals as representitve, no individualID ending in non-digits
-    site_data = site_data[site_data["individualID"].str.contains("\d$")]
-
-    #Only data within the last two years, sites can be hand managed
-    #site_data=site_data[site_data["eventID"].str.contains("2015|2016|2017|2018")]
-    
-    #Container for recall pts.
     point_contains = [ ]
+
+    site_data_dict = {}
+    for site in sites:
+        #Container for recall pts.
+        
+        #load field data
+        field_data = pd.read_csv("data/field_data.csv") 
+        field_data = field_data[field_data['UTM_E'].notnull()]
     
+        #select site
+        site_data = field_data[field_data["siteID"]==site]
+    
+        #select tree species
+        specieslist = pd.read_csv("data/AcceptedSpecies.csv",encoding="utf-8")
+        specieslist =  specieslist[specieslist["siteID"] == site]
+    
+        site_data = site_data[site_data["scientificName"].isin(specieslist["scientificName"].values)]
+    
+        #Single bole individuals as representitve, no individualID ending in non-digits
+        site_data = site_data[site_data["individualID"].str.contains("\d$")]
+        site_data_dict[site] = site_data
+        
+        #Only data within the last two years, sites can be hand managed
+        #site_data=site_data[site_data["eventID"].str.contains("2015|2016|2017|2018")]
+        
+        
     for i in range(generator.size()):
         
         #Load image
         raw_image    = generator.load_image(i)
-        
         raw_image = raw_image.copy()
         
         #Skip if missing a component data source
@@ -94,7 +97,8 @@ def neonRecall(
         image_detections = np.concatenate([image_boxes, np.expand_dims(image_scores, axis=1), np.expand_dims(image_labels, axis=1)], axis=1)
         
         #Find geographic bounds
-        tile_path=generator.base_dir + generator.image_data[i]["tile"]
+        base_dir = generator.DeepForest_config[generator.row["site"]][generator.name]["RGB"]
+        tile_path = os.path.join(base_dir, generator.image_data[i]["tile"])
         
         with rasterio.open(tile_path) as dataset:
             tile_bounds = dataset.bounds   
@@ -115,11 +119,11 @@ def neonRecall(
             
         density = Lidar.check_density(generator.lidar_tile, bounds=bounds)
         
-        print("Point density is {:.2f}".format(density))
+        #print("Point density is {:.2f}".format(density))
                 
         if density > generator.DeepForest_config["min_density"]:
             #find window utm coordinates
-            print("Bounds for image {}, window {}, are {}".format(generator.row["tile"], generator.row["window"], bounds))
+            #print("Bounds for image {}, window {}, are {}".format(generator.row["tile"], generator.row["window"], bounds))
             pc = postprocessing.drape_boxes(boxes=image_boxes, pc = generator.lidar_tile, bounds=bounds)     
             
             #Get new bounding boxes
@@ -129,16 +133,17 @@ def neonRecall(
             image_detections = np.concatenate([new_boxes, np.expand_dims(new_scores, axis=1), np.expand_dims(new_labels, axis=1)], axis=1)
             
         else:
-            print("Point density of {:.2f} is too low, skipping image {}".format(density, generator.row["tile"]))        
+            #print("Point density of {:.2f} is too low, skipping image {}".format(density, generator.row["tile"]))   
+            pass
 
         #add spatial NEON points
+        site_data =site_data_dict[generator.row["site"]]
         plotID = os.path.splitext(generator.image_data[i]["tile"])[0]
         plot_data = site_data[site_data.plotID == plotID]
 
         #Save image and send it to logger
         if save_path is not None:
             draw_detections(raw_image, image_boxes, image_scores, image_labels, label_to_name=generator.label_to_name, score_threshold=score_threshold, color = (80,127,255))
-    
             
             x = (plot_data.UTM_E - tile_bounds.left).values / 0.1
             y = (tile_bounds.top - plot_data.UTM_N).values / 0.1
@@ -169,7 +174,6 @@ def neonRecall(
             p=Point(tree.UTM_E, tree.UTM_N)
     
             within_polygon=[]
-    
             for prediction in projected_boxes:
                 within_polygon.append(p.within(prediction))
     
@@ -274,7 +278,6 @@ def IoU_polygon(a, b):
 
     #Intersection
     intersection_area=a.intersection(b).area
-
     iou = intersection_area / float(predicted_area + polygon_area - intersection_area)
 
     return iou

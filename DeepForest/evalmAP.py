@@ -101,10 +101,11 @@ def _get_detections(generator, model, score_threshold=0.05, max_detections=100, 
         
         #drape boxes
         #get lidar cloud if a new tile, or if not the same tile as previous image.
-        if i == 0:
-            generator.load_lidar_tile()
-        elif not generator.image_data[i]["tile"] == generator.image_data[i-1]["tile"]:
-            generator.load_lidar_tile()
+        if generator.with_lidar:
+            if i == 0:
+                generator.load_lidar_tile()
+            elif not generator.image_data[i]["tile"] == generator.image_data[i-1]["tile"]:
+                generator.load_lidar_tile()
         
         #The tile could be the full tile, so let's check just the 400 pixel crop we are interested    
         #Not the best structure, but the on-the-fly generator always has 0 bounds
@@ -112,31 +113,29 @@ def _get_detections(generator, model, score_threshold=0.05, max_detections=100, 
             bounds = generator.hf["utm_coords"][generator.row["window"]]    
         else:
             bounds=[]
-            
-        density = Lidar.check_density(generator.lidar_tile, bounds=bounds)
         
-        print("Point density is {:.2f}".format(density))
+        if generator.with_lidar:
+            density = Lidar.check_density(generator.lidar_tile, bounds=bounds)
+                            
+            if density > generator.DeepForest_config["min_density"]:
+                #find window utm coordinates
+                #print("Bounds for image {}, window {}, are {}".format(generator.row["tile"], generator.row["window"], bounds))
+                pc = postprocessing.drape_boxes(boxes=image_boxes, pc = generator.lidar_tile, bounds=bounds)     
                 
-        if density > generator.DeepForest_config["min_density"]:
-            #find window utm coordinates
-            print("Bounds for image {}, window {}, are {}".format(generator.row["tile"], generator.row["window"], bounds))
-            pc = postprocessing.drape_boxes(boxes=image_boxes, pc = generator.lidar_tile, bounds=bounds)     
-            
-            #Get new bounding boxes
-            new_boxes = postprocessing.cloud_to_box(pc, bounds)    
-            new_scores = image_scores[:new_boxes.shape[0]]
-            new_labels = image_labels[:new_boxes.shape[0]]          
-            image_detections = np.concatenate([new_boxes, np.expand_dims(new_scores, axis=1), np.expand_dims(new_labels, axis=1)], axis=1)
-            
-        else:
-            print("Point density of {:.2f} is too low, skipping image {}".format(density, generator.row["tile"]))        
+                #Get new bounding boxes
+                image_boxes = postprocessing.cloud_to_box(pc, bounds)    
+                image_scores = image_scores[:new_boxes.shape[0]]
+                image_labels = image_labels[:new_boxes.shape[0]]          
+                image_detections = np.concatenate([image_boxes, np.expand_dims(image_scores, axis=1), np.expand_dims(image_labels, axis=1)], axis=1)
+                
+            else:
+                pass
+                #print("Point density of {:.2f} is too low, skipping image {}".format(density, generator.row["tile"]))        
 
         if save_path is not None:
             draw_annotations(raw_image, generator.load_annotations(i), label_to_name=generator.label_to_name)
             draw_detections(raw_image, image_boxes, image_scores, image_labels, label_to_name=generator.label_to_name,score_threshold=score_threshold)
-            if density > generator.DeepForest_config["min_density"]:
-                draw_detections(raw_image, new_boxes, new_scores, new_labels, label_to_name=generator.label_to_name,score_threshold=score_threshold, color=(0,0,0))            
-            
+
             #name image
             image_name=generator.image_names[i]        
             row=generator.image_data[image_name]             

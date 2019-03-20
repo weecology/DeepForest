@@ -7,7 +7,7 @@ import random
 import itertools
 import csv
 import sys
-import os.path
+import os
 import cv2
 import rasterio
 import pandas as pd
@@ -15,7 +15,8 @@ import numpy as np
 from PIL import Image
 from six import raise_from
 import slidingwindow as sw
-from DeepForest import Lidar, postprocessing, utils
+from DeepForest import Lidar, postprocessing
+from DeepForest.utils import image_utils
 from matplotlib import pyplot
 from keras_retinanet.preprocessing.generator import Generator
 from keras_retinanet.utils.image import preprocess_image, resize_image
@@ -24,7 +25,7 @@ from keras_retinanet import models
 class OnTheFlyGenerator(Generator):
     """ Generate data for a custom CSV dataset.
 
-    See https://github.com/fizyr/keras-retinanet#csv-datasets for more information.
+    name: training or evaluation to set the directory location in config file
     """
 
     def __init__(
@@ -32,10 +33,9 @@ class OnTheFlyGenerator(Generator):
         data,
         windowdf,
         DeepForest_config,
-        base_dir=None,
         shuffle_tile_epoch=False,
         group_method="none",
-        name=None,
+        name="training",
         **kwargs
     ):
         """ Initialize a data self.
@@ -53,17 +53,13 @@ class OnTheFlyGenerator(Generator):
         self.group_method=group_method
         self.shuffle_tile_epoch=shuffle_tile_epoch
         self.annotation_list = data  
+        self.verbose = False
+        
+        #Switch for prediction with lidar
+        self.with_lidar = False
         
         #Tensorflow prediction session
         self.session_exists = False
-        
-        #Set destination directory
-        if not base_dir:
-            self.base_dir=DeepForest_config["rgb_tile_dir"]
-            self.lidar_path = DeepForest_config["rgb_tile_dir"]
-        else:
-            self.base_dir=base_dir
-            self.lidar_path=base_dir
             
         #Holder for image path, keep from reloading same image to save time.
         self.previous_image_path = None
@@ -159,13 +155,15 @@ class OnTheFlyGenerator(Generator):
         ''''
         Create a sliding window object
         '''
-        #Load tile
-        image = os.path.join(self.base_dir, self.annotation_list.rgb_path.unique()[0])
+        #Find directory and load tile # TODO this fails for hand annotated data.
+        site = self.annotation_list.site.unique()[0]
+        base_dir = self.DeepForest_config[site][self.name]["RGB"]
+        image = os.path.join(base_dir, self.annotation_list.rgb_path.unique()[0])
         im = Image.open(image)
         numpy_image = np.array(im)    
         
         #Generate sliding windows
-        windows = sw.generate(numpy_image, sw.DimOrder.HeightWidthChannel,  self.DeepForest_config["patch_size"], self.DeepForest_config["patch_overlap"])
+        windows = sw.generate(numpy_image, sw.DimOrder.HeightWidthChannel, self.DeepForest_config["patch_size"], self.DeepForest_config["patch_overlap"])
         
         return(windows)
     
@@ -177,6 +175,11 @@ class OnTheFlyGenerator(Generator):
         crop = self.numpy_image[self.windows[index].indices()]
         return(crop)
     
+    def get_window_extent(self):
+        """Inherit LIDAR methods for Class"""
+        bounds = Lidar.get_window_extent(annotations=self.annotation_list, row=self.row, windows=self.windows, rgb_res=self.rgb_res)
+        return bounds
+    
     def clip_las(self):
         '''' Inherit LIDAR methods for Class
         '''
@@ -184,15 +187,20 @@ class OnTheFlyGenerator(Generator):
         return self.clipped_las
     
     def fetch_lidar_filename(self):           
-        lidar_filepath=Lidar.fetch_lidar_filename(self.row, self.base_dir)
+        lidar_path = self.DeepForest_config[self.row["site"]][self.name]["LIDAR"]        
+        lidar_filepath = Lidar.fetch_lidar_filename(self.row, lidar_path)
         
-        return lidar_filepath
+        if lidar_filepath:
+            self.with_lidar = True
+            return lidar_filepath
+        else:
+            print("Lidar file {} cannot be found in {}".format(self.row["tile"], lidar_path))
 
-    def load_lidar_tile(self):
+    def load_lidar_tile(self, normalize = True):
         '''Load a point cloud into memory from file
         '''
         self.lidar_filepath=self.fetch_lidar_filename()        
-        self.lidar_tile=Lidar.load_lidar(self.lidar_filepath)
+        self.lidar_tile=Lidar.load_lidar(self.lidar_filepath, normalize)
         
         return self.lidar_tile
     
@@ -200,7 +208,8 @@ class OnTheFlyGenerator(Generator):
         ''''
         Read RGB tile from file
         '''
-        filename = os.path.join(self.base_dir, self.row["tile"])
+        base_dir = self.DeepForest_config[self.row["site"]][self.name]["RGB"]
+        filename = os.path.join(base_dir, self.row["tile"])
         im = Image.open(filename)
         numpy_image = np.array(im)    
         
@@ -257,10 +266,10 @@ class OnTheFlyGenerator(Generator):
         ##Check if image the is same as previous draw from self
         if not self.row["tile"] == self.previous_image_path:
             
-            print("Loading new tile {}".format(self.row["tile"]))
-            
+            if self.verbose:
+                print("Loading new tile {}".format(self.row["tile"]))
+                
             self.numpy_image = self.load_rgb_tile()
-            self.lidar_tile = self.load_lidar_tile()
             
         #Load a new crop from self
         four_channel_image = self.load_new_crop()
@@ -276,15 +285,16 @@ class OnTheFlyGenerator(Generator):
         Note that the window method is calculated once in train.py, this assumes all tiles have the same size and resolution
         offset: Number of meters to add to box edge to look for annotations
         '''
-        image = os.path.join(self.base_dir, self.row["tile"])
+        #Set site directory and look for tile
+        base_dir = self.DeepForest_config[self.row["site"]][self.name]["RGB"]
+        image = os.path.join(base_dir, self.row["tile"])
         index = self.row["window"]
         annotations = self.annotation_list
-        windows = self.windows
         offset = (self.DeepForest_config["patch_size"] * 0.1)/self.rgb_res
         patch_size = self.DeepForest_config["patch_size"]
     
         #Find index of crop and create coordinate box
-        x, y, w, h=windows[index].getRect()
+        x, y, w, h=self.windows[index].getRect()
         window_coords={}
     
         #top left
@@ -309,10 +319,9 @@ class OnTheFlyGenerator(Generator):
             (annotations.window_xmin > -offset) &  
             (annotations.window_ymin > -offset)  &
             (annotations.window_xmax < (patch_size+ offset)) &
-            (annotations.window_ymax < (patch_size+ offset))
-                         ]
+            (annotations.window_ymax < (patch_size+ offset))]
         
-        overlapping_boxes=d[d.apply(utils.box_overlap, window=window_coords, axis=1) > 0.5].copy()
+        overlapping_boxes=d[d.apply(image_utils.box_overlap, window=window_coords, axis=1) > 0.5].copy()
         
         #If boxes fall off edge, clip to window extent    
         overlapping_boxes.loc[overlapping_boxes["window_xmin"] < 0,"window_xmin"]=0
@@ -338,7 +347,7 @@ class OnTheFlyGenerator(Generator):
         self.row = self.image_data[image_name]
         
         #Check for blank black image, if so, enforce no annotations
-        remove_annotations = utils.image_is_blank(self.image)
+        remove_annotations = image_utils.image_is_blank(self.image)
     
         if remove_annotations:
             return np.zeros((0, 5))
@@ -368,7 +377,8 @@ class OnTheFlyGenerator(Generator):
         x = x * self.rgb_res
         y = y * self.rgb_res
         
-        filename = os.path.join(self.base_dir, self.row["tile"])
+        base_dir = self.DeepForest_config[self.row["site"]][self.name]["RGB"]        
+        filename = os.path.join(base_dir, self.row["tile"])
         
         with rasterio.open(filename) as dataset:
             self.utm_bounds = dataset.bounds   
@@ -393,59 +403,5 @@ class OnTheFlyGenerator(Generator):
         
         #flag for session setting
         self.session_exists = True
-        
-    def predict(self, model):
-        '''
-        Generic prediction function for bounding box prediction
-        model: a loaded model of form retinanet saved model
-        '''
-                
-        #Get a new tensorflow session if not previously set 
-        if not self.session_exists:
-            self.tf_session()
-            
-        # load retinanet model
-        model = models.load_model(model, backbone_name='resnet50', convert=True, nms_threshold=self.DeepForest_config["nms_threshold"])
-        labels_to_names = {0: 'Tree'}
-                   
-        # preprocess image for network
-        image = preprocess_image(self.image)
-        image, scale = resize_image(img = image, min_side = 400)
-        
-        # process image
-        boxes, scores, labels = model.predict_on_batch(np.expand_dims(image, axis=0))
-        
-        # correct for image scale
-        boxes /= scale
-            
-        #only pass score threshold boxes
-        quality_boxes = []
-        for box, score, label in zip(boxes[0], scores[0], labels[0]):
-            quality_boxes.append(box)
-            # scores are sorted so we can break
-            if score < self.DeepForest_config["score_threshold"]:
-                break
-        
-        ###Drape boxes on lidar cloud###
-        #Load tile
-        self.load_lidar_tile()
-        
-        #The tile could be the full tile, so let's check just the 400 pixel crop we are interested    
-        density = Lidar.check_density(self.lidar_tile)
-    
-        print("Point density is {:.2f}".format(density))
-    
-        if density > 4:
-            #find window utm coordinates
-            pc = postprocessing.drape_boxes(boxes=quality_boxes, pc = self.lidar_tile)     
-    
-            #Get new bounding boxes
-            new_boxes = postprocessing.cloud_to_box(pc)    
-            new_scores = scores[:new_boxes.shape[0]]
-            new_labels = labels[:new_boxes.shape[0]]          
-        else:
-            print("Point density of {:.2f} is too low, skipping image {}".format(density, self.row["tile"]))        
-                   
-        return [new_boxes, new_scores, new_labels]       
         
         

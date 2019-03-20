@@ -64,10 +64,11 @@ def fetch_lidar_filename(row, dirname):
         
     return laz_path
 
-def load_lidar(laz_path):
+def load_lidar(laz_path, normalize=True):
     """
     Load lidar tile from file based on path name
-    param: A string of the file path of the lidar tile
+    laz_path: A string of the file path of the lidar tile
+    normalize: Perform ground normalization (slow)
     return: A pyfor point cloud
     """
     
@@ -126,8 +127,8 @@ def get_window_extent(annotations, row, windows, rgb_res):
     
     window_utm_xmin = x * rgb_res + tile_xmin
     window_utm_xmax = (x+w) * rgb_res + tile_xmin
-    window_utm_ymin = tile_ymax - (y * rgb_res)
-    window_utm_ymax= tile_ymax - ((y+h) * rgb_res)
+    window_utm_ymax = tile_ymax - (y * rgb_res)
+    window_utm_ymin= tile_ymax - ((y+h) * rgb_res)
     
     return(window_utm_xmin, window_utm_xmax, window_utm_ymin, window_utm_ymax)
 
@@ -262,7 +263,7 @@ def bind_array(image,chm):
 def check_density(pc, bounds=[]):
     ''''
     Check the point density of a pyfor point cloud
-    bounds: a utm array [xmin, xmax, ymin,ymax] to limit density search
+    bounds: a utm array [xmin, xmax, ymin, ymax] to limit density search
     returns: density in points/m^2
     '''
     if len(bounds)> 0:

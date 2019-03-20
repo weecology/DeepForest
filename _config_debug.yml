@@ -1,52 +1,74 @@
-#Config file for DeepMeerkat train.py on local OSX
+#Config file for DeepLidar on local OSX
 
-#Data generation
+#Data generation - the number of workers for dask session
 num_hipergator_workers: 20
+training_csvs:
+  - TEAK
 
-#SlidingWindow
+#Keras
+workers: 1
+use_multiprocessing: False
+max_queue_size: 10
+num_GPUs: 1
+save_image_path: snapshots/images/
+save_snapshot_path: snapshots/images/
+
+#Sliding Window Size and Ovelap
 patch_size: 400
 patch_overlap: 0.05
 rgb_res: 0.1
 
-##Preprocessing routines
+#Preprocessing routines
 preprocess:
-          zero_area: True
+  zero_area: True
 
-##Training
-training_h5_dir: /Users/Ben/Downloads/training/
-training_csvs: /Users/Ben/Documents/DeepLidar/data/SJER/training/
-rgb_tile_dir: /Users/Ben/Documents/DeepLidar/data/SJER/training/
-training_images: All
-batch_size: 2   
-epochs: 2
-imagenet_weights: False
+#Select sites
+hand_annotation_site:
+  - TEAK
+pretraining_site:
+  - TEAK
+evaluation_site:
+  - TEAK
+
+#Training
+training_images: 1
 weights: /Users/ben/Documents/DeepLidar/snapshots/SJER_selfsupervised.h5
-save_snapshot_path: None
+imagenet_weights: False
+batch_size: 25
+epochs: 1
 backbone: resnet50
-shuffle_training: False
-score_threshold: 0.2
-num_GPUs: 1
+shuffle_training: True
+score_threshold: 0.20
 
-##Retraining
-hand_annotations: /Users/ben/Documents/DeepLidar/data/SJER/training/
-retraining_h5_dir: /Users/Ben/Downloads/
-
-##Evaluation
-evaluation_site: SJER
-evaluation_images: 10
-evaluation_tile_dir: /Users/Ben/Documents/DeepLidar/data/SJER/plots/
-save_image_path: snapshots/images/
+#Evaluation
+evaluation_images: 1
 shuffle_evaluation: False
-
+validation_percent: 5 #For hand annotation neon_MAP
 #Non-max suppression, threshold for the IoU value to determine when a box should be suppressed.
-nms_threshold: 0.05
+nms_threshold: 0.1
 
-#For hand annotation neon_MAP
-validation_percent: 2
-
-#LIDAR
-workers: 1
-kernel_size: 5
-use_multiprocessing: False
-max_queue_size: 10
+#LIDAR density
 min_density: 100
+
+#Data Paths
+SJER:
+  h5: /Users/Ben/Downloads/SJER/
+  hand_annotations: /Users/Ben/Documents/DeepLidar/data/SJER/training/
+  training_csvs: /Users/Ben/Documents/DeepLidar/data/SJER/training/
+  training:
+    RGB: /Users/Ben/Documents/DeepLidar/data/SJER/training/
+    LIDAR: /Users/Ben/Documents/DeepLidar/data/SJER/training/
+  evaluation:
+    RGB: /Users/Ben/Documents/DeepLidar/data/SJER/plots/
+    LIDAR: /Users/Ben/Documents/DeepLidar/data/SJER/plots/
+TEAK:
+  h5: /Users/Ben/Downloads/TEAK/
+  training_csvs: /Users/Ben/Documents/DeepLidar/data/TEAK/training/
+  hand_annotations:
+     RGB: /Users/Ben/Documents/DeepLidar/data/TEAK/training/
+  training:
+    RGB: /Users/Ben/Documents/DeepLidar/data/TEAK/training/
+    LIDAR: /Users/Ben/Documents/DeepLidar/data/TEAK/training/
+  evaluation:
+    RGB: /Users/Ben/Documents/DeepLidar/data/TEAK/plots/
+    LIDAR: /Users/Ben/Documents/DeepLidar/data/TEAK/plots/

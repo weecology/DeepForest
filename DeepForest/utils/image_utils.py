@@ -1,36 +1,32 @@
 """
-Utility functions for reading and cleaning images
+Utility functions for reading/cleaning images and generators
 """
 import numpy as np
 import keras
-from keras_retinanet import models
-from keras_retinanet.utils.image import read_image_bgr, preprocess_image, resize_image
 import matplotlib.pyplot as plt
 import os
 import numpy as np
 import time
 import pandas as pd
 import geopandas as gp
-
-# set tf backend to allow memory to grow, instead of claiming everything
 import tensorflow as tf
-
-#parse args
+import rtree
 import argparse
 import glob
 
-#DeepForest
-from DeepForest import onthefly_generator, config
-from DeepForest.preprocess import compute_windows, retrieve_window
-from DeepForest import postprocessing
+from keras_retinanet import models
+from keras_retinanet.utils.image import read_image_bgr, preprocess_image, resize_image
 from shapely import geometry
-import rtree
+
+#DeepForest
+from DeepForest import config
+from DeepForest.preprocess import compute_windows, retrieve_window, NEON_annotations
+from DeepForest import postprocessing
 
 #Utility functions
 def normalize(image):
     
     #Range normalize for all channels 
-    
     v_min = image.min(axis=(0, 1), keepdims=True)
     v_max = image.max(axis=(0, 1), keepdims=True)
     normalized_image=(v - v_min)/(v_max - v_min)
