@@ -71,6 +71,8 @@ def _get_detections(generator, model, score_threshold=0.05, max_detections=100, 
         if raw_image is None:
             print("Empty image, skipping")
             continue
+        else:
+            chm = raw_image[:,:,3]
         
         image        = generator.preprocess_image(raw_image)
         image, scale = generator.resize_image(image)
