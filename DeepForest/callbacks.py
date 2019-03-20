@@ -172,7 +172,7 @@ class NEONmAP(keras.callbacks.Callback):
                 precision       += average_precision
         NEON_map = round(precision / present_classes,3)
         print('Neon mAP: {:.3f}'.format(NEON_map))
-        experiment.log_metric("Neon mAP", NEON_map)          
+        self.experiment.log_metric("Neon mAP", NEON_map)          
         
 class shuffle_inputs(keras.callbacks.Callback):
     """Randomize order of tiles and windows
