@@ -164,9 +164,9 @@ def main(data, DeepForest_config, experiment, args=None):
         if num_annotations > 0:
             present_classes += 1
             precision       += average_precision
-    NEON_map = precision / present_classes
-    print('NEON mAP: {:.3f}'.format(precision / present_classes))
-    experiment.log_metric("NEON mAP", precision / present_classes)        
+    NEON_map = round(precision / present_classes,3)
+    print('Neon mAP: {:.3f}'.format(NEON_map))
+    experiment.log_metric("Neon mAP", NEON_map)        
     
     return [recall, NEON_map]
     

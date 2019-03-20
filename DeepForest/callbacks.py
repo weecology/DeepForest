@@ -161,24 +161,18 @@ class NEONmAP(keras.callbacks.Callback):
             experiment=self.experiment
         )
 
-        # compute per class average precision
-        total_instances = []
-        precisions = []
-        for label, (average_precision, num_annotations ) in average_precisions.items():
-            if self.verbose == 1:
-                print('{:.0f} instances of class'.format(num_annotations),
-                      self.generator.label_to_name(label), 'with average precision: {:.3f}'.format(average_precision))
-            total_instances.append(num_annotations)
-            precisions.append(average_precision)
-        if self.weighted_average:
-            self.mean_neon_ap = sum([a * b for a, b in zip(total_instances, precisions)]) / sum(total_instances)
-        else:
-            self.mean_neon_ap = sum(precisions) / sum(x > 0 for x in total_instances)
-
-        if self.verbose == 1:
-            print('NEON mAP: {:.3f}'.format(self.mean_neon_ap))
-        
-        self.experiment.log_metric("Neon mAP", self.mean_neon_ap)       
+        # print evaluation
+        present_classes = 0
+        precision = 0
+        for label, (average_precision, num_annotations) in average_precisions.items():
+            print('{:.0f} instances of class'.format(num_annotations),
+                  NEON_generator.label_to_name(label), 'with average precision: {:.3f}'.format(average_precision))
+            if num_annotations > 0:
+                present_classes += 1
+                precision       += average_precision
+        NEON_map = round(precision / present_classes,3)
+        print('Neon mAP: {:.3f}'.format(NEON_map))
+        experiment.log_metric("Neon mAP", NEON_map)          
         
 class shuffle_inputs(keras.callbacks.Callback):
     """Randomize order of tiles and windows
@@ -194,7 +188,5 @@ class shuffle_inputs(keras.callbacks.Callback):
         
     #Before epoch, randomize tile order
     def on_epoch_begin(self,epoch,logs=None):
-            print("Shuffling and recomputing batches by tile")  
             self.generator.image_data, self.generator.image_names =self.generator.define_groups(self.generator.windowdf,shuffle=True)
             self.generator.group_images()
-            print(self.generator.groups)

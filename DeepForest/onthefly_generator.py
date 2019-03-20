@@ -252,7 +252,10 @@ class OnTheFlyGenerator(Generator):
         
         ##Check if image the is same as previous draw from self
         if not self.row["tile"] == self.previous_image_path:
-            print("Loading new tile {}".format(self.row["tile"]))
+            
+            if self.verbose:
+                print("Loading new tile {}".format(self.row["tile"]))
+                
             self.numpy_image = self.load_rgb_tile()
             
         #Load a new crop from self

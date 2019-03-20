@@ -376,7 +376,7 @@ def main(args=None, data=None, DeepForest_config=None, experiment=None):
     if validation_generator:
         matched=[]
         for entry in validation_generator.image_data.values():
-            test=entry in train_generator.image_data.values() 
+            test = entry in train_generator.image_data.values() 
             matched.append(test)
         if sum(matched) > 0:
             raise Exception("%.2f percent of validation windows are in training data" % (100 * sum(matched)/train_generator.size()))
