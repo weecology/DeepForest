@@ -84,7 +84,7 @@ for pretraining_site in pretraining_models:
             '--score-threshold', str(DeepForest_config['score_threshold']),
             '--suppression-threshold', '0.1', 
             '--save-path', 'snapshots/images/', 
-            '--model', pretrain_model_path, 
+            '--model', model, 
             '--convert-model'
         ]
                    
