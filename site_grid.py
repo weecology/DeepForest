@@ -29,6 +29,8 @@ for pretraining_site in pretraining_models:
     pretrain_model_path = pretraining_models[pretraining_site]
     for site in sites:
         
+        print("Running pretraining site {} with hand annotations {}".format(pretraining_site, site))
+        
         #load config - clean
         DeepForest_config = load_config()        
         

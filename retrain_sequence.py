@@ -21,6 +21,7 @@ models = glob.glob("/orange/ewhite/b.weinstein/retinanet/20190315_150652/*.h5")
 #models = glob.glob("/Users/Ben/Documents/DeepLidar/snapshots/*.h5")
 
 #For each model, match the hand annotations with the pretraining model
+models.sort()
 results = []
 for model in models:
     
@@ -30,6 +31,8 @@ for model in models:
     #Replace config file and experiment
     experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2", project_name='deeplidar', log_code=False)
     experiment.log_parameter("mode","retrain_sequence")
+    
+    print("Running pretraining model {}".format(model))
     
     #Log experiments
     dirname = datetime.now().strftime("%Y%m%d_%H%M%S")  
