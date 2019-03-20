@@ -9,6 +9,7 @@ import pandas as pd
 from . import onthefly_generator, preprocess, config, Lidar
 import sys
 import glob
+import pathlib
 
 #supress warnings
 import warnings
@@ -76,8 +77,8 @@ def run(tile_csv=None, tile_xml = None, mode="train", site=None):
         destination_dir = os.path.join(DeepForest_config[site]["h5"],"hand_annotations")
         
         #If dest doesn't exist, create it
-        if not os.path.exists:
-            os.mkdir(destination_dir)
+        if not os.path.exists(destination_dir):
+            pathlib.Path(destination_dir).mkdir(parents=True, exist_ok=True)
     
     if windows is None:
         print("Invalid window, cannot find {} in {}".format(tilename, base_dir))

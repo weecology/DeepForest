@@ -24,11 +24,11 @@ preprocess:
 
 #Select sites
 hand_annotation_site:
-  - TEAK
+  - SJER
 pretraining_site:
-  - TEAK
+  - SJER
 evaluation_site:
-  - TEAK
+  - SJER
 
 #Training
 training_images: 1
@@ -53,7 +53,9 @@ min_density: 100
 #Data Paths
 SJER:
   h5: /Users/Ben/Downloads/SJER/
-  hand_annotations: /Users/Ben/Documents/DeepLidar/data/SJER/training/
+  hand_annotations:
+    RGB: /Users/Ben/Documents/DeepLidar/data/SJER/training/
+    LIDAR: /Users/Ben/Documents/DeepLidar/data/SJER/training/
   training_csvs: /Users/Ben/Documents/DeepLidar/data/SJER/training/
   training:
     RGB: /Users/Ben/Documents/DeepLidar/data/SJER/training/
