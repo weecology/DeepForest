@@ -23,7 +23,7 @@ original_DeepForest_config = load_config()
                    #"All": "/orange/ewhite/b.weinstein/retinanet/20190314_150323/resnet50_03.h5"}
 #pretraining_models = {"SJER" : "/Users/ben/Documents/DeepLidar/snapshots/TEAK_20190125_125012_fullmodel.h5"}
 pretraining_models = {"SJER":"/orange/ewhite/b.weinstein/retinanet/20190318_144257/resnet50_02.h5"}
-sites = ["SJER"]
+sites = [["SJER"]]
 
 #For each site, match the hand annotations with the pretraining model
 results = []
@@ -34,7 +34,7 @@ for pretraining_site in pretraining_models:
         
         print("Running pretraining site {} with hand annotations {}".format(pretraining_site, site))
         
-        #load config - cleaned in case it was changed below
+        #load config - clean
         DeepForest_config = original_DeepForest_config      
         
         ##Replace config file and experiment
