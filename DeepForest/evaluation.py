@@ -119,11 +119,11 @@ def neonRecall(
             
         density = Lidar.check_density(generator.lidar_tile, bounds=bounds)
         
-        print("Point density is {:.2f}".format(density))
+        #print("Point density is {:.2f}".format(density))
                 
         if density > generator.DeepForest_config["min_density"]:
             #find window utm coordinates
-            print("Bounds for image {}, window {}, are {}".format(generator.row["tile"], generator.row["window"], bounds))
+            #print("Bounds for image {}, window {}, are {}".format(generator.row["tile"], generator.row["window"], bounds))
             pc = postprocessing.drape_boxes(boxes=image_boxes, pc = generator.lidar_tile, bounds=bounds)     
             
             #Get new bounding boxes
@@ -133,7 +133,8 @@ def neonRecall(
             image_detections = np.concatenate([new_boxes, np.expand_dims(new_scores, axis=1), np.expand_dims(new_labels, axis=1)], axis=1)
             
         else:
-            print("Point density of {:.2f} is too low, skipping image {}".format(density, generator.row["tile"]))        
+            #print("Point density of {:.2f} is too low, skipping image {}".format(density, generator.row["tile"]))   
+            pass
 
         #add spatial NEON points
         site_data =site_data_dict[generator.row["site"]]
