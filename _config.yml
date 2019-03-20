@@ -25,18 +25,18 @@ preprocess:
 
 #Select sites
 hand_annotation_site:
-  - TEAK
+  - SJER
 pretraining_site:
-  - TEAK
+  - SJER
 evaluation_site:
-  - TEAK
+  - SJER
 
 #Training
 training_images: All
-weights: None
+weights: /orange/ewhite/b.weinstein/retinanet/20190318_144257/resnet50_02.h5
 imagenet_weights: True
 batch_size: 25
-epochs: 40
+epochs: 45
 backbone: resnet50
 shuffle_training: True
 score_threshold: 0.20
