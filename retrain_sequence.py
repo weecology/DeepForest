@@ -73,6 +73,12 @@ for model in models:
     experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2", project_name='deeplidar', log_code=False)      
     experiment.log_parameter("mode","retrain_sequence_evaluation")   
     
+    #slightly awkward to reset config file for paths
+    #load config - clean
+    DeepForest_config = original_DeepForest_config      
+    DeepForest_config["hand_annotation_site"] = site
+    DeepForest_config["evaluation_site"] = site
+    
     #pass an args object instead of using command line        
     retinanet_args = [
         "--batch-size", str(DeepForest_config['batch_size']),
