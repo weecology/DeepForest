@@ -89,7 +89,7 @@ for pretraining_site in pretraining_models:
         DeepForest_config["evaluation_site"] = site
         print("Before eval")
         for x in site:
-            print(DeepForest_config[x]["h5"])      
+            print(original_DeepForest_config[x]["h5"])      
             
         #args = [
             #"--batch-size", str(DeepForest_config['batch_size']),
