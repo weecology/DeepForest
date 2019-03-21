@@ -68,7 +68,7 @@ for model_path in models[:3]:
     ]
     
     #Run training, and pass comet experiment class    
-    #trained_model = training_main(args, data, DeepForest_config, experiment=experiment)  
+    trained_model = training_main(args, data, DeepForest_config, experiment=experiment)  
     
     #Format output
     experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2", project_name='deeplidar', log_code=False)      
@@ -80,7 +80,7 @@ for model_path in models[:3]:
         '--score-threshold', str(DeepForest_config['score_threshold']),
         '--suppression-threshold', '0.1', 
         '--save-path', 'snapshots/images/', 
-        '--model', model_path, 
+        '--model', trained_model, 
         '--convert-model'
     ]
         
