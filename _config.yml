@@ -36,7 +36,7 @@ training_images: All
 weights: /orange/ewhite/b.weinstein/retinanet/20190318_144257/resnet50_02.h5
 imagenet_weights: True
 batch_size: 25
-epochs: 45
+epochs: 1
 backbone: resnet50
 shuffle_training: True
 score_threshold: 0.20
