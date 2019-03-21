@@ -20,12 +20,11 @@ from eval import main as eval_main
 original_DeepForest_config = load_config()       
 
 pretraining_models = {"SJER":"/orange/ewhite/b.weinstein/retinanet/20190318_144257/resnet50_02.h5",
-                   "TEAK":"/orange/ewhite/b.weinstein/retinanet/20190315_150652/resnet50_02.h5"}
-#                  "All": "/orange/ewhite/b.weinstein/retinanet/20190314_150323/resnet50_03.h5"}
+                   "TEAK":"/orange/ewhite/b.weinstein/retinanet/20190315_150652/resnet50_02.h5",
+                  "All": "/orange/ewhite/b.weinstein/retinanet/20190314_150323/resnet50_03.h5"}
 #pretraining_models = {"SJER" : "/Users/ben/Documents/DeepLidar/snapshots/TEAK_20190125_125012_fullmodel.h5"}
 
-sites = [["SJER","TEAK"]]
-#sites = [["SJER"],["TEAK"],["SJER","TEAK"]]
+sites = [["SJER"],["TEAK"],["SJER","TEAK"]]
 
 #For each site, match the hand annotations with the pretraining model
 results = []
@@ -77,7 +76,7 @@ for pretraining_site in pretraining_models:
         ]
     
         #Run training, and pass comet experiment class
-        #model = training_main(args=args, data=data, DeepForest_config=DeepForest_config, experiment=experiment)  
+        model = training_main(args=args, data=data, DeepForest_config=DeepForest_config, experiment=experiment)  
         
         #Run eval
         experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2", project_name='deeplidar', log_code=False)
@@ -92,20 +91,19 @@ for pretraining_site in pretraining_models:
         for x in site:
             print(DeepForest_config[x]["h5"])      
             
-        #args = [
-            #"--batch-size", str(DeepForest_config['batch_size']),
-            #'--score-threshold', str(DeepForest_config['score_threshold']),
-            #'--suppression-threshold', '0.1', 
-            #'--save-path', 'snapshots/images/', 
-            #'--model', model, 
-            #'--convert-model'
-        #]
+        args = [
+            "--batch-size", str(DeepForest_config['batch_size']),
+            '--score-threshold', str(DeepForest_config['score_threshold']),
+            '--suppression-threshold', '0.1', 
+            '--save-path', 'snapshots/images/', 
+            '--model', model, 
+            '--convert-model'
+        ]
                    
-        #stem_recall, mAP = eval_main(data = data, DeepForest_config = DeepForest_config, experiment = experiment, args = args)
-        #results.append({"Evaluation Site" : site, "Pretraining Site": pretraining_site, "Stem Recall": stem_recall, "mAP": mAP})
+        stem_recall, mAP = eval_main(data = data, DeepForest_config = DeepForest_config, experiment = experiment, args = args)
+        results.append({"Evaluation Site" : site, "Pretraining Site": pretraining_site, "Stem Recall": stem_recall, "mAP": mAP})
         
-#results = pd.DataFrame(results)
+results = pd.DataFrame(results)
 
-#model name
-#results.to_csv("analysis/site_grid" + ".csv")        
+results.to_csv("analysis/site_grid" + ".csv")        
         
