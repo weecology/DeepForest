@@ -27,7 +27,7 @@ models = glob.glob("/orange/ewhite/b.weinstein/retinanet/20190315_150652/*.h5")
 #For each model, match the hand annotations with the pretraining model
 models.sort()
 results = []
-for model_path in models[:3]:
+for model_path in models:
     
     #load config
     DeepForest_config = copy.deepcopy(original_DeepForest_config)
