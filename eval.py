@@ -205,7 +205,9 @@ if __name__ == '__main__':
 
     if mode.mode == "retrain":
         data = load_retraining_data(DeepForest_config)
-    
+        for x in DeepForest_config["evaluation_site"]:
+            DeepForest_config[x]["h5"] = os.path.join(DeepForest_config[x]["h5"],"hand_annotations")
+            
     #pass an args object instead of using command line        
     args = [
         "--batch-size", str(DeepForest_config['batch_size']),

@@ -60,7 +60,6 @@ def neonRecall(
         #Only data within the last two years, sites can be hand managed
         #site_data=site_data[site_data["eventID"].str.contains("2015|2016|2017|2018")]
         
-        
     for i in range(generator.size()):
         
         #Load image

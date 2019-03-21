@@ -7,13 +7,14 @@ import os
 import h5py
 import pandas as pd
 from . import onthefly_generator, preprocess, config, Lidar
+from DeepForest.utils import image_utils
 import sys
 import glob
 import pathlib
 
-#supress warnings
+#optional suppress warnings
 import warnings
-warnings.simplefilter("ignore")
+#warnings.simplefilter("ignore")
 
 def parse_args():    
     
@@ -55,7 +56,7 @@ def run(tile_csv=None, tile_xml = None, mode="train", site=None):
         
         #Destination dir
         destination_dir = DeepForest_config[site]["h5"]
-        
+            
     if mode == "retrain":
         #Base dir
         base_dir = DeepForest_config[site]["hand_annotations"]["RGB"]
@@ -75,11 +76,11 @@ def run(tile_csv=None, tile_xml = None, mode="train", site=None):
         
         #destination dir
         destination_dir = os.path.join(DeepForest_config[site]["h5"],"hand_annotations")
-        
-        #If dest doesn't exist, create it
-        if not os.path.exists(destination_dir):
-            pathlib.Path(destination_dir).mkdir(parents=True, exist_ok=True)
     
+    #If dest doesn't exist, create it
+    if not os.path.exists(destination_dir):
+        pathlib.Path(destination_dir).mkdir(parents=True, exist_ok=True)    
+        
     if windows is None:
         print("Invalid window, cannot find {} in {}".format(tilename, base_dir))
         return None
@@ -88,7 +89,9 @@ def run(tile_csv=None, tile_xml = None, mode="train", site=None):
     generator = onthefly_generator.OnTheFlyGenerator(data,
                                                      windows,
                                                      DeepForest_config,
-                                                     name=name)
+                                                     name=name,
+                                                     preprocess_image = image_utils.normalize_four_channel
+                                                     )
     
     #Create h5 dataset    
     # open a hdf5 file and create arrays

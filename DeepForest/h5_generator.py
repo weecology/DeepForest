@@ -22,11 +22,10 @@ import slidingwindow as sw
 import itertools
 
 from DeepForest import Lidar
+from DeepForest.utils import image_utils
 
 class H5Generator(Generator):
-    """ Generate data for a custom CSV dataset.
-
-    See https://github.com/fizyr/keras-retinanet#csv-datasets for more information.
+    """ Generate data for a custom h5 dataset.
     """
 
     def __init__(
@@ -40,6 +39,7 @@ class H5Generator(Generator):
         """ Initialize a data generator.
 
         """
+        
         self.image_names = []
         self.image_data  = {}
         self.name = name

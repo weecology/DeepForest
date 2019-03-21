@@ -37,10 +37,10 @@ from keras_retinanet .utils.model import freeze as freeze_model
 
 #Custom Generator
 from DeepForest.h5_generator import H5Generator
-from DeepForest.onthefly_generator import OnTheFlyGenerator
 from DeepForest.config import load_config
 from DeepForest import preprocess
 from DeepForest.utils.generators import create_NEON_generator, load_training_data, load_retraining_data
+from DeepForest.utils import image_utils
 
 #Custom Callbacks
 from DeepForest.callbacks import recallCallback, NEONmAP, Evaluate
@@ -204,7 +204,6 @@ def create_callbacks(model, training_model, prediction_model, train_generator, v
 def create_generators(args, data, DeepForest_config):
     """ Create generators for training and validation.
     """
-
     #Split training and test data
     train, test = preprocess.split_training(data, DeepForest_config, experiment=None)
 
@@ -216,14 +215,16 @@ def create_generators(args, data, DeepForest_config):
     train_generator = H5Generator(train, 
                                   batch_size = args.batch_size, 
                                   DeepForest_config = DeepForest_config, 
-                                  name = "training")
+                                  name = "training",
+                                  preprocess_image = image_utils.normalize_four_channel)
 
     #Validation Generator, check that it exists
     if test is not None:
         validation_generator = H5Generator(test, 
                                            batch_size = args.batch_size, 
                                            DeepForest_config = DeepForest_config, 
-                                           name = "training")
+                                           name = "training",
+                                           preprocess_image = image_utils.normalize_four_channel)
     else:
         validation_generator = None
         
@@ -351,7 +352,7 @@ def main(args=None, data=None, DeepForest_config=None, experiment=None):
         )
 
     # print model summary
-    print(model.summary())
+    #print(model.summary())
 
     # this lets the generator compute backbone layer shapes using the actual backbone model
     if 'vgg' in args.backbone or 'densenet' in args.backbone:
@@ -512,5 +513,10 @@ if __name__ == '__main__':
             "--weights", output_model
         ]
     
+        experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2", project_name='deeplidar', log_code=False)
+        experiment.log_parameters(DeepForest_config)    
+        experiment.log_parameter("Start Time", dirname)    
+        experiment.log_parameter("mode", "final_hand_annotation")
+        
         #Run training, and pass comet experiment class
         main(args, data, DeepForest_config, experiment=experiment)  

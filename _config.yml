@@ -34,7 +34,7 @@ evaluation_site:
 #Training
 training_images: All
 weights: None
-imagenet_weights: True
+imagenet_weights: False
 batch_size: 25
 epochs: 40
 backbone: resnet50

@@ -24,6 +24,18 @@ from DeepForest.preprocess import compute_windows, retrieve_window, NEON_annotat
 from DeepForest import postprocessing
 
 #Utility functions
+def normalize_four_channel(four_channel_image):
+    
+    """Assumes a binary height raster - scales all channels to 0-1"""
+    four_channel_image[:,:,0] =  four_channel_image[:,:,0]/255
+    four_channel_image[:,:,1] = four_channel_image[:,:,1]/255
+    four_channel_image[:,:,2] = four_channel_image[:,:,2]/255
+    max_height = four_channel_image[:,:,3].max()
+    if max_height > 1:
+        print("Non normal height vector the max height value is {} ".format(max_height))
+        
+    return four_channel_image
+
 def normalize(image):
     
     #Range normalize for all channels 

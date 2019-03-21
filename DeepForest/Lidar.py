@@ -156,20 +156,23 @@ def clip_las(lidar_tile, annotations, row, windows, rgb_res):
     else:    
         return clipped
 
-def compute_chm(clipped_las, kernel_size, min_threshold = 3):
+def compute_chm(clipped_las, kernel_size, min_threshold = 2):
     """
     Computer a canopy height model based on the available laz file to align with the RGB data
     """
 
     #Median filter
-    chm = clipped_las.chm(cell_size = 0.1 , interp_method = "nearest" )    
+    chm = clipped_las.chm(cell_size = 0.1 , interp_method = "linear" )    
     
     if not kernel_size == 'None':
         chm.array = medfilt2d(chm.array, kernel_size=kernel_size)
     
     #remove understory noise, anything under 2m.
     chm.array[chm.array < min_threshold] = 0   
+    chm.array[chm.array > 0] = 1   
     
+    #replace nas with 0
+    chm.array = np.nan_to_num(chm.array)
     return chm
 
 def watershed():

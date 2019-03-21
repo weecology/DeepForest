@@ -12,12 +12,13 @@ import cv2
 import rasterio
 import pandas as pd
 import numpy as np
+from matplotlib import pyplot
 from PIL import Image
 from six import raise_from
 import slidingwindow as sw
+
 from DeepForest import Lidar, postprocessing
 from DeepForest.utils import image_utils
-from matplotlib import pyplot
 from keras_retinanet.preprocessing.generator import Generator
 from keras_retinanet.utils.image import preprocess_image, resize_image
 from keras_retinanet import models
@@ -39,8 +40,8 @@ class OnTheFlyGenerator(Generator):
         **kwargs
     ):
         """ Initialize a data self.
-
         """
+        
         #Assign config and intiliaze values
         self.DeepForest_config=DeepForest_config
         self.rgb_res=DeepForest_config['rgb_res']        
@@ -56,7 +57,7 @@ class OnTheFlyGenerator(Generator):
         self.verbose = False
         
         #Switch for prediction with lidar
-        self.with_lidar = False
+        self.with_lidar = True
         
         #Tensorflow prediction session
         self.session_exists = False
@@ -118,7 +119,6 @@ class OnTheFlyGenerator(Generator):
         """ 
         Number of annotation classes
         """
-        
         #Get unique classes
         uclasses=self.annotation_list.loc[:,['label','numeric_label']].drop_duplicates()
         
@@ -155,7 +155,6 @@ class OnTheFlyGenerator(Generator):
         ''''
         Create a sliding window object
         '''
-        #Find directory and load tile # TODO this fails for hand annotated data.
         site = self.annotation_list.site.unique()[0]
         base_dir = self.DeepForest_config[site][self.name]["RGB"]
         image = os.path.join(base_dir, self.annotation_list.rgb_path.unique()[0])
@@ -247,7 +246,8 @@ class OnTheFlyGenerator(Generator):
         
         #If empty, return None
         if self.clipped_las is None:
-            return None
+            raise ValueError("Empty lidar image")
+            #return None
         
         #Crop numpy array
         self.CHM = self.compute_CHM()
