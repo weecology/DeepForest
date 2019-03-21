@@ -36,7 +36,7 @@ for model_path in models[:3]:
     experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2", project_name='deeplidar', log_code=False)
     experiment.log_parameter("mode","retrain_sequence")
     
-    print("Running pretraining model {}".format(model))
+    print("Running pretraining model {}".format(model_path))
     
     #Log experiments
     dirname = datetime.now().strftime("%Y%m%d_%H%M%S")  
