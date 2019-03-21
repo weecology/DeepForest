@@ -80,10 +80,11 @@ def load_lidar(laz_path, normalize=True):
         print("Failed loading path: %s" %(laz_path))
         
     #normalize and filter
-    try: 
-        pc.normalize(1)
-    except:
-        print("No vertical objects in image, skipping normalization")
+    if normalize:
+        try: 
+            pc.normalize(1)
+        except:
+            print("No vertical objects in image, skipping normalization")
     
     #Quick filter for unreasonable points.
     pc.filter(min = -1, max = 100 , dim = "z")    
