@@ -8,6 +8,7 @@ import os
 from datetime import datetime
 import glob
 import pandas as pd 
+import copy
 
 #insert path 
 from DeepForest.config import load_config
@@ -36,7 +37,7 @@ for pretraining_site in pretraining_models:
         print("Running pretraining site {} with hand annotations {}".format(pretraining_site, site))
         
         #load config - clean
-        DeepForest_config = original_DeepForest_config      
+        DeepForest_config = copy.deepcopy(original_DeepForest_config)      
         
         ##Replace config file and experiment
         DeepForest_config["hand_annotation_site"] = site
@@ -84,12 +85,12 @@ for pretraining_site in pretraining_models:
         
         #slightly awkward to reset config file for paths
         #load config - clean
-        DeepForest_config = original_DeepForest_config      
+        DeepForest_config = copy.deepcopy(original_DeepForest_config)       
         DeepForest_config["hand_annotation_site"] = site
         DeepForest_config["evaluation_site"] = site
         print("Before eval")
         for x in site:
-            print(original_DeepForest_config[x]["h5"])      
+            print(DeepForest_config[x]["h5"])      
             
         #args = [
             #"--batch-size", str(DeepForest_config['batch_size']),
