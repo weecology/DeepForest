@@ -60,8 +60,10 @@ for pretraining_site in pretraining_models:
         
         #Load retraining data
         data = load_retraining_data(DeepForest_config)
+        print("Before training")
         for x in site:
             DeepForest_config[x]["h5"] = os.path.join(DeepForest_config[x]["h5"],"hand_annotations")
+            print(DeepForest_config[x]["h5"])
         
         args = [
             "--epochs", str(DeepForest_config['epochs']),
@@ -74,7 +76,7 @@ for pretraining_site in pretraining_models:
         ]
     
         #Run training, and pass comet experiment class
-        model = training_main(args=args, data=data, DeepForest_config=DeepForest_config, experiment=experiment)  
+        #model = training_main(args=args, data=data, DeepForest_config=DeepForest_config, experiment=experiment)  
         
         #Run eval
         experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2", project_name='deeplidar', log_code=False)
@@ -85,7 +87,10 @@ for pretraining_site in pretraining_models:
         DeepForest_config = original_DeepForest_config      
         DeepForest_config["hand_annotation_site"] = site
         DeepForest_config["evaluation_site"] = site
-        
+        print("Before eval")
+        for x in site:
+            print(DeepForest_config[x]["h5"])      
+            
         args = [
             "--batch-size", str(DeepForest_config['batch_size']),
             '--score-threshold', str(DeepForest_config['score_threshold']),
@@ -95,11 +100,11 @@ for pretraining_site in pretraining_models:
             '--convert-model'
         ]
                    
-        stem_recall, mAP = eval_main(data = data, DeepForest_config = DeepForest_config, experiment = experiment, args = args)
-        results.append({"Evaluation Site" : site, "Pretraining Site": pretraining_site, "Stem Recall": stem_recall, "mAP": mAP})
+        #stem_recall, mAP = eval_main(data = data, DeepForest_config = DeepForest_config, experiment = experiment, args = args)
+        #results.append({"Evaluation Site" : site, "Pretraining Site": pretraining_site, "Stem Recall": stem_recall, "mAP": mAP})
         
-results = pd.DataFrame(results)
+#results = pd.DataFrame(results)
 
 #model name
-results.to_csv("analysis/site_grid" + ".csv")        
+#results.to_csv("analysis/site_grid" + ".csv")        
         
