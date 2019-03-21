@@ -81,15 +81,6 @@ for pretraining_site in pretraining_models:
         #Run eval
         experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2", project_name='deeplidar', log_code=False)
         experiment.log_parameter("mode","evaluation_grid")
-        
-        #slightly awkward to reset config file for paths
-        #load config - clean
-        DeepForest_config = copy.deepcopy(original_DeepForest_config)       
-        DeepForest_config["hand_annotation_site"] = site
-        DeepForest_config["evaluation_site"] = site
-        print("Before eval")
-        for x in site:
-            print(DeepForest_config[x]["h5"])      
             
         args = [
             "--batch-size", str(DeepForest_config['batch_size']),
