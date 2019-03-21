@@ -1,2 +1,2 @@
 ,Evaluation Site,Pretraining Site,Stem Recall,mAP
-0,['SJER'],SJER,0.8378378378378378,0.392
+0,"['SJER', 'TEAK']",SJER,0.5768421052631579,0.362

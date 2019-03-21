@@ -18,12 +18,13 @@ from eval import main as eval_main
 #load config - clean
 original_DeepForest_config = load_config()       
 
-pretraining_models = {"SJER":"/orange/ewhite/b.weinstein/retinanet/20190318_144257/resnet50_02.h5",
-                   "TEAK":"/orange/ewhite/b.weinstein/retinanet/20190315_150652/resnet50_02.h5",
-                   "All": "/orange/ewhite/b.weinstein/retinanet/20190314_150323/resnet50_03.h5"}
+pretraining_models = {"SJER":"/orange/ewhite/b.weinstein/retinanet/20190318_144257/resnet50_02.h5"}
+#                   "TEAK":"/orange/ewhite/b.weinstein/retinanet/20190315_150652/resnet50_02.h5",
+#                  "All": "/orange/ewhite/b.weinstein/retinanet/20190314_150323/resnet50_03.h5"}
 #pretraining_models = {"SJER" : "/Users/ben/Documents/DeepLidar/snapshots/TEAK_20190125_125012_fullmodel.h5"}
 
-sites = [["SJER"],["TEAK"],["SJER","TEAK"]]
+sites = [["SJER","TEAK"]]
+#sites = [["SJER"],["TEAK"],["SJER","TEAK"]]
 
 #For each site, match the hand annotations with the pretraining model
 results = []
