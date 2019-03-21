@@ -91,14 +91,14 @@ for pretraining_site in pretraining_models:
         for x in site:
             print(DeepForest_config[x]["h5"])      
             
-        args = [
-            "--batch-size", str(DeepForest_config['batch_size']),
-            '--score-threshold', str(DeepForest_config['score_threshold']),
-            '--suppression-threshold', '0.1', 
-            '--save-path', 'snapshots/images/', 
-            '--model', model, 
-            '--convert-model'
-        ]
+        #args = [
+            #"--batch-size", str(DeepForest_config['batch_size']),
+            #'--score-threshold', str(DeepForest_config['score_threshold']),
+            #'--suppression-threshold', '0.1', 
+            #'--save-path', 'snapshots/images/', 
+            #'--model', model, 
+            #'--convert-model'
+        #]
                    
         #stem_recall, mAP = eval_main(data = data, DeepForest_config = DeepForest_config, experiment = experiment, args = args)
         #results.append({"Evaluation Site" : site, "Pretraining Site": pretraining_site, "Stem Recall": stem_recall, "mAP": mAP})
