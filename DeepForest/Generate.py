@@ -71,7 +71,7 @@ def run(tile_csv=None, tile_xml = None, mode="train", site=None):
         windows = preprocess.create_windows(data, DeepForest_config, base_dir) 
 
         #Don't check lidar for density, annotations are made directly on RGB
-        check_lidar = False
+        check_lidar = True
         name = "hand_annotations"
         
         #destination dir
@@ -114,7 +114,7 @@ def run(tile_csv=None, tile_xml = None, mode="train", site=None):
     generator.load_image(1)
     
     if check_lidar:
-        point_cloud = generator.load_lidar_tile(normalize=False)
+        point_cloud = generator.load_lidar_tile()
     
     for i in range(generator.size()):
         
@@ -132,7 +132,7 @@ def run(tile_csv=None, tile_xml = None, mode="train", site=None):
             bounds = generator.get_window_extent()
             density = Lidar.check_density(point_cloud, bounds)
                     
-            if density < 2:
+            if density < generator.DeepForest_config["min_density"]:
                 print("Point density is {} for window {}, skipping".format(density, tilename))
                 continue
         

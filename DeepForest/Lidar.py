@@ -80,10 +80,11 @@ def load_lidar(laz_path, normalize=True):
         print("Failed loading path: %s" %(laz_path))
         
     #normalize and filter
-    try: 
-        pc.normalize(1)
-    except:
-        print("No vertical objects in image, skipping normalization")
+    if normalize:
+        try: 
+            pc.normalize(1)
+        except:
+            print("No vertical objects in image, skipping normalization")
     
     #Quick filter for unreasonable points.
     pc.filter(min = -1, max = 100 , dim = "z")    
@@ -150,7 +151,7 @@ def clip_las(lidar_tile, annotations, row, windows, rgb_res):
     clipped = lidar_tile.clip(poly)
     
     #If there are no points within the clip, return None and continue to next window
-    if len(clipped.data.points) == 0:
+    if len(clipped.data.points) < 10:
         print("Window {s} from tile {r} has no LIDAR points".format(s=row["window"], r=row["tile"]))
         return None
     else:    
@@ -167,12 +168,13 @@ def compute_chm(clipped_las, kernel_size, min_threshold = 2):
     if not kernel_size == 'None':
         chm.array = medfilt2d(chm.array, kernel_size=kernel_size)
     
+    #replace nas with 0    
+    chm.array = np.nan_to_num(chm.array)
+    
     #remove understory noise, anything under 2m.
     chm.array[chm.array < min_threshold] = 0   
     chm.array[chm.array > 0] = 1   
     
-    #replace nas with 0
-    chm.array = np.nan_to_num(chm.array)
     return chm
 
 def watershed():

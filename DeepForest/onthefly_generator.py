@@ -246,12 +246,10 @@ class OnTheFlyGenerator(Generator):
         
         #If empty, return None
         if self.clipped_las is None:
-            raise ValueError("Empty lidar image")
-            #return None
+            return None
         
-        #Crop numpy array
+        #Crop and bind numpy array
         self.CHM = self.compute_CHM()
-    
         four_channel_image = self.bind_array()
         
         return four_channel_image
