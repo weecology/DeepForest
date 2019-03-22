@@ -513,6 +513,8 @@ if __name__ == '__main__':
         ]
     
         #Run training, and pass comet experiment class
+        #use all hand annotations, always
+        DeepForest_config["evaluation_images"] =0 
         experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2", project_name='deeplidar', log_code=False)
         experiment.log_parameters(DeepForest_config)    
         experiment.log_parameter("Start Time", dirname)    
