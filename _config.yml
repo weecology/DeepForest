@@ -4,6 +4,7 @@
 num_hipergator_workers: 30
 training_csvs:
   - SJER
+  - TEAK
 kernel_size: 11
 #Keras
 workers: 1
