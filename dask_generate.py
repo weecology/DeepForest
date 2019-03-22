@@ -4,6 +4,10 @@ import socket
 import os
 import sys
 
+#optional suppress warnings
+import warnings
+warnings.simplefilter("ignore")
+
 from DeepForest import Generate, config
 
 def find_csvs():
