@@ -205,6 +205,8 @@ if __name__ == '__main__':
 
     if mode.mode == "retrain":
         data = load_retraining_data(DeepForest_config)
+        for site in DeepForest_config["hand_annotation_site"]:
+            DeepForest_config[site]["h5"] = os.path.join(DeepForest_config[site]["h5"],"hand_annotations")        
     
     #pass an args object instead of using command line        
     args = [

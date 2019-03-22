@@ -9,8 +9,9 @@ import pandas as pd
 from . import onthefly_generator, preprocess, config, Lidar
 import sys
 import glob
+import pathlib
 
-#supress warnings
+#optional suppress warnings
 import warnings
 warnings.simplefilter("ignore")
 
@@ -54,7 +55,7 @@ def run(tile_csv=None, tile_xml = None, mode="train", site=None):
         
         #Destination dir
         destination_dir = DeepForest_config[site]["h5"]
-        
+            
     if mode == "retrain":
         #Base dir
         base_dir = DeepForest_config[site]["hand_annotations"]["RGB"]
@@ -69,16 +70,16 @@ def run(tile_csv=None, tile_xml = None, mode="train", site=None):
         windows = preprocess.create_windows(data, DeepForest_config, base_dir) 
 
         #Don't check lidar for density, annotations are made directly on RGB
-        check_lidar = False
+        check_lidar = True
         name = "hand_annotations"
         
         #destination dir
         destination_dir = os.path.join(DeepForest_config[site]["h5"],"hand_annotations")
-        
-        #If dest doesn't exist, create it
-        if not os.path.exists:
-            os.mkdir(destination_dir)
     
+    #If dest doesn't exist, create it
+    if not os.path.exists(destination_dir):
+        pathlib.Path(destination_dir).mkdir(parents=True, exist_ok=True)    
+        
     if windows is None:
         print("Invalid window, cannot find {} in {}".format(tilename, base_dir))
         return None
@@ -110,7 +111,7 @@ def run(tile_csv=None, tile_xml = None, mode="train", site=None):
     generator.load_image(1)
     
     if check_lidar:
-        point_cloud = generator.load_lidar_tile(normalize=False)
+        point_cloud = generator.load_lidar_tile()
     
     for i in range(generator.size()):
         
@@ -128,7 +129,7 @@ def run(tile_csv=None, tile_xml = None, mode="train", site=None):
             bounds = generator.get_window_extent()
             density = Lidar.check_density(point_cloud, bounds)
                     
-            if density < 2:
+            if density < generator.DeepForest_config["min_density"]:
                 print("Point density is {} for window {}, skipping".format(density, tilename))
                 continue
         
@@ -154,8 +155,6 @@ def run(tile_csv=None, tile_xml = None, mode="train", site=None):
     csv_filename = os.path.join(destination_dir, tilename + ".csv")    
     labeldf.to_csv(csv_filename, index=False)
     
-    #Write geographic position 
-    #Need to close h5py?
     hdf5_file.close()
     
     #flush system
