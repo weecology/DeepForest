@@ -14,7 +14,7 @@ import pathlib
 
 #optional suppress warnings
 import warnings
-#warnings.simplefilter("ignore")
+warnings.simplefilter("ignore")
 
 def parse_args():    
     
