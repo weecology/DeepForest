@@ -120,7 +120,7 @@ def neonRecall(
         
         #print("Point density is {:.2f}".format(density))
                 
-        if density > generator.DeepForest_config["min_density"]:
+        if density > 100:
             #find window utm coordinates
             #print("Bounds for image {}, window {}, are {}".format(generator.row["tile"], generator.row["window"], bounds))
             pc = postprocessing.drape_boxes(boxes=image_boxes, pc = generator.lidar_tile, bounds=bounds)     
