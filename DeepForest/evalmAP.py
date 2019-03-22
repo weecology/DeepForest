@@ -126,8 +126,8 @@ def _get_detections(generator, model, score_threshold=0.05, max_detections=100, 
                 
                 #Get new bounding boxes
                 image_boxes = postprocessing.cloud_to_box(pc, bounds)    
-                image_scores = image_scores[:new_boxes.shape[0]]
-                image_labels = image_labels[:new_boxes.shape[0]]          
+                image_scores = image_scores[:image_boxes.shape[0]]
+                image_labels = image_labels[:image_boxes.shape[0]]          
                 image_detections = np.concatenate([image_boxes, np.expand_dims(image_scores, axis=1), np.expand_dims(image_labels, axis=1)], axis=1)
                 
             else:
