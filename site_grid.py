@@ -78,6 +78,8 @@ for pretraining_site in pretraining_models:
         model = training_main(args=args, data=data, DeepForest_config=DeepForest_config, experiment=experiment)  
         
         #Run eval
+        #Always use all hand annotations
+        DeepForest_config["evaluation_images"] =0         
         experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2", project_name='deeplidar', log_code=False)
         experiment.log_parameter("mode","evaluation_grid")
         experiment.log_parameters(DeepForest_config)            
