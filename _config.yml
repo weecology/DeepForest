@@ -10,7 +10,7 @@ training_csvs:
 workers: 1
 use_multiprocessing: False
 max_queue_size: 20
-num_GPUs: 1
+num_GPUs: 2
 save_image_path: /orange/ewhite/b.weinstein/retinanet/
 save_snapshot_path: /orange/ewhite/b.weinstein/retinanet/
 
@@ -33,16 +33,16 @@ evaluation_site:
 
 #Training
 training_images: All
-weights: /orange/ewhite/b.weinstein/retinanet/20190318_144257/resnet50_02.h5
+weights: None
 imagenet_weights: True
-batch_size: 25
-epochs: 1
+batch_size: 20
+epochs: 3
 backbone: resnet50
 shuffle_training: True
 score_threshold: 0.20
 
 #Evaluation
-evaluation_images: 50
+evaluation_images: 0
 shuffle_evaluation: True
 validation_percent: 5 #For hand annotation neon_MAP
 
