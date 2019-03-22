@@ -40,6 +40,7 @@ for model_path in models:
     
     #Log experiments
     dirname = datetime.now().strftime("%Y%m%d_%H%M%S")  
+    DeepForest_config["evaluation_images"] =0             
     experiment.log_parameters(DeepForest_config)
     experiment.log_parameter("Start Time", dirname)    
     
