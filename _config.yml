@@ -32,9 +32,9 @@ evaluation_site:
   - SJER
 
 #Training
-training_images: All
+training_images: 100
 weights: None
-imagenet_weights: False
+imagenet_weights: True
 batch_size: 20
 epochs: 3
 backbone: resnet50
