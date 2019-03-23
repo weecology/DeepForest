@@ -152,8 +152,9 @@ def _get_detections(generator, model, score_threshold=0.05, max_detections=100, 
             row = generator.image_data[image_name]             
             lfname = os.path.splitext(row["tile"])[0] + "_" + str(row["window"]) +"_lidar"
             
-            #make cv2 colormap.
-            chm = cv2.applyColorMap(plot_image[:,:,3] * 255, cv2.COLORMAP_JET)
+            #make cv2 colormap
+            chm = plot_image[:,:,3].copy()
+            chm = cv2.applyColorMap(chm* 255, cv2.COLORMAP_JET)
         
             #Write CHM
             cv2.imwrite(os.path.join(save_path, '{}.png'.format(lfname)), chm)            
