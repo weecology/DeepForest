@@ -155,6 +155,8 @@ def _get_detections(generator, model, score_threshold=0.05, max_detections=100, 
             #make cv2 colormap
             chm = np.uint8(plot_image[:,:,3].copy())
             chm = cv2.applyColorMap(chm* 255, cv2.COLORMAP_BONE)
+            draw_annotations(chm, generator.load_annotations(i), label_to_name=generator.label_to_name)
+            draw_detections(chm, image_boxes, image_scores, image_labels, label_to_name=generator.label_to_name,score_threshold=score_threshold)
         
             #Write CHM
             cv2.imwrite(os.path.join(save_path, '{}.png'.format(lfname)), chm)            
