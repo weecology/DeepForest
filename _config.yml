@@ -57,6 +57,7 @@ SJER:
   h5: /orange/ewhite/b.weinstein/training_h5s/fourchannel/SJER/
   hand_annotations:
     RGB: /home/b.weinstein/DeepLidar/data/SJER/training/
+    LIDAR: /home/b.weinstein/DeepLidar/data/SJER/training/
   training_csvs: /home/b.weinstein/TreeSegmentation/analysis/Results/detection_boxes/SJER/2018/
   training:
     RGB: /ufrc/ewhite/b.weinstein/NeonData/SJER/DP3.30010.001/2018/FullSite/D17/2018_SJER_3/L3/Camera/Mosaic/V01/
