@@ -23,6 +23,7 @@ from keras_retinanet.utils.eval import _get_detections
 from DeepForest import Lidar 
 from DeepForest import postprocessing
 from DeepForest import onthefly_generator
+import copy
 
 def neonRecall(
     sites,
@@ -64,7 +65,7 @@ def neonRecall(
         
         #Load image
         raw_image    = generator.load_image(i)
-        raw_image = raw_image.copy()
+        plot_image = copy.deepcopy(raw_image)
         
         #Skip if missing a component data source
         if raw_image is None:
@@ -142,16 +143,16 @@ def neonRecall(
 
         #Save image and send it to logger
         if save_path is not None:
-            draw_detections(raw_image[:,:,:3], image_boxes, image_scores, image_labels, label_to_name=generator.label_to_name, score_threshold=score_threshold, color = (80,127,255))
+            draw_detections(plot_image[:,:,:3], image_boxes, image_scores, image_labels, label_to_name=generator.label_to_name, score_threshold=score_threshold, color = (80,127,255))
             
             x = (plot_data.UTM_E - tile_bounds.left).values / 0.1
             y = (tile_bounds.top - plot_data.UTM_N).values / 0.1
             
             for i in np.arange(len(x)):
-                cv2.circle(raw_image,(int(x[i]),int(y[i])), 2, (0,0,255), -1)
+                cv2.circle(plot_image,(int(x[i]),int(y[i])), 2, (0,0,255), -1)
     
             #Write RGB
-            cv2.imwrite(os.path.join(save_path, '{}_NeonPlot.png'.format(plotID)), raw_image[:,:,:3])
+            cv2.imwrite(os.path.join(save_path, '{}_NeonPlot.png'.format(plotID)), plot_image[:,:,:3])
                 
             #Format name and save
             if experiment:

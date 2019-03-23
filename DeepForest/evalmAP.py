@@ -13,6 +13,7 @@ import os
 import cv2
 from matplotlib import pyplot as plt
 from DeepForest import postprocessing, Lidar
+import copy
 
 def _compute_ap(recall, precision):
     """ Compute the average precision, given the recall and precision curves.
@@ -65,7 +66,7 @@ def _get_detections(generator, model, score_threshold=0.05, max_detections=100, 
         raw_image    = generator.load_image(i)
     
         #need to make contigious see https://stackoverflow.com/questions/23830618/python-opencv-typeerror-layout-of-the-output-array-incompatible-with-cvmat
-        raw_image = raw_image.copy()
+        plot_image = copy.deepcopy(raw_image)
         
         #Skip if missing a component data source
         if raw_image is None:
@@ -135,8 +136,8 @@ def _get_detections(generator, model, score_threshold=0.05, max_detections=100, 
                 #print("Point density of {:.2f} is too low, skipping image {}".format(density, generator.row["tile"]))        
 
         if save_path is not None:
-            draw_annotations(raw_image, generator.load_annotations(i), label_to_name=generator.label_to_name)
-            draw_detections(raw_image, image_boxes, image_scores, image_labels, label_to_name=generator.label_to_name,score_threshold=score_threshold)
+            draw_annotations(plot_image, generator.load_annotations(i), label_to_name=generator.label_to_name)
+            draw_detections(plot_image, image_boxes, image_scores, image_labels, label_to_name=generator.label_to_name,score_threshold=score_threshold)
 
             #name image
             image_name = generator.image_names[i]        
@@ -144,7 +145,7 @@ def _get_detections(generator, model, score_threshold=0.05, max_detections=100, 
             fname = os.path.splitext(row["tile"])[0] + "_" + str(row["window"])
             
             #Write RGB
-            cv2.imwrite(os.path.join(save_path, '{}.png'.format(fname)), raw_image[:,:,:3])
+            cv2.imwrite(os.path.join(save_path, '{}.png'.format(fname)), plot_image[:,:,:3])
         
             #Format name and save
             image_name = generator.image_names[i]        
@@ -152,7 +153,7 @@ def _get_detections(generator, model, score_threshold=0.05, max_detections=100, 
             lfname = os.path.splitext(row["tile"])[0] + "_" + str(row["window"]) +"_lidar"
         
             #Write CHM
-            cv2.imwrite(os.path.join(save_path, '{}.png'.format(lfname)), raw_image[:,:,3])            
+            cv2.imwrite(os.path.join(save_path, '{}.png'.format(lfname)), plot_image[:,:,3])            
             
             if experiment:
                 experiment.log_image(os.path.join(save_path, '{}.png'.format(fname)), file_name=fname)                
