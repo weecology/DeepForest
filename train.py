@@ -513,6 +513,7 @@ if __name__ == '__main__':
             "--weights", output_model
         ]
     
+        DeepForest_config["evaluation_images"] = 0 
         experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2", project_name='deeplidar', log_code=False)
         experiment.log_parameters(DeepForest_config)    
         experiment.log_parameter("Start Time", dirname)    
