@@ -143,7 +143,8 @@ def neonRecall(
 
         #Save image and send it to logger
         if save_path is not None:
-            draw_detections(plot_image[:,:,:3], image_boxes, image_scores, image_labels, label_to_name=generator.label_to_name, score_threshold=score_threshold, color = (80,127,255))
+            plot_image = np.uint8(plot_image[:,:,:3])
+            draw_detections(plot_image, image_boxes, image_scores, image_labels, label_to_name=generator.label_to_name, score_threshold=score_threshold, color = (80,127,255))
             
             x = (plot_data.UTM_E - tile_bounds.left).values / 0.1
             y = (tile_bounds.top - plot_data.UTM_N).values / 0.1
