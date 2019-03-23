@@ -72,7 +72,7 @@ def _get_detections(generator, model, score_threshold=0.05, max_detections=100, 
             print("Empty image, skipping")
             continue
         else:
-            chm = raw_image[:,:,3]
+            pass
         
         image        = generator.preprocess_image(raw_image)
         image, scale = generator.resize_image(image)
@@ -139,25 +139,20 @@ def _get_detections(generator, model, score_threshold=0.05, max_detections=100, 
             draw_detections(raw_image, image_boxes, image_scores, image_labels, label_to_name=generator.label_to_name,score_threshold=score_threshold)
 
             #name image
-            image_name=generator.image_names[i]        
-            row=generator.image_data[image_name]             
-            fname=os.path.splitext(row["tile"])[0] + "_" + str(row["window"])
+            image_name = generator.image_names[i]        
+            row = generator.image_data[image_name]             
+            fname = os.path.splitext(row["tile"])[0] + "_" + str(row["window"])
             
             #Write RGB
-            cv2.imwrite(os.path.join(save_path, '{}.png'.format(fname)), raw_image)
-            
-            #Write LIDAR
-            chm = chm.astype(np.float32) # convert to float        
-            draw_annotations(chm, generator.load_annotations(i), label_to_name=generator.label_to_name)
-            draw_detections(chm, image_boxes, image_scores, image_labels, label_to_name=generator.label_to_name,score_threshold=score_threshold)            
+            cv2.imwrite(os.path.join(save_path, '{}.png'.format(fname)), raw_image[:,:,:3])
         
             #Format name and save
-            image_name=generator.image_names[i]        
-            row=generator.image_data[image_name]             
-            lfname=os.path.splitext(row["tile"])[0] + "_" + str(row["window"]) +"_lidar"
+            image_name = generator.image_names[i]        
+            row = generator.image_data[image_name]             
+            lfname = os.path.splitext(row["tile"])[0] + "_" + str(row["window"]) +"_lidar"
         
             #Write CHM
-            cv2.imwrite(os.path.join(save_path, '{}.png'.format(lfname)), chm)            
+            cv2.imwrite(os.path.join(save_path, '{}.png'.format(lfname)), raw_image[:,:,3])            
             
             if experiment:
                 experiment.log_image(os.path.join(save_path, '{}.png'.format(fname)), file_name=fname)                
