@@ -10,7 +10,7 @@ kernel_size: 11
 workers: 1
 use_multiprocessing: False
 max_queue_size: 20
-num_GPUs: 1
+num_GPUs: 2
 save_image_path: /orange/ewhite/b.weinstein/retinanet/
 save_snapshot_path: /orange/ewhite/b.weinstein/retinanet/
 
@@ -25,25 +25,25 @@ preprocess:
 
 #Select sites
 hand_annotation_site:
-  - TEAK
+  - SJER
 pretraining_site:
-  - TEAK
+  - SJER
 evaluation_site:
-  - TEAK
+  - SJER
 
 #Training
 training_images: All
 weights: None
 imagenet_weights: False
-batch_size: 25
-epochs: 40
+batch_size: 20
+epochs: 3
 backbone: resnet50
-shuffle_training: True
+shuffle_training: False
 score_threshold: 0.20
 
 #Evaluation
 evaluation_images: 50
-shuffle_evaluation: True
+shuffle_evaluation: False
 validation_percent: 5 #For hand annotation neon_MAP
 
 #Non-max suppression, threshold for the IoU value to determine when a box should be suppressed.
