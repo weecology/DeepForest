@@ -82,7 +82,7 @@ def load_lidar(laz_path, normalize=True):
     #normalize and filter
     if normalize:
         try: 
-            pc.normalize(1)
+            pc.normalize(0.33)
         except:
             print("No vertical objects in image, skipping normalization")
     

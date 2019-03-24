@@ -3,6 +3,7 @@ import subprocess
 import socket
 import os
 import sys
+import re
 
 #optional suppress warnings
 import warnings
@@ -10,19 +11,43 @@ warnings.simplefilter("ignore")
 
 from DeepForest import Generate, config
 
-def find_csvs():
+def find_csvs(overwrite=T):
     """
     Find training csvs in site path
     """
     DeepForest_config = config.load_config()
     data_paths = {}
+    
     for site in DeepForest_config['training_csvs']:
         file_path = DeepForest_config[site]["training_csvs"]
         search_path = os.path.join(file_path,"*.csv")
         found_csvs = glob.glob(search_path)
+        
+        if not overwrite:
+            
+            #find completed sites
+            completed = glob.glob(os.path.join(DeepForest_config[site]["h5"],"*.csv"))
+            
+            #get geographic index and store
+            p = re.compile("(\d+_\d+)_image")       
+            completed_geo_index = [p.findall(x)[0] for x in completed]
+            print("There are {} completed files".format(len(completed_geo_index)))
+           
+           #For each found csv, has it been completed?
+            p2 = re.compile("(\d+_\d+)_c") 
+            for x in found_csvs:
+                geo_index = p2.findall(x)[0]
+                
+                if geo_index in completed_geo_index:
+                    found_csvs.remove(x)
+                    print("{} already run".format(geo_index))
+                    
         data_paths[site] = found_csvs
-    
-    return data_paths
+
+                    
+    return data_paths        
+
+            
 
 def run_test(data_paths):
     DeepForest_config = config.load_config()    
