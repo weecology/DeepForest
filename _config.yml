@@ -70,6 +70,7 @@ TEAK:
   training_csvs: /home/b.weinstein/TreeSegmentation/analysis/Results/detection_boxes/TEAK/2018/
   hand_annotations:
     RGB: /home/b.weinstein/DeepLidar/data/TEAK/training/
+    LIDAR: /home/b.weinstein/DeepLidar/data/TEAK/training/ 
   training:
     RGB: /orange/ewhite/NeonData/TEAK/DP3.30010.001/2018/FullSite/D17/2018_TEAK_3/L3/Camera/Mosaic/V01/
     LIDAR: /orange/ewhite/NeonData/TEAK/DP1.30003.001/2018/FullSite/D17/2018_TEAK_3/L1/DiscreteLidar/ClassifiedPointCloud/
