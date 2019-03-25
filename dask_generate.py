@@ -3,22 +3,48 @@ import subprocess
 import socket
 import os
 import sys
+import re
+
+#optional suppress warnings
+import warnings
+warnings.simplefilter("ignore")
 
 from DeepForest import Generate, config
 
-def find_csvs():
+def find_csvs(overwrite=False):
     """
     Find training csvs in site path
     """
     DeepForest_config = config.load_config()
     data_paths = {}
+    
     for site in DeepForest_config['training_csvs']:
         file_path = DeepForest_config[site]["training_csvs"]
         search_path = os.path.join(file_path,"*.csv")
         found_csvs = glob.glob(search_path)
+        
+        if not overwrite:
+            
+            #find completed sites
+            completed = glob.glob(os.path.join(DeepForest_config[site]["h5"],"*.csv"))
+            
+            #get geographic index and store
+            p = re.compile("(\d+_\d+)_image")       
+            completed_geo_index = [p.findall(x)[0] for x in completed]
+            print("There are {} completed files".format(len(completed_geo_index)))
+           
+           #For each found csv, has it been completed?
+            p2 = re.compile("(\d+_\d+)_c") 
+            for x in found_csvs[:]:
+                geo_index = p2.findall(x)[0]
+                
+                if geo_index in completed_geo_index:
+                    found_csvs.remove(x)
+                    print("{} already run".format(geo_index))
+                    
         data_paths[site] = found_csvs
-    
-    return data_paths
+        
+    return data_paths        
 
 def run_test(data_paths):
     DeepForest_config = config.load_config()    
@@ -81,6 +107,8 @@ def run_HPC(data_paths):
     for site in data_paths:
         futures = dask_client.map(Generate.run, data_paths[site], site=site)
         wait(futures)
+    
+    #TODO print futures in such a way to see result.
 
 if __name__ == "__main__":
     
@@ -92,8 +120,8 @@ if __name__ == "__main__":
     total_files = [len(data_paths[x]) for x in data_paths]
     print("{s} csv files found for training".format(s=sum(total_files)))
     
-    run_local(data_paths)
+    #run_local(data_paths)
     #run_test(data_paths)
     
     #On Hypergator
-    #run_HPC(data_paths)
+    run_HPC(data_paths)
