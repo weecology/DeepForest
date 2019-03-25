@@ -11,7 +11,7 @@ warnings.simplefilter("ignore")
 
 from DeepForest import Generate, config
 
-def find_csvs(overwrite=T):
+def find_csvs(overwrite=False):
     """
     Find training csvs in site path
     """
@@ -35,7 +35,7 @@ def find_csvs(overwrite=T):
            
            #For each found csv, has it been completed?
             p2 = re.compile("(\d+_\d+)_c") 
-            for x in found_csvs:
+            for x in found_csvs[:]:
                 geo_index = p2.findall(x)[0]
                 
                 if geo_index in completed_geo_index:
@@ -43,11 +43,8 @@ def find_csvs(overwrite=T):
                     print("{} already run".format(geo_index))
                     
         data_paths[site] = found_csvs
-
-                    
+        
     return data_paths        
-
-            
 
 def run_test(data_paths):
     DeepForest_config = config.load_config()    
