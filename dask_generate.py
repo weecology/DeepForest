@@ -107,6 +107,8 @@ def run_HPC(data_paths):
     for site in data_paths:
         futures = dask_client.map(Generate.run, data_paths[site], site=site)
         wait(futures)
+    
+    #TODO print futures in such a way to see result.
 
 if __name__ == "__main__":
     
