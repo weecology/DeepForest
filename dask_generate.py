@@ -121,7 +121,7 @@ if __name__ == "__main__":
     print("{s} csv files found for training".format(s=sum(total_files)))
     
     #run_local(data_paths)
-    run_test(data_paths)
+    #run_test(data_paths)
     
     #On Hypergator
-    #run_HPC(data_paths)
+    run_HPC(data_paths)
