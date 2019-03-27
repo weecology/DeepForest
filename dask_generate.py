@@ -113,7 +113,7 @@ def run_HPC(data_paths):
 if __name__ == "__main__":
     
     #Local Debugging
-    data_paths=find_csvs()
+    data_paths=find_csvs(overwrite=True)
     
     #Optionally limit
     #data_paths = data_paths[:100]
@@ -121,7 +121,7 @@ if __name__ == "__main__":
     print("{s} csv files found for training".format(s=sum(total_files)))
     
     #run_local(data_paths)
-    #run_test(data_paths)
+    run_test(data_paths)
     
     #On Hypergator
-    run_HPC(data_paths)
+    #run_HPC(data_paths)

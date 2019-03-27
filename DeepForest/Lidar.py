@@ -163,7 +163,7 @@ def compute_chm(clipped_las, kernel_size, min_threshold = 2):
     """
 
     #Median filter
-    chm = clipped_las.chm(cell_size = 0.1 , interp_method = "linear" )    
+    chm = clipped_las.chm(cell_size = 0.1 , interp_method = None)    
     
     if not kernel_size == 'None':
         chm.array = medfilt2d(chm.array, kernel_size=kernel_size)
