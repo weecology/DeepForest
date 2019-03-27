@@ -163,7 +163,7 @@ def compute_chm(clipped_las, kernel_size, min_threshold = 2):
     """
 
     #Median filter
-    chm = clipped_las.chm(cell_size = 0.1 , interp_method = None)    
+    chm = clipped_las.chm(cell_size = 0.1 , interp_method = "nearest")    
     
     if not kernel_size == 'None':
         chm.array = medfilt2d(chm.array, kernel_size=kernel_size)
@@ -173,7 +173,7 @@ def compute_chm(clipped_las, kernel_size, min_threshold = 2):
     
     #remove understory noise, anything under 2m.
     chm.array[chm.array < min_threshold] = 0   
-    chm.array[chm.array > 0] = 1   
+    #chm.array[chm.array > 0] = 1   
     
     return chm
 
