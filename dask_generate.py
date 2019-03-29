@@ -91,13 +91,13 @@ def run_HPC(data_paths):
         processes=1,
         queue='hpg2-compute',
         cores=1, 
-        memory='19GB', 
+        memory='22GB', 
         walltime='48:00:00',
         job_extra=extra_args,
         local_directory="/home/b.weinstein/logs/", death_timeout=300)
     
     print(cluster.job_script())
-    cluster.scale(num_workers)
+    cluster.adapt(num_workers, num_workers)
     
     dask_client = Client(cluster)
         
