@@ -25,11 +25,11 @@ preprocess:
 
 #Select sites
 hand_annotation_site:
-  - SJER
+  - TEAK
 pretraining_site:
-  - SJER
+  - TEAK
 evaluation_site:
-  - SJER
+  - TEAK
 
 #Training
 training_images: 1
@@ -69,6 +69,7 @@ TEAK:
   training_csvs: /Users/Ben/Documents/DeepLidar/data/TEAK/training/
   hand_annotations:
      RGB: /Users/Ben/Documents/DeepLidar/data/TEAK/training/
+     LIDAR: /Users/Ben/Documents/DeepLidar/data/TEAK/training/
   training:
     RGB: /Users/Ben/Documents/DeepLidar/data/TEAK/training/
     LIDAR: /Users/Ben/Documents/DeepLidar/data/TEAK/training/
