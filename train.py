@@ -401,7 +401,9 @@ def main(args=None, data=None, DeepForest_config=None, experiment=None):
     saved_models = glob.glob(os.path.join(args.snapshot_path,"*.h5"))
     saved_models.sort()
     
-    return saved_models[-1]
+    #Return model if found
+    if len(saved_models) > 0:
+        return saved_models[-1]
      
 if __name__ == '__main__':
     
@@ -504,7 +506,7 @@ if __name__ == '__main__':
             
         #pass an args object instead of using command line    
         args = [
-            "--epochs", str(30),
+            "--epochs", str(40),
             "--batch-size", str(DeepForest_config['batch_size']),
             "--backbone", str(DeepForest_config["backbone"]),
             "--score-threshold", str(DeepForest_config["score_threshold"]),
