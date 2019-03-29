@@ -153,9 +153,9 @@ def _get_detections(generator, model, score_threshold=0.05, max_detections=100, 
             lfname = os.path.splitext(row["tile"])[0] + "_" + str(row["window"]) +"_lidar"
             
             #make cv2 colormap
-            chm = np.uint8(plot_image[:,:,3].copy())
+            chm = plot_image[:,:,3].copy()
             #scale 
-            chm = chm/chm.max()
+            chm = np.uint8(chm/chm.max())
             chm = cv2.applyColorMap(chm * 255, cv2.COLORMAP_JET)
             draw_annotations(chm, generator.load_annotations(i), label_to_name=generator.label_to_name)
             draw_detections(chm, image_boxes, image_scores, image_labels, label_to_name=generator.label_to_name,score_threshold=score_threshold)
