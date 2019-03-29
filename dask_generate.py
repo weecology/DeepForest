@@ -97,7 +97,7 @@ def run_HPC(data_paths):
         local_directory="/home/b.weinstein/logs/", death_timeout=300)
     
     print(cluster.job_script())
-    cluster.adapt(num_workers, num_workers)
+    cluster.adapt(minimum_cores=num_workers, maximum_cores=num_workers)
     
     dask_client = Client(cluster)
         
