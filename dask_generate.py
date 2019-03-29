@@ -122,4 +122,4 @@ if __name__ == "__main__":
     #run_test(data_paths)
     
     #On Hypergator
-    run_HPC(data_paths)
+    #run_HPC(data_paths)
