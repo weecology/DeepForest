@@ -229,14 +229,6 @@ class OnTheFlyGenerator(Generator):
     def load_new_crop(self):
         ''''Read a new pair of RGB and LIDAR crop
         '''
-        #Load rgb image and get crop
-        image = self.retrieve_window()
-
-        #BGR order
-        image = image[:,:,::-1]
-        
-        #Store if needed for show, in RGB color space.
-        self.image = image        
         
         #Save image path for next evaluation to check
         self.previous_image_path = self.row["tile"]
@@ -248,11 +240,10 @@ class OnTheFlyGenerator(Generator):
         if self.clipped_las is None:
             return None
         
-        #Crop and bind numpy array
+        #Compute height model and return as numpy array
         self.CHM = self.compute_CHM()
-        four_channel_image = self.bind_array()
         
-        return four_channel_image
+        return self.CHM.array
         
     def load_image(self, image_index):
         """ Load an image at the image_index.
@@ -267,16 +258,15 @@ class OnTheFlyGenerator(Generator):
             if self.verbose:
                 print("Loading new tile {}".format(self.row["tile"]))
                 
-            self.numpy_image = self.load_rgb_tile()
             self.lidar_tile  = self.load_lidar_tile()
         
         #Load a new crop from self
-        four_channel_image = self.load_new_crop()
+        one_channel_image = self.load_new_crop()
         
-        if four_channel_image is None:
+        if one_channel_image is None:
             return None
         else: 
-            return four_channel_image
+            return one_channel_image
     
     def fetch_annotations(self):
         '''
