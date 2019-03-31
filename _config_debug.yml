@@ -53,7 +53,7 @@ min_density: 2
 
 #Data Paths
 SJER:
-  h5: /Users/Ben/Downloads/SJER/
+  h5: /Users/Ben/Downloads/LidarOnly/SJER/
   hand_annotations:
     RGB: /Users/Ben/Documents/DeepLidar/data/SJER/training/
     LIDAR: /Users/Ben/Documents/DeepLidar/data/SJER/training/
@@ -65,7 +65,7 @@ SJER:
     RGB: /Users/Ben/Documents/DeepLidar/data/SJER/plots/
     LIDAR: /Users/Ben/Documents/DeepLidar/data/SJER/plots/
 TEAK:
-  h5: /Users/Ben/Downloads/TEAK/
+  h5: /Users/Ben/Downloads/LidarOnly/TEAK/
   training_csvs: /Users/Ben/Documents/DeepLidar/data/TEAK/training/
   hand_annotations:
      RGB: /Users/Ben/Documents/DeepLidar/data/TEAK/training/

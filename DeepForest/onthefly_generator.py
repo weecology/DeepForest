@@ -243,7 +243,10 @@ class OnTheFlyGenerator(Generator):
         #Compute height model and return as numpy array
         self.CHM = self.compute_CHM()
         
-        return self.CHM.array
+        #turn into one channel array
+        one_channel_array = np.expand_dims(self.CHM.array, 3)
+        
+        return one_channel_array
         
     def load_image(self, image_index):
         """ Load an image at the image_index.
@@ -334,12 +337,6 @@ class OnTheFlyGenerator(Generator):
         #Find the original data and crop
         image_name = self.image_names[image_index]
         self.row = self.image_data[image_name]
-        
-        #Check for blank black image, if so, enforce no annotations
-        remove_annotations = image_utils.image_is_blank(self.image)
-    
-        if remove_annotations:
-            return np.zeros((0, 5))
         
         #Look for annotations in previous epoch
         key = self.row["tile"]+"_"+str(self.row["window"])
