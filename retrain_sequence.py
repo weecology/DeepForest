@@ -15,32 +15,30 @@ from DeepForest.utils.generators import load_retraining_data
 from train import main as training_main
 from eval import main as eval_main
 from eval import parse_args
-import copy
 
 #load config
 original_DeepForest_config = load_config()
 
 #find models
-models = glob.glob("/orange/ewhite/b.weinstein/retinanet/20190315_150652/*.h5")
+models = glob.glob("/orange/ewhite/b.weinstein/retinanet/20190329_193840/*.h5")
 #models = glob.glob("/Users/Ben/Documents/DeepLidar/snapshots/*.h5")
 
 #For each model, match the hand annotations with the pretraining model
 models.sort()
 results = []
-for model_path in models:
+for model in models:
     
     #load config
-    DeepForest_config = copy.deepcopy(original_DeepForest_config)
+    DeepForest_config = original_DeepForest_config
     
     #Replace config file and experiment
     experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2", project_name='deeplidar', log_code=False)
     experiment.log_parameter("mode","retrain_sequence")
     
-    print("Running pretraining model {}".format(model_path))
+    print("Running pretraining model {}".format(model))
     
     #Log experiments
     dirname = datetime.now().strftime("%Y%m%d_%H%M%S")  
-    DeepForest_config["evaluation_images"] =0             
     experiment.log_parameters(DeepForest_config)
     experiment.log_parameter("Start Time", dirname)    
     
@@ -65,7 +63,7 @@ for model_path in models:
         "--score-threshold", str(DeepForest_config["score_threshold"]),
         "--save-path", save_image_path,
         "--snapshot-path", save_snapshot_path,
-        "--weights", str(model_path)
+        "--weights", str(model)
     ]
     
     #Run training, and pass comet experiment class    
@@ -86,11 +84,10 @@ for model_path in models:
     ]
         
     stem_recall, mAP = eval_main(data=data, DeepForest_config=DeepForest_config, experiment=experiment, args=retinanet_args)
-    model_name = os.path.splitext(os.path.basename(model_path))[0]    
-    print(model_name)
+    
+    model_name = os.path.splitext(os.path.basename(model))[0]    
     results.append({"Model": model_name, "Stem Recall": stem_recall, "mAP": mAP})
 
-print(results)
 results = pd.DataFrame(results)
 print(results)
 results.to_csv("analysis/pretraining_size" + ".csv")    
