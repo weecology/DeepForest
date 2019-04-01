@@ -113,7 +113,7 @@ def run_HPC(data_paths):
 if __name__ == "__main__":
     
     #Local Debugging
-    data_paths=find_csvs(overwrite=True)
+    data_paths=find_csvs(overwrite=False)
     
     total_files = [len(data_paths[x]) for x in data_paths]
     print("{s} csv files found for training".format(s=sum(total_files)))
