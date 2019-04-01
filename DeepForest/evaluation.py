@@ -143,8 +143,6 @@ def neonRecall(
 
         #Save image and send it to logger
         if save_path is not None:
-            plot_image = np.uint8(plot_image[:,:,:3])
-            draw_detections(plot_image, image_boxes, image_scores, image_labels, label_to_name=generator.label_to_name, score_threshold=score_threshold, color = (80,127,255))
             
             x = (plot_data.UTM_E - tile_bounds.left).values / 0.1
             y = (tile_bounds.top - plot_data.UTM_N).values / 0.1
@@ -152,8 +150,11 @@ def neonRecall(
             for i in np.arange(len(x)):
                 cv2.circle(plot_image,(int(x[i]),int(y[i])), 2, (0,0,255), -1)
     
-            #Write RGB
-            cv2.imwrite(os.path.join(save_path, '{}_NeonPlot.png'.format(plotID)), plot_image[:,:,:3])
+            #Write CHM
+            chm = np.uint8(plot_image/plot_image.max()*255)
+            chm = cv2.applyColorMap(chm, cv2.COLORMAP_HOT)     
+            draw_detections(chm, image_boxes, image_scores, image_labels, label_to_name=generator.label_to_name, score_threshold=score_threshold, color = (80,127,255))            
+            cv2.imwrite(os.path.join(save_path, '{}_NeonPlot.png'.format(plotID)), chm)
                 
             #Format name and save
             if experiment:
