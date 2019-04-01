@@ -129,7 +129,7 @@ def run(tile_csv=None, tile_xml = None, mode="train", site=None):
             bounds = generator.get_window_extent()
             density = Lidar.check_density(point_cloud, bounds)
                     
-            if density < generator.DeepForest_config["min_density"]:
+            if density < 2:
                 print("Point density is {} for window {}, skipping".format(density, tilename))
                 continue
         

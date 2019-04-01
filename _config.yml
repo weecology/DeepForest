@@ -25,15 +25,15 @@ preprocess:
 
 #Select sites
 hand_annotation_site:
-  - SJER
+  - TEAK
 pretraining_site:
-  - SJER
+  - TEAK
 evaluation_site:
-  - SJER
+  - TEAK
 
 #Training
 training_images: All
-weights: None
+weights: /orange/ewhite/b.weinstein/retinanet/20190330_212904/resnet50_03.h5
 imagenet_weights: False
 batch_size: 20
 epochs: 40
@@ -50,7 +50,7 @@ validation_percent: 5 #For hand annotation neon_MAP
 nms_threshold: 0.1
 
 #LIDAR density
-min_density: 2
+min_density: 100
 
 #Data Paths
 SJER:
