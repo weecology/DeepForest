@@ -188,7 +188,6 @@ class H5Generator(Generator):
             #tilename for h5 and csv files
             tilename = os.path.split(self.row["tile"])[-1]
             tilename = os.path.splitext(tilename)[0]                        
-            
             h5_name = os.path.join(h5_dir, tilename+'.h5')
             csv_name = os.path.join(h5_dir, tilename+'.csv')
             
@@ -202,9 +201,6 @@ class H5Generator(Generator):
         #read image from h5
         window = self.row["window"]
         image = self.hf["train_imgs"][window,...]
-        
-        #Store RGB if needed for show, in RGB color space.
-        self.image = image[:,:,:3]        
         
         #Save image path for next evaluation to check
         self.previous_image_path = self.row["tile"]
@@ -239,25 +235,4 @@ class H5Generator(Generator):
         windows = sw.generate(numpy_image, sw.DimOrder.HeightWidthChannel,  self.DeepForest_config["patch_size"], self.DeepForest_config["patch_overlap"])
         
         return(windows)
-    
-if __name__=="__main__":
-    
-    import yaml
-    import preprocess
-    
-    #load config
-    with open('../_config_debug.yml', 'r') as f:
-        DeepForest_config = yaml.load(f)    
-    
-    #Load data
-    data=preprocess.load_csvs(h5_dir=DeepForest_config["training_h5_dir"])
-    
-    #Split training and test data
-    train, test = preprocess.split_training(data, DeepForest_config, experiment=None)
-    
-    generator=H5Generator(train, DeepForest_config)
-    
-    for i in range(generator.size()):
-        image=generator.load_image(i)
-        print(image.shape)
         

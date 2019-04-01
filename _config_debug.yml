@@ -33,7 +33,7 @@ evaluation_site:
 
 #Training
 training_images: 1
-weights: /Users/ben/Documents/DeepLidar/snapshots/SJER_selfsupervised.h5
+weights: None
 imagenet_weights: False
 batch_size: 25
 epochs: 1
