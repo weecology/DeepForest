@@ -136,9 +136,6 @@ def _get_detections(generator, model, score_threshold=0.05, max_detections=100, 
                 #print("Point density of {:.2f} is too low, skipping image {}".format(density, generator.row["tile"]))        
 
         if save_path is not None:
-            draw_annotations(plot_image, generator.load_annotations(i), label_to_name=generator.label_to_name)
-            draw_detections(plot_image, image_boxes, image_scores, image_labels, label_to_name=generator.label_to_name,score_threshold=score_threshold)
-        
             #Format name and save
             image_name = generator.image_names[i]        
             row = generator.image_data[image_name]             
