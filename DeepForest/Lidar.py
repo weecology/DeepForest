@@ -173,7 +173,7 @@ def compute_chm(clipped_las, kernel_size, min_threshold = 2):
     
     #remove understory noise, anything under 2m.
     chm.array[chm.array < min_threshold] = 0   
-    #chm.array[chm.array > 0] = 1   
+    chm.array[chm.array > 0] = 1   
     
     return chm
 
