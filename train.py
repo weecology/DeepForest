@@ -503,7 +503,7 @@ if __name__ == '__main__':
             
         #pass an args object instead of using command line    
         args = [
-            "--epochs", str(25),
+            "--epochs", str(50),
             "--batch-size", str(DeepForest_config['batch_size']),
             "--backbone", str(DeepForest_config["backbone"]),
             "--score-threshold", str(DeepForest_config["score_threshold"]),
