@@ -216,24 +216,23 @@ def split_training(data, DeepForest_config, experiment):
     #More than one tile in training data?
     single_tile =  len(data.tile.unique()) == 1
     
-    if single_tile:        
-        #Select n% as validation
-        msk = np.random.rand(len(data)) < 1-(float(DeepForest_config["validation_percent"])/100)
-        training = data[msk]
-        evaluation = data[~msk]     
+    if DeepForest_config["evaluation_images"] == 0:
+        training= data
+        evaluation = None
     else:
-        #Select one validation tile if validation is requested, if no validation data, take all tiles.        
-        if DeepForest_config["evaluation_images"] == 0:
-            training= data
-            evaluation = None
+        if single_tile: 
+                #Select n% as validation
+                msk = np.random.rand(len(data)) < 1-(float(DeepForest_config["validation_percent"])/100)
+                training = data[msk]
+                evaluation = data[~msk]  
         else:
-            eval_tile = data.tile.unique()[1]
-            evaluation = data[data["tile"] == eval_tile]
-            training = data[~(data["tile"] == eval_tile)]
-        
-            #Log 
-            if not experiment==None:
-                experiment.log_parameter(eval_tile, "Evaluation Tile")
+                eval_tile = data.tile.unique()[1]
+                evaluation = data[data["tile"] == eval_tile]
+                training = data[~(data["tile"] == eval_tile)]
+            
+                #Log 
+                if not experiment==None:
+                    experiment.log_parameter(eval_tile, "Evaluation Tile")
             
     #Select n Training samples
     if not DeepForest_config["training_images"]=="All":
@@ -347,7 +346,7 @@ def create_windows(data, DeepForest_config, base_dir):
     tile_windows["window"]=np.arange(0, len(windows))
     
     #Expand grid
-    tile_data=expand_grid(tile_windows)    
+    tile_data = expand_grid(tile_windows)    
     
     #Merge with the site variable
     merge_site = data[["rgb_path","site"]].drop_duplicates()
