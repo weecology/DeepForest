@@ -66,7 +66,7 @@ def _get_detections(generator, model, score_threshold=0.05, max_detections=100, 
         raw_image    = generator.load_image(i)
     
         #need to make contigious see https://stackoverflow.com/questions/23830618/python-opencv-typeerror-layout-of-the-output-array-incompatible-with-cvmat
-        plot_image = copy.deepcopy(raw_image)
+        plot_image = copy.deepcopy(raw_image[:,:,0])
         
         #Skip if missing a component data source
         if raw_image is None:

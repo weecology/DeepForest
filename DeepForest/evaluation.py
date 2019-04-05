@@ -65,7 +65,7 @@ def neonRecall(
         
         #Load image
         raw_image    = generator.load_image(i)
-        plot_image = copy.deepcopy(raw_image)
+        plot_image = copy.deepcopy(raw_image[:,:,0])
         
         #Skip if missing a component data source
         if raw_image is None:
