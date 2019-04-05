@@ -10,8 +10,7 @@ import re
 import glob 
 import numpy as np
 import os
-from scipy.signal import medfilt2d
-
+import cv2
 #random color
 import random
 
@@ -157,25 +156,22 @@ def clip_las(lidar_tile, annotations, row, windows, rgb_res):
     else:    
         return clipped
 
-def compute_chm(clipped_las, kernel_size, min_threshold = 2):
+def compute_chm(clipped_las, kernel_size, min_threshold = 1):
     """
     Computer a canopy height model based on the available laz file to align with the RGB data
     """
 
-    #Median filter
-    chm = clipped_las.chm(cell_size = 0.1 , interp_method = "nearest")    
-    
-    if not kernel_size == 'None':
-        chm.array = medfilt2d(chm.array, kernel_size=kernel_size)
-    
-    #replace nas with 0    
-    chm.array = np.nan_to_num(chm.array)
-    
-    #remove understory noise, anything under 2m.
+    #Filter 
+    chm = clipped_las.chm(cell_size = 0.1 , interp_method = None)    
     chm.array[chm.array < min_threshold] = 0   
-    chm.array[chm.array > 0] = 1   
+    CHM = np.uint8(chm.array)
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3,3))
+    dilated = cv2.dilate(CHM, kernel,iterations=4)
+    sobel = cv2.Sobel(dilated, cv2.CV_64F, 1, 0)
     
-    return chm
+    two_channel = np.dstack((dilated,sobel))
+    
+    return two_channel
 
 def watershed():
     
