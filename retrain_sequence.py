@@ -15,6 +15,7 @@ from DeepForest.utils.generators import load_retraining_data
 from train import main as training_main
 from eval import main as eval_main
 from eval import parse_args
+import copy
 
 #load config
 original_DeepForest_config = load_config()
@@ -29,7 +30,7 @@ results = []
 for model in models:
     
     #load config
-    DeepForest_config = original_DeepForest_config
+    DeepForest_config = copy.deepcopy(original_DeepForest_config)
     
     #Replace config file and experiment
     experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2", project_name='deeplidar', log_code=False)
