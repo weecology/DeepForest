@@ -20,7 +20,7 @@ from eval import parse_args
 original_DeepForest_config = load_config()
 
 #find models
-models = glob.glob("/orange/ewhite/b.weinstein/retinanet/20190329_193840/*.h5")
+models = glob.glob("/orange/ewhite/b.weinstein/retinanet/20190404_123941/*.h5")
 #models = glob.glob("/Users/Ben/Documents/DeepLidar/snapshots/*.h5")
 
 #For each model, match the hand annotations with the pretraining model

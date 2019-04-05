@@ -99,6 +99,11 @@ def _get_detections(generator, model, score_threshold=0.05, max_detections=100, 
         image_labels     = labels[0, indices[scores_sort]]
         image_detections = np.concatenate([image_boxes, np.expand_dims(image_scores, axis=1), np.expand_dims(image_labels, axis=1)], axis=1)
         
+        #name image
+        image_name = generator.image_names[i]        
+        row = generator.image_data[image_name]             
+        fname = os.path.splitext(row["tile"])[0] + "_" + str(row["window"])
+        
         #drape boxes
         #get lidar cloud if a new tile, or if not the same tile as previous image.
         if generator.with_lidar:
@@ -122,11 +127,14 @@ def _get_detections(generator, model, score_threshold=0.05, max_detections=100, 
                 #print("Bounds for image {}, window {}, are {}".format(generator.row["tile"], generator.row["window"], bounds))
                 pc = postprocessing.drape_boxes(boxes=image_boxes, pc = generator.lidar_tile, bounds=bounds)     
                 
+                
                 #Get new bounding boxes
-                image_boxes = postprocessing.cloud_to_box(pc, bounds)    
-                image_scores = image_scores[:new_boxes.shape[0]]
-                image_labels = image_labels[:new_boxes.shape[0]]          
-                image_detections = np.concatenate([image_boxes, np.expand_dims(image_scores, axis=1), np.expand_dims(image_labels, axis=1)], axis=1)
+                new_boxes = postprocessing.cloud_to_box(pc, bounds)    
+                new_scores = image_scores[:new_boxes.shape[0]]
+                new_labels = image_labels[:new_boxes.shape[0]]          
+                draw_annotations(raw_image, generator.load_annotations(i), label_to_name=generator.label_to_name)
+                draw_detections(raw_image, new_boxes, new_scores, new_labels, label_to_name=generator.label_to_name, score_threshold=score_threshold, color=[0,0,0])
+                pc.write(os.path.join(save_path, '{}.las'.format(fname)))
                 
             else:
                 pass
@@ -135,11 +143,6 @@ def _get_detections(generator, model, score_threshold=0.05, max_detections=100, 
         if save_path is not None:
             draw_annotations(raw_image, generator.load_annotations(i), label_to_name=generator.label_to_name)
             draw_detections(raw_image, image_boxes, image_scores, image_labels, label_to_name=generator.label_to_name,score_threshold=score_threshold)
-
-            #name image
-            image_name=generator.image_names[i]        
-            row=generator.image_data[image_name]             
-            fname=os.path.splitext(row["tile"])[0] + "_" + str(row["window"])
             
             #Write RGB
             cv2.imwrite(os.path.join(save_path, '{}.png'.format(fname)), raw_image)
