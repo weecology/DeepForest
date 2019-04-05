@@ -24,13 +24,13 @@ from DeepForest.preprocess import compute_windows, retrieve_window, NEON_annotat
 from DeepForest import postprocessing
 
 #Utility functions
-def normalize_four_channel(four_channel_image):
+def normalize_four_channel(image):
     
     """Normalize array inputs by max value. Threshold used for height"""
     
-    four_channel_image[:,:,0] =  four_channel_image[:,:,0]
+    image[:,:,0] =  image[:,:,0]/image[:,:,0].max()
     
-    return four_channel_image
+    return image
 
 def normalize(image):
     
