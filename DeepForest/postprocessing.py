@@ -24,7 +24,7 @@ def drape_boxes(boxes, pc, bounds=[]):
     for box in boxes:
 
         #Find utm coordinates
-        xmin, xmax, ymin, ymax = find_utm_coords(box = box, pc = pc, bounds=bounds)
+        xmin, xmax, ymin, ymax = find_utm_coords(box=box, pc=pc, bounds=bounds)
         
         #Update points
         pc.data.points.loc[(pc.data.points.x > xmin) & (pc.data.points.x < xmax)  & (pc.data.points.y > ymin)   & (pc.data.points.y < ymax),"user_data"] = tree_counter
@@ -32,8 +32,18 @@ def drape_boxes(boxes, pc, bounds=[]):
         #update counter
         tree_counter +=1 
         
-    #remove ground points    
-    pc.data.points.loc[pc.data.points.z < 2, "user_data"] = np.nan
+    #remove ground points 
+    pc.data.points.loc[pc.data.points.classification == 2, "user_data"] = np.nan
+    
+    #remove points under half meter
+    pc.data.points.loc[pc.data.points.z < 0.5, "user_data"] = np.nan
+    
+    #TODO
+    #Pass a window over the image 
+    #Following 1. Xu, S.; Ye, N.; Xu, S.; Zhu, F. A supervoxel approach to the segmentation of individual trees from LiDAR point clouds. Remote Sens. Lett. 2018, 9, 515–523.
+    #If there there are labeled points
+    #1. Find highest point in each tree cluster
+    #2. Find mean and sd of cluster elevation
     
     return pc    
     

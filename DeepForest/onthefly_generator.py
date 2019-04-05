@@ -56,7 +56,7 @@ class OnTheFlyGenerator(Generator):
         self.verbose = False
         
         #Switch for prediction with lidar
-        self.with_lidar = False
+        self.with_lidar = True
         
         #Tensorflow prediction session
         self.session_exists = False

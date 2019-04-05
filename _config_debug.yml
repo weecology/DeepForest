@@ -48,7 +48,7 @@ validation_percent: 5 #For hand annotation neon_MAP
 nms_threshold: 0.1
 
 #LIDAR density
-min_density: 100
+min_density: 2
 
 #Data Paths
 SJER:
