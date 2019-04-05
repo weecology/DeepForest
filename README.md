@@ -12,6 +12,10 @@ Some key dependencies that have some build specific installs include
 * Keras + Tensorflow
 * GDAL
 
+I've forked my own version of the wonderful keras retinanet implementation.
+
+https://github.com/bw4sz/keras-retinanet
+
 ```
 conda env create --name DeepForest -f=environment.yml
 ```
@@ -19,6 +23,16 @@ conda env create --name DeepForest -f=environment.yml
 Depending on conda env, you may need to download laszip directly see: https://stackoverflow.com/questions/49500149/laspy-cannot-find-laszip-when-is-installed-from-source-laszip-is-in-path
 
 All configurations are in the _config.yml 
+
+To install the retinanet, activate the conda env and pip install
+
+For example:
+```
+MacBook-Pro:keras-retinanet ben$ conda activate DeepLidar_dask
+(DeepLidar_dask) MacBook-Pro:keras-retinanet ben$ pip install .
+Processing /Users/ben/Documents/keras-retinanet
+```
+
 
 Generate data
 
