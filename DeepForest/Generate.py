@@ -99,7 +99,7 @@ def run(tile_csv=None, tile_xml = None, mode="train", site=None):
     hdf5_file = h5py.File(h5_filename, mode='w')    
     
     #A 3 channel image of square patch size.
-    train_shape = (generator.size(), DeepForest_config["patch_size"], DeepForest_config["patch_size"], 2)
+    train_shape = (generator.size(), DeepForest_config["patch_size"], DeepForest_config["patch_size"], 3)
     
     #Create h5 dataset to fill
     hdf5_file.create_dataset("train_imgs", train_shape, dtype='f')
