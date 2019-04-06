@@ -167,11 +167,12 @@ def compute_chm(clipped_las, kernel_size, min_threshold = 1):
     CHM = np.uint8(chm.array)
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3,3))
     dilated = cv2.dilate(CHM, kernel,iterations=4)
-    sobel = cv2.Sobel(dilated, cv2.CV_64F, 1, 0)
     
-    two_channel = np.dstack((dilated,sobel))
-    
-    return two_channel
+    #colorize it
+    colormap = np.uint8(dilated/dilated.max()*255)
+    colormap = cv2.applyColorMap(colormap, cv2.COLORMAP_HOT)    
+        
+    return colormap
 
 def watershed():
     

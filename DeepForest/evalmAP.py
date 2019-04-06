@@ -66,7 +66,7 @@ def _get_detections(generator, model, score_threshold=0.05, max_detections=100, 
         raw_image    = generator.load_image(i)
     
         #need to make contigious see https://stackoverflow.com/questions/23830618/python-opencv-typeerror-layout-of-the-output-array-incompatible-with-cvmat
-        plot_image = copy.deepcopy(raw_image[:,:,0])
+        plot_image = copy.deepcopy(raw_image)
         
         #Skip if missing a component data source
         if raw_image is None:
@@ -142,8 +142,7 @@ def _get_detections(generator, model, score_threshold=0.05, max_detections=100, 
             lfname = os.path.splitext(row["tile"])[0] + "_" + str(row["window"]) +"_lidar"
             
             #make cv2 colormap
-            chm = np.uint8(plot_image/plot_image.max()*255)
-            chm = cv2.applyColorMap(chm, cv2.COLORMAP_HOT)
+            chm = np.uint8(plot_image)
             draw_annotations(chm, generator.load_annotations(i), label_to_name=generator.label_to_name)
             draw_detections(chm, image_boxes, image_scores, image_labels, label_to_name=generator.label_to_name,score_threshold=score_threshold)
             

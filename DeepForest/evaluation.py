@@ -65,7 +65,7 @@ def neonRecall(
         
         #Load image
         raw_image    = generator.load_image(i)
-        plot_image = copy.deepcopy(raw_image[:,:,0])
+        plot_image = copy.deepcopy(raw_image)
         
         #Skip if missing a component data source
         if raw_image is None:
@@ -151,8 +151,7 @@ def neonRecall(
                 cv2.circle(plot_image,(int(x[i]),int(y[i])), 2, (0,0,255), -1)
     
             #Write CHM
-            chm = np.uint8(plot_image/plot_image.max()*255)
-            chm = cv2.applyColorMap(chm, cv2.COLORMAP_HOT)     
+            chm = np.uint8(plot_image)
             draw_detections(chm, image_boxes, image_scores, image_labels, label_to_name=generator.label_to_name, score_threshold=score_threshold, color = (80,127,255))            
             cv2.imwrite(os.path.join(save_path, '{}_NeonPlot.png'.format(plotID)), chm)
                 
