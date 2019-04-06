@@ -28,8 +28,7 @@ def normalize_four_channel(image):
     
     """Normalize array inputs by max value. Threshold used for height"""
     
-    image[:,:,0] =  image[:,:,0]/image[:,:,0]/10
-    image[:,:,1] =  image[:,:,1]/image[:,:,0]/10
+    image[:,:,0] =  image[:,:,0]/image[:,:,0]
     
     return image
 
