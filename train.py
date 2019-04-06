@@ -417,7 +417,7 @@ if __name__ == '__main__':
     DeepForest_config = load_config()
 
     #set experiment and log configs
-    experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2", project_name='deeplidar')
+    experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2", project_name='deeplidar',log_code=False)
 
     #save time for logging
     if mode.dir:
@@ -514,7 +514,7 @@ if __name__ == '__main__':
         ]
     
         DeepForest_config["evaluation_images"] = 0 
-        experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2", project_name='deeplidar')
+        experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2", project_name='deeplidar',log_code=False)
         experiment.log_parameters(DeepForest_config)    
         experiment.log_parameter("Start Time", dirname)    
         experiment.log_parameter("mode", "final_hand_annotation")
