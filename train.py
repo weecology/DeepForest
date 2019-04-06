@@ -215,16 +215,14 @@ def create_generators(args, data, DeepForest_config):
     train_generator = H5Generator(train, 
                                   batch_size = args.batch_size, 
                                   DeepForest_config = DeepForest_config, 
-                                  name = "training",
-                                  preprocess_image = image_utils.normalize_four_channel)
+                                  name = "training")
 
     #Validation Generator, check that it exists
     if test is not None:
         validation_generator = H5Generator(test, 
                                            batch_size = args.batch_size, 
                                            DeepForest_config = DeepForest_config, 
-                                           name = "training",
-                                           preprocess_image = image_utils.normalize_four_channel)
+                                           name = "training")
     else:
         validation_generator = None
         
