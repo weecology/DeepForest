@@ -5,7 +5,7 @@ from DeepForest import config
 
 #Load config
 DeepForest_config = config.load_config()
-pattern=os.path.join(DeepForest_config["SJER"]["h5"],"*.h5")
+pattern=os.path.join(DeepForest_config["TEAK"]["h5"],"*.h5")
 
 files=glob.glob(pattern)
 
