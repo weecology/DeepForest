@@ -89,7 +89,9 @@ def run(tile_csv=None, tile_xml = None, mode="train", site=None):
     generator = onthefly_generator.OnTheFlyGenerator(data,
                                                      windows,
                                                      DeepForest_config,
-                                                     name=name
+                                                     name=name,
+                                                     image_min_side=400,
+                                                     image_max_side=400
                                                      )
     
     #Create h5 dataset    
@@ -123,7 +125,7 @@ def run(tile_csv=None, tile_xml = None, mode="train", site=None):
         image = generator.load_image(i)
         
         #resize image
-        image, scale = generator.resize_image(image,min_size=400,max_size=400)
+        image, scale = generator.resize_image(image)
         
         #If image window is corrupt (RGB missing), go to next tile, it won't be in labeldf
         if image is None:
