@@ -120,13 +120,13 @@ class OnTheFlyGenerator(Generator):
         Number of annotation classes
         """
         #Get unique classes
-        uclasses=self.annotation_list.loc[:,['label','numeric_label']].drop_duplicates()
+        uclasses=self.annotation_list[["label","numeric_label"]].drop_duplicates()
         
         # Define classes 
         classes = {}
         for index, row in uclasses.iterrows():
             classes[row.label] = row.numeric_label
-        
+        print("There are {} classes: {}".format(len(classes),classes))
         return(classes)
     
     def num_classes(self):

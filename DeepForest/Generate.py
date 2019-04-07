@@ -90,8 +90,7 @@ def run(tile_csv=None, tile_xml = None, mode="train", site=None):
                                                      windows,
                                                      DeepForest_config,
                                                      name=name,
-                                                     image_min_side=400,
-                                                     image_max_side=400
+                                                     preprocess_image=image_utils.normalize_four_channel
                                                      )
     
     #Create h5 dataset    
@@ -123,9 +122,6 @@ def run(tile_csv=None, tile_xml = None, mode="train", site=None):
 
         #Load images
         image = generator.load_image(i)
-        
-        #resize image
-        image, scale = generator.resize_image(image)
         
         #If image window is corrupt (RGB missing), go to next tile, it won't be in labeldf
         if image is None:
