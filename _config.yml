@@ -11,7 +11,7 @@ kernel_size: 11
 workers: 1
 use_multiprocessing: False
 max_queue_size: 20
-num_GPUs: 2
+num_GPUs: 1
 save_image_path: /orange/ewhite/b.weinstein/retinanet/
 save_snapshot_path: /orange/ewhite/b.weinstein/retinanet/
 
@@ -33,19 +33,19 @@ evaluation_site:
   - SJER
 
 #Training
-training_images: 10000
+training_images: All
 weights: None
-imagenet_weights: False
+imagenet_weights: True
 batch_size: 20
-epochs: 5
+epochs: 40
 backbone: resnet50
 shuffle_training: False
-score_threshold: 0.20
+score_threshold: 0.1
 
 #Evaluation
 evaluation_images: 50
 shuffle_evaluation: False
-validation_percent: 5 #For hand annotation neon_MAP
+validation_percent: 20 #For hand annotation neon_MAP
 
 #Non-max suppression, threshold for the IoU value to determine when a box should be suppressed.
 nms_threshold: 0.1
