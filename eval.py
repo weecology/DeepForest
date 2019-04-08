@@ -156,17 +156,18 @@ def main(data, DeepForest_config, experiment, args=None):
     )
 
     # print evaluation
+    ## print evaluation
     present_classes = 0
     precision = 0
     for label, (average_precision, num_annotations) in average_precisions.items():
         print('{:.0f} instances of class'.format(num_annotations),
-              NEON_generator.label_to_name(label), 'with average precision: {:.3f}'.format(average_precision))
+              generator.label_to_name(label), 'with average precision: {:.3f}'.format(average_precision))
         if num_annotations > 0:
             present_classes += 1
             precision       += average_precision
     NEON_map = round(precision / present_classes,3)
     print('Neon mAP: {:.3f}'.format(NEON_map))
-    experiment.log_metric("Neon mAP", NEON_map)        
+    experiment.log_metric("Neon mAP", NEON_map)       
     
     return [recall, NEON_map]
     
