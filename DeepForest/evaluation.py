@@ -68,7 +68,7 @@ def neonRecall(
         plot_image = copy.deepcopy(raw_image)
         
         #Skip if missing a component data source
-        if raw_image is None:
+        if raw_image is False:
             print("Empty image, skipping")
             continue
         
