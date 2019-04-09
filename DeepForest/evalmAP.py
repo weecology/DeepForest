@@ -63,17 +63,23 @@ def _get_detections(generator, model, score_threshold=0.05, max_detections=100, 
     all_detections = [[None for i in range(generator.num_classes())] for j in range(generator.size())]
 
     for i in range(generator.size()):
+        print(i)
         raw_image    = generator.load_image(i)
     
-        #need to make contigious see https://stackoverflow.com/questions/23830618/python-opencv-typeerror-layout-of-the-output-array-incompatible-with-cvmat
+        ##need to make contigious see https://stackoverflow.com/questions/23830618/python-opencv-typeerror-layout-of-the-output-array-incompatible-with-cvmat
         plot_image = copy.deepcopy(raw_image)
         
+        #Temporary write raw file
+        #Format name and save
+        image_name = generator.image_names[i]        
+        row = generator.image_data[image_name]             
+        lfname = os.path.splitext(row["tile"])[0] + "_" + str(row["window"]) +"raw_image"              
+        cv2.imwrite(os.path.join(save_path, '{}.tif'.format(lfname)), plot_image)            
+        
         #Skip if missing a component data source
-        if raw_image is None:
+        if raw_image is False:
             print("Empty image, skipping")
             continue
-        else:
-            pass
         
         image        = generator.preprocess_image(raw_image)
         image, scale = generator.resize_image(image)

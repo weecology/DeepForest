@@ -193,16 +193,19 @@ class OnTheFlyGenerator(Generator):
             self.with_lidar = True
             return lidar_filepath
         else:
-            print("Lidar file {} cannot be found in {}".format(self.row["tile"], lidar_path))
+            return None
 
     def load_lidar_tile(self, normalize = True):
         '''Load a point cloud into memory from file
         '''
-        self.lidar_filepath=self.fetch_lidar_filename()        
-        self.lidar_tile=Lidar.load_lidar(self.lidar_filepath, normalize)
+        self.lidar_filepath=self.fetch_lidar_filename()
+        if self.lidar_filepath == None:
+            print("Lidar file {} cannot be found".format(self.row["tile"]))
+            return None
         
+        self.lidar_tile=Lidar.load_lidar(self.lidar_filepath, normalize)
         return self.lidar_tile
-    
+
     def load_rgb_tile(self):
         ''''
         Read RGB tile from file
@@ -229,7 +232,6 @@ class OnTheFlyGenerator(Generator):
     def load_new_crop(self):
         ''''Read a new pair of RGB and LIDAR crop
         '''
-        
         #Save image path for next evaluation to check
         self.previous_image_path = self.row["tile"]
         
@@ -241,9 +243,12 @@ class OnTheFlyGenerator(Generator):
             return None
         
         #Compute height model and return as numpy array
-        two_channel_array = self.compute_CHM()
+        try:
+            three_channel_array = self.compute_CHM()
+        except:
+            return None
         
-        return two_channel_array
+        return three_channel_array
         
     def load_image(self, image_index):
         """ Load an image at the image_index.
@@ -254,19 +259,21 @@ class OnTheFlyGenerator(Generator):
         
         ##Check if image the is same as previous draw from self
         if not self.row["tile"] == self.previous_image_path:
-            
             if self.verbose:
                 print("Loading new tile {}".format(self.row["tile"]))
                 
-            self.lidar_tile  = self.load_lidar_tile()
+            self.lidar_tile  = self.load_lidar_tile()            
+            if self.lidar_tile == None:
+                print("image annotations have no corresponding crop, exiting.")
+                return False
         
         #Load a new crop from self
-        one_channel_image = self.load_new_crop()
+        three_channel_image = self.load_new_crop()
         
-        if one_channel_image is None:
-            return None
+        if three_channel_image is None:
+            return False
         else: 
-            return one_channel_image
+            return three_channel_image
     
     def fetch_annotations(self):
         '''

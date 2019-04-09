@@ -74,5 +74,5 @@ TEAK:
     RGB: /Users/Ben/Documents/DeepLidar/data/TEAK/training/
     LIDAR: /Users/Ben/Documents/DeepLidar/data/TEAK/training/
   evaluation:
-    RGB: /Users/Ben/Documents/DeepLidar/data/TEAK/plots/
-    LIDAR: /Users/Ben/Documents/DeepLidar/data/TEAK/plots/
+    RGB: /Users/Ben/Documents/DeepLidar/data/TEAK/samples/
+    LIDAR: /Users/Ben/Documents/DeepLidar/data/TEAK/samples/
