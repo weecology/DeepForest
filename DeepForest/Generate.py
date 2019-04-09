@@ -90,7 +90,8 @@ def run(tile_csv=None, tile_xml = None, mode="train", site=None):
                                                      windows,
                                                      DeepForest_config,
                                                      name=name,
-                                                     preprocess_image=image_utils.normalize_four_channel
+                                                     image_min_side=400,
+                                                     image_max_side=400
                                                      )
     
     #Create h5 dataset    
@@ -142,6 +143,8 @@ def run(tile_csv=None, tile_xml = None, mode="train", site=None):
                 print("Point density is too patchy ({}%) for window {}, skipping".format(propNA, tilename))
                 continue 
             
+        image = generator.resize_image(image)
+        
         hdf5_file["train_imgs"][i,...] = image        
         
         #Load annotations and write a pandas frame
