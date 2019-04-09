@@ -4,7 +4,11 @@
 num_hipergator_workers: 20
 training_csvs:
   - TEAK
+
+#LIDAR settings
 kernel_size: 11
+min_density: 2
+min_coverage: 30
 
 #Keras
 workers: 1
@@ -13,6 +17,7 @@ max_queue_size: 10
 num_GPUs: 1
 save_image_path: snapshots/images/
 save_snapshot_path: snapshots/images/
+input_channels: 3
 
 #Sliding Window Size and Ovelap
 patch_size: 400
@@ -47,9 +52,6 @@ shuffle_evaluation: False
 validation_percent: 50 #For hand annotation neon_MAP
 #Non-max suppression, threshold for the IoU value to determine when a box should be suppressed.
 nms_threshold: 0.1
-
-#LIDAR density
-min_density: 2
 
 #Data Paths
 SJER:

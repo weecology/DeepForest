@@ -109,7 +109,6 @@ class OnTheFlyGenerator(Generator):
         
         #Bring back together
         newdf = pd.concat(groups).reset_index(drop=True)
-        
         image_data = newdf.to_dict("index")
         image_names = list(image_data.keys())
         
@@ -381,17 +380,7 @@ class OnTheFlyGenerator(Generator):
         
         return (utm_xmin, utm_xmax, utm_ymin, utm_ymax)
    
-    #Prediction methods
-    def get_session(self):
-        config = tf.ConfigProto()
-        config.gpu_options.allow_growth = True
-        return tf.Session(config=config)
     
-    def tf_session(self):
-        # set the modified tf session as backend in keras        
-        keras.backend.tensorflow_backend.set_session(self.get_session())        
-        
-        #flag for session setting
-        self.session_exists = True
+
         
         

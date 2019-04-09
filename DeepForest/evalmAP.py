@@ -63,7 +63,6 @@ def _get_detections(generator, model, score_threshold=0.05, max_detections=100, 
     all_detections = [[None for i in range(generator.num_classes())] for j in range(generator.size())]
 
     for i in range(generator.size()):
-        print(i)
         raw_image    = generator.load_image(i)
     
         ##need to make contigious see https://stackoverflow.com/questions/23830618/python-opencv-typeerror-layout-of-the-output-array-incompatible-with-cvmat
