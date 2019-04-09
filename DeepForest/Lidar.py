@@ -161,10 +161,11 @@ def compute_chm(clipped_las, kernel_size, min_threshold = 1):
     Computer a canopy height model based on the available laz file to align with the RGB data
     """
     #Filter 
-    chm = clipped_las.chm(cell_size = 0.1 , interp_method = "nearest")    
+    chm = clipped_las.chm(cell_size = 0.1 , interp_method = "nearest")  
     chm.array[chm.array < min_threshold] = 0   
+    chm.array[chm.array > np.quantile(chm.array,0.999)] = 0   
     CHM = np.uint8(chm.array)
-    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3,3))
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3,3))    
     dilated = cv2.dilate(CHM, kernel,iterations=3)
     
     #colorize it

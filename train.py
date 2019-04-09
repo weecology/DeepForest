@@ -77,7 +77,7 @@ def model_with_weights(model, weights, skip_mismatch):
     return model
 
 
-def create_models(backbone_retinanet, num_classes, weights, multi_gpu=0, freeze_backbone=False,nms_threshold=None):
+def create_models(backbone_retinanet, num_classes, weights, multi_gpu=0, freeze_backbone=False, nms_threshold=None, input_channels=3):
     """ Creates three models (model, training_model, prediction_model).
 
     Args
@@ -98,10 +98,10 @@ def create_models(backbone_retinanet, num_classes, weights, multi_gpu=0, freeze_
     # optionally wrap in a parallel model
     if multi_gpu > 1:
         with tf.device('/cpu:0'):
-            model = model_with_weights(backbone_retinanet(num_classes, modifier=modifier), weights=weights, skip_mismatch=True)
+            model = model_with_weights(backbone_retinanet(num_classes, modifier=modifier, input_channels=input_channels), weights=weights, skip_mismatch=True)
         training_model = multi_gpu_model(model, gpus=multi_gpu)
     else:
-        model          = model_with_weights(backbone_retinanet(num_classes, modifier=modifier), weights=weights, skip_mismatch=True)
+        model          = model_with_weights(backbone_retinanet(num_classes, modifier=modifier, input_channels=input_channels), weights=weights, skip_mismatch=True)
         training_model = model
 
     # make prediction model
@@ -330,7 +330,7 @@ def main(args=None, data=None, DeepForest_config=None, experiment=None):
         print('Loading model, this may take a secondkeras-retinanet.\n')
         model            = models.load_model(args.snapshot, backbone_name=args.backbone)
         training_model   = model
-        prediction_model = retinanet_bbox(model=model,nms_threshold=DeepForest_config["nms_threshold"])
+        prediction_model = retinanet_bbox(model=model, nms_threshold=DeepForest_config["nms_threshold"])
     else:
         weights = args.weights
         # default to imagenet if nothing else is specified
@@ -346,7 +346,8 @@ def main(args=None, data=None, DeepForest_config=None, experiment=None):
             weights=weights,
             multi_gpu=args.multi_gpu,
             freeze_backbone=args.freeze_backbone,
-            nms_threshold=DeepForest_config["nms_threshold"]
+            nms_threshold=DeepForest_config["nms_threshold"],
+            input_channels=DeepForest_config["input_channels"]
         )
 
     # print model summary
