@@ -137,10 +137,11 @@ def run(tile_csv=None, tile_xml = None, mode="train", site=None):
                 continue
             
             #Check for a patchy chm, get proportion NA
-            propNA = image_utils.proportion_NA()
+            propNA = image_utils.proportion_NA(point_cloud)
             if propNA > DeepForest_config["min_coverage"]:
                 print("Point density is too patchy ({}%) for window {}, skipping".format(propNA, tilename))
-                
+                continue 
+            
         hdf5_file["train_imgs"][i,...] = image        
         
         #Load annotations and write a pandas frame
