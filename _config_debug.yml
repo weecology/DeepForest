@@ -36,7 +36,7 @@ evaluation_site:
   - SJER
 
 #Training
-training_images: 1
+training_images: All
 weights: None
 imagenet_weights: False
 batch_size: 25

@@ -180,7 +180,7 @@ if __name__ == '__main__':
     import numpy as np
     from datetime import datetime
     from DeepForest.config import load_config
-    from DeepForest import preprocess, Generate    
+    from DeepForest import preprocess    
     
     #Set training or training
     mode_parser     = argparse.ArgumentParser(description='Retinanet training or finetuning?')
@@ -191,7 +191,7 @@ if __name__ == '__main__':
     mode = mode_parser.parse_args()
 
     #set experiment and log configs
-    experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2",project_name='deeplidar',log_code=False)
+    experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2",project_name='deeplidar',log_code=True)
 
     DeepForest_config = load_config()
 
