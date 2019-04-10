@@ -219,7 +219,7 @@ class OnTheFlyGenerator(Generator):
     def compute_CHM(self):
         '''' Compute a canopy height model on loaded point cloud
         '''
-        CHM = Lidar.compute_chm(self.clipped_las, kernel_size=self.DeepForest_config["kernel_size"])
+        CHM = Lidar.compute_chm(self.clipped_las)
         return CHM
     
     def bind_array(self):

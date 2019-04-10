@@ -156,7 +156,7 @@ def clip_las(lidar_tile, annotations, row, windows, rgb_res):
     else:    
         return clipped
 
-def compute_chm(clipped_las, kernel_size, min_threshold = 1):
+def compute_chm(clipped_las, min_threshold = 1):
     """
     Computer a canopy height model based on the available laz file to align with the RGB data
     """
