@@ -42,13 +42,13 @@ training_images: All
 weights: None
 imagenet_weights: True
 batch_size: 20
-epochs: 100
+epochs: 2
 backbone: resnet50
 shuffle_training: False
 score_threshold: 0.2
 
 #Evaluation
-evaluation_images: 0
+evaluation_images: 50
 shuffle_evaluation: False
 validation_percent: 20 #For hand annotation neon_MAP
 
