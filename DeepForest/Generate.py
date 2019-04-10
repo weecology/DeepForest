@@ -146,7 +146,7 @@ def run(tile_csv=None, tile_xml = None, mode="train", site=None):
         #TODO do boxes need to be scaled in some way?    
         image, scale = generator.resize_image(image)
         
-        iamge = np.expand_dims(image, 2)
+        image = np.expand_dims(image, 2)
         
         hdf5_file["train_imgs"][i,...] = image        
         
