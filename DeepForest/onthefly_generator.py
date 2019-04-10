@@ -57,7 +57,7 @@ class OnTheFlyGenerator(Generator):
         self.verbose = False
         
         #Switch for prediction with lidar
-        self.with_lidar = True
+        self.with_lidar = False
         
         #Tensorflow prediction session
         self.session_exists = False
@@ -189,7 +189,6 @@ class OnTheFlyGenerator(Generator):
         lidar_filepath = Lidar.fetch_lidar_filename(self.row, lidar_path)
         
         if lidar_filepath:
-            self.with_lidar = True
             return lidar_filepath
         else:
             return None
