@@ -52,6 +52,9 @@ class H5Generator(Generator):
         #Holder for image path, keep from reloading same image to save time.
         self.previous_image_path=None
         
+        #Turn off lidar checking during prediction for training sets.
+        self.with_lidar=False
+        
         #Read classes
         self.classes={"Tree": 0}
         
