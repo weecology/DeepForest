@@ -30,24 +30,24 @@ preprocess:
 
 #Select sites
 hand_annotation_site:
-  - SJER
+  - TEAK
 pretraining_site:
-  - SJER
+  - TEAK
 evaluation_site:
-  - SJER
+  - TEAK
 
 #Training
 training_images: All
 weights: None
 imagenet_weights: True
 batch_size: 20
-epochs: 2
+epochs: 75
 backbone: resnet50
 shuffle_training: False
 score_threshold: 0.2
 
 #Evaluation
-evaluation_images: 50
+evaluation_images: 0
 shuffle_evaluation: False
 validation_percent: 20 #For hand annotation neon_MAP
 
