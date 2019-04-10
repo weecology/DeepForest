@@ -163,7 +163,7 @@ def compute_chm(clipped_las, kernel_size, min_threshold = 1):
     #Filter 
     chm = clipped_las.chm(cell_size = 0.1 , interp_method = "nearest")  
     chm.array[chm.array < min_threshold] = 0   
-    #chm.array[chm.array > np.quantile(chm.array,0.999)] = np.quantile(chm.array,0.999)   
+    chm.array[chm.array > np.quantile(chm.array,0.9999)] = np.quantile(chm.array,0.9999)   
     CHM = np.uint8(chm.array)
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3,3))    
     dilated = cv2.dilate(CHM, kernel,iterations=3)
