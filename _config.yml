@@ -17,7 +17,7 @@ max_queue_size: 20
 num_GPUs: 1
 save_image_path: /orange/ewhite/b.weinstein/retinanet/
 save_snapshot_path: /orange/ewhite/b.weinstein/retinanet/
-input_channels: 3
+input_channels: 1
 
 #Sliding Window Size and Ovelap
 patch_size: 400
@@ -56,7 +56,7 @@ nms_threshold: 0.1
 
 #Data Paths
 SJER:
-  h5: /orange/ewhite/b.weinstein/training_h5s/absoluteheight/SJER/
+  h5: /orange/ewhite/b.weinstein/training_h5s/greyscale/SJER/
   hand_annotations:
     RGB: /home/b.weinstein/DeepLidar/data/SJER/training/
     LIDAR: /home/b.weinstein/DeepLidar/data/SJER/training/
@@ -68,7 +68,7 @@ SJER:
     RGB: /home/b.weinstein/DeepLidar/data/SJER/plots/
     LIDAR: /home/b.weinstein/DeepLidar/data/SJER/plots/
 TEAK:
-  h5: /orange/ewhite/b.weinstein/training_h5s/absoluteheight/TEAK/
+  h5: /orange/ewhite/b.weinstein/training_h5s/greyscale/TEAK/
   training_csvs: /home/b.weinstein/TreeSegmentation/analysis/Results/detection_boxes/TEAK/2018/
   hand_annotations:
     RGB: /home/b.weinstein/DeepLidar/data/TEAK/training/
