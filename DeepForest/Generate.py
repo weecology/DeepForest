@@ -142,8 +142,9 @@ def run(tile_csv=None, tile_xml = None, mode="train", site=None):
             if propNA > DeepForest_config["min_coverage"]:
                 print("Point density is too patchy ({}%) for window {}, skipping".format(propNA, tilename))
                 continue 
-            
-        image = generator.resize_image(image)
+        
+        #TODO do boxes need to be scaled in some way?    
+        image, scale = generator.resize_image(image)
         
         hdf5_file["train_imgs"][i,...] = image        
         
