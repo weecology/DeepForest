@@ -169,8 +169,8 @@ def compute_chm(clipped_las, min_threshold = 1):
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3,3))    
     dilated = cv2.dilate(CHM, kernel,iterations=3)
     
-    #colorize it
-    colormap = np.uint8(dilated/dilated.max()*255)
+    #colorize it, stretch that scale a bit to get a set of colors
+    colormap = np.uint8(dilated*3)
     colormap = cv2.applyColorMap(colormap, cv2.COLORMAP_HOT)            
         
     return colormap
