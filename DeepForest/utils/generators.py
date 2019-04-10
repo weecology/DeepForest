@@ -81,6 +81,8 @@ def create_NEON_generator(batch_size, DeepForest_config, name="evaluation"):
         batch_size = batch_size,
         DeepForest_config = DeepForest_config,
         group_method="none",
-        name=name)
+        name=name,
+        preprocess_image=image_utils.normalize
+    )
     
     return(generator)

@@ -31,21 +31,11 @@ def proportion_NA(pc):
     proportionNA = np.count_nonzero(np.isnan(chm.array))/chm.array.size
     return proportionNA * 100
     
-def normalize_four_channel(image):
-    
-    """Normalize array inputs by max value. Threshold used for height"""
-    image[:,:,0] =  image[:,:,0]
-    
-    return image
-
 def normalize(image):
     
-    #Range normalize for all channels 
-    v_min = image.min(axis=(0, 1), keepdims=True)
-    v_max = image.max(axis=(0, 1), keepdims=True)
-    normalized_image=(v - v_min)/(v_max - v_min)
-    
-    return normalized_image
+    """Custom normalization"""    
+    return image
+
 
 def image_is_blank(image):
     
