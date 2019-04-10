@@ -170,7 +170,10 @@ def compute_chm(clipped_las, min_threshold = 1):
     dilated = cv2.dilate(CHM, kernel,iterations=3)
     
     #colorize it, stretch that scale a bit to get a set of colors
-    one_channel_array = np.uint8(dilated/dilated.max())
+    greyscale = np.uint8(dilated/dilated.max())
+    
+    #Add extra dim
+    one_channel_array = np.expand_dims(greyscale, 2)
         
     return one_channel_array
          

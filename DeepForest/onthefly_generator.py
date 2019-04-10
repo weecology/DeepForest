@@ -242,11 +242,11 @@ class OnTheFlyGenerator(Generator):
         
         #Compute height model and return as numpy array
         try:
-            three_channel_array = self.compute_CHM()
+            one_channel_array = self.compute_CHM()
         except:
             return None
         
-        return three_channel_array
+        return one_channel_array
         
     def load_image(self, image_index):
         """ Load an image at the image_index.
