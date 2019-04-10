@@ -140,7 +140,8 @@ def create_callbacks(model, training_model, prediction_model, train_generator, v
                               experiment=experiment,
                               save_path=args.save_path,
                               score_threshold=args.score_threshold,
-                              DeepForest_config=DeepForest_config)
+                              DeepForest_config=DeepForest_config,
+                              )
         
         evaluation = RedirectModel(evaluation, prediction_model)
         callbacks.append(evaluation)
@@ -215,14 +216,18 @@ def create_generators(args, data, DeepForest_config):
     train_generator = H5Generator(train, 
                                   batch_size = args.batch_size, 
                                   DeepForest_config = DeepForest_config, 
-                                  name = "training")
+                                  name = "training",
+                                  preprocess_image=image_utils.normalize
+                                  )
 
     #Validation Generator, check that it exists
     if test is not None:
         validation_generator = H5Generator(test, 
                                            batch_size = args.batch_size, 
                                            DeepForest_config = DeepForest_config, 
-                                           name = "training")
+                                           name = "training",
+                                           preprocess_image=image_utils.normalize
+                                           )
     else:
         validation_generator = None
         
