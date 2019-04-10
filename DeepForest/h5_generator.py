@@ -39,15 +39,11 @@ class H5Generator(Generator):
         """ Initialize a data generator.
 
         """
-        
         self.image_names = []
         self.image_data  = {}
         self.name = name
         self.windowdf = data
         self.DeepForest_config = DeepForest_config
-        
-        #A switch to allow RGB only
-        self.with_lidar = False
         
         #Holder for the group order, after shuffling we can still recover loss -> window
         self.group_order = {}
@@ -148,22 +144,6 @@ class H5Generator(Generator):
         
         return(image_data, image_names)
     
-    def fetch_lidar_filename(self):           
-        lidar_path = self.DeepForest_config[self.row["site"]][self.name]["LIDAR"]        
-        lidar_filepath = Lidar.fetch_lidar_filename(self.row, lidar_path)
-        
-        if lidar_filepath:
-            self.with_lidar = True
-            return lidar_filepath
-        else:
-            print("Lidar file {} cannot be found in {}".format(self.row["tile"], lidar_path))
-        
-    def load_lidar_tile(self):
-        '''Load a point cloud into memory from file
-        '''
-        self.lidar_filepath = self.fetch_lidar_filename()        
-        self.lidar_tile = Lidar.load_lidar(self.lidar_filepath)
-    
     def load_image(self, image_index):
         """ Load an image at the image_index.
         """
@@ -179,8 +159,7 @@ class H5Generator(Generator):
         #Open image to crop
         ##Check if tile the is same as previous draw from generator, this will save time.
         if not self.row["tile"] == self.previous_image_path:
-            
-            print("Loading new tile: %s" % (self.row["tile"]))
+            print("Loading new h5: %s" % (self.row["tile"]))
             
             #Set directory based on site
             h5_dir = self.DeepForest_config[self.row["site"]]["h5"]
@@ -193,7 +172,6 @@ class H5Generator(Generator):
             
             #Read h5 
             self.hf = h5py.File(h5_name, 'r')
-            train_addrs = self.hf['train_imgs']
             
             #Read corresponding csv labels
             self.annotations = pd.read_csv(csv_name)

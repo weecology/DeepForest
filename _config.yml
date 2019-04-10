@@ -7,7 +7,6 @@ training_csvs:
   - TEAK
 
 #LIDAR settings
-kernel_size: 11
 min_density: 2
 min_coverage: 30
 

@@ -72,6 +72,7 @@ def load_lidar(laz_path, normalize=True):
     """
     
     try:
+        print("Loading tile")
         pc = pyfor.cloud.Cloud(laz_path)
         pc.extension = ".las"
         
@@ -156,21 +157,21 @@ def clip_las(lidar_tile, annotations, row, windows, rgb_res):
     else:    
         return clipped
 
-def compute_chm(clipped_las, kernel_size, min_threshold = 1):
+def compute_chm(clipped_las, min_threshold = 1):
     """
     Computer a canopy height model based on the available laz file to align with the RGB data
     """
     #Filter 
     chm = clipped_las.chm(cell_size = 0.1 , interp_method = "nearest")  
     chm.array[chm.array < min_threshold] = 0   
-    chm.array[chm.array > np.quantile(chm.array,0.9999)] = np.quantile(chm.array,0.9999)   
+    chm.array[chm.array > np.quantile(chm.array,0.999)] = np.quantile(chm.array,0.999)   
     CHM = np.uint8(chm.array)
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3,3))    
     dilated = cv2.dilate(CHM, kernel,iterations=3)
     
     #colorize it
     colormap = np.uint8(dilated/dilated.max()*255)
-    colormap = cv2.applyColorMap(colormap, cv2.COLORMAP_HOT)    
+    colormap = cv2.applyColorMap(colormap, cv2.COLORMAP_HOT)            
         
     return colormap
          
