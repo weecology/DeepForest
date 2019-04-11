@@ -33,7 +33,8 @@ def proportion_NA(pc):
     
 def normalize(image):
     
-    """Custom normalization"""    
+    """Mean subtraction"""    
+    mage[:,:,0] = image[:,:,0] - 5
     return image
 
 

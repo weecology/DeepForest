@@ -54,7 +54,7 @@ class OnTheFlyGenerator(Generator):
         self.group_method=group_method
         self.shuffle_tile_epoch=shuffle_tile_epoch
         self.annotation_list = data  
-        self.verbose = False
+        self.verbose = True
         
         #Switch for prediction with lidar
         self.with_lidar = False

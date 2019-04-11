@@ -111,12 +111,6 @@ def run(tile_csv=None, tile_xml = None, mode="train", site=None):
     #Generate crops and annotations
     labels = {}
     
-    #load first rgb and lidar tile, assumes all images in generator came from same tile, saves time
-    generator.load_image(1)
-    
-    if check_lidar:
-        point_cloud = generator.load_lidar_tile()
-    
     for i in range(generator.size()):
         
         print("window {i} from tile {tilename}".format(i=i, tilename=tilename))
@@ -131,14 +125,14 @@ def run(tile_csv=None, tile_xml = None, mode="train", site=None):
         #Check if there is lidar density
         if check_lidar:
             bounds = generator.get_window_extent()
-            density = Lidar.check_density(point_cloud, bounds)
+            density = Lidar.check_density(generator.lidar_tile, bounds)
                     
             if density < generator.DeepForest_config["min_density"]:
                 print("Point density is {} for window {}, skipping".format(density, tilename))
                 continue
             
             #Check for a patchy chm, get proportion NA
-            propNA = image_utils.proportion_NA(point_cloud)
+            propNA = image_utils.proportion_NA(generator.lidar_tile)
             if propNA > DeepForest_config["min_coverage"]:
                 print("Point density is too patchy ({}%) for window {}, skipping".format(propNA, tilename))
                 continue 
