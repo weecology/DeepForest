@@ -65,6 +65,7 @@ def _get_detections(generator, model, score_threshold=0.05, max_detections=100, 
     for i in range(generator.size()):
         raw_image    = generator.load_image(i)
         plot_image = copy.deepcopy(raw_image)
+        plot_image=plot_image/plot_image.max()*255
         
         #Temporary write raw file
         #Format name and save
