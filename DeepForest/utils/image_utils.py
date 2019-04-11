@@ -34,7 +34,7 @@ def proportion_NA(pc):
 def normalize(image):
     
     """Max normalization"""    
-    image[:,:,0] = image[:,:,0] / image[:,:,0].max()
+    image[:,:,0] = image[:,:,0] / image[:,:,0].max() * 255
     return image
 
 
