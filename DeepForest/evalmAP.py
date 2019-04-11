@@ -65,12 +65,7 @@ def _get_detections(generator, model, score_threshold=0.05, max_detections=100, 
     for i in range(generator.size()):
         raw_image    = generator.load_image(i)
         plot_image = copy.deepcopy(raw_image)
-        
-        #normalize to make clearer for plotting
-        plot_image = plot_image/plot_image.max() * 255
-        
 
-        
         #Temporary write raw file
         #Format name and save
         image_name = generator.image_names[i]        
@@ -150,6 +145,8 @@ def _get_detections(generator, model, score_threshold=0.05, max_detections=100, 
             lfname = os.path.splitext(row["tile"])[0] + "_" + str(row["window"]) +"_lidar"
             
             #make cv2 colormap
+            #normalize visual to make clearer for plotting
+            plot_image = plot_image/plot_image.max() * 255            
             chm = np.uint8(plot_image)
             draw_annotations(chm, generator.load_annotations(i), label_to_name=generator.label_to_name)
             draw_detections(chm, image_boxes, image_scores, image_labels, label_to_name=generator.label_to_name,score_threshold=score_threshold)
