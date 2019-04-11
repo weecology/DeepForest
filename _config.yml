@@ -39,7 +39,7 @@ evaluation_site:
 #Training
 training_images: All
 weights: None
-imagenet_weights: True
+imagenet_weights: False
 batch_size: 20
 epochs: 75
 backbone: resnet50
@@ -49,7 +49,7 @@ score_threshold: 0.2
 #Evaluation
 evaluation_images: 0
 shuffle_evaluation: False
-validation_percent: 20 #For hand annotation neon_MAP
+validation_percent: 90 #For hand annotation neon_MAP
 
 #Non-max suppression, threshold for the IoU value to determine when a box should be suppressed.
 nms_threshold: 0.1
