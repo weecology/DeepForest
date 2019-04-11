@@ -177,12 +177,12 @@ def compute_chm(clipped_las, min_threshold = 1):
         
     return one_channel_array
          
-def pad_array(image, chm):
+def pad_array(desired_shape, chm):
     """
     Enforce the same data structure between the rgb image and the canopy height model. 
     Add 0's around the edge to fix shape
     """
-    h,w = np.subtract(image.shape[0:2],chm.shape[0:2] )
+    h,w = np.subtract(desired_shape[0:2],chm.shape[0:2] )
     #distribute evenly to both sides as possible
     left = 0
     right = 0
@@ -215,7 +215,7 @@ def bind_array(image,chm):
     #Check if arrays are same shape. If not, pad.
     if not chm.shape == image.shape:
         
-        padded_chm = pad_array(image=image, chm=chm)
+        padded_chm = pad_array(desired_shape=image.shape, chm=chm)
         
         #Append to bottom of image
         four_channel_image = np.dstack((image, padded_chm))
