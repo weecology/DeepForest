@@ -504,6 +504,8 @@ if __name__ == '__main__':
             os.mkdir(save_image_path)        
         
         #Load retraining data
+        DeepForest_config["evaluation_images"] = 0     
+        DeepForest_config["training_images"] = "All"         
         data = load_retraining_data(DeepForest_config)     
         for site in DeepForest_config["hand_annotation_site"]:
             DeepForest_config[site]["h5"] = os.path.join(DeepForest_config[site]["h5"],"hand_annotations")
