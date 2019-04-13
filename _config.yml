@@ -39,7 +39,7 @@ evaluation_site:
 #Training
 training_images: All
 weights: None
-imagenet_weights: False
+imagenet_weights: True
 batch_size: 20
 epochs: 40
 backbone: resnet50
@@ -47,7 +47,7 @@ shuffle_training: False
 score_threshold: 0.2
 
 #Evaluation
-evaluation_images: 50
+evaluation_images: 0
 shuffle_evaluation: False
 validation_percent: 90 #For hand annotation neon_MAP
 
@@ -56,7 +56,7 @@ nms_threshold: 0.1
 
 #Data Paths
 SJER:
-  h5: /orange/ewhite/b.weinstein/training_h5s/greyscale/SJER/
+  h5: /orange/ewhite/b.weinstein/training_h5s/absolute_height_preprocessarg/SJER/
   hand_annotations:
     RGB: /home/b.weinstein/DeepLidar/data/SJER/training/
     LIDAR: /home/b.weinstein/DeepLidar/data/SJER/training/
