@@ -56,11 +56,7 @@ nms_threshold: 0.1
 
 #Data Paths
 SJER:
-<<<<<<< HEAD
-  h5: /orange/ewhite/b.weinstein/training_h5s/absoluteheight_preprocessarg/SJER/
-=======
-  h5: /orange/ewhite/b.weinstein/training_h5s/absolute_height_preprocessarg/SJER/
->>>>>>> 030101d700214a29aa528e234ca429a81e1e1f73
+  h5: /orange/ewhite/b.weinstein/training_h5s/no_shape_check/SJER/
   hand_annotations:
     RGB: /home/b.weinstein/DeepLidar/data/SJER/training/
     LIDAR: /home/b.weinstein/DeepLidar/data/SJER/training/
@@ -72,7 +68,7 @@ SJER:
     RGB: /home/b.weinstein/DeepLidar/data/SJER/plots/
     LIDAR: /home/b.weinstein/DeepLidar/data/SJER/plots/
 TEAK:
-  h5: /orange/ewhite/b.weinstein/training_h5s/greyscale/TEAK/
+  h5: /orange/ewhite/b.weinstein/training_h5s/no_shape_check/TEAK/
   training_csvs: /home/b.weinstein/TreeSegmentation/analysis/Results/detection_boxes/TEAK/2018/
   hand_annotations:
     RGB: /home/b.weinstein/DeepLidar/data/TEAK/training/
