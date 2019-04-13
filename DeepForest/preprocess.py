@@ -137,7 +137,7 @@ def load_xml(path, dirname, res):
         ymax.append(tile_xml["bndbox"]["ymax"])
         label.append(tile_xml['name'])        
         
-    rgb_path=doc["annotation"]["filename"]
+    rgb_path = doc["annotation"]["filename"]
     
     #bounds
     #read in tile to get dimensions

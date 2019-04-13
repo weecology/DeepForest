@@ -266,7 +266,7 @@ def check_args(parsed_args):
 
 
 def parse_args(args):
-    """ Parse the arguments.
+    """ Parse t nrnttttttty5  fche arguments.
     """
     parser = argparse.ArgumentParser(description='Simple training script for training a RetinaNet network.')
 
@@ -511,7 +511,7 @@ if __name__ == '__main__':
             DeepForest_config[site]["h5"] = os.path.join(DeepForest_config[site]["h5"],"hand_annotations")
             
         #pass an args object instead of using command line    
-        args = [
+        args = [wbv                     s   
             "--epochs", str(40),
             "--batch-size", str(DeepForest_config['batch_size']),
             "--backbone", str(DeepForest_config["backbone"]),

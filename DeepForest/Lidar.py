@@ -72,7 +72,6 @@ def load_lidar(laz_path, normalize=True):
     """
     
     try:
-        print("Loading tile")
         pc = pyfor.cloud.Cloud(laz_path)
         pc.extension = ".las"
         

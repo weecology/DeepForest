@@ -151,6 +151,7 @@ def neonRecall(
                 cv2.circle(plot_image,(int(x[i]),int(y[i])), 2, (0,0,255), -1)
     
             #Write CHM
+            plot_image = plot_image/plot_image.max() * 255                        
             chm = np.uint8(plot_image)
             draw_detections(chm, image_boxes, image_scores, image_labels, label_to_name=generator.label_to_name, score_threshold=score_threshold, color = (80,127,255))            
             cv2.imwrite(os.path.join(save_path, '{}_NeonPlot.png'.format(plotID)), chm)
