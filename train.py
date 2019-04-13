@@ -511,7 +511,7 @@ if __name__ == '__main__':
             DeepForest_config[site]["h5"] = os.path.join(DeepForest_config[site]["h5"],"hand_annotations")
             
         #pass an args object instead of using command line    
-        args = [wbv                     s   
+        args = [ 
             "--epochs", str(40),
             "--batch-size", str(DeepForest_config['batch_size']),
             "--backbone", str(DeepForest_config["backbone"]),
