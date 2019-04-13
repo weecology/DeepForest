@@ -136,9 +136,9 @@ def run(tile_csv=None, tile_xml = None, mode="train", site=None):
                 continue 
         
         ##check for desired array shape. For example 400x400, occassionally the model is 399 * 400 if there are no lidar tile edge points.
-        #if not image.shape == (DeepForest_config["patch_size"], DeepForest_config["patch_size"], DeepForest_config["input_channels"]):
-            #print("Skipping window with invalid shape:{}".format(image.shape))
-            #continue
+        if not image.shape == (DeepForest_config["patch_size"], DeepForest_config["patch_size"], DeepForest_config["input_channels"]):
+            print("Skipping window with invalid shape:{}".format(image.shape))
+            continue
                     
         hdf5_file["train_imgs"][i,...] = image        
         
