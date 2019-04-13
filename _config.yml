@@ -56,7 +56,7 @@ nms_threshold: 0.1
 
 #Data Paths
 SJER:
-  h5: /orange/ewhite/b.weinstein/training_h5s/greyscale/SJER/
+  h5: /orange/ewhite/b.weinstein/training_h5s/absoluteheight_preprocessarg/SJER/
   hand_annotations:
     RGB: /home/b.weinstein/DeepLidar/data/SJER/training/
     LIDAR: /home/b.weinstein/DeepLidar/data/SJER/training/

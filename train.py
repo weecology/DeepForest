@@ -442,6 +442,10 @@ if __name__ == '__main__':
         for site in DeepForest_config["hand_annotation_site"]:
             DeepForest_config[site]["h5"] = os.path.join(DeepForest_config[site]["h5"],"hand_annotations")
         
+        #log h5 dir
+        experiment.log_parameter("{} h5 dir".format(site),  DeepForest_config[site]["h5"] )    
+        
+        
     #log params
     experiment.log_parameters(DeepForest_config)    
     experiment.log_parameter("Start Time", dirname)    
