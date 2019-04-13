@@ -89,7 +89,8 @@ def run(tile_csv=None, tile_xml = None, mode="train", site=None):
     generator = onthefly_generator.OnTheFlyGenerator(data,
                                                      windows,
                                                      DeepForest_config,
-                                                     name=name
+                                                     name=name,
+                                                     preprocess_image=image_utils.normalize
                                                      )
     
     #Create h5 dataset    
