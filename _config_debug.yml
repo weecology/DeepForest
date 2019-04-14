@@ -29,11 +29,11 @@ preprocess:
 
 #Select sites
 hand_annotation_site:
-  - TEAK
+  - SJER
 pretraining_site:
-  - TEAK
+  - SJER
 evaluation_site:
-  - TEAK
+  - SJER
 
 #Training
 training_images: All
@@ -54,7 +54,7 @@ nms_threshold: 0.1
 
 #Data Paths
 SJER:
-  h5: /Users/Ben/Downloads/absoluteheight/SJER/
+  h5: /Users/Ben/Downloads/ab2/SJER/
   hand_annotations:
     RGB: /Users/Ben/Documents/DeepLidar/data/SJER/training/
     LIDAR: /Users/Ben/Documents/DeepLidar/data/SJER/training/
@@ -66,7 +66,7 @@ SJER:
     RGB: /Users/Ben/Documents/DeepLidar/data/SJER/plots/
     LIDAR: /Users/Ben/Documents/DeepLidar/data/SJER/plots/
 TEAK:
-  h5: /Users/Ben/Downloads/absoluteheight/TEAK/
+  h5: /Users/Ben/Downloads/ab2/TEAK/
   training_csvs: /Users/Ben/Documents/DeepLidar/data/TEAK/training/
   hand_annotations:
      RGB: /Users/Ben/Documents/DeepLidar/data/TEAK/training/
