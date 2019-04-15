@@ -37,10 +37,10 @@ from keras_retinanet .utils.model import freeze as freeze_model
 
 #Custom Generator
 from DeepForest.h5_generator import H5Generator
-from DeepForest.onthefly_generator import OnTheFlyGenerator
 from DeepForest.config import load_config
 from DeepForest import preprocess
 from DeepForest.utils.generators import create_NEON_generator, load_training_data, load_retraining_data
+from DeepForest.utils import image_utils
 
 #Custom Callbacks
 from DeepForest.callbacks import recallCallback, NEONmAP, Evaluate
@@ -77,7 +77,7 @@ def model_with_weights(model, weights, skip_mismatch):
     return model
 
 
-def create_models(backbone_retinanet, num_classes, weights, multi_gpu=0, freeze_backbone=False,nms_threshold=None):
+def create_models(backbone_retinanet, num_classes, weights, multi_gpu=0, freeze_backbone=False, nms_threshold=None, input_channels=3):
     """ Creates three models (model, training_model, prediction_model).
 
     Args
@@ -98,10 +98,10 @@ def create_models(backbone_retinanet, num_classes, weights, multi_gpu=0, freeze_
     # optionally wrap in a parallel model
     if multi_gpu > 1:
         with tf.device('/cpu:0'):
-            model = model_with_weights(backbone_retinanet(num_classes, modifier=modifier), weights=weights, skip_mismatch=True)
+            model = model_with_weights(backbone_retinanet(num_classes, modifier=modifier, input_channels=input_channels), weights=weights, skip_mismatch=True)
         training_model = multi_gpu_model(model, gpus=multi_gpu)
     else:
-        model          = model_with_weights(backbone_retinanet(num_classes, modifier=modifier), weights=weights, skip_mismatch=True)
+        model          = model_with_weights(backbone_retinanet(num_classes, modifier=modifier, input_channels=input_channels), weights=weights, skip_mismatch=True)
         training_model = model
 
     # make prediction model
@@ -140,7 +140,8 @@ def create_callbacks(model, training_model, prediction_model, train_generator, v
                               experiment=experiment,
                               save_path=args.save_path,
                               score_threshold=args.score_threshold,
-                              DeepForest_config=DeepForest_config)
+                              DeepForest_config=DeepForest_config,
+                              )
         
         evaluation = RedirectModel(evaluation, prediction_model)
         callbacks.append(evaluation)
@@ -204,7 +205,6 @@ def create_callbacks(model, training_model, prediction_model, train_generator, v
 def create_generators(args, data, DeepForest_config):
     """ Create generators for training and validation.
     """
-
     #Split training and test data
     train, test = preprocess.split_training(data, DeepForest_config, experiment=None)
 
@@ -216,14 +216,18 @@ def create_generators(args, data, DeepForest_config):
     train_generator = H5Generator(train, 
                                   batch_size = args.batch_size, 
                                   DeepForest_config = DeepForest_config, 
-                                  name = "training")
+                                  name = "training",
+                                  preprocess_image=image_utils.normalize
+                                  )
 
     #Validation Generator, check that it exists
     if test is not None:
         validation_generator = H5Generator(test, 
                                            batch_size = args.batch_size, 
                                            DeepForest_config = DeepForest_config, 
-                                           name = "training")
+                                           name = "training",
+                                           preprocess_image=image_utils.normalize
+                                           )
     else:
         validation_generator = None
         
@@ -331,7 +335,7 @@ def main(args=None, data=None, DeepForest_config=None, experiment=None):
         print('Loading model, this may take a secondkeras-retinanet.\n')
         model            = models.load_model(args.snapshot, backbone_name=args.backbone)
         training_model   = model
-        prediction_model = retinanet_bbox(model=model,nms_threshold=DeepForest_config["nms_threshold"])
+        prediction_model = retinanet_bbox(model=model, nms_threshold=DeepForest_config["nms_threshold"])
     else:
         weights = args.weights
         # default to imagenet if nothing else is specified
@@ -347,11 +351,12 @@ def main(args=None, data=None, DeepForest_config=None, experiment=None):
             weights=weights,
             multi_gpu=args.multi_gpu,
             freeze_backbone=args.freeze_backbone,
-            nms_threshold=DeepForest_config["nms_threshold"]
+            nms_threshold=DeepForest_config["nms_threshold"],
+            input_channels=DeepForest_config["input_channels"]
         )
 
     # print model summary
-    print(model.summary())
+    #print(model.summary())
 
     # this lets the generator compute backbone layer shapes using the actual backbone model
     if 'vgg' in args.backbone or 'densenet' in args.backbone:
@@ -400,7 +405,9 @@ def main(args=None, data=None, DeepForest_config=None, experiment=None):
     saved_models = glob.glob(os.path.join(args.snapshot_path,"*.h5"))
     saved_models.sort()
     
-    return saved_models[-1]
+    #Return model if found
+    if len(saved_models) > 0:
+        return saved_models[-1]
      
 if __name__ == '__main__':
     
@@ -416,7 +423,7 @@ if __name__ == '__main__':
     DeepForest_config = load_config()
 
     #set experiment and log configs
-    experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2", project_name='deeplidar', log_code=False)
+    experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2", project_name='deeplidar', log_code=True)
 
     #save time for logging
     if mode.dir:
@@ -434,6 +441,10 @@ if __name__ == '__main__':
         data = load_retraining_data(DeepForest_config)   
         for site in DeepForest_config["hand_annotation_site"]:
             DeepForest_config[site]["h5"] = os.path.join(DeepForest_config[site]["h5"],"hand_annotations")
+        
+        #log h5 dir
+        experiment.log_parameter("{} h5 dir".format(site),  DeepForest_config[site]["h5"] )    
+        
         
     #log params
     experiment.log_parameters(DeepForest_config)    
@@ -497,13 +508,15 @@ if __name__ == '__main__':
             os.mkdir(save_image_path)        
         
         #Load retraining data
+        DeepForest_config["evaluation_images"] = 0     
+        DeepForest_config["training_images"] = "All"         
         data = load_retraining_data(DeepForest_config)     
         for site in DeepForest_config["hand_annotation_site"]:
             DeepForest_config[site]["h5"] = os.path.join(DeepForest_config[site]["h5"],"hand_annotations")
             
         #pass an args object instead of using command line    
         args = [
-            "--epochs", str(50),
+            "--epochs", str(40),
             "--batch-size", str(DeepForest_config['batch_size']),
             "--backbone", str(DeepForest_config["backbone"]),
             "--score-threshold", str(DeepForest_config["score_threshold"]),
@@ -512,6 +525,12 @@ if __name__ == '__main__':
             "--weights", output_model
         ]
     
+        DeepForest_config["evaluation_images"] = 0 
+        experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2", project_name='deeplidar',log_code=True)
+        experiment.log_parameters(DeepForest_config)    
+        experiment.log_parameter("Start Time", dirname)    
+        experiment.log_parameter("mode", "final_hand_annotation")
+        
         #Run training, and pass comet experiment class
         #use all hand annotations, always
         DeepForest_config["evaluation_images"] =0 

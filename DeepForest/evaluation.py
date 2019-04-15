@@ -23,6 +23,7 @@ from keras_retinanet.utils.eval import _get_detections
 from DeepForest import Lidar 
 from DeepForest import postprocessing
 from DeepForest import onthefly_generator
+import copy
 
 def neonRecall(
     sites,
@@ -60,15 +61,14 @@ def neonRecall(
         #Only data within the last two years, sites can be hand managed
         #site_data=site_data[site_data["eventID"].str.contains("2015|2016|2017|2018")]
         
-        
     for i in range(generator.size()):
         
         #Load image
         raw_image    = generator.load_image(i)
-        raw_image = raw_image.copy()
+        plot_image = copy.deepcopy(raw_image)
         
         #Skip if missing a component data source
-        if raw_image is None:
+        if raw_image is False:
             print("Empty image, skipping")
             continue
         
@@ -121,7 +121,7 @@ def neonRecall(
         
         #print("Point density is {:.2f}".format(density))
                 
-        if density > generator.DeepForest_config["min_density"]:
+        if density > 100:
             #find window utm coordinates
             #print("Bounds for image {}, window {}, are {}".format(generator.row["tile"], generator.row["window"], bounds))
             pc = postprocessing.drape_boxes(boxes=image_boxes, pc = generator.lidar_tile, bounds=bounds)     
@@ -143,16 +143,18 @@ def neonRecall(
 
         #Save image and send it to logger
         if save_path is not None:
-            draw_detections(raw_image, image_boxes, image_scores, image_labels, label_to_name=generator.label_to_name, score_threshold=score_threshold, color = (80,127,255))
             
             x = (plot_data.UTM_E - tile_bounds.left).values / 0.1
             y = (tile_bounds.top - plot_data.UTM_N).values / 0.1
             
             for i in np.arange(len(x)):
-                cv2.circle(raw_image,(int(x[i]),int(y[i])), 2, (0,0,255), -1)
+                cv2.circle(plot_image,(int(x[i]),int(y[i])), 2, (0,0,255), -1)
     
-            #Write RGB
-            cv2.imwrite(os.path.join(save_path, '{}_NeonPlot.png'.format(plotID)), raw_image[:,:,:3])
+            #Write CHM
+            plot_image = plot_image/plot_image.max() * 255                        
+            chm = np.uint8(plot_image)
+            draw_detections(chm, image_boxes, image_scores, image_labels, label_to_name=generator.label_to_name, score_threshold=score_threshold, color = (80,127,255))            
+            cv2.imwrite(os.path.join(save_path, '{}_NeonPlot.png'.format(plotID)), chm)
                 
             #Format name and save
             if experiment:

@@ -13,6 +13,7 @@ import os
 import cv2
 from matplotlib import pyplot as plt
 from DeepForest import postprocessing, Lidar
+import copy
 
 def _compute_ap(recall, precision):
     """ Compute the average precision, given the recall and precision curves.
@@ -63,12 +64,17 @@ def _get_detections(generator, model, score_threshold=0.05, max_detections=100, 
 
     for i in range(generator.size()):
         raw_image    = generator.load_image(i)
-    
-        #need to make contigious see https://stackoverflow.com/questions/23830618/python-opencv-typeerror-layout-of-the-output-array-incompatible-with-cvmat
-        raw_image = raw_image.copy()
+        plot_image = copy.deepcopy(raw_image)
+
+        #Temporary write raw file
+        #Format name and save
+        image_name = generator.image_names[i]        
+        row = generator.image_data[image_name]             
+        lfname = os.path.splitext(row["tile"])[0] + "_" + str(row["window"]) +"raw_image"              
+        cv2.imwrite(os.path.join(save_path, '{}.tif'.format(lfname)), plot_image)            
         
         #Skip if missing a component data source
-        if raw_image is None:
+        if raw_image is False:
             print("Empty image, skipping")
             continue
         
@@ -122,33 +128,40 @@ def _get_detections(generator, model, score_threshold=0.05, max_detections=100, 
         if generator.with_lidar:
             density = Lidar.check_density(generator.lidar_tile, bounds=bounds)
                             
-            if density > generator.DeepForest_config["min_density"]:
+            if density > 100:
                 #find window utm coordinates
                 #print("Bounds for image {}, window {}, are {}".format(generator.row["tile"], generator.row["window"], bounds))
                 pc = postprocessing.drape_boxes(boxes=image_boxes, pc = generator.lidar_tile, bounds=bounds)     
                 
                 
                 #Get new bounding boxes
-                new_boxes = postprocessing.cloud_to_box(pc, bounds)    
-                new_scores = image_scores[:new_boxes.shape[0]]
-                new_labels = image_labels[:new_boxes.shape[0]]          
-                draw_annotations(raw_image, generator.load_annotations(i), label_to_name=generator.label_to_name)
-                draw_detections(raw_image, new_boxes, new_scores, new_labels, label_to_name=generator.label_to_name, score_threshold=score_threshold, color=[0,0,0])
-                pc.write(os.path.join(save_path, '{}.las'.format(fname)))
+                image_boxes = postprocessing.cloud_to_box(pc, bounds)    
+                image_scores = image_scores[:image_boxes.shape[0]]
+                image_labels = image_labels[:image_boxes.shape[0]]          
+                image_detections = np.concatenate([image_boxes, np.expand_dims(image_scores, axis=1), np.expand_dims(image_labels, axis=1)], axis=1)
                 
             else:
                 pass
                 #print("Point density of {:.2f} is too low, skipping image {}".format(density, generator.row["tile"]))        
 
         if save_path is not None:
-            draw_annotations(raw_image, generator.load_annotations(i), label_to_name=generator.label_to_name)
-            draw_detections(raw_image, image_boxes, image_scores, image_labels, label_to_name=generator.label_to_name,score_threshold=score_threshold)
+            #Format name and save
+            image_name = generator.image_names[i]        
+            row = generator.image_data[image_name]             
+            lfname = os.path.splitext(row["tile"])[0] + "_" + str(row["window"]) +"_lidar"
             
-            #Write RGB
-            cv2.imwrite(os.path.join(save_path, '{}.png'.format(fname)), raw_image)
+            #make cv2 colormap
+            #normalize visual to make clearer for plotting
+            plot_image = plot_image/plot_image.max() * 255            
+            chm = np.uint8(plot_image)
+            draw_annotations(chm, generator.load_annotations(i), label_to_name=generator.label_to_name)
+            draw_detections(chm, image_boxes, image_scores, image_labels, label_to_name=generator.label_to_name,score_threshold=score_threshold)
+            
+            #Write CHM
+            cv2.imwrite(os.path.join(save_path, '{}.png'.format(lfname)), chm)            
             
             if experiment:
-                experiment.log_image(os.path.join(save_path, '{}.png'.format(fname)), file_name=fname)                
+                experiment.log_image(os.path.join(save_path, '{}.png'.format(lfname)),file_name=lfname)      
 
         # copy detections to all_detections
         for label in range(generator.num_classes()):

@@ -10,8 +10,7 @@ import re
 import glob 
 import numpy as np
 import os
-from scipy.signal import medfilt2d
-
+import cv2
 #random color
 import random
 
@@ -73,18 +72,21 @@ def load_lidar(laz_path, normalize=True):
     """
     
     try:
-        pc=pyfor.cloud.Cloud(laz_path)
-        pc.extension=".las"
+        pc = pyfor.cloud.Cloud(laz_path)
+        pc.extension = ".las"
         
     except FileNotFoundError:
         print("Failed loading path: %s" %(laz_path))
+        return None
         
     #normalize and filter
     if normalize:
         try: 
-            pc.normalize(1)
+            pc.normalize(0.33)
         except:
             print("No vertical objects in image, skipping normalization")
+            #TODO use NEON classification for normalization
+            return None
     
     #Quick filter for unreasonable points.
     pc.filter(min = -1, max = 100 , dim = "z")    
@@ -151,72 +153,38 @@ def clip_las(lidar_tile, annotations, row, windows, rgb_res):
     clipped = lidar_tile.clip(poly)
     
     #If there are no points within the clip, return None and continue to next window
-    if len(clipped.data.points) == 0:
+    if len(clipped.data.points) < 10:
         print("Window {s} from tile {r} has no LIDAR points".format(s=row["window"], r=row["tile"]))
         return None
     else:    
         return clipped
 
-def compute_chm(clipped_las, kernel_size, min_threshold = 3):
+def compute_chm(clipped_las, min_threshold = 1):
     """
     Computer a canopy height model based on the available laz file to align with the RGB data
     """
-
-    #Median filter
-    chm = clipped_las.chm(cell_size = 0.1 , interp_method = "nearest" )    
-    
-    if not kernel_size == 'None':
-        chm.array = medfilt2d(chm.array, kernel_size=kernel_size)
-    
-    #remove understory noise, anything under 2m.
+    #Filter 
+    chm = clipped_las.chm(cell_size = 0.1 , interp_method = "nearest")  
     chm.array[chm.array < min_threshold] = 0   
+    chm.array[chm.array > np.quantile(chm.array,0.999)] = np.quantile(chm.array,0.999)   
+    CHM = np.uint8(chm.array)
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3,3))    
+    dilated = cv2.dilate(CHM, kernel,iterations=3)
     
-    return chm
-
-def watershed():
+    #colorize it, stretch that scale a bit to get a set of colors
+    greyscale = dilated
     
-    from matplotlib import colors as mcolors
-    from matplotlib import pyplot as plt
-    from geopandas.plotting import plot_polygon_collection
-    
-    chm = clipped.chm(cell_size = 0.5 , interp_method = "nearest" )        
-    segmentation = chm.watershed_seg(min_distance=2, threshold_abs=2)    
-    final_segments = segmentation.segments[segmentation.segments["raster_val"] > 0]
-    
-
-    colors = dict(mcolors.CSS4_COLORS)    
-    colors=list(colors.keys())
-    
-    final_segments["color"] = "red"
-    for index, row in final_segments.iterrows():
-        final_segments.loc[index,"color"] = colors[random.randint(0,len(colors))]
-    
-    #flip y axis?
-    #rasterize? https://gis.stackexchange.com/questions/151339/rasterize-a-shapefile-with-geopandas-or-fiona-python
-    fig, ax = plt.subplots()
-    ax.set_aspect('equal')
-    plot_polygon_collection(ax, geoms=final_segments['geometry'], color=final_segments['color'])    
-    
-    return watershed_features
-
-def rasterize_watershed():
-    
-    from rasterio import features
-    
-    watershed_raster = np.zeros(shape=chm.array.shape)
-    
-    #this is where we create a generator of geom, value pairs to use in rasterizing
-    shapes = ((geom,value) for geom, value in zip(final_segments.geometry, final_segments.raster_val))
-    burned = features.rasterize(shapes=shapes, fill=0, out=watershed_raster)
+    #Add extra dim
+    one_channel_array = np.expand_dims(greyscale, 2)
+        
+    return one_channel_array
          
-def pad_array(image, chm):
+def pad_array(desired_shape, chm):
     """
     Enforce the same data structure between the rgb image and the canopy height model. 
     Add 0's around the edge to fix shape
     """
-    
-    h,w = np.subtract(image.shape[0:2],chm.shape[0:2] )
-    
+    h,w = np.subtract(desired_shape[0:2],chm.shape[0:2] )
     #distribute evenly to both sides as possible
     left = 0
     right = 0
@@ -227,14 +195,12 @@ def pad_array(image, chm):
     for x in np.arange(h):
         if x % 2 == 0:
             left +=1
-            
         else:
             right +=1
-    
+            
     for x in np.arange(w):
         if x % 2 ==0:
             bottom +=1
-            
         else:
             top +=1        
     #pad
@@ -242,16 +208,16 @@ def pad_array(image, chm):
     
     return padded    
 
+
 def bind_array(image,chm):
     '''
     Bind the rgb image and the lidar canopy height model
     Pad with zeros if needed
     '''
-    
     #Check if arrays are same shape. If not, pad.
     if not chm.shape == image.shape:
         
-        padded_chm = pad_array(image=image, chm=chm)
+        padded_chm = pad_array(desired_shape=image.shape, chm=chm)
         
         #Append to bottom of image
         four_channel_image = np.dstack((image, padded_chm))
@@ -267,7 +233,7 @@ def check_density(pc, bounds=[]):
     bounds: a utm array [xmin, xmax, ymin, ymax] to limit density search
     returns: density in points/m^2
     '''
-    if len(bounds)> 0:
+    if len(bounds) > 0:
         #Filter by utm bounds, find points in crop
         xmin, xmax, ymin, ymax = bounds
         filtered_points = pc.data.points[(pc.data.points.x > xmin) & (pc.data.points.x < xmax)  & (pc.data.points.y > ymin) & (pc.data.points.y < ymax)]

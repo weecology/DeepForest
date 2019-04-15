@@ -7,6 +7,7 @@ import os
 import h5py
 import pandas as pd
 from . import onthefly_generator, preprocess, config, Lidar
+from DeepForest.utils import image_utils
 import sys
 import glob
 import pathlib
@@ -88,7 +89,8 @@ def run(tile_csv=None, tile_xml = None, mode="train", site=None):
     generator = onthefly_generator.OnTheFlyGenerator(data,
                                                      windows,
                                                      DeepForest_config,
-                                                     name=name)
+                                                     name=name
+                                                     )
     
     #Create h5 dataset    
     # open a hdf5 file and create arrays
@@ -96,7 +98,7 @@ def run(tile_csv=None, tile_xml = None, mode="train", site=None):
     hdf5_file = h5py.File(h5_filename, mode='w')    
     
     #A 3 channel image of square patch size.
-    train_shape = (generator.size(), DeepForest_config["patch_size"], DeepForest_config["patch_size"], 3)
+    train_shape = (generator.size(), DeepForest_config["patch_size"], DeepForest_config["patch_size"], DeepForest_config["input_channels"])
     
     #Create h5 dataset to fill
     hdf5_file.create_dataset("train_imgs", train_shape, dtype='f')
@@ -106,12 +108,6 @@ def run(tile_csv=None, tile_xml = None, mode="train", site=None):
     
     #Generate crops and annotations
     labels = {}
-    
-    #load first rgb and lidar tile, assumes all images in generator came from same tile, saves time
-    generator.load_image(1)
-    
-    if check_lidar:
-        point_cloud = generator.load_lidar_tile()
     
     for i in range(generator.size()):
         
@@ -127,12 +123,23 @@ def run(tile_csv=None, tile_xml = None, mode="train", site=None):
         #Check if there is lidar density
         if check_lidar:
             bounds = generator.get_window_extent()
-            density = Lidar.check_density(point_cloud, bounds)
+            density = Lidar.check_density(generator.lidar_tile, bounds)
                     
-            if density < 2:
+            if density < generator.DeepForest_config["min_density"]:
                 print("Point density is {} for window {}, skipping".format(density, tilename))
                 continue
+            
+            #Check for a patchy chm, get proportion NA
+            propNA = image_utils.proportion_NA(generator.lidar_tile)
+            if propNA > DeepForest_config["min_coverage"]:
+                print("Point density is too patchy ({}%) for window {}, skipping".format(propNA, tilename))
+                continue 
         
+        ##check for desired array shape. For example 400x400, occassionally the model is 399 * 400 if there are no lidar tile edge points.
+        if not image.shape == (DeepForest_config["patch_size"], DeepForest_config["patch_size"], DeepForest_config["input_channels"]):
+            print("Skipping window with invalid shape:{}".format(image.shape))
+            continue
+                    
         hdf5_file["train_imgs"][i,...] = image        
         
         #Load annotations and write a pandas frame

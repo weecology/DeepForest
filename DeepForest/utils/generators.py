@@ -4,6 +4,7 @@ import pandas as pd
 from DeepForest.onthefly_generator import OnTheFlyGenerator
 from DeepForest.preprocess import NEON_annotations, load_csvs
 from DeepForest import Generate
+from DeepForest.utils import image_utils
 
 def load_retraining_data(DeepForest_config):
     """
@@ -66,7 +67,8 @@ def load_training_data(DeepForest_config):
     #Create a dict assigning the tiles to the h5 dir
     data = pd.concat(dataframes, ignore_index=True)         
     return data
-
+    
+    
 def create_NEON_generator(batch_size, DeepForest_config, name="evaluation"):
     """ Create generators for training and validation.
     """
@@ -79,6 +81,8 @@ def create_NEON_generator(batch_size, DeepForest_config, name="evaluation"):
         batch_size = batch_size,
         DeepForest_config = DeepForest_config,
         group_method="none",
-        name=name)
+        name=name,
+        preprocess_image=image_utils.normalize
+    )
     
     return(generator)

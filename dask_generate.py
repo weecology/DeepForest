@@ -11,7 +11,7 @@ warnings.simplefilter("ignore")
 
 from DeepForest import Generate, config
 
-def find_csvs(overwrite=False):
+def find_csvs(overwrite=True):
     """
     Find training csvs in site path
     """
@@ -91,13 +91,13 @@ def run_HPC(data_paths):
         processes=1,
         queue='hpg2-compute',
         cores=1, 
-        memory='15GB', 
+        memory='22GB', 
         walltime='48:00:00',
         job_extra=extra_args,
         local_directory="/home/b.weinstein/logs/", death_timeout=300)
     
     print(cluster.job_script())
-    cluster.scale(num_workers)
+    cluster.adapt(minimum=num_workers, maximum=num_workers)
     
     dask_client = Client(cluster)
         
@@ -115,13 +115,11 @@ if __name__ == "__main__":
     #Local Debugging
     data_paths=find_csvs(overwrite=True)
     
-    #Optionally limit
-    #data_paths = data_paths[:100]
     total_files = [len(data_paths[x]) for x in data_paths]
     print("{s} csv files found for training".format(s=sum(total_files)))
     
-    run_local(data_paths)
-    #run_test(data_paths)
+    #run_local(data_paths)
+    run_test(data_paths)
     
     #On Hypergator
     #run_HPC(data_paths)

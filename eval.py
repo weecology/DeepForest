@@ -95,54 +95,54 @@ def main(data, DeepForest_config, experiment, args=None):
 
     # load the model
     print('Loading model, this may take a second...')
-    model = models.load_model(args.model, backbone_name=args.backbone, convert=args.convert_model, nms_threshold=DeepForest_config["nms_threshold"])
+    model = models.load_model(args.model, backbone_name=args.backbone, convert=args.convert_model, input_channels=DeepForest_config["input_channels"], nms_threshold=DeepForest_config["nms_threshold"])
 
     #print(model.summary())
 
-    # create the testing generators
-    if DeepForest_config["evaluation_images"] > 0:
-        generator = create_generator(args, data, DeepForest_config)
+    ## create the testing generators
+    #if DeepForest_config["evaluation_images"] > 0:
+        #generator = create_generator(args, data, DeepForest_config)
         
-        average_precisions = evaluate(
-            generator,
-            model,
-            iou_threshold=args.iou_threshold,
-            score_threshold=args.score_threshold,
-            max_detections=args.max_detections,
-            save_path=args.save_path + dirname
-        )
+        #average_precisions = evaluate(
+            #generator,
+            #model,
+            #iou_threshold=args.iou_threshold,
+            #score_threshold=args.score_threshold,
+            #max_detections=args.max_detections,
+            #save_path=args.save_path + dirname
+        #)
     
-        ## print evaluation
-        present_classes = 0
-        precision = 0
-        for label, (average_precision, num_annotations) in average_precisions.items():
-            print('{:.0f} instances of class'.format(num_annotations),
-                  generator.label_to_name(label), 'with average precision: {:.3f}'.format(average_precision))
-            if num_annotations > 0:
-                present_classes += 1
-                precision       += average_precision
-        print('mAP: {:.3f}'.format(precision / present_classes))
-        experiment.log_metric("mAP", precision / present_classes)                 
+        ### print evaluation
+        #present_classes = 0
+        #precision = 0
+        #for label, (average_precision, num_annotations) in average_precisions.items():
+            #print('{:.0f} instances of class'.format(num_annotations),
+                  #generator.label_to_name(label), 'with average precision: {:.3f}'.format(average_precision))
+            #if num_annotations > 0:
+                #present_classes += 1
+                #precision       += average_precision
+        #print('mAP: {:.3f}'.format(precision / present_classes))
+        #experiment.log_metric("mAP", precision / present_classes)                 
 
-    #Evaluation metrics
-    sites=DeepForest_config["evaluation_site"]
+    ##Evaluation metrics
+    #sites = DeepForest_config["evaluation_site"]
     
-    #create the NEON mAP generator 
+    ##create the NEON mAP generator 
     NEON_generator = create_NEON_generator(args.batch_size, DeepForest_config)
-    NEON_recall_generator = create_NEON_generator(args.batch_size, DeepForest_config)
+    #NEON_recall_generator = create_NEON_generator(args.batch_size, DeepForest_config)
 
-    recall = neonRecall(
-        sites,
-        NEON_recall_generator,
-        model,            
-        score_threshold=args.score_threshold,
-        save_path=args.save_path + dirname,
-        max_detections=args.max_detections
-    )
+    #recall = neonRecall(
+        #sites,
+        #NEON_recall_generator,
+        #model,            
+        #score_threshold=args.score_threshold,
+        #save_path=args.save_path + dirname,
+        #max_detections=args.max_detections
+    #)
     
-    print("Recall is {:0.3f}".format(recall))
+    #print("Recall is {:0.3f}".format(recall))
     
-    experiment.log_metric("Recall", recall)               
+    #experiment.log_metric("Recall", recall)               
         
     #NEON plot mAP
     average_precisions = evaluate(
@@ -156,17 +156,18 @@ def main(data, DeepForest_config, experiment, args=None):
     )
 
     # print evaluation
+    ## print evaluation
     present_classes = 0
     precision = 0
     for label, (average_precision, num_annotations) in average_precisions.items():
         print('{:.0f} instances of class'.format(num_annotations),
-              NEON_generator.label_to_name(label), 'with average precision: {:.3f}'.format(average_precision))
+              generator.label_to_name(label), 'with average precision: {:.3f}'.format(average_precision))
         if num_annotations > 0:
             present_classes += 1
             precision       += average_precision
     NEON_map = round(precision / present_classes,3)
     print('Neon mAP: {:.3f}'.format(NEON_map))
-    experiment.log_metric("Neon mAP", NEON_map)        
+    experiment.log_metric("Neon mAP", NEON_map)       
     
     return [recall, NEON_map]
     
@@ -179,7 +180,7 @@ if __name__ == '__main__':
     import numpy as np
     from datetime import datetime
     from DeepForest.config import load_config
-    from DeepForest import preprocess, Generate    
+    from DeepForest import preprocess    
     
     #Set training or training
     mode_parser     = argparse.ArgumentParser(description='Retinanet training or finetuning?')
@@ -190,7 +191,7 @@ if __name__ == '__main__':
     mode = mode_parser.parse_args()
 
     #set experiment and log configs
-    experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2",project_name='deeplidar',log_code=False)
+    experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2",project_name='deeplidar',log_code=True)
 
     DeepForest_config = load_config()
 
@@ -205,9 +206,9 @@ if __name__ == '__main__':
 
     if mode.mode == "retrain":
         data = load_retraining_data(DeepForest_config)
-        for site in DeepForest_config["hand_annotation_site"]:
-            DeepForest_config[site]["h5"] = os.path.join(DeepForest_config[site]["h5"],"hand_annotations")        
-    
+        for x in DeepForest_config["evaluation_site"]:
+            DeepForest_config[x]["h5"] = os.path.join(DeepForest_config[x]["h5"],"hand_annotations")
+            
     #pass an args object instead of using command line        
     args = [
         "--batch-size", str(DeepForest_config['batch_size']),

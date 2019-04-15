@@ -12,12 +12,13 @@ import cv2
 import rasterio
 import pandas as pd
 import numpy as np
+from matplotlib import pyplot
 from PIL import Image
 from six import raise_from
 import slidingwindow as sw
+
 from DeepForest import Lidar, postprocessing
 from DeepForest.utils import image_utils
-from matplotlib import pyplot
 from keras_retinanet.preprocessing.generator import Generator
 from keras_retinanet.utils.image import preprocess_image, resize_image
 from keras_retinanet import models
@@ -39,8 +40,8 @@ class OnTheFlyGenerator(Generator):
         **kwargs
     ):
         """ Initialize a data self.
-
         """
+        
         #Assign config and intiliaze values
         self.DeepForest_config=DeepForest_config
         self.rgb_res=DeepForest_config['rgb_res']        
@@ -53,7 +54,7 @@ class OnTheFlyGenerator(Generator):
         self.group_method=group_method
         self.shuffle_tile_epoch=shuffle_tile_epoch
         self.annotation_list = data  
-        self.verbose = False
+        self.verbose = True
         
         #Switch for prediction with lidar
         self.with_lidar = True
@@ -108,7 +109,6 @@ class OnTheFlyGenerator(Generator):
         
         #Bring back together
         newdf = pd.concat(groups).reset_index(drop=True)
-        
         image_data = newdf.to_dict("index")
         image_names = list(image_data.keys())
         
@@ -118,15 +118,14 @@ class OnTheFlyGenerator(Generator):
         """ 
         Number of annotation classes
         """
-        
         #Get unique classes
-        uclasses=self.annotation_list.loc[:,['label','numeric_label']].drop_duplicates()
+        uclasses=self.annotation_list[["label","numeric_label"]].drop_duplicates()
         
         # Define classes 
         classes = {}
         for index, row in uclasses.iterrows():
             classes[row.label] = row.numeric_label
-        
+        print("There are {} classes: {}".format(len(classes),classes))
         return(classes)
     
     def num_classes(self):
@@ -155,7 +154,6 @@ class OnTheFlyGenerator(Generator):
         ''''
         Create a sliding window object
         '''
-        #Find directory and load tile # TODO this fails for hand annotated data.
         site = self.annotation_list.site.unique()[0]
         base_dir = self.DeepForest_config[site][self.name]["RGB"]
         image = os.path.join(base_dir, self.annotation_list.rgb_path.unique()[0])
@@ -191,19 +189,21 @@ class OnTheFlyGenerator(Generator):
         lidar_filepath = Lidar.fetch_lidar_filename(self.row, lidar_path)
         
         if lidar_filepath:
-            self.with_lidar = True
             return lidar_filepath
         else:
-            print("Lidar file {} cannot be found in {}".format(self.row["tile"], lidar_path))
+            return None
 
     def load_lidar_tile(self, normalize = True):
         '''Load a point cloud into memory from file
         '''
-        self.lidar_filepath=self.fetch_lidar_filename()        
-        self.lidar_tile=Lidar.load_lidar(self.lidar_filepath, normalize)
+        self.lidar_filepath=self.fetch_lidar_filename()
+        if self.lidar_filepath == None:
+            print("Lidar file {} cannot be found".format(self.row["tile"]))
+            return None
         
+        self.lidar_tile=Lidar.load_lidar(self.lidar_filepath, normalize)
         return self.lidar_tile
-    
+
     def load_rgb_tile(self):
         ''''
         Read RGB tile from file
@@ -218,7 +218,7 @@ class OnTheFlyGenerator(Generator):
     def compute_CHM(self):
         '''' Compute a canopy height model on loaded point cloud
         '''
-        CHM = Lidar.compute_chm(self.clipped_las, kernel_size=self.DeepForest_config["kernel_size"])
+        CHM = Lidar.compute_chm(self.clipped_las)
         return CHM
     
     def bind_array(self):
@@ -230,20 +230,24 @@ class OnTheFlyGenerator(Generator):
     def load_new_crop(self):
         ''''Read a new pair of RGB and LIDAR crop
         '''
-        #Load rgb image and get crop
-        image = self.retrieve_window()
-
-        #BGR order
-        image = image[:,:,::-1]
-        
-        #Store if needed for show, in RGB color space.
-        self.image = image        
-        
         #Save image path for next evaluation to check
         self.previous_image_path = self.row["tile"]
         
-        return image
-    
+        #Crop Las
+        self.clipped_las = self.clip_las()
+        
+        #If empty, return None
+        if self.clipped_las is None:
+            return None
+        
+        #Compute height model and return as numpy array
+        try:
+            one_channel_array = self.compute_CHM()
+        except:
+            return None
+        
+        return one_channel_array
+        
     def load_image(self, image_index):
         """ Load an image at the image_index.
         """
@@ -253,17 +257,19 @@ class OnTheFlyGenerator(Generator):
         
         ##Check if image the is same as previous draw from self
         if not self.row["tile"] == self.previous_image_path:
-            
             if self.verbose:
                 print("Loading new tile {}".format(self.row["tile"]))
                 
-            self.numpy_image = self.load_rgb_tile()
-            
+            self.lidar_tile  = self.load_lidar_tile()            
+            if self.lidar_tile == None:
+                print("image annotations have no corresponding crop, exiting.")
+                return False
+        
         #Load a new crop from self
         three_channel_image = self.load_new_crop()
         
         if three_channel_image is None:
-            return None
+            return False
         else: 
             return three_channel_image
     
@@ -334,12 +340,6 @@ class OnTheFlyGenerator(Generator):
         image_name = self.image_names[image_index]
         self.row = self.image_data[image_name]
         
-        #Check for blank black image, if so, enforce no annotations
-        remove_annotations = image_utils.image_is_blank(self.image)
-    
-        if remove_annotations:
-            return np.zeros((0, 5))
-        
         #Look for annotations in previous epoch
         key = self.row["tile"]+"_"+str(self.row["window"])
         
@@ -379,17 +379,7 @@ class OnTheFlyGenerator(Generator):
         
         return (utm_xmin, utm_xmax, utm_ymin, utm_ymax)
    
-    #Prediction methods
-    def get_session(self):
-        config = tf.ConfigProto()
-        config.gpu_options.allow_growth = True
-        return tf.Session(config=config)
     
-    def tf_session(self):
-        # set the modified tf session as backend in keras        
-        keras.backend.tensorflow_backend.set_session(self.get_session())        
-        
-        #flag for session setting
-        self.session_exists = True
+
         
         

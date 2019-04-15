@@ -22,11 +22,10 @@ import slidingwindow as sw
 import itertools
 
 from DeepForest import Lidar
+from DeepForest.utils import image_utils
 
 class H5Generator(Generator):
-    """ Generate data for a custom CSV dataset.
-
-    See https://github.com/fizyr/keras-retinanet#csv-datasets for more information.
+    """ Generate data for a custom h5 dataset.
     """
 
     def __init__(
@@ -46,15 +45,15 @@ class H5Generator(Generator):
         self.windowdf = data
         self.DeepForest_config = DeepForest_config
         
-        #A switch to allow RGB only
-        self.with_lidar = False
-        
         #Holder for the group order, after shuffling we can still recover loss -> window
         self.group_order = {}
         self.group_method=group_method
         
         #Holder for image path, keep from reloading same image to save time.
         self.previous_image_path=None
+        
+        #Turn off lidar checking during prediction for training sets.
+        self.with_lidar=False
         
         #Read classes
         self.classes={"Tree": 0}
@@ -123,7 +122,7 @@ class H5Generator(Generator):
             selected_annotations = pd.merge(self.windowdf, annotations)
             total_annotations += len(selected_annotations)        
         
-        print("There are a total of {} tree annotations in the {} generator".format(total_annotations,self.name))       
+        print("There are a total of {} tree annotations in the {} generator".format(total_annotations, self.name))       
         
         return(total_annotations)
     
@@ -148,22 +147,6 @@ class H5Generator(Generator):
         
         return(image_data, image_names)
     
-    def fetch_lidar_filename(self):           
-        lidar_path = self.DeepForest_config[self.row["site"]][self.name]["LIDAR"]        
-        lidar_filepath = Lidar.fetch_lidar_filename(self.row, lidar_path)
-        
-        if lidar_filepath:
-            self.with_lidar = True
-            return lidar_filepath
-        else:
-            print("Lidar file {} cannot be found in {}".format(self.row["tile"], lidar_path))
-        
-    def load_lidar_tile(self):
-        '''Load a point cloud into memory from file
-        '''
-        self.lidar_filepath = self.fetch_lidar_filename()        
-        self.lidar_tile = Lidar.load_lidar(self.lidar_filepath)
-    
     def load_image(self, image_index):
         """ Load an image at the image_index.
         """
@@ -179,8 +162,7 @@ class H5Generator(Generator):
         #Open image to crop
         ##Check if tile the is same as previous draw from generator, this will save time.
         if not self.row["tile"] == self.previous_image_path:
-            
-            print("Loading new tile: %s" % (self.row["tile"]))
+            print("Loading new h5: %s" % (self.row["tile"]))
             
             #Set directory based on site
             h5_dir = self.DeepForest_config[self.row["site"]]["h5"]
@@ -188,13 +170,11 @@ class H5Generator(Generator):
             #tilename for h5 and csv files
             tilename = os.path.split(self.row["tile"])[-1]
             tilename = os.path.splitext(tilename)[0]                        
-            
             h5_name = os.path.join(h5_dir, tilename+'.h5')
             csv_name = os.path.join(h5_dir, tilename+'.csv')
             
             #Read h5 
             self.hf = h5py.File(h5_name, 'r')
-            train_addrs = self.hf['train_imgs']
             
             #Read corresponding csv labels
             self.annotations = pd.read_csv(csv_name)
@@ -202,9 +182,6 @@ class H5Generator(Generator):
         #read image from h5
         window = self.row["window"]
         image = self.hf["train_imgs"][window,...]
-        
-        #Store RGB if needed for show, in RGB color space.
-        self.image = image[:,:,:3]        
         
         #Save image path for next evaluation to check
         self.previous_image_path = self.row["tile"]
@@ -239,25 +216,4 @@ class H5Generator(Generator):
         windows = sw.generate(numpy_image, sw.DimOrder.HeightWidthChannel,  self.DeepForest_config["patch_size"], self.DeepForest_config["patch_overlap"])
         
         return(windows)
-    
-if __name__=="__main__":
-    
-    import yaml
-    import preprocess
-    
-    #load config
-    with open('../_config_debug.yml', 'r') as f:
-        DeepForest_config = yaml.load(f)    
-    
-    #Load data
-    data=preprocess.load_csvs(h5_dir=DeepForest_config["training_h5_dir"])
-    
-    #Split training and test data
-    train, test = preprocess.split_training(data, DeepForest_config, experiment=None)
-    
-    generator=H5Generator(train, DeepForest_config)
-    
-    for i in range(generator.size()):
-        image=generator.load_image(i)
-        print(image.shape)
         

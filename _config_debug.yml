@@ -3,7 +3,11 @@
 #Data generation - the number of workers for dask session
 num_hipergator_workers: 20
 training_csvs:
-  - TEAK
+  - SJER
+
+#LIDAR settings
+min_density: 2
+min_coverage: 30
 
 #Keras
 workers: 1
@@ -12,6 +16,7 @@ max_queue_size: 10
 num_GPUs: 1
 save_image_path: snapshots/images/
 save_snapshot_path: snapshots/images/
+input_channels: 1
 
 #Sliding Window Size and Ovelap
 patch_size: 400
@@ -31,8 +36,8 @@ evaluation_site:
   - SJER
 
 #Training
-training_images: 1
-weights: /Users/ben/Documents/DeepLidar/snapshots/SJER_selfsupervised.h5
+training_images: All
+weights: None
 imagenet_weights: False
 batch_size: 25
 epochs: 1
@@ -41,18 +46,15 @@ shuffle_training: True
 score_threshold: 0.20
 
 #Evaluation
-evaluation_images: 1
+evaluation_images: 50
 shuffle_evaluation: False
-validation_percent: 5 #For hand annotation neon_MAP
+validation_percent: 50 #For hand annotation neon_MAP
 #Non-max suppression, threshold for the IoU value to determine when a box should be suppressed.
 nms_threshold: 0.1
 
-#LIDAR density
-min_density: 2
-
 #Data Paths
 SJER:
-  h5: /Users/Ben/Downloads/SJER/
+  h5: /Users/Ben/Downloads/ab2/SJER/
   hand_annotations:
     RGB: /Users/Ben/Documents/DeepLidar/data/SJER/training/
     LIDAR: /Users/Ben/Documents/DeepLidar/data/SJER/training/
@@ -64,13 +66,26 @@ SJER:
     RGB: /Users/Ben/Documents/DeepLidar/data/SJER/plots/
     LIDAR: /Users/Ben/Documents/DeepLidar/data/SJER/plots/
 TEAK:
-  h5: /Users/Ben/Downloads/TEAK/
+  h5: /Users/Ben/Downloads/ab2/TEAK/
   training_csvs: /Users/Ben/Documents/DeepLidar/data/TEAK/training/
   hand_annotations:
      RGB: /Users/Ben/Documents/DeepLidar/data/TEAK/training/
+     LIDAR: /Users/Ben/Documents/DeepLidar/data/TEAK/training/
   training:
     RGB: /Users/Ben/Documents/DeepLidar/data/TEAK/training/
     LIDAR: /Users/Ben/Documents/DeepLidar/data/TEAK/training/
   evaluation:
-    RGB: /Users/Ben/Documents/DeepLidar/data/TEAK/plots/
-    LIDAR: /Users/Ben/Documents/DeepLidar/data/TEAK/plots/
+    RGB: /Users/Ben/Documents/DeepLidar/data/TEAK/samples/
+    LIDAR: /Users/Ben/Documents/DeepLidar/data/TEAK/samples/
+NIWO:
+  h5: /Users/Ben/Downloads/ab2/NIWO/
+  hand_annotations:
+    RGB: /Users/Ben/Documents/DeepLidar/data/NIWO/training/
+    LIDAR: /Users/Ben/Documents/DeepLidar/data/NIWO/training/
+  training_csvs: /Users/Ben/Documents/DeepLidar/data/NIWO/training/
+  training:
+    RGB: /Users/Ben/Documents/DeepLidar/data/NIWO/training/
+    LIDAR: /Users/Ben/Documents/DeepLidar/data/NIWO/training/
+  evaluation:
+    RGB: /Users/Ben/Documents/DeepLidar/data/NIWO/plots/
+    LIDAR: /Users/Ben/Documents/DeepLidar/data/NIWO/plots/

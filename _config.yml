@@ -1,10 +1,14 @@
 #Config file for DeepLidar
 
 #Data generation - the number of workers for dask session
-num_hipergator_workers: 25
+num_hipergator_workers: 40
 training_csvs:
   - SJER
   - TEAK
+
+#LIDAR settings
+min_density: 2
+min_coverage: 30
 
 #Keras
 workers: 1
@@ -13,6 +17,7 @@ max_queue_size: 20
 num_GPUs: 1
 save_image_path: /orange/ewhite/b.weinstein/retinanet/
 save_snapshot_path: /orange/ewhite/b.weinstein/retinanet/
+input_channels: 1
 
 #Sliding Window Size and Ovelap
 patch_size: 400
@@ -36,25 +41,22 @@ training_images: All
 weights: None
 imagenet_weights: True
 batch_size: 20
-epochs: 50
+epochs: 40
 backbone: resnet50
 shuffle_training: False
-score_threshold: 0.20
+score_threshold: 0.2
 
 #Evaluation
 evaluation_images: 0
 shuffle_evaluation: False
-validation_percent: 5 #For hand annotation neon_MAP
+validation_percent: 90 #For hand annotation neon_MAP
 
 #Non-max suppression, threshold for the IoU value to determine when a box should be suppressed.
 nms_threshold: 0.1
 
-#LIDAR density
-min_density: 100
-
 #Data Paths
 SJER:
-  h5: /orange/ewhite/b.weinstein/training_h5s/SJER/
+  h5: /orange/ewhite/b.weinstein/training_h5s/absoluteheight3/SJER/
   hand_annotations:
     RGB: /home/b.weinstein/DeepLidar/data/SJER/training/
     LIDAR: /home/b.weinstein/DeepLidar/data/SJER/training/
@@ -66,14 +68,26 @@ SJER:
     RGB: /home/b.weinstein/DeepLidar/data/SJER/plots/
     LIDAR: /home/b.weinstein/DeepLidar/data/SJER/plots/
 TEAK:
-  h5: /orange/ewhite/b.weinstein/training_h5s/TEAK/
+  h5: /orange/ewhite/b.weinstein/training_h5s/absoluteheight3/TEAK/
   training_csvs: /home/b.weinstein/TreeSegmentation/analysis/Results/detection_boxes/TEAK/2018/
   hand_annotations:
     RGB: /home/b.weinstein/DeepLidar/data/TEAK/training/
-    LIDAR: /home/b.weinstein/DeepLidar/data/TEAK/training/ 
+    LIDAR: /home/b.weinstein/DeepLidar/data/TEAK/training/
   training:
     RGB: /orange/ewhite/NeonData/TEAK/DP3.30010.001/2018/FullSite/D17/2018_TEAK_3/L3/Camera/Mosaic/V01/
     LIDAR: /orange/ewhite/NeonData/TEAK/DP1.30003.001/2018/FullSite/D17/2018_TEAK_3/L1/DiscreteLidar/ClassifiedPointCloud/
   evaluation:
     RGB: /home/b.weinstein/DeepLidar/data/TEAK/plots/
     LIDAR: /home/b.weinstein/DeepLidar/data/TEAK/plots/
+NIWO:
+  h5: /orange/ewhite/b.weinstein/training_h5s/absoluteheight3/NIWO/
+  training_csvs: /home/b.weinstein/TreeSegmentation/analysis/Results/detection_boxes/NIWO/2018/
+  hand_annotations:
+    RGB: /home/b.weinstein/DeepLidar/data/NIWO/training/
+    LIDAR: /home/b.weinstein/DeepLidar/data/NIWO/training/
+  training:
+    RGB: /orange/ewhite/NeonData/NIWO/DP3.30010.001/2018/FullSite/D13/2018_NIWO_2/L3/Camera/Mosaic/V01/
+    LIDAR: /orange/ewhite/NeonData/NIWO/DP1.30003.001/2018/FullSite/D13/2018_NIWO_2/L1/DiscreteLidar/ClassifiedPointCloud/
+  evaluation:
+    RGB: /home/b.weinstein/DeepLidar/data/NIWO/plots/
+    LIDAR: /home/b.weinstein/DeepLidar/data/NIWO/plots/

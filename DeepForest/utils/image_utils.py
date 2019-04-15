@@ -24,14 +24,19 @@ from DeepForest.preprocess import compute_windows, retrieve_window, NEON_annotat
 from DeepForest import postprocessing
 
 #Utility functions
+
+def proportion_NA(pc):
+    """Returns the proportion (%) of cells that are nan in a canopy raster array"""
+    chm=pc.chm(cell_size=1)
+    proportionNA = np.count_nonzero(np.isnan(chm.array))/chm.array.size
+    return proportionNA * 100
+    
 def normalize(image):
     
-    #Range normalize for all channels 
-    v_min = image.min(axis=(0, 1), keepdims=True)
-    v_max = image.max(axis=(0, 1), keepdims=True)
-    normalized_image=(v - v_min)/(v_max - v_min)
-    
-    return normalized_image
+    """Max normalization across dataset"""    
+    image[:,:,0] = image[:,:,0] / image[:,:,0].max() * 255
+    return image
+
 
 def image_is_blank(image):
     

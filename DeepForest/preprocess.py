@@ -137,7 +137,7 @@ def load_xml(path, dirname, res):
         ymax.append(tile_xml["bndbox"]["ymax"])
         label.append(tile_xml['name'])        
         
-    rgb_path=doc["annotation"]["filename"]
+    rgb_path = doc["annotation"]["filename"]
     
     #bounds
     #read in tile to get dimensions
@@ -230,10 +230,6 @@ def split_training(data, DeepForest_config, experiment):
                 evaluation = data[data["tile"] == eval_tile]
                 training = data[~(data["tile"] == eval_tile)]
             
-                #Log 
-                if not experiment==None:
-                    experiment.log_parameter(eval_tile, "Evaluation Tile")
-            
     #Select n Training samples
     if not DeepForest_config["training_images"]=="All":
         num_training_images = DeepForest_config["training_images"]
@@ -276,6 +272,7 @@ def NEON_annotations(DeepForest_config):
         
         #Set directory to the plots 
         plot_dir = DeepForest_config[site]["evaluation"]["RGB"]
+        
         #up one level is assumed to be annotation dir
         base_dir = os.path.dirname(os.path.dirname(plot_dir))
         annotation_dir = os.path.join(base_dir ,"annotations")
@@ -303,6 +300,7 @@ def NEON_annotations(DeepForest_config):
     data = pd.concat(annotations)
     
     #Compute list of sliding windows, assumed that all objects are the same extent and resolution
+    #TO DO this could be an area of concern.
     image_path = os.path.join(plot_dir, data[data["site"]==site].rgb_path.unique()[0])
     windows = compute_windows(image=image_path, pixels=DeepForest_config["patch_size"], overlap=DeepForest_config["patch_overlap"])
     
