@@ -79,3 +79,15 @@ TEAK:
   evaluation:
     RGB: /home/b.weinstein/DeepLidar/data/TEAK/plots/
     LIDAR: /home/b.weinstein/DeepLidar/data/TEAK/plots/
+NIWO:
+  h5: /orange/ewhite/b.weinstein/training_h5s/absoluteheight3/NIWO/
+  training_csvs: /home/b.weinstein/TreeSegmentation/analysis/Results/detection_boxes/NIWO/2018/
+  hand_annotations:
+    RGB: /home/b.weinstein/DeepLidar/data/NIWO/training/
+    LIDAR: /home/b.weinstein/DeepLidar/data/NIWO/training/
+  training:
+    RGB: /orange/ewhite/NeonData/NIWO/DP3.30010.001/2018/FullSite/D13/2018_NIWO_2/L3/Camera/Mosaic/V01/
+    LIDAR: /orange/ewhite/NeonData/NIWO/DP1.30003.001/2018/FullSite/D13/2018_NIWO_2/L1/DiscreteLidar/ClassifiedPointCloud/
+  evaluation:
+    RGB: /home/b.weinstein/DeepLidar/data/NIWO/plots/
+    LIDAR: /home/b.weinstein/DeepLidar/data/NIWO/plots/

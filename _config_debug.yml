@@ -77,3 +77,15 @@ TEAK:
   evaluation:
     RGB: /Users/Ben/Documents/DeepLidar/data/TEAK/samples/
     LIDAR: /Users/Ben/Documents/DeepLidar/data/TEAK/samples/
+NIWO:
+  h5: /Users/Ben/Downloads/ab2/NIWO/
+  hand_annotations:
+    RGB: /Users/Ben/Documents/DeepLidar/data/NIWO/training/
+    LIDAR: /Users/Ben/Documents/DeepLidar/data/NIWO/training/
+  training_csvs: /Users/Ben/Documents/DeepLidar/data/NIWO/training/
+  training:
+    RGB: /Users/Ben/Documents/DeepLidar/data/NIWO/training/
+    LIDAR: /Users/Ben/Documents/DeepLidar/data/NIWO/training/
+  evaluation:
+    RGB: /Users/Ben/Documents/DeepLidar/data/NIWO/plots/
+    LIDAR: /Users/Ben/Documents/DeepLidar/data/NIWO/plots/
