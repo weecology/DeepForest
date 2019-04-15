@@ -354,7 +354,7 @@ class OnTheFlyGenerator(Generator):
         self.row = self.image_data[image_name]
         
         #Check for blank black image, if so, enforce no annotations
-        remove_annotations = utils.image_is_blank(self.image)
+        remove_annotations = image_utils.image_is_blank(self.image)
     
         if remove_annotations:
             return np.zeros((0, 5))
