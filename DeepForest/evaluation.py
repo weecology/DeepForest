@@ -66,7 +66,7 @@ def neonRecall(
         #Load image
         raw_image    = generator.load_image(i)
         plot_image = copy.deepcopy(raw_image)
-        plot_rgb = plot_image[:,:,:3]
+        plot_rgb = plot_image[:,:,:3].copy()
         plot_chm = plot_image[:,:,3]        
         
         #Skip if missing a component data source

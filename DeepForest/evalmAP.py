@@ -173,7 +173,7 @@ def _get_detections(generator, model, score_threshold=0.05, max_detections=100, 
             cv2.imwrite(os.path.join(save_path, '{}.png'.format(lfname)), chm)            
             
             if experiment:
-                experiment.log_image(os.path.join(save_path, '{}.png'.format(lfname)),file_name=lfname)      
+                experiment.log_image(os.path.join(save_path, '{}_LIDAR.png'.format(lfname)),file_name=lfname)      
                 experiment.log_image(os.path.join(save_path, '{}.png'.format(fname)),file_name=fname)      
 
         # copy detections to all_detections
