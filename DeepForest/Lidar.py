@@ -77,6 +77,7 @@ def load_lidar(laz_path, normalize=True):
         
     except FileNotFoundError:
         print("Failed loading path: %s" %(laz_path))
+        return None
         
     #normalize and filter
     if normalize:
@@ -84,6 +85,8 @@ def load_lidar(laz_path, normalize=True):
             pc.normalize(0.33)
         except:
             print("No vertical objects in image, skipping normalization")
+            #TODO use NEON classification for normalization
+            return None
     
     #Quick filter for unreasonable points.
     pc.filter(min = -1, max = 100 , dim = "z")    
