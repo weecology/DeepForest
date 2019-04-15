@@ -34,11 +34,11 @@ def proportion_NA(pc):
 def normalize(image):
     """Max normalization across sample"""
     #RGB
-    x = x.astype(keras.backend.floatx())
+    image = image.astype(keras.backend.floatx())
     
-    x[..., 0] -= 103.939
-    x[..., 1] -= 116.779
-    x[..., 2] -= 123.68
+    image[..., 0] -= 103.939
+    image[..., 1] -= 116.779
+    image[..., 2] -= 123.68
     
     #Height model
     image[:,:,3] = image[:,:,3] / image[:,:,3].max() * 255
