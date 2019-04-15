@@ -173,11 +173,8 @@ def compute_chm(clipped_las, min_threshold = 1):
     
     #colorize it, stretch that scale a bit to get a set of colors
     greyscale = dilated
-    
-    #Add extra dim
-    one_channel_array = np.expand_dims(greyscale, 2)
-        
-    return one_channel_array
+            
+    return greyscale
          
 def pad_array(desired_shape, chm):
     """

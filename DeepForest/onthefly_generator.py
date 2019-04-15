@@ -211,20 +211,20 @@ class OnTheFlyGenerator(Generator):
         base_dir = self.DeepForest_config[self.row["site"]][self.name]["RGB"]
         filename = os.path.join(base_dir, self.row["tile"])
         im = Image.open(filename)
-        numpy_image = np.array(im)    
+        self.numpy_image = np.array(im)    
         
-        return numpy_image
+        return self.numpy_image
         
     def compute_CHM(self):
         '''' Compute a canopy height model on loaded point cloud
         '''
-        CHM = Lidar.compute_chm(self.clipped_las)
-        return CHM
+        self.CHM  = Lidar.compute_chm(self.clipped_las)
+        return self.CHM
     
     def bind_array(self):
         """ Bind RGB and LIDAR arrays
         """
-        four_channel_image=Lidar.bind_array(self.image, self.CHM.array) 
+        four_channel_image=Lidar.bind_array(self.image, self.CHM) 
         return four_channel_image
     
     def load_new_crop(self):
@@ -233,6 +233,12 @@ class OnTheFlyGenerator(Generator):
         #Save image path for next evaluation to check
         self.previous_image_path = self.row["tile"]
         
+        #Load rgb image and get crop
+        image = self.retrieve_window()
+    
+        #BGR order
+        self.image = image[:,:,::-1]
+    
         #Crop Las
         self.clipped_las = self.clip_las()
         
@@ -246,7 +252,9 @@ class OnTheFlyGenerator(Generator):
         except:
             return None
         
-        return one_channel_array
+        four_channel_image = self.bind_array()
+        
+        return four_channel_image
         
     def load_image(self, image_index):
         """ Load an image at the image_index.
@@ -260,18 +268,22 @@ class OnTheFlyGenerator(Generator):
             if self.verbose:
                 print("Loading new tile {}".format(self.row["tile"]))
                 
+            #Load RGB
+            self.load_rgb_tile()
+            
+            #Load lidar
             self.lidar_tile  = self.load_lidar_tile()            
             if self.lidar_tile == None:
                 print("image annotations have no corresponding crop, exiting.")
                 return False
         
         #Load a new crop from self
-        three_channel_image = self.load_new_crop()
+        four_channel_image = self.load_new_crop()
         
-        if three_channel_image is None:
+        if four_channel_image is None:
             return False
         else: 
-            return three_channel_image
+            return four_channel_image
     
     def fetch_annotations(self):
         '''
@@ -283,6 +295,7 @@ class OnTheFlyGenerator(Generator):
         base_dir = self.DeepForest_config[self.row["site"]][self.name]["RGB"]
         image = os.path.join(base_dir, self.row["tile"])
         index = self.row["window"]
+        
         annotations = self.annotation_list
         offset = (self.DeepForest_config["patch_size"] * 0.1)/self.rgb_res
         patch_size = self.DeepForest_config["patch_size"]
@@ -339,6 +352,12 @@ class OnTheFlyGenerator(Generator):
         #Find the original data and crop
         image_name = self.image_names[image_index]
         self.row = self.image_data[image_name]
+        
+        #Check for blank black image, if so, enforce no annotations
+        remove_annotations = utils.image_is_blank(self.image)
+    
+        if remove_annotations:
+            return np.zeros((0, 5))
         
         #Look for annotations in previous epoch
         key = self.row["tile"]+"_"+str(self.row["window"])

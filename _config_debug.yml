@@ -54,7 +54,7 @@ nms_threshold: 0.1
 
 #Data Paths
 SJER:
-  h5: /Users/Ben/Downloads/ab2/SJER/
+  h5: /Users/Ben/Downloads/fourchannel/SJER/
   hand_annotations:
     RGB: /Users/Ben/Documents/DeepLidar/data/SJER/training/
     LIDAR: /Users/Ben/Documents/DeepLidar/data/SJER/training/
@@ -66,7 +66,7 @@ SJER:
     RGB: /Users/Ben/Documents/DeepLidar/data/SJER/plots/
     LIDAR: /Users/Ben/Documents/DeepLidar/data/SJER/plots/
 TEAK:
-  h5: /Users/Ben/Downloads/ab2/TEAK/
+  h5: /Users/Ben/Downloads/fourchannel/TEAK/
   training_csvs: /Users/Ben/Documents/DeepLidar/data/TEAK/training/
   hand_annotations:
      RGB: /Users/Ben/Documents/DeepLidar/data/TEAK/training/
@@ -78,7 +78,7 @@ TEAK:
     RGB: /Users/Ben/Documents/DeepLidar/data/TEAK/samples/
     LIDAR: /Users/Ben/Documents/DeepLidar/data/TEAK/samples/
 NIWO:
-  h5: /Users/Ben/Downloads/ab2/NIWO/
+  h5: /Users/Ben/Downloads/fourchannel/NIWO/
   hand_annotations:
     RGB: /Users/Ben/Documents/DeepLidar/data/NIWO/training/
     LIDAR: /Users/Ben/Documents/DeepLidar/data/NIWO/training/
