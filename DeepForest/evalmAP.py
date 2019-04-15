@@ -65,8 +65,9 @@ def _get_detections(generator, model, score_threshold=0.05, max_detections=100, 
     for i in range(generator.size()):
         raw_image    = generator.load_image(i)
         plot_image = copy.deepcopy(raw_image)
+        plot_rgb = plot_image[:,:,:3]
+        plot_chm = plot_image[:,:,3]
 
-        #Temporary write raw file
         #Format name and save
         image_name = generator.image_names[i]        
         row = generator.image_data[image_name]             
@@ -133,7 +134,6 @@ def _get_detections(generator, model, score_threshold=0.05, max_detections=100, 
                 #print("Bounds for image {}, window {}, are {}".format(generator.row["tile"], generator.row["window"], bounds))
                 pc = postprocessing.drape_boxes(boxes=image_boxes, pc = generator.lidar_tile, bounds=bounds)     
                 
-                
                 #Get new bounding boxes
                 image_boxes = postprocessing.cloud_to_box(pc, bounds)    
                 image_scores = image_scores[:image_boxes.shape[0]]
@@ -145,6 +145,18 @@ def _get_detections(generator, model, score_threshold=0.05, max_detections=100, 
                 #print("Point density of {:.2f} is too low, skipping image {}".format(density, generator.row["tile"]))        
 
         if save_path is not None:
+            
+            draw_annotations(plot_rgb, generator.load_annotations(i), label_to_name=generator.label_to_name)
+            draw_detections(plot_rgb, image_boxes, image_scores, image_labels, label_to_name=generator.label_to_name,score_threshold=score_threshold)
+        
+            #name image
+            image_name=generator.image_names[i]        
+            row=generator.image_data[image_name]             
+            fname=os.path.splitext(row["tile"])[0] + "_" + str(row["window"])
+        
+            #Write RGB
+            cv2.imwrite(os.path.join(save_path, '{}.png'.format(fname)), plot_rgb)
+            
             #Format name and save
             image_name = generator.image_names[i]        
             row = generator.image_data[image_name]             
@@ -152,8 +164,8 @@ def _get_detections(generator, model, score_threshold=0.05, max_detections=100, 
             
             #make cv2 colormap
             #normalize visual to make clearer for plotting
-            plot_image = plot_image/plot_image.max() * 255            
-            chm = np.uint8(plot_image)
+            plot_chm = plot_chm/plot_chm.max() * 255            
+            chm = np.uint8(plot_chm)
             draw_annotations(chm, generator.load_annotations(i), label_to_name=generator.label_to_name)
             draw_detections(chm, image_boxes, image_scores, image_labels, label_to_name=generator.label_to_name,score_threshold=score_threshold)
             
@@ -162,6 +174,7 @@ def _get_detections(generator, model, score_threshold=0.05, max_detections=100, 
             
             if experiment:
                 experiment.log_image(os.path.join(save_path, '{}.png'.format(lfname)),file_name=lfname)      
+                experiment.log_image(os.path.join(save_path, '{}.png'.format(fname)),file_name=fname)      
 
         # copy detections to all_detections
         for label in range(generator.num_classes()):

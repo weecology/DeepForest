@@ -66,6 +66,8 @@ def neonRecall(
         #Load image
         raw_image    = generator.load_image(i)
         plot_image = copy.deepcopy(raw_image)
+        plot_rgb = plot_image[:,:,:3]
+        plot_chm = plot_image[:,:,3]        
         
         #Skip if missing a component data source
         if raw_image is False:
@@ -150,15 +152,26 @@ def neonRecall(
             for i in np.arange(len(x)):
                 cv2.circle(plot_image,(int(x[i]),int(y[i])), 2, (0,0,255), -1)
     
-            #Write CHM
-            plot_image = plot_image/plot_image.max() * 255                        
-            chm = np.uint8(plot_image)
+            #Write RGB
+            draw_detections(plot_rgb, image_boxes, image_scores, image_labels, label_to_name=generator.label_to_name,score_threshold=score_threshold)
+        
+            #name image
+            image_name=generator.image_names[i]        
+            row=generator.image_data[image_name]             
+            fname=os.path.splitext(row["tile"])[0] + "_" + str(row["window"])
+        
+            #Write RGB
+            cv2.imwrite(os.path.join(save_path, '{}_NeonPlot.png'.format(fname)), plot_rgb)
+            
+            plot_chm = plot_chm/plot_chm.max() * 255                        
+            chm = np.uint8(plot_chm)
             draw_detections(chm, image_boxes, image_scores, image_labels, label_to_name=generator.label_to_name, score_threshold=score_threshold, color = (80,127,255))            
-            cv2.imwrite(os.path.join(save_path, '{}_NeonPlot.png'.format(plotID)), chm)
+            cv2.imwrite(os.path.join(save_path, '{}_Lidar_NeonPlot.png'.format(plotID)), chm)
                 
             #Format name and save
             if experiment:
                 experiment.log_image(os.path.join(save_path, '{}_NeonPlot.png'.format(plotID)),file_name=str(plotID))
+                experiment.log_image(os.path.join(save_path, '{}_Lidar_NeonPlot.png'.format(plotID)),file_name=str("Lidar_" + plotID))
         
         #calculate recall
             s = gp.GeoSeries(map(Point, zip(plot_data.UTM_E, plot_data.UTM_N)))
