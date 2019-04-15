@@ -17,7 +17,7 @@ max_queue_size: 20
 num_GPUs: 1
 save_image_path: /orange/ewhite/b.weinstein/retinanet/
 save_snapshot_path: /orange/ewhite/b.weinstein/retinanet/
-input_channels: 1
+input_channels: 4
 
 #Sliding Window Size and Ovelap
 patch_size: 400
@@ -30,11 +30,11 @@ preprocess:
 
 #Select sites
 hand_annotation_site:
-  - SJER
+  - TEAK
 pretraining_site:
-  - SJER
+  - TEAK
 evaluation_site:
-  - SJER
+  - TEAK
 
 #Training
 training_images: All
