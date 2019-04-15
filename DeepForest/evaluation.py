@@ -149,8 +149,8 @@ def neonRecall(
             x = (plot_data.UTM_E - tile_bounds.left).values / 0.1
             y = (tile_bounds.top - plot_data.UTM_N).values / 0.1
             
-            for i in np.arange(len(x)):
-                cv2.circle(plot_image,(int(x[i]),int(y[i])), 2, (0,0,255), -1)
+            for j in np.arange(len(x)):
+                cv2.circle(plot_image,(int(x[j]),int(y[j])), 2, (0,0,255), -1)
     
             #Write RGB
             draw_detections(plot_rgb, image_boxes, image_scores, image_labels, label_to_name=generator.label_to_name,score_threshold=score_threshold)
