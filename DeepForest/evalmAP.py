@@ -174,7 +174,7 @@ def _get_detections(generator, model, score_threshold=0.05, max_detections=100, 
             draw_detections(chm, image_boxes, image_scores, image_labels, label_to_name=generator.label_to_name,score_threshold=score_threshold)
             
             #Write CHM
-            cv2.imwrite(os.path.join(save_path, '{}.png'.format(lfname)), chm)            
+            cv2.imwrite(os.path.join(save_path, '{}_LIDAR.png'.format(lfname)), chm)            
             
             if experiment:
                 experiment.log_image(os.path.join(save_path, '{}_LIDAR.png'.format(lfname)),file_name=lfname)      
