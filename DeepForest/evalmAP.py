@@ -71,7 +71,6 @@ def _get_detections(generator, model, score_threshold=0.05, max_detections=100, 
         image_name = generator.image_names[i]        
         row = generator.image_data[image_name]             
         lfname = os.path.splitext(row["tile"])[0] + "_" + str(row["window"]) +"raw_image"              
-        cv2.imwrite(os.path.join(save_path, '{}.tif'.format(lfname)), plot_image)            
         
         #Skip if missing a component data source
         if raw_image is False:
