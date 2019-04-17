@@ -16,7 +16,7 @@ max_queue_size: 10
 num_GPUs: 1
 save_image_path: snapshots/images/
 save_snapshot_path: snapshots/images/
-input_channels: 1
+input_channels: 4
 
 #Sliding Window Size and Ovelap
 patch_size: 400
@@ -36,7 +36,7 @@ evaluation_site:
   - TEAK
 
 #Training
-training_images: All
+training_images: 10
 weights: None
 imagenet_weights: False
 batch_size: 25
@@ -75,8 +75,8 @@ TEAK:
     RGB: /Users/Ben/Documents/DeepLidar/data/TEAK/training/
     LIDAR: /Users/Ben/Documents/DeepLidar/data/TEAK/training/
   evaluation:
-    RGB: /Users/Ben/Documents/DeepLidar/data/TEAK/samples/
-    LIDAR: /Users/Ben/Documents/DeepLidar/data/TEAK/samples/
+    RGB: /Users/Ben/Documents/DeepLidar/data/TEAK/plots/
+    LIDAR: /Users/Ben/Documents/DeepLidar/data/TEAK/plots/
 NIWO:
   h5: /Users/Ben/Downloads/fourchannel/NIWO/
   hand_annotations:
