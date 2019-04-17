@@ -39,7 +39,7 @@ def normalize(image):
     image[..., 2] -= 123.68
     
     #Height model
-    image[:,:,3] = image[:,:,3] / image[:,:,3].max() * 255
+    image[:,:,3] = image[:,:,3] 
     
     return image
 
