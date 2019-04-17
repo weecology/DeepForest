@@ -44,7 +44,6 @@ def normalize(image):
     
     return image
 
-
 def image_is_blank(image):
     
     is_zero=image.sum(2)==0
