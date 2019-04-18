@@ -40,8 +40,7 @@ def normalize(image):
     image[..., 2] -= 123.68
     
     #Height model
-    #TODO make this site specific?
-    image[:,:,3] = image[:,:,3] - 30
+    image[:,:,3] = image[:,:,3]
     
     return image
 
