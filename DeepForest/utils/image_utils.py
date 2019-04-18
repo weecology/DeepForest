@@ -32,15 +32,16 @@ def proportion_NA(pc):
     return proportionNA * 100
     
 def normalize(image):
-    """Max normalization across sample"""
-    #RGB
+    """Mean normalization across dataset"""
+    #RGB - Imagenet means
     image = image.astype(keras.backend.floatx())    
     image[..., 0] -= 103.939
     image[..., 1] -= 116.779
     image[..., 2] -= 123.68
     
     #Height model
-    image[:,:,3] = image[:,:,3] 
+    #TODO make this site specific?
+    image[:,:,3] = image[:,:,3] - 15
     
     return image
 
