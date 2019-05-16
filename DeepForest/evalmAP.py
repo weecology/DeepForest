@@ -142,7 +142,6 @@ def _get_detections(generator, model, score_threshold=0.05, max_detections=100, 
                 image_scores = image_scores[:image_boxes.shape[0]]
                 image_labels = image_labels[:image_boxes.shape[0]]          
                 image_detections = np.concatenate([image_boxes, np.expand_dims(image_scores, axis=1), np.expand_dims(image_labels, axis=1)], axis=1)
-                
             else:
                 pass
                 #print("Point density of {:.2f} is too low, skipping image {}".format(density, generator.row["tile"]))        
@@ -159,6 +158,7 @@ def _get_detections(generator, model, score_threshold=0.05, max_detections=100, 
         
             #Write RGB
             cv2.imwrite(os.path.join(save_path, '{}.png'.format(fname)), plot_rgb)
+            #generator.lidar_tile.write(os.path.join(save_path, '{}.laz'.format(fname)))
             
             #Format name and save
             image_name = generator.image_names[i]        
@@ -167,8 +167,9 @@ def _get_detections(generator, model, score_threshold=0.05, max_detections=100, 
             
             #make cv2 colormap
             #normalize visual to make clearer for plotting
-            plot_chm = plot_chm/plot_chm.max() * 255            
+            plot_chm = plot_chm/plot_chm.max() * 255
             chm = np.uint8(plot_chm)
+            chm = cv2.applyColorMap(chm, cv2.COLORMAP_HOT)            
             draw_annotations(chm, generator.load_annotations(i), label_to_name=generator.label_to_name)
             draw_detections(chm, image_boxes, image_scores, image_labels, label_to_name=generator.label_to_name,score_threshold=score_threshold)
             

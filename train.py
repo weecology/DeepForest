@@ -140,8 +140,7 @@ def create_callbacks(model, training_model, prediction_model, train_generator, v
                               experiment=experiment,
                               save_path=args.save_path,
                               score_threshold=args.score_threshold,
-                              DeepForest_config=DeepForest_config,
-                              )
+                              DeepForest_config=DeepForest_config)
         
         evaluation = RedirectModel(evaluation, prediction_model)
         callbacks.append(evaluation)
@@ -176,16 +175,16 @@ def create_callbacks(model, training_model, prediction_model, train_generator, v
     ))
    
     #Neon Callbacks
-    NEON_recall_generator = create_NEON_generator(args.batch_size, DeepForest_config)
-    recall = recallCallback(
-        generator=NEON_recall_generator,
-        save_path=args.save_path,
-        score_threshold=args.score_threshold,
-        experiment=experiment,
-        sites=DeepForest_config["evaluation_site"]    )
+    #NEON_recall_generator = create_NEON_generator(args.batch_size, DeepForest_config)
+    #recall = recallCallback(
+        #generator=NEON_recall_generator,
+        #save_path=args.save_path,
+        #score_threshold=args.score_threshold,
+        #experiment=experiment,
+        #sites=DeepForest_config["evaluation_site"])
     
-    recall = RedirectModel(recall, prediction_model)
-    callbacks.append(recall)
+    #recall = RedirectModel(recall, prediction_model)
+    #callbacks.append(recall)
     
     #create the NEON generator 
     NEON_generator = create_NEON_generator(args.batch_size, DeepForest_config)
@@ -217,8 +216,7 @@ def create_generators(args, data, DeepForest_config):
                                   batch_size = args.batch_size, 
                                   DeepForest_config = DeepForest_config, 
                                   name = "training",
-                                  preprocess_image=image_utils.normalize
-                                  )
+                                  preprocess_image=image_utils.normalize)
 
     #Validation Generator, check that it exists
     if test is not None:
@@ -226,8 +224,7 @@ def create_generators(args, data, DeepForest_config):
                                            batch_size = args.batch_size, 
                                            DeepForest_config = DeepForest_config, 
                                            name = "training",
-                                           preprocess_image=image_utils.normalize
-                                           )
+                                           preprocess_image=image_utils.normalize)
     else:
         validation_generator = None
         
@@ -398,8 +395,7 @@ def main(args=None, data=None, DeepForest_config=None, experiment=None):
         callbacks=callbacks,
         workers=DeepForest_config["workers"],
         use_multiprocessing=DeepForest_config["use_multiprocessing"],
-        max_queue_size=DeepForest_config["max_queue_size"]
-    )
+        max_queue_size=DeepForest_config["max_queue_size"])
     
     #return path snapshot of final epoch
     saved_models = glob.glob(os.path.join(args.snapshot_path,"*.h5"))
@@ -443,8 +439,7 @@ if __name__ == '__main__':
             DeepForest_config[site]["h5"] = os.path.join(DeepForest_config[site]["h5"],"hand_annotations")
         
         #log h5 dir
-        experiment.log_parameter("{} h5 dir".format(site),  DeepForest_config[site]["h5"] )    
-        
+        experiment.log_parameter("{} h5 dir".format(site),  DeepForest_config[site]["h5"])    
         
     #log params
     experiment.log_parameters(DeepForest_config)    
