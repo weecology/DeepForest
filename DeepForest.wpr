@@ -4,6 +4,7 @@
 # Wing IDE project file                                          #
 ##################################################################
 [project attributes]
+proj.file-list = [loc('tests/test_onthefly_generator.py')]
 proj.file-type = 'shared'
 proj.launch-config = {loc('../DeepForest/predict.py'): ('project',
         (u'--model /Users/ben/Documents/DeepForest/snapshots/fullmodel.h5 --image /Users/ben/Documents/DeepForest/data/SJER/SJER_053.tif --single_image',
@@ -52,3 +53,6 @@ proj.launch-config = {loc('../DeepForest/predict.py'): ('project',
         'roject',
         (u'csv /Users/Ben/Documents/keras-retinanet/tests/test-data/annotations.csv /Users/Ben/Documents/keras-retinanet/tests/test-data/classes.csv',
          ''))}
+testing.auto-test-file-specs = (('glob',
+                                 'test*'),)
+testing.test-framework = {None: ':internal pytest'}

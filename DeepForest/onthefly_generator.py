@@ -221,10 +221,10 @@ class OnTheFlyGenerator(Generator):
         self.CHM  = Lidar.compute_chm(self.clipped_las)
         return self.CHM
     
-    def bind_array(self):
+    def bind_array(self, image, CHM):
         """ Bind RGB and LIDAR arrays
         """
-        four_channel_image=Lidar.bind_array(self.image, self.CHM) 
+        four_channel_image=Lidar.bind_array(image, CHM) 
         return four_channel_image
     
     def load_new_crop(self):
@@ -252,7 +252,10 @@ class OnTheFlyGenerator(Generator):
         except:
             return None
         
-        four_channel_image = self.bind_array()
+        #subtract lidar model from RGB
+        subtracted_image = self.subtract_lidar(self.image, self.CHM)
+        
+        four_channel_image = self.bind_array(subtracted_image, self.CHM)
         
         return four_channel_image
         
