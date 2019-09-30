@@ -11,13 +11,11 @@ parent_path = os.path.abspath(os.path.join(os.getcwd(), os.pardir))
 sys.path.append(parent_path)
 
 import pytest
-from deepforest import deepforest
+from  ..deepforest import deepforest
 
 def test_deepforest():
     model = deepforest.deepforest()
     assert model.weights is None
-
-test_deepforest()
 
 #@pytest.fixture
 #def response():
