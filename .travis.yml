@@ -1,0 +1,33 @@
+# Config file for automatic testing at travis-ci.org, drawn from: https://github.com/astrofrog/example-travis-conda/blob/master/.travis.yml
+language: python
+python:
+  - 3.6
+
+before_install:
+  # Here we just install Miniconda, which you shouldn't have to change.
+  - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
+  - chmod +x miniconda.sh
+  - ./miniconda.sh -b
+  - export PATH=/home/travis/miniconda/bin:$PATH
+  - conda update --yes conda
+  - git clone https://github.com/bw4sz/keras-retinanet.git
+  - pip install keras-retinanet
+
+#download release model
+#keras retin
+#wget --header "Authorization: token <GITHUB TOKEN>"  --output-document=<RELEASE>.tar.gz https://api.github.com/repos/<USER>/<REPO>/tarball/<RELEASE NAME>
+
+install:
+- conda create --yes -n test python=$TRAVIS_PYTHON_VERSION
+- source activate test
+
+# Below, include the dependencies you want to install with conda, optionally
+# specifying versions used in the matrix above. If you split this into
+# multiple conda install commands, you should always include numpy=$NUMPY as
+# the first package to install (for every conda install command) otherwise
+# numpy may be automatically upgraded.
+
+  - conda install --file=environment.yml
+
+script:
+  - py.test

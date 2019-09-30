@@ -14,9 +14,11 @@ import pytest
 from  ..deepforest import deepforest
 
 def test_deepforest():
-    model = deepforest.deepforest()
+    model = deepforest.deepforest(weights=None)
     assert model.weights is None
 
+def test_deepforest_weights():
+    model = deepforest.deepforest(weights="")
 #@pytest.fixture
 #def response():
     #"""Sample pytest fixture.
