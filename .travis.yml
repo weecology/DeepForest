@@ -20,6 +20,7 @@ install:
   - conda env create --file=environment.yml
   - source activate DeepForest
   - pip install keras-retinanet
+  - python keras-retinanet/setup.py build_ext --inplace
 
 
 # Below, include the dependencies you want to install with conda, optionally
