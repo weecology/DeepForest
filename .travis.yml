@@ -16,12 +16,14 @@ before_install:
 #keras retin
 #wget --header "Authorization: token <GITHUB TOKEN>"  --output-document=<RELEASE>.tar.gz https://api.github.com/repos/<USER>/<REPO>/tarball/<RELEASE NAME>
 
+# A bit ugly, but absolute paths wasn't building
 install:
   - conda env create --file=environment.yml
   - source activate DeepForest
-  - pip install keras-retinanet
-  - python keras-retinanet/setup.py build_ext --inplace
-
+  - cd keras-retinanet
+  - pip install .
+  - python setup.py build_ext --inplace
+  - cd ..
 
 # Below, include the dependencies you want to install with conda, optionally
 # specifying versions used in the matrix above. If you split this into
