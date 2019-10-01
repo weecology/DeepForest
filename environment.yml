@@ -13,6 +13,7 @@ dependencies:
   - pillow
   - scipy
   - pip
+  - pandas
   - pip:
     - keras-resnet
     - opencv-python

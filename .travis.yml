@@ -11,7 +11,6 @@ before_install:
   - export PATH=/home/travis/miniconda3/bin:$PATH
   - conda update --yes conda
   - git clone https://github.com/bw4sz/keras-retinanet.git
-  - pip install keras-retinanet
 
 #download release model
 #keras retin
@@ -20,6 +19,8 @@ before_install:
 install:
   - conda env create --file=environment.yml
   - source activate DeepForest
+  - pip install keras-retinanet
+
 
 # Below, include the dependencies you want to install with conda, optionally
 # specifying versions used in the matrix above. If you split this into
@@ -28,6 +29,4 @@ install:
 # numpy may be automatically upgraded.
 
 script:
-  - echo which py.test
   - python -m pytest
-  - py.test
