@@ -3,15 +3,14 @@ channels:
   - defaults
 dependencies:
   - sphinx
-  - pip:
-    - cython
-    - h5py
-    - keras
-    - keras-resnet
-    - keras-retinanet
-    - numpy
-    - opencv-python
-    - pillow
-    - pyyaml
-    - scipy
+  - pyyaml
+  - cython
+  - h5py
+  - keras
+  - keras-resnet
+  - keras-retinanet
+  - numpy
+  - opencv-python
+  - pillow
+  - scipy
 
