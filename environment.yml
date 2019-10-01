@@ -7,10 +7,10 @@ dependencies:
   - cython
   - h5py
   - keras
-  - keras-resnet
-  - keras-retinanet
   - numpy
-  - opencv-python
   - pillow
   - scipy
-
+  - pip
+  - pip:
+    - keras-resnet
+    - opencv-python
