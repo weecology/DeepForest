@@ -18,9 +18,8 @@ before_install:
 #wget --header "Authorization: token <GITHUB TOKEN>"  --output-document=<RELEASE>.tar.gz https://api.github.com/repos/<USER>/<REPO>/tarball/<RELEASE NAME>
 
 install:
-  - conda create --yes -n test python=$TRAVIS_PYTHON_VERSION
-  - source activate test
   - conda env create --file=environment.yml
+  - source activate DeepForest
 
 # Below, include the dependencies you want to install with conda, optionally
 # specifying versions used in the matrix above. If you split this into
