@@ -9,7 +9,6 @@ before_install:
   - chmod +x miniconda.sh
   - ./miniconda.sh -b
   - export PATH=/home/travis/miniconda/bin:$PATH
-  - conda update --yes conda
   - git clone https://github.com/bw4sz/keras-retinanet.git
   - pip install keras-retinanet
 
