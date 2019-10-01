@@ -11,7 +11,7 @@ before_install:
   - export PATH=/home/travis/miniconda2/bin:$PATH
   - conda update --yes conda
   - git clone https://github.com/bw4sz/keras-retinanet.git
-  - pip install keras-retinanet
+  - pip3 install keras-retinanet
 
 #download release model
 #keras retin
