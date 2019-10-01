@@ -5,6 +5,7 @@ dependencies:
   - python=3.6
   - sphinx
   - pyyaml
+  - pytest
   - cython
   - h5py
   - keras

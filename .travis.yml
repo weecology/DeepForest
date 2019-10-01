@@ -19,7 +19,7 @@ before_install:
 
 install:
   - conda env create --file=environment.yml
-  - source activate DeepForest
+  - conda activate DeepForest
 
 # Below, include the dependencies you want to install with conda, optionally
 # specifying versions used in the matrix above. If you split this into
