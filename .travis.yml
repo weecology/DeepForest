@@ -19,7 +19,7 @@ before_install:
 
 install:
   - conda env create --file=environment.yml
-  - conda activate DeepForest
+  - source activate DeepForest
 
 # Below, include the dependencies you want to install with conda, optionally
 # specifying versions used in the matrix above. If you split this into
@@ -28,4 +28,6 @@ install:
 # numpy may be automatically upgraded.
 
 script:
+  - echo which py.test
+  - python -m pytest
   - py.test
