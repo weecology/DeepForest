@@ -15,6 +15,7 @@ dependencies:
   - pillow
   - scipy
   - pip
+  - sphinx_rtd_theme
   - pandas
   - pip:
     - keras-resnet
