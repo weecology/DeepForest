@@ -9,7 +9,6 @@ import cv2
 import pandas as pd
 
 #Retinanet-viz
-from keras_retinanet import models
 from keras_retinanet.utils import image as keras_retinanet_image
 from keras_retinanet.utils.visualization import draw_detections
 
