@@ -32,4 +32,4 @@ install:
 # numpy may be automatically upgraded.
 
 script:
-  - python -m pytest DeepForest
+  - pytest DeepForest/
