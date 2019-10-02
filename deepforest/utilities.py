@@ -20,12 +20,16 @@ def label_to_name(label):
         return "Tree"
 
 def read_config():
-        with open("deepforest_config.yml", 'r') as f:
-                config = yaml.load(f)
+        try:
+                with open("deepforest_config.yml", 'r') as f:
+                        config = yaml.load(f)
+        except Exception as e:
+                raise FileNotFoundError("There is no config file in dir:{}".format(os.getcwd()))
+                
         return config
 
 def read_model(model_path, config):
-        model = models.load_model(model_path, backbone_name='resnet50', convert=True, nms_threshold=config["nms_threshold"])
+        model = models.load_model(model_path, backbone_name='resnet50', nms_threshold=config["nms_threshold"])
         return model
 
 def predict_image(model, image_path, score_threshold = 0.1, max_detections= 200, return_plot=True):
