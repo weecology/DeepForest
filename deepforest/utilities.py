@@ -5,7 +5,7 @@ import sys
 from tqdm import tqdm
 import json
 import urllib
-
+from keras_retinanet import models
 def label_to_name(label):
         """ Map label to name.
         """
