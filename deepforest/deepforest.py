@@ -66,4 +66,8 @@ class deepforest:
         Returns:
             predictions (array): Numpy array of predicted bounding boxes
         '''     
-        pass
+        #Check for model weights
+        
+        if(self.weights is None):
+            raise ValueError("Model currently has no weights, either train a new model using deepforest.train, loading existing model, or use prebuilt model (see deepforest.use_release()")
+        

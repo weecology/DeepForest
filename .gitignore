@@ -1,6 +1,6 @@
 snapshots/
 logs/
-data/
+data/*.h5
 *.wpu
 *.wpr
-tests/data/
+tests/data/*.h5

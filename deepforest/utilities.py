@@ -59,7 +59,7 @@ def use_release():
         
         #Download if it doesn't exist
         if not os.path.exists(output_path):
-                print("Downloading model from DeepForest release {}, see {} for detailed".format(_json["tag_name"],_json["html_url"]))                
+                print("Downloading model from DeepForest release {}, see {} for details".format(_json["tag_name"],_json["html_url"]))                
                 with DownloadProgressBar(unit='B', unit_scale=True,
                                      miniters=1, desc=url.split('/')[-1]) as t:
                         urllib.request.urlretrieve(url, filename=output_path, reporthook=t.update_to)           
