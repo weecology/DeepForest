@@ -17,3 +17,4 @@ dependencies:
   - pip:
     - keras-resnet
     - opencv-python
+    - pycocotools
