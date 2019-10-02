@@ -6,23 +6,20 @@
 .. moduleauthor:: Ben Weinstein <ben.weinstein@weecology.org>
 
 """
-from ..deepforest import utilities
+from deepforest import utilities
 import os
 
-
 class deepforest:
-    """Overall class for training and predicting images
-    """
+    ''' Class for training and predicting tree crowns in RGB images
     
-    def __init__(self, weights="default"):
-        """A deepforest object for model training or prediction
-        
-        Parameters
-        ---------
-        weights: str
-             Path to model weights.
-        
-        """
+    Args:
+        weights (str): Path to model weights on disk. Default is None
+    
+    Attributes:
+        model: A keras training model from keras-retinanet
+    '''
+    
+    def __init__(self, weights=""):
         self.weights = weights
         
         #Read config file
@@ -35,32 +32,26 @@ class deepforest:
             self.model = None
             
     def train(self, image_dir,label_csv):
-        """Train a deep learning tree detection model
-        
+        '''
+        Train a deep learning tree detection model
         This is the main entry point for training a new model based on either existing weights or scratch
         
-        Parameters
-        ---------
-        image_dir: str
-            Directory of images
-        label_csv: str
-            Path to csv label file, labels are in the format -> path/to/image.jpg,x1,y1,x2,y2,class_name
-        Returns
-        -------
-             str
-                 "A train keras model"
-
-        """
+        Args:
+            image_dir (str): Directory of images
+            label_csv (str): Path to csv label file, labels are in the format -> path/to/image.jpg,x1,y1,x2,y2,class_name
+        Returns:
+            model (object): A trained keras model
+        '''
         
         pass
     
     def download_release(self):
-        """Download the latest model release from github release
-        Returns
-        ------
-            str
-                 "A loaded keras model"
-        """        
+        '''
+        Download the latest model release from github release and load model
+        
+        Returns:
+            model (object): A trained keras model
+        '''        
         #Download latest model from github release
         weight_path = utilities.download_release()  
         
@@ -69,11 +60,10 @@ class deepforest:
         self.model = utilities.read_model(self.weights, self.config)
         
     def predict(self, image):
-        """Predict tree crowns in an image
-        Parameters
-        ---------
+        '''
+        Predict tree crowns based on loaded (or trained) model
         
-        Returns
-        ------
-        """
+        Returns:
+            predictions (array): Numpy array of predicted bounding boxes
+        '''     
         pass

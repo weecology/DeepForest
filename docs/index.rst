@@ -11,7 +11,7 @@ Source code is available here: (https://github.com/weecology/DeepForest.git).
    readme
    installation
    usage
-   .. automodule:: deepforest
+   source/deepforest
    modules
    contributing
    authors
