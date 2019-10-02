@@ -25,5 +25,5 @@ def test_use_release(download_release):
     assert isinstance(test_model.model,keras.models.Model)
 
 def test_predict(download_release):
-    test_model = deepforest.deepforest(weights="tests/data/universal_model_july30.h5")
+    test_model = deepforest.deepforest(weights="data/universal_model_july30.h5")
     
