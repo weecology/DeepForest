@@ -19,7 +19,7 @@ class deepforest:
         model: A keras training model from keras-retinanet
     '''
     
-    def __init__(self, weights=""):
+    def __init__(self, weights=None):
         self.weights = weights
         
         #Read config file
@@ -45,21 +45,21 @@ class deepforest:
         
         pass
     
-    def download_release(self):
+    def use_release(self):
         '''
-        Download the latest model release from github release and load model
+        Use the latest DeepForest model release from github and load model. Optionally download if release doesn't exist
         
         Returns:
             model (object): A trained keras model
         '''        
         #Download latest model from github release
-        weight_path = utilities.download_release()  
+        weight_path = utilities.use_release()  
         
         #load weights
         self.weights = weight_path
         self.model = utilities.read_model(self.weights, self.config)
         
-    def predict(self, image):
+    def predict_image(self, image_path):
         '''
         Predict tree crowns based on loaded (or trained) model
         
