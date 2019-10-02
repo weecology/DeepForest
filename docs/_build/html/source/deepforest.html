@@ -183,7 +183,7 @@
 <span id="deepforest-deepforest-module"></span><h2>deepforest.deepforest module<a class="headerlink" href="#module-deepforest.deepforest" title="Permalink to this headline">¶</a></h2>
 <span class="target" id="module-deepforest"></span><dl class="class">
 <dt id="deepforest.deepforest.deepforest">
-<em class="property">class </em><code class="sig-prename descclassname">deepforest.deepforest.</code><code class="sig-name descname">deepforest</code><span class="sig-paren">(</span><em class="sig-param">weights=''</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/deepforest/deepforest.html#deepforest"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#deepforest.deepforest.deepforest" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">deepforest.deepforest.</code><code class="sig-name descname">deepforest</code><span class="sig-paren">(</span><em class="sig-param">weights=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/deepforest/deepforest.html#deepforest"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#deepforest.deepforest.deepforest" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Class for training and predicting tree crowns in RGB images</p>
 <dl class="simple">
@@ -199,30 +199,20 @@
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#deepforest.deepforest.deepforest.download_release" title="deepforest.deepforest.deepforest.download_release"><code class="xref py py-obj docutils literal notranslate"><span class="pre">download_release</span></code></a>(self)</p></td>
-<td><p>Download the latest model release from github release and load model</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#deepforest.deepforest.deepforest.predict" title="deepforest.deepforest.deepforest.predict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict</span></code></a>(self, image)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#deepforest.deepforest.deepforest.predict_image" title="deepforest.deepforest.deepforest.predict_image"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_image</span></code></a>(self, image_path)</p></td>
 <td><p>Predict tree crowns based on loaded (or trained) model</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#deepforest.deepforest.deepforest.train" title="deepforest.deepforest.deepforest.train"><code class="xref py py-obj docutils literal notranslate"><span class="pre">train</span></code></a>(self, image_dir, label_csv)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#deepforest.deepforest.deepforest.train" title="deepforest.deepforest.deepforest.train"><code class="xref py py-obj docutils literal notranslate"><span class="pre">train</span></code></a>(self, image_dir, label_csv)</p></td>
 <td><p>Train a deep learning tree detection model This is the main entry point for training a new model based on either existing weights or scratch</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#deepforest.deepforest.deepforest.use_release" title="deepforest.deepforest.deepforest.use_release"><code class="xref py py-obj docutils literal notranslate"><span class="pre">use_release</span></code></a>(self)</p></td>
+<td><p>Use the latest DeepForest model release from github and load model.</p></td>
 </tr>
 </tbody>
 </table>
 <dl class="method">
-<dt id="deepforest.deepforest.deepforest.download_release">
-<code class="sig-name descname">download_release</code><span class="sig-paren">(</span><em class="sig-param">self</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/deepforest/deepforest.html#deepforest.download_release"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#deepforest.deepforest.deepforest.download_release" title="Permalink to this definition">¶</a></dt>
-<dd><p>Download the latest model release from github release and load model</p>
-<dl class="simple">
-<dt>Returns:</dt><dd><p>model (object): A trained keras model</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="deepforest.deepforest.deepforest.predict">
-<code class="sig-name descname">predict</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">image</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/deepforest/deepforest.html#deepforest.predict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#deepforest.deepforest.deepforest.predict" title="Permalink to this definition">¶</a></dt>
+<dt id="deepforest.deepforest.deepforest.predict_image">
+<code class="sig-name descname">predict_image</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">image_path</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/deepforest/deepforest.html#deepforest.predict_image"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#deepforest.deepforest.deepforest.predict_image" title="Permalink to this definition">¶</a></dt>
 <dd><p>Predict tree crowns based on loaded (or trained) model</p>
 <dl class="simple">
 <dt>Returns:</dt><dd><p>predictions (array): Numpy array of predicted bounding boxes</p>
@@ -239,6 +229,16 @@ This is the main entry point for training a new model based on either existing w
 <dt>Args:</dt><dd><p>image_dir (str): Directory of images
 label_csv (str): Path to csv label file, labels are in the format -&gt; path/to/image.jpg,x1,y1,x2,y2,class_name</p>
 </dd>
+<dt>Returns:</dt><dd><p>model (object): A trained keras model</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="deepforest.deepforest.deepforest.use_release">
+<code class="sig-name descname">use_release</code><span class="sig-paren">(</span><em class="sig-param">self</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/deepforest/deepforest.html#deepforest.use_release"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#deepforest.deepforest.deepforest.use_release" title="Permalink to this definition">¶</a></dt>
+<dd><p>Use the latest DeepForest model release from github and load model. Optionally download if release doesn’t exist</p>
+<dl class="simple">
 <dt>Returns:</dt><dd><p>model (object): A trained keras model</p>
 </dd>
 </dl>
@@ -359,38 +359,10 @@ label_csv (str): Path to csv label file, labels are in the format -&gt; path/to/
 </dd></dl>
 
 <dl class="function">
-<dt id="deepforest.utilities.download_release">
-<code class="sig-prename descclassname">deepforest.utilities.</code><code class="sig-name descname">download_release</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/deepforest/utilities.html#download_release"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#deepforest.utilities.download_release" title="Permalink to this definition">¶</a></dt>
-<dd><p>Download the latest model release from github</p>
-<dl class="simple">
-<dt>Returns:</dt><dd><p>output_path (str): path to downloaded model weights</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="function">
 <dt id="deepforest.utilities.label_to_name">
 <code class="sig-prename descclassname">deepforest.utilities.</code><code class="sig-name descname">label_to_name</code><span class="sig-paren">(</span><em class="sig-param">label</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/deepforest/utilities.html#label_to_name"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#deepforest.utilities.label_to_name" title="Permalink to this definition">¶</a></dt>
 <dd><p>Map label to name.</p>
 </dd></dl>
-
-<dl class="function">
-<dt id="deepforest.utilities.predict_all_images">
-<code class="sig-prename descclassname">deepforest.utilities.</code><code class="sig-name descname">predict_all_images</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/deepforest/utilities.html#predict_all_images"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#deepforest.utilities.predict_all_images" title="Permalink to this definition">¶</a></dt>
-<dd><p>loop through a dir and run all images</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="deepforest.utilities.predict_image">
-<code class="sig-prename descclassname">deepforest.utilities.</code><code class="sig-name descname">predict_image</code><span class="sig-paren">(</span><em class="sig-param">model</em>, <em class="sig-param">image_path</em>, <em class="sig-param">score_threshold=0.1</em>, <em class="sig-param">max_detections=200</em>, <em class="sig-param">return_plot=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/deepforest/utilities.html#predict_image"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#deepforest.utilities.predict_image" title="Permalink to this definition">¶</a></dt>
-<dd><p>Predict an image
-return_plot: Logical. If true, return a image object, else return bounding boxes</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="deepforest.utilities.prediction_wrapper">
-<code class="sig-prename descclassname">deepforest.utilities.</code><code class="sig-name descname">prediction_wrapper</code><span class="sig-paren">(</span><em class="sig-param">image_path</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/deepforest/utilities.html#prediction_wrapper"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#deepforest.utilities.prediction_wrapper" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
 
 <dl class="function">
 <dt id="deepforest.utilities.read_config">
@@ -401,6 +373,16 @@ return_plot: Logical. If true, return a image object, else return bounding boxes
 <dt id="deepforest.utilities.read_model">
 <code class="sig-prename descclassname">deepforest.utilities.</code><code class="sig-name descname">read_model</code><span class="sig-paren">(</span><em class="sig-param">model_path</em>, <em class="sig-param">config</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/deepforest/utilities.html#read_model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#deepforest.utilities.read_model" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
+
+<dl class="function">
+<dt id="deepforest.utilities.use_release">
+<code class="sig-prename descclassname">deepforest.utilities.</code><code class="sig-name descname">use_release</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/deepforest/utilities.html#use_release"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#deepforest.utilities.use_release" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check the existance of, or download the latest model release from github</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>output_path (str): path to downloaded model weights</p>
+</dd>
+</dl>
+</dd></dl>
 
 </div>
 <div class="section" id="module-deepforest">
