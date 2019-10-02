@@ -6,49 +6,74 @@
 .. moduleauthor:: Ben Weinstein <ben.weinstein@weecology.org>
 
 """
-from .utilities import read_model, read_config
+from ..deepforest import utilities
+import os
+
 
 class deepforest:
     """Overall class for training and predicting images
     """
     
     def __init__(self, weights="default"):
-        """A deepforest object for model training or prediction"""
+        """A deepforest object for model training or prediction
+        
+        Parameters
+        ---------
+        weights: str
+             Path to model weights.
+        
+        """
         self.weights = weights
         
         #Read config file
-        self.config = read_config()
+        self.config = utilities.read_config()
         
         #Load model weights if needed
-        if self.weights is "default":
-            #Check if most recent model has been downloaded
-            if os.path.exists("path_to_model"):
-                pass
-            else:
-                path_to_model = self.download_release()
-                self.weights = path_to_model
         if self.weights is not None:
-            self.model = read_model(self.weights, self.config)
+            self.model = utilities.read_model(self.weights, self.config)
         else:
             self.model = None
             
-    def train(self):
-        """A training model.
+    def train(self, image_dir,label_csv):
+        """Train a deep learning tree detection model
         
-        Train a deep learning model for tree crown detection
+        This is the main entry point for training a new model based on either existing weights or scratch
+        
+        Parameters
+        ---------
+        image_dir: str
+            Directory of images
+        label_csv: str
+            Path to csv label file, labels are in the format -> path/to/image.jpg,x1,y1,x2,y2,class_name
+        Returns
+        -------
+             str
+                 "A train keras model"
+
         """
+        
         pass
     
     def download_release(self):
         """Download the latest model release from github release
-        Returns:
-            str: "path to downloaded weights on disk"
-        """
-        pass
+        Returns
+        ------
+            str
+                 "A loaded keras model"
+        """        
+        #Download latest model from github release
+        weight_path = utilities.download_release()  
+        
+        #load weights
+        self.weights = weight_path
+        self.model = utilities.read_model(self.weights, self.config)
         
     def predict(self, image):
         """Predict tree crowns in an image
-        Args: 
-               image (np.array): Image numpy array
+        Parameters
+        ---------
+        
+        Returns
+        ------
         """
         pass

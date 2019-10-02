@@ -8,6 +8,9 @@ import numpy as np
 import copy
 import pandas as pd
 import glob
+from tqdm import tqdm
+import json
+import urllib
 
 #DeepForest
 from keras_retinanet import models
@@ -24,13 +27,44 @@ def read_config():
                 with open("deepforest_config.yml", 'r') as f:
                         config = yaml.load(f)
         except Exception as e:
-                raise FileNotFoundError("There is no config file in dir:{}".format(os.getcwd()))
+                raise FileNotFoundError("There is no config file in dir:{}, yields {}".format(os.getcwd(),e))
                 
         return config
 
 def read_model(model_path, config):
-        model = models.load_model(model_path, backbone_name='resnet50', nms_threshold=config["nms_threshold"])
+        model = models.load_model(model_path, backbone_name='resnet50')
         return model
+
+#Download progress bar
+class DownloadProgressBar(tqdm):
+        def update_to(self, b=1, bsize=1, tsize=None):
+                if tsize is not None:
+                        self.total = tsize
+                self.update(b * bsize - self.n)
+                
+def download_release():
+        """Download the latest tag model from github and save it the /data folder
+        Returns
+        -------
+         str
+                 Path to model weights
+        """
+        #Find latest github tag release from the DeepLidar repo
+        _json = json.loads(urllib.request.urlopen(urllib.request.Request(
+                'https://api.github.com/repos/Weecology/DeepForest/releases/latest',
+            headers={'Accept': 'application/vnd.github.v3+json'},
+             )).read())        
+        asset = _json['assets'][0]
+        output_path = os.path.join('data',asset['name'])    
+        url = asset['browser_download_url']
+        
+        #Download if it doesn't exist
+        if not os.path.exists(output_path):
+                with DownloadProgressBar(unit='B', unit_scale=True,
+                                     miniters=1, desc=url.split('/')[-1]) as t:
+                        urllib.request.urlretrieve(url, filename=output_path, reporthook=t.update_to)           
+        
+        return output_path
 
 def predict_image(model, image_path, score_threshold = 0.1, max_detections= 200, return_plot=True):
         """
