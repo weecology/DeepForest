@@ -6,6 +6,7 @@ dependencies:
   - sphinx
   - pyyaml
   - pytest
+  - numpydoc
   - cython
   - h5py
   - keras

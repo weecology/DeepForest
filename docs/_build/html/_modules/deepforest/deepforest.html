@@ -7,6 +7,7 @@
     <title>deepforest.deepforest &#8212; DeepForest 0.1.0 documentation</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
     <script type="text/javascript" src="../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../_static/underscore.js"></script>
@@ -39,51 +40,66 @@
 <span class="sd">.. moduleauthor:: Ben Weinstein &lt;ben.weinstein@weecology.org&gt;</span>
 
 <span class="sd">&quot;&quot;&quot;</span>
-<span class="kn">from</span> <span class="nn">.utilities</span> <span class="k">import</span> <span class="n">read_model</span><span class="p">,</span> <span class="n">read_config</span>
+<span class="kn">from</span> <span class="nn">deepforest</span> <span class="k">import</span> <span class="n">utilities</span>
+<span class="kn">import</span> <span class="nn">os</span>
 
 <div class="viewcode-block" id="deepforest"><a class="viewcode-back" href="../../source/deepforest.html#deepforest.deepforest.deepforest">[docs]</a><span class="k">class</span> <span class="nc">deepforest</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Overall class for training and predicting images</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="sd">&#39;&#39;&#39; Class for training and predicting tree crowns in RGB images</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        weights (str): Path to model weights on disk. Default is None</span>
+<span class="sd">    </span>
+<span class="sd">    Attributes:</span>
+<span class="sd">        model: A keras training model from keras-retinanet</span>
+<span class="sd">    &#39;&#39;&#39;</span>
     
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="s2">&quot;default&quot;</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;A deepforest object for model training or prediction&quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">weights</span> <span class="o">=</span> <span class="n">weights</span>
         
         <span class="c1">#Read config file</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">read_config</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">utilities</span><span class="o">.</span><span class="n">read_config</span><span class="p">()</span>
         
         <span class="c1">#Load model weights if needed</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">weights</span> <span class="ow">is</span> <span class="s2">&quot;default&quot;</span><span class="p">:</span>
-            <span class="c1">#Check if most recent model has been downloaded</span>
-            <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s2">&quot;path_to_model&quot;</span><span class="p">):</span>
-                <span class="k">pass</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">path_to_model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">download_release</span><span class="p">()</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">weights</span> <span class="o">=</span> <span class="n">path_to_model</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">weights</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">read_model</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">weights</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">utilities</span><span class="o">.</span><span class="n">read_model</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">weights</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="kc">None</span>
             
-<div class="viewcode-block" id="deepforest.train"><a class="viewcode-back" href="../../source/deepforest.html#deepforest.deepforest.deepforest.train">[docs]</a>    <span class="k">def</span> <span class="nf">train</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;A training model.</span>
+<div class="viewcode-block" id="deepforest.train"><a class="viewcode-back" href="../../source/deepforest.html#deepforest.deepforest.deepforest.train">[docs]</a>    <span class="k">def</span> <span class="nf">train</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">image_dir</span><span class="p">,</span><span class="n">label_csv</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Train a deep learning tree detection model</span>
+<span class="sd">        This is the main entry point for training a new model based on either existing weights or scratch</span>
 <span class="sd">        </span>
-<span class="sd">        Train a deep learning model for tree crown detection</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        Args:</span>
+<span class="sd">            image_dir (str): Directory of images</span>
+<span class="sd">            label_csv (str): Path to csv label file, labels are in the format -&gt; path/to/image.jpg,x1,y1,x2,y2,class_name</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            model (object): A trained keras model</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        
         <span class="k">pass</span></div>
     
 <div class="viewcode-block" id="deepforest.download_release"><a class="viewcode-back" href="../../source/deepforest.html#deepforest.deepforest.deepforest.download_release">[docs]</a>    <span class="k">def</span> <span class="nf">download_release</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Download the latest model release from github release</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Download the latest model release from github release and load model</span>
+<span class="sd">        </span>
 <span class="sd">        Returns:</span>
-<span class="sd">            str: &quot;path to downloaded weights on disk&quot;</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">pass</span></div>
+<span class="sd">            model (object): A trained keras model</span>
+<span class="sd">        &#39;&#39;&#39;</span>        
+        <span class="c1">#Download latest model from github release</span>
+        <span class="n">weight_path</span> <span class="o">=</span> <span class="n">utilities</span><span class="o">.</span><span class="n">download_release</span><span class="p">()</span>  
+        
+        <span class="c1">#load weights</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">weights</span> <span class="o">=</span> <span class="n">weight_path</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">utilities</span><span class="o">.</span><span class="n">read_model</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">weights</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">)</span></div>
         
 <div class="viewcode-block" id="deepforest.predict"><a class="viewcode-back" href="../../source/deepforest.html#deepforest.deepforest.deepforest.predict">[docs]</a>    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">image</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Predict tree crowns in an image</span>
-<span class="sd">        Args: </span>
-<span class="sd">               image (np.array): Image numpy array</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Predict tree crowns based on loaded (or trained) model</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            predictions (array): Numpy array of predicted bounding boxes</span>
+<span class="sd">        &#39;&#39;&#39;</span>     
         <span class="k">pass</span></div></div>
 </pre></div>
 
@@ -108,6 +124,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../readme.html">DeepForest</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../source/deepforest.html">deepforest package</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../authors.html">Credits</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../history.html">History</a></li>

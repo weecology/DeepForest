@@ -43,12 +43,11 @@ class DownloadProgressBar(tqdm):
                 self.update(b * bsize - self.n)
                 
 def download_release():
-        """Download the latest tag model from github and save it the /data folder
-        Returns
-        -------
-         str
-                 Path to model weights
-        """
+        '''
+        Download the latest model release from github
+        
+        Returns:
+                output_path (str): path to downloaded model weights'''
         #Find latest github tag release from the DeepLidar repo
         _json = json.loads(urllib.request.urlopen(urllib.request.Request(
                 'https://api.github.com/repos/Weecology/DeepForest/releases/latest',
