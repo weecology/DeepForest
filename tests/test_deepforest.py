@@ -2,23 +2,24 @@
 # -*- coding: utf-8 -*-
 
 """Tests for `deepforest` package."""
-
-#Path hack
 import os
 import sys
-dir_path = os.path.dirname(os.path.realpath(__file__))
-parent_path = os.path.abspath(os.path.join(os.getcwd(), os.pardir))
-sys.path.append(parent_path)
-
 import pytest
+import keras
 from  ..deepforest import deepforest
 
 def test_deepforest():
     model = deepforest.deepforest(weights=None)
     assert model.weights is None
 
+def test_download_release():
+    test_model = deepforest.deepforest(weights=None)
+    test_model.download_release()
+    #Assert is model instance
+    assert isinstance(test_model.model,keras.models.Model)
+    
 def test_deepforest_weights():
-    model = deepforest.deepforest(weights="")
+    model = deepforest.deepforest(weights="data/universal_model_july30.h5")
 #@pytest.fixture
 #def response():
     #"""Sample pytest fixture.
