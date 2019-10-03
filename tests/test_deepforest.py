@@ -18,7 +18,7 @@ def download_release(scope="session"):
     
 @pytest.fixture()
 def test_model(download_release):
-    test_model = deepforest.deepforest(weights="data/universal_model_july30.h5")
+    test_model = deepforest.deepforest(weights="tests/data/universal_model_july30.h5")
     return test_model
 
 def test_deepforest():
@@ -35,7 +35,7 @@ def test_predict_image(test_model):
     #Test fixture
     assert isinstance(test_model.model,keras.models.Model)
     
-    image = test_model.predict_image("data/OSBS_029.tif")
+    image = test_model.predict_image(image_path = "tests/data/OSBS_029.tif")
     assert isinstance(image,np.ndarray)
     assert image.shape == (400,400,3)
 
