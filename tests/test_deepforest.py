@@ -8,6 +8,7 @@ import pytest
 import keras
 from  deepforest import deepforest
 from deepforest import utilities
+import numpy as np
 
 #download latest release
 @pytest.fixture()
@@ -16,7 +17,7 @@ def download_release(scope="session"):
     utilities.use_release()    
     
 @pytest.fixture()
-def prediction_model(download_release):
+def test_model(download_release):
     test_model = deepforest.deepforest(weights="data/universal_model_july30.h5")
     return test_model
 
@@ -30,6 +31,11 @@ def test_use_release(download_release):
     #Assert is model instance    
     assert isinstance(test_model.model,keras.models.Model)
 
-def test_predict_image(prediction_model):
+def test_predict_image(test_model):
     #Test fixture
-    assert isinstance(prediction_model.model,keras.models.Model)
+    assert isinstance(test_model.model,keras.models.Model)
+    
+    image = test_model.predict_image("data/OSBS_029.tif")
+    assert isinstance(image,np.ndarray)
+    assert image.shape == (400,400,3)
+

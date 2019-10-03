@@ -7,7 +7,10 @@
 
 """
 from deepforest import utilities
+from deepforest import predict
 import os
+from matplotlib import pyplot as plt
+from keras_retinanet.models import convert_model
 
 class deepforest:
     ''' Class for training and predicting tree crowns in RGB images
@@ -59,10 +62,12 @@ class deepforest:
         self.weights = weight_path
         self.model = utilities.read_model(self.weights, self.config)
         
-    def predict_image(self, image_path):
+    def predict_image(self, image_path, plot=True):
         '''
         Predict tree crowns based on loaded (or trained) model
-        
+        Args:
+            image_path (str): Path to image on disk
+            plot (bool): Plot the predicted image with bounding boxes
         Returns:
             predictions (array): Numpy array of predicted bounding boxes
         '''     
@@ -71,3 +76,11 @@ class deepforest:
         if(self.weights is None):
             raise ValueError("Model currently has no weights, either train a new model using deepforest.train, loading existing model, or use prebuilt model (see deepforest.use_release()")
         
+        #convert model to prediction
+        self.prediction_model = convert_model(self.model)
+        image = predict.predict_image(self.prediction_model, image_path, return_plot=True)
+        
+        #cv2 channel order
+        plt.imshow(image[:,:,::-1])
+        
+        return image

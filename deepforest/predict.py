@@ -7,19 +7,33 @@ import glob
 import keras
 import cv2
 import pandas as pd
+from deepforest.image import preprocess
 
 #Retinanet-viz
 from keras_retinanet.utils import image as keras_retinanet_image
 from keras_retinanet.utils.visualization import draw_detections
 
+def label_to_name(label):
+    """ Map label to name.
+    """
+    return "Tree"
+    
 def predict_image(model, image_path, score_threshold = 0.1, max_detections= 200, return_plot=True):
     """
-    Predict an image
-    return_plot: Logical. If true, return a image object, else return bounding boxes
+    Predict invidiual tree crown bounding boxes for a single image
+    
+    model (object): A keras-retinanet model to predict bounding boxes, either load a model from weights, use the latest release, or train a new model from scratch.  
+    image_path (str): Path to image file on disk
+    score_threshold (float): Minimum probability score to be included in final boxes, ranging from 0 to 1.
+    max_detections (int): Maximum number of bounding box predictions per tile
+    return_plot (bool):  If true, return a image object, else return bounding boxes as a numpy array
+    Returns:
+        raw_image (array): If return_plot is TRUE, the image with the overlaid boxes is returned
+        image_boxes: If return_plot is FALSE, the bounding boxes as a 4 column array -> xmin, ymin, xmax, ymax
     """
     #predict
     raw_image = cv2.imread(image_path)        
-    image        = image_utils.preprocess_image(raw_image)
+    image        = preprocess(raw_image)
     image, scale = keras_retinanet_image.resize_image(image)
 
     if keras.backend.image_data_format() == 'channels_first':
