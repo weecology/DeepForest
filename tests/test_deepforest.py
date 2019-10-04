@@ -18,7 +18,7 @@ def download_release(scope="session"):
     
 @pytest.fixture()
 def test_model(download_release):
-    test_model = deepforest.deepforest(weights="tests/data/universal_model_july30.h5")
+    test_model = deepforest.deepforest(weights="data/universal_model_july30.h5")
     return test_model
 
 def test_deepforest():
