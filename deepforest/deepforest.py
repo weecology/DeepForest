@@ -82,5 +82,6 @@ class deepforest:
         
         #cv2 channel order
         plt.imshow(image[:,:,::-1])
+        plt.show()
         
         return image

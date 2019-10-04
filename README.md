@@ -1,13 +1,11 @@
 # DeepForest
 
 [![Build Status](https://travis-ci.org/Weecology/DeepForest.svg?branch=master)](https://travis-ci.org/Weecology/DeepForest) 
-[![Documentation Status](https://readthedocs.org/projects/deepforest/badge/?version=master)](http://deepforest.readthedocs.io/en/latest/?badge=master)
+[![Documentation Status](https://readthedocs.org/projects/deepforest/badge/?version=latest)](http://deepforest.readthedocs.io/en/latest/?badge=latest)
 
 Python package for training and predicting individual tree crowns in airborne imagery.
 
 ## Installation
-
-## Usage
 
 ```
 git clone https://github.com/weecology/DeepForest.git
@@ -29,6 +27,24 @@ DeepForest uses conda as a packgae manager.
 ```
 conda env create --file=environment.yml
 ```
+
+## Usage
+
+```{python}
+from  deepforest import deepforest
+from deepforest import utilities
+
+#Download latest model release from github
+utilities.use_release()    
+
+#Load model class with release weights
+test_model = deepforest.deepforest(weights="data/universal_model_july30.h5")
+
+#predict image
+image = test_model.predict_image(image_path = "tests/data/OSBS_029.tif")
+```
+
+TODO add image figure here.
 
 ## Web Demo
 
