@@ -32,11 +32,24 @@ conda env create --file=environment.yml
 
 ## Web Demo
 
+Thanks to Microsoft AI4Earth grant for hosting a azure web demo of the trained model
+
+http://tree.westus.cloudapp.azure.com/shiny/
+
+## License
 * Free software: MIT license
 * Documentation: https://deepforest.readthedocs.io.
 
 ## Citation
 
+Geographic Generalization in Airborne RGB Deep Learning Tree Detection
+Ben Weinstein, Sergio Marconi, Stephanie Bohlman, Alina Zare, Ethan P White
+bioRxiv 790071; doi: https://doi.org/10.1101/790071
+
 ### Where can I get sample data?
 
-We are organizing a benchmark dataset for individual tree crown prediction in RGB imagery from the National Ecological Observation 
+We are organizing a benchmark dataset for individual tree crown prediction in RGB imagery from the National Ecological Observation
+
+https://github.com/weecology/NeonTreeEvaluation
+
+
