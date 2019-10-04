@@ -13,7 +13,7 @@ Python package for training and predicting individual tree crowns in airborne im
 git clone https://github.com/weecology/DeepForest.git
 ```
 
-Depends on keras-retinainet for object detection.
+This package depends on keras-retinainet for object detection.
 
 ```
 git clone https://github.com/fizyr/keras-retinanet.git
@@ -32,7 +32,7 @@ conda env create --file=environment.yml
 
 ## Web Demo
 
-Thanks to Microsoft AI4Earth grant for hosting a azure web demo of the trained model
+Thanks to Microsoft AI4Earth grant for hosting a azure web demo of the trained model.
 
 http://tree.westus.cloudapp.azure.com/shiny/
 
