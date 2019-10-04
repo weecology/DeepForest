@@ -1,7 +1,7 @@
 # DeepForest
 
 [![Build Status](https://travis-ci.org/Weecology/DeepForest.svg?branch=master)](https://travis-ci.org/Weecology/DeepForest) 
-[![Documentation Status](https://readthedocs.org/projects/deepforest/badge/?version=latest)](http://deepforest.readthedocs.io/en/latest/?badge=master)
+[![Documentation Status](https://readthedocs.org/projects/deepforest/badge/?version=master)](http://deepforest.readthedocs.io/en/latest/?badge=master)
 
 Python package for training and predicting individual tree crowns in airborne imagery.
 
