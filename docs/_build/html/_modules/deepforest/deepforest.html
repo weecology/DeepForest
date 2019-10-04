@@ -163,7 +163,10 @@
 
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="kn">from</span> <span class="nn">deepforest</span> <span class="k">import</span> <span class="n">utilities</span>
+<span class="kn">from</span> <span class="nn">deepforest</span> <span class="k">import</span> <span class="n">predict</span>
 <span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">matplotlib</span> <span class="k">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+<span class="kn">from</span> <span class="nn">keras_retinanet.models</span> <span class="k">import</span> <span class="n">convert_model</span>
 
 <div class="viewcode-block" id="deepforest"><a class="viewcode-back" href="../../source/deepforest.html#deepforest.deepforest.deepforest">[docs]</a><span class="k">class</span> <span class="nc">deepforest</span><span class="p">:</span>
     <span class="sd">&#39;&#39;&#39; Class for training and predicting tree crowns in RGB images</span>
@@ -215,18 +218,29 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">weights</span> <span class="o">=</span> <span class="n">weight_path</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">utilities</span><span class="o">.</span><span class="n">read_model</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">weights</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">)</span></div>
         
-<div class="viewcode-block" id="deepforest.predict_image"><a class="viewcode-back" href="../../source/deepforest.html#deepforest.deepforest.deepforest.predict_image">[docs]</a>    <span class="k">def</span> <span class="nf">predict_image</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">image_path</span><span class="p">):</span>
+<div class="viewcode-block" id="deepforest.predict_image"><a class="viewcode-back" href="../../source/deepforest.html#deepforest.deepforest.deepforest.predict_image">[docs]</a>    <span class="k">def</span> <span class="nf">predict_image</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">image_path</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Predict tree crowns based on loaded (or trained) model</span>
-<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            image_path (str): Path to image on disk</span>
+<span class="sd">            plot (bool): Plot the predicted image with bounding boxes</span>
 <span class="sd">        Returns:</span>
 <span class="sd">            predictions (array): Numpy array of predicted bounding boxes</span>
 <span class="sd">        &#39;&#39;&#39;</span>     
         <span class="c1">#Check for model weights</span>
         
         <span class="k">if</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">weights</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Model currently has no weights, either train a new model using deepforest.train, loading existing model, or use prebuilt model (see deepforest.use_release()&quot;</span><span class="p">)</span></div></div>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Model currently has no weights, either train a new model using deepforest.train, loading existing model, or use prebuilt model (see deepforest.use_release()&quot;</span><span class="p">)</span>
         
+        <span class="c1">#convert model to prediction</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">prediction_model</span> <span class="o">=</span> <span class="n">convert_model</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">)</span>
+        <span class="n">image</span> <span class="o">=</span> <span class="n">predict</span><span class="o">.</span><span class="n">predict_image</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prediction_model</span><span class="p">,</span> <span class="n">image_path</span><span class="p">,</span> <span class="n">return_plot</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        
+        <span class="c1">#cv2 channel order</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">image</span><span class="p">[:,:,::</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+        
+        <span class="k">return</span> <span class="n">image</span></div></div>
 </pre></div>
 
            </div>

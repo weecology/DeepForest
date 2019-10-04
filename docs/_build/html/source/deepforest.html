@@ -199,8 +199,8 @@
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#deepforest.deepforest.deepforest.predict_image" title="deepforest.deepforest.deepforest.predict_image"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_image</span></code></a>(self, image_path)</p></td>
-<td><p>Predict tree crowns based on loaded (or trained) model</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#deepforest.deepforest.deepforest.predict_image" title="deepforest.deepforest.deepforest.predict_image"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_image</span></code></a>(self, image_path[, plot])</p></td>
+<td><p>Predict tree crowns based on loaded (or trained) model Args:     image_path (str): Path to image on disk     plot (bool): Plot the predicted image with bounding boxes Returns:     predictions (array): Numpy array of predicted bounding boxes</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#deepforest.deepforest.deepforest.train" title="deepforest.deepforest.deepforest.train"><code class="xref py py-obj docutils literal notranslate"><span class="pre">train</span></code></a>(self, image_dir, label_csv)</p></td>
 <td><p>Train a deep learning tree detection model This is the main entry point for training a new model based on either existing weights or scratch</p></td>
@@ -212,8 +212,13 @@
 </table>
 <dl class="method">
 <dt id="deepforest.deepforest.deepforest.predict_image">
-<code class="sig-name descname">predict_image</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">image_path</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/deepforest/deepforest.html#deepforest.predict_image"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#deepforest.deepforest.deepforest.predict_image" title="Permalink to this definition">¶</a></dt>
-<dd><p>Predict tree crowns based on loaded (or trained) model</p>
+<code class="sig-name descname">predict_image</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">image_path</em>, <em class="sig-param">plot=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/deepforest/deepforest.html#deepforest.predict_image"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#deepforest.deepforest.deepforest.predict_image" title="Permalink to this definition">¶</a></dt>
+<dd><p>Predict tree crowns based on loaded (or trained) model
+Args:</p>
+<blockquote>
+<div><p>image_path (str): Path to image on disk
+plot (bool): Plot the predicted image with bounding boxes</p>
+</div></blockquote>
 <dl class="simple">
 <dt>Returns:</dt><dd><p>predictions (array): Numpy array of predicted bounding boxes</p>
 </dd>
