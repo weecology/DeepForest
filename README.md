@@ -31,7 +31,7 @@ conda env create --file=environment.yml
 ## Usage
 
 ```{python}
-from  deepforest import deepforest
+from deepforest import deepforest
 from deepforest import utilities
 
 #Download latest model release from github
@@ -44,7 +44,7 @@ test_model = deepforest.deepforest(weights="data/universal_model_july30.h5")
 image = test_model.predict_image(image_path = "tests/data/OSBS_029.tif")
 ```
 
-TODO add image figure here.
+![www/test_image.png]
 
 ## Web Demo
 
