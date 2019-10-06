@@ -192,27 +192,9 @@
 <dt>Attributes:</dt><dd><p>model: A keras training model from keras-retinanet</p>
 </dd>
 </dl>
-<p class="rubric">Methods</p>
-<table class="longtable docutils align-default">
-<colgroup>
-<col style="width: 10%" />
-<col style="width: 90%" />
-</colgroup>
-<tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#deepforest.deepforest.deepforest.predict_image" title="deepforest.deepforest.deepforest.predict_image"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_image</span></code></a>(self, image_path[, plot])</p></td>
-<td><p>Predict tree crowns based on loaded (or trained) model Args:     image_path (str): Path to image on disk     plot (bool): Plot the predicted image with bounding boxes Returns:     predictions (array): Numpy array of predicted bounding boxes</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#deepforest.deepforest.deepforest.train" title="deepforest.deepforest.deepforest.train"><code class="xref py py-obj docutils literal notranslate"><span class="pre">train</span></code></a>(self, image_dir, label_csv)</p></td>
-<td><p>Train a deep learning tree detection model This is the main entry point for training a new model based on either existing weights or scratch</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#deepforest.deepforest.deepforest.use_release" title="deepforest.deepforest.deepforest.use_release"><code class="xref py py-obj docutils literal notranslate"><span class="pre">use_release</span></code></a>(self)</p></td>
-<td><p>Use the latest DeepForest model release from github and load model.</p></td>
-</tr>
-</tbody>
-</table>
 <dl class="method">
 <dt id="deepforest.deepforest.deepforest.predict_image">
-<code class="sig-name descname">predict_image</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">image_path</em>, <em class="sig-param">plot=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/deepforest/deepforest.html#deepforest.predict_image"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#deepforest.deepforest.deepforest.predict_image" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">predict_image</code><span class="sig-paren">(</span><em class="sig-param">image_path</em>, <em class="sig-param">plot=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/deepforest/deepforest.html#deepforest.predict_image"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#deepforest.deepforest.deepforest.predict_image" title="Permalink to this definition">¶</a></dt>
 <dd><p>Predict tree crowns based on loaded (or trained) model
 Args:</p>
 <blockquote>
@@ -227,7 +209,7 @@ plot (bool): Plot the predicted image with bounding boxes</p>
 
 <dl class="method">
 <dt id="deepforest.deepforest.deepforest.train">
-<code class="sig-name descname">train</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">image_dir</em>, <em class="sig-param">label_csv</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/deepforest/deepforest.html#deepforest.train"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#deepforest.deepforest.deepforest.train" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">train</code><span class="sig-paren">(</span><em class="sig-param">image_dir</em>, <em class="sig-param">label_csv</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/deepforest/deepforest.html#deepforest.train"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#deepforest.deepforest.deepforest.train" title="Permalink to this definition">¶</a></dt>
 <dd><p>Train a deep learning tree detection model
 This is the main entry point for training a new model based on either existing weights or scratch</p>
 <dl class="simple">
@@ -241,7 +223,7 @@ label_csv (str): Path to csv label file, labels are in the format -&gt; path/to/
 
 <dl class="method">
 <dt id="deepforest.deepforest.deepforest.use_release">
-<code class="sig-name descname">use_release</code><span class="sig-paren">(</span><em class="sig-param">self</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/deepforest/deepforest.html#deepforest.use_release"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#deepforest.deepforest.deepforest.use_release" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">use_release</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/deepforest/deepforest.html#deepforest.use_release"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#deepforest.deepforest.deepforest.use_release" title="Permalink to this definition">¶</a></dt>
 <dd><p>Use the latest DeepForest model release from github and load model. Optionally download if release doesn’t exist</p>
 <dl class="simple">
 <dt>Returns:</dt><dd><p>model (object): A trained keras model</p>
@@ -258,107 +240,9 @@ label_csv (str): Path to csv label file, labels are in the format -&gt; path/to/
 <dt id="deepforest.utilities.DownloadProgressBar">
 <em class="property">class </em><code class="sig-prename descclassname">deepforest.utilities.</code><code class="sig-name descname">DownloadProgressBar</code><span class="sig-paren">(</span><em class="sig-param">iterable=None</em>, <em class="sig-param">desc=None</em>, <em class="sig-param">total=None</em>, <em class="sig-param">leave=True</em>, <em class="sig-param">file=None</em>, <em class="sig-param">ncols=None</em>, <em class="sig-param">mininterval=0.1</em>, <em class="sig-param">maxinterval=10.0</em>, <em class="sig-param">miniters=None</em>, <em class="sig-param">ascii=None</em>, <em class="sig-param">disable=False</em>, <em class="sig-param">unit='it'</em>, <em class="sig-param">unit_scale=False</em>, <em class="sig-param">dynamic_ncols=False</em>, <em class="sig-param">smoothing=0.3</em>, <em class="sig-param">bar_format=None</em>, <em class="sig-param">initial=0</em>, <em class="sig-param">position=None</em>, <em class="sig-param">postfix=None</em>, <em class="sig-param">unit_divisor=1000</em>, <em class="sig-param">write_bytes=None</em>, <em class="sig-param">gui=False</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/deepforest/utilities.html#DownloadProgressBar"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#deepforest.utilities.DownloadProgressBar" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">tqdm.std.tqdm</span></code></p>
-<dl class="field-list simple">
-<dt class="field-odd">Attributes</dt>
-<dd class="field-odd"><dl class="simple">
-<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">format_dict</span></code></dt><dd><p>Public API for read-only member access.</p>
-</dd>
-<dt><strong>monitor</strong></dt><dd></dd>
-</dl>
-</dd>
-</dl>
-<p class="rubric">Methods</p>
-<table class="longtable docutils align-default">
-<colgroup>
-<col style="width: 10%" />
-<col style="width: 90%" />
-</colgroup>
-<tbody>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">clear</span></code>(self[, nolock])</p></td>
-<td><p>Clear current bar display.</p></td>
-</tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">close</span></code>(self)</p></td>
-<td><p>Cleanup and (if leave=False) close the progressbar.</p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">display</span></code>(self[, msg, pos])</p></td>
-<td><p>Use <cite>self.sp</cite> to display <cite>msg</cite> in the specified <cite>pos</cite>.</p></td>
-</tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">ema</span></code>(x[, mu, alpha])</p></td>
-<td><p>Exponential moving average: smoothing to give progressively lower weights to older values.</p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">external_write_mode</span></code>([file, nolock])</p></td>
-<td><p>Disable tqdm within context and refresh tqdm when exits.</p></td>
-</tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">format_interval</span></code>(t)</p></td>
-<td><p>Formats a number of seconds as a clock time, [H:]MM:SS</p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">format_meter</span></code>(n, total, elapsed[, ncols, …])</p></td>
-<td><p>Return a string-based progress bar given some parameters</p></td>
-</tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">format_num</span></code>(n)</p></td>
-<td><p>Intelligent scientific notation (.3g).</p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">format_sizeof</span></code>(num[, suffix, divisor])</p></td>
-<td><p>Formats a number (greater than unity) with SI Order of Magnitude prefixes.</p></td>
-</tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_lock</span></code>()</p></td>
-<td><p>Get the global lock.</p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">pandas</span></code>(\*targs, \*\*tkwargs)</p></td>
-<td><p>Registers the given <cite>tqdm</cite> class with</p></td>
-</tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">refresh</span></code>(self[, nolock])</p></td>
-<td><p>Force refresh the display of this bar.</p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">reset</span></code>(self[, total])</p></td>
-<td><p>Resets to 0 iterations for repeated use.</p></td>
-</tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_description</span></code>(self[, desc, refresh])</p></td>
-<td><p>Set/modify description of the progress bar.</p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_description_str</span></code>(self[, desc, refresh])</p></td>
-<td><p>Set/modify description without ‘: ‘ appended.</p></td>
-</tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_lock</span></code>(lock)</p></td>
-<td><p>Set the global lock.</p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_postfix</span></code>(self[, ordered_dict, refresh])</p></td>
-<td><p>Set/modify postfix (additional stats) with automatic formatting based on datatype.</p></td>
-</tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_postfix_str</span></code>(self[, s, refresh])</p></td>
-<td><p>Postfix without dictionary expansion, similar to prefix handling.</p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">status_printer</span></code>(file)</p></td>
-<td><p>Manage the printing and in-place updating of a line of characters.</p></td>
-</tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">unpause</span></code>(self)</p></td>
-<td><p>Restart tqdm timer from last print time.</p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">update</span></code>(self[, n])</p></td>
-<td><p>Manually update the progress bar, useful for streams such as reading files.</p></td>
-</tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">write</span></code>(s[, file, end, nolock])</p></td>
-<td><p>Print a message via tqdm (without overlap with bars).</p></td>
-</tr>
-</tbody>
-</table>
-<table class="docutils align-default">
-<colgroup>
-<col style="width: 57%" />
-<col style="width: 43%" />
-</colgroup>
-<tbody>
-<tr class="row-odd"><td><p><strong>moveto</strong></p></td>
-<td></td>
-</tr>
-<tr class="row-even"><td><p><strong>update_to</strong></p></td>
-<td></td>
-</tr>
-</tbody>
-</table>
 <dl class="method">
 <dt id="deepforest.utilities.DownloadProgressBar.update_to">
-<code class="sig-name descname">update_to</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">b=1</em>, <em class="sig-param">bsize=1</em>, <em class="sig-param">tsize=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/deepforest/utilities.html#DownloadProgressBar.update_to"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#deepforest.utilities.DownloadProgressBar.update_to" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">update_to</code><span class="sig-paren">(</span><em class="sig-param">b=1</em>, <em class="sig-param">bsize=1</em>, <em class="sig-param">tsize=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/deepforest/utilities.html#DownloadProgressBar.update_to"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#deepforest.utilities.DownloadProgressBar.update_to" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
