@@ -40,11 +40,12 @@ def test_predict_image(test_model):
     assert isinstance(test_model.model,keras.models.Model)
     image = test_model.predict_image(image_path = "tests/data/OSBS_029.tif",show=False)
     
+    #Returns a 4 column numpy array
     assert isinstance(image,np.ndarray)
-    assert image.shape == (400,400,3)
+    assert image.shape[1] == 4
 
 def test_train(annotations):
     test_model = deepforest.deepforest()
     test_model.config["epochs"] = 1
-    test_model.config["no-snapshots"] = True
+    test_model.config["save-snapshot"] = False
     test_model.train(annotations="tests/data/OSBS_029.csv")

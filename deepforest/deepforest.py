@@ -47,6 +47,8 @@ class deepforest:
         '''
         arg_list = utilities.format_args(annotations, self.config)
         
+        print("Training retinanet with the following args {}".format(arg_list))
+        
         #Train model
         self.training_model = retinanet_train(arg_list)
         

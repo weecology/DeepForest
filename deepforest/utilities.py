@@ -179,7 +179,7 @@ def format_args(annotations, config):
         arg_list = [val for sublist in arg_list for val in sublist]
 
         #boolean arguments
-        if not config["save-snapshot"]:
+        if config["save-snapshot"] is False:
                 arg_list + ["--no-snapshots"]
                 
         #positional arguments first
