@@ -33,8 +33,8 @@ def read_model(model_path, config):
 class DownloadProgressBar(tqdm):
         def update_to(self, b=1, bsize=1, tsize=None):
                 if tsize is not None:
-                        total = tsize
-                update(b * bsize - n)
+                        self.total = tsize
+                self.update(b * bsize - self.n)
                 
 def use_release():
         '''
