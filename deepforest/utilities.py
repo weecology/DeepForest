@@ -146,7 +146,7 @@ def number_of_images(annotations_file):
         Returns:
                 n (int): Number of images
         """
-        df = pd.read_csv(annotations_file,names=["image_path","xmin","ymin","xmax","ymax"])
+        df = pd.read_csv(annotations_file,names=["image_path","xmin","ymin","xmax","ymax"],index_col=False)
         n = len(df.image_path.unique())
         return n
         
@@ -178,6 +178,10 @@ def format_args(annotations, config):
         arg_list = [[k,v] for k, v in args.items()]
         arg_list = [val for sublist in arg_list for val in sublist]
 
+        #boolean arguments
+        if not config["save-snapshot"]:
+                arg_list + ["--no-snapshots"]
+                
         #positional arguments first
         arg_list =  arg_list + ["csv", annotations, classes_file] 
 

@@ -6,3 +6,6 @@ backbone: resnet50
 image-min-side: 400
 multi-gpu: 1
 epochs: 1
+
+#save snapshot?
+save-snapshot: False
