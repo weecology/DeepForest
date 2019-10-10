@@ -45,4 +45,6 @@ def test_predict_image(test_model):
 
 def test_train(annotations):
     test_model = deepforest.deepforest()
+    test_model.config["epochs"] = 1
+    test_model.config["no-snapshots"] = True
     test_model.train(annotations="tests/data/OSBS_029.csv")
