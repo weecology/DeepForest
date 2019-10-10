@@ -16,10 +16,6 @@ def download_release(scope="session"):
     print("running fixtures")
     utilities.use_release()    
     
-@pytest.fixture()
-def test_model(download_release):
-    test_model = deepforest.deepforest(weights="tests/data/universal_model_july30.h5")
-    return test_model
 
 @pytest.fixture()
 def annotations():
@@ -36,7 +32,8 @@ def test_use_release(download_release):
     #Assert is model instance    
     assert isinstance(test_model.model,keras.models.Model)
 
-def test_predict_image(test_model):
+def test_predict_image(download_release):
+    test_model = deepforest.deepforest(weights="tests/data/universal_model_july30.h5")    
     assert isinstance(test_model.model,keras.models.Model)
     image = test_model.predict_image(image_path = "tests/data/OSBS_029.tif",show=False)
     

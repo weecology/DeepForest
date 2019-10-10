@@ -180,7 +180,8 @@ def format_args(annotations, config):
 
         #boolean arguments
         if config["save-snapshot"] is False:
-                arg_list + ["--no-snapshots"]
+                print("Disabling snapshot saving")                
+                arg_list = arg_list + ["--no-snapshots"]
                 
         #positional arguments first
         arg_list =  arg_list + ["csv", annotations, classes_file] 
