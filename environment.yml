@@ -9,6 +9,7 @@ dependencies:
   - numpydoc
   - cython
   - h5py
+  - xmltodict
   - keras
   - tqdm
   - numpy
@@ -21,4 +22,3 @@ dependencies:
   - pip:
     - keras-resnet
     - opencv-python
-    - pycocotools

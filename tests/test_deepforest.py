@@ -6,7 +6,7 @@ import os
 import sys
 import pytest
 import keras
-from  deepforest import deepforest
+from deepforest import deepforest
 from deepforest import utilities
 import numpy as np
 
@@ -18,8 +18,13 @@ def download_release(scope="session"):
     
 @pytest.fixture()
 def test_model(download_release):
-    test_model = deepforest.deepforest(weights="data/universal_model_july30.h5")
+    test_model = deepforest.deepforest(weights="tests/data/universal_model_july30.h5")
     return test_model
+
+@pytest.fixture()
+def annotations():
+    annotations = utilities.xml_to_annotations("tests/data/OSBS_029.xml",rgb_dir="tests/data")
+    annotations.to_csv("tests/data/OSBS_029.csv",index=False, header=False)
 
 def test_deepforest():
     model = deepforest.deepforest(weights=None)
@@ -32,10 +37,12 @@ def test_use_release(download_release):
     assert isinstance(test_model.model,keras.models.Model)
 
 def test_predict_image(test_model):
-    #Test fixture
     assert isinstance(test_model.model,keras.models.Model)
+    image = test_model.predict_image(image_path = "tests/data/OSBS_029.tif",show=False)
     
-    image = test_model.predict_image(image_path = "tests/data/OSBS_029.tif")
     assert isinstance(image,np.ndarray)
     assert image.shape == (400,400,3)
 
+def test_train(annotations):
+    test_model = deepforest.deepforest()
+    test_model.train(annotations="tests/data/OSBS_029.csv")

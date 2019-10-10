@@ -44,7 +44,7 @@ test_model = deepforest.deepforest(weights="data/universal_model_july30.h5")
 image = test_model.predict_image(image_path = "tests/data/OSBS_029.tif")
 ```
 
-![test image](www/test_image.png)
+![test image](www/image.png)
 
 ## Web Demo
 
