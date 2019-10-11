@@ -72,7 +72,7 @@ def save_crop(base_dir, image_name, index, crop):
         os.makedirs(base_dir)
     
     im = Image.fromarray(crop)
-    filename = "{}/{}.jpg".format(base_dir, image_name)
+    filename = "{}/{}_{}.jpg".format(base_dir, image_name,index)
     im.save(filename)   
 
 def split_training_raster(path_to_raster, annotations_file, base_dir, patch_size, patch_overlap):
