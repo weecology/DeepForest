@@ -36,10 +36,11 @@ class DownloadProgressBar(tqdm):
                         self.total = tsize
                 self.update(b * bsize - self.n)
                 
-def use_release():
+def use_release(save_dir = "data"):
         '''
         Check the existance of, or download the latest model release from github
-        
+        Args:
+                save_dir (str): Directory to save filepath, default to "data" in toplevel repo
         Returns:
                 output_path (str): path to downloaded model weights'''
         #Find latest github tag release from the DeepLidar repo
@@ -48,7 +49,7 @@ def use_release():
             headers={'Accept': 'application/vnd.github.v3+json'},
              )).read())     
         asset = _json['assets'][0]
-        output_path = os.path.join('data',asset['name'])    
+        output_path = os.path.join(save_dir,asset['name'])    
         url = asset['browser_download_url']
         
         #Download if it doesn't exist

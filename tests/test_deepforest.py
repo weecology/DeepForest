@@ -12,11 +12,10 @@ import numpy as np
 
 #download latest release
 @pytest.fixture()
-def download_release(scope="session"):
+def download_release():
     print("running fixtures")
-    utilities.use_release()    
+    utilities.use_release(save_dir = "tests/data")    
     
-
 @pytest.fixture()
 def annotations():
     annotations = utilities.xml_to_annotations("tests/data/OSBS_029.xml",rgb_dir="tests/data")
