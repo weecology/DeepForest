@@ -10,7 +10,7 @@ dependencies:
   - cython
   - h5py
   - xmltodict
-  - keras >=2.2.3
+  - keras >=2.3.0
   - tqdm
   - numpy
   - pillow
