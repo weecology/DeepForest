@@ -22,3 +22,5 @@ dependencies:
   - pip:
     - keras-resnet
     - opencv-python
+    - slidingwindow
+
