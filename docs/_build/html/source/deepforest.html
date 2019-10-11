@@ -194,14 +194,12 @@
 </dl>
 <dl class="method">
 <dt id="deepforest.deepforest.deepforest.predict_image">
-<code class="sig-name descname">predict_image</code><span class="sig-paren">(</span><em class="sig-param">image_path</em>, <em class="sig-param">plot=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/deepforest/deepforest.html#deepforest.predict_image"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#deepforest.deepforest.deepforest.predict_image" title="Permalink to this definition">¶</a></dt>
-<dd><p>Predict tree crowns based on loaded (or trained) model
-Args:</p>
-<blockquote>
-<div><p>image_path (str): Path to image on disk
-plot (bool): Plot the predicted image with bounding boxes</p>
-</div></blockquote>
+<code class="sig-name descname">predict_image</code><span class="sig-paren">(</span><em class="sig-param">image_path</em>, <em class="sig-param">show=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/deepforest/deepforest.html#deepforest.predict_image"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#deepforest.deepforest.deepforest.predict_image" title="Permalink to this definition">¶</a></dt>
+<dd><p>Predict tree crowns based on loaded (or trained) model</p>
 <dl class="simple">
+<dt>Args:</dt><dd><p>image_path (str): Path to image on disk
+show (bool): Plot the predicted image with bounding boxes</p>
+</dd>
 <dt>Returns:</dt><dd><p>predictions (array): Numpy array of predicted bounding boxes</p>
 </dd>
 </dl>
@@ -209,12 +207,11 @@ plot (bool): Plot the predicted image with bounding boxes</p>
 
 <dl class="method">
 <dt id="deepforest.deepforest.deepforest.train">
-<code class="sig-name descname">train</code><span class="sig-paren">(</span><em class="sig-param">image_dir</em>, <em class="sig-param">label_csv</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/deepforest/deepforest.html#deepforest.train"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#deepforest.deepforest.deepforest.train" title="Permalink to this definition">¶</a></dt>
-<dd><p>Train a deep learning tree detection model
+<code class="sig-name descname">train</code><span class="sig-paren">(</span><em class="sig-param">annotations</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/deepforest/deepforest.html#deepforest.train"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#deepforest.deepforest.deepforest.train" title="Permalink to this definition">¶</a></dt>
+<dd><p>Train a deep learning tree detection model using keras-retinanet
 This is the main entry point for training a new model based on either existing weights or scratch</p>
 <dl class="simple">
-<dt>Args:</dt><dd><p>image_dir (str): Directory of images
-label_csv (str): Path to csv label file, labels are in the format -&gt; path/to/image.jpg,x1,y1,x2,y2,class_name</p>
+<dt>Args:</dt><dd><p>annotations (str): Path to csv label file, labels are in the format -&gt; path/to/image.jpg,x1,y1,x2,y2,class_name</p>
 </dd>
 <dt>Returns:</dt><dd><p>model (object): A trained keras model</p>
 </dd>
@@ -248,9 +245,47 @@ label_csv (str): Path to csv label file, labels are in the format -&gt; path/to/
 </dd></dl>
 
 <dl class="function">
+<dt id="deepforest.utilities.create_classes">
+<code class="sig-prename descclassname">deepforest.utilities.</code><code class="sig-name descname">create_classes</code><span class="sig-paren">(</span><em class="sig-param">annotations_file</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/deepforest/utilities.html#create_classes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#deepforest.utilities.create_classes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a class list in the format accepted by keras retinanet
+Args:</p>
+<blockquote>
+<div><p>annotations_file: an annotation csv in the retinanet format path/to/image.jpg,x1,y1,x2,y2,class_name</p>
+</div></blockquote>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>path to classes file</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="deepforest.utilities.format_args">
+<code class="sig-prename descclassname">deepforest.utilities.</code><code class="sig-name descname">format_args</code><span class="sig-paren">(</span><em class="sig-param">annotations</em>, <em class="sig-param">config</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/deepforest/utilities.html#format_args"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#deepforest.utilities.format_args" title="Permalink to this definition">¶</a></dt>
+<dd><p>Format config file to match argparse list for retinainet</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>config (dict): a dictionary object to convert into a list for argparse</p>
+</dd>
+<dt>Returns:</dt><dd><p>arg_list (list): a list structure that mimics argparse input arguments for retinanet</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
 <dt id="deepforest.utilities.label_to_name">
 <code class="sig-prename descclassname">deepforest.utilities.</code><code class="sig-name descname">label_to_name</code><span class="sig-paren">(</span><em class="sig-param">label</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/deepforest/utilities.html#label_to_name"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#deepforest.utilities.label_to_name" title="Permalink to this definition">¶</a></dt>
 <dd><p>Map label to name.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="deepforest.utilities.number_of_images">
+<code class="sig-prename descclassname">deepforest.utilities.</code><code class="sig-name descname">number_of_images</code><span class="sig-paren">(</span><em class="sig-param">annotations_file</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/deepforest/utilities.html#number_of_images"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#deepforest.utilities.number_of_images" title="Permalink to this definition">¶</a></dt>
+<dd><p>How many images in the annotations file?</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>annotations_file (str):</p>
+</dd>
+<dt>Returns:</dt><dd><p>n (int): Number of images</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">
@@ -265,10 +300,27 @@ label_csv (str): Path to csv label file, labels are in the format -&gt; path/to/
 
 <dl class="function">
 <dt id="deepforest.utilities.use_release">
-<code class="sig-prename descclassname">deepforest.utilities.</code><code class="sig-name descname">use_release</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/deepforest/utilities.html#use_release"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#deepforest.utilities.use_release" title="Permalink to this definition">¶</a></dt>
-<dd><p>Check the existance of, or download the latest model release from github</p>
+<code class="sig-prename descclassname">deepforest.utilities.</code><code class="sig-name descname">use_release</code><span class="sig-paren">(</span><em class="sig-param">save_dir='data'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/deepforest/utilities.html#use_release"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#deepforest.utilities.use_release" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check the existance of, or download the latest model release from github
+Args:</p>
+<blockquote>
+<div><p>save_dir (str): Directory to save filepath, default to “data” in toplevel repo</p>
+</div></blockquote>
 <dl class="simple">
 <dt>Returns:</dt><dd><p>output_path (str): path to downloaded model weights</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="deepforest.utilities.xml_to_annotations">
+<code class="sig-prename descclassname">deepforest.utilities.</code><code class="sig-name descname">xml_to_annotations</code><span class="sig-paren">(</span><em class="sig-param">xml_path</em>, <em class="sig-param">rgb_dir</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/deepforest/utilities.html#xml_to_annotations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#deepforest.utilities.xml_to_annotations" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load annotations from xml format (e.g. RectLabel editor) and convert them into retinanet annotations format.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>xml_path (str): Path to the annotations xml, formatted by RectLabel
+rgb_dir (str): Directory path to the rgb dir</p>
+</dd>
+<dt>Returns:</dt><dd><p>Annotations (pandas dataframe): in the format -&gt; path/to/image.jpg,x1,y1,x2,y2,class_name</p>
 </dd>
 </dl>
 </dd></dl>

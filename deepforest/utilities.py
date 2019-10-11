@@ -37,12 +37,14 @@ class DownloadProgressBar(tqdm):
                 self.update(b * bsize - self.n)
                 
 def use_release(save_dir = "data"):
-        '''
-        Check the existance of, or download the latest model release from github
+        '''Check the existance of, or download the latest model release from github
+        
         Args:
                 save_dir (str): Directory to save filepath, default to "data" in toplevel repo
         Returns:
-                output_path (str): path to downloaded model weights'''
+                output_path (str): path to downloaded model weights
+        '''
+        
         #Find latest github tag release from the DeepLidar repo
         _json = json.loads(urllib.request.urlopen(urllib.request.Request(
                 'https://api.github.com/repos/Weecology/DeepForest/releases/latest',
@@ -64,9 +66,9 @@ def use_release(save_dir = "data"):
         return output_path
 
 def xml_to_annotations(xml_path, rgb_dir):
-        """
-        Load annotations from xml format (e.g. RectLabel editor) and convert them into retinanet annotations format. 
-        args:
+        """Load annotations from xml format (e.g. RectLabel editor) and convert them into retinanet annotations format. 
+        
+        Args:
                 xml_path (str): Path to the annotations xml, formatted by RectLabel
                 rgb_dir (str): Directory path to the rgb dir
         Returns:
@@ -114,11 +116,11 @@ def xml_to_annotations(xml_path, rgb_dir):
         return(annotations)        
 
 def create_classes(annotations_file):
-        """
-        Create a class list in the format accepted by keras retinanet
-        args:
+        """Create a class list in the format accepted by keras retinanet
+        
+        Args:
                 annotations_file: an annotation csv in the retinanet format path/to/image.jpg,x1,y1,x2,y2,class_name
-        returns:
+        Returns:
                 path to classes file
         """
         annotations = pd.read_csv(annotations_file, names=["image_path","xmin","ymin","xmax","ymax","label"])
@@ -140,19 +142,21 @@ def create_classes(annotations_file):
         return classes_path
 
 def number_of_images(annotations_file):
-        """
-        How many images in the annotations file
+        """How many images in the annotations file?
+        
         Args:
                 annotations_file (str):
         Returns:
                 n (int): Number of images
         """
+        
         df = pd.read_csv(annotations_file,names=["image_path","xmin","ymin","xmax","ymax"],index_col=False)
         n = len(df.image_path.unique())
         return n
         
 def format_args(annotations, config):
         """Format config file to match argparse list for retinainet
+        
         Args:
                 config (dict): a dictionary object to convert into a list for argparse
         Returns:

@@ -160,8 +160,13 @@
 <span class="kn">import</span> <span class="nn">sys</span>
 <span class="kn">from</span> <span class="nn">tqdm</span> <span class="k">import</span> <span class="n">tqdm</span>
 <span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">urllib</span>
+<span class="kn">import</span> <span class="nn">xmltodict</span>
+<span class="kn">import</span> <span class="nn">csv</span>
 <span class="kn">from</span> <span class="nn">keras_retinanet</span> <span class="k">import</span> <span class="n">models</span>
+
 <div class="viewcode-block" id="label_to_name"><a class="viewcode-back" href="../../source/deepforest.html#deepforest.utilities.label_to_name">[docs]</a><span class="k">def</span> <span class="nf">label_to_name</span><span class="p">(</span><span class="n">label</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Map label to name.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -187,10 +192,10 @@
                         <span class="bp">self</span><span class="o">.</span><span class="n">total</span> <span class="o">=</span> <span class="n">tsize</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">b</span> <span class="o">*</span> <span class="n">bsize</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="p">)</span></div></div>
                 
-<div class="viewcode-block" id="use_release"><a class="viewcode-back" href="../../source/deepforest.html#deepforest.utilities.use_release">[docs]</a><span class="k">def</span> <span class="nf">use_release</span><span class="p">():</span>
-        <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        Check the existance of, or download the latest model release from github</span>
-<span class="sd">        </span>
+<div class="viewcode-block" id="use_release"><a class="viewcode-back" href="../../source/deepforest.html#deepforest.utilities.use_release">[docs]</a><span class="k">def</span> <span class="nf">use_release</span><span class="p">(</span><span class="n">save_dir</span> <span class="o">=</span> <span class="s2">&quot;data&quot;</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;Check the existance of, or download the latest model release from github</span>
+<span class="sd">        Args:</span>
+<span class="sd">                save_dir (str): Directory to save filepath, default to &quot;data&quot; in toplevel repo</span>
 <span class="sd">        Returns:</span>
 <span class="sd">                output_path (str): path to downloaded model weights&#39;&#39;&#39;</span>
         <span class="c1">#Find latest github tag release from the DeepLidar repo</span>
@@ -199,7 +204,7 @@
             <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;Accept&#39;</span><span class="p">:</span> <span class="s1">&#39;application/vnd.github.v3+json&#39;</span><span class="p">},</span>
              <span class="p">))</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>     
         <span class="n">asset</span> <span class="o">=</span> <span class="n">_json</span><span class="p">[</span><span class="s1">&#39;assets&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
-        <span class="n">output_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s1">&#39;data&#39;</span><span class="p">,</span><span class="n">asset</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">])</span>    
+        <span class="n">output_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">save_dir</span><span class="p">,</span><span class="n">asset</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">])</span>    
         <span class="n">url</span> <span class="o">=</span> <span class="n">asset</span><span class="p">[</span><span class="s1">&#39;browser_download_url&#39;</span><span class="p">]</span>
         
         <span class="c1">#Download if it doesn&#39;t exist</span>
@@ -212,6 +217,135 @@
                 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Model from DeepForest release </span><span class="si">{}</span><span class="s2"> was already downloaded. Loading model from file.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">_json</span><span class="p">[</span><span class="s2">&quot;html_url&quot;</span><span class="p">]))</span>
                 
         <span class="k">return</span> <span class="n">output_path</span></div>
+
+<div class="viewcode-block" id="xml_to_annotations"><a class="viewcode-back" href="../../source/deepforest.html#deepforest.utilities.xml_to_annotations">[docs]</a><span class="k">def</span> <span class="nf">xml_to_annotations</span><span class="p">(</span><span class="n">xml_path</span><span class="p">,</span> <span class="n">rgb_dir</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Load annotations from xml format (e.g. RectLabel editor) and convert them into retinanet annotations format. </span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">                xml_path (str): Path to the annotations xml, formatted by RectLabel</span>
+<span class="sd">                rgb_dir (str): Directory path to the rgb dir</span>
+<span class="sd">        Returns:</span>
+<span class="sd">                Annotations (pandas dataframe): in the format -&gt; path/to/image.jpg,x1,y1,x2,y2,class_name</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1">#parse</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">xml_path</span><span class="p">)</span> <span class="k">as</span> <span class="n">fd</span><span class="p">:</span>
+                <span class="n">doc</span> <span class="o">=</span> <span class="n">xmltodict</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">fd</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>
+
+        <span class="c1">#grab xml objects</span>
+        <span class="k">try</span><span class="p">:</span>
+                <span class="n">tile_xml</span><span class="o">=</span><span class="n">doc</span><span class="p">[</span><span class="s2">&quot;annotation&quot;</span><span class="p">][</span><span class="s2">&quot;object&quot;</span><span class="p">]</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;error </span><span class="si">{}</span><span class="s2"> for path </span><span class="si">{}</span><span class="s2"> with doc annotation</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">xml_path</span><span class="p">,</span> <span class="n">doc</span><span class="p">[</span><span class="s2">&quot;annotation&quot;</span><span class="p">]))</span>
+
+        <span class="n">xmin</span><span class="o">=</span><span class="p">[]</span>
+        <span class="n">xmax</span><span class="o">=</span><span class="p">[]</span>
+        <span class="n">ymin</span><span class="o">=</span><span class="p">[]</span>
+        <span class="n">ymax</span><span class="o">=</span><span class="p">[]</span>
+        <span class="n">label</span><span class="o">=</span><span class="p">[]</span>
+
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">tile_xml</span><span class="p">)</span> <span class="o">==</span> <span class="nb">list</span><span class="p">:</span>
+                <span class="n">treeID</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">tile_xml</span><span class="p">))</span>
+
+                <span class="c1">#Construct frame if multiple trees</span>
+                <span class="k">for</span> <span class="n">tree</span> <span class="ow">in</span> <span class="n">tile_xml</span><span class="p">:</span>
+                        <span class="n">xmin</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tree</span><span class="p">[</span><span class="s2">&quot;bndbox&quot;</span><span class="p">][</span><span class="s2">&quot;xmin&quot;</span><span class="p">])</span>
+                        <span class="n">xmax</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tree</span><span class="p">[</span><span class="s2">&quot;bndbox&quot;</span><span class="p">][</span><span class="s2">&quot;xmax&quot;</span><span class="p">])</span>
+                        <span class="n">ymin</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tree</span><span class="p">[</span><span class="s2">&quot;bndbox&quot;</span><span class="p">][</span><span class="s2">&quot;ymin&quot;</span><span class="p">])</span>
+                        <span class="n">ymax</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tree</span><span class="p">[</span><span class="s2">&quot;bndbox&quot;</span><span class="p">][</span><span class="s2">&quot;ymax&quot;</span><span class="p">])</span>
+                        <span class="n">label</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tree</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+                <span class="c1">#One tree</span>
+                <span class="n">treeID</span><span class="o">=</span><span class="mi">0</span>
+
+                <span class="n">xmin</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tile_xml</span><span class="p">[</span><span class="s2">&quot;bndbox&quot;</span><span class="p">][</span><span class="s2">&quot;xmin&quot;</span><span class="p">])</span>
+                <span class="n">xmax</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tile_xml</span><span class="p">[</span><span class="s2">&quot;bndbox&quot;</span><span class="p">][</span><span class="s2">&quot;xmax&quot;</span><span class="p">])</span>
+                <span class="n">ymin</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tile_xml</span><span class="p">[</span><span class="s2">&quot;bndbox&quot;</span><span class="p">][</span><span class="s2">&quot;ymin&quot;</span><span class="p">])</span>
+                <span class="n">ymax</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tile_xml</span><span class="p">[</span><span class="s2">&quot;bndbox&quot;</span><span class="p">][</span><span class="s2">&quot;ymax&quot;</span><span class="p">])</span>
+                <span class="n">label</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tile_xml</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">])</span>        
+
+        <span class="n">rgb_name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">doc</span><span class="p">[</span><span class="s2">&quot;annotation&quot;</span><span class="p">][</span><span class="s2">&quot;filename&quot;</span><span class="p">])</span>
+        
+        <span class="n">annotations</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">&quot;image_path&quot;</span><span class="p">:</span> <span class="n">rgb_name</span><span class="p">,</span><span class="s2">&quot;xmin&quot;</span><span class="p">:</span><span class="n">xmin</span><span class="p">,</span><span class="s2">&quot;ymin&quot;</span><span class="p">:</span> <span class="n">ymin</span><span class="p">,</span><span class="s2">&quot;xmax&quot;</span><span class="p">:</span><span class="n">xmax</span><span class="p">,</span> <span class="s2">&quot;ymax&quot;</span><span class="p">:</span> <span class="n">ymax</span><span class="p">,</span><span class="s2">&quot;label&quot;</span><span class="p">:</span><span class="n">label</span><span class="p">})</span>
+        <span class="k">return</span><span class="p">(</span><span class="n">annotations</span><span class="p">)</span>        </div>
+
+<div class="viewcode-block" id="create_classes"><a class="viewcode-back" href="../../source/deepforest.html#deepforest.utilities.create_classes">[docs]</a><span class="k">def</span> <span class="nf">create_classes</span><span class="p">(</span><span class="n">annotations_file</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Create a class list in the format accepted by keras retinanet</span>
+<span class="sd">        Args:</span>
+<span class="sd">                annotations_file: an annotation csv in the retinanet format path/to/image.jpg,x1,y1,x2,y2,class_name</span>
+<span class="sd">        Returns:</span>
+<span class="sd">                path to classes file</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">annotations</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">annotations_file</span><span class="p">,</span> <span class="n">names</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;image_path&quot;</span><span class="p">,</span><span class="s2">&quot;xmin&quot;</span><span class="p">,</span><span class="s2">&quot;ymin&quot;</span><span class="p">,</span><span class="s2">&quot;xmax&quot;</span><span class="p">,</span><span class="s2">&quot;ymax&quot;</span><span class="p">,</span><span class="s2">&quot;label&quot;</span><span class="p">])</span>
+        
+        <span class="c1">#get dir to place along file annotations</span>
+        <span class="n">dirname</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">annotations_file</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">classes_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">dirname</span><span class="p">,</span><span class="s2">&quot;classes.csv&quot;</span><span class="p">)</span>
+        
+        <span class="c1">#get unique labels</span>
+        <span class="n">labels</span> <span class="o">=</span> <span class="n">annotations</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;There are </span><span class="si">{}</span><span class="s2"> unique labels: </span><span class="si">{}</span><span class="s2"> &quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">labels</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="nb">list</span><span class="p">(</span><span class="n">labels</span><span class="p">)))</span> 
+        
+        <span class="c1">#write label</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">classes_path</span><span class="p">,</span><span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">csv_file</span><span class="p">:</span>
+                <span class="n">writer</span> <span class="o">=</span> <span class="n">csv</span><span class="o">.</span><span class="n">writer</span><span class="p">(</span><span class="n">csv_file</span><span class="p">)</span>   
+                <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">label</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">labels</span><span class="p">):</span>
+                        <span class="n">writer</span><span class="o">.</span><span class="n">writerow</span><span class="p">([</span><span class="n">label</span><span class="p">,</span> <span class="n">index</span><span class="p">])</span>
+        
+        <span class="k">return</span> <span class="n">classes_path</span></div>
+
+<div class="viewcode-block" id="number_of_images"><a class="viewcode-back" href="../../source/deepforest.html#deepforest.utilities.number_of_images">[docs]</a><span class="k">def</span> <span class="nf">number_of_images</span><span class="p">(</span><span class="n">annotations_file</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;How many images in the annotations file?</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">                annotations_file (str):</span>
+<span class="sd">        Returns:</span>
+<span class="sd">                n (int): Number of images</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">annotations_file</span><span class="p">,</span><span class="n">names</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;image_path&quot;</span><span class="p">,</span><span class="s2">&quot;xmin&quot;</span><span class="p">,</span><span class="s2">&quot;ymin&quot;</span><span class="p">,</span><span class="s2">&quot;xmax&quot;</span><span class="p">,</span><span class="s2">&quot;ymax&quot;</span><span class="p">],</span><span class="n">index_col</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">image_path</span><span class="o">.</span><span class="n">unique</span><span class="p">())</span>
+        <span class="k">return</span> <span class="n">n</span></div>
+        
+<div class="viewcode-block" id="format_args"><a class="viewcode-back" href="../../source/deepforest.html#deepforest.utilities.format_args">[docs]</a><span class="k">def</span> <span class="nf">format_args</span><span class="p">(</span><span class="n">annotations</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Format config file to match argparse list for retinainet</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">                config (dict): a dictionary object to convert into a list for argparse</span>
+<span class="sd">        Returns:</span>
+<span class="sd">                arg_list (list): a list structure that mimics argparse input arguments for retinanet</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1">#Format args. Retinanet uses argparse, so they need to be passed as a list</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">classes_file</span> <span class="o">=</span> <span class="n">create_classes</span><span class="p">(</span><span class="n">annotations</span><span class="p">)</span>
+
+        <span class="c1">#remember that .yml reads None as a str</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;weights&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;None&#39;</span><span class="p">:</span>
+                <span class="n">args</span><span class="p">[</span><span class="s2">&quot;--snapshot&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;weights&quot;</span><span class="p">]</span>
+                
+        <span class="n">args</span><span class="p">[</span><span class="s2">&quot;--backbone&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;backbone&quot;</span><span class="p">]</span>
+        <span class="n">args</span><span class="p">[</span><span class="s2">&quot;--image-min-side&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;image-min-side&quot;</span><span class="p">]</span>
+        <span class="n">args</span><span class="p">[</span><span class="s2">&quot;--multi-gpu&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;multi-gpu&quot;</span><span class="p">]</span>
+        <span class="n">args</span><span class="p">[</span><span class="s2">&quot;--epochs&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;epochs&quot;</span><span class="p">]</span>
+        <span class="n">args</span><span class="p">[</span><span class="s2">&quot;--steps&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">number_of_images</span><span class="p">(</span><span class="n">annotations</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">args</span><span class="p">[</span><span class="s2">&quot;--multi-gpu&quot;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">args</span><span class="p">[</span><span class="s2">&quot;--multi-gpu-force&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="c1">#turn dictionary to list for argparse</span>
+        <span class="n">arg_list</span> <span class="o">=</span> <span class="p">[[</span><span class="n">k</span><span class="p">,</span><span class="n">v</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">args</span><span class="o">.</span><span class="n">items</span><span class="p">()]</span>
+        <span class="n">arg_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">val</span> <span class="k">for</span> <span class="n">sublist</span> <span class="ow">in</span> <span class="n">arg_list</span> <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">sublist</span><span class="p">]</span>
+
+        <span class="c1">#boolean arguments</span>
+        <span class="k">if</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;save-snapshot&quot;</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Disabling snapshot saving&quot;</span><span class="p">)</span>                
+                <span class="n">arg_list</span> <span class="o">=</span> <span class="n">arg_list</span> <span class="o">+</span> <span class="p">[</span><span class="s2">&quot;--no-snapshots&quot;</span><span class="p">]</span>
+                
+        <span class="c1">#positional arguments first</span>
+        <span class="n">arg_list</span> <span class="o">=</span>  <span class="n">arg_list</span> <span class="o">+</span> <span class="p">[</span><span class="s2">&quot;csv&quot;</span><span class="p">,</span> <span class="n">annotations</span><span class="p">,</span> <span class="n">classes_file</span><span class="p">]</span> 
+
+        <span class="c1">#All need to be str classes to mimic sys.arg</span>
+        <span class="n">arg_list</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">arg_list</span><span class="p">]</span>
+        
+        <span class="k">return</span> <span class="n">arg_list</span></div>
 </pre></div>
 
            </div>
