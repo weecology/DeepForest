@@ -112,6 +112,12 @@ def xml_to_annotations(xml_path, rgb_dir):
 
         rgb_name = os.path.basename(doc["annotation"]["filename"])
         
+        #set dtypes
+        xmin = [int(x) for x in xmin]
+        xmax = [int(x) for x in xmax]
+        ymin = [int(x) for x in ymin]
+        ymax = [int(x) for x in ymax]
+        
         annotations = pd.DataFrame({"image_path": rgb_name,"xmin":xmin,"ymin": ymin,"xmax":xmax, "ymax": ymax,"label":label})
         return(annotations)        
 
