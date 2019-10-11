@@ -36,8 +36,7 @@ class deepforest:
             self.model = None
             
     def train(self, annotations):
-        '''
-        Train a deep learning tree detection model using keras-retinanet
+        '''Train a deep learning tree detection model using keras-retinanet
         This is the main entry point for training a new model based on either existing weights or scratch
         
         Args:
@@ -56,8 +55,7 @@ class deepforest:
         self.prediction_model = convert_model(self.training_model) 
     
     def use_release(self):
-        '''
-        Use the latest DeepForest model release from github and load model. Optionally download if release doesn't exist
+        '''Use the latest DeepForest model release from github and load model. Optionally download if release doesn't exist
         
         Returns:
             model (object): A trained keras model
@@ -70,8 +68,8 @@ class deepforest:
         self.model = utilities.read_model(self.weights, self.config)
         
     def predict_image(self, image_path, show=True):
-        '''
-        Predict tree crowns based on loaded (or trained) model
+        '''Predict tree crowns based on loaded (or trained) model
+        
         Args:
             image_path (str): Path to image on disk
             show (bool): Plot the predicted image with bounding boxes
