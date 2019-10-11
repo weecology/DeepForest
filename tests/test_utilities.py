@@ -14,6 +14,9 @@ def test_xml_to_annotations():
     print(annotations.shape)
     assert annotations.shape == (60,6)
     
+    #bounding box extents should be int
+    assert annotations["xmin"].dtype == "int"
+    
 def test_create_classes(annotations):
     classes_file = utilities.create_classes(annotations_file="tests/data/OSBS_029.csv")
     assert os.path.exists(classes_file)
