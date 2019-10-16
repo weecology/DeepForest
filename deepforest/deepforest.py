@@ -6,12 +6,12 @@
 .. moduleauthor:: Ben Weinstein <ben.weinstein@weecology.org>
 
 """
+import os
 from deepforest import utilities
 from deepforest import predict
-import os
-from matplotlib import pyplot as plt
+from deepforest.retinanet_train import main as retinanet_train
 from keras_retinanet.models import convert_model
-from keras_retinanet.bin.train import main as retinanet_train
+from matplotlib import pyplot as plt
 
 class deepforest:
     ''' Class for training and predicting tree crowns in RGB images
@@ -35,12 +35,13 @@ class deepforest:
         else:
             self.model = None
             
-    def train(self, annotations):
+    def train(self, annotations, comet_experiment=None):
         '''Train a deep learning tree detection model using keras-retinanet
         This is the main entry point for training a new model based on either existing weights or scratch
         
         Args:
             annotations (str): Path to csv label file, labels are in the format -> path/to/image.jpg,x1,y1,x2,y2,class_name
+            comet_experiment: A comet ml object to log images. Optional.
         Returns:
             model (object): A trained keras model
         '''
@@ -49,7 +50,7 @@ class deepforest:
         print("Training retinanet with the following args {}".format(arg_list))
         
         #Train model
-        self.training_model = retinanet_train(arg_list)
+        self.training_model = retinanet_train(arg_list, comet_experiment)
         
         #Create prediction model
         self.prediction_model = convert_model(self.training_model) 
@@ -67,14 +68,15 @@ class deepforest:
         self.weights = weight_path
         self.model = utilities.read_model(self.weights, self.config)
         
-    def predict_image(self, image_path, show=True):
+    def predict_image(self, image_path, return_plot=True, show=False):
         '''Predict tree crowns based on loaded (or trained) model
         
         Args:
             image_path (str): Path to image on disk
-            show (bool): Plot the predicted image with bounding boxes
+            show (bool): Plot the predicted image with bounding boxes. Ignored if return_plot=False
+            return_plot: Whether to return image with annotations overlaid, or just a numpy array of boxes
         Returns:
-            predictions (array): Numpy array of predicted bounding boxes
+            predictions (array): if return_plot, an image. Otherwise a numpy array of predicted bounding boxes
         '''     
         #Check for model weights
         
@@ -83,11 +85,15 @@ class deepforest:
         
         #convert model to prediction
         self.prediction_model = convert_model(self.model)
-        image = predict.predict_image(self.prediction_model, image_path, return_plot=show)
         
-        #cv2 channel order
-        if show:
-            plt.imshow(image[:,:,::-1])
-            plt.show()
-        
-        return image
+        if return_plot:
+            image = predict.predict_image(self.prediction_model, image_path, return_plot=return_plot)            
+            #cv2 channel order
+            if show:
+                plt.imshow(image[:,:,::-1])
+                plt.show()             
+            return image
+        else:
+            boxes = predict.predict_image(self.prediction_model, image_path, return_plot=return_plot)            
+            return boxes            
+

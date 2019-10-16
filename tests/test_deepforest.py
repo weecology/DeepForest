@@ -34,11 +34,11 @@ def test_use_release(download_release):
 def test_predict_image(download_release):
     test_model = deepforest.deepforest(weights="tests/data/universal_model_july30.h5")    
     assert isinstance(test_model.model,keras.models.Model)
-    image = test_model.predict_image(image_path = "tests/data/OSBS_029.tif",show=False)
+    boxes = test_model.predict_image(image_path = "tests/data/OSBS_029.tif",show=False, return_plot = False)
     
     #Returns a 4 column numpy array
-    assert isinstance(image,np.ndarray)
-    assert image.shape[1] == 4
+    assert isinstance(boxes,np.ndarray)
+    assert boxes.shape[1] == 4
 
 def test_train(annotations):
     test_model = deepforest.deepforest()
