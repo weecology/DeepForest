@@ -1,6 +1,7 @@
 #Config file for DeepForest
 
 #Train Settings
+batch_size: 10
 weights: None
 backbone: resnet50
 image-min-side: 400

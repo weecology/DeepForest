@@ -185,12 +185,12 @@ def format_args(annotations, config):
         args["--multi-gpu"] = config["multi-gpu"]
         args["--epochs"] = config["epochs"]
         args["--steps"] = number_of_images(annotations)
+        args["--batch-size"] = config["batch_size"]
+        args["--tensorboard-dir"] = None
 
         if args["--multi-gpu"] > 1:
                 args["--multi-gpu-force"] = True
         
-                
-
         #turn dictionary to list for argparse
         arg_list = [[k,v] for k, v in args.items()]
         arg_list = [val for sublist in arg_list for val in sublist]

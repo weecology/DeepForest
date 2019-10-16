@@ -12,11 +12,6 @@ before_install:
   - conda update --yes conda
   - git clone https://github.com/bw4sz/keras-retinanet.git
 
-#download release model
-#keras retin
-#wget --header "Authorization: token <GITHUB TOKEN>"  --output-document=<RELEASE>.tar.gz https://api.github.com/repos/<USER>/<REPO>/tarball/<RELEASE NAME>
-
-# A bit ugly, but absolute paths wasn't building
 install:
   - conda env create --file=environment.yml
   - source activate DeepForest
