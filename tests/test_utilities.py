@@ -7,7 +7,7 @@ import pandas as pd
 @pytest.fixture()
 def annotations():
     annotations = utilities.xml_to_annotations("tests/data/OSBS_029.xml",rgb_dir="tests/data")
-    annotations.to_csv("tests/data/OSBS_029.csv",index=False, header=False)
+    annotations.to_csv("tests/data/OSBS_029.csv",index=False)
 
 def test_xml_to_annotations():
     annotations = utilities.xml_to_annotations(xml_path = "tests/data/OSBS_029.xml",rgb_dir = "tests/data")

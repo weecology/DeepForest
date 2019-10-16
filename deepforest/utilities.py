@@ -10,6 +10,7 @@ import urllib
 import xmltodict
 import csv
 from keras_retinanet import models
+import warnings
 
 def label_to_name(label):
         """ Map label to name.
@@ -137,7 +138,10 @@ def create_classes(annotations_file):
         
         #get unique labels
         labels = annotations.label.unique()
-        print("There are {} unique labels: {} ".format(labels.shape[0],list(labels))) 
+        n_classes = labels.shape[0]
+        print("There are {} unique labels: {} ".format(n_classes,list(labels))) 
+        if n_classes > 1:
+                warnings.warn("There are greater than 1 classes, check annotation levels for file {}".format(annotations_file))
         
         #write label
         with open(classes_path,'w') as csv_file:
@@ -156,7 +160,7 @@ def number_of_images(annotations_file):
                 n (int): Number of images
         """
         
-        df = pd.read_csv(annotations_file,names=["image_path","xmin","ymin","xmax","ymax"],index_col=False)
+        df = pd.read_csv(annotations_file,index_col=False,names=["image_path","xmin","ymin","xmax","ymax"])
         n = len(df.image_path.unique())
         return n
         
@@ -184,6 +188,8 @@ def format_args(annotations, config):
 
         if args["--multi-gpu"] > 1:
                 args["--multi-gpu-force"] = True
+        
+                
 
         #turn dictionary to list for argparse
         arg_list = [[k,v] for k, v in args.items()]
@@ -197,6 +203,9 @@ def format_args(annotations, config):
         #positional arguments first
         arg_list =  arg_list + ["csv", annotations, classes_file] 
 
+        if not config["validation_annotations"] == "None":
+                arg_list =  arg_list + ["--val-annotations", config["validation_annotations"]]
+                
         #All need to be str classes to mimic sys.arg
         arg_list = [str(x) for x in arg_list]
         

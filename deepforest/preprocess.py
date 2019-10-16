@@ -42,7 +42,10 @@ def select_annotations(image_name, annotations_file, windows, index):
     """
     
     # Load annotations file
-    annotations = pd.read_csv(annotations_file, names=["image_path", "xmin", "ymin", "xmax", "ymax", "label"])
+    annotations = pd.read_csv(annotations_file)
+    
+    if not annotations.shape[1]==6:
+        raise ValueError("Annotations file has {} columns, should have format image_path, xmin, ymin, xmax, ymax, label".format(annotations.shape[1]))
     
     # Window coordinates - with respect to tile
     window_xmin, window_ymin, w, h= windows[index].getRect()
@@ -59,7 +62,8 @@ def select_annotations(image_name, annotations_file, windows, index):
         (annotations.ymax < (window_ymax + offset))].copy()
     
     #change the image name
-    selected_annotations.image_path = "{}_{}.tif".format(image_name,index) 
+    image_basename = os.path.splitext(image_name)[0]
+    selected_annotations.image_path = "{}_{}.jpg".format(image_basename,index) 
     
     return selected_annotations
  

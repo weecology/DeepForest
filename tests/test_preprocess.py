@@ -17,7 +17,7 @@ def config():
     
     #Create a clean config test data
     annotations = utilities.xml_to_annotations(xml_path = config["annotations_xml"],rgb_dir =  config["rgb_dir"])
-    annotations.to_csv("tests/data/OSBS_029.csv",index=False, header=False)
+    annotations.to_csv("tests/data/OSBS_029.csv",index=False)
     
     return config
 
@@ -36,6 +36,9 @@ def test_select_annotations(config, numpy_image):
     
     #Returns a 5 column matrix
     assert selected_annotations.shape[0] == 9 
+    
+    #image name should be name of image plus the index .tif
+    assert selected_annotations.image_path.unique()[0] == "OSBS_029_7.jpg"
 
 def test_split_training_raster(config):
     annotations_file = preprocess.split_training_raster(config["path_to_raster"], config["annotations_file"], "tests/data/",config["patch_size"], config["patch_overlap"])

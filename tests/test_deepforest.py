@@ -19,7 +19,7 @@ def download_release():
 @pytest.fixture()
 def annotations():
     annotations = utilities.xml_to_annotations("tests/data/OSBS_029.xml",rgb_dir="tests/data")
-    annotations.to_csv("tests/data/OSBS_029.csv",index=False, header=False)
+    annotations.to_csv("tests/data/OSBS_029.csv",index=False, header=None)
 
 def test_deepforest():
     model = deepforest.deepforest(weights=None)
