@@ -73,9 +73,9 @@ def select_annotations(image_name, annotations_file, windows, index):
     
     #cut off any annotations over the border.
     selected_annotations.xmin[selected_annotations.xmin < 0] = 0
-    selected_annotations.xmax[selected_annotations.xmax > h] = h   
+    selected_annotations.xmax[selected_annotations.xmax > w] = w   
     selected_annotations.ymin[selected_annotations.ymin < 0] = 0
-    selected_annotations.ymax[selected_annotations.xmax > h] = h   
+    selected_annotations.ymax[selected_annotations.ymax > h] = h   
     
     return selected_annotations
  

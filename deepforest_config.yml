@@ -4,7 +4,7 @@
 batch_size: 10
 weights: None
 backbone: resnet50
-image-min-side: 400
+image-min-side: 800
 multi-gpu: 1
 epochs: 1
 validation_annotations: None
