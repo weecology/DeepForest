@@ -40,6 +40,17 @@ def test_select_annotations(config, numpy_image):
     #image name should be name of image plus the index .tif
     assert selected_annotations.image_path.unique()[0] == "OSBS_029_7.jpg"
 
+def test_select_annotations_tile(config, numpy_image):
+    config["patch_size"] = 50
+    windows = preprocess.compute_windows(numpy_image, config["patch_size"], config["patch_overlap"])
+    selected_annotations = preprocess.select_annotations("OSBS_029.tif", config["annotations_file"], windows, index=7)
+    
+    #The largest box cannot be off the edge of the window
+    assert selected_annotations.xmin.min() >= 0
+    assert selected_annotations.ymin.min() >= 0
+    assert selected_annotations.xmax.max() <= config["patch_size"]
+    assert selected_annotations.ymax.max() <= config["patch_size"]
+    
 def test_split_training_raster(config):
     annotations_file = preprocess.split_training_raster(config["path_to_raster"], config["annotations_file"], "tests/data/",config["patch_size"], config["patch_overlap"])
     

@@ -65,6 +65,18 @@ def select_annotations(image_name, annotations_file, windows, index):
     image_basename = os.path.splitext(image_name)[0]
     selected_annotations.image_path = "{}_{}.jpg".format(image_basename,index) 
     
+    #update coordinates with respect to origin
+    selected_annotations.xmax = (selected_annotations.xmin - window_xmin)  + (selected_annotations.xmax - selected_annotations.xmin)    
+    selected_annotations.xmin = (selected_annotations.xmin - window_xmin)
+    selected_annotations.ymax = (selected_annotations.ymin - window_ymin)  + (selected_annotations.ymax - selected_annotations.ymin)    
+    selected_annotations.ymin = (selected_annotations.ymin - window_ymin)
+    
+    #cut off any annotations over the border.
+    selected_annotations.xmin[selected_annotations.xmin < 0] = 0
+    selected_annotations.xmax[selected_annotations.xmax > h] = h   
+    selected_annotations.ymin[selected_annotations.ymin < 0] = 0
+    selected_annotations.ymax[selected_annotations.xmax > h] = h   
+    
     return selected_annotations
  
 def save_crop(base_dir, image_name, index, crop):
