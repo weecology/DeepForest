@@ -52,13 +52,15 @@ def select_annotations(image_name, annotations_file, windows, index):
     window_xmax = window_xmin + w
     window_ymax = window_ymin + h
     
-    #buffer coordinates a bit to grab boxes that might start just against the image edge
+    #buffer coordinates a bit to grab boxes that might start just against the image edge. Don't allow boxes that start and end after the offset
     offset = 10
     selected_annotations = annotations[ 
         (annotations.image_path == image_name) &
         (annotations.xmin > (window_xmin -offset)) &  
+        (annotations.xmin < (window_xmax)) &
         (annotations.ymin > (window_ymin - offset))  &
         (annotations.xmax < (window_xmax + offset)) &
+        (annotations.ymin < (window_ymax)) &        
         (annotations.ymax < (window_ymax + offset))].copy()
     
     #change the image name
