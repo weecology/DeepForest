@@ -55,5 +55,5 @@ def test_split_training_raster(config):
     annotations_file = preprocess.split_training_raster(config["path_to_raster"], config["annotations_file"], "tests/data/",config["patch_size"], config["patch_overlap"])
     
     #There should be one image name for each window crop
-    assert len(annotations_file.image_path.unique()) == 9
+    assert len(annotations_file.image_path.unique()) == 27
     

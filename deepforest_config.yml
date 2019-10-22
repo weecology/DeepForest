@@ -9,5 +9,10 @@ multi-gpu: 1
 epochs: 1
 validation_annotations: None
 
+#Keras generator methods
+multiprocessing: False 
+workers: 1
+max_queue_size: 10
+
 #save snapshot?
 save-snapshot: False

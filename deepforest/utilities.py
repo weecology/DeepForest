@@ -187,6 +187,8 @@ def format_args(annotations, config):
         args["--steps"] = number_of_images(annotations)
         args["--batch-size"] = config["batch_size"]
         args["--tensorboard-dir"] = None
+        args["--workers"] = config["workers"]
+        args["--max-queue-size"] = config["max_queue_size"]
         
         #turn dictionary to list for argparse
         arg_list = [[k,v] for k, v in args.items()]
@@ -200,6 +202,9 @@ def format_args(annotations, config):
         if config["multi-gpu"] > 1:
                 arg_list = arg_list + ["--multi-gpu-force"]
 
+        if config["multiprocessing"]:
+                arg_list = arg_list + ["--multiprocessing"]
+                
         #positional arguments first
         arg_list =  arg_list + ["csv", annotations, classes_file] 
 
