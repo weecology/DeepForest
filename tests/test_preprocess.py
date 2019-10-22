@@ -43,7 +43,7 @@ def test_select_annotations(config, numpy_image):
 def test_select_annotations_tile(config, numpy_image):
     config["patch_size"] = 50
     windows = preprocess.compute_windows(numpy_image, config["patch_size"], config["patch_overlap"])
-    selected_annotations = preprocess.select_annotations("OSBS_029.tif", config["annotations_file"], windows, index=7)
+    selected_annotations = preprocess.select_annotations("OSBS_029.tif", config["annotations_file"], windows, index=10)
     
     #The largest box cannot be off the edge of the window
     assert selected_annotations.xmin.min() >= 0
