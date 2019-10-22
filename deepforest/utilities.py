@@ -196,7 +196,7 @@ def format_args(annotations, config):
                 print("Disabling snapshot saving")                
                 arg_list = arg_list + ["--no-snapshots"]
 
-        if config["--multi-gpu"] > 1:
+        if config["multi-gpu"] > 1:
                 arg_list = arg_list + ["--multi-gpu-force"]
 
         #positional arguments first
