@@ -182,14 +182,10 @@ def format_args(annotations, config):
                 
         args["--backbone"] = config["backbone"]
         args["--image-min-side"] = config["image-min-side"]
-        args["--multi-gpu"] = config["multi-gpu"]
         args["--epochs"] = config["epochs"]
         args["--steps"] = number_of_images(annotations)
         args["--batch-size"] = config["batch_size"]
         args["--tensorboard-dir"] = None
-
-        if args["--multi-gpu"] > 1:
-                args["--multi-gpu-force"] = True
         
         #turn dictionary to list for argparse
         arg_list = [[k,v] for k, v in args.items()]
@@ -199,7 +195,10 @@ def format_args(annotations, config):
         if config["save-snapshot"] is False:
                 print("Disabling snapshot saving")                
                 arg_list = arg_list + ["--no-snapshots"]
-                
+
+        if config["--multi-gpu"] > 1:
+                arg_list = arg_list + ["--multi-gpu-force"]
+
         #positional arguments first
         arg_list =  arg_list + ["csv", annotations, classes_file] 
 
