@@ -182,6 +182,7 @@ def format_args(annotations, config):
                 
         args["--backbone"] = config["backbone"]
         args["--image-min-side"] = config["image-min-side"]
+        args["--multi-gpu"] = config["multi-gpu"]
         args["--epochs"] = config["epochs"]
         args["--steps"] = number_of_images(annotations)
         args["--batch-size"] = config["batch_size"]
