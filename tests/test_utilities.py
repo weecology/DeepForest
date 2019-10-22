@@ -23,7 +23,7 @@ def test_create_classes(annotations):
 
 def test_number_of_images(annotations):
     n = utilities.number_of_images(annotations_file="tests/data/OSBS_029.csv")
-    assert n == 1
+    assert n == 2
     
 def format_args():
     config  = utilities.read_config()
