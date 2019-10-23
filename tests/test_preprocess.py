@@ -4,6 +4,7 @@ from deepforest import utilities
 from PIL import Image
 import numpy as np
 import pytest
+import pandas as pd
 
 @pytest.fixture("module")
 def config():
@@ -32,7 +33,8 @@ def test_compute_windows(config, numpy_image):
 
 def test_select_annotations(config, numpy_image):      
     windows = preprocess.compute_windows(numpy_image, config["patch_size"], config["patch_overlap"])
-    selected_annotations = preprocess.select_annotations("OSBS_029.tif", config["annotations_file"], windows, index=7)
+    image_annotations = pd.read_csv("tests/data/OSBS_029.csv")
+    selected_annotations = preprocess.select_annotations(image_annotations, windows, index=7)
     
     #Returns a 5 column matrix
     assert selected_annotations.shape[0] == 9 
@@ -43,7 +45,8 @@ def test_select_annotations(config, numpy_image):
 def test_select_annotations_tile(config, numpy_image):
     config["patch_size"] = 50
     windows = preprocess.compute_windows(numpy_image, config["patch_size"], config["patch_overlap"])
-    selected_annotations = preprocess.select_annotations("OSBS_029.tif", config["annotations_file"], windows, index=10)
+    image_annotations = pd.read_csv("tests/data/OSBS_029.csv")    
+    selected_annotations = preprocess.select_annotations(image_annotations, windows, index=10)
     
     #The largest box cannot be off the edge of the window
     assert selected_annotations.xmin.min() >= 0
@@ -55,5 +58,5 @@ def test_split_training_raster(config):
     annotations_file = preprocess.split_training_raster(config["path_to_raster"], config["annotations_file"], "tests/data/",config["patch_size"], config["patch_overlap"])
     
     #There should be one image name for each window crop
-    assert len(annotations_file.image_path.unique()) == 27
+    assert len(annotations_file.image_path.unique()) == 9
     
