@@ -107,39 +107,41 @@ def split_training_raster(path_to_raster, annotations_file, base_dir, patch_size
     Returns:
         A pandas dataframe with annotations file for training.
     """
-    
-    #Load raster as image
-    raster = Image.open(path_to_raster)
-    numpy_image = np.array(raster)        
-    
-    #Compute sliding window index
-    windows = compute_windows(numpy_image, patch_size, patch_overlap)
-    
-    #Get image name for indexing
-    image_name = image_name_from_path(path_to_raster)
-    
-    annotations_files = []
-    for index, window in enumerate(windows):
+    #try and raise path to raster is fail
+    try:
+        #Load raster as image
+        raster = Image.open(path_to_raster)
+        numpy_image = np.array(raster)        
         
-        #Crop image
-        crop = numpy_image[windows[index].indices()]
+        #Compute sliding window index
+        windows = compute_windows(numpy_image, patch_size, patch_overlap)
         
-        #Find annotations, image_name is the basename of the path
-        imageid = os.path.basename(path_to_raster)
-        crop_annotations = select_annotations(imageid, annotations_file, windows, index)
+        #Get image name for indexing
+        image_name = image_name_from_path(path_to_raster)
         
-        #save annotations
-        annotations_files.append(crop_annotations)
+        annotations_files = []
+        for index, window in enumerate(windows):
+            
+            #Crop image
+            crop = numpy_image[windows[index].indices()]
+            
+            #Find annotations, image_name is the basename of the path
+            imageid = os.path.basename(path_to_raster)
+            crop_annotations = select_annotations(imageid, annotations_file, windows, index)
+            
+            #save annotations
+            annotations_files.append(crop_annotations)
+            
+            #save image crop
+            save_crop(base_dir, image_name, index, crop)
+            
+        annotations_files = pd.concat(annotations_files)
         
-        #save image crop
-        save_crop(base_dir, image_name, index, crop)
+        #Use filename of the raster path to save the annotations
+        file_path = image_name + ".csv"
+        file_path = os.path.join(base_dir, file_path)
+        annotations_files.to_csv(file_path, index=False)
         
-    annotations_files = pd.concat(annotations_files)
-    
-    #Use filename of the raster path to save the annotations
-    file_path = image_name + ".csv"
-    file_path = os.path.join(base_dir, file_path)
-    annotations_files.to_csv(file_path, index=False)
-    
-    return annotations_files
-    
+        return annotations_files
+    except Exception as e:
+        print("{} failed with exception: {}".format(path_to_raster, e))
