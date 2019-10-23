@@ -31,7 +31,7 @@ def compute_windows(numpy_image, patch_size, patch_overlap):
     
     return(windows)
 
-def select_annotations(image_name, annotations_file, windows, index):
+def select_annotations(annotations, windows, index):
     """
     Select annotations that overlap with selected image crop
     Args:
@@ -41,12 +41,6 @@ def select_annotations(image_name, annotations_file, windows, index):
         index: The index in the windows object to use a crop bounds
     """
     
-    # Load annotations file
-    annotations = pd.read_csv(annotations_file)
-    
-    if not annotations.shape[1]==6:
-        raise ValueError("Annotations file has {} columns, should have format image_path, xmin, ymin, xmax, ymax, label".format(annotations.shape[1]))
-    
     # Window coordinates - with respect to tile
     window_xmin, window_ymin, w, h= windows[index].getRect()
     window_xmax = window_xmin + w
@@ -55,7 +49,6 @@ def select_annotations(image_name, annotations_file, windows, index):
     #buffer coordinates a bit to grab boxes that might start just against the image edge. Don't allow boxes that start and end after the offset
     offset = 5
     selected_annotations = annotations[ 
-        (annotations.image_path == image_name) &
         (annotations.xmin > (window_xmin -offset)) &  
         (annotations.xmin < (window_xmax)) &
         (annotations.xmax > (window_xmin)) &                        
@@ -66,7 +59,7 @@ def select_annotations(image_name, annotations_file, windows, index):
         (annotations.ymax < (window_ymax + offset))].copy()
     
     #change the image name
-    image_basename = os.path.splitext(image_name)[0]
+    image_basename = os.path.splitext("{}".format(annotations.image_path.unique()[0]))[0]
     selected_annotations.image_path = "{}_{}.jpg".format(image_basename,index) 
     
     #update coordinates with respect to origin
@@ -108,40 +101,45 @@ def split_training_raster(path_to_raster, annotations_file, base_dir, patch_size
         A pandas dataframe with annotations file for training.
     """
     #try and raise path to raster is fail
-    try:
-        #Load raster as image
-        raster = Image.open(path_to_raster)
-        numpy_image = np.array(raster)        
-        
-        #Compute sliding window index
-        windows = compute_windows(numpy_image, patch_size, patch_overlap)
-        
-        #Get image name for indexing
-        image_name = image_name_from_path(path_to_raster)
-        
-        annotations_files = []
-        for index, window in enumerate(windows):
+    #Load raster as image
+    raster = Image.open(path_to_raster)
+    numpy_image = np.array(raster)        
+    
+    #Compute sliding window index
+    windows = compute_windows(numpy_image, patch_size, patch_overlap)
+    
+    #Get image name for indexing
+    image_name = os.path.basename(path_to_raster)
+    
+    # Load annotations file
+    annotations = pd.read_csv(annotations_file)
+    
+    #open annotations file
+    image_annotations = annotations[annotations.image_path == image_name].copy()
+    
+    if not annotations.shape[1]==6:
+        raise ValueError("Annotations file has {} columns, should have format image_path, xmin, ymin, xmax, ymax, label".format(annotations.shape[1]))
             
-            #Crop image
-            crop = numpy_image[windows[index].indices()]
-            
-            #Find annotations, image_name is the basename of the path
-            imageid = os.path.basename(path_to_raster)
-            crop_annotations = select_annotations(imageid, annotations_file, windows, index)
-            
-            #save annotations
-            annotations_files.append(crop_annotations)
-            
-            #save image crop
-            save_crop(base_dir, image_name, index, crop)
-            
-        annotations_files = pd.concat(annotations_files)
+    annotations_files = []
+    for index, window in enumerate(windows):
         
-        #Use filename of the raster path to save the annotations
-        file_path = image_name + ".csv"
-        file_path = os.path.join(base_dir, file_path)
-        annotations_files.to_csv(file_path, index=False)
+        #Crop image
+        crop = numpy_image[windows[index].indices()]
         
-        return annotations_files
-    except Exception as e:
-        print("{} failed with exception: {}".format(path_to_raster, e))
+        #Find annotations, image_name is the basename of the path
+        crop_annotations = select_annotations(image_annotations, windows, index)
+        
+        #save annotations
+        annotations_files.append(crop_annotations)
+        
+        #save image crop
+        save_crop(base_dir, image_name, index, crop)
+        
+    annotations_files = pd.concat(annotations_files)
+    
+    #Use filename of the raster path to save the annotations
+    file_path = image_name + ".csv"
+    file_path = os.path.join(base_dir, file_path)
+    annotations_files.to_csv(file_path, index=False)
+    
+    return annotations_files
