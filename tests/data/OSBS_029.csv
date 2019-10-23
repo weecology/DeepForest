@@ -1,3 +1,4 @@
+image_path,xmin,ymin,xmax,ymax,label
 OSBS_029.tif,256,99,288,140,Tree
 OSBS_029.tif,166,253,225,304,Tree
 OSBS_029.tif,365,2,400,27,Tree
