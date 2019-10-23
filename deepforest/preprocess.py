@@ -59,7 +59,8 @@ def select_annotations(annotations, windows, index):
         (annotations.ymax < (window_ymax + offset))].copy()
     
     #change the image name
-    image_basename = os.path.splitext("{}".format(annotations.image_path.unique()[0]))[0]
+    image_name = os.path.splitext("{}".format(annotations.image_path.unique()[0]))[0]
+    image_basename = os.path.splitext(image_name)[0]
     selected_annotations.image_path = "{}_{}.jpg".format(image_basename,index) 
     
     #update coordinates with respect to origin
