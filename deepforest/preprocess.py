@@ -86,7 +86,8 @@ def save_crop(base_dir, image_name, index, crop):
         os.makedirs(base_dir)
     
     im = Image.fromarray(crop)
-    filename = "{}/{}_{}.jpg".format(base_dir, image_name,index)
+    image_basename = os.path.splitext(image_name)[0]    
+    filename = "{}/{}_{}.jpg".format(base_dir, image_basename, index)
     im.save(filename)   
 
 def split_training_raster(path_to_raster, annotations_file, base_dir, patch_size, patch_overlap):
