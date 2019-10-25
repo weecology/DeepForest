@@ -184,7 +184,7 @@ def format_args(annotations, config):
         args["--image-min-side"] = config["image-min-side"]
         args["--multi-gpu"] = config["multi-gpu"]
         args["--epochs"] = config["epochs"]
-        args["--steps"] = int(number_of_images(annotations))/int(config["batch_size"])
+        args["--steps"] = int(int(number_of_images(annotations))/int(config["batch_size"]))
         args["--batch-size"] = config["batch_size"]
         args["--tensorboard-dir"] = None
         args["--workers"] = config["workers"]
