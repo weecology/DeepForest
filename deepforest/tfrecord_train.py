@@ -25,7 +25,7 @@ def _parse_fn(example):
     #TODO allow this vary from config? Or sess?
     image = tf.reshape(image, [-1, 800, 800, 3])    
     
-    return image, targets
+    return image, regression_target, class_target
     
 def create_dataset(filepath, sess):
     """
@@ -54,13 +54,11 @@ def create_dataset(filepath, sess):
     image, regression_target, class_target = iterator.get_next()
     
     #Reshape at run time
-    regression_targets = tf.reshape(regression_target, [120087, 5])
-    class_target = tf.reshape(regression_target, [120087, 2])
+    regression_target = tf.reshape(regression_target, [120087, 5])
+    class_target = tf.reshape(class_target, [120087, 2])
     
     #stack regression and class targets?    
-    targets = tf.stack(regression_target, class_target)    
-
-    return image, targets
+    return image, [regression_target, class_target]
 
 
 if __name__ =="__main__":
