@@ -1,0 +1,9 @@
+[anchor_parameters]
+# Sizes should correlate to how the network processes an image, it is not advised to change these!
+sizes   = 32 64 128 256 512
+# Strides should correlate to how the network strides over an image, it is not advised to change these!
+strides = 8 16 32 64 128
+# The different ratios to use per anchor location.
+ratios  = 0.5 1 2 3
+# The different scaling factors to use per anchor location.
+scales  = 1 1.2 1.6
