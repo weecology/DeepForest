@@ -23,6 +23,6 @@ dependencies:
     - opencv-python
     - slidingwindow
     - keras==2.3.0
-    - tensorflow
+    - tensorflow==1.14
 
 
