@@ -23,7 +23,7 @@ def config():
     annotations = utilities.xml_to_annotations(xml_path=config["annotations_xml"],rgb_dir= config["rgb_dir"])
     annotations.to_csv("tests/data/OSBS_029.csv",index=False)
     annotations_file = preprocess.split_training_raster(config["path_to_raster"], config["annotations_file"], "tests/data/",config["patch_size"], config["patch_overlap"])
-    annotations_file.to_csv("tests/data/OSBS_029_crop.csv", index=False,header=False)
+    annotations_file.to_csv("tests/data/OSBS_029.csv", index=False,header=False)
     return config
 
 @pytest.fixture()
@@ -43,5 +43,5 @@ def test_create_dataset(prepare_dataset):
 def test_train(prepare_dataset, config):
     list_of_tfrecords = glob.glob("tests/data/*.tfrecord")
     print("Found {} tfrecords".format(len(list_of_tfrecords)))
-    tfrecords.train(path_to_tfrecord=list_of_tfrecords, steps_per_epoch = 10, backbone_model=config["backbone"])
+    tfrecords.train(list_of_tfrecords=list_of_tfrecords, steps_per_epoch=10, backbone_name=config["backbone"])
 

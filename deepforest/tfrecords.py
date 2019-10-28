@@ -2,6 +2,7 @@ import tensorflow as tf
 import numpy as np
 from math import ceil
 import keras 
+
 from keras_retinanet.preprocessing.csv_generator import CSVGenerator
 from keras_retinanet import models
 from keras_retinanet.models.retinanet import retinanet_bbox
@@ -123,14 +124,15 @@ def _parse_fn(example):
     #TODO allow this vary from config? Or read during sess?    
     image = tf.reshape(image, [800, 800, 3],name="cast_image")            
     regression_target = tf.reshape(regression_target, [120087, 5], name="cast_regression")
-    class_target = tf.reshape(class_target, [120087, 3], name="cast_class_label")
+    class_target = tf.reshape(class_target, [120087, 2], name="cast_class_label")
     
     return image, regression_target, class_target
 
-def create_dataset(filepath):
+def create_dataset(filepath, batch_size=1):
     """
     Args:
         filepath: list of tfrecord files
+        batch_size: number of images per batch
     Returns:
         dataset: a tensorflow dataset object for model training or prediction
     """
@@ -148,18 +150,12 @@ def create_dataset(filepath):
     #dataset = dataset.shuffle(1000)
     
     ## Set the batchsize
-    dataset = dataset.batch(1, drop_remainder=True)
+    dataset = dataset.batch(batch_size=batch_size, drop_remainder=True)
     
     ## Create an iterator
     iterator = dataset.make_one_shot_iterator()
     
     return iterator
-
-    ## Create your tf representation of the iterator
-    #image, regression_target, class_target = iterator.get_next()
-    
-    #stack regression and class targets?    
-    #return image, [regression_target, class_target]
 
 def model_with_weights(model, weights, skip_mismatch):
     """ Load weights for model.
@@ -228,12 +224,12 @@ def create_models(backbone_retinanet, num_classes, weights, multi_gpu=0,
 
     return model, training_model, prediction_model
 
-def train(path_to_tfrecord, backbone_name, steps_per_epoch=None):
+def train(list_of_tfrecords, backbone_name, steps_per_epoch=None):
     """
     Train a retinanet model using tfrecords input
     
     Args:
-        path_to_tfrecord: a path or wildcard glob of tfrecords
+        list_of_tfrecords: a path or wildcard glob of tfrecords
         backbone_model: A keras retinanet backbone name
         steps_per_epoch: How often should validation data be evaluated?
     
@@ -243,15 +239,15 @@ def train(path_to_tfrecord, backbone_name, steps_per_epoch=None):
     """
     
     #Create tensorflow iterator
-    iterator = create_dataset(path_to_tfrecord)
+    iterator = create_dataset(list_of_tfrecords)
     next_element = iterator.get_next()
     
     #Split into inputs and targets 
     inputs = next_element[0]
     targets = [next_element[1], next_element[2]]
     
-    backbone.retinanet = models.backbone(backbone_name)
-    model, training_model, prediction_model = create_models(backbone_retinanet=backbone.retinanet,weights=weights, targets=targets, num_classes=2)
+    backbone = models.backbone(backbone_name)
+    model, training_model, prediction_model = create_models(backbone_retinanet=backbone.retinanet, weights=None, targets=targets, num_classes=1)
     
     #Train model
     if steps_per_epoch is None:

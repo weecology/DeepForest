@@ -52,7 +52,7 @@ class deepforest:
         print("Training retinanet with the following args {}".format(arg_list))
         
         #Train model
-        self.training_model = retinanet_train(arg_list, input_type, list_of_tfrecords, comet_experiment)
+        self.training_model = retinanet_train(args=arg_list, input_type = input_type, list_of_tfrecords = list_of_tfrecords, comet_experiment = comet_experiment)
         
         #Create prediction model
         self.prediction_model = convert_model(self.training_model) 
