@@ -5,6 +5,7 @@ from deepforest import preprocess
 
 import pytest
 import os
+import glob
 
 @pytest.fixture("module")
 def config():
@@ -27,12 +28,12 @@ def config():
 
 @pytest.fixture()
 def prepare_dataset(config):    
-    tfrecords.create_tfrecords(annotations_file="tests/data/OSBS_029_crop.csv", class_file="tests/data/classes.csv", image_min_side=config["image-min-side"], backbone_model=config["backbone"], size=10, savedir="tests/data/")
+    tfrecords.create_tfrecords(annotations_file="tests/data/OSBS_029.csv", class_file="tests/data/classes.csv", image_min_side=config["image-min-side"], backbone_model=config["backbone"], size=10, savedir="tests/data/")
     assert os.path.exists("tests/data/0.tfrecord")
 
 #Writing
 def test_create_tfrecords(config):
-    tfrecords.create_tfrecords(annotations_file="tests/data/OSBS_029_crop.csv", class_file="tests/data/classes.csv", image_min_side=config["image-min-side"], backbone_model=config["backbone"], size=10)
+    tfrecords.create_tfrecords(annotations_file="tests/data/OSBS_029.csv", class_file="tests/data/classes.csv", image_min_side=config["image-min-side"], backbone_model=config["backbone"], size=10)
 
 #Reading
 def test_create_dataset(prepare_dataset):
@@ -40,4 +41,7 @@ def test_create_dataset(prepare_dataset):
         
 #Training    
 def test_train(prepare_dataset, config):
-    tfrecords.train(path_to_tfrecord="tests/data/0.tfrecord", steps_per_epoch = 10, backbone_model=config["backbone"])
+    list_of_tfrecords = glob.glob("tests/data/*.tfrecord")
+    print("Found {} tfrecords".format(len(list_of_tfrecords)))
+    tfrecords.train(path_to_tfrecord=list_of_tfrecords, steps_per_epoch = 10, backbone_model=config["backbone"])
+
