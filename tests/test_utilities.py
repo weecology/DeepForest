@@ -9,7 +9,7 @@ import numpy as np
 def annotations():
     annotations = utilities.xml_to_annotations("tests/data/OSBS_029.xml",rgb_dir="tests/data")
     annotations_file = "tests/data/OSBS_029.csv"
-    annotations.to_csv("tests/data/OSBS_029.csv",index=False)
+    annotations.to_csv("tests/data/OSBS_029.csv",index=False, header=False)
     return annotations_file
 
 @pytest.fixture()
@@ -31,7 +31,7 @@ def test_create_classes(annotations):
 
 def test_number_of_images(annotations):
     n = utilities.number_of_images(annotations_file=annotations)
-    assert n == 2
+    assert n == 1
     
 def test_format_args(annotations, config):
     arg_list = utilities.format_args(annotations, config)
