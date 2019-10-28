@@ -164,11 +164,13 @@ def number_of_images(annotations_file):
         n = len(df.image_path.unique())
         return n
         
-def format_args(annotations, config):
+def format_args(annotations, config, steps_per_epoch=None):
         """Format config file to match argparse list for retinainet
         
         Args:
+                annotations: a pandas dataframe of annotations to get number of images
                 config (dict): a dictionary object to convert into a list for argparse
+                steps_per_epoch (int): Override default steps per epoch (n images/batch size) by manually setting a number of images
         Returns:
                 arg_list (list): a list structure that mimics argparse input arguments for retinanet
         """
@@ -184,7 +186,12 @@ def format_args(annotations, config):
         args["--image-min-side"] = config["image-min-side"]
         args["--multi-gpu"] = config["multi-gpu"]
         args["--epochs"] = config["epochs"]
-        args["--steps"] = round(int(number_of_images(annotations))/int(config["batch_size"]))
+        
+        if steps_per_epoch:
+                args["--steps"] = round(int(number_of_images(annotations))/int(config["batch_size"]))
+        else:
+                args["--steps"] = steps_per_epoch
+        
         args["--batch-size"] = config["batch_size"]
         args["--tensorboard-dir"] = None
         args["--workers"] = config["workers"]
