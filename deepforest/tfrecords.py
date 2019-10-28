@@ -1,4 +1,5 @@
 import tensorflow as tf
+import os
 import numpy as np
 from math import ceil
 import keras 
@@ -43,6 +44,9 @@ def create_tfrecords(annotations_file, class_file, backbone_model="resnet50", im
     #Image preprocess function
     backbone = models.backbone(backbone_model)
     
+    #filebase name
+    image_basename = os.path.splitext(os.path.basename(annotations_file))[0]
+    
     #Create generator - because of how retinanet yields data, this should always be 1. Shape problems in the future?
     train_generator = CSVGenerator(
         annotations_file,
@@ -61,7 +65,7 @@ def create_tfrecords(annotations_file, class_file, backbone_model="resnet50", im
     
     for chunk in chunks:
         #Create tfrecord dataset
-        writer = tf.python_io.TFRecordWriter(savedir + "{}.tfrecord".format(chunk[0]))
+        writer = tf.python_io.TFRecordWriter(savedir + "{}_{}.tfrecord".format(image_basename, chunk[0]))
         images = []
         regression_targets = []
         class_targets = []
