@@ -6,9 +6,12 @@ import os
 import sys
 import pytest
 import keras
+import glob
+import numpy as np
+
 from deepforest import deepforest
 from deepforest import utilities
-import numpy as np
+from deepforest import tfrecords
 
 #download latest release
 @pytest.fixture()
@@ -20,6 +23,11 @@ def download_release():
 def annotations():
     annotations = utilities.xml_to_annotations("tests/data/OSBS_029.xml",rgb_dir="tests/data")
     annotations.to_csv("tests/data/OSBS_029.csv",index=False, header=None)
+
+@pytest.fixture()
+def prepare_tfdataset():    
+    tfrecords.create_tfrecords(annotations_file="tests/data/OSBS_029_crop.csv", class_file="tests/data/classes.csv", image_min_side=800, backbone_model="resnet50", size=10, savedir="tests/data/")
+    assert os.path.exists("tests/data/0.tfrecord")
 
 def test_deepforest():
     model = deepforest.deepforest(weights=None)
@@ -44,4 +52,14 @@ def test_train(annotations):
     test_model = deepforest.deepforest()
     test_model.config["epochs"] = 1
     test_model.config["save-snapshot"] = False
-    test_model.train(annotations="tests/data/OSBS_029.csv")
+    test_model.train(annotations="tests/data/OSBS_029_crop.csv")
+    
+#Training    
+def test_tfrecord_train(prepare_tfdataset):
+    test_model = deepforest.deepforest()
+    test_model.config["epochs"] = 1
+    test_model.config["save-snapshot"] = False
+    list_of_tfrecords = glob.glob("tests/data/*.tfrecord")    
+    
+    print("Found {} tfrecords to train".format(len(list_of_tfrecords)))
+    test_model.train(annotations="tests/data/OSBS_029_crop.csv",input_type="tfrecord", list_of_tfrecords=list_of_tfrecords)

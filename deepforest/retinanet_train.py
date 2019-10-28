@@ -30,6 +30,8 @@ from keras_retinanet.utils.transform import random_transform_generator
 from keras_retinanet.utils.image import random_visual_effect_generator
 from keras_retinanet.utils.gpu import setup_gpu
 
+from deepforest import tfrecords
+
 def makedirs(path):
     # Intended behavior: try to create the directory,
     # pass if the directory exists already, fails otherwise.
@@ -55,7 +57,7 @@ def model_with_weights(model, weights, skip_mismatch):
 
 
 def create_models(backbone_retinanet, num_classes, weights, multi_gpu=0,
-                  freeze_backbone=False, lr=1e-5, config=None):
+                  freeze_backbone=False, lr=1e-5, config=None , targets=None):
     """ Creates three models (model, training_model, prediction_model).
 
     Args
@@ -65,6 +67,7 @@ def create_models(backbone_retinanet, num_classes, weights, multi_gpu=0,
         multi_gpu          : The number of GPUs to use for training.
         freeze_backbone    : If True, disables learning for the backbone.
         config             : Config parameters, None indicates the default configuration.
+        targets            : Target tensors if training a model with tfrecord inputs
 
     Returns
         model            : The base model. This is also the model that is saved in snapshots.
@@ -95,14 +98,26 @@ def create_models(backbone_retinanet, num_classes, weights, multi_gpu=0,
     # make prediction model
     prediction_model = retinanet_bbox(model=model, anchor_params=anchor_params)
 
-    # compile model
-    training_model.compile(
-        loss={
-            'regression'    : losses.smooth_l1(),
-            'classification': losses.focal()
-        },
-        optimizer=keras.optimizers.adam(lr=lr, clipnorm=0.001)
-    )
+    #Compile model
+    if targets:
+        #tfdataset target tensor from tfrecords pipelione
+        training_model.compile(
+            loss={
+                'regression'    : losses.smooth_l1(),
+                'classification': losses.focal()
+                },
+            optimizer=keras.optimizers.adam(lr=lr, clipnorm=0.001),
+            target_tensors=targets
+        )
+    else:
+        # compile model
+        training_model.compile(
+            loss={
+                'regression'    : losses.smooth_l1(),
+                'classification': losses.focal()
+            },
+            optimizer=keras.optimizers.adam(lr=lr, clipnorm=0.001)
+        )
 
     return model, training_model, prediction_model
 
@@ -299,10 +314,19 @@ def parse_args(args):
     parser.add_argument('--workers',          help='Number of generator workers.', type=int, default=1)
     parser.add_argument('--max-queue-size',   help='Queue length for multiprocessing workers in fit_generator.', type=int, default=10)
 
+    #TODO tfrecord arguments
+    
     return check_args(parser.parse_args(args))
 
 
-def main(args=None, comet_experiment=None):
+def main(args=None, input_type="fit_generator", list_of_tfrecords=None, comet_experiment=None):
+    """
+    Main Training Loop
+    Args:
+        args: Keras retinanet argparse
+        list_of_tfrecords: list of tfrecords to parse
+        input_type: "fit_generator" or "tfrecord" input type
+    """
     # parse arguments
     if args is None:
         args = sys.argv[1:]
@@ -322,9 +346,25 @@ def main(args=None, comet_experiment=None):
     if args.config:
         args.config = read_config_file(args.config)
 
-    # create the generators
-    train_generator, validation_generator = create_generators(args, backbone.preprocess_image)
-
+    #data input
+    if input_type == "fit_generator":
+        # create the generators
+        train_generator, validation_generator = create_generators(args, backbone.preprocess_image)
+    elif input_type == "tfrecord":
+        #Create tensorflow iterators
+        iterator = tfrecords.create_dataset(list_of_tfrecords)
+        next_element = iterator.get_next()
+        
+        #Split into inputs and targets 
+        inputs = next_element[0]
+        targets = [next_element[1], next_element[2]]
+        
+        if not args.compute_val_loss:
+            validation_generator = None   
+            
+    else:
+        raise ValueError("{} input type is invalid. Only 'tfrecord' or 'for_generator' input types are accepted for model training".format(input_type))
+                
     # create the model
     if args.snapshot is not None:
         print('Loading model, this may take a second...')
@@ -341,9 +381,14 @@ def main(args=None, comet_experiment=None):
             weights = backbone.download_imagenet()
 
         print('Creating model, this may take a second...')
+        if input_type == "fit_generator":
+            num_of_classes = train_generator.num_classes()
+        else:
+            num_of_classes = 2 
+            
         model, training_model, prediction_model = create_models(
             backbone_retinanet=backbone.retinanet,
-            num_classes=train_generator.num_classes(),
+            num_classes=num_of_classes,
             weights=weights,
             multi_gpu=args.multi_gpu,
             freeze_backbone=args.freeze_backbone,
@@ -374,17 +419,25 @@ def main(args=None, comet_experiment=None):
         validation_generator = None
 
     # start training
-    training_model.fit_generator(
-        generator=train_generator,
-        steps_per_epoch=args.steps,
-        epochs=args.epochs,
-        verbose=1,
-        callbacks=callbacks,
-        workers=args.workers,
-        use_multiprocessing=args.multiprocessing,
-        max_queue_size=args.max_queue_size,
-        validation_data=validation_generator
-    )
-    
-    #return model
+    if input_type == "fit_generator":
+        training_model.fit_generator(
+            generator=train_generator,
+            steps_per_epoch=args.steps,
+            epochs=args.epochs,
+            verbose=1,
+            callbacks=callbacks,
+            workers=args.workers,
+            use_multiprocessing=args.multiprocessing,
+            max_queue_size=args.max_queue_size,
+            validation_data=validation_generator
+        )
+    elif input_type == "tfrecord":
+        #Fit model
+        #TODO how to define steps here?
+        training_model.fit(inputs, steps_per_epoch=1)
+        #Callbacks?
+    else:
+        raise ValueError("{} input type is invalid. Only 'tfrecord' or 'for_generator' input types are accepted for model training".format(input_type))
+        
+    #return trained model
     return training_model

@@ -35,13 +35,15 @@ class deepforest:
         else:
             self.model = None
             
-    def train(self, annotations, comet_experiment=None):
+    def train(self, annotations, input_type="fit_generator", list_of_tfrecords=None, comet_experiment=None):
         '''Train a deep learning tree detection model using keras-retinanet
         This is the main entry point for training a new model based on either existing weights or scratch
         
         Args:
             annotations (str): Path to csv label file, labels are in the format -> path/to/image.jpg,x1,y1,x2,y2,class_name
             comet_experiment: A comet ml object to log images. Optional.
+            list_of_tfrecords: Ignored if input_type != "tfrecord", list of tf records to process
+            input_type: "fit_generator" or "tfrecord"
         Returns:
             model (object): A trained keras model
         '''
@@ -50,7 +52,7 @@ class deepforest:
         print("Training retinanet with the following args {}".format(arg_list))
         
         #Train model
-        self.training_model = retinanet_train(arg_list, comet_experiment)
+        self.training_model = retinanet_train(arg_list, input_type, list_of_tfrecords, comet_experiment)
         
         #Create prediction model
         self.prediction_model = convert_model(self.training_model) 
