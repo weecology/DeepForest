@@ -139,9 +139,4 @@ def split_training_raster(path_to_raster, annotations_file, base_dir, patch_size
         
     annotations_files = pd.concat(annotations_files)
     
-    #Use filename of the raster path to save the annotations
-    file_path = image_name + ".csv"
-    file_path = os.path.join(base_dir, file_path)
-    annotations_files.to_csv(file_path, index=False)
-    
     return annotations_files
