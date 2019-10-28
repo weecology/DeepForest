@@ -24,7 +24,7 @@ def annotations():
     annotations = utilities.xml_to_annotations("tests/data/OSBS_029.xml",rgb_dir="tests/data")
     annotations.to_csv("tests/data/testfile_deepforest.csv",index=False,header=False)
 
-@pytest.fixture(annotations)
+@pytest.fixture()
 def prepare_tfdataset():    
     tfrecords.create_tfrecords(annotations_file="tests/data/testfile_deepforest.csv", class_file="tests/data/classes.csv", image_min_side=800, backbone_model="resnet50", size=10, savedir="tests/data/")
     assert os.path.exists("tests/data/0.tfrecord")

@@ -164,11 +164,11 @@ def number_of_images(annotations_file):
         n = len(df.image_path.unique())
         return n
         
-def format_args(annotations, config, steps_per_epoch=None):
+def format_args(annotations_file, config, steps_per_epoch=None):
         """Format config file to match argparse list for retinainet
         
         Args:
-                annotations: a pandas dataframe of annotations to get number of images
+                annotations_file: a path to a csv  dataframe of annotations to get number of images, no header
                 config (dict): a dictionary object to convert into a list for argparse
                 steps_per_epoch (int): Override default steps per epoch (n images/batch size) by manually setting a number of images
         Returns:
@@ -176,7 +176,7 @@ def format_args(annotations, config, steps_per_epoch=None):
         """
         #Format args. Retinanet uses argparse, so they need to be passed as a list
         args = {}
-        classes_file = create_classes(annotations)
+        classes_file = create_classes(annotations_file)
 
         #remember that .yml reads None as a str
         if not config["weights"] == 'None':
@@ -188,9 +188,9 @@ def format_args(annotations, config, steps_per_epoch=None):
         args["--epochs"] = config["epochs"]
         
         if steps_per_epoch:
-                args["--steps"] = round(int(number_of_images(annotations))/int(config["batch_size"]))
-        else:
                 args["--steps"] = steps_per_epoch
+        else:
+                args["--steps"] = round(int(number_of_images(annotations_file))/int(config["batch_size"]))                
         
         args["--batch-size"] = config["batch_size"]
         args["--tensorboard-dir"] = None
@@ -213,7 +213,7 @@ def format_args(annotations, config, steps_per_epoch=None):
                 arg_list = arg_list + ["--multiprocessing"]
                 
         #positional arguments first
-        arg_list =  arg_list + ["csv", annotations, classes_file] 
+        arg_list =  arg_list + ["csv", annotations_file, classes_file] 
 
         if not config["validation_annotations"] == "None":
                 arg_list =  arg_list + ["--val-annotations", config["validation_annotations"]]
