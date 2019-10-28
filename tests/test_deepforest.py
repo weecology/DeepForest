@@ -27,7 +27,7 @@ def annotations():
 @pytest.fixture()
 def prepare_tfdataset():    
     tfrecords.create_tfrecords(annotations_file="tests/data/testfile_deepforest.csv", class_file="tests/data/classes.csv", image_min_side=800, backbone_model="resnet50", size=10, savedir="tests/data/")
-    assert os.path.exists("tests/data/0.tfrecord")
+    assert os.path.exists("tests/data/testfile_deepforest_0.tfrecord")
 
 def test_deepforest():
     model = deepforest.deepforest(weights=None)
