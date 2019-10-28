@@ -1,10 +1,13 @@
 #test preprocessing
-from deepforest import preprocess
-from deepforest import utilities
 from PIL import Image
 import numpy as np
 import pytest
 import pandas as pd
+import os
+
+from deepforest import preprocess
+from deepforest import utilities
+
 
 @pytest.fixture("module")
 def config():
@@ -59,4 +62,3 @@ def test_split_training_raster(config):
     
     #Returns a 6 column pandas array
     assert annotations_file.shape[1] == 6
-    
