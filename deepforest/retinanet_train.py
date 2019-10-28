@@ -350,6 +350,10 @@ def main(args=None, input_type="fit_generator", list_of_tfrecords=None, comet_ex
     if input_type == "fit_generator":
         # create the generators
         train_generator, validation_generator = create_generators(args, backbone.preprocess_image)
+        
+        #placeholder target tensor for creating models
+        targets = None
+        
     elif input_type == "tfrecord":
         #Create tensorflow iterators
         iterator = tfrecords.create_dataset(list_of_tfrecords)
@@ -384,7 +388,7 @@ def main(args=None, input_type="fit_generator", list_of_tfrecords=None, comet_ex
         if input_type == "fit_generator":
             num_of_classes = train_generator.num_classes()
         else:
-            num_of_classes = 2 
+            num_of_classes = 1
             
         model, training_model, prediction_model = create_models(
             backbone_retinanet=backbone.retinanet,
@@ -393,7 +397,8 @@ def main(args=None, input_type="fit_generator", list_of_tfrecords=None, comet_ex
             multi_gpu=args.multi_gpu,
             freeze_backbone=args.freeze_backbone,
             lr=args.lr,
-            config=args.config
+            config=args.config,
+            targets=targets
         )
 
     # print model summary
@@ -433,8 +438,8 @@ def main(args=None, input_type="fit_generator", list_of_tfrecords=None, comet_ex
         )
     elif input_type == "tfrecord":
         #Fit model
-        #TODO how to define steps here?
-        training_model.fit(inputs, steps_per_epoch=1)
+        #TODO how to define steps here? Batch size needs to be consistant in config!
+        training_model.fit(inputs, steps_per_epoch=args.steps)
         #Callbacks?
     else:
         raise ValueError("{} input type is invalid. Only 'tfrecord' or 'for_generator' input types are accepted for model training".format(input_type))
