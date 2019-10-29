@@ -25,7 +25,7 @@ def create_tf_example(image, regression_target, class_target):
     example = tf.train.Example(features=tf.train.Features(feature={
         'image/encoded':  tf.train.Feature(bytes_list=tf.train.BytesList(value=[encoded_image.tostring()])),
         'image/object/regression_target': tf.train.Feature(float_list=tf.train.FloatList(value=regression_target.flatten())),
-        'image/object/class_target': tf.train.Feature(int64_list=tf.train.Int64List(value=class_target.flatten())),
+        'image/object/class_target': tf.train.Feature(int64_list=tf.train.Int64List(value=class_target.flatten()))
     }))
     
     # Serialize to string and write to file
@@ -121,15 +121,15 @@ def _parse_fn(example):
     #Define features
     features = {
         'image/encoded': tf.io.FixedLenFeature([], tf.string),       
-        "image/object/regression_target": tf.FixedLenFeature([], tf.string),
-        "image/object/class_target": tf.FixedLenFeature([], tf.string)
+        "image/object/regression_target": tf.FixedLenFeature([120087, 5], tf.float32),
+        "image/object/class_target": tf.FixedLenFeature([120087, 2], tf.int64)
                         }
     
     # Load one example and parse
     example = tf.io.parse_single_example(example, features)
-    image = tf.decode_raw(example['image/encoded'], tf.float32)
-    regression_target = tf.decode_raw(example['image/object/regression_target'], tf.float32)
-    class_target = tf.decode_raw(example['image/object/class_target'], tf.float32)
+    image = tf.image.decode_image(example['image/encoded'],3)
+    regression_target = tf.cast(example['image/object/regression_target'], tf.float32)
+    class_target = tf.cast(example['image/object/class_target'], tf.float32)
     
     #TODO allow this vary from config? Or read during sess?    
     image = tf.reshape(image, [800, 800, 3],name="cast_image")            
