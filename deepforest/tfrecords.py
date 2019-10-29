@@ -3,34 +3,36 @@ import os
 import numpy as np
 from math import ceil
 import keras 
+import cv2
 
 from keras_retinanet.preprocessing.csv_generator import CSVGenerator
 from keras_retinanet import models
 from keras_retinanet.models.retinanet import retinanet_bbox
 from keras_retinanet import losses
 
+import matplotlib.pyplot as plt
+import psutil
+import gc
+
 def create_tf_example(image, regression_target, class_target):
-    #Image data 
-    height = image.shape[0]
-    width = image.shape[1]
-    image_format = b'jpg'
-    classes_text = ['Tree']
-    classes = [1]
+    
+    #Encode Image data to reduce size
+    success, encoded_image = cv2.imencode(".jpg", image)
+    
+    #Class labels can be stored as int list
+    class_target = class_target.astype(int)
     
     example = tf.train.Example(features=tf.train.Features(feature={
-        'image/height': tf.train.Feature(int64_list=tf.train.Int64List(value=[image.shape[0]])), 
-        'image/width': tf.train.Feature(int64_list=tf.train.Int64List(value=[image.shape[1]])),
-        'image/encoded':  tf.train.Feature(bytes_list=tf.train.BytesList(value=[image.tobytes()])),
-        'image/n_anchors': tf.train.Feature(int64_list=tf.train.Int64List(value=[regression_target.shape[0]])),         
-        'image/object/regression_target': tf.train.Feature(bytes_list=tf.train.BytesList(value=[regression_target.tobytes()])),
-        'image/object/class_target': tf.train.Feature(bytes_list=tf.train.BytesList(value=[class_target.tobytes()])),
+        'image/encoded':  tf.train.Feature(bytes_list=tf.train.BytesList(value=[encoded_image.tostring()])),
+        'image/object/regression_target': tf.train.Feature(float_list=tf.train.FloatList(value=regression_target.flatten())),
+        'image/object/class_target': tf.train.Feature(int64_list=tf.train.Int64List(value=class_target.flatten())),
     }))
     
     # Serialize to string and write to file
     return example
 
 #TODO create classes file from annotations_file
-def create_tfrecords(annotations_file, class_file, backbone_model="resnet50", image_min_side=800, size=1, savedir="."):
+def create_tfrecords(annotations_file, class_file, backbone_model="resnet50", image_min_side=800, size=1, savedir="./"):
     """
     Args:
         annotations_file: path to 5 column data in form image_path, xmin, ymin, xmax, ymax, label
@@ -41,6 +43,8 @@ def create_tfrecords(annotations_file, class_file, backbone_model="resnet50", im
     Returns:
         NULL -> side effect writes tfrecords
     """
+    memory_used = []
+    
     #Image preprocess function
     backbone = models.backbone(backbone_model)
     
@@ -65,7 +69,7 @@ def create_tfrecords(annotations_file, class_file, backbone_model="resnet50", im
     
     for chunk in chunks:
         #Create tfrecord dataset
-        writer = tf.python_io.TFRecordWriter(savedir + "{}_{}.tfrecord".format(image_basename, chunk[0]))
+        writer = tf.io.TFRecordWriter(savedir + "{}_{}.tfrecord".format(image_basename, chunk[0]))
         images = []
         regression_targets = []
         class_targets = []
@@ -101,17 +105,22 @@ def create_tfrecords(annotations_file, class_file, backbone_model="resnet50", im
         for image, regression_target, class_target in zip(images,regression_targets, class_targets):
             tf_example = create_tf_example(image, regression_target, class_target)
             writer.write(tf_example.SerializeToString())        
-            
+        
+        memory_used.append(psutil.virtual_memory().used / 2 ** 30)
+
+    plt.plot(memory_used)
+    plt.title('Evolution of memory')
+    plt.xlabel('iteration')
+    plt.ylabel('memory used (GB)')   
+    plt.savefig(os.path.join(savedir,"memory.png"))
+        
 
 #Reading
 def _parse_fn(example):
     
     #Define features
     features = {
-        "image/height": tf.io.FixedLenFeature([], tf.int64),
-        "image/width": tf.io.FixedLenFeature([], tf.int64),
         'image/encoded': tf.io.FixedLenFeature([], tf.string),       
-        "image/n_anchors": tf.io.FixedLenFeature([], tf.int64),
         "image/object/regression_target": tf.FixedLenFeature([], tf.string),
         "image/object/class_target": tf.FixedLenFeature([], tf.string)
                         }
@@ -119,9 +128,6 @@ def _parse_fn(example):
     # Load one example and parse
     example = tf.io.parse_single_example(example, features)
     image = tf.decode_raw(example['image/encoded'], tf.float32)
-    height = tf.cast(example['image/height'], tf.int32)
-    width = tf.cast(example['image/width'], tf.int32)
-    n_anchors = tf.cast(example['image/n_anchors'], tf.int32)
     regression_target = tf.decode_raw(example['image/object/regression_target'], tf.float32)
     class_target = tf.decode_raw(example['image/object/class_target'], tf.float32)
     

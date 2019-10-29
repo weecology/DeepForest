@@ -39,8 +39,13 @@ def prepare_dataset(config):
 
 #Writing
 def test_create_tfrecords(config):
-    tfrecords.create_tfrecords(annotations_file="tests/data/testfile_tfrecords.csv", class_file="tests/data/classes.csv", image_min_side=config["image-min-side"], backbone_model=config["backbone"], size=10)
-
+    tfrecords.create_tfrecords(annotations_file="tests/data/testfile_tfrecords.csv",
+                               class_file="tests/data/classes.csv",
+                               image_min_side=config["image-min-side"], 
+                               backbone_model=config["backbone"],
+                               size=100,
+                               savedir="tests/data/")
+    assert os.path.exists("tests/data/testfile_tfrecords_0.tfrecord")
 #Reading
 def test_create_dataset(prepare_dataset):
     dataset = tfrecords.create_dataset("tests/data/testfile_tfrecords_0.tfrecord")        

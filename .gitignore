@@ -5,3 +5,5 @@ data/*.h5
 *.wpr
 tests/data/*.h5
 *.jpg
+*.tfrecord
+*.tfrecords
