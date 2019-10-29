@@ -150,20 +150,23 @@ def create_dataset(filepath, batch_size=1):
     # This works with arrays as well
     dataset = tf.data.TFRecordDataset(filepath)
     
-    # Maps the parser on every filepath in the array. You can set the number of parallel loaders here
-    dataset = dataset.map(_parse_fn)
+    ## Set the number of datapoints you want to load and shuffle 
+    dataset = dataset.shuffle(1000)
     
     ## This dataset will go on forever
     dataset = dataset.repeat()
-    
-    ## Set the number of datapoints you want to load and shuffle 
-    #dataset = dataset.shuffle(1000)
-    
+        
+    # Maps the parser on every filepath in the array. You can set the number of parallel loaders here
+    dataset = dataset.map(_parse_fn, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+      
     ## Set the batchsize
     dataset = dataset.batch(batch_size=batch_size, drop_remainder=True)
     
+    #Collect a queue of data tensors
+    dataset = dataset.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
+
     ## Create an iterator
-    iterator = dataset.make_one_shot_iterator()
+    iterator = dataset.make_one_shot_iterator()    
     
     return iterator
 

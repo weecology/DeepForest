@@ -188,7 +188,7 @@ def format_args(annotations_file, config, steps_per_epoch=None):
         args["--epochs"] = config["epochs"]
         
         if steps_per_epoch:
-                args["--steps"] = steps_per_epoch
+                args["--steps"] = steps_per_epoch/int(config["batch_size"])
         else:
                 args["--steps"] = round(int(number_of_images(annotations_file))/int(config["batch_size"]))                
         
