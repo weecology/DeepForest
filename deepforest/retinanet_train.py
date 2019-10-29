@@ -356,7 +356,7 @@ def main(args=None, input_type="fit_generator", list_of_tfrecords=None, comet_ex
         
     elif input_type == "tfrecord":
         #Create tensorflow iterators
-        iterator = tfrecords.create_dataset(list_of_tfrecords)
+        iterator = tfrecords.create_dataset(list_of_tfrecords, args.batch_size)
         next_element = iterator.get_next()
         
         #Split into inputs and targets 
@@ -438,9 +438,11 @@ def main(args=None, input_type="fit_generator", list_of_tfrecords=None, comet_ex
         )
     elif input_type == "tfrecord":
         #Fit model
-        #TODO how to define steps here? Batch size needs to be consistant in config!
-        training_model.fit(inputs, steps_per_epoch=args.steps)
-        #Callbacks?
+        training_model.fit(
+            x=inputs,
+            steps_per_epoch=args.steps,
+            epochs=args.epochs,
+            callbacks=callbacks)
     else:
         raise ValueError("{} input type is invalid. Only 'tfrecord' or 'for_generator' input types are accepted for model training".format(input_type))
         
