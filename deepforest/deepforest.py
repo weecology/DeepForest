@@ -35,7 +35,7 @@ class deepforest:
         else:
             self.model = None
             
-    def train(self, annotations, input_type="fit_generator", list_of_tfrecords=None, comet_experiment=None, steps_per_epoch=None):
+    def train(self, annotations, input_type="fit_generator", list_of_tfrecords=None, comet_experiment=None, images_per_epoch=None):
         '''Train a deep learning tree detection model using keras-retinanet
         This is the main entry point for training a new model based on either existing weights or scratch
         
@@ -44,11 +44,11 @@ class deepforest:
             comet_experiment: A comet ml object to log images. Optional.
             list_of_tfrecords: Ignored if input_type != "tfrecord", list of tf records to process
             input_type: "fit_generator" or "tfrecord"
-            steps_per_epoch: number of steps to override default config of # images in annotations file / batch size. Useful for debug
+            images_per_epoch: number of images to override default config of # images in annotations file / batch size. Useful for debug
         Returns:
             model (object): A trained keras model
         '''
-        arg_list = utilities.format_args(annotations, self.config, steps_per_epoch)
+        arg_list = utilities.format_args(annotations, self.config, images_per_epoch)
         
         print("Training retinanet with the following args {}".format(arg_list))
         

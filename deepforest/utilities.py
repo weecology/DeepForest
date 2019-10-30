@@ -164,13 +164,13 @@ def number_of_images(annotations_file):
         n = len(df.image_path.unique())
         return n
         
-def format_args(annotations_file, config, steps_per_epoch=None):
+def format_args(annotations_file, config, images_per_epoch=None):
         """Format config file to match argparse list for retinainet
         
         Args:
                 annotations_file: a path to a csv  dataframe of annotations to get number of images, no header
                 config (dict): a dictionary object to convert into a list for argparse
-                steps_per_epoch (int): Override default steps per epoch (n images/batch size) by manually setting a number of images
+                images_per_epoch (int): Override default steps per epoch (n images/batch size) by manually setting a number of images
         Returns:
                 arg_list (list): a list structure that mimics argparse input arguments for retinanet
         """
@@ -187,8 +187,8 @@ def format_args(annotations_file, config, steps_per_epoch=None):
         args["--multi-gpu"] = config["multi-gpu"]
         args["--epochs"] = config["epochs"]
         
-        if steps_per_epoch:
-                args["--steps"] = round(steps_per_epoch/int(config["batch_size"]))
+        if images_per_epoch:
+                args["--steps"] = round(images_per_epoch/int(config["batch_size"]))
         else:
                 args["--steps"] = round(int(number_of_images(annotations_file))/int(config["batch_size"]))                
         
