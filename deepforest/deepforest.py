@@ -47,16 +47,15 @@ class deepforest:
             images_per_epoch: number of images to override default config of # images in annotations file / batch size. Useful for debug
         Returns:
             model (object): A trained keras model
+            prediction model: with bbox nms
+            trained model: without nms
         '''
         arg_list = utilities.format_args(annotations, self.config, images_per_epoch)
         
         print("Training retinanet with the following args {}".format(arg_list))
         
         #Train model
-        self.training_model = retinanet_train(args=arg_list, input_type = input_type, list_of_tfrecords = list_of_tfrecords, comet_experiment = comet_experiment)
-        
-        #Create prediction model
-        self.prediction_model = convert_model(self.training_model) 
+        self.model, self.prediction_model, self.training_model = retinanet_train(args=arg_list, input_type = input_type, list_of_tfrecords = list_of_tfrecords, comet_experiment = comet_experiment)
     
     def use_release(self):
         '''Use the latest DeepForest model release from github and load model. Optionally download if release doesn't exist
