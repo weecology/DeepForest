@@ -447,4 +447,4 @@ def main(args=None, input_type="fit_generator", list_of_tfrecords=None, comet_ex
         raise ValueError("{} input type is invalid. Only 'tfrecord' or 'for_generator' input types are accepted for model training".format(input_type))
         
     #return trained model
-    return training_model
+    return model, prediction_model, training_model
