@@ -38,9 +38,9 @@ def test_format_args(annotations, config):
     assert isinstance(arg_list, list)
 
 def test_format_args_steps(annotations, config):
-    arg_list = utilities.format_args(annotations, config, steps_per_epoch=100)
+    arg_list = utilities.format_args(annotations, config, images_per_epoch=2)
     assert isinstance(arg_list, list)
     
     #A bit ugly, but since its a list, what is the argument after --steps to assert
     steps_position = np.where(["--steps" in x for x in arg_list])[0][0] + 1
-    assert arg_list[steps_position] == '100'
+    assert arg_list[steps_position] == '2'
