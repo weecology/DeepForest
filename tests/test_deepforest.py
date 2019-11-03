@@ -30,8 +30,8 @@ def prepare_tfdataset():
     assert os.path.exists("tests/data/testfile_deepforest_0.tfrecord")
 
 def test_deepforest():
-    model = deepforest.deepforest(weights=None)
-    assert model.weights is None
+    model = deepforest.deepforest(saved_model=None)
+    assert model.saved_model is None
 
 def test_use_release(download_release):
     test_model = deepforest.deepforest() 
@@ -40,7 +40,7 @@ def test_use_release(download_release):
     assert isinstance(test_model.model,keras.models.Model)
 
 def test_predict_image(download_release):
-    test_model = deepforest.deepforest(weights="tests/data/universal_model_july30.h5")    
+    test_model = deepforest.deepforest(saved_model="tests/data/universal_model_july30.h5")    
     assert isinstance(test_model.model,keras.models.Model)
     boxes = test_model.predict_image(image_path="tests/data/OSBS_029.tif", show=False, return_plot = False)
     
@@ -62,4 +62,4 @@ def test_tfrecord_train(prepare_tfdataset):
     list_of_tfrecords = glob.glob("tests/data/*.tfrecord")    
     
     print("Found {} tfrecords to train".format(len(list_of_tfrecords)))
-    test_model.train(annotations="tests/data/testfile_deepforest.csv",input_type="tfrecord", list_of_tfrecords=list_of_tfrecords)
+    test_model.train(annotations="tests/data/testfile_deepforest.csv",input_type="tfrecord", list_of_tfrecords=list_of_tfrecords, images_per_epoch=1)
