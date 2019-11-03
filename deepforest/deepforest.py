@@ -17,21 +17,21 @@ class deepforest:
     ''' Class for training and predicting tree crowns in RGB images
     
     Args:
-        weights (str): Path to model weights on disk. Default is None
+        saved_model (str): Path to model saved on disk from keras.model.save(). Default is None
     
     Attributes:
         model: A keras training model from keras-retinanet
     '''
     
-    def __init__(self, weights=None):
-        self.weights = weights
+    def __init__(self, saved_model=None):
+        self.saved_model = saved_model
         
         #Read config file
         self.config = utilities.read_config()
         
-        #Load model weights if needed
-        if self.weights is not None:
-            self.model = utilities.read_model(self.weights, self.config)
+        #Load model if needed
+        if self.saved_model is not None:
+            self.model = utilities.read_model(self.saved_model, self.config)
         else:
             self.model = None
             
@@ -64,11 +64,11 @@ class deepforest:
             model (object): A trained keras model
         '''        
         #Download latest model from github release
-        weight_path = utilities.use_release()  
+        saved_model = utilities.use_release()  
         
-        #load weights
-        self.weights = weight_path
-        self.model = utilities.read_model(self.weights, self.config)
+        #load saved model
+        self.saved_model = saved_model
+        self.model = utilities.read_model(self.saved_model, self.config)
         
     def predict_image(self, image_path, return_plot=True, show=False):
         '''Predict tree crowns based on loaded (or trained) model
@@ -80,9 +80,9 @@ class deepforest:
         Returns:
             predictions (array): if return_plot, an image. Otherwise a numpy array of predicted bounding boxes
         '''     
-        #Check for model weights
+        #Check for model save
         
-        if(self.weights is None):
+        if(self.saved_model is None):
             raise ValueError("Model currently has no weights, either train a new model using deepforest.train, loading existing model, or use prebuilt model (see deepforest.use_release()")
         
         #convert model to prediction

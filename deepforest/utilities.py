@@ -27,6 +27,9 @@ def read_config():
         return config
 
 def read_model(model_path, config):
+        """
+        Read keras retinanet model from keras.model.save()
+        """
         model = models.load_model(model_path, backbone_name='resnet50')
         return model
 
@@ -43,7 +46,7 @@ def use_release(save_dir = "data"):
         Args:
                 save_dir (str): Directory to save filepath, default to "data" in toplevel repo
         Returns:
-                output_path (str): path to downloaded model weights
+                output_path (str): path to downloaded model 
         '''
         
         #Find latest github tag release from the DeepLidar repo
@@ -180,7 +183,7 @@ def format_args(annotations_file, config, images_per_epoch=None):
 
         #remember that .yml reads None as a str
         if not config["weights"] == 'None':
-                args["--snapshot"] = config["weights"]
+                args["--weights"] = config["weights"]
                 
         args["--backbone"] = config["backbone"]
         args["--image-min-side"] = config["image-min-side"]
