@@ -1,6 +1,6 @@
 # DeepForest
 
-[![Build Status](https://travis-ci.org/Weecology/DeepForest.svg?branch=master)](https://travis-ci.org/Weecology/DeepForest) 
+[![Build Status](https://travis-ci.org/Weecology/DeepForest.svg?branch=master)](https://travis-ci.org/Weecology/DeepForest)
 [![Documentation Status](https://readthedocs.org/projects/deepforest/badge/?version=latest)](http://deepforest.readthedocs.io/en/latest/?badge=latest)
 
 Python package for training and predicting individual tree crowns in airborne imagery.
@@ -20,7 +20,7 @@ pip install .
 python setup.py build_ext --inplace
 ```
 
-### Python dependencies 
+### Python dependencies
 
 DeepForest uses conda as a packgae manager.
 
@@ -29,6 +29,10 @@ conda env create --file=environment.yml
 ```
 
 ## Usage
+
+### prediction
+
+Using DeepForest, users can predict individual tree crowns by loading pre-built models and applying them to RGB images.
 
 ```{python}
 from deepforest import deepforest
@@ -45,6 +49,34 @@ image = test_model.predict_image(image_path = "tests/data/OSBS_029.tif")
 ```
 
 ![test image](www/image.png)
+
+## training
+
+DeepForest allows training through a keras-retinanet CSV generator. Input files must be formatted, without a header, in the following format:
+
+```
+image_path, xmin, ymin, xmax, ymax, label
+```
+
+Training config parameters are stored in deepforest_config.yml. They also can be changed at runtime.
+
+```{python}
+#Load model class
+test_model = deepforest.deepforest()
+
+#Change config
+test_model.config["epochs"] = 1
+test_model.config["save-snapshot"] = False
+test_model.config["steps"] = 1
+
+#Train
+test_model.train(annotations="tests/data/testfile_deepforest.csv")
+
+#save
+test_model.model.save("snapshots/final_model.h5")
+```
+
+DeepForest is developed using comet_ml dashboards for training visualization. Simply pass a comet_experiment object to train to log metrics and performance. See more at www.comet.ml  
 
 ## Web Demo
 
@@ -67,5 +99,3 @@ bioRxiv 790071; doi: https://doi.org/10.1101/790071
 We are organizing a benchmark dataset for individual tree crown prediction in RGB imagery from the National Ecological Observation
 
 https://github.com/weecology/NeonTreeEvaluation
-
-

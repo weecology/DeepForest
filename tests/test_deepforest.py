@@ -48,12 +48,19 @@ def test_predict_image(download_release):
     assert isinstance(boxes,np.ndarray)
     assert boxes.shape[1] == 4
 
+@pytest.fixture()
 def test_train(annotations):
     test_model = deepforest.deepforest()
     test_model.config["epochs"] = 1
     test_model.config["save-snapshot"] = False
+    test_model.config["steps"] = 1
     test_model.train(annotations="tests/data/testfile_deepforest.csv")
     
+    return test_model
+
+def test_evaluate(test_train):
+    test_train.evaluate_generator(annotations="tests/data/testfile_deepforest.csv", images_per_epoch = 1)
+
 #Training    
 def test_tfrecord_train(prepare_tfdataset):
     test_model = deepforest.deepforest()

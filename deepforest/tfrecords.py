@@ -3,6 +3,7 @@ import os
 import numpy as np
 from math import ceil
 import keras 
+from keras.callbacks import Callback
 import cv2
 
 from keras_retinanet.preprocessing.csv_generator import CSVGenerator
@@ -183,7 +184,7 @@ def model_with_weights(model, weights, skip_mismatch):
     return model
 
 def create_models(backbone_retinanet, num_classes, weights, multi_gpu=0,
-                  freeze_backbone=False, lr=1e-5, config=None, targets=None):
+                  freeze_backbone=False, lr=1e-5, config=None, inputs=None, targets=None):
     """ Creates three models (model, training_model, prediction_model).
 
     Args
@@ -193,6 +194,7 @@ def create_models(backbone_retinanet, num_classes, weights, multi_gpu=0,
         multi_gpu          : The number of GPUs to use for training.
         freeze_backbone    : If True, disables learning for the backbone.
         config             : Config parameters, None indicates the default configuration.
+        inputs:            : tf.dataset object tensor
         targets            : tf.dataset object tensor
 
 
@@ -237,20 +239,15 @@ def create_models(backbone_retinanet, num_classes, weights, multi_gpu=0,
 
     return model, training_model, prediction_model
 
-def train(list_of_tfrecords, backbone_name, steps_per_epoch=None):
-    """
-    Train a retinanet model using tfrecords input
-    
+def create_tensors(list_of_tfrecords, backbone_name="resnet50"):
+    """Create a wired tensor target from a list of tfrecords
     Args:
-        list_of_tfrecords: a path or wildcard glob of tfrecords
-        backbone_model: A keras retinanet backbone name
-        steps_per_epoch: How often should validation data be evaluated?
-    
+        list_of_tfrecords: a list of tfrecord on disk to turn into a tfdataset
+        backbone_name: keras retinanet backbone
     Returns:
-        training_model: The retinanet training model
-        prediction_model: The retinanet prediction model with nms for bbox
-    """
-    
+        inputs: input tensors of images
+        targets: target tensors of bounding boxes and classes
+        """
     #Create tensorflow iterator
     iterator = create_dataset(list_of_tfrecords)
     next_element = iterator.get_next()
@@ -258,14 +255,33 @@ def train(list_of_tfrecords, backbone_name, steps_per_epoch=None):
     #Split into inputs and targets 
     inputs = next_element[0]
     targets = [next_element[1], next_element[2]]
+
+    return inputs, targets
+
+def train(list_of_tfrecords, backbone_name, weights=None, steps_per_epoch=None):
+    """
+    Train a retinanet model using tfrecords input
     
-    backbone = models.backbone(backbone_name)
-    model, training_model, prediction_model = create_models(backbone_retinanet=backbone.retinanet, weights=None, targets=targets, num_classes=1)
+    Args:
+        list_of_tfrecords: a path or wildcard glob of tfrecords
+        backbone_model: A keras retinanet backbone name
+        weights: path to training weights to start from, built from keras.model.save_weights s
+        steps_per_epoch: How often should validation data be evaluated?
     
-    #Train model
+    Returns:
+        training_model: The retinanet training model
+        prediction_model: The retinanet prediction model with nms for bbox
+    """
+    
+    #Check args
     if steps_per_epoch is None:
-        raise ValueError("Unknown steps for a tfrecord")
+        raise ValueError("Unknown training steps for a tfrecord, set using steps_per_epoch")
+
+    #Create tensorflow iterator and retinanet models
+    inputs, targets = create_tensors(list_of_tfrecords)
+    backbone = models.backbone(backbone_name)
+    model, training_model, prediction_model = create_models(backbone_retinanet=backbone.retinanet, weights=weights, targets=targets, num_classes=1)
     
-    training_model.fit(inputs, steps_per_epoch=steps_per_epoch)
+    training_model.fit(inputs, steps_per_epoch=steps_per_epoch)        
     
-    return training_model, prediction_model    
+    return model, training_model, prediction_model

@@ -54,5 +54,10 @@ def test_create_dataset(prepare_dataset):
 def test_train(prepare_dataset, config):
     list_of_tfrecords = glob.glob("tests/data/*.tfrecord")
     print("Found {} tfrecords".format(len(list_of_tfrecords)))
-    tfrecords.train(list_of_tfrecords=list_of_tfrecords, steps_per_epoch=1, backbone_name=config["backbone"])
+    
+    tfrecords.train(
+        list_of_tfrecords=list_of_tfrecords,
+        backbone_name=config["backbone"],
+        steps_per_epoch=1       
+    )
 

@@ -7,11 +7,16 @@
 
 """
 import os
+from matplotlib import pyplot as plt
+
 from deepforest import utilities
 from deepforest import predict
 from deepforest.retinanet_train import main as retinanet_train
+from deepforest.retinanet_train import parse_args
+
 from keras_retinanet.models import convert_model
-from matplotlib import pyplot as plt
+from keras_retinanet.preprocessing.csv_generator import CSVGenerator
+from keras_retinanet.utils.eval import evaluate
 
 class deepforest:
     ''' Class for training and predicting tree crowns in RGB images
@@ -69,7 +74,62 @@ class deepforest:
         #load saved model
         self.saved_model = saved_model
         self.model = utilities.read_model(self.saved_model, self.config)
+    
+    def evaluate_generator(self, annotations, comet_experiment = None, images_per_epoch = None, iou_threshold=0.5, score_threshold=0.05, max_detections=200):
+        """
+        Evaluate prediction model using a csv fit_generator
+        Args:
+            annotations (str): Path to csv label file, labels are in the format -> path/to/image.jpg,x1,y1,x2,y2,class_name
+            iou_threshold(float): IoU Threshold to count for a positive detection (defaults to 0.5)
+            score_threshold (float): Eliminate bounding boxes under this threshold
+            max_detections (int): Maximum number of bounding box predictions
+            comet_experiment(object): A comet experiment class objects to track
+            images_per_epoch (int): number of validation steps
+        Return:
+            mAP: Mean average precision of the evaluated data
+        """
+        #Format args for CSV generator 
+        arg_list = utilities.format_args(annotations, self.config, images_per_epoch)
+        args = parse_args(arg_list)
         
+        #create generator
+        validation_generator = CSVGenerator(
+            args.annotations,
+            args.classes,
+            image_min_side=args.image_min_side,
+            image_max_side=args.image_max_side,
+            config=args.config,
+            shuffle_groups=False,
+        )
+        
+        average_precisions = evaluate(
+            validation_generator,
+            self.prediction_model,
+            iou_threshold=iou_threshold,
+            score_threshold=score_threshold,
+            max_detections=max_detections,
+            save_path=args.save_path
+        )
+        
+        # print evaluation
+        total_instances = []
+        precisions = []
+        for label, (average_precision, num_annotations) in average_precisions.items():
+            print('{:.0f} instances of class'.format(num_annotations),
+                  validation_generator.label_to_name(label), 'with average precision: {:.4f}'.format(average_precision))
+            total_instances.append(num_annotations)
+            precisions.append(average_precision)
+
+        if sum(total_instances) == 0:
+            print('No test instances found.')
+            return
+
+        print('mAP using the weighted average of precisions among classes: {:.4f}'.format(sum([a * b for a, b in zip(total_instances, precisions)]) / sum(total_instances)))
+        
+        mAP = sum(precisions) / sum(x > 0 for x in total_instances)
+        print('mAP: {:.4f}'.format(mAP))   
+        return mAP
+
     def predict_image(self, image_path, return_plot=True, show=False):
         '''Predict tree crowns based on loaded (or trained) model
         
