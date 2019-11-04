@@ -313,8 +313,6 @@ def parse_args(args):
     parser.add_argument('--multiprocessing',  help='Use multiprocessing in fit_generator.', action='store_true')
     parser.add_argument('--workers',          help='Number of generator workers.', type=int, default=1)
     parser.add_argument('--max-queue-size',   help='Queue length for multiprocessing workers in fit_generator.', type=int, default=10)
-
-    #TODO tfrecord arguments
     
     return check_args(parser.parse_args(args))
 
@@ -437,6 +435,7 @@ def main(args=None, input_type="fit_generator", list_of_tfrecords=None, comet_ex
             validation_data=validation_generator
         )
     elif input_type == "tfrecord":
+        
         #Fit model
         training_model.fit(
             x=inputs,
