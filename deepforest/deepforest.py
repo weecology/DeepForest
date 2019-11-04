@@ -108,7 +108,8 @@ class deepforest:
             iou_threshold=iou_threshold,
             score_threshold=score_threshold,
             max_detections=max_detections,
-            save_path=args.save_path
+            save_path=args.save_path,
+            comet_experiment=comet_experiment
         )
         
         # print evaluation
