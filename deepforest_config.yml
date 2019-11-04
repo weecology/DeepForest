@@ -14,5 +14,6 @@ multiprocessing: False
 workers: 1
 max_queue_size: 10
 
-#save snapshot?
+#save snapshot and images
 save-snapshot: False
+

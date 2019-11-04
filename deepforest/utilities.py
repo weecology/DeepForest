@@ -189,7 +189,6 @@ def format_args(annotations_file, config, images_per_epoch=None):
         args["--image-min-side"] = config["image-min-side"]
         args["--multi-gpu"] = config["multi-gpu"]
         args["--epochs"] = config["epochs"]
-        
         if images_per_epoch:
                 args["--steps"] = round(images_per_epoch/int(config["batch_size"]))
         else:
