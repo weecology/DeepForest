@@ -14,7 +14,8 @@ from deepforest import predict
 from deepforest.retinanet_train import main as retinanet_train
 from deepforest.retinanet_train import parse_args
 
-from keras_retinanet.models import convert_model
+from keras_retinanet import models
+from keras_retinanet.bin.train import create_models
 from keras_retinanet.preprocessing.csv_generator import CSVGenerator
 from keras_retinanet.utils.eval import evaluate
 
@@ -22,22 +23,25 @@ class deepforest:
     ''' Class for training and predicting tree crowns in RGB images
     
     Args:
-        saved_model (str): Path to model saved on disk from keras.model.save(). Default is None
+        weights (str): Path to model saved on disk from keras.model.save_weights(). A new model is created and weights are copied. Default is None. 
     
     Attributes:
         model: A keras training model from keras-retinanet
     '''
     
-    def __init__(self, saved_model=None):
-        self.saved_model = saved_model
+    def __init__(self, weights=None):
+        self.weights = weights
         
         #Read config file
         self.config = utilities.read_config()
         
         #Load model if needed
-        if self.saved_model is not None:
-            self.model = utilities.read_model(self.saved_model, self.config)
+        if self.weights is not None:
+            print("Creating model from weights")
+            backbone = models.backbone(self.config["backbone"])            
+            self.model, self.training_model, self.prediction_model = create_models(backbone.retinanet, num_classes=1, weights=self.weights)
         else:
+            print("No model initialized, either train or load an existing retinanet model")
             self.model = None
             
     def train(self, annotations, input_type="fit_generator", list_of_tfrecords=None, comet_experiment=None, images_per_epoch=None):
@@ -69,11 +73,11 @@ class deepforest:
             model (object): A trained keras model
         '''        
         #Download latest model from github release
-        saved_model = utilities.use_release()  
+        weights = utilities.use_release()  
         
         #load saved model
-        self.saved_model = saved_model
-        self.model = utilities.read_model(self.saved_model, self.config)
+        self.weights = weights
+        self.model = utilities.read_model(self.weights, self.config)
     
     def evaluate_generator(self, annotations, comet_experiment = None, images_per_epoch = None, iou_threshold=0.5, score_threshold=0.05, max_detections=200):
         """
@@ -143,12 +147,9 @@ class deepforest:
         '''     
         #Check for model save
         
-        if(self.saved_model is None):
+        if(self.weights is None):
             raise ValueError("Model currently has no weights, either train a new model using deepforest.train, loading existing model, or use prebuilt model (see deepforest.use_release()")
-        
-        #convert model to prediction
-        self.prediction_model = convert_model(self.model)
-        
+                
         if return_plot:
             image = predict.predict_image(self.prediction_model, image_path, return_plot=return_plot)            
             #cv2 channel order
