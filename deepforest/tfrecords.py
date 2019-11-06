@@ -66,9 +66,12 @@ def create_tfrecords(annotations_file, class_file, backbone_model="resnet50", im
         for i in range(ceil(len(indices) / size))
     ]
     
+    written_files = [ ]
     for chunk in chunks:
-        #Create tfrecord dataset
-        writer = tf.io.TFRecordWriter(savedir + "{}_{}.tfrecord".format(image_basename, chunk[0]))
+        #Create tfrecord dataset and save it for output
+        fname = savedir + "{}_{}.tfrecord".format(image_basename, chunk[0])
+        written_files.append(fname)
+        writer = tf.io.TFRecordWriter(fname)
         images = []
         regression_targets = []
         class_targets = []
@@ -112,6 +115,8 @@ def create_tfrecords(annotations_file, class_file, backbone_model="resnet50", im
     plt.xlabel('iteration')
     plt.ylabel('memory used (GB)')   
     plt.savefig(os.path.join(savedir,"memory.png"))
+    
+    return written_files
         
 
 #Reading
