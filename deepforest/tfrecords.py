@@ -3,7 +3,6 @@ import os
 import numpy as np
 from math import ceil
 import keras 
-from keras.callbacks import Callback
 import cv2
 
 from keras_retinanet.preprocessing.csv_generator import CSVGenerator
@@ -32,7 +31,6 @@ def create_tf_example(image, regression_target, class_target):
     # Serialize to string and write to file
     return example
 
-#TODO create classes file from annotations_file
 def create_tfrecords(annotations_file, class_file, backbone_model="resnet50", image_min_side=800, size=1, savedir="./"):
     """
     Args:
@@ -152,7 +150,7 @@ def create_dataset(filepath, batch_size=1):
     dataset = tf.data.TFRecordDataset(filepath)
     
     ## Set the number of datapoints you want to load and shuffle 
-    dataset = dataset.shuffle(1000)
+    dataset = dataset.shuffle(100)
     
     ## This dataset will go on forever
     dataset = dataset.repeat()
