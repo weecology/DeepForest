@@ -1,3 +1,10 @@
+"""
+Module: tfrecords
+
+Tfrecords creation and reader for improved performance across multi-gpu
+There were a tradeoffs made in this repo. It would be natural to save the generated prepreprocessed image to tfrecord from the generator. This results in enormous (100x) files. 
+The compromise was to read the original image from file using tensorflow's data pipeline. The opencv resize billinear method is marginally different then the tensorflow method, so we can assert they are the same array. 
+"""
 import tensorflow as tf
 import os
 import numpy as np
@@ -14,19 +21,23 @@ import matplotlib.pyplot as plt
 import psutil
 import gc
 
-def create_tf_example(image, regression_target, class_target, fname):
-    
-    #Encode Image data to reduce size
-    #success, encoded_image = cv2.imencode(".jpg", image)
+def create_tf_example(image, regression_target, class_target, fname, original_image):
     
     #Class labels can be stored as int list
     class_target = class_target.astype(int)
     
+    #Save image information and metadata so that the tensors can be reshaped at runtime
+    
     example = tf.train.Example(features=tf.train.Features(feature={
+        'image/target_height':  tf.train.Feature(int64_list=tf.train.Int64List(value=[image.shape[0]])),        
+        'image/target_width':  tf.train.Feature(int64_list=tf.train.Int64List(value=[image.shape[1]])),            
+        'image/height':  tf.train.Feature(int64_list=tf.train.Int64List(value=[original_image.shape[0]])),        
+        'image/width':  tf.train.Feature(int64_list=tf.train.Int64List(value=[original_image.shape[1]])),                        
         'image/filename':  tf.train.Feature(bytes_list=tf.train.BytesList(value=[fname.encode('utf-8')])),        
-        'image/image':  tf.train.Feature(bytes_list=tf.train.BytesList(value=[image.tostring()])),
+        #'image/image':  tf.train.Feature(bytes_list=tf.train.BytesList(value=[image.tostring()])),
         'image/object/regression_target': tf.train.Feature(float_list=tf.train.FloatList(value=regression_target.flatten())),
-        'image/object/class_target': tf.train.Feature(int64_list=tf.train.Int64List(value=class_target.flatten()))
+        'image/object/class_target': tf.train.Feature(int64_list=tf.train.Int64List(value=class_target.flatten())),
+        'image/object/n_anchors': tf.train.Feature(int64_list=tf.train.Int64List(value=[regression_target.shape[0]]))
     }))
     
     # Serialize to string and write to file
@@ -77,8 +88,12 @@ def create_tfrecords(annotations_file, class_file, backbone_model="resnet50", im
         regression_targets = []
         class_targets = []
         filename = [ ]
-        
+        original_image = []
         for i in chunk:
+            
+            #Original image
+            original_image.append(train_generator.load_image(i))
+            
             batch = train_generator.__getitem__(i),
             
             #split into images and tar  gets
@@ -106,10 +121,15 @@ def create_tfrecords(annotations_file, class_file, backbone_model="resnet50", im
             
             #append filename by looking at group index
             current_index = train_generator.groups[i][0]
-            filename.append(train_generator.image_names[current_index])
+            
+            #Grab filename and append to the full path
+            fname = train_generator.image_names[current_index]
+            fname = os.path.join(train_generator.base_dir,fname)
+            
+            filename.append(fname)
                             
-        for image, regression_target, class_target, fname in zip(images,regression_targets, class_targets,filename):
-            tf_example = create_tf_example(image, regression_target, class_target, fname)
+        for image, regression_target, class_target, fname,orig_image in zip(images,regression_targets, class_targets,filename, original_image):
+            tf_example = create_tf_example(image, regression_target, class_target, fname,orig_image)
             writer.write(tf_example.SerializeToString())        
         
         memory_used.append(psutil.virtual_memory().used / 2 ** 30)
@@ -127,26 +147,61 @@ def create_tfrecords(annotations_file, class_file, backbone_model="resnet50", im
 def _parse_fn(example):
     
     #Define features
+    #TODO make the number of anchors dynamic
     features = {
         'image/filename': tf.io.FixedLenFeature([], tf.string),               
-        'image/image': tf.io.FixedLenFeature([], tf.string),       
         "image/object/regression_target": tf.FixedLenFeature([120087, 5], tf.float32),
-        "image/object/class_target": tf.FixedLenFeature([120087, 2], tf.int64)
+        "image/object/class_target": tf.FixedLenFeature([120087, 2], tf.int64),
+        "image/height": tf.FixedLenFeature([ ], tf.int64),        
+        "image/width": tf.FixedLenFeature([ ], tf.int64),
+        "image/target_height": tf.FixedLenFeature([ ], tf.int64),        
+        "image/target_width": tf.FixedLenFeature([ ], tf.int64),      
+        "image/object/n_anchors": tf.FixedLenFeature([ ], tf.int64)        
                         }
     
     # Load one example and parse
     example = tf.io.parse_single_example(example, features)
-    filename = example["image/filename"]
-    image = tf.decode_raw(example['image/image'],tf.float32)
+    
+    #Load image from file
+    filename = tf.cast(example["image/filename"],tf.string)    
+    loaded_image = tf.read_file(filename)
+    loaded_image = tf.image.decode_image(loaded_image, 3)
+    
+    #Reshape to known shape
+    image_rows = tf.cast(example['image/height'], tf.int32)
+    image_cols = tf.cast(example['image/width'], tf.int32)    
+    loaded_image = tf.reshape(loaded_image, tf.stack([image_rows, image_cols, 3]), name="cast_loaded_image")            
+    
+    #needs to be float to subtract weights below
+    loaded_image = tf.cast(loaded_image,tf.float32)
+    
+    #Turn loaded image from rgb into bgr and subtract imagenet means, see keras_retinanet.utils.image.preprocess_image
+    red, green, blue = tf.unstack(loaded_image, axis=-1)
+    
+    #Subtract imagenet means
+    blue = tf.subtract(blue,103.939)
+    green = tf.subtract(green, 116.779)
+    red = tf.subtract(red, 123.68)
+    
+    #Recombine as BGR image
+    loaded_image = tf.stack([blue, green, red], axis=-1)
+    
+    #Resize loaded image to desired target shape
+    target_height = tf.cast(example['image/target_height'], tf.int32)
+    target_width = tf.cast(example['image/target_width'], tf.int32)         
+    loaded_image = tf.image.resize(loaded_image, (target_height,target_width), align_corners=True)
+    
+    #Generated data
+    #image = tf.decode_raw(example['image/image'],tf.float32)
     regression_target = tf.cast(example['image/object/regression_target'], tf.float32)
     class_target = tf.cast(example['image/object/class_target'], tf.float32)
     
     #TODO allow this vary from config? Or read during sess?    
-    image = tf.reshape(image, [800, 800, 3],name="cast_image")            
+    #image = tf.reshape(image, tf.stack([target_height, target_width, 3]),name="cast_image")        
     regression_target = tf.reshape(regression_target, [120087, 5], name="cast_regression")
     class_target = tf.reshape(class_target, [120087, 2], name="cast_class_label")
     
-    return image, regression_target, class_target, filename
+    return loaded_image, regression_target, class_target
 
 def create_dataset(filepath, batch_size=1, shuffle=True):
     """
@@ -265,9 +320,8 @@ def create_tensors(list_of_tfrecords, backbone_name="resnet50", shuffle=True):
     #Split into inputs and targets 
     inputs = next_element[0]
     targets = [next_element[1], next_element[2]]
-    filename = [next_element[3]]
 
-    return inputs, targets, filename
+    return inputs, targets
 
 def train(list_of_tfrecords, backbone_name, weights=None, steps_per_epoch=None):
     """
