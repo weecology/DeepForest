@@ -54,7 +54,7 @@ def test_train(annotations):
     test_model.config["epochs"] = 1
     test_model.config["save-snapshot"] = False
     test_model.config["steps"] = 1
-    test_model.train(annotations="tests/data/testfile_deepforest.csv")
+    test_model.train(annotations="tests/data/testfile_deepforest.csv", input_type="fit_generator")
     
     return test_model
 
@@ -70,3 +70,4 @@ def test_tfrecord_train(prepare_tfdataset):
     
     print("Found {} tfrecords to train".format(len(list_of_tfrecords)))
     test_model.train(annotations="tests/data/testfile_deepforest.csv",input_type="tfrecord", list_of_tfrecords=list_of_tfrecords, images_per_epoch=1)
+    

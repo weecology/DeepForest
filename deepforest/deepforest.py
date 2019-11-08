@@ -15,6 +15,7 @@ from deepforest.retinanet_train import main as retinanet_train
 from deepforest.retinanet_train import parse_args
 
 from keras_retinanet import models
+from keras_retinanet.models import convert_model
 from keras_retinanet.bin.train import create_models
 from keras_retinanet.preprocessing.csv_generator import CSVGenerator
 from keras_retinanet.utils.eval import evaluate
@@ -24,18 +25,25 @@ class deepforest:
     
     Args:
         weights (str): Path to model saved on disk from keras.model.save_weights(). A new model is created and weights are copied. Default is None. 
+        saved_model: Path to a saved model from disk using keras.model.save(). No new model is created.
     
     Attributes:
         model: A keras training model from keras-retinanet
     '''
     
-    def __init__(self, weights=None):
+    def __init__(self, weights=None, saved_model=None):
         self.weights = weights
+        self.saved_model = saved_model
         
         #Read config file
         self.config = utilities.read_config()
         
-        #Load model if needed
+        #Load saved model if needed
+        if self.saved_model:
+            print("Loading saved model")
+            self.model = utilities.load_model(saved_model)
+            self.prediction_model = convert_model(self.model)
+            
         if self.weights is not None:
             print("Creating model from weights")
             backbone = models.backbone(self.config["backbone"])            
@@ -78,6 +86,7 @@ class deepforest:
         #load saved model
         self.weights = weights
         self.model = utilities.read_model(self.weights, self.config)
+        self.prediction_model = convert_model(self.model)
     
     def evaluate_generator(self, annotations, comet_experiment = None, images_per_epoch = None, iou_threshold=0.5, score_threshold=0.05, max_detections=200):
         """
