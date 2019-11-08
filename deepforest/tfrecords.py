@@ -14,16 +14,17 @@ import matplotlib.pyplot as plt
 import psutil
 import gc
 
-def create_tf_example(image, regression_target, class_target):
+def create_tf_example(image, regression_target, class_target, fname):
     
     #Encode Image data to reduce size
-    success, encoded_image = cv2.imencode(".jpg", image)
+    #success, encoded_image = cv2.imencode(".jpg", image)
     
     #Class labels can be stored as int list
     class_target = class_target.astype(int)
     
     example = tf.train.Example(features=tf.train.Features(feature={
-        'image/encoded':  tf.train.Feature(bytes_list=tf.train.BytesList(value=[encoded_image.tostring()])),
+        'image/filename':  tf.train.Feature(bytes_list=tf.train.BytesList(value=[fname.encode('utf-8')])),        
+        'image/image':  tf.train.Feature(bytes_list=tf.train.BytesList(value=[image.tostring()])),
         'image/object/regression_target': tf.train.Feature(float_list=tf.train.FloatList(value=regression_target.flatten())),
         'image/object/class_target': tf.train.Feature(int64_list=tf.train.Int64List(value=class_target.flatten()))
     }))
@@ -57,7 +58,7 @@ def create_tfrecords(annotations_file, class_file, backbone_model="resnet50", im
          batch_size = 1,
          image_min_side = image_min_side,
          preprocess_image = backbone.preprocess_image
-         )
+    )
     
     #chunk size 
     indices = np.arange(train_generator.size())
@@ -75,11 +76,12 @@ def create_tfrecords(annotations_file, class_file, backbone_model="resnet50", im
         images = []
         regression_targets = []
         class_targets = []
+        filename = [ ]
         
         for i in chunk:
             batch = train_generator.__getitem__(i),
             
-            #split into images and targets
+            #split into images and tar  gets
             inputs, targets =  batch[0]
            
             #grab image, asssume batch size of 1, squeeze
@@ -102,10 +104,12 @@ def create_tfrecords(annotations_file, class_file, backbone_model="resnet50", im
             print("Label shape is: {}".format(labels.shape))
             class_targets.append(labels)
             
-            i +=1
-                
-        for image, regression_target, class_target in zip(images,regression_targets, class_targets):
-            tf_example = create_tf_example(image, regression_target, class_target)
+            #append filename by looking at group index
+            current_index = train_generator.groups[i][0]
+            filename.append(train_generator.image_names[current_index])
+                            
+        for image, regression_target, class_target, fname in zip(images,regression_targets, class_targets,filename):
+            tf_example = create_tf_example(image, regression_target, class_target, fname)
             writer.write(tf_example.SerializeToString())        
         
         memory_used.append(psutil.virtual_memory().used / 2 ** 30)
@@ -124,14 +128,16 @@ def _parse_fn(example):
     
     #Define features
     features = {
-        'image/encoded': tf.io.FixedLenFeature([], tf.string),       
+        'image/filename': tf.io.FixedLenFeature([], tf.string),               
+        'image/image': tf.io.FixedLenFeature([], tf.string),       
         "image/object/regression_target": tf.FixedLenFeature([120087, 5], tf.float32),
         "image/object/class_target": tf.FixedLenFeature([120087, 2], tf.int64)
                         }
     
     # Load one example and parse
     example = tf.io.parse_single_example(example, features)
-    image = tf.image.decode_image(example['image/encoded'],3)
+    filename = example["image/filename"]
+    image = tf.decode_raw(example['image/image'],tf.float32)
     regression_target = tf.cast(example['image/object/regression_target'], tf.float32)
     class_target = tf.cast(example['image/object/class_target'], tf.float32)
     
@@ -140,9 +146,9 @@ def _parse_fn(example):
     regression_target = tf.reshape(regression_target, [120087, 5], name="cast_regression")
     class_target = tf.reshape(class_target, [120087, 2], name="cast_class_label")
     
-    return image, regression_target, class_target
+    return image, regression_target, class_target, filename
 
-def create_dataset(filepath, batch_size=1):
+def create_dataset(filepath, batch_size=1, shuffle=True):
     """
     Args:
         filepath: list of tfrecord files
@@ -155,7 +161,8 @@ def create_dataset(filepath, batch_size=1):
     dataset = tf.data.TFRecordDataset(filepath)
     
     ## Set the number of datapoints you want to load and shuffle 
-    dataset = dataset.shuffle(100)
+    if shuffle:
+        dataset = dataset.shuffle(100)
     
     ## This dataset will go on forever
     dataset = dataset.repeat()
@@ -242,7 +249,7 @@ def create_models(backbone_retinanet, num_classes, weights, multi_gpu=0,
 
     return model, training_model, prediction_model
 
-def create_tensors(list_of_tfrecords, backbone_name="resnet50"):
+def create_tensors(list_of_tfrecords, backbone_name="resnet50", shuffle=True):
     """Create a wired tensor target from a list of tfrecords
     Args:
         list_of_tfrecords: a list of tfrecord on disk to turn into a tfdataset
@@ -252,14 +259,15 @@ def create_tensors(list_of_tfrecords, backbone_name="resnet50"):
         targets: target tensors of bounding boxes and classes
         """
     #Create tensorflow iterator
-    iterator = create_dataset(list_of_tfrecords)
+    iterator = create_dataset(list_of_tfrecords, shuffle=shuffle)
     next_element = iterator.get_next()
     
     #Split into inputs and targets 
     inputs = next_element[0]
     targets = [next_element[1], next_element[2]]
+    filename = [next_element[3]]
 
-    return inputs, targets
+    return inputs, targets, filename
 
 def train(list_of_tfrecords, backbone_name, weights=None, steps_per_epoch=None):
     """

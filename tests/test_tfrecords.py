@@ -6,12 +6,18 @@ from deepforest import preprocess
 import pytest
 import os
 import glob
+import tensorflow as tf
+import numpy as np
+import matplotlib.pyplot as plt
+
+from keras_retinanet.preprocessing import csv_generator
+from keras_retinanet import models
 
 @pytest.fixture()
 def config():
     config = {}
     config["patch_size"] = 200
-    config["patch_overlap"] = 0.25
+    config["patch_overlap"] = 0.05
     config["annotations_xml"] = "tests/data/OSBS_029.xml"
     config["rgb_dir"] = "tests/data"
     config["annotations_file"] = "tests/data/OSBS_029.csv"
@@ -39,18 +45,75 @@ def prepare_dataset(config):
 
 #Writing
 def test_create_tfrecords(config):
-    tfrecords.create_tfrecords(annotations_file="tests/data/testfile_tfrecords.csv",
+    created_records = tfrecords.create_tfrecords(annotations_file="tests/data/testfile_tfrecords.csv",
                                class_file="tests/data/classes.csv",
                                image_min_side=config["image-min-side"], 
                                backbone_model=config["backbone"],
                                size=100,
                                savedir="tests/data/")
     assert os.path.exists("tests/data/testfile_tfrecords_0.tfrecord")
+    
+    #the image going in to tensorflow should be equivalent to the image from the fit_generator
+    backbone = models.backbone(config["backbone"])
+    
+    def dummy_preprocess(x):
+        return x
+        
+    #CSV generator
+    generator = csv_generator.CSVGenerator(
+        csv_data_file="tests/data/testfile_tfrecords.csv",
+        csv_class_file="tests/data/classes.csv",
+        image_min_side=config["image-min-side"],
+        preprocess_image=backbone.preprocess_image,
+    )
+    
+    #find file in randomize generator group
+    first_file = generator.groups[0][0]
+    gen_filename = generator.image_names[first_file]
+    original_image = generator.load_image(first_file)
+    inputs, targets = generator.__getitem__(0)
+    
+    image = inputs[0,...]
+    
+    tf_inputs, tf_targets, tf_filename = tfrecords.create_tensors(created_records, shuffle = False)
+    
+    with tf.Session() as sess:
+        #seek the randomized image to match
+        filename=""
+        while gen_filename!= filename:
+            filename, tf_image = sess.run([tf_filename,tf_inputs])
+            print("filename is {}".format(filename))
+            
+            #decode and strip batch size
+            filename = filename[0][0].decode()            
 
+    #assert filename is the same
+    assert gen_filename == filename
+    tf_image = tf_image[0,...]
+    
+    #Same shape
+    assert tf_image.shape == image.shape
+    
+    #Same values, slightly duplicitious with above, but useful for debugging.
+    np.testing.assert_array_equal(image, tf_image)
+    
+    #Useful for debug to plot
+    fig = plt.figure()
+    ax1 = fig.add_subplot(1,3,1)
+    ax1.title.set_text('Fit Gen Original')    
+    plt.imshow(original_image[...,::-1])
+    ax1 = fig.add_subplot(1,3,2)
+    ax1.title.set_text('Fit Generator')    
+    plt.imshow(image)
+    ax2 = fig.add_subplot(1,3,3)
+    ax2.title.set_text('Tfrecords')        
+    plt.imshow(tf_image)
+    plt.show()
+    
 #Reading
 def test_create_dataset(prepare_dataset):
     dataset = tfrecords.create_dataset("tests/data/testfile_tfrecords_0.tfrecord")        
-        
+    
 #Training  of cropped records
 def test_train(prepare_dataset, config):
     list_of_tfrecords = glob.glob("tests/data/*.tfrecord")
@@ -64,4 +127,3 @@ def test_train(prepare_dataset, config):
         backbone_name=config["backbone"],
         steps_per_epoch=1
     )
-

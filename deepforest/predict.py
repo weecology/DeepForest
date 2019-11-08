@@ -7,7 +7,6 @@ import glob
 import keras
 import cv2
 import pandas as pd
-from deepforest.image import preprocess
 
 #Retinanet-viz
 from keras_retinanet.utils import image as keras_retinanet_image
@@ -33,7 +32,7 @@ def predict_image(model, image_path, score_threshold = 0.1, max_detections= 200,
     """
     #predict
     raw_image = cv2.imread(image_path)        
-    image        = preprocess(raw_image)
+    image        = keras_retinanet_image.preprocess_image(raw_image)
     image, scale = keras_retinanet_image.resize_image(image)
 
     if keras.backend.image_data_format() == 'channels_first':
