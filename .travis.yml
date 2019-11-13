@@ -26,5 +26,9 @@ install:
 # the first package to install (for every conda install command) otherwise
 # numpy may be automatically upgraded.
 
+#Skip tests not made for travis (memory load)
+env: TRAVIS=true
+
 script:
   - pytest --ignore=keras-retinanet/
+  
