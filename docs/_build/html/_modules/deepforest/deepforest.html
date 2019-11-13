@@ -162,53 +162,73 @@
 <span class="sd">.. moduleauthor:: Ben Weinstein &lt;ben.weinstein@weecology.org&gt;</span>
 
 <span class="sd">&quot;&quot;&quot;</span>
-<span class="kn">from</span> <span class="nn">deepforest</span> <span class="k">import</span> <span class="n">utilities</span>
-<span class="kn">from</span> <span class="nn">deepforest</span> <span class="k">import</span> <span class="n">predict</span>
 <span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">from</span> <span class="nn">matplotlib</span> <span class="k">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+
+<span class="kn">from</span> <span class="nn">deepforest</span> <span class="k">import</span> <span class="n">utilities</span>
+<span class="kn">from</span> <span class="nn">deepforest</span> <span class="k">import</span> <span class="n">predict</span>
+<span class="kn">from</span> <span class="nn">deepforest.retinanet_train</span> <span class="k">import</span> <span class="n">main</span> <span class="k">as</span> <span class="n">retinanet_train</span>
+<span class="kn">from</span> <span class="nn">deepforest.retinanet_train</span> <span class="k">import</span> <span class="n">parse_args</span>
+
+<span class="kn">from</span> <span class="nn">keras_retinanet</span> <span class="k">import</span> <span class="n">models</span>
 <span class="kn">from</span> <span class="nn">keras_retinanet.models</span> <span class="k">import</span> <span class="n">convert_model</span>
-<span class="kn">from</span> <span class="nn">keras_retinanet.bin.train</span> <span class="k">import</span> <span class="n">main</span> <span class="k">as</span> <span class="n">retinanet_train</span>
+<span class="kn">from</span> <span class="nn">keras_retinanet.bin.train</span> <span class="k">import</span> <span class="n">create_models</span>
+<span class="kn">from</span> <span class="nn">keras_retinanet.preprocessing.csv_generator</span> <span class="k">import</span> <span class="n">CSVGenerator</span>
+<span class="kn">from</span> <span class="nn">keras_retinanet.utils.eval</span> <span class="k">import</span> <span class="n">evaluate</span>
 
 <div class="viewcode-block" id="deepforest"><a class="viewcode-back" href="../../source/deepforest.html#deepforest.deepforest.deepforest">[docs]</a><span class="k">class</span> <span class="nc">deepforest</span><span class="p">:</span>
     <span class="sd">&#39;&#39;&#39; Class for training and predicting tree crowns in RGB images</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
-<span class="sd">        weights (str): Path to model weights on disk. Default is None</span>
+<span class="sd">        weights (str): Path to model saved on disk from keras.model.save_weights(). A new model is created and weights are copied. Default is None. </span>
+<span class="sd">        saved_model: Path to a saved model from disk using keras.model.save(). No new model is created.</span>
 <span class="sd">    </span>
 <span class="sd">    Attributes:</span>
 <span class="sd">        model: A keras training model from keras-retinanet</span>
 <span class="sd">    &#39;&#39;&#39;</span>
     
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">saved_model</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">weights</span> <span class="o">=</span> <span class="n">weights</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">saved_model</span> <span class="o">=</span> <span class="n">saved_model</span>
         
         <span class="c1">#Read config file</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">utilities</span><span class="o">.</span><span class="n">read_config</span><span class="p">()</span>
         
-        <span class="c1">#Load model weights if needed</span>
+        <span class="c1">#Load saved model if needed</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">saved_model</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Loading saved model&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">utilities</span><span class="o">.</span><span class="n">load_model</span><span class="p">(</span><span class="n">saved_model</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">prediction_model</span> <span class="o">=</span> <span class="n">convert_model</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">)</span>
+            
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">weights</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">utilities</span><span class="o">.</span><span class="n">read_model</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">weights</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Creating model from weights&quot;</span><span class="p">)</span>
+            <span class="n">backbone</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">backbone</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;backbone&quot;</span><span class="p">])</span>            
+            <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_model</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prediction_model</span> <span class="o">=</span> <span class="n">create_models</span><span class="p">(</span><span class="n">backbone</span><span class="o">.</span><span class="n">retinanet</span><span class="p">,</span> <span class="n">num_classes</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">weights</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;No model initialized, either train or load an existing retinanet model&quot;</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="kc">None</span>
             
-<div class="viewcode-block" id="deepforest.train"><a class="viewcode-back" href="../../source/deepforest.html#deepforest.deepforest.deepforest.train">[docs]</a>    <span class="k">def</span> <span class="nf">train</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">annotations</span><span class="p">):</span>
+<div class="viewcode-block" id="deepforest.train"><a class="viewcode-back" href="../../source/deepforest.html#deepforest.deepforest.deepforest.train">[docs]</a>    <span class="k">def</span> <span class="nf">train</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">annotations</span><span class="p">,</span> <span class="n">input_type</span><span class="o">=</span><span class="s2">&quot;fit_generator&quot;</span><span class="p">,</span> <span class="n">list_of_tfrecords</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">comet_experiment</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">images_per_epoch</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;Train a deep learning tree detection model using keras-retinanet</span>
 <span class="sd">        This is the main entry point for training a new model based on either existing weights or scratch</span>
 <span class="sd">        </span>
 <span class="sd">        Args:</span>
 <span class="sd">            annotations (str): Path to csv label file, labels are in the format -&gt; path/to/image.jpg,x1,y1,x2,y2,class_name</span>
+<span class="sd">            comet_experiment: A comet ml object to log images. Optional.</span>
+<span class="sd">            list_of_tfrecords: Ignored if input_type != &quot;tfrecord&quot;, list of tf records to process</span>
+<span class="sd">            input_type: &quot;fit_generator&quot; or &quot;tfrecord&quot;</span>
+<span class="sd">            images_per_epoch: number of images to override default config of # images in annotations file / batch size. Useful for debug</span>
 <span class="sd">        Returns:</span>
 <span class="sd">            model (object): A trained keras model</span>
+<span class="sd">            prediction model: with bbox nms</span>
+<span class="sd">            trained model: without nms</span>
 <span class="sd">        &#39;&#39;&#39;</span>
-        <span class="n">arg_list</span> <span class="o">=</span> <span class="n">utilities</span><span class="o">.</span><span class="n">format_args</span><span class="p">(</span><span class="n">annotations</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">)</span>
+        <span class="n">arg_list</span> <span class="o">=</span> <span class="n">utilities</span><span class="o">.</span><span class="n">format_args</span><span class="p">(</span><span class="n">annotations</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="n">images_per_epoch</span><span class="p">)</span>
         
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Training retinanet with the following args </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">arg_list</span><span class="p">))</span>
         
         <span class="c1">#Train model</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">training_model</span> <span class="o">=</span> <span class="n">retinanet_train</span><span class="p">(</span><span class="n">arg_list</span><span class="p">)</span>
-        
-        <span class="c1">#Create prediction model</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">prediction_model</span> <span class="o">=</span> <span class="n">convert_model</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">training_model</span><span class="p">)</span> </div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prediction_model</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_model</span> <span class="o">=</span> <span class="n">retinanet_train</span><span class="p">(</span><span class="n">args</span><span class="o">=</span><span class="n">arg_list</span><span class="p">,</span> <span class="n">input_type</span> <span class="o">=</span> <span class="n">input_type</span><span class="p">,</span> <span class="n">list_of_tfrecords</span> <span class="o">=</span> <span class="n">list_of_tfrecords</span><span class="p">,</span> <span class="n">comet_experiment</span> <span class="o">=</span> <span class="n">comet_experiment</span><span class="p">)</span></div>
     
 <div class="viewcode-block" id="deepforest.use_release"><a class="viewcode-back" href="../../source/deepforest.html#deepforest.deepforest.deepforest.use_release">[docs]</a>    <span class="k">def</span> <span class="nf">use_release</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;Use the latest DeepForest model release from github and load model. Optionally download if release doesn&#39;t exist</span>
@@ -217,36 +237,94 @@
 <span class="sd">            model (object): A trained keras model</span>
 <span class="sd">        &#39;&#39;&#39;</span>        
         <span class="c1">#Download latest model from github release</span>
-        <span class="n">weight_path</span> <span class="o">=</span> <span class="n">utilities</span><span class="o">.</span><span class="n">use_release</span><span class="p">()</span>  
+        <span class="n">weights</span> <span class="o">=</span> <span class="n">utilities</span><span class="o">.</span><span class="n">use_release</span><span class="p">()</span>  
         
-        <span class="c1">#load weights</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">weights</span> <span class="o">=</span> <span class="n">weight_path</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">utilities</span><span class="o">.</span><span class="n">read_model</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">weights</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">)</span></div>
+        <span class="c1">#load saved model</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">weights</span> <span class="o">=</span> <span class="n">weights</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">utilities</span><span class="o">.</span><span class="n">read_model</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">weights</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">prediction_model</span> <span class="o">=</span> <span class="n">convert_model</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="deepforest.evaluate_generator"><a class="viewcode-back" href="../../source/deepforest.html#deepforest.deepforest.deepforest.evaluate_generator">[docs]</a>    <span class="k">def</span> <span class="nf">evaluate_generator</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">annotations</span><span class="p">,</span> <span class="n">comet_experiment</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">iou_threshold</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">score_threshold</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="n">max_detections</span><span class="o">=</span><span class="mi">200</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Evaluate prediction model using a csv fit_generator</span>
+<span class="sd">        Args:</span>
+<span class="sd">            annotations (str): Path to csv label file, labels are in the format -&gt; path/to/image.jpg,x1,y1,x2,y2,class_name</span>
+<span class="sd">            iou_threshold(float): IoU Threshold to count for a positive detection (defaults to 0.5)</span>
+<span class="sd">            score_threshold (float): Eliminate bounding boxes under this threshold</span>
+<span class="sd">            max_detections (int): Maximum number of bounding box predictions</span>
+<span class="sd">            comet_experiment(object): A comet experiment class objects to track</span>
+<span class="sd">        Return:</span>
+<span class="sd">            mAP: Mean average precision of the evaluated data</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1">#Format args for CSV generator </span>
+        <span class="n">arg_list</span> <span class="o">=</span> <span class="n">utilities</span><span class="o">.</span><span class="n">format_args</span><span class="p">(</span><span class="n">annotations</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">)</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="n">parse_args</span><span class="p">(</span><span class="n">arg_list</span><span class="p">)</span>
         
-<div class="viewcode-block" id="deepforest.predict_image"><a class="viewcode-back" href="../../source/deepforest.html#deepforest.deepforest.deepforest.predict_image">[docs]</a>    <span class="k">def</span> <span class="nf">predict_image</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">image_path</span><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="c1">#create generator</span>
+        <span class="n">validation_generator</span> <span class="o">=</span> <span class="n">CSVGenerator</span><span class="p">(</span>
+            <span class="n">args</span><span class="o">.</span><span class="n">annotations</span><span class="p">,</span>
+            <span class="n">args</span><span class="o">.</span><span class="n">classes</span><span class="p">,</span>
+            <span class="n">image_min_side</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">image_min_side</span><span class="p">,</span>
+            <span class="n">image_max_side</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">image_max_side</span><span class="p">,</span>
+            <span class="n">config</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">config</span><span class="p">,</span>
+            <span class="n">shuffle_groups</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="p">)</span>
+        
+        <span class="n">average_precisions</span> <span class="o">=</span> <span class="n">evaluate</span><span class="p">(</span>
+            <span class="n">validation_generator</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">prediction_model</span><span class="p">,</span>
+            <span class="n">iou_threshold</span><span class="o">=</span><span class="n">iou_threshold</span><span class="p">,</span>
+            <span class="n">score_threshold</span><span class="o">=</span><span class="n">score_threshold</span><span class="p">,</span>
+            <span class="n">max_detections</span><span class="o">=</span><span class="n">max_detections</span><span class="p">,</span>
+            <span class="n">save_path</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">save_path</span><span class="p">,</span>
+            <span class="n">comet_experiment</span><span class="o">=</span><span class="n">comet_experiment</span>
+        <span class="p">)</span>
+        
+        <span class="c1"># print evaluation</span>
+        <span class="n">total_instances</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">precisions</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">label</span><span class="p">,</span> <span class="p">(</span><span class="n">average_precision</span><span class="p">,</span> <span class="n">num_annotations</span><span class="p">)</span> <span class="ow">in</span> <span class="n">average_precisions</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{:.0f}</span><span class="s1"> instances of class&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">num_annotations</span><span class="p">),</span>
+                  <span class="n">validation_generator</span><span class="o">.</span><span class="n">label_to_name</span><span class="p">(</span><span class="n">label</span><span class="p">),</span> <span class="s1">&#39;with average precision: </span><span class="si">{:.4f}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">average_precision</span><span class="p">))</span>
+            <span class="n">total_instances</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">num_annotations</span><span class="p">)</span>
+            <span class="n">precisions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">average_precision</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">sum</span><span class="p">(</span><span class="n">total_instances</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;No test instances found.&#39;</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;mAP using the weighted average of precisions among classes: </span><span class="si">{:.4f}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">sum</span><span class="p">([</span><span class="n">a</span> <span class="o">*</span> <span class="n">b</span> <span class="k">for</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">total_instances</span><span class="p">,</span> <span class="n">precisions</span><span class="p">)])</span> <span class="o">/</span> <span class="nb">sum</span><span class="p">(</span><span class="n">total_instances</span><span class="p">)))</span>
+        
+        <span class="n">mAP</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">precisions</span><span class="p">)</span> <span class="o">/</span> <span class="nb">sum</span><span class="p">(</span><span class="n">x</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">total_instances</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;mAP: </span><span class="si">{:.4f}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mAP</span><span class="p">))</span>   
+        <span class="k">return</span> <span class="n">mAP</span></div>
+
+<div class="viewcode-block" id="deepforest.predict_image"><a class="viewcode-back" href="../../source/deepforest.html#deepforest.deepforest.deepforest.predict_image">[docs]</a>    <span class="k">def</span> <span class="nf">predict_image</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">image_path</span><span class="p">,</span> <span class="n">return_plot</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;Predict tree crowns based on loaded (or trained) model</span>
 <span class="sd">        </span>
 <span class="sd">        Args:</span>
 <span class="sd">            image_path (str): Path to image on disk</span>
-<span class="sd">            show (bool): Plot the predicted image with bounding boxes</span>
+<span class="sd">            show (bool): Plot the predicted image with bounding boxes. Ignored if return_plot=False</span>
+<span class="sd">            return_plot: Whether to return image with annotations overlaid, or just a numpy array of boxes</span>
 <span class="sd">        Returns:</span>
-<span class="sd">            predictions (array): Numpy array of predicted bounding boxes</span>
+<span class="sd">            predictions (array): if return_plot, an image. Otherwise a numpy array of predicted bounding boxes</span>
 <span class="sd">        &#39;&#39;&#39;</span>     
-        <span class="c1">#Check for model weights</span>
+        <span class="c1">#Check for model save</span>
         
         <span class="k">if</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">weights</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Model currently has no weights, either train a new model using deepforest.train, loading existing model, or use prebuilt model (see deepforest.use_release()&quot;</span><span class="p">)</span>
-        
-        <span class="c1">#convert model to prediction</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">prediction_model</span> <span class="o">=</span> <span class="n">convert_model</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">)</span>
-        <span class="n">image</span> <span class="o">=</span> <span class="n">predict</span><span class="o">.</span><span class="n">predict_image</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prediction_model</span><span class="p">,</span> <span class="n">image_path</span><span class="p">,</span> <span class="n">return_plot</span><span class="o">=</span><span class="n">show</span><span class="p">)</span>
-        
-        <span class="c1">#cv2 channel order</span>
-        <span class="k">if</span> <span class="n">show</span><span class="p">:</span>
-            <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">image</span><span class="p">[:,:,::</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
-            <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
-        
-        <span class="k">return</span> <span class="n">image</span></div></div>
+                
+        <span class="k">if</span> <span class="n">return_plot</span><span class="p">:</span>
+            <span class="n">image</span> <span class="o">=</span> <span class="n">predict</span><span class="o">.</span><span class="n">predict_image</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prediction_model</span><span class="p">,</span> <span class="n">image_path</span><span class="p">,</span> <span class="n">return_plot</span><span class="o">=</span><span class="n">return_plot</span><span class="p">)</span>            
+            <span class="c1">#cv2 channel order</span>
+            <span class="k">if</span> <span class="n">show</span><span class="p">:</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">image</span><span class="p">[:,:,::</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>             
+            <span class="k">return</span> <span class="n">image</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">boxes</span> <span class="o">=</span> <span class="n">predict</span><span class="o">.</span><span class="n">predict_image</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prediction_model</span><span class="p">,</span> <span class="n">image_path</span><span class="p">,</span> <span class="n">return_plot</span><span class="o">=</span><span class="n">return_plot</span><span class="p">)</span>            
+            <span class="k">return</span> <span class="n">boxes</span>            </div></div>
+
 </pre></div>
 
            </div>

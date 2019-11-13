@@ -183,37 +183,63 @@
 <span id="deepforest-deepforest-module"></span><h2>deepforest.deepforest module<a class="headerlink" href="#module-deepforest.deepforest" title="Permalink to this headline">¶</a></h2>
 <span class="target" id="module-deepforest"></span><dl class="class">
 <dt id="deepforest.deepforest.deepforest">
-<em class="property">class </em><code class="sig-prename descclassname">deepforest.deepforest.</code><code class="sig-name descname">deepforest</code><span class="sig-paren">(</span><em class="sig-param">weights=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/deepforest/deepforest.html#deepforest"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#deepforest.deepforest.deepforest" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">deepforest.deepforest.</code><code class="sig-name descname">deepforest</code><span class="sig-paren">(</span><em class="sig-param">weights=None</em>, <em class="sig-param">saved_model=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/deepforest/deepforest.html#deepforest"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#deepforest.deepforest.deepforest" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Class for training and predicting tree crowns in RGB images</p>
 <dl class="simple">
-<dt>Args:</dt><dd><p>weights (str): Path to model weights on disk. Default is None</p>
+<dt>Args:</dt><dd><p>weights (str): Path to model saved on disk from keras.model.save_weights(). A new model is created and weights are copied. Default is None. 
+saved_model: Path to a saved model from disk using keras.model.save(). No new model is created.</p>
 </dd>
 <dt>Attributes:</dt><dd><p>model: A keras training model from keras-retinanet</p>
 </dd>
 </dl>
 <dl class="method">
+<dt id="deepforest.deepforest.deepforest.evaluate_generator">
+<code class="sig-name descname">evaluate_generator</code><span class="sig-paren">(</span><em class="sig-param">annotations</em>, <em class="sig-param">comet_experiment=None</em>, <em class="sig-param">iou_threshold=0.5</em>, <em class="sig-param">score_threshold=0.05</em>, <em class="sig-param">max_detections=200</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/deepforest/deepforest.html#deepforest.evaluate_generator"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#deepforest.deepforest.deepforest.evaluate_generator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Evaluate prediction model using a csv fit_generator
+Args:</p>
+<blockquote>
+<div><p>annotations (str): Path to csv label file, labels are in the format -&gt; path/to/image.jpg,x1,y1,x2,y2,class_name
+iou_threshold(float): IoU Threshold to count for a positive detection (defaults to 0.5)
+score_threshold (float): Eliminate bounding boxes under this threshold
+max_detections (int): Maximum number of bounding box predictions
+comet_experiment(object): A comet experiment class objects to track</p>
+</div></blockquote>
+<dl class="simple">
+<dt>Return:</dt><dd><p>mAP: Mean average precision of the evaluated data</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
 <dt id="deepforest.deepforest.deepforest.predict_image">
-<code class="sig-name descname">predict_image</code><span class="sig-paren">(</span><em class="sig-param">image_path</em>, <em class="sig-param">show=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/deepforest/deepforest.html#deepforest.predict_image"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#deepforest.deepforest.deepforest.predict_image" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">predict_image</code><span class="sig-paren">(</span><em class="sig-param">image_path</em>, <em class="sig-param">return_plot=True</em>, <em class="sig-param">show=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/deepforest/deepforest.html#deepforest.predict_image"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#deepforest.deepforest.deepforest.predict_image" title="Permalink to this definition">¶</a></dt>
 <dd><p>Predict tree crowns based on loaded (or trained) model</p>
 <dl class="simple">
 <dt>Args:</dt><dd><p>image_path (str): Path to image on disk
-show (bool): Plot the predicted image with bounding boxes</p>
+show (bool): Plot the predicted image with bounding boxes. Ignored if return_plot=False
+return_plot: Whether to return image with annotations overlaid, or just a numpy array of boxes</p>
 </dd>
-<dt>Returns:</dt><dd><p>predictions (array): Numpy array of predicted bounding boxes</p>
+<dt>Returns:</dt><dd><p>predictions (array): if return_plot, an image. Otherwise a numpy array of predicted bounding boxes</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="deepforest.deepforest.deepforest.train">
-<code class="sig-name descname">train</code><span class="sig-paren">(</span><em class="sig-param">annotations</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/deepforest/deepforest.html#deepforest.train"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#deepforest.deepforest.deepforest.train" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">train</code><span class="sig-paren">(</span><em class="sig-param">annotations</em>, <em class="sig-param">input_type='fit_generator'</em>, <em class="sig-param">list_of_tfrecords=None</em>, <em class="sig-param">comet_experiment=None</em>, <em class="sig-param">images_per_epoch=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/deepforest/deepforest.html#deepforest.train"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#deepforest.deepforest.deepforest.train" title="Permalink to this definition">¶</a></dt>
 <dd><p>Train a deep learning tree detection model using keras-retinanet
 This is the main entry point for training a new model based on either existing weights or scratch</p>
 <dl class="simple">
-<dt>Args:</dt><dd><p>annotations (str): Path to csv label file, labels are in the format -&gt; path/to/image.jpg,x1,y1,x2,y2,class_name</p>
+<dt>Args:</dt><dd><p>annotations (str): Path to csv label file, labels are in the format -&gt; path/to/image.jpg,x1,y1,x2,y2,class_name
+comet_experiment: A comet ml object to log images. Optional.
+list_of_tfrecords: Ignored if input_type != “tfrecord”, list of tf records to process
+input_type: “fit_generator” or “tfrecord”
+images_per_epoch: number of images to override default config of # images in annotations file / batch size. Useful for debug</p>
 </dd>
-<dt>Returns:</dt><dd><p>model (object): A trained keras model</p>
+<dt>Returns:</dt><dd><p>model (object): A trained keras model
+prediction model: with bbox nms
+trained model: without nms</p>
 </dd>
 </dl>
 </dd></dl>
@@ -247,12 +273,10 @@ This is the main entry point for training a new model based on either existing w
 <dl class="function">
 <dt id="deepforest.utilities.create_classes">
 <code class="sig-prename descclassname">deepforest.utilities.</code><code class="sig-name descname">create_classes</code><span class="sig-paren">(</span><em class="sig-param">annotations_file</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/deepforest/utilities.html#create_classes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#deepforest.utilities.create_classes" title="Permalink to this definition">¶</a></dt>
-<dd><p>Create a class list in the format accepted by keras retinanet
-Args:</p>
-<blockquote>
-<div><p>annotations_file: an annotation csv in the retinanet format path/to/image.jpg,x1,y1,x2,y2,class_name</p>
-</div></blockquote>
+<dd><p>Create a class list in the format accepted by keras retinanet</p>
 <dl class="simple">
+<dt>Args:</dt><dd><p>annotations_file: an annotation csv in the retinanet format path/to/image.jpg,x1,y1,x2,y2,class_name</p>
+</dd>
 <dt>Returns:</dt><dd><p>path to classes file</p>
 </dd>
 </dl>
@@ -260,10 +284,12 @@ Args:</p>
 
 <dl class="function">
 <dt id="deepforest.utilities.format_args">
-<code class="sig-prename descclassname">deepforest.utilities.</code><code class="sig-name descname">format_args</code><span class="sig-paren">(</span><em class="sig-param">annotations</em>, <em class="sig-param">config</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/deepforest/utilities.html#format_args"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#deepforest.utilities.format_args" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">deepforest.utilities.</code><code class="sig-name descname">format_args</code><span class="sig-paren">(</span><em class="sig-param">annotations_file</em>, <em class="sig-param">config</em>, <em class="sig-param">images_per_epoch=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/deepforest/utilities.html#format_args"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#deepforest.utilities.format_args" title="Permalink to this definition">¶</a></dt>
 <dd><p>Format config file to match argparse list for retinainet</p>
 <dl class="simple">
-<dt>Args:</dt><dd><p>config (dict): a dictionary object to convert into a list for argparse</p>
+<dt>Args:</dt><dd><p>annotations_file: a path to a csv  dataframe of annotations to get number of images, no header
+config (dict): a dictionary object to convert into a list for argparse
+images_per_epoch (int): Override default steps per epoch (n images/batch size) by manually setting a number of images</p>
 </dd>
 <dt>Returns:</dt><dd><p>arg_list (list): a list structure that mimics argparse input arguments for retinanet</p>
 </dd>
@@ -296,18 +322,17 @@ Args:</p>
 <dl class="function">
 <dt id="deepforest.utilities.read_model">
 <code class="sig-prename descclassname">deepforest.utilities.</code><code class="sig-name descname">read_model</code><span class="sig-paren">(</span><em class="sig-param">model_path</em>, <em class="sig-param">config</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/deepforest/utilities.html#read_model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#deepforest.utilities.read_model" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Read keras retinanet model from keras.model.save()</p>
+</dd></dl>
 
 <dl class="function">
 <dt id="deepforest.utilities.use_release">
 <code class="sig-prename descclassname">deepforest.utilities.</code><code class="sig-name descname">use_release</code><span class="sig-paren">(</span><em class="sig-param">save_dir='data'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/deepforest/utilities.html#use_release"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#deepforest.utilities.use_release" title="Permalink to this definition">¶</a></dt>
-<dd><p>Check the existance of, or download the latest model release from github
-Args:</p>
-<blockquote>
-<div><p>save_dir (str): Directory to save filepath, default to “data” in toplevel repo</p>
-</div></blockquote>
+<dd><p>Check the existance of, or download the latest model release from github</p>
 <dl class="simple">
-<dt>Returns:</dt><dd><p>output_path (str): path to downloaded model weights</p>
+<dt>Args:</dt><dd><p>save_dir (str): Directory to save filepath, default to “data” in toplevel repo</p>
+</dd>
+<dt>Returns:</dt><dd><p>output_path (str): path to downloaded model</p>
 </dd>
 </dl>
 </dd></dl>

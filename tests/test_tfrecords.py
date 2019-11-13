@@ -114,18 +114,4 @@ def test_create_tfrecords(config):
     
 #Reading
 def test_create_dataset(prepare_dataset):
-    dataset = tfrecords.create_dataset("tests/data/testfile_tfrecords_0.tfrecord")        
-    
-#Training  of cropped records
-def test_train(prepare_dataset, config):
-    list_of_tfrecords = glob.glob("tests/data/*.tfrecord")
-    print("Found {} tfrecords".format(len(list_of_tfrecords)))
-    
-    config["batch_size"] = 1
-    config["save-snapshot"] = False
-    
-    tfrecords.train(
-        list_of_tfrecords=list_of_tfrecords,
-        backbone_name=config["backbone"],
-        steps_per_epoch=1
-    )
+    dataset = tfrecords.create_dataset("tests/data/testfile_tfrecords_0.tfrecord")
