@@ -62,7 +62,7 @@ def test_train(annotations):
     
     return test_model
 
-def test_evaluate(test_train):
+def test_evaluate(test_train, annotations):
     test_train.evaluate_generator(annotations=annotations)
 
 #Training    
