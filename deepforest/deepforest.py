@@ -7,6 +7,7 @@
 
 """
 import os
+import pandas as pd
 from matplotlib import pyplot as plt
 
 from deepforest import utilities
@@ -19,6 +20,7 @@ from keras_retinanet.models import convert_model
 from keras_retinanet.bin.train import create_models
 from keras_retinanet.preprocessing.csv_generator import CSVGenerator
 from keras_retinanet.utils.eval import evaluate
+from keras_retinanet.utils.eval import _get_detections
 
 class deepforest:
     ''' Class for training and predicting tree crowns in RGB images
@@ -88,6 +90,55 @@ class deepforest:
         self.model = utilities.read_model(self.weights, self.config)
         self.prediction_model = convert_model(self.model)
     
+    def predict_generator(self, annotations, comet_experiment = None, iou_threshold=0.5, score_threshold=0.05, max_detections=200):
+        """
+         Predict bounding boxes for a model using a csv fit_generator
+        Args:
+            annotations (str): Path to csv label file, labels are in the format -> path/to/image.jpg,x1,y1,x2,y2,class_name
+            iou_threshold(float): IoU Threshold to count for a positive detection (defaults to 0.5)
+            score_threshold (float): Eliminate bounding boxes under this threshold
+            max_detections (int): Maximum number of bounding box predictions
+            comet_experiment(object): A comet experiment class objects to track
+        Return:
+            boxes_output: a pandas dataframe of bounding boxes for each image in the annotations file
+        """
+        #Format args for CSV generator 
+        arg_list = utilities.format_args(annotations, self.config)
+        args = parse_args(arg_list)
+        
+        #create generator
+        generator = CSVGenerator(
+            args.annotations,
+            args.classes,
+            image_min_side=args.image_min_side,
+            image_max_side=args.image_max_side,
+            config=args.config,
+            shuffle_groups=False,
+        )
+        
+        if self.prediction_model:
+            boxes_output = [ ]
+            #For each image, gather predictions
+            for i in range(generator.size()):
+                #pass image as path
+                plot_name = generator.image_names[i]
+                image_path = os.path.join(generator.base_dir,plot_name)
+                boxes = self.predict_image(image_path, return_plot=False)
+                
+                #Turn to pandas frame and save output
+                box_df = pd.DataFrame(boxes)
+                box_df["plot_name"] = plot_name
+                boxes_output.append(box_df)
+        else:
+                raise ValueError("No prediction model loaded. Either load a retinanet from file, download the latest release or train a new model")
+    
+        #name columns and return box data
+        boxes_output = pd.concat(boxes_output)
+        boxes_output.columns = ["xmin","ymin","xmax","ymax","plot_name"]
+        boxes_output = boxes_output.reindex(columns= ["plot_name","xmin","ymin","xmax","ymax"])    
+        
+        return boxes_output
+    
     def evaluate_generator(self, annotations, comet_experiment = None, iou_threshold=0.5, score_threshold=0.05, max_detections=200):
         """
         Evaluate prediction model using a csv fit_generator
@@ -143,11 +194,12 @@ class deepforest:
         print('mAP: {:.4f}'.format(mAP))   
         return mAP
 
-    def predict_image(self, image_path, return_plot=True, show=False):
+    def predict_image(self, image_path=None, raw_image=None, return_plot=True, show=False):
         '''Predict tree crowns based on loaded (or trained) model
         
         Args:
             image_path (str): Path to image on disk
+            raw_image (array): Numpy image array in BGR channel order following openCV convention
             show (bool): Plot the predicted image with bounding boxes. Ignored if return_plot=False
             return_plot: Whether to return image with annotations overlaid, or just a numpy array of boxes
         Returns:
@@ -159,7 +211,7 @@ class deepforest:
             raise ValueError("Model currently has no weights, either train a new model using deepforest.train, loading existing model, or use prebuilt model (see deepforest.use_release()")
                 
         if return_plot:
-            image = predict.predict_image(self.prediction_model, image_path, return_plot=return_plot)            
+            image = predict.predict_image(self.prediction_model, image_path, raw_image, return_plot=return_plot)            
             #cv2 channel order
             if show:
                 plt.imshow(image[:,:,::-1])

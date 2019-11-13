@@ -37,15 +37,22 @@ def test_deepforest():
     model = deepforest.deepforest(weights=None)
     assert model.weights is None
 
+@pytest.fixture()
 def test_use_release(download_release):
     test_model = deepforest.deepforest() 
     test_model.use_release()
     #Assert is model instance    
     assert isinstance(test_model.model,keras.models.Model)
+    
+    return test_model
 
 def test_predict_image(download_release):
+    
+    #Load model
     test_model = deepforest.deepforest(weights="tests/data/universal_model_july30.h5")    
     assert isinstance(test_model.model,keras.models.Model)
+    
+    #Predict test image and return boxes
     boxes = test_model.predict_image(image_path="tests/data/OSBS_029.tif", show=False, return_plot = False)
     
     #Returns a 4 column numpy array
@@ -62,8 +69,14 @@ def test_train(annotations):
     
     return test_model
 
-def test_evaluate(test_train, annotations):
-    test_train.evaluate_generator(annotations=annotations)
+def test_predict_generator(test_use_release, annotations):
+    boxes = test_use_release.predict_generator(annotations=annotations)
+    assert boxes.shape[1] == 5
+    
+def test_evaluate(test_use_release, annotations):
+    mAP = test_use_release.evaluate_generator(annotations=annotations)
+    #Assert that function returns a float numpy value
+    assert mAP.dtype == float
 
 #Training    
 def test_tfrecord_train(prepare_tfdataset, annotations):

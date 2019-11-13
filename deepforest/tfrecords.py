@@ -46,7 +46,7 @@ def create_tf_example(image, regression_target, class_target, fname, original_im
 def create_tfrecords(annotations_file, class_file, backbone_model="resnet50", image_min_side=800, size=1, savedir="./"):
     """
     Args:
-        annotations_file: path to 5 column data in form image_path, xmin, ymin, xmax, ymax, label
+        annotations_file: path to 6 column data in form image_path, xmin, ymin, xmax, ymax, label
         backbone_model: A keras retinanet backbone
         image_min_side: resized image object minimum size
         size: Number of images per tfrecord
