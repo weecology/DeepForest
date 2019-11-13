@@ -199,6 +199,9 @@ def format_args(annotations_file, config, images_per_epoch=None):
         args["--workers"] = config["workers"]
         args["--max-queue-size"] = config["max_queue_size"]
         
+        if config["save_path"]:
+                args["--save-path"] = config["save_path"]
+                
         #turn dictionary to list for argparse
         arg_list = [[k,v] for k, v in args.items()]
         arg_list = [val for sublist in arg_list for val in sublist]

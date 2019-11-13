@@ -62,6 +62,9 @@ def create_tfrecords(annotations_file, class_file, backbone_model="resnet50", im
     #filebase name
     image_basename = os.path.splitext(os.path.basename(annotations_file))[0]
     
+    #TODO check annotations file, JPEG, PNG, GIF, or BMP are allowed.
+    #assert annotations_file
+    
     #Create generator - because of how retinanet yields data, this should always be 1. Shape problems in the future?
     train_generator = CSVGenerator(
         annotations_file,
@@ -217,7 +220,7 @@ def create_dataset(filepath, batch_size=1, shuffle=True):
     
     ## Set the number of datapoints you want to load and shuffle 
     if shuffle:
-        dataset = dataset.shuffle(100)
+        dataset = dataset.shuffle(500)
     
     ## This dataset will go on forever
     dataset = dataset.repeat()

@@ -88,7 +88,7 @@ class deepforest:
         self.model = utilities.read_model(self.weights, self.config)
         self.prediction_model = convert_model(self.model)
     
-    def evaluate_generator(self, annotations, comet_experiment = None, images_per_epoch = None, iou_threshold=0.5, score_threshold=0.05, max_detections=200):
+    def evaluate_generator(self, annotations, comet_experiment = None, iou_threshold=0.5, score_threshold=0.05, max_detections=200):
         """
         Evaluate prediction model using a csv fit_generator
         Args:
@@ -97,12 +97,11 @@ class deepforest:
             score_threshold (float): Eliminate bounding boxes under this threshold
             max_detections (int): Maximum number of bounding box predictions
             comet_experiment(object): A comet experiment class objects to track
-            images_per_epoch (int): number of validation steps
         Return:
             mAP: Mean average precision of the evaluated data
         """
         #Format args for CSV generator 
-        arg_list = utilities.format_args(annotations, self.config, images_per_epoch)
+        arg_list = utilities.format_args(annotations, self.config)
         args = parse_args(arg_list)
         
         #create generator

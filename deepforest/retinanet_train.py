@@ -361,8 +361,7 @@ def main(args=None, input_type="fit_generator", list_of_tfrecords=None, comet_ex
         inputs = next_element[0]
         targets = [next_element[1], next_element[2]]
         
-        if not args.compute_val_loss:
-            validation_generator = None   
+        validation_generator = None   
             
     else:
         raise ValueError("{} input type is invalid. Only 'tfrecord' or 'for_generator' input types are accepted for model training".format(input_type))
