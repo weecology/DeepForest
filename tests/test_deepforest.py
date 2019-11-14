@@ -97,7 +97,7 @@ def test_freeze_train(annotations, test_train):
     test_train.train(annotations=annotations, input_type="fit_generator")
     
     #Get updated weights to compare
-    after = test_train.training_model.layers[6].get_weights().s
+    after = test_train.training_model.layers[6].get_weights()
     print("Trainable layers after freezing: {}".format(len(test_train.training_model.trainable_weights)))
 
     assert not test_train.training_model.layers[6].trainable
