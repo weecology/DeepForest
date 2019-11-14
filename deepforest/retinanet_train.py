@@ -57,7 +57,7 @@ def model_with_weights(model, weights, skip_mismatch):
 
 
 def create_models(backbone_retinanet, num_classes, weights, multi_gpu=0,
-                  freeze_backbone=True, lr=1e-5, config=None , targets=None, freeze_layers=0):
+                  freeze_backbone=False, lr=1e-5, config=None , targets=None, freeze_layers=0, modifier=None):
     """ Creates three models (model, training_model, prediction_model).
 
     Args
@@ -68,7 +68,8 @@ def create_models(backbone_retinanet, num_classes, weights, multi_gpu=0,
         freeze_backbone    : If True, disables learning for the backbone.
         config             : Config parameters, None indicates the default configuration.
         targets            : Target tensors if training a model with tfrecord inputs
-        freeze_layers    : int layer number to freeze from bottom of the network during finetuning. e.g. 10 will set layers 0:10 to layer.trainable = False. 0 is default, no freezing.
+        freeze_layers    : int layer number to freeze from bottom of the retinanet network during finetuning. e.g. 10 will set layers 0:10 to layer.trainable = False. 0 is default, no freezing.
+        modifier           : function that takes in a model and freezes resnet layers, returns modified object
 
     Returns
         model            : The base model. This is also the model that is saved in snapshots.
@@ -76,6 +77,7 @@ def create_models(backbone_retinanet, num_classes, weights, multi_gpu=0,
         prediction_model : The model wrapped with utility functions to perform object detection (applies regression values and performs NMS).
     """
 
+    #if not modifier:
     modifier = freeze_model if freeze_backbone else None
 
     # load anchor parameters, or pass None (so that defaults will be used)
@@ -98,14 +100,6 @@ def create_models(backbone_retinanet, num_classes, weights, multi_gpu=0,
 
     # make prediction model
     prediction_model = retinanet_bbox(model=model, anchor_params=anchor_params)
-
-    #Optionally freeze lower layers when finetuning
-    #if freeze_layers > 0:
-        #for layer in training_model.layers[:freeze_layers]:
-            #print("Freezing layer {}".format(layer.name))
-            #layer.trainable = False
-    #for layer in training_model.layers[:-4]:
-        #layer.trainable=False
         
     #Compile model
     if targets:
@@ -310,7 +304,7 @@ def parse_args(args):
     parser.add_argument('--tensorboard-dir',  help='Log directory for Tensorboard output', default='./logs')
     parser.add_argument('--no-snapshots',     help='Disable saving snapshots.', dest='snapshots', action='store_false')
     parser.add_argument('--no-evaluation',    help='Disable per epoch evaluation.', dest='evaluation', action='store_false')
-    parser.add_argument('--freeze-backbone',  help='Freeze training of backbone layers.', action='store_true')
+    parser.add_argument('--freeze-backbone',  help='Freeze training of backbone layers.', action='store_false')
     parser.add_argument('--random-transform', help='Randomly transform image and annotations.', action='store_true')
     parser.add_argument('--image-min-side',   help='Rescale the image so the smallest side is min_side.', type=int, default=1000)
     parser.add_argument('--image-max-side',   help='Rescale the image if the largest side is larger than max_side.', type=int, default=1333)
