@@ -215,6 +215,9 @@ def format_args(annotations_file, config, images_per_epoch=None):
                 print("Disabling snapshot saving")                
                 arg_list = arg_list + ["--no-snapshots"]
 
+        if config["freeze_resnet"] is True:
+                arg_list = arg_list + ["--freeze-backbone"]
+                        
         if config["multi-gpu"] > 1:
                 arg_list = arg_list + ["--multi-gpu-force"]
 
