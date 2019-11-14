@@ -19,7 +19,7 @@ epochs: 1
 #Validation annotations. If training using fit_generator, these will be evaluated as a callback at the end of each epoch.
 validation_annotations: None
 ###Freeze layers. Used for model finetuning, freeze the bottom n layers.
-freeze_layers: 10
+freeze_layers: 0
 
 #Keras generator methods
 multiprocessing: False 

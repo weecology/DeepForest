@@ -207,8 +207,8 @@ class deepforest:
         '''     
         #Check for model save
         
-        if(self.weights is None):
-            raise ValueError("Model currently has no weights, either train a new model using deepforest.train, loading existing model, or use prebuilt model (see deepforest.use_release()")
+        if(self.prediction_model is None):
+            raise ValueError("Model currently has no prediction weights, either train a new model using deepforest.train, loading existing model, or use prebuilt model (see deepforest.use_release()")
                 
         if return_plot:
             image = predict.predict_image(self.prediction_model, image_path, raw_image, return_plot=return_plot)            

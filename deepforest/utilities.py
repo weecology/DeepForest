@@ -198,6 +198,7 @@ def format_args(annotations_file, config, images_per_epoch=None):
         args["--tensorboard-dir"] = None
         args["--workers"] = config["workers"]
         args["--max-queue-size"] = config["max_queue_size"]
+        args["--freeze-layers"] = config["freeze_layers"]
         
         if config["save_path"]:
                 args["--save-path"] = config["save_path"]

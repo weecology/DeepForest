@@ -57,7 +57,7 @@ def model_with_weights(model, weights, skip_mismatch):
 
 
 def create_models(backbone_retinanet, num_classes, weights, multi_gpu=0,
-                  freeze_backbone=False, lr=1e-5, config=None , targets=None):
+                  freeze_backbone=False, lr=1e-5, config=None , targets=None, freeze_layers=0):
     """ Creates three models (model, training_model, prediction_model).
 
     Args
@@ -68,6 +68,7 @@ def create_models(backbone_retinanet, num_classes, weights, multi_gpu=0,
         freeze_backbone    : If True, disables learning for the backbone.
         config             : Config parameters, None indicates the default configuration.
         targets            : Target tensors if training a model with tfrecord inputs
+        freeze_layers    : int layer number to freeze from bottom of the network during finetuning. e.g. 10 will set layers 0:10 to layer.trainable = False. 0 is default, no freezing.
 
     Returns
         model            : The base model. This is also the model that is saved in snapshots.
@@ -98,6 +99,12 @@ def create_models(backbone_retinanet, num_classes, weights, multi_gpu=0,
     # make prediction model
     prediction_model = retinanet_bbox(model=model, anchor_params=anchor_params)
 
+    #Optionally freeze lower layers when finetuning
+    if freeze_layers > 0:
+        for layer in training_model.layers[:freeze_layers]:
+            print("Freezing layer {}".format(layer.name))
+            layer.trainable = False
+        
     #Compile model
     if targets:
         #tfdataset target tensor from tfrecords pipelione
@@ -308,6 +315,7 @@ def parse_args(args):
     parser.add_argument('--config',           help='Path to a configuration parameters .ini file.')
     parser.add_argument('--weighted-average', help='Compute the mAP using the weighted average of precisions among classes.', action='store_true')
     parser.add_argument('--compute-val-loss', help='Compute validation loss during training', dest='compute_val_loss', action='store_true')
+    parser.add_argument('--freeze-layers',   help='Set trainable to False for the first n retinanet layers', type=int, default=0)
 
     # Fit generator arguments
     parser.add_argument('--multiprocessing',  help='Use multiprocessing in fit_generator.', action='store_true')
@@ -395,7 +403,8 @@ def main(args=None, input_type="fit_generator", list_of_tfrecords=None, comet_ex
             freeze_backbone=args.freeze_backbone,
             lr=args.lr,
             config=args.config,
-            targets=targets
+            targets=targets,
+            freeze_layers=args.freeze_layers
         )
 
     # print model summary
