@@ -31,4 +31,5 @@ max_queue_size: 10
 save-snapshot: False
 #Save directory for images and snapshots
 save_path: snapshots/
+snapshot_path: snapshots/
 

@@ -202,6 +202,9 @@ def format_args(annotations_file, config, images_per_epoch=None):
         
         if config["save_path"]:
                 args["--save-path"] = config["save_path"]
+        
+        if config["snapshot_path"]:
+                args["--snapshot-path"] = config["snapshot_path"]       
                 
         #turn dictionary to list for argparse
         arg_list = [[k,v] for k, v in args.items()]

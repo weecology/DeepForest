@@ -55,6 +55,10 @@ def test_create_tfrecords(config):
     return created_records
 
 @pytest.fixture()
+def setup_create_tensors(test_create_tfrecords):
+    created_tensors = tfrecords.create_tensors(test_create_tfrecords)
+    return created_tensors
+
 def test_create_tensors(test_create_tfrecords):
     print("Testing that input tensors can be created")
     created_tensors = tfrecords.create_tensors(test_create_tfrecords)
@@ -62,14 +66,13 @@ def test_create_tensors(test_create_tfrecords):
     
     return created_tensors
 
-#@pytest.mark.skipif("TRAVIS" in os.environ and os.environ["TRAVIS"] == "true", reason="tfrecords can't build on travis")
 def test_create_dataset(test_create_tfrecords):
     dataset = tfrecords.create_dataset(test_create_tfrecords)
     
-def test_equivalence(config, test_create_tensors):
+def test_equivalence(config, setup_create_tensors):
     
     #unpack created tensors
-    tf_inputs, tf_targets = test_create_tensors
+    tf_inputs, tf_targets = setup_create_tensors
     
     #the image going in to tensorflow should be equivalent to the image from the fit_generator
     backbone = models.backbone(config["backbone"])
@@ -126,4 +129,15 @@ def test_equivalence(config, test_create_tensors):
     #ax2.title.set_text('Loaded Image')        
     #plt.imshow(tf_inputs)
     #plt.show()        
-    
+
+#Check for bad file types
+@pytest.fixture()
+def bad_annotations():
+    annotations = utilities.xml_to_annotations("tests/data/OSBS_029.xml",rgb_dir="tests/data")
+    f = "tests/data/testfile_error_deepforest.csv"
+    annotations.to_csv(f,index=False,header=False)
+    return f
+
+def test_tfdataset_error(bad_annotations):    
+    with pytest.raises(ValueError):    
+        records_created = tfrecords.create_tfrecords(annotations_file=bad_annotations, class_file="tests/data/classes.csv", image_min_side=800, backbone_model="resnet50", size=100, savedir="tests/data/")
