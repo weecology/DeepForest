@@ -100,10 +100,12 @@ def create_models(backbone_retinanet, num_classes, weights, multi_gpu=0,
     prediction_model = retinanet_bbox(model=model, anchor_params=anchor_params)
 
     #Optionally freeze lower layers when finetuning
-    if freeze_layers > 0:
-        for layer in training_model.layers[:freeze_layers]:
-            print("Freezing layer {}".format(layer.name))
-            layer.trainable = False
+    #if freeze_layers > 0:
+        #for layer in training_model.layers[:freeze_layers]:
+            #print("Freezing layer {}".format(layer.name))
+            #layer.trainable = False
+    for layer in training_model.layers:
+        layer.trainable = False
         
     #Compile model
     if targets:
