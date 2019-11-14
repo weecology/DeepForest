@@ -57,7 +57,7 @@ def model_with_weights(model, weights, skip_mismatch):
 
 
 def create_models(backbone_retinanet, num_classes, weights, multi_gpu=0,
-                  freeze_backbone=False, lr=1e-5, config=None , targets=None, freeze_layers=0):
+                  freeze_backbone=True, lr=1e-5, config=None , targets=None, freeze_layers=0):
     """ Creates three models (model, training_model, prediction_model).
 
     Args
@@ -104,8 +104,8 @@ def create_models(backbone_retinanet, num_classes, weights, multi_gpu=0,
         #for layer in training_model.layers[:freeze_layers]:
             #print("Freezing layer {}".format(layer.name))
             #layer.trainable = False
-    for layer in training_model.layers[:-4]:
-        layer.trainable=False
+    #for layer in training_model.layers[:-4]:
+        #layer.trainable=False
         
     #Compile model
     if targets:
