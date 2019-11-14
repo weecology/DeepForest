@@ -11,6 +11,7 @@ import numpy as np
 from math import ceil
 import keras 
 import cv2
+import pandas as pd
 
 from keras_retinanet.preprocessing.csv_generator import CSVGenerator
 from keras_retinanet import models
@@ -62,8 +63,13 @@ def create_tfrecords(annotations_file, class_file, backbone_model="resnet50", im
     #filebase name
     image_basename = os.path.splitext(os.path.basename(annotations_file))[0]
     
-    #TODO check annotations file, JPEG, PNG, GIF, or BMP are allowed.
-    #assert annotations_file
+    #Check annotations file only JPEG, PNG, GIF, or BMP are allowed.
+    df = pd.read_csv(annotations_file, names=["image_path","xmin","ymin","xmax","ymax","label"])
+    df['FileType'] = df.image_path.str.split('.').str[-1].str.lower()
+    bad_file_types = sum(~df['FileType'].isin(["jpeg","jpg","png","gif","bmp"]))
+    
+    if bad_file_types > 0:
+        raise ValueError("Check annotations file, only JPEG, PNG, GIF, or BMP are allowed, {} incorrect files found".format(bad_file_types))
     
     #Create generator - because of how retinanet yields data, this should always be 1. Shape problems in the future?
     train_generator = CSVGenerator(
@@ -251,62 +257,6 @@ def model_with_weights(model, weights, skip_mismatch):
         model.load_weights(weights, by_name=True, skip_mismatch=skip_mismatch)
     return model
 
-def create_models(backbone_retinanet, num_classes, weights, multi_gpu=0,
-                  freeze_backbone=False, lr=1e-5, config=None, inputs=None, targets=None):
-    """ Creates three models (model, training_model, prediction_model).
-
-    Args
-        backbone_retinanet : A function to call to create a retinanet model with a given backbone.
-        num_classes        : The number of classes to train.
-        weights            : The weights to load into the model.
-        multi_gpu          : The number of GPUs to use for training.
-        freeze_backbone    : If True, disables learning for the backbone.
-        config             : Config parameters, None indicates the default configuration.
-        inputs:            : tf.dataset object tensor
-        targets            : tf.dataset object tensor
-
-
-    Returns
-        model            : The base model. This is also the model that is saved in snapshots.
-        training_model   : The training model. If multi_gpu=0, this is identical to model.
-        prediction_model : The model wrapped with utility functions to perform object detection (applies regression values and performs NMS).
-    """
-
-    modifier = freeze_model if freeze_backbone else None
-
-    # load anchor parameters, or pass None (so that defaults will be used)
-    anchor_params = None
-    num_anchors   = None
-    if config and 'anchor_parameters' in config:
-        anchor_params = parse_anchor_parameters(config)
-        num_anchors   = anchor_params.num_anchors()
-
-    # Keras recommends initialising a multi-gpu model on the CPU to ease weight sharing, and to prevent OOM errors.
-    # optionally wrap in a parallel model
-    if multi_gpu > 1:
-        from keras.utils import multi_gpu_model
-        with tf.device('/cpu:0'):
-            model = model_with_weights(backbone_retinanet(num_classes, num_anchors=num_anchors, modifier=modifier), weights=weights, skip_mismatch=True)
-        training_model = multi_gpu_model(model, gpus=multi_gpu)
-    else:
-        model          = model_with_weights(backbone_retinanet(num_classes, num_anchors=num_anchors, modifier=modifier), weights=weights, skip_mismatch=True)
-        training_model = model
-
-    # make prediction model
-    prediction_model = retinanet_bbox(model=model, anchor_params=anchor_params)
-
-    # compile model
-    training_model.compile(
-        loss={
-            'regression'    : losses.smooth_l1(),
-            'classification': losses.focal()
-            },
-        optimizer=keras.optimizers.adam(lr=lr, clipnorm=0.001),
-        target_tensors=targets
-    )
-
-    return model, training_model, prediction_model
-
 def create_tensors(list_of_tfrecords, backbone_name="resnet50", shuffle=True):
     """Create a wired tensor target from a list of tfrecords
     Args:
@@ -325,31 +275,3 @@ def create_tensors(list_of_tfrecords, backbone_name="resnet50", shuffle=True):
     targets = [next_element[1], next_element[2]]
 
     return inputs, targets
-
-def train(list_of_tfrecords, backbone_name, weights=None, steps_per_epoch=None):
-    """
-    Train a retinanet model using tfrecords input
-    
-    Args:
-        list_of_tfrecords: a path or wildcard glob of tfrecords
-        backbone_model: A keras retinanet backbone name
-        weights: path to training weights to start from, built from keras.model.save_weights s
-        steps_per_epoch: How often should validation data be evaluated?
-    
-    Returns:
-        training_model: The retinanet training model
-        prediction_model: The retinanet prediction model with nms for bbox
-    """
-    
-    #Check args
-    if steps_per_epoch is None:
-        raise ValueError("Unknown training steps for a tfrecord, set using steps_per_epoch")
-
-    #Create tensorflow iterator and retinanet models
-    inputs, targets = create_tensors(list_of_tfrecords)
-    backbone = models.backbone(backbone_name)
-    model, training_model, prediction_model = create_models(backbone_retinanet=backbone.retinanet, weights=weights, targets=targets, num_classes=1)
-    
-    training_model.fit(inputs, steps_per_epoch=steps_per_epoch)        
-    
-    return model, training_model, prediction_model
