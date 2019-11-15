@@ -17,7 +17,7 @@ def label_to_name(label):
     """
     return "Tree"
     
-def predict_image(model, image_path=None, raw_image = None, score_threshold = 0.1, max_detections= 200, return_plot=True):
+def predict_image(model, image_path=None, raw_image = None, score_threshold = 0.05, max_detections= 200, return_plot=True):
     """
     Predict invidiual tree crown bounding boxes for a single image
     

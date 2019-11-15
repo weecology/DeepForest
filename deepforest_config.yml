@@ -20,6 +20,7 @@ epochs: 1
 validation_annotations: None
 ###Freeze layers. Used for model finetuning, freeze the bottom n layers.
 freeze_layers: 0
+###Freeze resnet backbone entirely.
 freeze_resnet: False
 
 #Keras generator methods

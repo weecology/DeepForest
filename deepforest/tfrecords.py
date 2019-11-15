@@ -226,7 +226,7 @@ def create_dataset(filepath, batch_size=1, shuffle=True):
     
     ## Set the number of datapoints you want to load and shuffle 
     if shuffle:
-        dataset = dataset.shuffle(500)
+        dataset = dataset.shuffle(800)
     
     ## This dataset will go on forever
     dataset = dataset.repeat()
