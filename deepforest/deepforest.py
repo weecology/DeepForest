@@ -123,7 +123,7 @@ class deepforest:
                 #pass image as path
                 plot_name = generator.image_names[i]
                 image_path = os.path.join(generator.base_dir,plot_name)
-                boxes = self.predict_image(image_path, return_plot=False, score_threshold=score_threshold, max_detections=max_detections)
+                boxes = self.predict_image(image_path, return_plot=False, score_threshold=args.score_threshold)
                 
                 #Turn to pandas frame and save output
                 box_df = pd.DataFrame(boxes)
@@ -169,7 +169,7 @@ class deepforest:
             validation_generator,
             self.prediction_model,
             iou_threshold=iou_threshold,
-            score_threshold=score_threshold,
+            score_threshold=args.score_threshold,
             max_detections=max_detections,
             save_path=args.save_path,
             comet_experiment=comet_experiment
@@ -194,7 +194,7 @@ class deepforest:
         print('mAP: {:.4f}'.format(mAP))   
         return mAP
 
-    def predict_image(self, image_path=None, raw_image=None, return_plot=True, show=False):
+    def predict_image(self, image_path=None, raw_image=None, return_plot=True, score_threshold=0.05, max_detections=200, show=False):
         '''Predict tree crowns based on loaded (or trained) model
         
         Args:
@@ -211,7 +211,7 @@ class deepforest:
             raise ValueError("Model currently has no prediction weights, either train a new model using deepforest.train, loading existing model, or use prebuilt model (see deepforest.use_release()")
                 
         if return_plot:
-            image = predict.predict_image(self.prediction_model, image_path, raw_image, return_plot=return_plot)            
+            image = predict.predict_image(self.prediction_model, image_path, raw_image, score_threshold, return_plot=return_plot)            
             #cv2 channel order
             if show:
                 plt.imshow(image[:,:,::-1])
