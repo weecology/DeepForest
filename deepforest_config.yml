@@ -27,10 +27,11 @@ freeze_resnet: False
 ###Score threshold, above which bounding boxes are included in evaluation predictions
 score_threshold: 0.05
 
-#Keras generator methods
+#Keras fit_generator methods, these do not apply to tfrecords input_type
 multiprocessing: False 
 workers: 1
 max_queue_size: 10
+random_transform: False
 
 #save snapshot and images
 ###Whether to save snapshots at the end of each epoch
