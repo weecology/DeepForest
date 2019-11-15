@@ -86,7 +86,7 @@ def test_train_no_freeze(annotations, test_train):
     assert not np.array_equal(before, after)
     
 def test_freeze_train(annotations, test_train):
-    test_train.config["freeze_layers"] = 10
+    test_train.config["freeze_resnet"] = True
     
     #Get initial weights to compare from one layer, it should start in trainable mode
     print("Trainable layers before freezing: {}".format(len(test_train.training_model.trainable_weights)))
@@ -97,10 +97,10 @@ def test_freeze_train(annotations, test_train):
     test_train.train(annotations=annotations, input_type="fit_generator")
     
     #Get updated weights to compare
-    after = test_train.training_model.layers[6].get_weights()
+    after = test_train.training_model.layers[10].get_weights()
     print("Trainable layers after freezing: {}".format(len(test_train.training_model.trainable_weights)))
 
-    assert not test_train.training_model.layers[6].trainable
+    assert not test_train.training_model.layers[10].trainable
     
     #Because the network uses batch norm layers, there is a slight drift in weights. It should be very small.
     #assert np.array_equal(before, after)

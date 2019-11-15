@@ -47,7 +47,7 @@ def select_annotations(annotations, windows, index):
     window_ymax = window_ymin + h
     
     #buffer coordinates a bit to grab boxes that might start just against the image edge. Don't allow boxes that start and end after the offset
-    offset = 5
+    offset = 40
     selected_annotations = annotations[ 
         (annotations.xmin > (window_xmin -offset)) &  
         (annotations.xmin < (window_xmax)) &

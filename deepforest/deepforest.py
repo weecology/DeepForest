@@ -123,7 +123,7 @@ class deepforest:
                 #pass image as path
                 plot_name = generator.image_names[i]
                 image_path = os.path.join(generator.base_dir,plot_name)
-                boxes = self.predict_image(image_path, return_plot=False)
+                boxes = self.predict_image(image_path, return_plot=False, score_threshold=score_threshold, max_detections=max_detections)
                 
                 #Turn to pandas frame and save output
                 box_df = pd.DataFrame(boxes)
