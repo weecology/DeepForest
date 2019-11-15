@@ -206,8 +206,7 @@ def format_args(annotations_file, config, images_per_epoch=None):
         
         if config["snapshot_path"]:
                 args["--snapshot-path"] = config["snapshot_path"]       
-                
-        #turn dictionary to list for argparse
+
         arg_list = [[k,v] for k, v in args.items()]
         arg_list = [val for sublist in arg_list for val in sublist]
 
@@ -218,7 +217,10 @@ def format_args(annotations_file, config, images_per_epoch=None):
 
         if config["freeze_resnet"] is True:
                 arg_list = arg_list + ["--freeze-backbone"]
-                        
+                     
+        if config["random_transform"] is True:
+                arg_list = arg_list + ["--random-transform"]            
+                
         if config["multi-gpu"] > 1:
                 arg_list = arg_list + ["--multi-gpu-force"]
 
