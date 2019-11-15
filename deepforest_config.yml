@@ -23,6 +23,10 @@ freeze_layers: 0
 ###Freeze resnet backbone entirely.
 freeze_resnet: False
 
+###Evaluation
+###Score threshold, above which bounding boxes are included in evaluation predictions
+score_threshold: 0.05
+
 #Keras generator methods
 multiprocessing: False 
 workers: 1

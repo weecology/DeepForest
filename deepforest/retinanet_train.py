@@ -142,7 +142,7 @@ def create_callbacks(model, training_model, prediction_model, validation_generat
     callbacks = []
 
     if args.evaluation and validation_generator:
-        evaluation = Evaluate(validation_generator, weighted_average=args.weighted_average, comet_experiment=comet_experiment, save_path=args.save_path)
+        evaluation = Evaluate(validation_generator, weighted_average=args.weighted_average, comet_experiment=comet_experiment, save_path=args.save_path, score_threshold=args.score_threshold)
         evaluation = RedirectModel(evaluation, prediction_model)
         callbacks.append(evaluation)
 
@@ -317,6 +317,9 @@ def parse_args(args):
     parser.add_argument('--multiprocessing',  help='Use multiprocessing in fit_generator.', action='store_true')
     parser.add_argument('--workers',          help='Number of generator workers.', type=int, default=1)
     parser.add_argument('--max-queue-size',   help='Queue length for multiprocessing workers in fit_generator.', type=int, default=10)
+    
+    #callback arguments
+    parser.add_argument('--score-threshold', help="Minimum bounding box score to be considered in prediction", type=float, default=0.05)
     
     return check_args(parser.parse_args(args))
 
