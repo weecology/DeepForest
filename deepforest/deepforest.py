@@ -127,7 +127,8 @@ class deepforest:
                 
                 #Turn to pandas frame and save output
                 box_df = pd.DataFrame(boxes)
-                box_df["plot_name"] = plot_name
+                #use only plot name, not extension
+                box_df["plot_name"] = os.path.splitext(plot_name)[0]
                 boxes_output.append(box_df)
         else:
                 raise ValueError("No prediction model loaded. Either load a retinanet from file, download the latest release or train a new model")
