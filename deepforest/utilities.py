@@ -219,6 +219,7 @@ def format_args(annotations_file, config, images_per_epoch=None):
                 arg_list = arg_list + ["--freeze-backbone"]
                      
         if config["random_transform"] is True:
+                print("Turning on random transform generator")
                 arg_list = arg_list + ["--random-transform"]            
                 
         if config["multi-gpu"] > 1:
