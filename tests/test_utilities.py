@@ -4,6 +4,7 @@ import pytest
 import os
 import pandas as pd
 import numpy as np
+from deepforest import deepforest
 
 @pytest.fixture()
 def annotations():
@@ -44,3 +45,4 @@ def test_format_args_steps(annotations, config):
     #A bit ugly, but since its a list, what is the argument after --steps to assert
     steps_position = np.where(["--steps" in x for x in arg_list])[0][0] + 1
     assert arg_list[steps_position] == '2'
+    

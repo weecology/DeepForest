@@ -122,4 +122,10 @@ def test_tfrecord_train(prepare_tfdataset, annotations):
     
     print("Found {} tfrecords to train".format(len(prepare_tfdataset)))
     test_model.train(annotations=annotations,input_type="tfrecord", list_of_tfrecords=prepare_tfdataset, images_per_epoch=1)
-    
+
+#Test random transform
+def test_random_transform(annotations):
+    test_model = deepforest.deepforest()
+    test_model.config["random_transform"]
+    arg_list = utilities.format_args(annotations, test_model.config)
+    assert "--random-transform" in arg_list
