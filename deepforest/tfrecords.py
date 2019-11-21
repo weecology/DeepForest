@@ -35,7 +35,6 @@ def create_tf_example(image, regression_target, class_target, fname, original_im
         'image/height':  tf.train.Feature(int64_list=tf.train.Int64List(value=[original_image.shape[0]])),        
         'image/width':  tf.train.Feature(int64_list=tf.train.Int64List(value=[original_image.shape[1]])),                        
         'image/filename':  tf.train.Feature(bytes_list=tf.train.BytesList(value=[fname.encode('utf-8')])),        
-        #'image/image':  tf.train.Feature(bytes_list=tf.train.BytesList(value=[image.tostring()])),
         'image/object/regression_target': tf.train.Feature(float_list=tf.train.FloatList(value=regression_target.flatten())),
         'image/object/class_target': tf.train.Feature(int64_list=tf.train.Int64List(value=class_target.flatten())),
         'image/object/n_anchors': tf.train.Feature(int64_list=tf.train.Int64List(value=[regression_target.shape[0]]))
@@ -159,8 +158,8 @@ def _parse_fn(example):
     #TODO make the number of anchors dynamic
     features = {
         'image/filename': tf.io.FixedLenFeature([], tf.string),               
-        "image/object/regression_target": tf.FixedLenFeature([120087, 5], tf.float32),
-        "image/object/class_target": tf.FixedLenFeature([120087, 2], tf.int64),
+        "image/object/regression_target": tf.VarLenFeature(tf.float32),
+        "image/object/class_target": tf.VarLenFeature(tf.int64),
         "image/height": tf.FixedLenFeature([ ], tf.int64),        
         "image/width": tf.FixedLenFeature([ ], tf.int64),
         "image/target_height": tf.FixedLenFeature([ ], tf.int64),        
@@ -200,15 +199,16 @@ def _parse_fn(example):
     target_width = tf.cast(example['image/target_width'], tf.int32)         
     loaded_image = tf.image.resize(loaded_image, (target_height,target_width), align_corners=True)
     
-    #Generated data
-    #image = tf.decode_raw(example['image/image'],tf.float32)
-    regression_target = tf.cast(example['image/object/regression_target'], tf.float32)
-    class_target = tf.cast(example['image/object/class_target'], tf.float32)
+    #Generated anchor data
+    regression_target = tf.sparse_tensor_to_dense(example['image/object/regression_target'])    
+    class_target = tf.sparse_tensor_to_dense(example['image/object/class_target'])    
     
-    #TODO allow this vary from config? Or read during sess?    
-    #image = tf.reshape(image, tf.stack([target_height, target_width, 3]),name="cast_image")        
-    regression_target = tf.reshape(regression_target, [120087, 5], name="cast_regression")
-    class_target = tf.reshape(class_target, [120087, 2], name="cast_class_label")
+    target_n_anchors = tf.cast(example['image/object/n_anchors'], tf.int32)         
+    regression_target = tf.cast(regression_target, tf.float32)
+    class_target = tf.cast(class_target, tf.float32)
+    
+    regression_target = tf.reshape(regression_target, [target_n_anchors, 5], name="cast_regression")
+    class_target = tf.reshape(class_target, [target_n_anchors, 2], name="cast_class_label")
     
     return loaded_image, regression_target, class_target
 

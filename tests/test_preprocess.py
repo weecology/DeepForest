@@ -32,7 +32,7 @@ def numpy_image(config):
     
 def test_compute_windows(config, numpy_image):
     windows = preprocess.compute_windows(numpy_image, config["patch_size"], config["patch_overlap"])
-    assert len(windows) == 17
+    assert len(windows) == 9
 
 def test_select_annotations(config, numpy_image):      
     windows = preprocess.compute_windows(numpy_image, config["patch_size"], config["patch_overlap"])
@@ -40,7 +40,7 @@ def test_select_annotations(config, numpy_image):
     selected_annotations = preprocess.select_annotations(image_annotations, windows, index=7)
     
     #Returns a 5 column matrix
-    assert selected_annotations.shape[0] == 17 
+    assert selected_annotations.shape[0] == 17
     
     #image name should be name of image plus the index .tif
     assert selected_annotations.image_path.unique()[0] == "OSBS_029_7.jpg"
