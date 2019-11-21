@@ -7,3 +7,4 @@ tests/data/*.h5
 *.jpg
 *.tfrecord
 *.tfrecords
+_pycache_

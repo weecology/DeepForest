@@ -14,6 +14,7 @@ dependencies:
   - numpy
   - pillow
   - scipy
+  - pbr
   - pip
   - matplotlib
   - sphinx_rtd_theme

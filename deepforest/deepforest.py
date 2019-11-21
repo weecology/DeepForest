@@ -7,11 +7,15 @@
 
 """
 import os
+from PIL import Image
 import pandas as pd
+import numpy as np
 from matplotlib import pyplot as plt
+import tempfile
 
 from deepforest import utilities
 from deepforest import predict
+from deepforest import preprocess
 from deepforest.retinanet_train import main as retinanet_train
 from deepforest.retinanet_train import parse_args
 
@@ -21,6 +25,7 @@ from keras_retinanet.bin.train import create_models
 from keras_retinanet.preprocessing.csv_generator import CSVGenerator
 from keras_retinanet.utils.eval import evaluate
 from keras_retinanet.utils.eval import _get_detections
+from keras_retinanet.utils.visualization import draw_box
 
 class deepforest:
     ''' Class for training and predicting tree crowns in RGB images
@@ -222,3 +227,55 @@ class deepforest:
             boxes = predict.predict_image(self.prediction_model, image_path, return_plot=return_plot)            
             return boxes            
 
+    def predict_tile(self, path_to_raster, patch_size=400,patch_overlap=0.1, return_plot=False):
+        """
+        For images too large to input into the model, predict_tile cuts the image into overlapping windows, predicts trees on each window and reassambles into a single array. 
+        Args:
+            raster_path: Path to image on disk
+            return_plot: Should the image be returned with the predictions drawn?
+        Returns:
+            boxes (array): if return_plot, an image. Otherwise a numpy array of predicted bounding boxes
+        """   
+       
+        #Load raster as image
+        raster = Image.open(path_to_raster)
+        numpy_image = np.array(raster)        
+        image_name = os.path.basename(path_to_raster)
+        
+        #Compute sliding window index
+        windows = preprocess.compute_windows(numpy_image, patch_size,patch_overlap)
+        
+        #Save images to tmpdir
+        base_dir = tempfile.TemporaryDirectory()
+        predicted_boxes = []
+        
+        for index, window in enumerate(windows):
+            #Crop window and predict
+            crop = numpy_image[windows[index].indices()] 
+            
+            #Crop is RGB channel order, change to BGR
+            crop = crop[...,::-1]
+            image_path = preprocess.save_crop(base_dir.name, image_name, index, crop)
+            boxes = self.predict_image(image_path, return_plot=False, score_threshold=self.config["score_threshold"])            
+            
+            #transform coordinates to original system
+            xmin, ymin, xmax, ymax = windows[index].getRect()
+            boxes = pd.DataFrame(boxes, columns=["xmin","ymin","xmax","ymax"])
+            boxes.xmin = boxes.xmin + xmin
+            boxes.xmax = boxes.xmax + xmin
+            boxes.ymin = boxes.ymin + ymin
+            boxes.ymax = boxes.ymax + ymin
+            
+            predicted_boxes.append(boxes)
+            
+        predicted_boxes = pd.concat(predicted_boxes)
+        
+        #Read 
+        if return_plot:
+            #Draw predictions
+            for box in predicted_boxes.values:
+                draw_box(numpy_image, box, [0,0,255])
+            
+            return numpy_image
+        else:
+            return predicted_boxes

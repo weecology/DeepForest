@@ -57,8 +57,8 @@ def test_select_annotations_tile(config, numpy_image):
     assert selected_annotations.xmax.max() <= config["patch_size"]
     assert selected_annotations.ymax.max() <= config["patch_size"]
     
-def test_split_training_raster(config):
-    annotations_file = preprocess.split_training_raster(config["path_to_raster"], config["annotations_file"], "tests/data/",config["patch_size"], config["patch_overlap"])
+def test_split_raster(config):
+    annotations_file = preprocess.split_raster(config["path_to_raster"], config["annotations_file"], "tests/data/",config["patch_size"], config["patch_overlap"])
     
     #Returns a 6 column pandas array
     assert annotations_file.shape[1] == 6

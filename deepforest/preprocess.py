@@ -80,6 +80,7 @@ def select_annotations(annotations, windows, index):
 def save_crop(base_dir, image_name, index, crop):
     """
     Save window crop as image file to be read by PIL. Filename should match the image_name + window index
+
     """
     #create dir if needed
     if not os.path.exists(base_dir):
@@ -89,10 +90,12 @@ def save_crop(base_dir, image_name, index, crop):
     image_basename = os.path.splitext(image_name)[0]    
     filename = "{}/{}_{}.jpg".format(base_dir, image_basename, index)
     im.save(filename)   
+    
+    return filename
 
-def split_training_raster(path_to_raster, annotations_file, base_dir, patch_size, patch_overlap):
+def split_raster(path_to_raster, annotations_file, base_dir, patch_size, patch_overlap):
     """
-    Divide a large tile into smaller arrays for training. Each crop will be saved to file
+    Divide a large tile into smaller arrays. Each crop will be saved to file
     Args:
         path_to_tile (str): Path to a tile that can be read by rasterio on disk
         annotations_file (str): Path to annotations file with data in the format -> image_path, xmin, ymin, xmax, ymax, label
@@ -102,7 +105,6 @@ def split_training_raster(path_to_raster, annotations_file, base_dir, patch_size
     Returns:
         A pandas dataframe with annotations file for training.
     """
-    #try and raise path to raster is fail
     #Load raster as image
     raster = Image.open(path_to_raster)
     numpy_image = np.array(raster)        
