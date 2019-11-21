@@ -30,7 +30,7 @@ def config():
     annotations = utilities.xml_to_annotations(xml_path=config["annotations_xml"],rgb_dir= config["rgb_dir"])
     annotations.to_csv("tests/data/testtfrecords_OSBS_029.csv",index=False)
     
-    annotations_file = preprocess.split_training_raster(path_to_raster=config["path_to_raster"],
+    annotations_file = preprocess.split_raster(path_to_raster=config["path_to_raster"],
                                                         annotations_file="tests/data/testtfrecords_OSBS_029.csv",
                                                         base_dir= "tests/data/",
                                                         patch_size=config["patch_size"],

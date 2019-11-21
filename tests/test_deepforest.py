@@ -8,6 +8,8 @@ import pytest
 import keras
 import glob
 import numpy as np
+from PIL import Image
+from matplotlib import pyplot as plt
 
 from deepforest import deepforest
 from deepforest import utilities
@@ -129,3 +131,26 @@ def test_random_transform(annotations):
     test_model.config["random_transform"]
     arg_list = utilities.format_args(annotations, test_model.config)
     assert "--random-transform" in arg_list
+
+def test_predict_tile(test_use_release):
+    raster_path = "tests/data/OSBS_029.tif"
+    original_raster = Image.open(raster_path)
+    original_raster = np.array(original_raster)  
+    predicted_raster = test_use_release.predict_tile(raster_path, return_plot = True, patch_size=400,patch_overlap=0)
+    
+    #This should make the same prediction?
+    predicted_raster = test_use_release.predict_tile(raster_path, return_plot = False, patch_size=400,patch_overlap=0)
+    predicted_image = test_use_release.predict_image(raster_path, return_plot = False)
+    
+    assert predicted_raster.shape == original_raster.shape
+    
+    #Debug
+    predicted_raster = test_use_release.predict_tile(raster_path, return_plot = True, patch_size=400,patch_overlap=0)
+    predicted_image = test_use_release.predict_image(raster_path, return_plot = True)
+        
+    plt.imshow(predicted_raster)
+    plt.show
+    
+    plt.imshow(predicted_image[...,::-1])
+    plt.show    
+    
