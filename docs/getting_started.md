@@ -26,12 +26,6 @@ While the prebuilt models outperform available tree crown detection tools, they 
 
 ```
 
-## Training Hardware
-
-Training neural networks is computationally intensive. While small amounts of data, on the order of several hundred trees, can be trained on a laptop in a few hours, large amounts of data are best trained on dedicated graphical processing units (GPUs). Many university clusters have GPUs available, and they can be rented for short periods of time on cloud servers (AWS, Google Cloud, Azure).
-
-For more details and recommendations for model training see [training overview]().
-
 # Evaluation
 
 
