@@ -45,6 +45,7 @@ def use_release(save_dir = "data"):
         
         Args:
                 save_dir (str): Directory to save filepath, default to "data" in toplevel repo
+        
         Returns:
                 output_path (str): path to downloaded model 
         '''
@@ -75,6 +76,7 @@ def xml_to_annotations(xml_path, rgb_dir):
         Args:
                 xml_path (str): Path to the annotations xml, formatted by RectLabel
                 rgb_dir (str): Directory path to the rgb dir
+        
         Returns:
                 Annotations (pandas dataframe): in the format -> path/to/image.jpg,x1,y1,x2,y2,class_name
         """
@@ -130,6 +132,7 @@ def create_classes(annotations_file):
         
         Args:
                 annotations_file: an annotation csv in the retinanet format path/to/image.jpg,x1,y1,x2,y2,class_name
+        
         Returns:
                 path to classes file
         """
@@ -159,6 +162,7 @@ def number_of_images(annotations_file):
         
         Args:
                 annotations_file (str):
+        
         Returns:
                 n (int): Number of images
         """
@@ -174,6 +178,7 @@ def format_args(annotations_file, config, images_per_epoch=None):
                 annotations_file: a path to a csv  dataframe of annotations to get number of images, no header
                 config (dict): a dictionary object to convert into a list for argparse
                 images_per_epoch (int): Override default steps per epoch (n images/batch size) by manually setting a number of images
+        
         Returns:
                 arg_list (list): a list structure that mimics argparse input arguments for retinanet
         """

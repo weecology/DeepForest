@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>deepforest.utilities &mdash; DeepForest 0.1.0 documentation</title>
+  <title>deepforest.utilities &mdash; DeepForest 0.0.3 documentation</title>
   
 
   
@@ -59,7 +59,7 @@
             
             
               <div class="version">
-                0.1.0
+                0.0.3
               </div>
             
           
@@ -85,12 +85,15 @@
             
               <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started.html">What is DeepForest?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started.html#how-does-it-work">How does it work?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started.html#prebuilt-models">Prebuilt models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started.html#training">Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started.html#evaluation">Evaluation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started.html#prediction">Prediction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../training.html">Training new models - An Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../source/deepforest.html">deepforest package</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../authors.html">Credits</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../history.html">History</a></li>
 </ul>
 
             
@@ -201,6 +204,7 @@
 <span class="sd">        </span>
 <span class="sd">        Args:</span>
 <span class="sd">                save_dir (str): Directory to save filepath, default to &quot;data&quot; in toplevel repo</span>
+<span class="sd">        </span>
 <span class="sd">        Returns:</span>
 <span class="sd">                output_path (str): path to downloaded model </span>
 <span class="sd">        &#39;&#39;&#39;</span>
@@ -231,6 +235,7 @@
 <span class="sd">        Args:</span>
 <span class="sd">                xml_path (str): Path to the annotations xml, formatted by RectLabel</span>
 <span class="sd">                rgb_dir (str): Directory path to the rgb dir</span>
+<span class="sd">        </span>
 <span class="sd">        Returns:</span>
 <span class="sd">                Annotations (pandas dataframe): in the format -&gt; path/to/image.jpg,x1,y1,x2,y2,class_name</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -286,6 +291,7 @@
 <span class="sd">        </span>
 <span class="sd">        Args:</span>
 <span class="sd">                annotations_file: an annotation csv in the retinanet format path/to/image.jpg,x1,y1,x2,y2,class_name</span>
+<span class="sd">        </span>
 <span class="sd">        Returns:</span>
 <span class="sd">                path to classes file</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -315,6 +321,7 @@
 <span class="sd">        </span>
 <span class="sd">        Args:</span>
 <span class="sd">                annotations_file (str):</span>
+<span class="sd">        </span>
 <span class="sd">        Returns:</span>
 <span class="sd">                n (int): Number of images</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -330,6 +337,7 @@
 <span class="sd">                annotations_file: a path to a csv  dataframe of annotations to get number of images, no header</span>
 <span class="sd">                config (dict): a dictionary object to convert into a list for argparse</span>
 <span class="sd">                images_per_epoch (int): Override default steps per epoch (n images/batch size) by manually setting a number of images</span>
+<span class="sd">        </span>
 <span class="sd">        Returns:</span>
 <span class="sd">                arg_list (list): a list structure that mimics argparse input arguments for retinanet</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -354,11 +362,15 @@
         <span class="n">args</span><span class="p">[</span><span class="s2">&quot;--tensorboard-dir&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="n">args</span><span class="p">[</span><span class="s2">&quot;--workers&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;workers&quot;</span><span class="p">]</span>
         <span class="n">args</span><span class="p">[</span><span class="s2">&quot;--max-queue-size&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;max_queue_size&quot;</span><span class="p">]</span>
+        <span class="n">args</span><span class="p">[</span><span class="s2">&quot;--freeze-layers&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;freeze_layers&quot;</span><span class="p">]</span>
+        <span class="n">args</span><span class="p">[</span><span class="s2">&quot;--score-threshold&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;score_threshold&quot;</span><span class="p">]</span>
         
         <span class="k">if</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;save_path&quot;</span><span class="p">]:</span>
                 <span class="n">args</span><span class="p">[</span><span class="s2">&quot;--save-path&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;save_path&quot;</span><span class="p">]</span>
-                
-        <span class="c1">#turn dictionary to list for argparse</span>
+        
+        <span class="k">if</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;snapshot_path&quot;</span><span class="p">]:</span>
+                <span class="n">args</span><span class="p">[</span><span class="s2">&quot;--snapshot-path&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;snapshot_path&quot;</span><span class="p">]</span>       
+
         <span class="n">arg_list</span> <span class="o">=</span> <span class="p">[[</span><span class="n">k</span><span class="p">,</span><span class="n">v</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">args</span><span class="o">.</span><span class="n">items</span><span class="p">()]</span>
         <span class="n">arg_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">val</span> <span class="k">for</span> <span class="n">sublist</span> <span class="ow">in</span> <span class="n">arg_list</span> <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">sublist</span><span class="p">]</span>
 
@@ -367,6 +379,13 @@
                 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Disabling snapshot saving&quot;</span><span class="p">)</span>                
                 <span class="n">arg_list</span> <span class="o">=</span> <span class="n">arg_list</span> <span class="o">+</span> <span class="p">[</span><span class="s2">&quot;--no-snapshots&quot;</span><span class="p">]</span>
 
+        <span class="k">if</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;freeze_resnet&quot;</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+                <span class="n">arg_list</span> <span class="o">=</span> <span class="n">arg_list</span> <span class="o">+</span> <span class="p">[</span><span class="s2">&quot;--freeze-backbone&quot;</span><span class="p">]</span>
+                     
+        <span class="k">if</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;random_transform&quot;</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Turning on random transform generator&quot;</span><span class="p">)</span>
+                <span class="n">arg_list</span> <span class="o">=</span> <span class="n">arg_list</span> <span class="o">+</span> <span class="p">[</span><span class="s2">&quot;--random-transform&quot;</span><span class="p">]</span>            
+                
         <span class="k">if</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;multi-gpu&quot;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
                 <span class="n">arg_list</span> <span class="o">=</span> <span class="n">arg_list</span> <span class="o">+</span> <span class="p">[</span><span class="s2">&quot;--multi-gpu-force&quot;</span><span class="p">]</span>
 

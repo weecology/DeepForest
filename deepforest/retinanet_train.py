@@ -46,7 +46,7 @@ def makedirs(path):
 def model_with_weights(model, weights, skip_mismatch):
     """ Load weights for model.
 
-    Args
+    Args:
         model         : The model to load weights for.
         weights       : The weights to load.
         skip_mismatch : If True, skips layers whose shape of weights doesn't match with the model.
@@ -60,7 +60,7 @@ def create_models(backbone_retinanet, num_classes, weights, multi_gpu=0,
                   freeze_backbone=False, lr=1e-5, config=None , targets=None, freeze_layers=0, modifier=None):
     """ Creates three models (model, training_model, prediction_model).
 
-    Args
+    Args:
         backbone_retinanet : A function to call to create a retinanet model with a given backbone.
         num_classes        : The number of classes to train.
         weights            : The weights to load into the model.
@@ -71,7 +71,7 @@ def create_models(backbone_retinanet, num_classes, weights, multi_gpu=0,
         freeze_layers    : int layer number to freeze from bottom of the retinanet network during finetuning. e.g. 10 will set layers 0:10 to layer.trainable = False. 0 is default, no freezing.
         modifier           : function that takes in a model and freezes resnet layers, returns modified object
 
-    Returns
+    Returns:
         model            : The base model. This is also the model that is saved in snapshots.
         training_model   : The training model. If multi_gpu=0, this is identical to model.
         prediction_model : The model wrapped with utility functions to perform object detection (applies regression values and performs NMS).
@@ -180,7 +180,7 @@ def create_callbacks(model, training_model, prediction_model, validation_generat
 def create_generators(args, preprocess_image):
     """ Create generators for training and validation.
 
-    Args
+    Args:
         args             : parseargs object containing configuration for generators.
         preprocess_image : Function that preprocesses an image for the network.
     """
@@ -244,10 +244,10 @@ def check_args(parsed_args):
     For example, batch_size < num_gpus
     Intended to raise errors prior to backend initialisation.
 
-    Args
+    Args:
         parsed_args: parser.parse_args()
 
-    Returns
+    Returns:
         parsed_args
     """
 

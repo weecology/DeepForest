@@ -1,0 +1,344 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>tests.test_tfrecords &mdash; DeepForest 0.0.3 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/graphviz.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> DeepForest
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.0.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started.html">What is DeepForest?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started.html#how-does-it-work">How does it work?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started.html#prebuilt-models">Prebuilt models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started.html#training">Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started.html#evaluation">Evaluation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started.html#prediction">Prediction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../training.html">Training new models - An Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../source/deepforest.html">deepforest package</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">DeepForest</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>tests.test_tfrecords</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for tests.test_tfrecords</h1><div class="highlight"><pre>
+<span></span><span class="c1">#test module for tfrecords</span>
+<span class="kn">from</span> <span class="nn">deepforest</span> <span class="k">import</span> <span class="n">tfrecords</span>
+<span class="kn">from</span> <span class="nn">deepforest</span> <span class="k">import</span> <span class="n">utilities</span>
+<span class="kn">from</span> <span class="nn">deepforest</span> <span class="k">import</span> <span class="n">preprocess</span>
+
+<span class="kn">import</span> <span class="nn">pytest</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">glob</span>
+<span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+
+<span class="kn">from</span> <span class="nn">keras_retinanet.preprocessing</span> <span class="k">import</span> <span class="n">csv_generator</span>
+<span class="kn">from</span> <span class="nn">keras_retinanet</span> <span class="k">import</span> <span class="n">models</span>
+
+<div class="viewcode-block" id="config"><a class="viewcode-back" href="../../source/tests.html#tests.test_tfrecords.config">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">config</span><span class="p">():</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Configuring tfrecord tests&quot;</span><span class="p">)</span>
+    <span class="n">config</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">config</span><span class="p">[</span><span class="s2">&quot;patch_size&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">200</span>
+    <span class="n">config</span><span class="p">[</span><span class="s2">&quot;patch_overlap&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.05</span>
+    <span class="n">config</span><span class="p">[</span><span class="s2">&quot;annotations_xml&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;tests/data/OSBS_029.xml&quot;</span>
+    <span class="n">config</span><span class="p">[</span><span class="s2">&quot;rgb_dir&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;tests/data&quot;</span>
+    <span class="n">config</span><span class="p">[</span><span class="s2">&quot;annotations_file&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;tests/data/OSBS_029.csv&quot;</span>
+    <span class="n">config</span><span class="p">[</span><span class="s2">&quot;path_to_raster&quot;</span><span class="p">]</span> <span class="o">=</span><span class="s2">&quot;tests/data/OSBS_029.tif&quot;</span>
+    <span class="n">config</span><span class="p">[</span><span class="s2">&quot;image-min-side&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">800</span>
+    <span class="n">config</span><span class="p">[</span><span class="s2">&quot;backbone&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;resnet50&quot;</span>
+    
+    <span class="c1">#Create a clean config test data</span>
+    <span class="n">annotations</span> <span class="o">=</span> <span class="n">utilities</span><span class="o">.</span><span class="n">xml_to_annotations</span><span class="p">(</span><span class="n">xml_path</span><span class="o">=</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;annotations_xml&quot;</span><span class="p">],</span><span class="n">rgb_dir</span><span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;rgb_dir&quot;</span><span class="p">])</span>
+    <span class="n">annotations</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="s2">&quot;tests/data/testtfrecords_OSBS_029.csv&quot;</span><span class="p">,</span><span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    
+    <span class="n">annotations_file</span> <span class="o">=</span> <span class="n">preprocess</span><span class="o">.</span><span class="n">split_raster</span><span class="p">(</span><span class="n">path_to_raster</span><span class="o">=</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;path_to_raster&quot;</span><span class="p">],</span>
+                                                        <span class="n">annotations_file</span><span class="o">=</span><span class="s2">&quot;tests/data/testtfrecords_OSBS_029.csv&quot;</span><span class="p">,</span>
+                                                        <span class="n">base_dir</span><span class="o">=</span> <span class="s2">&quot;tests/data/&quot;</span><span class="p">,</span>
+                                                        <span class="n">patch_size</span><span class="o">=</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;patch_size&quot;</span><span class="p">],</span>
+                                                        <span class="n">patch_overlap</span><span class="o">=</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;patch_overlap&quot;</span><span class="p">])</span>
+    
+    <span class="n">annotations_file</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="s2">&quot;tests/data/testfile_tfrecords.csv&quot;</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">header</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">config</span></div>
+
+<span class="c1">#Reading</span>
+
+<span class="c1">#Writing</span>
+<div class="viewcode-block" id="test_create_tfrecords"><a class="viewcode-back" href="../../source/tests.html#tests.test_tfrecords.test_create_tfrecords">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">test_create_tfrecords</span><span class="p">(</span><span class="n">config</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This test is in flux due to the fact that tensorflow and cv2 resize methods are not identical: https://jricheimer.github.io/tensorflow/2019/02/11/resize-confusion/ &quot;&quot;&quot;</span>
+    <span class="n">created_records</span> <span class="o">=</span> <span class="n">tfrecords</span><span class="o">.</span><span class="n">create_tfrecords</span><span class="p">(</span><span class="n">annotations_file</span><span class="o">=</span><span class="s2">&quot;tests/data/testfile_tfrecords.csv&quot;</span><span class="p">,</span>
+                               <span class="n">class_file</span><span class="o">=</span><span class="s2">&quot;tests/data/classes.csv&quot;</span><span class="p">,</span>
+                               <span class="n">image_min_side</span><span class="o">=</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;image-min-side&quot;</span><span class="p">],</span> 
+                               <span class="n">backbone_model</span><span class="o">=</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;backbone&quot;</span><span class="p">],</span>
+                               <span class="n">size</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+                               <span class="n">savedir</span><span class="o">=</span><span class="s2">&quot;tests/data/&quot;</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s2">&quot;tests/data/testfile_tfrecords_0.tfrecord&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">created_records</span></div>
+
+<div class="viewcode-block" id="setup_create_tensors"><a class="viewcode-back" href="../../source/tests.html#tests.test_tfrecords.setup_create_tensors">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">setup_create_tensors</span><span class="p">(</span><span class="n">test_create_tfrecords</span><span class="p">):</span>
+    <span class="n">created_tensors</span> <span class="o">=</span> <span class="n">tfrecords</span><span class="o">.</span><span class="n">create_tensors</span><span class="p">(</span><span class="n">test_create_tfrecords</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">created_tensors</span></div>
+
+<div class="viewcode-block" id="test_create_tensors"><a class="viewcode-back" href="../../source/tests.html#tests.test_tfrecords.test_create_tensors">[docs]</a><span class="k">def</span> <span class="nf">test_create_tensors</span><span class="p">(</span><span class="n">test_create_tfrecords</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Testing that input tensors can be created&quot;</span><span class="p">)</span>
+    <span class="n">created_tensors</span> <span class="o">=</span> <span class="n">tfrecords</span><span class="o">.</span><span class="n">create_tensors</span><span class="p">(</span><span class="n">test_create_tfrecords</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">created_tensors</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span>
+    
+    <span class="k">return</span> <span class="n">created_tensors</span></div>
+
+<div class="viewcode-block" id="test_create_dataset"><a class="viewcode-back" href="../../source/tests.html#tests.test_tfrecords.test_create_dataset">[docs]</a><span class="k">def</span> <span class="nf">test_create_dataset</span><span class="p">(</span><span class="n">test_create_tfrecords</span><span class="p">):</span>
+    <span class="n">dataset</span> <span class="o">=</span> <span class="n">tfrecords</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="n">test_create_tfrecords</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="test_equivalence"><a class="viewcode-back" href="../../source/tests.html#tests.test_tfrecords.test_equivalence">[docs]</a><span class="k">def</span> <span class="nf">test_equivalence</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">setup_create_tensors</span><span class="p">):</span>
+    
+    <span class="c1">#unpack created tensors</span>
+    <span class="n">tf_inputs</span><span class="p">,</span> <span class="n">tf_targets</span> <span class="o">=</span> <span class="n">setup_create_tensors</span>
+    
+    <span class="c1">#the image going in to tensorflow should be equivalent to the image from the fit_generator</span>
+    <span class="n">backbone</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">backbone</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;backbone&quot;</span><span class="p">])</span>
+
+    <span class="c1">#CSV generator</span>
+    <span class="n">generator</span> <span class="o">=</span> <span class="n">csv_generator</span><span class="o">.</span><span class="n">CSVGenerator</span><span class="p">(</span>
+        <span class="n">csv_data_file</span><span class="o">=</span><span class="s2">&quot;tests/data/testfile_tfrecords.csv&quot;</span><span class="p">,</span>
+        <span class="n">csv_class_file</span><span class="o">=</span><span class="s2">&quot;tests/data/classes.csv&quot;</span><span class="p">,</span>
+        <span class="n">image_min_side</span><span class="o">=</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;image-min-side&quot;</span><span class="p">],</span>
+        <span class="n">preprocess_image</span><span class="o">=</span><span class="n">backbone</span><span class="o">.</span><span class="n">preprocess_image</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="c1">#find file in randomize generator group</span>
+    <span class="n">first_file</span> <span class="o">=</span> <span class="n">generator</span><span class="o">.</span><span class="n">groups</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">gen_filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">generator</span><span class="o">.</span><span class="n">base_dir</span><span class="p">,</span> <span class="n">generator</span><span class="o">.</span><span class="n">image_names</span><span class="p">[</span><span class="n">first_file</span><span class="p">])</span>
+    <span class="n">original_image</span> <span class="o">=</span> <span class="n">generator</span><span class="o">.</span><span class="n">load_image</span><span class="p">(</span><span class="n">first_file</span><span class="p">)</span>
+    <span class="n">inputs</span><span class="p">,</span> <span class="n">targets</span> <span class="o">=</span> <span class="n">generator</span><span class="o">.</span><span class="fm">__getitem__</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="n">image</span> <span class="o">=</span> <span class="n">inputs</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="o">...</span><span class="p">]</span>
+    <span class="n">targets</span> <span class="o">=</span> <span class="n">targets</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">,</span><span class="o">...</span><span class="p">]</span>
+
+    <span class="k">with</span> <span class="n">tf</span><span class="o">.</span><span class="n">Session</span><span class="p">()</span> <span class="k">as</span> <span class="n">sess</span><span class="p">:</span>
+        <span class="c1">#seek the randomized image to match</span>
+        <span class="n">tf_inputs</span><span class="p">,</span> <span class="n">tf_targets</span> <span class="o">=</span> <span class="n">sess</span><span class="o">.</span><span class="n">run</span><span class="p">([</span><span class="n">tf_inputs</span><span class="p">,</span><span class="n">tf_targets</span><span class="p">])</span>
+
+    <span class="c1">#assert filename is the same as generator</span>
+    <span class="c1">#assert gen_filename == filename</span>
+    <span class="c1">#tf_image = tf_image[0,...]</span>
+    <span class="n">tf_inputs</span> <span class="o">=</span> <span class="n">tf_inputs</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="o">...</span><span class="p">]</span>
+    <span class="n">tf_targets</span> <span class="o">=</span> <span class="n">tf_targets</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">,</span><span class="o">...</span><span class="p">]</span>
+
+    <span class="c1">#Same shape</span>
+    <span class="c1">#assert tf_image.shape == image.shape</span>
+    <span class="k">assert</span> <span class="n">tf_inputs</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">image</span><span class="o">.</span><span class="n">shape</span>
+    <span class="k">assert</span> <span class="n">tf_targets</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">targets</span><span class="o">.</span><span class="n">shape</span></div>
+
+    <span class="c1">#Same values, slightly duplicitious with above, but useful for debugging.</span>
+    <span class="c1">#Saved array is the same as generator image</span>
+    <span class="c1">#np.testing.assert_array_equal(image, tf_image)</span>
+
+    <span class="c1">#Loaded array is the same as generator, this is not true currently, the opencv and the tensorflow interpolation method is slightly different, waiting for tf. 2.0</span>
+    <span class="c1">#np.testing.assert_array_equal(tf_loaded, tf_image)</span>
+
+    <span class="c1">##Useful for debug to plot</span>
+    <span class="c1">#fig = plt.figure()</span>
+    <span class="c1">#ax1 = fig.add_subplot(1,4,1)</span>
+    <span class="c1">#ax1.title.set_text(&#39;Fit Gen Original&#39;)    </span>
+    <span class="c1">#plt.imshow(original_image[...,::-1])</span>
+    <span class="c1">#ax1 = fig.add_subplot(1,4,2)</span>
+    <span class="c1">#ax1.title.set_text(&#39;Fit Generator&#39;)    </span>
+    <span class="c1">#plt.imshow(image)</span>
+    <span class="c1">#ax2 = fig.add_subplot(1,4,3)</span>
+    <span class="c1">#ax2 = fig.add_subplot(1,4,4)</span>
+    <span class="c1">#ax2.title.set_text(&#39;Loaded Image&#39;)        </span>
+    <span class="c1">#plt.imshow(tf_inputs)</span>
+    <span class="c1">#plt.show()        </span>
+
+<span class="c1">#Check for bad file types</span>
+<div class="viewcode-block" id="bad_annotations"><a class="viewcode-back" href="../../source/tests.html#tests.test_tfrecords.bad_annotations">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">bad_annotations</span><span class="p">():</span>
+    <span class="n">annotations</span> <span class="o">=</span> <span class="n">utilities</span><span class="o">.</span><span class="n">xml_to_annotations</span><span class="p">(</span><span class="s2">&quot;tests/data/OSBS_029.xml&quot;</span><span class="p">,</span><span class="n">rgb_dir</span><span class="o">=</span><span class="s2">&quot;tests/data&quot;</span><span class="p">)</span>
+    <span class="n">f</span> <span class="o">=</span> <span class="s2">&quot;tests/data/testfile_error_deepforest.csv&quot;</span>
+    <span class="n">annotations</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">f</span><span class="p">,</span><span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">header</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">f</span></div>
+
+<div class="viewcode-block" id="test_tfdataset_error"><a class="viewcode-back" href="../../source/tests.html#tests.test_tfrecords.test_tfdataset_error">[docs]</a><span class="k">def</span> <span class="nf">test_tfdataset_error</span><span class="p">(</span><span class="n">bad_annotations</span><span class="p">):</span>    
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">):</span>    
+        <span class="n">records_created</span> <span class="o">=</span> <span class="n">tfrecords</span><span class="o">.</span><span class="n">create_tfrecords</span><span class="p">(</span><span class="n">annotations_file</span><span class="o">=</span><span class="n">bad_annotations</span><span class="p">,</span> <span class="n">class_file</span><span class="o">=</span><span class="s2">&quot;tests/data/classes.csv&quot;</span><span class="p">,</span> <span class="n">image_min_side</span><span class="o">=</span><span class="mi">800</span><span class="p">,</span> <span class="n">backbone_model</span><span class="o">=</span><span class="s2">&quot;resnet50&quot;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">savedir</span><span class="o">=</span><span class="s2">&quot;tests/data/&quot;</span><span class="p">)</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Ben Weinstein
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

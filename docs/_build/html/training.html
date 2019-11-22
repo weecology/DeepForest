@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Usage &mdash; DeepForest 0.1.0 documentation</title>
+  <title>Training new models - An Overview &mdash; DeepForest 0.0.3 documentation</title>
   
 
   
@@ -61,7 +61,7 @@
             
             
               <div class="version">
-                0.1.0
+                0.0.3
               </div>
             
           
@@ -87,12 +87,22 @@
             
               <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">What is DeepForest?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html#how-does-it-work">How does it work?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html#prebuilt-models">Prebuilt models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html#training">Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html#evaluation">Evaluation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html#prediction">Prediction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Usage</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Training new models - An Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#design-evaluation-data">Design evaluation data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#gather-annotations">Gather annotations</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#guidelines-for-model-training">Guidelines for model Training</a></li>
+</ul>
+</li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="source/deepforest.html">deepforest package</a></li>
-<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
-<li class="toctree-l1"><a class="reference internal" href="authors.html">Credits</a></li>
-<li class="toctree-l1"><a class="reference internal" href="history.html">History</a></li>
 </ul>
 
             
@@ -138,13 +148,13 @@
     
       <li><a href="index.html">Docs</a> &raquo;</li>
         
-      <li>Usage</li>
+      <li>Training new models - An Overview</li>
     
     
       <li class="wy-breadcrumbs-aside">
         
             
-            <a href="_sources/usage.rst.txt" rel="nofollow"> View page source</a>
+            <a href="_sources/training.md.txt" rel="nofollow"> View page source</a>
           
         
       </li>
@@ -157,11 +167,29 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="usage">
-<h1>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h1>
-<p>To use DeepForest in a project:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">deepforest</span>
-</pre></div>
+  <div class="section" id="training-new-models-an-overview">
+<h1>Training new models - An Overview<a class="headerlink" href="#training-new-models-an-overview" title="Permalink to this headline">¶</a></h1>
+<p>Our work has shown that starting training from the prebuilt model increases performance, regardless of the geographic location of your data. In the majority of cases, it will be useful for the model to have learned general tree representations that can be refined using hand annotated data.</p>
+<div class="section" id="design-evaluation-data">
+<h2>Design evaluation data<a class="headerlink" href="#design-evaluation-data" title="Permalink to this headline">¶</a></h2>
+<p>In our experience, defining a clear evaluation dataset and setting a threshold for desired performance is critical before training. It is common to just dive into training new data with only a vague sense of the desired outcome. This is always a mistake. We highly suggest users spend the time to answer 2 questions.</p>
+<ul class="simple">
+<li><p>What kind of data am I trying to predict?</p></li>
+</ul>
+<p>Capturing the variability and the broad range of tree taxonomy and presentation will make development go more smoothly.</p>
+<ul class="simple">
+<li><p>What kind of accuracy do I need to answer my question?</p></li>
+</ul>
+<p>It is natural to want the best model possible, but one can waste a tremendous amount of time trying to eek out another 5% of recall without understanding whether that increase in performance will improve our ecological or natural resource questions. Prioritize evaluation data that matches your desired outcomes.</p>
+</div>
+<div class="section" id="gather-annotations">
+<h2>Gather annotations<a class="headerlink" href="#gather-annotations" title="Permalink to this headline">¶</a></h2>
+<p>DeepForest uses xml files produced by the commonly used annotation program RectLabel. Please note that Rectlabel is an inexpensive program available only for Mac.</p>
+<p>Rectlabel screenshot</p>
+<p>xml format explanation</p>
+<div class="section" id="guidelines-for-model-training">
+<h3>Guidelines for model Training<a class="headerlink" href="#guidelines-for-model-training" title="Permalink to this headline">¶</a></h3>
+</div>
 </div>
 </div>
 

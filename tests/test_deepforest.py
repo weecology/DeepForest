@@ -136,21 +136,23 @@ def test_predict_tile(test_use_release):
     raster_path = "tests/data/OSBS_029.tif"
     original_raster = Image.open(raster_path)
     original_raster = np.array(original_raster)  
-    predicted_raster = test_use_release.predict_tile(raster_path, return_plot = True, patch_size=400,patch_overlap=0)
     
     #This should make the same prediction?
-    predicted_raster = test_use_release.predict_tile(raster_path, return_plot = False, patch_size=400,patch_overlap=0)
-    predicted_image = test_use_release.predict_image(raster_path, return_plot = False)
+    #predicted_raster = test_use_release.predict_tile(raster_path, return_plot = False, patch_size=400,patch_overlap=0)
+    #predicted_image = test_use_release.predict_image(raster_path, return_plot = False)
     
-    assert predicted_raster.shape == original_raster.shape
+    #assert predicted_raster.shape == predicted_image.shape
     
     #Debug
-    predicted_raster = test_use_release.predict_tile(raster_path, return_plot = True, patch_size=400,patch_overlap=0)
+    predicted_raster = test_use_release.predict_tile(raster_path, return_plot = True, patch_size=300,patch_overlap=0.5)
     predicted_image = test_use_release.predict_image(raster_path, return_plot = True)
-        
-    plt.imshow(predicted_raster)
-    plt.show
     
+    assert original_raster.shape == predicted_raster.shape
+    
+    fig=plt.figure()
+    fig.add_subplot(2,1,1)
+    plt.imshow(predicted_raster)
+    fig.add_subplot(2,1,2)    
     plt.imshow(predicted_image[...,::-1])
-    plt.show    
+    plt.show()
     

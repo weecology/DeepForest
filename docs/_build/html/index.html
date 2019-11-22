@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Welcome to DeepForest’s documentation! &mdash; DeepForest 0.1.0 documentation</title>
+  <title>Welcome to DeepForest’s documentation! &mdash; DeepForest 0.0.3 documentation</title>
   
 
   
@@ -36,7 +36,7 @@
   <link rel="stylesheet" href="_static/graphviz.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="&lt;no title&gt;" href="readme.html" /> 
+    <link rel="next" title="What is DeepForest?" href="getting_started.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -60,7 +60,7 @@
             
             
               <div class="version">
-                0.1.0
+                0.0.3
               </div>
             
           
@@ -86,12 +86,15 @@
             
               <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">What is DeepForest?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html#how-does-it-work">How does it work?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html#prebuilt-models">Prebuilt models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html#training">Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html#evaluation">Evaluation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html#prediction">Prediction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="training.html">Training new models - An Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="source/deepforest.html">deepforest package</a></li>
-<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
-<li class="toctree-l1"><a class="reference internal" href="authors.html">Credits</a></li>
-<li class="toctree-l1"><a class="reference internal" href="history.html">History</a></li>
 </ul>
 
             
@@ -163,35 +166,38 @@ Source code is available here: (<a class="reference external" href="https://gith
 <div class="toctree-wrapper compound">
 <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">What is DeepForest?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html#how-does-it-work">How does it work?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html#prebuilt-models">Prebuilt models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html#training">Training</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="getting_started.html#training-hardware">Training Hardware</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html#evaluation">Evaluation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="getting_started.html#neon-benchmark">NEON Benchmark</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html#prediction">Prediction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="installation.html#dependencies">Dependencies</a></li>
 <li class="toctree-l2"><a class="reference internal" href="installation.html#conda-environment">Conda environment</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="training.html">Training new models - An Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="training.html#design-evaluation-data">Design evaluation data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="training.html#gather-annotations">Gather annotations</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="source/deepforest.html">deepforest package</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="source/deepforest.html#submodules">Submodules</a></li>
 <li class="toctree-l2"><a class="reference internal" href="source/deepforest.html#module-deepforest.cli">deepforest.cli module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="source/deepforest.html#module-deepforest.deepforest">deepforest.deepforest module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="source/deepforest.html#module-deepforest.predict">deepforest.predict module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="source/deepforest.html#module-deepforest.preprocess">deepforest.preprocess module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="source/deepforest.html#module-deepforest.retinanet_train">deepforest.retinanet_train module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="source/deepforest.html#module-deepforest.tfrecords">deepforest.tfrecords module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="source/deepforest.html#module-deepforest.utilities">deepforest.utilities module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="source/deepforest.html#module-deepforest">Module contents</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="contributing.html#types-of-contributions">Types of Contributions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="contributing.html#get-started">Get Started!</a></li>
-<li class="toctree-l2"><a class="reference internal" href="contributing.html#pull-request-guidelines">Pull Request Guidelines</a></li>
-<li class="toctree-l2"><a class="reference internal" href="contributing.html#tips">Tips</a></li>
-<li class="toctree-l2"><a class="reference internal" href="contributing.html#deploying">Deploying</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="authors.html">Credits</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="authors.html#development-lead">Development Lead</a></li>
-<li class="toctree-l2"><a class="reference internal" href="authors.html#contributors">Contributors</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="history.html">History</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="history.html#id1">0.1.0 (2019-09-30)</a></li>
 </ul>
 </li>
 </ul>
@@ -214,7 +220,7 @@ Source code is available here: (<a class="reference external" href="https://gith
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="readme.html" class="btn btn-neutral float-right" title="&lt;no title&gt;" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="getting_started.html" class="btn btn-neutral float-right" title="What is DeepForest?" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
     </div>

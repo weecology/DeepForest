@@ -1,0 +1,360 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>deepforest.preprocess &mdash; DeepForest 0.0.3 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/graphviz.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> DeepForest
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.0.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started.html">What is DeepForest?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started.html#how-does-it-work">How does it work?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started.html#prebuilt-models">Prebuilt models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started.html#training">Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started.html#evaluation">Evaluation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started.html#prediction">Prediction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../training.html">Training new models - An Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../source/deepforest.html">deepforest package</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">DeepForest</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>deepforest.preprocess</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for deepforest.preprocess</h1><div class="highlight"><pre>
+<span></span><span class="c1">#Deepforest Preprocessing model</span>
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">The preprocessing module is used to reshape data into format suitable for training or prediction. For example cutting large tiles into smaller images.</span>
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">PIL</span> <span class="k">import</span> <span class="n">Image</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">slidingwindow</span>
+
+<div class="viewcode-block" id="image_name_from_path"><a class="viewcode-back" href="../../source/deepforest.html#deepforest.preprocess.image_name_from_path">[docs]</a><span class="k">def</span> <span class="nf">image_name_from_path</span><span class="p">(</span><span class="n">image_path</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convert path to image name for use in indexing</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">image_name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">image_path</span><span class="p">)</span>
+    <span class="n">image_name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">image_name</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    
+    <span class="k">return</span> <span class="n">image_name</span></div>
+
+<div class="viewcode-block" id="compute_windows"><a class="viewcode-back" href="../../source/deepforest.html#deepforest.preprocess.compute_windows">[docs]</a><span class="k">def</span> <span class="nf">compute_windows</span><span class="p">(</span><span class="n">numpy_image</span><span class="p">,</span> <span class="n">patch_size</span><span class="p">,</span> <span class="n">patch_overlap</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;&#39;Create a sliding window object from a raster tile</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        numpy_image (array): Raster object as numpy array to cut into crops</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        windows (list): a sliding windows object</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    
+    <span class="k">if</span> <span class="n">patch_overlap</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Patch overlap </span><span class="si">{}</span><span class="s2"> must be between 0 - 1&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">patch_overlap</span><span class="p">))</span>
+    
+    <span class="c1">#Generate overlapping sliding windows</span>
+    <span class="n">windows</span> <span class="o">=</span> <span class="n">slidingwindow</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="n">numpy_image</span><span class="p">,</span> <span class="n">slidingwindow</span><span class="o">.</span><span class="n">DimOrder</span><span class="o">.</span><span class="n">HeightWidthChannel</span><span class="p">,</span> <span class="n">patch_size</span><span class="p">,</span> <span class="n">patch_overlap</span><span class="p">)</span>
+    
+    <span class="k">return</span><span class="p">(</span><span class="n">windows</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="select_annotations"><a class="viewcode-back" href="../../source/deepforest.html#deepforest.preprocess.select_annotations">[docs]</a><span class="k">def</span> <span class="nf">select_annotations</span><span class="p">(</span><span class="n">annotations</span><span class="p">,</span> <span class="n">windows</span><span class="p">,</span> <span class="n">index</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Select annotations that overlap with selected image crop</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        image_name (str): Name of the image in the annotations file to lookup. </span>
+<span class="sd">        annotations_file: path to annotations file in the format -&gt; image_path, xmin, ymin, xmax, ymax, label</span>
+<span class="sd">        windows: A sliding window object (see compute_windows) </span>
+<span class="sd">        index: The index in the windows object to use a crop bounds</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        selected_annotations: a pandas dataframe of annotations </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="c1"># Window coordinates - with respect to tile</span>
+    <span class="n">window_xmin</span><span class="p">,</span> <span class="n">window_ymin</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">h</span><span class="o">=</span> <span class="n">windows</span><span class="p">[</span><span class="n">index</span><span class="p">]</span><span class="o">.</span><span class="n">getRect</span><span class="p">()</span>
+    <span class="n">window_xmax</span> <span class="o">=</span> <span class="n">window_xmin</span> <span class="o">+</span> <span class="n">w</span>
+    <span class="n">window_ymax</span> <span class="o">=</span> <span class="n">window_ymin</span> <span class="o">+</span> <span class="n">h</span>
+    
+    <span class="c1">#buffer coordinates a bit to grab boxes that might start just against the image edge. Don&#39;t allow boxes that start and end after the offset</span>
+    <span class="n">offset</span> <span class="o">=</span> <span class="mi">40</span>
+    <span class="n">selected_annotations</span> <span class="o">=</span> <span class="n">annotations</span><span class="p">[</span> 
+        <span class="p">(</span><span class="n">annotations</span><span class="o">.</span><span class="n">xmin</span> <span class="o">&gt;</span> <span class="p">(</span><span class="n">window_xmin</span> <span class="o">-</span><span class="n">offset</span><span class="p">))</span> <span class="o">&amp;</span>  
+        <span class="p">(</span><span class="n">annotations</span><span class="o">.</span><span class="n">xmin</span> <span class="o">&lt;</span> <span class="p">(</span><span class="n">window_xmax</span><span class="p">))</span> <span class="o">&amp;</span>
+        <span class="p">(</span><span class="n">annotations</span><span class="o">.</span><span class="n">xmax</span> <span class="o">&gt;</span> <span class="p">(</span><span class="n">window_xmin</span><span class="p">))</span> <span class="o">&amp;</span>                        
+        <span class="p">(</span><span class="n">annotations</span><span class="o">.</span><span class="n">ymin</span> <span class="o">&gt;</span> <span class="p">(</span><span class="n">window_ymin</span> <span class="o">-</span> <span class="n">offset</span><span class="p">))</span>  <span class="o">&amp;</span>
+        <span class="p">(</span><span class="n">annotations</span><span class="o">.</span><span class="n">xmax</span> <span class="o">&lt;</span> <span class="p">(</span><span class="n">window_xmax</span> <span class="o">+</span> <span class="n">offset</span><span class="p">))</span> <span class="o">&amp;</span>
+        <span class="p">(</span><span class="n">annotations</span><span class="o">.</span><span class="n">ymin</span> <span class="o">&lt;</span> <span class="p">(</span><span class="n">window_ymax</span><span class="p">))</span> <span class="o">&amp;</span>  
+        <span class="p">(</span><span class="n">annotations</span><span class="o">.</span><span class="n">ymax</span> <span class="o">&gt;</span> <span class="p">(</span><span class="n">window_ymin</span><span class="p">))</span> <span class="o">&amp;</span>                
+        <span class="p">(</span><span class="n">annotations</span><span class="o">.</span><span class="n">ymax</span> <span class="o">&lt;</span> <span class="p">(</span><span class="n">window_ymax</span> <span class="o">+</span> <span class="n">offset</span><span class="p">))]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    
+    <span class="c1">#change the image name</span>
+    <span class="n">image_name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">annotations</span><span class="o">.</span><span class="n">image_path</span><span class="o">.</span><span class="n">unique</span><span class="p">()[</span><span class="mi">0</span><span class="p">]))[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">image_basename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">image_name</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">selected_annotations</span><span class="o">.</span><span class="n">image_path</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">_</span><span class="si">{}</span><span class="s2">.jpg&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">image_basename</span><span class="p">,</span><span class="n">index</span><span class="p">)</span> 
+    
+    <span class="c1">#update coordinates with respect to origin</span>
+    <span class="n">selected_annotations</span><span class="o">.</span><span class="n">xmax</span> <span class="o">=</span> <span class="p">(</span><span class="n">selected_annotations</span><span class="o">.</span><span class="n">xmin</span> <span class="o">-</span> <span class="n">window_xmin</span><span class="p">)</span>  <span class="o">+</span> <span class="p">(</span><span class="n">selected_annotations</span><span class="o">.</span><span class="n">xmax</span> <span class="o">-</span> <span class="n">selected_annotations</span><span class="o">.</span><span class="n">xmin</span><span class="p">)</span>    
+    <span class="n">selected_annotations</span><span class="o">.</span><span class="n">xmin</span> <span class="o">=</span> <span class="p">(</span><span class="n">selected_annotations</span><span class="o">.</span><span class="n">xmin</span> <span class="o">-</span> <span class="n">window_xmin</span><span class="p">)</span>
+    <span class="n">selected_annotations</span><span class="o">.</span><span class="n">ymax</span> <span class="o">=</span> <span class="p">(</span><span class="n">selected_annotations</span><span class="o">.</span><span class="n">ymin</span> <span class="o">-</span> <span class="n">window_ymin</span><span class="p">)</span>  <span class="o">+</span> <span class="p">(</span><span class="n">selected_annotations</span><span class="o">.</span><span class="n">ymax</span> <span class="o">-</span> <span class="n">selected_annotations</span><span class="o">.</span><span class="n">ymin</span><span class="p">)</span>    
+    <span class="n">selected_annotations</span><span class="o">.</span><span class="n">ymin</span> <span class="o">=</span> <span class="p">(</span><span class="n">selected_annotations</span><span class="o">.</span><span class="n">ymin</span> <span class="o">-</span> <span class="n">window_ymin</span><span class="p">)</span>
+    
+    <span class="c1">#cut off any annotations over the border.</span>
+    <span class="n">selected_annotations</span><span class="o">.</span><span class="n">xmin</span><span class="p">[</span><span class="n">selected_annotations</span><span class="o">.</span><span class="n">xmin</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">selected_annotations</span><span class="o">.</span><span class="n">xmax</span><span class="p">[</span><span class="n">selected_annotations</span><span class="o">.</span><span class="n">xmax</span> <span class="o">&gt;</span> <span class="n">w</span><span class="p">]</span> <span class="o">=</span> <span class="n">w</span>   
+    <span class="n">selected_annotations</span><span class="o">.</span><span class="n">ymin</span><span class="p">[</span><span class="n">selected_annotations</span><span class="o">.</span><span class="n">ymin</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">selected_annotations</span><span class="o">.</span><span class="n">ymax</span><span class="p">[</span><span class="n">selected_annotations</span><span class="o">.</span><span class="n">ymax</span> <span class="o">&gt;</span> <span class="n">h</span><span class="p">]</span> <span class="o">=</span> <span class="n">h</span>   
+    
+    <span class="k">return</span> <span class="n">selected_annotations</span></div>
+ 
+<div class="viewcode-block" id="save_crop"><a class="viewcode-back" href="../../source/deepforest.html#deepforest.preprocess.save_crop">[docs]</a><span class="k">def</span> <span class="nf">save_crop</span><span class="p">(</span><span class="n">base_dir</span><span class="p">,</span> <span class="n">image_name</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">crop</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Save window crop as image file to be read by PIL. Filename should match the image_name + window index</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1">#create dir if needed</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">base_dir</span><span class="p">):</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">base_dir</span><span class="p">)</span>
+    
+    <span class="n">im</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">fromarray</span><span class="p">(</span><span class="n">crop</span><span class="p">)</span>
+    <span class="n">image_basename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">image_name</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>    
+    <span class="n">filename</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">/</span><span class="si">{}</span><span class="s2">_</span><span class="si">{}</span><span class="s2">.jpg&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">base_dir</span><span class="p">,</span> <span class="n">image_basename</span><span class="p">,</span> <span class="n">index</span><span class="p">)</span>
+    <span class="n">im</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>   
+    
+    <span class="k">return</span> <span class="n">filename</span></div>
+
+<div class="viewcode-block" id="split_raster"><a class="viewcode-back" href="../../source/deepforest.html#deepforest.preprocess.split_raster">[docs]</a><span class="k">def</span> <span class="nf">split_raster</span><span class="p">(</span><span class="n">path_to_raster</span><span class="p">,</span> <span class="n">annotations_file</span><span class="p">,</span> <span class="n">base_dir</span><span class="p">,</span> <span class="n">patch_size</span><span class="p">,</span> <span class="n">patch_overlap</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Divide a large tile into smaller arrays. Each crop will be saved to file</span>
+<span class="sd">    Args:</span>
+<span class="sd">        path_to_tile (str): Path to a tile that can be read by rasterio on disk</span>
+<span class="sd">        annotations_file (str): Path to annotations file with data in the format -&gt; image_path, xmin, ymin, xmax, ymax, label</span>
+<span class="sd">        base_dir (str): Where to save the annotations and image crops relative to current working dir</span>
+<span class="sd">        patch_size (int): Maximum dimensions of square window</span>
+<span class="sd">        patch_overlap (float): Percent of overlap among windows 0-&gt;1</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        A pandas dataframe with annotations file for training.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1">#Load raster as image</span>
+    <span class="n">raster</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">path_to_raster</span><span class="p">)</span>
+    <span class="n">numpy_image</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">raster</span><span class="p">)</span>        
+    
+    <span class="c1">#Compute sliding window index</span>
+    <span class="n">windows</span> <span class="o">=</span> <span class="n">compute_windows</span><span class="p">(</span><span class="n">numpy_image</span><span class="p">,</span> <span class="n">patch_size</span><span class="p">,</span> <span class="n">patch_overlap</span><span class="p">)</span>
+    
+    <span class="c1">#Get image name for indexing</span>
+    <span class="n">image_name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">path_to_raster</span><span class="p">)</span>
+    
+    <span class="c1"># Load annotations file</span>
+    <span class="n">annotations</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">annotations_file</span><span class="p">)</span>
+    
+    <span class="c1">#open annotations file</span>
+    <span class="n">image_annotations</span> <span class="o">=</span> <span class="n">annotations</span><span class="p">[</span><span class="n">annotations</span><span class="o">.</span><span class="n">image_path</span> <span class="o">==</span> <span class="n">image_name</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">annotations</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">==</span><span class="mi">6</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Annotations file has </span><span class="si">{}</span><span class="s2"> columns, should have format image_path, xmin, ymin, xmax, ymax, label&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">annotations</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+            
+    <span class="n">annotations_files</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">window</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">windows</span><span class="p">):</span>
+        
+        <span class="c1">#Crop image</span>
+        <span class="n">crop</span> <span class="o">=</span> <span class="n">numpy_image</span><span class="p">[</span><span class="n">windows</span><span class="p">[</span><span class="n">index</span><span class="p">]</span><span class="o">.</span><span class="n">indices</span><span class="p">()]</span>
+        
+        <span class="c1">#Find annotations, image_name is the basename of the path</span>
+        <span class="n">crop_annotations</span> <span class="o">=</span> <span class="n">select_annotations</span><span class="p">(</span><span class="n">image_annotations</span><span class="p">,</span> <span class="n">windows</span><span class="p">,</span> <span class="n">index</span><span class="p">)</span>
+        
+        <span class="c1">#save annotations</span>
+        <span class="n">annotations_files</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">crop_annotations</span><span class="p">)</span>
+        
+        <span class="c1">#save image crop</span>
+        <span class="n">save_crop</span><span class="p">(</span><span class="n">base_dir</span><span class="p">,</span> <span class="n">image_name</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">crop</span><span class="p">)</span>
+        
+    <span class="n">annotations_files</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span><span class="n">annotations_files</span><span class="p">)</span>
+    
+    <span class="c1">#Checkpoint csv files, useful for parallelization    </span>
+    <span class="c1">#Use filename of the raster path to save the annotations</span>
+    <span class="n">image_basename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">image_name</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>    
+    <span class="n">file_path</span> <span class="o">=</span> <span class="n">image_basename</span> <span class="o">+</span> <span class="s2">&quot;.csv&quot;</span>
+    <span class="n">file_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">base_dir</span><span class="p">,</span> <span class="n">file_path</span><span class="p">)</span>
+    <span class="n">annotations_files</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    
+    <span class="k">return</span> <span class="n">annotations_files</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Ben Weinstein
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

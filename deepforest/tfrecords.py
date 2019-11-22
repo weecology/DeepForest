@@ -51,8 +51,9 @@ def create_tfrecords(annotations_file, class_file, backbone_model="resnet50", im
         image_min_side: resized image object minimum size
         size: Number of images per tfrecord
         savedir: dir path to save tfrecords files
+    
     Returns:
-        NULL -> side effect writes tfrecords
+        written_files: A list of path names of written tfrecords
     """
     memory_used = []
     
@@ -155,7 +156,6 @@ def create_tfrecords(annotations_file, class_file, backbone_model="resnet50", im
 def _parse_fn(example):
     
     #Define features
-    #TODO make the number of anchors dynamic
     features = {
         'image/filename': tf.io.FixedLenFeature([], tf.string),               
         "image/object/regression_target": tf.VarLenFeature(tf.float32),
@@ -217,6 +217,7 @@ def create_dataset(filepath, batch_size=1, shuffle=True):
     Args:
         filepath: list of tfrecord files
         batch_size: number of images per batch
+        
     Returns:
         dataset: a tensorflow dataset object for model training or prediction
     """
@@ -248,7 +249,7 @@ def create_dataset(filepath, batch_size=1, shuffle=True):
 def model_with_weights(model, weights, skip_mismatch):
     """ Load weights for model.
 
-    Args
+    Args:
         model         : The model to load weights for.
         weights       : The weights to load.
         skip_mismatch : If True, skips layers whose shape of weights doesn't match with the model.
@@ -259,9 +260,11 @@ def model_with_weights(model, weights, skip_mismatch):
 
 def create_tensors(list_of_tfrecords, backbone_name="resnet50", shuffle=True):
     """Create a wired tensor target from a list of tfrecords
+    
     Args:
         list_of_tfrecords: a list of tfrecord on disk to turn into a tfdataset
         backbone_name: keras retinanet backbone
+        
     Returns:
         inputs: input tensors of images
         targets: target tensors of bounding boxes and classes

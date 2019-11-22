@@ -1,0 +1,265 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>What is DeepForest? &mdash; DeepForest 0.0.3 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/graphviz.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Installation" href="installation.html" />
+    <link rel="prev" title="Welcome to DeepForest’s documentation!" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> DeepForest
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.0.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">What is DeepForest?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#how-does-it-work">How does it work?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#prebuilt-models">Prebuilt models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#training">Training</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#training-hardware">Training Hardware</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="#evaluation">Evaluation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#neon-benchmark">NEON Benchmark</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="#prediction">Prediction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="training.html">Training new models - An Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/deepforest.html">deepforest package</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">DeepForest</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>What is DeepForest?</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/getting_started.md.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="what-is-deepforest">
+<h1>What is DeepForest?<a class="headerlink" href="#what-is-deepforest" title="Permalink to this headline">¶</a></h1>
+<p>DeepForest is a python package for training and predicting individual tree crowns from RGB imagery.</p>
+</div>
+<div class="section" id="how-does-it-work">
+<h1>How does it work?<a class="headerlink" href="#how-does-it-work" title="Permalink to this headline">¶</a></h1>
+<p>DeepForest uses deep learning object detection networks to predict bounding boxes corresponding to individual trees in RGB imagery. DeepForest is built on top of the keras-retinanet () package and designed to make training models for tree detection simpler.</p>
+</div>
+<div class="section" id="prebuilt-models">
+<h1>Prebuilt models<a class="headerlink" href="#prebuilt-models" title="Permalink to this headline">¶</a></h1>
+<p>DeepForest has a prebuilt model trained on data from 21 sites from the National Ecological Observation Network (). The prebuilt model uses a semi-supervised approach in which annotations are generated using unsupervised tree detection algorithms, followed by hand annotations of RGB imagery. For more details on the modeling approach see</p>
+<p>Weinstein, B.G.; Marconi, S.; Bohlman, S.; Zare, A.; White, E. Individual Tree-Crown Detection in RGB Imagery Using Semi-Supervised Deep Learning Neural Networks. Remote Sens. 2019, 11, 1309.
+https://www.mdpi.com/2072-4292/11/11/1309</p>
+<p>Geographic Generalization in Airborne RGB Deep Learning Tree Detection
+Ben. G. Weinstein, Sergio Marconi, Stephanie A. Bohlman, Alina Zare, Ethan P. White
+bioRxiv 790071; doi: https://doi.org/10.1101/790071</p>
+</div>
+<div class="section" id="training">
+<h1>Training<a class="headerlink" href="#training" title="Permalink to this headline">¶</a></h1>
+<p>While the prebuilt models outperform available tree crown detection tools, they can always be improved by adding data from the target area. In our work, we have found that even one hour worth of carefully chosen hand annotation can yield enormous improvements in accuracy and precision. We envision that for the majority of scientific applications, atleast some finetuning of the prebuilt model will be worthwhile.</p>
+<div class="highlight-{python} notranslate"><div class="highlight"><pre><span></span>
+
+</pre></div>
+</div>
+<div class="section" id="training-hardware">
+<h2>Training Hardware<a class="headerlink" href="#training-hardware" title="Permalink to this headline">¶</a></h2>
+<p>Training neural networks is computationally intensive. While small amounts of data, on the order of several hundred trees, can be trained on a laptop in a few hours, large amounts of data are best trained on dedicated graphical processing units (GPUs). Many university clusters have GPUs available, and they can be rented for short periods of time on cloud servers (AWS, Google Cloud, Azure).</p>
+<p>For more details and recommendations for model training see <a class="reference external" href="#">training overview</a>.</p>
+</div>
+</div>
+<div class="section" id="evaluation">
+<h1>Evaluation<a class="headerlink" href="#evaluation" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="neon-benchmark">
+<h2>NEON Benchmark<a class="headerlink" href="#neon-benchmark" title="Permalink to this headline">¶</a></h2>
+<p>To standardize model evaluation, we have collected and published a benchmark dataset of nearly 20,000 crowns from sites in the National Ecological Observation Network.</p>
+<p>https://github.com/weecology/NeonTreeEvaluation</p>
+</div>
+</div>
+<div class="section" id="prediction">
+<h1>Prediction<a class="headerlink" href="#prediction" title="Permalink to this headline">¶</a></h1>
+<p>Once a satisfactory model has been trained, DeepForest allows convenient prediction to new data. There are three ways to format data for prediction. For single images, predict_image can directly read an image from file and return predicted tree bounding boxes.</p>
+<div class="highlight-{python} notranslate"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+<p>For large tiles that cannot fit into memory, DeepForest has a <code class="docutils literal notranslate"><span class="pre">predict_tile</span></code> function to split the image into overlapping windows, perform prediction on each of the windows, and reassemble the resulting annotations.</p>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="installation.html" class="btn btn-neutral float-right" title="Installation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="index.html" class="btn btn-neutral float-left" title="Welcome to DeepForest’s documentation!" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Ben Weinstein
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

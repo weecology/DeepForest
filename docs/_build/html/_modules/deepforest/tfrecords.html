@@ -1,0 +1,481 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>deepforest.tfrecords &mdash; DeepForest 0.0.3 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/graphviz.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> DeepForest
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.0.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started.html">What is DeepForest?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started.html#how-does-it-work">How does it work?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started.html#prebuilt-models">Prebuilt models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started.html#training">Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started.html#evaluation">Evaluation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started.html#prediction">Prediction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../training.html">Training new models - An Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../source/deepforest.html">deepforest package</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">DeepForest</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>deepforest.tfrecords</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for deepforest.tfrecords</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Module: tfrecords</span>
+
+<span class="sd">Tfrecords creation and reader for improved performance across multi-gpu</span>
+<span class="sd">There were a tradeoffs made in this repo. It would be natural to save the generated prepreprocessed image to tfrecord from the generator. This results in enormous (100x) files. </span>
+<span class="sd">The compromise was to read the original image from file using tensorflow&#39;s data pipeline. The opencv resize billinear method is marginally different then the tensorflow method, so we can assert they are the same array. </span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">math</span> <span class="k">import</span> <span class="n">ceil</span>
+<span class="kn">import</span> <span class="nn">keras</span> 
+<span class="kn">import</span> <span class="nn">cv2</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+
+<span class="kn">from</span> <span class="nn">keras_retinanet.preprocessing.csv_generator</span> <span class="k">import</span> <span class="n">CSVGenerator</span>
+<span class="kn">from</span> <span class="nn">keras_retinanet</span> <span class="k">import</span> <span class="n">models</span>
+<span class="kn">from</span> <span class="nn">keras_retinanet.models.retinanet</span> <span class="k">import</span> <span class="n">retinanet_bbox</span>
+<span class="kn">from</span> <span class="nn">keras_retinanet</span> <span class="k">import</span> <span class="n">losses</span>
+
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">psutil</span>
+<span class="kn">import</span> <span class="nn">gc</span>
+
+<div class="viewcode-block" id="create_tf_example"><a class="viewcode-back" href="../../source/deepforest.html#deepforest.tfrecords.create_tf_example">[docs]</a><span class="k">def</span> <span class="nf">create_tf_example</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">regression_target</span><span class="p">,</span> <span class="n">class_target</span><span class="p">,</span> <span class="n">fname</span><span class="p">,</span> <span class="n">original_image</span><span class="p">):</span>
+    
+    <span class="c1">#Class labels can be stored as int list</span>
+    <span class="n">class_target</span> <span class="o">=</span> <span class="n">class_target</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+    
+    <span class="c1">#Save image information and metadata so that the tensors can be reshaped at runtime</span>
+    
+    <span class="n">example</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">Example</span><span class="p">(</span><span class="n">features</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">Features</span><span class="p">(</span><span class="n">feature</span><span class="o">=</span><span class="p">{</span>
+        <span class="s1">&#39;image/target_height&#39;</span><span class="p">:</span>  <span class="n">tf</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">Feature</span><span class="p">(</span><span class="n">int64_list</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">Int64List</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="p">[</span><span class="n">image</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]])),</span>        
+        <span class="s1">&#39;image/target_width&#39;</span><span class="p">:</span>  <span class="n">tf</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">Feature</span><span class="p">(</span><span class="n">int64_list</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">Int64List</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="p">[</span><span class="n">image</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]])),</span>            
+        <span class="s1">&#39;image/height&#39;</span><span class="p">:</span>  <span class="n">tf</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">Feature</span><span class="p">(</span><span class="n">int64_list</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">Int64List</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="p">[</span><span class="n">original_image</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]])),</span>        
+        <span class="s1">&#39;image/width&#39;</span><span class="p">:</span>  <span class="n">tf</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">Feature</span><span class="p">(</span><span class="n">int64_list</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">Int64List</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="p">[</span><span class="n">original_image</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]])),</span>                        
+        <span class="s1">&#39;image/filename&#39;</span><span class="p">:</span>  <span class="n">tf</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">Feature</span><span class="p">(</span><span class="n">bytes_list</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">BytesList</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="p">[</span><span class="n">fname</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)])),</span>        
+        <span class="s1">&#39;image/object/regression_target&#39;</span><span class="p">:</span> <span class="n">tf</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">Feature</span><span class="p">(</span><span class="n">float_list</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">FloatList</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">regression_target</span><span class="o">.</span><span class="n">flatten</span><span class="p">())),</span>
+        <span class="s1">&#39;image/object/class_target&#39;</span><span class="p">:</span> <span class="n">tf</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">Feature</span><span class="p">(</span><span class="n">int64_list</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">Int64List</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">class_target</span><span class="o">.</span><span class="n">flatten</span><span class="p">())),</span>
+        <span class="s1">&#39;image/object/n_anchors&#39;</span><span class="p">:</span> <span class="n">tf</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">Feature</span><span class="p">(</span><span class="n">int64_list</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">Int64List</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="p">[</span><span class="n">regression_target</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]]))</span>
+    <span class="p">}))</span>
+    
+    <span class="c1"># Serialize to string and write to file</span>
+    <span class="k">return</span> <span class="n">example</span></div>
+
+<div class="viewcode-block" id="create_tfrecords"><a class="viewcode-back" href="../../source/deepforest.html#deepforest.tfrecords.create_tfrecords">[docs]</a><span class="k">def</span> <span class="nf">create_tfrecords</span><span class="p">(</span><span class="n">annotations_file</span><span class="p">,</span> <span class="n">class_file</span><span class="p">,</span> <span class="n">backbone_model</span><span class="o">=</span><span class="s2">&quot;resnet50&quot;</span><span class="p">,</span> <span class="n">image_min_side</span><span class="o">=</span><span class="mi">800</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">savedir</span><span class="o">=</span><span class="s2">&quot;./&quot;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Args:</span>
+<span class="sd">        annotations_file: path to 6 column data in form image_path, xmin, ymin, xmax, ymax, label</span>
+<span class="sd">        backbone_model: A keras retinanet backbone</span>
+<span class="sd">        image_min_side: resized image object minimum size</span>
+<span class="sd">        size: Number of images per tfrecord</span>
+<span class="sd">        savedir: dir path to save tfrecords files</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        written_files: A list of path names of written tfrecords</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">memory_used</span> <span class="o">=</span> <span class="p">[]</span>
+    
+    <span class="c1">#Image preprocess function</span>
+    <span class="n">backbone</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">backbone</span><span class="p">(</span><span class="n">backbone_model</span><span class="p">)</span>
+    
+    <span class="c1">#filebase name</span>
+    <span class="n">image_basename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">annotations_file</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+    
+    <span class="c1">#Check annotations file only JPEG, PNG, GIF, or BMP are allowed.</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">annotations_file</span><span class="p">,</span> <span class="n">names</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;image_path&quot;</span><span class="p">,</span><span class="s2">&quot;xmin&quot;</span><span class="p">,</span><span class="s2">&quot;ymin&quot;</span><span class="p">,</span><span class="s2">&quot;xmax&quot;</span><span class="p">,</span><span class="s2">&quot;ymax&quot;</span><span class="p">,</span><span class="s2">&quot;label&quot;</span><span class="p">])</span>
+    <span class="n">df</span><span class="p">[</span><span class="s1">&#39;FileType&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">image_path</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">str</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="n">bad_file_types</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="o">~</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;FileType&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">([</span><span class="s2">&quot;jpeg&quot;</span><span class="p">,</span><span class="s2">&quot;jpg&quot;</span><span class="p">,</span><span class="s2">&quot;png&quot;</span><span class="p">,</span><span class="s2">&quot;gif&quot;</span><span class="p">,</span><span class="s2">&quot;bmp&quot;</span><span class="p">]))</span>
+    
+    <span class="k">if</span> <span class="n">bad_file_types</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Check annotations file, only JPEG, PNG, GIF, or BMP are allowed, </span><span class="si">{}</span><span class="s2"> incorrect files found&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">bad_file_types</span><span class="p">))</span>
+    
+    <span class="c1">#Create generator - because of how retinanet yields data, this should always be 1. Shape problems in the future?</span>
+    <span class="n">train_generator</span> <span class="o">=</span> <span class="n">CSVGenerator</span><span class="p">(</span>
+        <span class="n">annotations_file</span><span class="p">,</span>
+        <span class="n">class_file</span><span class="p">,</span>
+         <span class="n">batch_size</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+         <span class="n">image_min_side</span> <span class="o">=</span> <span class="n">image_min_side</span><span class="p">,</span>
+         <span class="n">preprocess_image</span> <span class="o">=</span> <span class="n">backbone</span><span class="o">.</span><span class="n">preprocess_image</span>
+    <span class="p">)</span>
+    
+    <span class="c1">#chunk size </span>
+    <span class="n">indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">train_generator</span><span class="o">.</span><span class="n">size</span><span class="p">())</span>
+    <span class="n">chunks</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">indices</span><span class="p">[</span><span class="n">i</span> <span class="o">*</span> <span class="n">size</span><span class="p">:(</span><span class="n">i</span> <span class="o">*</span> <span class="n">size</span><span class="p">)</span> <span class="o">+</span> <span class="n">size</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">ceil</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">indices</span><span class="p">)</span> <span class="o">/</span> <span class="n">size</span><span class="p">))</span>
+    <span class="p">]</span>
+    
+    <span class="n">written_files</span> <span class="o">=</span> <span class="p">[</span> <span class="p">]</span>
+    <span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="n">chunks</span><span class="p">:</span>
+        <span class="c1">#Create tfrecord dataset and save it for output</span>
+        <span class="n">fname</span> <span class="o">=</span> <span class="n">savedir</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">_</span><span class="si">{}</span><span class="s2">.tfrecord&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">image_basename</span><span class="p">,</span> <span class="n">chunk</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">written_files</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span>
+        <span class="n">writer</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">TFRecordWriter</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span>
+        <span class="n">images</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">regression_targets</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">class_targets</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="p">[</span> <span class="p">]</span>
+        <span class="n">original_image</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">chunk</span><span class="p">:</span>
+            
+            <span class="c1">#Original image</span>
+            <span class="n">original_image</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">train_generator</span><span class="o">.</span><span class="n">load_image</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
+            
+            <span class="n">batch</span> <span class="o">=</span> <span class="n">train_generator</span><span class="o">.</span><span class="fm">__getitem__</span><span class="p">(</span><span class="n">i</span><span class="p">),</span>
+            
+            <span class="c1">#split into images and tar  gets</span>
+            <span class="n">inputs</span><span class="p">,</span> <span class="n">targets</span> <span class="o">=</span>  <span class="n">batch</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+           
+            <span class="c1">#grab image, asssume batch size of 1, squeeze</span>
+            <span class="n">images</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">inputs</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="o">...</span><span class="p">])</span>
+            
+            <span class="c1">#Grab anchor targets</span>
+            <span class="n">regression_batch</span><span class="p">,</span> <span class="n">labels_batch</span> <span class="o">=</span> <span class="n">targets</span>
+        
+            <span class="c1">#grab regression anchors</span>
+            <span class="c1">#regression_batch: batch that contains bounding-box regression targets for an image &amp; anchor states (np.array of shape (batch_size, N, 4 + 1),</span>
+            <span class="c1">#where N is the number of anchors for an image, the first 4 columns define regression targets for (x1, y1, x2, y2) and the</span>
+            <span class="c1">#last column defines anchor states (-1 for ignore, 0 for bg, 1 for fg).       </span>
+            <span class="n">regression_anchors</span> <span class="o">=</span> <span class="n">regression_batch</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="o">...</span><span class="p">]</span> 
+            <span class="n">regression_targets</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">regression_anchors</span><span class="p">)</span>
+            
+            <span class="c1">#grab class labels - squeeze out batch size</span>
+            <span class="c1">#From retinanet: labels_batch: batch that contains labels &amp; anchor states (np.array of shape (batch_size, N, num_classes + 1),</span>
+           <span class="c1">#where N is the number of anchors for an image and the last column defines the anchor state (-1 for ignore, 0 for bg, 1 for fg).        </span>
+            <span class="n">labels</span> <span class="o">=</span> <span class="n">labels_batch</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="o">...</span><span class="p">]</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Label shape is: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">labels</span><span class="o">.</span><span class="n">shape</span><span class="p">))</span>
+            <span class="n">class_targets</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">labels</span><span class="p">)</span>
+            
+            <span class="c1">#append filename by looking at group index</span>
+            <span class="n">current_index</span> <span class="o">=</span> <span class="n">train_generator</span><span class="o">.</span><span class="n">groups</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            
+            <span class="c1">#Grab filename and append to the full path</span>
+            <span class="n">fname</span> <span class="o">=</span> <span class="n">train_generator</span><span class="o">.</span><span class="n">image_names</span><span class="p">[</span><span class="n">current_index</span><span class="p">]</span>
+            <span class="n">fname</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">train_generator</span><span class="o">.</span><span class="n">base_dir</span><span class="p">,</span><span class="n">fname</span><span class="p">)</span>
+            
+            <span class="n">filename</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span>
+                            
+        <span class="k">for</span> <span class="n">image</span><span class="p">,</span> <span class="n">regression_target</span><span class="p">,</span> <span class="n">class_target</span><span class="p">,</span> <span class="n">fname</span><span class="p">,</span><span class="n">orig_image</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">images</span><span class="p">,</span><span class="n">regression_targets</span><span class="p">,</span> <span class="n">class_targets</span><span class="p">,</span><span class="n">filename</span><span class="p">,</span> <span class="n">original_image</span><span class="p">):</span>
+            <span class="n">tf_example</span> <span class="o">=</span> <span class="n">create_tf_example</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">regression_target</span><span class="p">,</span> <span class="n">class_target</span><span class="p">,</span> <span class="n">fname</span><span class="p">,</span><span class="n">orig_image</span><span class="p">)</span>
+            <span class="n">writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">tf_example</span><span class="o">.</span><span class="n">SerializeToString</span><span class="p">())</span>        
+        
+        <span class="n">memory_used</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">psutil</span><span class="o">.</span><span class="n">virtual_memory</span><span class="p">()</span><span class="o">.</span><span class="n">used</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">**</span> <span class="mi">30</span><span class="p">)</span>
+
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">memory_used</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;Evolution of memory&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;iteration&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;memory used (GB)&#39;</span><span class="p">)</span>   
+    <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">savedir</span><span class="p">,</span><span class="s2">&quot;memory.png&quot;</span><span class="p">))</span>
+    
+    <span class="k">return</span> <span class="n">written_files</span></div>
+        
+
+<span class="c1">#Reading</span>
+<span class="k">def</span> <span class="nf">_parse_fn</span><span class="p">(</span><span class="n">example</span><span class="p">):</span>
+    
+    <span class="c1">#Define features</span>
+    <span class="n">features</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">&#39;image/filename&#39;</span><span class="p">:</span> <span class="n">tf</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">FixedLenFeature</span><span class="p">([],</span> <span class="n">tf</span><span class="o">.</span><span class="n">string</span><span class="p">),</span>               
+        <span class="s2">&quot;image/object/regression_target&quot;</span><span class="p">:</span> <span class="n">tf</span><span class="o">.</span><span class="n">VarLenFeature</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">float32</span><span class="p">),</span>
+        <span class="s2">&quot;image/object/class_target&quot;</span><span class="p">:</span> <span class="n">tf</span><span class="o">.</span><span class="n">VarLenFeature</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">int64</span><span class="p">),</span>
+        <span class="s2">&quot;image/height&quot;</span><span class="p">:</span> <span class="n">tf</span><span class="o">.</span><span class="n">FixedLenFeature</span><span class="p">([</span> <span class="p">],</span> <span class="n">tf</span><span class="o">.</span><span class="n">int64</span><span class="p">),</span>        
+        <span class="s2">&quot;image/width&quot;</span><span class="p">:</span> <span class="n">tf</span><span class="o">.</span><span class="n">FixedLenFeature</span><span class="p">([</span> <span class="p">],</span> <span class="n">tf</span><span class="o">.</span><span class="n">int64</span><span class="p">),</span>
+        <span class="s2">&quot;image/target_height&quot;</span><span class="p">:</span> <span class="n">tf</span><span class="o">.</span><span class="n">FixedLenFeature</span><span class="p">([</span> <span class="p">],</span> <span class="n">tf</span><span class="o">.</span><span class="n">int64</span><span class="p">),</span>        
+        <span class="s2">&quot;image/target_width&quot;</span><span class="p">:</span> <span class="n">tf</span><span class="o">.</span><span class="n">FixedLenFeature</span><span class="p">([</span> <span class="p">],</span> <span class="n">tf</span><span class="o">.</span><span class="n">int64</span><span class="p">),</span>      
+        <span class="s2">&quot;image/object/n_anchors&quot;</span><span class="p">:</span> <span class="n">tf</span><span class="o">.</span><span class="n">FixedLenFeature</span><span class="p">([</span> <span class="p">],</span> <span class="n">tf</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>        
+                        <span class="p">}</span>
+    
+    <span class="c1"># Load one example and parse</span>
+    <span class="n">example</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">parse_single_example</span><span class="p">(</span><span class="n">example</span><span class="p">,</span> <span class="n">features</span><span class="p">)</span>
+    
+    <span class="c1">#Load image from file</span>
+    <span class="n">filename</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">example</span><span class="p">[</span><span class="s2">&quot;image/filename&quot;</span><span class="p">],</span><span class="n">tf</span><span class="o">.</span><span class="n">string</span><span class="p">)</span>    
+    <span class="n">loaded_image</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">read_file</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+    <span class="n">loaded_image</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">image</span><span class="o">.</span><span class="n">decode_image</span><span class="p">(</span><span class="n">loaded_image</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+    
+    <span class="c1">#Reshape to known shape</span>
+    <span class="n">image_rows</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">example</span><span class="p">[</span><span class="s1">&#39;image/height&#39;</span><span class="p">],</span> <span class="n">tf</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+    <span class="n">image_cols</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">example</span><span class="p">[</span><span class="s1">&#39;image/width&#39;</span><span class="p">],</span> <span class="n">tf</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>    
+    <span class="n">loaded_image</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">loaded_image</span><span class="p">,</span> <span class="n">tf</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">image_rows</span><span class="p">,</span> <span class="n">image_cols</span><span class="p">,</span> <span class="mi">3</span><span class="p">]),</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;cast_loaded_image&quot;</span><span class="p">)</span>            
+    
+    <span class="c1">#needs to be float to subtract weights below</span>
+    <span class="n">loaded_image</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">loaded_image</span><span class="p">,</span><span class="n">tf</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+    
+    <span class="c1">#Turn loaded image from rgb into bgr and subtract imagenet means, see keras_retinanet.utils.image.preprocess_image</span>
+    <span class="n">red</span><span class="p">,</span> <span class="n">green</span><span class="p">,</span> <span class="n">blue</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">unstack</span><span class="p">(</span><span class="n">loaded_image</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+    
+    <span class="c1">#Subtract imagenet means</span>
+    <span class="n">blue</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">subtract</span><span class="p">(</span><span class="n">blue</span><span class="p">,</span><span class="mf">103.939</span><span class="p">)</span>
+    <span class="n">green</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">subtract</span><span class="p">(</span><span class="n">green</span><span class="p">,</span> <span class="mf">116.779</span><span class="p">)</span>
+    <span class="n">red</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">subtract</span><span class="p">(</span><span class="n">red</span><span class="p">,</span> <span class="mf">123.68</span><span class="p">)</span>
+    
+    <span class="c1">#Recombine as BGR image</span>
+    <span class="n">loaded_image</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">blue</span><span class="p">,</span> <span class="n">green</span><span class="p">,</span> <span class="n">red</span><span class="p">],</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+    
+    <span class="c1">#Resize loaded image to desired target shape</span>
+    <span class="n">target_height</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">example</span><span class="p">[</span><span class="s1">&#39;image/target_height&#39;</span><span class="p">],</span> <span class="n">tf</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+    <span class="n">target_width</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">example</span><span class="p">[</span><span class="s1">&#39;image/target_width&#39;</span><span class="p">],</span> <span class="n">tf</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>         
+    <span class="n">loaded_image</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">image</span><span class="o">.</span><span class="n">resize</span><span class="p">(</span><span class="n">loaded_image</span><span class="p">,</span> <span class="p">(</span><span class="n">target_height</span><span class="p">,</span><span class="n">target_width</span><span class="p">),</span> <span class="n">align_corners</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    
+    <span class="c1">#Generated anchor data</span>
+    <span class="n">regression_target</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">sparse_tensor_to_dense</span><span class="p">(</span><span class="n">example</span><span class="p">[</span><span class="s1">&#39;image/object/regression_target&#39;</span><span class="p">])</span>    
+    <span class="n">class_target</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">sparse_tensor_to_dense</span><span class="p">(</span><span class="n">example</span><span class="p">[</span><span class="s1">&#39;image/object/class_target&#39;</span><span class="p">])</span>    
+    
+    <span class="n">target_n_anchors</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">example</span><span class="p">[</span><span class="s1">&#39;image/object/n_anchors&#39;</span><span class="p">],</span> <span class="n">tf</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>         
+    <span class="n">regression_target</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">regression_target</span><span class="p">,</span> <span class="n">tf</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+    <span class="n">class_target</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">class_target</span><span class="p">,</span> <span class="n">tf</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+    
+    <span class="n">regression_target</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">regression_target</span><span class="p">,</span> <span class="p">[</span><span class="n">target_n_anchors</span><span class="p">,</span> <span class="mi">5</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;cast_regression&quot;</span><span class="p">)</span>
+    <span class="n">class_target</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">class_target</span><span class="p">,</span> <span class="p">[</span><span class="n">target_n_anchors</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;cast_class_label&quot;</span><span class="p">)</span>
+    
+    <span class="k">return</span> <span class="n">loaded_image</span><span class="p">,</span> <span class="n">regression_target</span><span class="p">,</span> <span class="n">class_target</span>
+
+<div class="viewcode-block" id="create_dataset"><a class="viewcode-back" href="../../source/deepforest.html#deepforest.tfrecords.create_dataset">[docs]</a><span class="k">def</span> <span class="nf">create_dataset</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Args:</span>
+<span class="sd">        filepath: list of tfrecord files</span>
+<span class="sd">        batch_size: number of images per batch</span>
+<span class="sd">        </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        dataset: a tensorflow dataset object for model training or prediction</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="c1"># This works with arrays as well</span>
+    <span class="n">dataset</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">TFRecordDataset</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+    
+    <span class="c1">## Set the number of datapoints you want to load and shuffle </span>
+    <span class="k">if</span> <span class="n">shuffle</span><span class="p">:</span>
+        <span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">shuffle</span><span class="p">(</span><span class="mi">800</span><span class="p">)</span>
+    
+    <span class="c1">## This dataset will go on forever</span>
+    <span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">repeat</span><span class="p">()</span>
+        
+    <span class="c1"># Maps the parser on every filepath in the array. You can set the number of parallel loaders here</span>
+    <span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">_parse_fn</span><span class="p">,</span> <span class="n">num_parallel_calls</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">experimental</span><span class="o">.</span><span class="n">AUTOTUNE</span><span class="p">)</span>
+      
+    <span class="c1">## Set the batchsize</span>
+    <span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">batch</span><span class="p">(</span><span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">drop_remainder</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    
+    <span class="c1">#Collect a queue of data tensors</span>
+    <span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">prefetch</span><span class="p">(</span><span class="n">buffer_size</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">experimental</span><span class="o">.</span><span class="n">AUTOTUNE</span><span class="p">)</span>
+
+    <span class="c1">## Create an iterator</span>
+    <span class="n">iterator</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">make_one_shot_iterator</span><span class="p">()</span>    
+    
+    <span class="k">return</span> <span class="n">iterator</span></div>
+
+<div class="viewcode-block" id="model_with_weights"><a class="viewcode-back" href="../../source/deepforest.html#deepforest.tfrecords.model_with_weights">[docs]</a><span class="k">def</span> <span class="nf">model_with_weights</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">weights</span><span class="p">,</span> <span class="n">skip_mismatch</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Load weights for model.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        model         : The model to load weights for.</span>
+<span class="sd">        weights       : The weights to load.</span>
+<span class="sd">        skip_mismatch : If True, skips layers whose shape of weights doesn&#39;t match with the model.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">weights</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">load_weights</span><span class="p">(</span><span class="n">weights</span><span class="p">,</span> <span class="n">by_name</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">skip_mismatch</span><span class="o">=</span><span class="n">skip_mismatch</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">model</span></div>
+
+<div class="viewcode-block" id="create_tensors"><a class="viewcode-back" href="../../source/deepforest.html#deepforest.tfrecords.create_tensors">[docs]</a><span class="k">def</span> <span class="nf">create_tensors</span><span class="p">(</span><span class="n">list_of_tfrecords</span><span class="p">,</span> <span class="n">backbone_name</span><span class="o">=</span><span class="s2">&quot;resnet50&quot;</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Create a wired tensor target from a list of tfrecords</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        list_of_tfrecords: a list of tfrecord on disk to turn into a tfdataset</span>
+<span class="sd">        backbone_name: keras retinanet backbone</span>
+<span class="sd">        </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        inputs: input tensors of images</span>
+<span class="sd">        targets: target tensors of bounding boxes and classes</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+    <span class="c1">#Create tensorflow iterator</span>
+    <span class="n">iterator</span> <span class="o">=</span> <span class="n">create_dataset</span><span class="p">(</span><span class="n">list_of_tfrecords</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="n">shuffle</span><span class="p">)</span>
+    <span class="n">next_element</span> <span class="o">=</span> <span class="n">iterator</span><span class="o">.</span><span class="n">get_next</span><span class="p">()</span>
+    
+    <span class="c1">#Split into inputs and targets </span>
+    <span class="n">inputs</span> <span class="o">=</span> <span class="n">next_element</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">targets</span> <span class="o">=</span> <span class="p">[</span><span class="n">next_element</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">next_element</span><span class="p">[</span><span class="mi">2</span><span class="p">]]</span>
+
+    <span class="k">return</span> <span class="n">inputs</span><span class="p">,</span> <span class="n">targets</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Ben Weinstein
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

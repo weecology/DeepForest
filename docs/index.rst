@@ -8,14 +8,11 @@ Source code is available here: (https://github.com/weecology/DeepForest.git).
    :maxdepth: 2
    :caption: Contents:
 
-   readme
+   getting_started
    installation
-   usage
+   training
    source/deepforest
    modules
-   contributing
-   authors
-   history
 
 Indices and tables
 ==================
