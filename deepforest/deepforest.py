@@ -211,7 +211,7 @@ class deepforest:
             return_plot: Whether to return image with annotations overlaid, or just a numpy array of boxes
         
         Returns:
-            predictions (array): if return_plot, an image. Otherwise a numpy array of predicted bounding boxes
+            predictions (array): if return_plot, an image. Otherwise a numpy array of predicted bounding boxes, with scores and labels
         """     
         
         #Check for model save
