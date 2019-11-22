@@ -18,13 +18,17 @@ def image_name_from_path(image_path):
     return image_name
 
 def compute_windows(numpy_image, patch_size, patch_overlap):
-    ''''
-    Create a sliding window object from a raster tile
+    ''''Create a sliding window object from a raster tile
+    
     Args:
         numpy_image (array): Raster object as numpy array to cut into crops
+    
     Returns:
         windows (list): a sliding windows object
     '''
+    
+    if patch_overlap > 1:
+        raise ValueError("Patch overlap {} must be between 0 - 1".format(patch_overlap))
     
     #Generate overlapping sliding windows
     windows = slidingwindow.generate(numpy_image, slidingwindow.DimOrder.HeightWidthChannel, patch_size, patch_overlap)
@@ -34,11 +38,15 @@ def compute_windows(numpy_image, patch_size, patch_overlap):
 def select_annotations(annotations, windows, index):
     """
     Select annotations that overlap with selected image crop
+    
     Args:
         image_name (str): Name of the image in the annotations file to lookup. 
         annotations_file: path to annotations file in the format -> image_path, xmin, ymin, xmax, ymax, label
         windows: A sliding window object (see compute_windows) 
         index: The index in the windows object to use a crop bounds
+    
+    Returns:
+        selected_annotations: a pandas dataframe of annotations 
     """
     
     # Window coordinates - with respect to tile

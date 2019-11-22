@@ -21,12 +21,14 @@ def predict_image(model, image_path=None, raw_image = None, score_threshold = 0.
     """
     Predict invidiual tree crown bounding boxes for a single image
     
-    model (object): A keras-retinanet model to predict bounding boxes, either load a model from weights, use the latest release, or train a new model from scratch.  
-    image_path (str): Path to image file on disk
-    image_path (str): Numpy image array in BGR channel order following openCV convention
-    score_threshold (float): Minimum probability score to be included in final boxes, ranging from 0 to 1.
-    max_detections (int): Maximum number of bounding box predictions per tile
-    return_plot (bool):  If true, return a image object, else return bounding boxes as a numpy array
+    Args:
+        model (object): A keras-retinanet model to predict bounding boxes, either load a model from weights, use the latest release, or train a new model from scratch.  
+        image_path (str): Path to image file on disk
+        image_path (str): Numpy image array in BGR channel order following openCV convention
+        score_threshold (float): Minimum probability score to be included in final boxes, ranging from 0 to 1.
+        max_detections (int): Maximum number of bounding box predictions per tile
+        return_plot (bool):  If true, return a image object, else return bounding boxes as a numpy array
+    
     Returns:
         raw_image (array): If return_plot is TRUE, the image with the overlaid boxes is returned
         image_boxes: If return_plot is FALSE, the bounding boxes as a 4 column array -> xmin, ymin, xmax, ymax

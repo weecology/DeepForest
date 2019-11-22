@@ -4,14 +4,12 @@
    :synopsis: A module for individual tree crown detection using deep learning neural networks. see Weinstein et al. Remote Sensing. 2019
 
 .. moduleauthor:: Ben Weinstein <ben.weinstein@weecology.org>
-
 """
 import os
 from PIL import Image
 import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
-import tempfile
 
 from deepforest import utilities
 from deepforest import predict
@@ -60,7 +58,7 @@ class deepforest:
             self.model = None
             
     def train(self, annotations, input_type="fit_generator", list_of_tfrecords=None, comet_experiment=None, images_per_epoch=None):
-        '''Train a deep learning tree detection model using keras-retinanet
+        '''Train a deep learning tree detection model using keras-retinanet.
         This is the main entry point for training a new model based on either existing weights or scratch
         
         Args:
@@ -69,6 +67,7 @@ class deepforest:
             list_of_tfrecords: Ignored if input_type != "tfrecord", list of tf records to process
             input_type: "fit_generator" or "tfrecord"
             images_per_epoch: number of images to override default config of # images in annotations file / batch size. Useful for debug
+        
         Returns:
             model (object): A trained keras model
             prediction model: with bbox nms
@@ -96,14 +95,15 @@ class deepforest:
         self.prediction_model = convert_model(self.model)
     
     def predict_generator(self, annotations, comet_experiment = None, iou_threshold=0.5, score_threshold=0.05, max_detections=200):
-        """
-         Predict bounding boxes for a model using a csv fit_generator
+        """Predict bounding boxes for a model using a csv fit_generator
+        
         Args:
             annotations (str): Path to csv label file, labels are in the format -> path/to/image.jpg,x1,y1,x2,y2,class_name
             iou_threshold(float): IoU Threshold to count for a positive detection (defaults to 0.5)
             score_threshold (float): Eliminate bounding boxes under this threshold
             max_detections (int): Maximum number of bounding box predictions
             comet_experiment(object): A comet experiment class objects to track
+        
         Return:
             boxes_output: a pandas dataframe of bounding boxes for each image in the annotations file
         """
@@ -146,14 +146,15 @@ class deepforest:
         return boxes_output
     
     def evaluate_generator(self, annotations, comet_experiment = None, iou_threshold=0.5, score_threshold=0.05, max_detections=200):
-        """
-        Evaluate prediction model using a csv fit_generator
+        """ Evaluate prediction model using a csv fit_generator
+        
         Args:
             annotations (str): Path to csv label file, labels are in the format -> path/to/image.jpg,x1,y1,x2,y2,class_name
             iou_threshold(float): IoU Threshold to count for a positive detection (defaults to 0.5)
             score_threshold (float): Eliminate bounding boxes under this threshold
             max_detections (int): Maximum number of bounding box predictions
             comet_experiment(object): A comet experiment class objects to track
+        
         Return:
             mAP: Mean average precision of the evaluated data
         """
@@ -201,18 +202,19 @@ class deepforest:
         return mAP
 
     def predict_image(self, image_path=None, raw_image=None, return_plot=True, score_threshold=0.05, max_detections=200, show=False):
-        '''Predict tree crowns based on loaded (or trained) model
+        """Predict tree crowns based on loaded (or trained) model
         
         Args:
             image_path (str): Path to image on disk
             raw_image (array): Numpy image array in BGR channel order following openCV convention
             show (bool): Plot the predicted image with bounding boxes. Ignored if return_plot=False
             return_plot: Whether to return image with annotations overlaid, or just a numpy array of boxes
+        
         Returns:
             predictions (array): if return_plot, an image. Otherwise a numpy array of predicted bounding boxes
-        '''     
-        #Check for model save
+        """     
         
+        #Check for model save
         if(self.prediction_model is None):
             raise ValueError("Model currently has no prediction weights, either train a new model using deepforest.train, loading existing model, or use prebuilt model (see deepforest.use_release()")
                 
@@ -224,15 +226,17 @@ class deepforest:
                 plt.show()             
             return image
         else:
-            boxes = predict.predict_image(self.prediction_model, image_path, return_plot=return_plot)            
+            boxes = predict.predict_image(self.prediction_model, image_path=image_path, raw_image=raw_image, return_plot=return_plot)            
             return boxes            
 
     def predict_tile(self, path_to_raster, patch_size=400,patch_overlap=0.1, return_plot=False):
         """
         For images too large to input into the model, predict_tile cuts the image into overlapping windows, predicts trees on each window and reassambles into a single array. 
+        
         Args:
             raster_path: Path to image on disk
             return_plot: Should the image be returned with the predictions drawn?
+        
         Returns:
             boxes (array): if return_plot, an image. Otherwise a numpy array of predicted bounding boxes
         """   
@@ -246,7 +250,6 @@ class deepforest:
         windows = preprocess.compute_windows(numpy_image, patch_size,patch_overlap)
         
         #Save images to tmpdir
-        base_dir = tempfile.TemporaryDirectory()
         predicted_boxes = []
         
         for index, window in enumerate(windows):
@@ -255,8 +258,7 @@ class deepforest:
             
             #Crop is RGB channel order, change to BGR
             crop = crop[...,::-1]
-            image_path = preprocess.save_crop(base_dir.name, image_name, index, crop)
-            boxes = self.predict_image(image_path, return_plot=False, score_threshold=self.config["score_threshold"])            
+            boxes = self.predict_image(raw_image=crop, return_plot=False, score_threshold=self.config["score_threshold"])            
             
             #transform coordinates to original system
             xmin, ymin, xmax, ymax = windows[index].getRect()
@@ -270,7 +272,8 @@ class deepforest:
             
         predicted_boxes = pd.concat(predicted_boxes)
         
-        #Read 
+        #TODO overlapping box supression
+        
         if return_plot:
             #Draw predictions
             for box in predicted_boxes.values:
