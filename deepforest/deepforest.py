@@ -7,6 +7,7 @@
 """
 import os
 from PIL import Image
+import tensorflow as tf
 import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
@@ -140,8 +141,8 @@ class deepforest:
     
         #name columns and return box data
         boxes_output = pd.concat(boxes_output)
-        boxes_output.columns = ["xmin","ymin","xmax","ymax","plot_name"]
-        boxes_output = boxes_output.reindex(columns= ["plot_name","xmin","ymin","xmax","ymax"])    
+        boxes_output.columns = ["xmin","ymin","xmax","ymax","score","label","plot_name"]
+        boxes_output = boxes_output.reindex(columns= ["plot_name","xmin","ymin","xmax","ymax","score","label"])    
         
         return boxes_output
     
@@ -238,7 +239,7 @@ class deepforest:
             return_plot: Should the image be returned with the predictions drawn?
         
         Returns:
-            boxes (array): if return_plot, an image. Otherwise a numpy array of predicted bounding boxes
+            boxes (array): if return_plot, an image. Otherwise a numpy array of predicted bounding boxes, scores and labels
         """   
        
         #Load raster as image
@@ -262,7 +263,6 @@ class deepforest:
             
             #transform coordinates to original system
             xmin, ymin, xmax, ymax = windows[index].getRect()
-            boxes = pd.DataFrame(boxes, columns=["xmin","ymin","xmax","ymax"])
             boxes.xmin = boxes.xmin + xmin
             boxes.xmax = boxes.xmax + xmin
             boxes.ymin = boxes.ymin + ymin
@@ -272,13 +272,18 @@ class deepforest:
             
         predicted_boxes = pd.concat(predicted_boxes)
         
-        #TODO overlapping box supression
-        
+        #Non-max supression for overlapping boxes among window 
+        with tf.Session() as sess:
+            new_boxes, new_scores, new_labels = predict.non_max_suppression(sess, predicted_boxes[["xmin","ymin","xmax","ymax"]].values, predicted_boxes.score.values, predicted_boxes.label.values)
+            image_detections = np.concatenate([new_boxes, np.expand_dims(new_scores, axis=1), np.expand_dims(new_labels, axis=1)], axis=1)
+            mosaic_df = pd.DataFrame(image_detections,columns=["xmin","ymin","xmax","ymax","score","label"])
+            mosaic_df.label = mosaic_df.label.str.decode("utf-8")
+            
         if return_plot:
             #Draw predictions
-            for box in predicted_boxes.values:
+            for box in mosaic_df[["xmin","ymin","xmax","ymax"]].values:
                 draw_box(numpy_image, box, [0,0,255])
             
             return numpy_image
         else:
-            return predicted_boxes
+            return mosaic_df

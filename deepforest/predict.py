@@ -7,6 +7,7 @@ import glob
 import keras
 import cv2
 import pandas as pd
+import tensorflow as tf
 
 #Retinanet-viz
 from keras_retinanet.utils import image as keras_retinanet_image
@@ -67,6 +68,7 @@ def predict_image(model, image_path=None, raw_image = None, score_threshold = 0.
 
     df = pd.DataFrame(image_detections, columns = ["xmin","ymin","xmax","ymax","score","label"])
     #Change numberic class into string label
+    df.label = df.label.astype(int)
     df.label = df.label.apply(lambda x: classes[x])
     
     if return_plot:
@@ -74,3 +76,16 @@ def predict_image(model, image_path=None, raw_image = None, score_threshold = 0.
         return raw_image                
     else:
         return df
+
+def non_max_suppression(sess, boxes, scores, labels, max_output_size=200, iou_threshold=0.25):
+    '''
+    Provide a tensorflow session and get non-maximum suppression
+    Args:
+        sess: a tensorfloe
+    max_output_size, iou_threshold are passed to tf.image.non_max_suppression 
+    '''
+    non_max_idxs = tf.image.non_max_suppression(boxes, scores, max_output_size=max_output_size, iou_threshold=iou_threshold)
+    new_boxes = tf.cast(tf.gather(boxes, non_max_idxs), tf.int32)
+    new_scores = tf.gather(scores, non_max_idxs)
+    new_labels =  tf.gather(labels, non_max_idxs)
+    return sess.run([new_boxes, new_scores, new_labels])
