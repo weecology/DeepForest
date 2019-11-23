@@ -58,7 +58,6 @@ def test_predict_image(download_release):
     boxes = test_model.predict_image(image_path="tests/data/OSBS_029.tif", show=False, return_plot = False)
     
     #Returns a 6 column numpy array, xmin, ymin, xmax, ymax, score, label
-    assert isinstance(boxes,np.ndarray)
     assert boxes.shape[1] == 6
 
 @pytest.fixture()

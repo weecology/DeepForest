@@ -18,7 +18,7 @@ bioRxiv 790071; doi: https://doi.org/10.1101/790071
 
 # Training
 
-While the prebuilt models outperform available tree crown detection tools, they can always be improved by adding data from the target area. In our work, we have found that even one hour worth of carefully chosen hand annotation can yield enormous improvements in accuracy and precision. We envision that for the majority of scientific applications, atleast some finetuning of the prebuilt model will be worthwhile.
+The prebuilt models can always be improved by adding data from the target area. In our work, we have found that even one hour worth of carefully chosen hand annotation can yield enormous improvements in accuracy and precision. We envision that for the majority of scientific applications, atleast some finetuning of the prebuilt model will be worthwhile.
 
 ```{python}
 
@@ -28,6 +28,20 @@ While the prebuilt models outperform available tree crown detection tools, they 
 
 # Evaluation
 
+Independent analysis of whether a model can generalize from training data to new areas is critical for creating a robust model. We stress that evaluation data must be different from training data, as neural networks have millions of parameters and can easily memorize thousands of samples. Therefore, while it would be rather easy to tune the model to get extremely high scores on the training data, it would fail when exposed to new images.
+
+DeepForest uses the keras-retinanet ```evaluate``` method to score images. This consists of an annotations.csv file in the following format
+
+```
+image_path, xmin, ymin, xmax, ymax, label
+```
+
+```{python}
+
+
+```
+
+For more on evaluation, see the [Evaluation Overview]()
 
 ## NEON Benchmark
 
