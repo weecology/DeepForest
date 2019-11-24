@@ -63,6 +63,7 @@ def create_tfrecords(annotations_file, class_file, backbone_model="resnet50", im
     #filebase name
     image_basename = os.path.splitext(os.path.basename(annotations_file))[0]
     
+    ## Syntax checks
     #Check annotations file only JPEG, PNG, GIF, or BMP are allowed.
     df = pd.read_csv(annotations_file, names=["image_path","xmin","ymin","xmax","ymax","label"])
     df['FileType'] = df.image_path.str.split('.').str[-1].str.lower()
@@ -70,6 +71,9 @@ def create_tfrecords(annotations_file, class_file, backbone_model="resnet50", im
     
     if bad_file_types > 0:
         raise ValueError("Check annotations file, only JPEG, PNG, GIF, or BMP are allowed, {} incorrect files found".format(bad_file_types))
+    
+    if df.xmin.dtype == float:
+        raise ValueError("Bounding box coordinates must be integers, not floats:{}".format(df.xmin.head()))
     
     #Create generator - because of how retinanet yields data, this should always be 1. Shape problems in the future?
     train_generator = CSVGenerator(
