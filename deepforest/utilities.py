@@ -146,8 +146,8 @@ def create_classes(annotations_file):
         labels = annotations.label.unique()
         n_classes = labels.shape[0]
         print("There are {} unique labels: {} ".format(n_classes,list(labels))) 
-        if n_classes > 1:
-                raise ValueError("There are greater than 1 classes ({}), check annotation levels for file {}".format(list(labels), annotations_file))
+        #if n_classes > 1:
+        #        raise ValueError("There are greater than 1 classes ({}), check annotation levels for file {}".format(list(labels), annotations_file))
         
         #write label
         with open(classes_path,'w') as csv_file:
