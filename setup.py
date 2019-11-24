@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 NAME ='deepforest'
-VERSION = 'VERSION='0.0.5''
+VERSION = 'VERSION='0.0.6''
 DESCRIPTION = 'Tree Crown Prediction using Deep Learning Retinanets'
 URL = 'https://github.com/Weecology/DeepForest'
 AUTHOR = 'Ben Weinstein'
