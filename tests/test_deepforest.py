@@ -108,7 +108,7 @@ def test_freeze_train(annotations, test_train):
 
 def test_predict_generator(test_use_release, annotations):
     boxes = test_use_release.predict_generator(annotations=annotations)
-    assert boxes.shape[1] == 5
+    assert boxes.shape[1] == 7
     
 def test_evaluate(test_use_release, annotations):
     mAP = test_use_release.evaluate_generator(annotations=annotations)
