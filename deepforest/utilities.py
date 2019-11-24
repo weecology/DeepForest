@@ -143,7 +143,7 @@ def create_classes(annotations_file):
         classes_path = os.path.join(dirname,"classes.csv")
         
         #get unique labels
-        labels = annotations.label.unique()
+        labels = annotations.label.dropna().unique()
         n_classes = labels.shape[0]
         print("There are {} unique labels: {} ".format(n_classes,list(labels))) 
         #if n_classes > 1:
