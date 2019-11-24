@@ -133,13 +133,13 @@ def split_raster(path_to_raster, annotations_file, base_dir, patch_size, patch_o
     #Get image name for indexing
     image_name = os.path.basename(path_to_raster)
     
-    # Load annotations file
+    # Load annotations file and coerce dtype
     annotations = pd.read_csv(annotations_file)
     
     #open annotations file
     image_annotations = annotations[annotations.image_path == image_name].copy()
     
-    if not annotations.shape[1]==6:
+    if not annotations.shape[1] == 6:
         raise ValueError("Annotations file has {} columns, should have format image_path, xmin, ymin, xmax, ymax, label".format(annotations.shape[1]))
             
     annotations_files = []
