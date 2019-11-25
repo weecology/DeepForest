@@ -45,4 +45,8 @@ def test_format_args_steps(annotations, config):
     #A bit ugly, but since its a list, what is the argument after --steps to assert
     steps_position = np.where(["--steps" in x for x in arg_list])[0][0] + 1
     assert arg_list[steps_position] == '2'
-    
+
+def test_use_release():
+    #Download latest model from github release
+    release_tag, weights = utilities.use_release()
+    assert os.path.exists("data/current_release.csv")
