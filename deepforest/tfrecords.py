@@ -7,11 +7,14 @@ The compromise was to read the original image from file using tensorflow's data 
 """
 import tensorflow as tf
 import os
+import csv
 import numpy as np
+
 from math import ceil
 import keras 
 import cv2
 import pandas as pd
+
 
 from keras_retinanet.preprocessing.csv_generator import CSVGenerator
 from keras_retinanet import models
@@ -72,9 +75,13 @@ def create_tfrecords(annotations_file, class_file, backbone_model="resnet50", im
     if bad_file_types > 0:
         raise ValueError("Check annotations file, only JPEG, PNG, GIF, or BMP are allowed, {} incorrect files found".format(bad_file_types))
     
-    if df.xmin.dtype == float:
-        raise ValueError("Bounding box coordinates must be integers, not floats:{}".format(df.xmin.head()))
-    
+    #Check dtypes, cannot use pandas, or will coerce in the presence of NAs
+    with open(annotations_file, 'r') as f:
+        reader = csv.reader(f, delimiter=',')
+        row = next(reader)
+        if row[1].count(".") > 0:
+            raise ValueError("Annotation files should be headerless with integer box, {} is not a int".format(row[1]))
+            
     #Create generator - because of how retinanet yields data, this should always be 1. Shape problems in the future?
     train_generator = CSVGenerator(
         annotations_file,
