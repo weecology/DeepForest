@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Training new models - An Overview &mdash; DeepForest 0.0.3 documentation</title>
+  <title>Training new models - An Overview &mdash; DeepForest 0.1.0 documentation</title>
   
 
   
@@ -61,7 +61,7 @@
             
             
               <div class="version">
-                0.0.3
+                0.1.0
               </div>
             
           
@@ -96,10 +96,8 @@
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Training new models - An Overview</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#design-evaluation-data">Design evaluation data</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#gather-annotations">Gather annotations</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#guidelines-for-model-training">Guidelines for model Training</a></li>
-</ul>
-</li>
+<li class="toctree-l2"><a class="reference internal" href="#gather-annotations">Gather annotations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#training-hardware">Training Hardware</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="source/deepforest.html">deepforest package</a></li>
@@ -187,9 +185,11 @@
 <p>DeepForest uses xml files produced by the commonly used annotation program RectLabel. Please note that Rectlabel is an inexpensive program available only for Mac.</p>
 <p>Rectlabel screenshot</p>
 <p>xml format explanation</p>
-<div class="section" id="guidelines-for-model-training">
-<h3>Guidelines for model Training<a class="headerlink" href="#guidelines-for-model-training" title="Permalink to this headline">¶</a></h3>
 </div>
+<div class="section" id="training-hardware">
+<h2>Training Hardware<a class="headerlink" href="#training-hardware" title="Permalink to this headline">¶</a></h2>
+<p>Training neural networks is computationally intensive. While small amounts of data, on the order of several hundred trees, can be trained on a laptop in a few hours, large amounts of data are best trained on dedicated graphical processing units (GPUs). Many university clusters have GPUs available, and they can be rented for short periods of time on cloud servers (AWS, Google Cloud, Azure).</p>
+<p>For more details and recommendations for model training see <a class="reference external" href="#">training overview</a>.</p>
 </div>
 </div>
 

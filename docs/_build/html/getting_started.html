@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>What is DeepForest? &mdash; DeepForest 0.0.3 documentation</title>
+  <title>What is DeepForest? &mdash; DeepForest 0.1.0 documentation</title>
   
 
   
@@ -61,7 +61,7 @@
             
             
               <div class="version">
-                0.0.3
+                0.1.0
               </div>
             
           
@@ -90,10 +90,7 @@
 <li class="toctree-l1 current"><a class="current reference internal" href="#">What is DeepForest?</a></li>
 <li class="toctree-l1"><a class="reference internal" href="#how-does-it-work">How does it work?</a></li>
 <li class="toctree-l1"><a class="reference internal" href="#prebuilt-models">Prebuilt models</a></li>
-<li class="toctree-l1"><a class="reference internal" href="#training">Training</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#training-hardware">Training Hardware</a></li>
-</ul>
-</li>
+<li class="toctree-l1"><a class="reference internal" href="#training">Training</a></li>
 <li class="toctree-l1"><a class="reference internal" href="#evaluation">Evaluation</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#neon-benchmark">NEON Benchmark</a></li>
 </ul>
@@ -185,19 +182,23 @@ bioRxiv 790071; doi: https://doi.org/10.1101/790071</p>
 </div>
 <div class="section" id="training">
 <h1>Training<a class="headerlink" href="#training" title="Permalink to this headline">¶</a></h1>
-<p>While the prebuilt models outperform available tree crown detection tools, they can always be improved by adding data from the target area. In our work, we have found that even one hour worth of carefully chosen hand annotation can yield enormous improvements in accuracy and precision. We envision that for the majority of scientific applications, atleast some finetuning of the prebuilt model will be worthwhile.</p>
+<p>The prebuilt models can always be improved by adding data from the target area. In our work, we have found that even one hour worth of carefully chosen hand annotation can yield enormous improvements in accuracy and precision. We envision that for the majority of scientific applications, atleast some finetuning of the prebuilt model will be worthwhile.</p>
 <div class="highlight-{python} notranslate"><div class="highlight"><pre><span></span>
 
 </pre></div>
 </div>
-<div class="section" id="training-hardware">
-<h2>Training Hardware<a class="headerlink" href="#training-hardware" title="Permalink to this headline">¶</a></h2>
-<p>Training neural networks is computationally intensive. While small amounts of data, on the order of several hundred trees, can be trained on a laptop in a few hours, large amounts of data are best trained on dedicated graphical processing units (GPUs). Many university clusters have GPUs available, and they can be rented for short periods of time on cloud servers (AWS, Google Cloud, Azure).</p>
-<p>For more details and recommendations for model training see <a class="reference external" href="#">training overview</a>.</p>
-</div>
 </div>
 <div class="section" id="evaluation">
 <h1>Evaluation<a class="headerlink" href="#evaluation" title="Permalink to this headline">¶</a></h1>
+<p>Independent analysis of whether a model can generalize from training data to new areas is critical for creating a robust model. We stress that evaluation data must be different from training data, as neural networks have millions of parameters and can easily memorize thousands of samples. Therefore, while it would be rather easy to tune the model to get extremely high scores on the training data, it would fail when exposed to new images.</p>
+<p>DeepForest uses the keras-retinanet <code class="docutils literal notranslate"><span class="pre">evaluate</span></code> method to score images. This consists of an annotations.csv file in the following format</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">image_path</span><span class="p">,</span> <span class="n">xmin</span><span class="p">,</span> <span class="n">ymin</span><span class="p">,</span> <span class="n">xmax</span><span class="p">,</span> <span class="n">ymax</span><span class="p">,</span> <span class="n">label</span>
+</pre></div>
+</div>
+<div class="highlight-{python} notranslate"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+<p>For more on evaluation, see the <a class="reference external" href="#">Evaluation Overview</a></p>
 <div class="section" id="neon-benchmark">
 <h2>NEON Benchmark<a class="headerlink" href="#neon-benchmark" title="Permalink to this headline">¶</a></h2>
 <p>To standardize model evaluation, we have collected and published a benchmark dataset of nearly 20,000 crowns from sites in the National Ecological Observation Network.</p>

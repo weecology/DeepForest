@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>deepforest.deepforest &mdash; DeepForest 0.0.3 documentation</title>
+  <title>deepforest.deepforest &mdash; DeepForest 0.1.0 documentation</title>
   
 
   
@@ -59,7 +59,7 @@
             
             
               <div class="version">
-                0.0.3
+                0.1.0
               </div>
             
           
@@ -166,6 +166,7 @@
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">from</span> <span class="nn">PIL</span> <span class="k">import</span> <span class="n">Image</span>
+<span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">from</span> <span class="nn">matplotlib</span> <span class="k">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">plt</span>
@@ -246,9 +247,12 @@
 <span class="sd">            model (object): A trained keras model</span>
 <span class="sd">        &#39;&#39;&#39;</span>        
         <span class="c1">#Download latest model from github release</span>
-        <span class="n">weights</span> <span class="o">=</span> <span class="n">utilities</span><span class="o">.</span><span class="n">use_release</span><span class="p">()</span>  
+        <span class="n">release_tag</span><span class="p">,</span> <span class="n">weights</span> <span class="o">=</span> <span class="n">utilities</span><span class="o">.</span><span class="n">use_release</span><span class="p">()</span>  
         
-        <span class="c1">#load saved model</span>
+        <span class="c1">#load saved model and tag release</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__release_version__</span> <span class="o">=</span> <span class="n">release_tag</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Loading pre-built model: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">release_tag</span><span class="p">))</span>
+        
         <span class="bp">self</span><span class="o">.</span><span class="n">weights</span> <span class="o">=</span> <span class="n">weights</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">utilities</span><span class="o">.</span><span class="n">read_model</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">weights</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">prediction_model</span> <span class="o">=</span> <span class="n">convert_model</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">)</span></div>
@@ -299,8 +303,8 @@
     
         <span class="c1">#name columns and return box data</span>
         <span class="n">boxes_output</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span><span class="n">boxes_output</span><span class="p">)</span>
-        <span class="n">boxes_output</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;xmin&quot;</span><span class="p">,</span><span class="s2">&quot;ymin&quot;</span><span class="p">,</span><span class="s2">&quot;xmax&quot;</span><span class="p">,</span><span class="s2">&quot;ymax&quot;</span><span class="p">,</span><span class="s2">&quot;plot_name&quot;</span><span class="p">]</span>
-        <span class="n">boxes_output</span> <span class="o">=</span> <span class="n">boxes_output</span><span class="o">.</span><span class="n">reindex</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span> <span class="p">[</span><span class="s2">&quot;plot_name&quot;</span><span class="p">,</span><span class="s2">&quot;xmin&quot;</span><span class="p">,</span><span class="s2">&quot;ymin&quot;</span><span class="p">,</span><span class="s2">&quot;xmax&quot;</span><span class="p">,</span><span class="s2">&quot;ymax&quot;</span><span class="p">])</span>    
+        <span class="n">boxes_output</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;xmin&quot;</span><span class="p">,</span><span class="s2">&quot;ymin&quot;</span><span class="p">,</span><span class="s2">&quot;xmax&quot;</span><span class="p">,</span><span class="s2">&quot;ymax&quot;</span><span class="p">,</span><span class="s2">&quot;score&quot;</span><span class="p">,</span><span class="s2">&quot;label&quot;</span><span class="p">,</span><span class="s2">&quot;plot_name&quot;</span><span class="p">]</span>
+        <span class="n">boxes_output</span> <span class="o">=</span> <span class="n">boxes_output</span><span class="o">.</span><span class="n">reindex</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span> <span class="p">[</span><span class="s2">&quot;plot_name&quot;</span><span class="p">,</span><span class="s2">&quot;xmin&quot;</span><span class="p">,</span><span class="s2">&quot;ymin&quot;</span><span class="p">,</span><span class="s2">&quot;xmax&quot;</span><span class="p">,</span><span class="s2">&quot;ymax&quot;</span><span class="p">,</span><span class="s2">&quot;score&quot;</span><span class="p">,</span><span class="s2">&quot;label&quot;</span><span class="p">])</span>    
         
         <span class="k">return</span> <span class="n">boxes_output</span></div>
     
@@ -370,7 +374,7 @@
 <span class="sd">            return_plot: Whether to return image with annotations overlaid, or just a numpy array of boxes</span>
 <span class="sd">        </span>
 <span class="sd">        Returns:</span>
-<span class="sd">            predictions (array): if return_plot, an image. Otherwise a numpy array of predicted bounding boxes</span>
+<span class="sd">            predictions (array): if return_plot, an image. Otherwise a numpy array of predicted bounding boxes, with scores and labels</span>
 <span class="sd">        &quot;&quot;&quot;</span>     
         
         <span class="c1">#Check for model save</span>
@@ -397,7 +401,7 @@
 <span class="sd">            return_plot: Should the image be returned with the predictions drawn?</span>
 <span class="sd">        </span>
 <span class="sd">        Returns:</span>
-<span class="sd">            boxes (array): if return_plot, an image. Otherwise a numpy array of predicted bounding boxes</span>
+<span class="sd">            boxes (array): if return_plot, an image. Otherwise a numpy array of predicted bounding boxes, scores and labels</span>
 <span class="sd">        &quot;&quot;&quot;</span>   
        
         <span class="c1">#Load raster as image</span>
@@ -421,7 +425,6 @@
             
             <span class="c1">#transform coordinates to original system</span>
             <span class="n">xmin</span><span class="p">,</span> <span class="n">ymin</span><span class="p">,</span> <span class="n">xmax</span><span class="p">,</span> <span class="n">ymax</span> <span class="o">=</span> <span class="n">windows</span><span class="p">[</span><span class="n">index</span><span class="p">]</span><span class="o">.</span><span class="n">getRect</span><span class="p">()</span>
-            <span class="n">boxes</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">boxes</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;xmin&quot;</span><span class="p">,</span><span class="s2">&quot;ymin&quot;</span><span class="p">,</span><span class="s2">&quot;xmax&quot;</span><span class="p">,</span><span class="s2">&quot;ymax&quot;</span><span class="p">])</span>
             <span class="n">boxes</span><span class="o">.</span><span class="n">xmin</span> <span class="o">=</span> <span class="n">boxes</span><span class="o">.</span><span class="n">xmin</span> <span class="o">+</span> <span class="n">xmin</span>
             <span class="n">boxes</span><span class="o">.</span><span class="n">xmax</span> <span class="o">=</span> <span class="n">boxes</span><span class="o">.</span><span class="n">xmax</span> <span class="o">+</span> <span class="n">xmin</span>
             <span class="n">boxes</span><span class="o">.</span><span class="n">ymin</span> <span class="o">=</span> <span class="n">boxes</span><span class="o">.</span><span class="n">ymin</span> <span class="o">+</span> <span class="n">ymin</span>
@@ -431,16 +434,21 @@
             
         <span class="n">predicted_boxes</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span><span class="n">predicted_boxes</span><span class="p">)</span>
         
-        <span class="c1">#TODO overlapping box supression</span>
-        
+        <span class="c1">#Non-max supression for overlapping boxes among window </span>
+        <span class="k">with</span> <span class="n">tf</span><span class="o">.</span><span class="n">Session</span><span class="p">()</span> <span class="k">as</span> <span class="n">sess</span><span class="p">:</span>
+            <span class="n">new_boxes</span><span class="p">,</span> <span class="n">new_scores</span><span class="p">,</span> <span class="n">new_labels</span> <span class="o">=</span> <span class="n">predict</span><span class="o">.</span><span class="n">non_max_suppression</span><span class="p">(</span><span class="n">sess</span><span class="p">,</span> <span class="n">predicted_boxes</span><span class="p">[[</span><span class="s2">&quot;xmin&quot;</span><span class="p">,</span><span class="s2">&quot;ymin&quot;</span><span class="p">,</span><span class="s2">&quot;xmax&quot;</span><span class="p">,</span><span class="s2">&quot;ymax&quot;</span><span class="p">]]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">predicted_boxes</span><span class="o">.</span><span class="n">score</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">predicted_boxes</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+            <span class="n">image_detections</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">new_boxes</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">new_scores</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">new_labels</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">mosaic_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">image_detections</span><span class="p">,</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;xmin&quot;</span><span class="p">,</span><span class="s2">&quot;ymin&quot;</span><span class="p">,</span><span class="s2">&quot;xmax&quot;</span><span class="p">,</span><span class="s2">&quot;ymax&quot;</span><span class="p">,</span><span class="s2">&quot;score&quot;</span><span class="p">,</span><span class="s2">&quot;label&quot;</span><span class="p">])</span>
+            <span class="n">mosaic_df</span><span class="o">.</span><span class="n">label</span> <span class="o">=</span> <span class="n">mosaic_df</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+            
         <span class="k">if</span> <span class="n">return_plot</span><span class="p">:</span>
             <span class="c1">#Draw predictions</span>
-            <span class="k">for</span> <span class="n">box</span> <span class="ow">in</span> <span class="n">predicted_boxes</span><span class="o">.</span><span class="n">values</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">box</span> <span class="ow">in</span> <span class="n">mosaic_df</span><span class="p">[[</span><span class="s2">&quot;xmin&quot;</span><span class="p">,</span><span class="s2">&quot;ymin&quot;</span><span class="p">,</span><span class="s2">&quot;xmax&quot;</span><span class="p">,</span><span class="s2">&quot;ymax&quot;</span><span class="p">]]</span><span class="o">.</span><span class="n">values</span><span class="p">:</span>
                 <span class="n">draw_box</span><span class="p">(</span><span class="n">numpy_image</span><span class="p">,</span> <span class="n">box</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">255</span><span class="p">])</span>
             
             <span class="k">return</span> <span class="n">numpy_image</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">predicted_boxes</span></div></div>
+            <span class="k">return</span> <span class="n">mosaic_df</span></div></div>
 </pre></div>
 
            </div>

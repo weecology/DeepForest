@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>tests.test_deepforest &mdash; DeepForest 0.0.3 documentation</title>
+  <title>tests.test_deepforest &mdash; DeepForest 0.1.0 documentation</title>
   
 
   
@@ -59,7 +59,7 @@
             
             
               <div class="version">
-                0.0.3
+                0.1.0
               </div>
             
           
@@ -198,27 +198,39 @@
     <span class="n">model</span> <span class="o">=</span> <span class="n">deepforest</span><span class="o">.</span><span class="n">deepforest</span><span class="p">(</span><span class="n">weights</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
     <span class="k">assert</span> <span class="n">model</span><span class="o">.</span><span class="n">weights</span> <span class="ow">is</span> <span class="kc">None</span></div>
 
-<div class="viewcode-block" id="test_use_release"><a class="viewcode-back" href="../../source/tests.html#tests.test_deepforest.test_use_release">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">test_use_release</span><span class="p">(</span><span class="n">download_release</span><span class="p">):</span>
+<div class="viewcode-block" id="test_use_release"><a class="viewcode-back" href="../../source/tests.html#tests.test_deepforest.test_use_release">[docs]</a><span class="k">def</span> <span class="nf">test_use_release</span><span class="p">(</span><span class="n">download_release</span><span class="p">):</span>
     <span class="n">test_model</span> <span class="o">=</span> <span class="n">deepforest</span><span class="o">.</span><span class="n">deepforest</span><span class="p">()</span> 
     <span class="n">test_model</span><span class="o">.</span><span class="n">use_release</span><span class="p">()</span>
+    
+    <span class="c1">#Check for release tag</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">test_model</span><span class="o">.</span><span class="n">__release_version__</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
+    
+    <span class="c1">#Assert is model instance    </span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">test_model</span><span class="o">.</span><span class="n">model</span><span class="p">,</span><span class="n">keras</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">Model</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="release_model"><a class="viewcode-back" href="../../source/tests.html#tests.test_deepforest.release_model">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">release_model</span><span class="p">(</span><span class="n">download_release</span><span class="p">):</span>
+    <span class="n">test_model</span> <span class="o">=</span> <span class="n">deepforest</span><span class="o">.</span><span class="n">deepforest</span><span class="p">()</span> 
+    <span class="n">test_model</span><span class="o">.</span><span class="n">use_release</span><span class="p">()</span>
+    
+    <span class="c1">#Check for release tag</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">test_model</span><span class="o">.</span><span class="n">__release_version__</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
+    
     <span class="c1">#Assert is model instance    </span>
     <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">test_model</span><span class="o">.</span><span class="n">model</span><span class="p">,</span><span class="n">keras</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">Model</span><span class="p">)</span>
     
     <span class="k">return</span> <span class="n">test_model</span></div>
 
 <div class="viewcode-block" id="test_predict_image"><a class="viewcode-back" href="../../source/tests.html#tests.test_deepforest.test_predict_image">[docs]</a><span class="k">def</span> <span class="nf">test_predict_image</span><span class="p">(</span><span class="n">download_release</span><span class="p">):</span>
-    
     <span class="c1">#Load model</span>
-    <span class="n">test_model</span> <span class="o">=</span> <span class="n">deepforest</span><span class="o">.</span><span class="n">deepforest</span><span class="p">(</span><span class="n">weights</span><span class="o">=</span><span class="s2">&quot;tests/data/universal_model_july30.h5&quot;</span><span class="p">)</span>    
+    <span class="n">test_model</span> <span class="o">=</span> <span class="n">deepforest</span><span class="o">.</span><span class="n">deepforest</span><span class="p">(</span><span class="n">weights</span><span class="o">=</span><span class="s2">&quot;tests/data/NEON.h5&quot;</span><span class="p">)</span>    
     <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">test_model</span><span class="o">.</span><span class="n">model</span><span class="p">,</span><span class="n">keras</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">Model</span><span class="p">)</span>
     
     <span class="c1">#Predict test image and return boxes</span>
     <span class="n">boxes</span> <span class="o">=</span> <span class="n">test_model</span><span class="o">.</span><span class="n">predict_image</span><span class="p">(</span><span class="n">image_path</span><span class="o">=</span><span class="s2">&quot;tests/data/OSBS_029.tif&quot;</span><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">return_plot</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
     
-    <span class="c1">#Returns a 4 column numpy array</span>
-    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">boxes</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span>
-    <span class="k">assert</span> <span class="n">boxes</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">4</span></div>
+    <span class="c1">#Returns a 6 column numpy array, xmin, ymin, xmax, ymax, score, label</span>
+    <span class="k">assert</span> <span class="n">boxes</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">6</span></div>
 
 <div class="viewcode-block" id="test_train"><a class="viewcode-back" href="../../source/tests.html#tests.test_deepforest.test_train">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span><span class="p">()</span>
 <span class="k">def</span> <span class="nf">test_train</span><span class="p">(</span><span class="n">annotations</span><span class="p">):</span>
@@ -230,7 +242,6 @@
     
     <span class="k">return</span> <span class="n">test_model</span></div>
 
-<span class="c1">#Check that weights have changed, following https://medium.com/@keeper6928/how-to-unit-test-machine-learning-code-57cf6fd81765</span>
 <div class="viewcode-block" id="test_train_no_freeze"><a class="viewcode-back" href="../../source/tests.html#tests.test_deepforest.test_train_no_freeze">[docs]</a><span class="k">def</span> <span class="nf">test_train_no_freeze</span><span class="p">(</span><span class="n">annotations</span><span class="p">,</span> <span class="n">test_train</span><span class="p">):</span>
     <span class="n">test_train</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;freeze_layers&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
     
@@ -266,12 +277,12 @@
     <span class="c1">#Because the network uses batch norm layers, there is a slight drift in weights. It should be very small.</span>
     <span class="c1">#assert np.array_equal(before, after)</span>
 
-<div class="viewcode-block" id="test_predict_generator"><a class="viewcode-back" href="../../source/tests.html#tests.test_deepforest.test_predict_generator">[docs]</a><span class="k">def</span> <span class="nf">test_predict_generator</span><span class="p">(</span><span class="n">test_use_release</span><span class="p">,</span> <span class="n">annotations</span><span class="p">):</span>
-    <span class="n">boxes</span> <span class="o">=</span> <span class="n">test_use_release</span><span class="o">.</span><span class="n">predict_generator</span><span class="p">(</span><span class="n">annotations</span><span class="o">=</span><span class="n">annotations</span><span class="p">)</span>
-    <span class="k">assert</span> <span class="n">boxes</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">5</span></div>
+<div class="viewcode-block" id="test_predict_generator"><a class="viewcode-back" href="../../source/tests.html#tests.test_deepforest.test_predict_generator">[docs]</a><span class="k">def</span> <span class="nf">test_predict_generator</span><span class="p">(</span><span class="n">release_model</span><span class="p">,</span> <span class="n">annotations</span><span class="p">):</span>
+    <span class="n">boxes</span> <span class="o">=</span> <span class="n">release_model</span><span class="o">.</span><span class="n">predict_generator</span><span class="p">(</span><span class="n">annotations</span><span class="o">=</span><span class="n">annotations</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">boxes</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">7</span></div>
     
-<div class="viewcode-block" id="test_evaluate"><a class="viewcode-back" href="../../source/tests.html#tests.test_deepforest.test_evaluate">[docs]</a><span class="k">def</span> <span class="nf">test_evaluate</span><span class="p">(</span><span class="n">test_use_release</span><span class="p">,</span> <span class="n">annotations</span><span class="p">):</span>
-    <span class="n">mAP</span> <span class="o">=</span> <span class="n">test_use_release</span><span class="o">.</span><span class="n">evaluate_generator</span><span class="p">(</span><span class="n">annotations</span><span class="o">=</span><span class="n">annotations</span><span class="p">)</span>
+<div class="viewcode-block" id="test_evaluate"><a class="viewcode-back" href="../../source/tests.html#tests.test_deepforest.test_evaluate">[docs]</a><span class="k">def</span> <span class="nf">test_evaluate</span><span class="p">(</span><span class="n">release_model</span><span class="p">,</span> <span class="n">annotations</span><span class="p">):</span>
+    <span class="n">mAP</span> <span class="o">=</span> <span class="n">release_model</span><span class="o">.</span><span class="n">evaluate_generator</span><span class="p">(</span><span class="n">annotations</span><span class="o">=</span><span class="n">annotations</span><span class="p">)</span>
     <span class="c1">#Assert that function returns a float numpy value</span>
     <span class="k">assert</span> <span class="n">mAP</span><span class="o">.</span><span class="n">dtype</span> <span class="o">==</span> <span class="nb">float</span></div>
 
@@ -291,20 +302,20 @@
     <span class="n">arg_list</span> <span class="o">=</span> <span class="n">utilities</span><span class="o">.</span><span class="n">format_args</span><span class="p">(</span><span class="n">annotations</span><span class="p">,</span> <span class="n">test_model</span><span class="o">.</span><span class="n">config</span><span class="p">)</span>
     <span class="k">assert</span> <span class="s2">&quot;--random-transform&quot;</span> <span class="ow">in</span> <span class="n">arg_list</span></div>
 
-<div class="viewcode-block" id="test_predict_tile"><a class="viewcode-back" href="../../source/tests.html#tests.test_deepforest.test_predict_tile">[docs]</a><span class="k">def</span> <span class="nf">test_predict_tile</span><span class="p">(</span><span class="n">test_use_release</span><span class="p">):</span>
+<div class="viewcode-block" id="test_predict_tile"><a class="viewcode-back" href="../../source/tests.html#tests.test_deepforest.test_predict_tile">[docs]</a><span class="k">def</span> <span class="nf">test_predict_tile</span><span class="p">(</span><span class="n">release_model</span><span class="p">):</span>
     <span class="n">raster_path</span> <span class="o">=</span> <span class="s2">&quot;tests/data/OSBS_029.tif&quot;</span>
     <span class="n">original_raster</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">raster_path</span><span class="p">)</span>
     <span class="n">original_raster</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">original_raster</span><span class="p">)</span>  
     
     <span class="c1">#This should make the same prediction?</span>
-    <span class="c1">#predicted_raster = test_use_release.predict_tile(raster_path, return_plot = False, patch_size=400,patch_overlap=0)</span>
-    <span class="c1">#predicted_image = test_use_release.predict_image(raster_path, return_plot = False)</span>
+    <span class="c1">#predicted_raster = release_model.predict_tile(raster_path, return_plot = False, patch_size=400,patch_overlap=0)</span>
+    <span class="c1">#predicted_image = release_model.predict_image(raster_path, return_plot = False)</span>
     
     <span class="c1">#assert predicted_raster.shape == predicted_image.shape</span>
     
     <span class="c1">#Debug</span>
-    <span class="n">predicted_raster</span> <span class="o">=</span> <span class="n">test_use_release</span><span class="o">.</span><span class="n">predict_tile</span><span class="p">(</span><span class="n">raster_path</span><span class="p">,</span> <span class="n">return_plot</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">patch_size</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span><span class="n">patch_overlap</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
-    <span class="n">predicted_image</span> <span class="o">=</span> <span class="n">test_use_release</span><span class="o">.</span><span class="n">predict_image</span><span class="p">(</span><span class="n">raster_path</span><span class="p">,</span> <span class="n">return_plot</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+    <span class="n">predicted_raster</span> <span class="o">=</span> <span class="n">release_model</span><span class="o">.</span><span class="n">predict_tile</span><span class="p">(</span><span class="n">raster_path</span><span class="p">,</span> <span class="n">return_plot</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">patch_size</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span><span class="n">patch_overlap</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+    <span class="n">predicted_image</span> <span class="o">=</span> <span class="n">release_model</span><span class="o">.</span><span class="n">predict_image</span><span class="p">(</span><span class="n">raster_path</span><span class="p">,</span> <span class="n">return_plot</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
     
     <span class="k">assert</span> <span class="n">original_raster</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">predicted_raster</span><span class="o">.</span><span class="n">shape</span>
     

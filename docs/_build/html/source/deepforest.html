@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>deepforest package &mdash; DeepForest 0.0.3 documentation</title>
+  <title>deepforest package &mdash; DeepForest 0.1.0 documentation</title>
   
 
   
@@ -60,7 +60,7 @@
             
             
               <div class="version">
-                0.0.3
+                0.1.0
               </div>
             
           
@@ -266,7 +266,7 @@
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>if return_plot, an image. Otherwise a numpy array of predicted bounding boxes</p>
+<dd class="field-even"><p>if return_plot, an image. Otherwise a numpy array of predicted bounding boxes, with scores and labels</p>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>predictions (array)</p>
@@ -286,7 +286,7 @@
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>if return_plot, an image. Otherwise a numpy array of predicted bounding boxes</p>
+<dd class="field-even"><p>if return_plot, an image. Otherwise a numpy array of predicted bounding boxes, scores and labels</p>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>boxes (array)</p>
@@ -342,26 +342,28 @@ trained model: without nms</p>
 <p>Prediction module. This module consists of predict utility function for the deepforest class</p>
 <dl class="function">
 <dt id="deepforest.predict.label_to_name">
-<code class="sig-prename descclassname">deepforest.predict.</code><code class="sig-name descname">label_to_name</code><span class="sig-paren">(</span><em class="sig-param">label</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/deepforest/predict.html#label_to_name"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#deepforest.predict.label_to_name" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">deepforest.predict.</code><code class="sig-name descname">label_to_name</code><span class="sig-paren">(</span><em class="sig-param">image_classes</em>, <em class="sig-param">index</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/deepforest/predict.html#label_to_name"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#deepforest.predict.label_to_name" title="Permalink to this definition">¶</a></dt>
 <dd><p>Map label to name.</p>
 </dd></dl>
 
 <dl class="function">
-<dt id="deepforest.predict.predict_all_images">
-<code class="sig-prename descclassname">deepforest.predict.</code><code class="sig-name descname">predict_all_images</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/deepforest/predict.html#predict_all_images"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#deepforest.predict.predict_all_images" title="Permalink to this definition">¶</a></dt>
-<dd><p>loop through a dir and run all images</p>
+<dt id="deepforest.predict.non_max_suppression">
+<code class="sig-prename descclassname">deepforest.predict.</code><code class="sig-name descname">non_max_suppression</code><span class="sig-paren">(</span><em class="sig-param">sess</em>, <em class="sig-param">boxes</em>, <em class="sig-param">scores</em>, <em class="sig-param">labels</em>, <em class="sig-param">max_output_size=200</em>, <em class="sig-param">iou_threshold=0.25</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/deepforest/predict.html#non_max_suppression"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#deepforest.predict.non_max_suppression" title="Permalink to this definition">¶</a></dt>
+<dd><p>Provide a tensorflow session and get non-maximum suppression
+:param sess: a tensorfloe</p>
+<p>max_output_size, iou_threshold are passed to tf.image.non_max_suppression</p>
 </dd></dl>
 
 <dl class="function">
 <dt id="deepforest.predict.predict_image">
-<code class="sig-prename descclassname">deepforest.predict.</code><code class="sig-name descname">predict_image</code><span class="sig-paren">(</span><em class="sig-param">model</em>, <em class="sig-param">image_path=None</em>, <em class="sig-param">raw_image=None</em>, <em class="sig-param">score_threshold=0.05</em>, <em class="sig-param">max_detections=200</em>, <em class="sig-param">return_plot=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/deepforest/predict.html#predict_image"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#deepforest.predict.predict_image" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">deepforest.predict.</code><code class="sig-name descname">predict_image</code><span class="sig-paren">(</span><em class="sig-param">model, image_path=None, raw_image=None, score_threshold=0.05, max_detections=200, return_plot=True, classes=['Tree']</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/deepforest/predict.html#predict_image"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#deepforest.predict.predict_image" title="Permalink to this definition">¶</a></dt>
 <dd><p>Predict invidiual tree crown bounding boxes for a single image</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>model</strong> (<em>object</em>) – A keras-retinanet model to predict bounding boxes, either load a model from weights, use the latest release, or train a new model from scratch.</p></li>
 <li><p><strong>image_path</strong> (<em>str</em>) – Path to image file on disk</p></li>
-<li><p><strong>image_path</strong> – Numpy image array in BGR channel order following openCV convention</p></li>
+<li><p><strong>raw_image</strong> (<em>str</em>) – Numpy image array in BGR channel order following openCV convention</p></li>
 <li><p><strong>score_threshold</strong> (<em>float</em>) – Minimum probability score to be included in final boxes, ranging from 0 to 1.</p></li>
 <li><p><strong>max_detections</strong> (<em>int</em>) – Maximum number of bounding box predictions per tile</p></li>
 <li><p><strong>return_plot</strong> (<em>bool</em>) – If true, return a image object, else return bounding boxes as a numpy array</p></li>
@@ -369,18 +371,13 @@ trained model: without nms</p>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>If return_plot is TRUE, the image with the overlaid boxes is returned
-image_boxes: If return_plot is FALSE, the bounding boxes as a 4 column array -&gt; xmin, ymin, xmax, ymax</p>
+image_detections: If return_plot is FALSE, a np.array of image_boxes, image_scores, image_labels</p>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>raw_image (array)</p>
 </dd>
 </dl>
 </dd></dl>
-
-<dl class="function">
-<dt id="deepforest.predict.prediction_wrapper">
-<code class="sig-prename descclassname">deepforest.predict.</code><code class="sig-name descname">prediction_wrapper</code><span class="sig-paren">(</span><em class="sig-param">image_path</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/deepforest/predict.html#prediction_wrapper"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#deepforest.predict.prediction_wrapper" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
 
 </div>
 <div class="section" id="module-deepforest.preprocess">
@@ -750,17 +747,20 @@ targets: target tensors of bounding boxes and classes</p>
 
 <dl class="function">
 <dt id="deepforest.utilities.use_release">
-<code class="sig-prename descclassname">deepforest.utilities.</code><code class="sig-name descname">use_release</code><span class="sig-paren">(</span><em class="sig-param">save_dir='data'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/deepforest/utilities.html#use_release"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#deepforest.utilities.use_release" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">deepforest.utilities.</code><code class="sig-name descname">use_release</code><span class="sig-paren">(</span><em class="sig-param">save_dir='data'</em>, <em class="sig-param">prebuilt_model='NEON'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/deepforest/utilities.html#use_release"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#deepforest.utilities.use_release" title="Permalink to this definition">¶</a></dt>
 <dd><p>Check the existance of, or download the latest model release from github</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>save_dir</strong> (<em>str</em>) – Directory to save filepath, default to “data” in toplevel repo</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>save_dir</strong> (<em>str</em>) – Directory to save filepath, default to “data” in toplevel repo</p></li>
+<li><p><strong>prebuilt_model</strong> – Currently only accepts “NEON”, but could be expanded to include other prebuilt models. The local model will be called {prebuilt_model}.h5 on disk.</p></li>
+</ul>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>path to downloaded model</p>
 </dd>
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>output_path (str)</p>
+<dd class="field-odd"><p>release_tag, output_path (str)</p>
 </dd>
 </dl>
 </dd></dl>

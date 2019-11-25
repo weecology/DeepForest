@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>deepforest.tfrecords &mdash; DeepForest 0.0.3 documentation</title>
+  <title>deepforest.tfrecords &mdash; DeepForest 0.1.0 documentation</title>
   
 
   
@@ -59,7 +59,7 @@
             
             
               <div class="version">
-                0.0.3
+                0.1.0
               </div>
             
           
@@ -166,11 +166,14 @@
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
 <span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">csv</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
 <span class="kn">from</span> <span class="nn">math</span> <span class="k">import</span> <span class="n">ceil</span>
 <span class="kn">import</span> <span class="nn">keras</span> 
 <span class="kn">import</span> <span class="nn">cv2</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+
 
 <span class="kn">from</span> <span class="nn">keras_retinanet.preprocessing.csv_generator</span> <span class="k">import</span> <span class="n">CSVGenerator</span>
 <span class="kn">from</span> <span class="nn">keras_retinanet</span> <span class="k">import</span> <span class="n">models</span>
@@ -222,6 +225,7 @@
     <span class="c1">#filebase name</span>
     <span class="n">image_basename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">annotations_file</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
     
+    <span class="c1">## Syntax checks</span>
     <span class="c1">#Check annotations file only JPEG, PNG, GIF, or BMP are allowed.</span>
     <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">annotations_file</span><span class="p">,</span> <span class="n">names</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;image_path&quot;</span><span class="p">,</span><span class="s2">&quot;xmin&quot;</span><span class="p">,</span><span class="s2">&quot;ymin&quot;</span><span class="p">,</span><span class="s2">&quot;xmax&quot;</span><span class="p">,</span><span class="s2">&quot;ymax&quot;</span><span class="p">,</span><span class="s2">&quot;label&quot;</span><span class="p">])</span>
     <span class="n">df</span><span class="p">[</span><span class="s1">&#39;FileType&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">image_path</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">str</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
@@ -230,6 +234,13 @@
     <span class="k">if</span> <span class="n">bad_file_types</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Check annotations file, only JPEG, PNG, GIF, or BMP are allowed, </span><span class="si">{}</span><span class="s2"> incorrect files found&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">bad_file_types</span><span class="p">))</span>
     
+    <span class="c1">#Check dtypes, cannot use pandas, or will coerce in the presence of NAs</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">annotations_file</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">reader</span> <span class="o">=</span> <span class="n">csv</span><span class="o">.</span><span class="n">reader</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">delimiter</span><span class="o">=</span><span class="s1">&#39;,&#39;</span><span class="p">)</span>
+        <span class="n">row</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">reader</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">row</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Annotation files should be headerless with integer box, </span><span class="si">{}</span><span class="s2"> is not a int&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+            
     <span class="c1">#Create generator - because of how retinanet yields data, this should always be 1. Shape problems in the future?</span>
     <span class="n">train_generator</span> <span class="o">=</span> <span class="n">CSVGenerator</span><span class="p">(</span>
         <span class="n">annotations_file</span><span class="p">,</span>

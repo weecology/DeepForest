@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>deepforest.preprocess &mdash; DeepForest 0.0.3 documentation</title>
+  <title>deepforest.preprocess &mdash; DeepForest 0.1.0 documentation</title>
   
 
   
@@ -59,7 +59,7 @@
             
             
               <div class="version">
-                0.0.3
+                0.1.0
               </div>
             
           
@@ -224,24 +224,34 @@
         <span class="p">(</span><span class="n">annotations</span><span class="o">.</span><span class="n">ymin</span> <span class="o">&lt;</span> <span class="p">(</span><span class="n">window_ymax</span><span class="p">))</span> <span class="o">&amp;</span>  
         <span class="p">(</span><span class="n">annotations</span><span class="o">.</span><span class="n">ymax</span> <span class="o">&gt;</span> <span class="p">(</span><span class="n">window_ymin</span><span class="p">))</span> <span class="o">&amp;</span>                
         <span class="p">(</span><span class="n">annotations</span><span class="o">.</span><span class="n">ymax</span> <span class="o">&lt;</span> <span class="p">(</span><span class="n">window_ymax</span> <span class="o">+</span> <span class="n">offset</span><span class="p">))]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-    
+        
     <span class="c1">#change the image name</span>
     <span class="n">image_name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">annotations</span><span class="o">.</span><span class="n">image_path</span><span class="o">.</span><span class="n">unique</span><span class="p">()[</span><span class="mi">0</span><span class="p">]))[</span><span class="mi">0</span><span class="p">]</span>
     <span class="n">image_basename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">image_name</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
     <span class="n">selected_annotations</span><span class="o">.</span><span class="n">image_path</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">_</span><span class="si">{}</span><span class="s2">.jpg&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">image_basename</span><span class="p">,</span><span class="n">index</span><span class="p">)</span> 
     
-    <span class="c1">#update coordinates with respect to origin</span>
-    <span class="n">selected_annotations</span><span class="o">.</span><span class="n">xmax</span> <span class="o">=</span> <span class="p">(</span><span class="n">selected_annotations</span><span class="o">.</span><span class="n">xmin</span> <span class="o">-</span> <span class="n">window_xmin</span><span class="p">)</span>  <span class="o">+</span> <span class="p">(</span><span class="n">selected_annotations</span><span class="o">.</span><span class="n">xmax</span> <span class="o">-</span> <span class="n">selected_annotations</span><span class="o">.</span><span class="n">xmin</span><span class="p">)</span>    
-    <span class="n">selected_annotations</span><span class="o">.</span><span class="n">xmin</span> <span class="o">=</span> <span class="p">(</span><span class="n">selected_annotations</span><span class="o">.</span><span class="n">xmin</span> <span class="o">-</span> <span class="n">window_xmin</span><span class="p">)</span>
-    <span class="n">selected_annotations</span><span class="o">.</span><span class="n">ymax</span> <span class="o">=</span> <span class="p">(</span><span class="n">selected_annotations</span><span class="o">.</span><span class="n">ymin</span> <span class="o">-</span> <span class="n">window_ymin</span><span class="p">)</span>  <span class="o">+</span> <span class="p">(</span><span class="n">selected_annotations</span><span class="o">.</span><span class="n">ymax</span> <span class="o">-</span> <span class="n">selected_annotations</span><span class="o">.</span><span class="n">ymin</span><span class="p">)</span>    
-    <span class="n">selected_annotations</span><span class="o">.</span><span class="n">ymin</span> <span class="o">=</span> <span class="p">(</span><span class="n">selected_annotations</span><span class="o">.</span><span class="n">ymin</span> <span class="o">-</span> <span class="n">window_ymin</span><span class="p">)</span>
-    
-    <span class="c1">#cut off any annotations over the border.</span>
-    <span class="n">selected_annotations</span><span class="o">.</span><span class="n">xmin</span><span class="p">[</span><span class="n">selected_annotations</span><span class="o">.</span><span class="n">xmin</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
-    <span class="n">selected_annotations</span><span class="o">.</span><span class="n">xmax</span><span class="p">[</span><span class="n">selected_annotations</span><span class="o">.</span><span class="n">xmax</span> <span class="o">&gt;</span> <span class="n">w</span><span class="p">]</span> <span class="o">=</span> <span class="n">w</span>   
-    <span class="n">selected_annotations</span><span class="o">.</span><span class="n">ymin</span><span class="p">[</span><span class="n">selected_annotations</span><span class="o">.</span><span class="n">ymin</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
-    <span class="n">selected_annotations</span><span class="o">.</span><span class="n">ymax</span><span class="p">[</span><span class="n">selected_annotations</span><span class="o">.</span><span class="n">ymax</span> <span class="o">&gt;</span> <span class="n">h</span><span class="p">]</span> <span class="o">=</span> <span class="n">h</span>   
-    
+    <span class="c1">#If no matching annotations, return a line with the image name, but no records</span>
+    <span class="k">if</span> <span class="n">selected_annotations</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+        <span class="n">selected_annotations</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">([</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2">_</span><span class="si">{}</span><span class="s2">.jpg&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">image_basename</span><span class="p">,</span><span class="n">index</span><span class="p">)],</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;image_path&quot;</span><span class="p">])</span>
+        <span class="n">selected_annotations</span><span class="p">[</span><span class="s2">&quot;xmin&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="n">selected_annotations</span><span class="p">[</span><span class="s2">&quot;ymin&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="n">selected_annotations</span><span class="p">[</span><span class="s2">&quot;xmax&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="n">selected_annotations</span><span class="p">[</span><span class="s2">&quot;ymax&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="n">selected_annotations</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1">#update coordinates with respect to origin</span>
+        <span class="n">selected_annotations</span><span class="o">.</span><span class="n">xmax</span> <span class="o">=</span> <span class="p">(</span><span class="n">selected_annotations</span><span class="o">.</span><span class="n">xmin</span> <span class="o">-</span> <span class="n">window_xmin</span><span class="p">)</span>  <span class="o">+</span> <span class="p">(</span><span class="n">selected_annotations</span><span class="o">.</span><span class="n">xmax</span> <span class="o">-</span> <span class="n">selected_annotations</span><span class="o">.</span><span class="n">xmin</span><span class="p">)</span>    
+        <span class="n">selected_annotations</span><span class="o">.</span><span class="n">xmin</span> <span class="o">=</span> <span class="p">(</span><span class="n">selected_annotations</span><span class="o">.</span><span class="n">xmin</span> <span class="o">-</span> <span class="n">window_xmin</span><span class="p">)</span>
+        <span class="n">selected_annotations</span><span class="o">.</span><span class="n">ymax</span> <span class="o">=</span> <span class="p">(</span><span class="n">selected_annotations</span><span class="o">.</span><span class="n">ymin</span> <span class="o">-</span> <span class="n">window_ymin</span><span class="p">)</span>  <span class="o">+</span> <span class="p">(</span><span class="n">selected_annotations</span><span class="o">.</span><span class="n">ymax</span> <span class="o">-</span> <span class="n">selected_annotations</span><span class="o">.</span><span class="n">ymin</span><span class="p">)</span>    
+        <span class="n">selected_annotations</span><span class="o">.</span><span class="n">ymin</span> <span class="o">=</span> <span class="p">(</span><span class="n">selected_annotations</span><span class="o">.</span><span class="n">ymin</span> <span class="o">-</span> <span class="n">window_ymin</span><span class="p">)</span>
+        
+        <span class="c1">#cut off any annotations over the border.</span>
+        <span class="n">selected_annotations</span><span class="o">.</span><span class="n">xmin</span><span class="p">[</span><span class="n">selected_annotations</span><span class="o">.</span><span class="n">xmin</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">selected_annotations</span><span class="o">.</span><span class="n">xmax</span><span class="p">[</span><span class="n">selected_annotations</span><span class="o">.</span><span class="n">xmax</span> <span class="o">&gt;</span> <span class="n">w</span><span class="p">]</span> <span class="o">=</span> <span class="n">w</span>   
+        <span class="n">selected_annotations</span><span class="o">.</span><span class="n">ymin</span><span class="p">[</span><span class="n">selected_annotations</span><span class="o">.</span><span class="n">ymin</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">selected_annotations</span><span class="o">.</span><span class="n">ymax</span><span class="p">[</span><span class="n">selected_annotations</span><span class="o">.</span><span class="n">ymax</span> <span class="o">&gt;</span> <span class="n">h</span><span class="p">]</span> <span class="o">=</span> <span class="n">h</span>   
+        
     <span class="k">return</span> <span class="n">selected_annotations</span></div>
  
 <div class="viewcode-block" id="save_crop"><a class="viewcode-back" href="../../source/deepforest.html#deepforest.preprocess.save_crop">[docs]</a><span class="k">def</span> <span class="nf">save_crop</span><span class="p">(</span><span class="n">base_dir</span><span class="p">,</span> <span class="n">image_name</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">crop</span><span class="p">):</span>
@@ -282,13 +292,13 @@
     <span class="c1">#Get image name for indexing</span>
     <span class="n">image_name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">path_to_raster</span><span class="p">)</span>
     
-    <span class="c1"># Load annotations file</span>
+    <span class="c1"># Load annotations file and coerce dtype</span>
     <span class="n">annotations</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">annotations_file</span><span class="p">)</span>
     
     <span class="c1">#open annotations file</span>
     <span class="n">image_annotations</span> <span class="o">=</span> <span class="n">annotations</span><span class="p">[</span><span class="n">annotations</span><span class="o">.</span><span class="n">image_path</span> <span class="o">==</span> <span class="n">image_name</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
     
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">annotations</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">==</span><span class="mi">6</span><span class="p">:</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">annotations</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">6</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Annotations file has </span><span class="si">{}</span><span class="s2"> columns, should have format image_path, xmin, ymin, xmax, ymax, label&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">annotations</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
             
     <span class="n">annotations_files</span> <span class="o">=</span> <span class="p">[]</span>

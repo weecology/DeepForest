@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>deepforest.predict &mdash; DeepForest 0.0.3 documentation</title>
+  <title>deepforest.predict &mdash; DeepForest 0.1.0 documentation</title>
   
 
   
@@ -59,7 +59,7 @@
             
             
               <div class="version">
-                0.0.3
+                0.1.0
               </div>
             
           
@@ -166,31 +166,34 @@
 <span class="kn">import</span> <span class="nn">keras</span>
 <span class="kn">import</span> <span class="nn">cv2</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
 
 <span class="c1">#Retinanet-viz</span>
 <span class="kn">from</span> <span class="nn">keras_retinanet.utils</span> <span class="k">import</span> <span class="n">image</span> <span class="k">as</span> <span class="n">keras_retinanet_image</span>
 <span class="kn">from</span> <span class="nn">keras_retinanet.utils.visualization</span> <span class="k">import</span> <span class="n">draw_detections</span>
 
-<div class="viewcode-block" id="label_to_name"><a class="viewcode-back" href="../../source/deepforest.html#deepforest.predict.label_to_name">[docs]</a><span class="k">def</span> <span class="nf">label_to_name</span><span class="p">(</span><span class="n">label</span><span class="p">):</span>
+<span class="c1">#TODO check how this works with multiple classes</span>
+<div class="viewcode-block" id="label_to_name"><a class="viewcode-back" href="../../source/deepforest.html#deepforest.predict.label_to_name">[docs]</a><span class="k">def</span> <span class="nf">label_to_name</span><span class="p">(</span><span class="n">image_classes</span><span class="p">,</span> <span class="n">index</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; Map label to name.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="s2">&quot;Tree&quot;</span></div>
-    
-<div class="viewcode-block" id="predict_image"><a class="viewcode-back" href="../../source/deepforest.html#deepforest.predict.predict_image">[docs]</a><span class="k">def</span> <span class="nf">predict_image</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">image_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">raw_image</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">score_threshold</span> <span class="o">=</span> <span class="mf">0.05</span><span class="p">,</span> <span class="n">max_detections</span><span class="o">=</span> <span class="mi">200</span><span class="p">,</span> <span class="n">return_plot</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="n">label</span> <span class="o">=</span> <span class="n">image_classes</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">label</span></div>
+
+<div class="viewcode-block" id="predict_image"><a class="viewcode-back" href="../../source/deepforest.html#deepforest.predict.predict_image">[docs]</a><span class="k">def</span> <span class="nf">predict_image</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">image_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">raw_image</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">score_threshold</span> <span class="o">=</span> <span class="mf">0.05</span><span class="p">,</span> <span class="n">max_detections</span><span class="o">=</span> <span class="mi">200</span><span class="p">,</span> <span class="n">return_plot</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">classes</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Tree&quot;</span><span class="p">]):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Predict invidiual tree crown bounding boxes for a single image</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
 <span class="sd">        model (object): A keras-retinanet model to predict bounding boxes, either load a model from weights, use the latest release, or train a new model from scratch.  </span>
 <span class="sd">        image_path (str): Path to image file on disk</span>
-<span class="sd">        image_path (str): Numpy image array in BGR channel order following openCV convention</span>
+<span class="sd">        raw_image (str): Numpy image array in BGR channel order following openCV convention</span>
 <span class="sd">        score_threshold (float): Minimum probability score to be included in final boxes, ranging from 0 to 1.</span>
 <span class="sd">        max_detections (int): Maximum number of bounding box predictions per tile</span>
 <span class="sd">        return_plot (bool):  If true, return a image object, else return bounding boxes as a numpy array</span>
 <span class="sd">    </span>
 <span class="sd">    Returns:</span>
 <span class="sd">        raw_image (array): If return_plot is TRUE, the image with the overlaid boxes is returned</span>
-<span class="sd">        image_boxes: If return_plot is FALSE, the bounding boxes as a 4 column array -&gt; xmin, ymin, xmax, ymax</span>
+<span class="sd">        image_detections: If return_plot is FALSE, a np.array of image_boxes, image_scores, image_labels</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1">#predict</span>
     <span class="k">if</span> <span class="n">image_path</span><span class="p">:</span>
@@ -222,42 +225,29 @@
     <span class="n">image_labels</span>     <span class="o">=</span> <span class="n">labels</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">indices</span><span class="p">[</span><span class="n">scores_sort</span><span class="p">]]</span>
     <span class="n">image_detections</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">image_boxes</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">image_scores</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">image_labels</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 
+    <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">image_detections</span><span class="p">,</span> <span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;xmin&quot;</span><span class="p">,</span><span class="s2">&quot;ymin&quot;</span><span class="p">,</span><span class="s2">&quot;xmax&quot;</span><span class="p">,</span><span class="s2">&quot;ymax&quot;</span><span class="p">,</span><span class="s2">&quot;score&quot;</span><span class="p">,</span><span class="s2">&quot;label&quot;</span><span class="p">])</span>
+    <span class="c1">#Change numberic class into string label</span>
+    <span class="n">df</span><span class="o">.</span><span class="n">label</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+    <span class="n">df</span><span class="o">.</span><span class="n">label</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">classes</span><span class="p">[</span><span class="n">x</span><span class="p">])</span>
+    
     <span class="k">if</span> <span class="n">return_plot</span><span class="p">:</span>
         <span class="n">draw_detections</span><span class="p">(</span><span class="n">raw_image</span><span class="p">,</span> <span class="n">image_boxes</span><span class="p">,</span> <span class="n">image_scores</span><span class="p">,</span> <span class="n">image_labels</span><span class="p">,</span> <span class="n">label_to_name</span><span class="o">=</span><span class="n">label_to_name</span><span class="p">,</span> <span class="n">score_threshold</span><span class="o">=</span><span class="n">score_threshold</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">raw_image</span>                
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">image_boxes</span></div>
+        <span class="k">return</span> <span class="n">df</span></div>
 
-<div class="viewcode-block" id="prediction_wrapper"><a class="viewcode-back" href="../../source/deepforest.html#deepforest.predict.prediction_wrapper">[docs]</a><span class="k">def</span> <span class="nf">prediction_wrapper</span><span class="p">(</span><span class="n">image_path</span><span class="p">):</span>
-    <span class="c1">##read model</span>
-    <span class="n">config</span> <span class="o">=</span> <span class="n">read_config</span><span class="p">()</span>        
-    <span class="n">model</span> <span class="o">=</span> <span class="n">read_model</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;model_path&quot;</span><span class="p">],</span> <span class="n">config</span><span class="p">)</span> 
-    <span class="n">prediction</span> <span class="o">=</span> <span class="n">predict_image</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">image_path</span><span class="p">,</span> <span class="n">score_threshold</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span> <span class="n">max_detections</span><span class="o">=</span> <span class="mi">200</span><span class="p">,</span><span class="n">return_plot</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">save_name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">image_path</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;_prediction.jpg&quot;</span>
-    <span class="n">cv2</span><span class="o">.</span><span class="n">imwrite</span><span class="p">(</span><span class="n">save_name</span><span class="p">,</span><span class="n">prediction</span><span class="p">)</span>
-    <span class="k">return</span><span class="p">(</span><span class="n">save_name</span><span class="p">)</span></div>
-
-<div class="viewcode-block" id="predict_all_images"><a class="viewcode-back" href="../../source/deepforest.html#deepforest.predict.predict_all_images">[docs]</a><span class="k">def</span> <span class="nf">predict_all_images</span><span class="p">():</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    loop through a dir and run all images</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="c1">#Read config</span>
-    <span class="n">config</span> <span class="o">=</span> <span class="n">read_config</span><span class="p">()</span>
-
-    <span class="c1">#read model</span>
-    <span class="n">model</span> <span class="o">=</span> <span class="n">read_model</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;model_path&quot;</span><span class="p">],</span> <span class="n">config</span><span class="p">)</span>
-    <span class="n">tifs</span> <span class="o">=</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">&quot;data&quot;</span><span class="p">,</span><span class="s2">&quot;**&quot;</span><span class="p">,</span><span class="s2">&quot;*.tif&quot;</span><span class="p">))</span>
-    <span class="k">for</span> <span class="n">tif</span> <span class="ow">in</span> <span class="n">tifs</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="n">tif</span><span class="p">)</span>
-        <span class="n">prediction</span> <span class="o">=</span> <span class="n">predict_image</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">tif</span><span class="p">,</span> <span class="n">score_threshold</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span> <span class="n">max_detections</span><span class="o">=</span> <span class="mi">200</span><span class="p">,</span><span class="n">return_plot</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-
-        <span class="c1">#reshape and save to csv</span>
-        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">prediction</span><span class="p">)</span>
-        <span class="n">df</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;xmin&quot;</span><span class="p">,</span><span class="s2">&quot;ymin&quot;</span><span class="p">,</span><span class="s2">&quot;xmax&quot;</span><span class="p">,</span><span class="s2">&quot;ymax&quot;</span><span class="p">]</span>
-
-        <span class="c1">#save boxes</span>
-        <span class="n">file_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">tif</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;.csv&quot;</span>
-        <span class="n">df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span></div>
+<div class="viewcode-block" id="non_max_suppression"><a class="viewcode-back" href="../../source/deepforest.html#deepforest.predict.non_max_suppression">[docs]</a><span class="k">def</span> <span class="nf">non_max_suppression</span><span class="p">(</span><span class="n">sess</span><span class="p">,</span> <span class="n">boxes</span><span class="p">,</span> <span class="n">scores</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">max_output_size</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span> <span class="n">iou_threshold</span><span class="o">=</span><span class="mf">0.25</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Provide a tensorflow session and get non-maximum suppression</span>
+<span class="sd">    Args:</span>
+<span class="sd">        sess: a tensorfloe</span>
+<span class="sd">    max_output_size, iou_threshold are passed to tf.image.non_max_suppression </span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">non_max_idxs</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">image</span><span class="o">.</span><span class="n">non_max_suppression</span><span class="p">(</span><span class="n">boxes</span><span class="p">,</span> <span class="n">scores</span><span class="p">,</span> <span class="n">max_output_size</span><span class="o">=</span><span class="n">max_output_size</span><span class="p">,</span> <span class="n">iou_threshold</span><span class="o">=</span><span class="n">iou_threshold</span><span class="p">)</span>
+    <span class="n">new_boxes</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="n">boxes</span><span class="p">,</span> <span class="n">non_max_idxs</span><span class="p">),</span> <span class="n">tf</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+    <span class="n">new_scores</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="n">scores</span><span class="p">,</span> <span class="n">non_max_idxs</span><span class="p">)</span>
+    <span class="n">new_labels</span> <span class="o">=</span>  <span class="n">tf</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="n">labels</span><span class="p">,</span> <span class="n">non_max_idxs</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">sess</span><span class="o">.</span><span class="n">run</span><span class="p">([</span><span class="n">new_boxes</span><span class="p">,</span> <span class="n">new_scores</span><span class="p">,</span> <span class="n">new_labels</span><span class="p">])</span></div>
 </pre></div>
 
            </div>
