@@ -9,8 +9,10 @@ import numpy as np
 import urllib
 import xmltodict
 import csv
-from keras_retinanet import models
 import warnings
+
+from keras_retinanet import models
+
 
 def label_to_name(label):
         """ Map label to name.
@@ -40,7 +42,7 @@ class DownloadProgressBar(tqdm):
                         self.total = tsize
                 self.update(b * bsize - self.n)
                 
-def use_release(save_dir = "data", prebuilt_model="NEON"):
+def use_release(save_dir = "data/", prebuilt_model="NEON"):
         '''Check the existance of, or download the latest model release from github
         
         Args:
@@ -62,13 +64,26 @@ def use_release(save_dir = "data", prebuilt_model="NEON"):
         #Naming based on pre-built model
         output_path = os.path.join(save_dir,prebuilt_model + ".h5")    
         
-        #Download if it doesn't exist
-        if not os.path.exists(output_path):
+        #Check the release tagged locally
+        try:
+                release_txt = pd.read_csv(save_dir+"current_release.csv")
+        except:
+                release_txt = pd.DataFrame({"current_release": [None]})                
+        
+        #Download the current release it doesn't exist
+        if not release_txt.current_release[0] == _json["html_url"]:
+                
                 print("Downloading model from DeepForest release {}, see {} for details".format(_json["tag_name"],_json["html_url"]))                
+                
                 with DownloadProgressBar(unit='B', unit_scale=True,
                                      miniters=1, desc=url.split('/')[-1]) as t:
                         urllib.request.urlretrieve(url, filename=output_path, reporthook=t.update_to)           
-                print("Model was downloaded and saved to {}".format(output_path))                
+                
+                print("Model was downloaded and saved to {}".format(output_path))         
+               
+                #record the release tag locally
+                release_txt = pd.DataFrame({"current_release":[_json["html_url"]]})
+                release_txt.to_csv(save_dir+"current_release.csv")                
         else:
                 print("Model from DeepForest release {} was already downloaded. Loading model from file.".format(_json["html_url"]))
                 

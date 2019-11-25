@@ -42,6 +42,7 @@ Currently there is 1 prebuilt model, "NEON", which was trained using a semi-supe
 For more information on the pre-built models see citations.
 
 ```{python}
+import matplotlib.pyplot as plt
 from deepforest import deepforest
 from deepforest import utilities
 
@@ -53,6 +54,9 @@ test_model = deepforest.deepforest(weights="data/NEON.h5")
 
 #predict image
 image = test_model.predict_image(image_path = "tests/data/OSBS_029.tif")
+
+#Show image, matplotlib expects RGB channel order, but keras-retinanet predicts in BGR
+plt.imshow(image[...,::-1])
 ```
 
 ![test image](www/image.png)
@@ -92,7 +96,7 @@ Thanks to Microsoft AI4Earth grant for hosting a azure web demo of the trained m
 http://tree.westus.cloudapp.azure.com/shiny/
 
 ## License
-* Free software: MIT license
+* Free software: [MIT license](https://github.com/weecology/DeepForest/blob/master/LICENSE)
 
 ## Citation
 
