@@ -88,9 +88,12 @@ class deepforest:
             model (object): A trained keras model
         '''        
         #Download latest model from github release
-        weights = utilities.use_release()  
+        release_tag, weights = utilities.use_release()  
         
-        #load saved model
+        #load saved model and tag release
+        self.__release_version__ = release_tag
+        print("Loading pre-built model: {}".format(release_tag))
+        
         self.weights = weights
         self.model = utilities.read_model(self.weights, self.config)
         self.prediction_model = convert_model(self.model)

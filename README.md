@@ -28,11 +28,18 @@ DeepForest uses conda as a packgae manager.
 conda env create --file=environment.yml
 ```
 
+## Documentation
+
+https://deepforest.readthedocs.io.
+
 ## Usage
 
-### prediction
+### Prediction
 
 Using DeepForest, users can predict individual tree crowns by loading pre-built models and applying them to RGB images.
+
+Currently there is 1 prebuilt model, "NEON", which was trained using a semi-supervised process from imagery from the National Ecological Observation Network.
+For more information on the pre-built models see citations.
 
 ```{python}
 from deepforest import deepforest
@@ -42,7 +49,7 @@ from deepforest import utilities
 utilities.use_release()    
 
 #Load model class with release weights
-test_model = deepforest.deepforest(weights="data/universal_model_july30.h5")
+test_model = deepforest.deepforest(weights="data/NEON.h5")
 
 #predict image
 image = test_model.predict_image(image_path = "tests/data/OSBS_029.tif")
@@ -50,7 +57,7 @@ image = test_model.predict_image(image_path = "tests/data/OSBS_029.tif")
 
 ![test image](www/image.png)
 
-## training
+## Training
 
 DeepForest allows training through a keras-retinanet CSV generator. Input files must be formatted, without a header, in the following format:
 
@@ -86,13 +93,16 @@ http://tree.westus.cloudapp.azure.com/shiny/
 
 ## License
 * Free software: MIT license
-* Documentation: https://deepforest.readthedocs.io.
 
 ## Citation
 
-Geographic Generalization in Airborne RGB Deep Learning Tree Detection
+[Weinstein, B.G.; Marconi, S.; Bohlman, S.; Zare, A.; White, E. 
+Individual Tree-Crown Detection in RGB Imagery Using Semi-Supervised Deep Learning Neural Networks.
+Remote Sens. 2019, 11, 1309] (https://www.mdpi.com/2072-4292/11/11/1309)
+
+[Geographic Generalization in Airborne RGB Deep Learning Tree Detection
 Ben Weinstein, Sergio Marconi, Stephanie Bohlman, Alina Zare, Ethan P White
-bioRxiv 790071; doi: https://doi.org/10.1101/790071
+bioRxiv 790071; doi: https://doi.org/10.1101/790071] (https://www.biorxiv.org/content/10.1101/790071v1.abstract)
 
 ### Where can I get sample data?
 
