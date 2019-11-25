@@ -40,14 +40,15 @@ class DownloadProgressBar(tqdm):
                         self.total = tsize
                 self.update(b * bsize - self.n)
                 
-def use_release(save_dir = "data"):
+def use_release(save_dir = "data", prebuilt_model="NEON"):
         '''Check the existance of, or download the latest model release from github
         
         Args:
                 save_dir (str): Directory to save filepath, default to "data" in toplevel repo
+                prebuilt_model: Currently only accepts "NEON", but could be expanded to include other prebuilt models. The local model will be called {prebuilt_model}.h5 on disk.
         
         Returns:
-                output_path (str): path to downloaded model 
+                release_tag, output_path (str): path to downloaded model 
         '''
         
         #Find latest github tag release from the DeepLidar repo
@@ -56,8 +57,10 @@ def use_release(save_dir = "data"):
             headers={'Accept': 'application/vnd.github.v3+json'},
              )).read())     
         asset = _json['assets'][0]
-        output_path = os.path.join(save_dir,asset['name'])    
         url = asset['browser_download_url']
+        
+        #Naming based on pre-built model
+        output_path = os.path.join(save_dir,prebuilt_model + ".h5")    
         
         #Download if it doesn't exist
         if not os.path.exists(output_path):
@@ -65,10 +68,11 @@ def use_release(save_dir = "data"):
                 with DownloadProgressBar(unit='B', unit_scale=True,
                                      miniters=1, desc=url.split('/')[-1]) as t:
                         urllib.request.urlretrieve(url, filename=output_path, reporthook=t.update_to)           
+                print("Model was downloaded and saved to {}".format(output_path))                
         else:
                 print("Model from DeepForest release {} was already downloaded. Loading model from file.".format(_json["html_url"]))
                 
-        return output_path
+        return _json["html_url"], output_path
 
 def xml_to_annotations(xml_path, rgb_dir):
         """Load annotations from xml format (e.g. RectLabel editor) and convert them into retinanet annotations format. 
