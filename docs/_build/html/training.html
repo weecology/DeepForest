@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Training new models - An Overview &mdash; DeepForest 0.1.0 documentation</title>
+  <title>Training New Models &mdash; DeepForest 0.1.2 documentation</title>
   
 
   
@@ -36,8 +36,8 @@
   <link rel="stylesheet" href="_static/graphviz.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="deepforest package" href="source/deepforest.html" />
-    <link rel="prev" title="Installation" href="installation.html" /> 
+    <link rel="next" title="Configuration File" href="training_config.html" />
+    <link rel="prev" title="Getting Started" href="getting_started.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -61,7 +61,7 @@
             
             
               <div class="version">
-                0.1.0
+                0.1.2
               </div>
             
           
@@ -87,19 +87,17 @@
             
               <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="getting_started.html">What is DeepForest?</a></li>
-<li class="toctree-l1"><a class="reference internal" href="getting_started.html#how-does-it-work">How does it work?</a></li>
-<li class="toctree-l1"><a class="reference internal" href="getting_started.html#prebuilt-models">Prebuilt models</a></li>
-<li class="toctree-l1"><a class="reference internal" href="getting_started.html#training">Training</a></li>
-<li class="toctree-l1"><a class="reference internal" href="getting_started.html#evaluation">Evaluation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="getting_started.html#prediction">Prediction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="landing.html">What is DeepForest?</a></li>
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Training new models - An Overview</a><ul>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Training New Models</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#design-evaluation-data">Design evaluation data</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#gather-annotations">Gather annotations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#fit-generator-versus-tfrecords">fit_generator versus tfrecords</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#training-hardware">Training Hardware</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="training_config.html">Configuration File</a></li>
 <li class="toctree-l1"><a class="reference internal" href="source/deepforest.html">deepforest package</a></li>
 </ul>
 
@@ -146,7 +144,7 @@
     
       <li><a href="index.html">Docs</a> &raquo;</li>
         
-      <li>Training new models - An Overview</li>
+      <li>Training New Models</li>
     
     
       <li class="wy-breadcrumbs-aside">
@@ -165,8 +163,8 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="training-new-models-an-overview">
-<h1>Training new models - An Overview<a class="headerlink" href="#training-new-models-an-overview" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="training-new-models">
+<h1>Training New Models<a class="headerlink" href="#training-new-models" title="Permalink to this headline">¶</a></h1>
 <p>Our work has shown that starting training from the prebuilt model increases performance, regardless of the geographic location of your data. In the majority of cases, it will be useful for the model to have learned general tree representations that can be refined using hand annotated data.</p>
 <div class="section" id="design-evaluation-data">
 <h2>Design evaluation data<a class="headerlink" href="#design-evaluation-data" title="Permalink to this headline">¶</a></h2>
@@ -186,10 +184,12 @@
 <p>Rectlabel screenshot</p>
 <p>xml format explanation</p>
 </div>
+<div class="section" id="fit-generator-versus-tfrecords">
+<h2>fit_generator versus tfrecords<a class="headerlink" href="#fit-generator-versus-tfrecords" title="Permalink to this headline">¶</a></h2>
+</div>
 <div class="section" id="training-hardware">
 <h2>Training Hardware<a class="headerlink" href="#training-hardware" title="Permalink to this headline">¶</a></h2>
 <p>Training neural networks is computationally intensive. While small amounts of data, on the order of several hundred trees, can be trained on a laptop in a few hours, large amounts of data are best trained on dedicated graphical processing units (GPUs). Many university clusters have GPUs available, and they can be rented for short periods of time on cloud servers (AWS, Google Cloud, Azure).</p>
-<p>For more details and recommendations for model training see <a class="reference external" href="#">training overview</a>.</p>
 </div>
 </div>
 
@@ -201,10 +201,10 @@
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="source/deepforest.html" class="btn btn-neutral float-right" title="deepforest package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="training_config.html" class="btn btn-neutral float-right" title="Configuration File" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="installation.html" class="btn btn-neutral float-left" title="Installation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="getting_started.html" class="btn btn-neutral float-left" title="Getting Started" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   

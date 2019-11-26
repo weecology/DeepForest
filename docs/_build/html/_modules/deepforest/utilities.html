@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>deepforest.utilities &mdash; DeepForest 0.1.0 documentation</title>
+  <title>deepforest.utilities &mdash; DeepForest 0.1.2 documentation</title>
   
 
   
@@ -59,7 +59,7 @@
             
             
               <div class="version">
-                0.1.0
+                0.1.2
               </div>
             
           
@@ -85,14 +85,11 @@
             
               <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../getting_started.html">What is DeepForest?</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../getting_started.html#how-does-it-work">How does it work?</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../getting_started.html#prebuilt-models">Prebuilt models</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../getting_started.html#training">Training</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../getting_started.html#evaluation">Evaluation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../getting_started.html#prediction">Prediction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../landing.html">What is DeepForest?</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../training.html">Training new models - An Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../training.html">Training New Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../training_config.html">Configuration File</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../source/deepforest.html">deepforest package</a></li>
 </ul>
 
@@ -168,8 +165,10 @@
 <span class="kn">import</span> <span class="nn">urllib</span>
 <span class="kn">import</span> <span class="nn">xmltodict</span>
 <span class="kn">import</span> <span class="nn">csv</span>
-<span class="kn">from</span> <span class="nn">keras_retinanet</span> <span class="k">import</span> <span class="n">models</span>
 <span class="kn">import</span> <span class="nn">warnings</span>
+
+<span class="kn">from</span> <span class="nn">keras_retinanet</span> <span class="k">import</span> <span class="n">models</span>
+
 
 <div class="viewcode-block" id="label_to_name"><a class="viewcode-back" href="../../source/deepforest.html#deepforest.utilities.label_to_name">[docs]</a><span class="k">def</span> <span class="nf">label_to_name</span><span class="p">(</span><span class="n">label</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Map label to name.</span>
@@ -199,7 +198,7 @@
                         <span class="bp">self</span><span class="o">.</span><span class="n">total</span> <span class="o">=</span> <span class="n">tsize</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">b</span> <span class="o">*</span> <span class="n">bsize</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="p">)</span></div></div>
                 
-<div class="viewcode-block" id="use_release"><a class="viewcode-back" href="../../source/deepforest.html#deepforest.utilities.use_release">[docs]</a><span class="k">def</span> <span class="nf">use_release</span><span class="p">(</span><span class="n">save_dir</span> <span class="o">=</span> <span class="s2">&quot;data&quot;</span><span class="p">,</span> <span class="n">prebuilt_model</span><span class="o">=</span><span class="s2">&quot;NEON&quot;</span><span class="p">):</span>
+<div class="viewcode-block" id="use_release"><a class="viewcode-back" href="../../source/deepforest.html#deepforest.utilities.use_release">[docs]</a><span class="k">def</span> <span class="nf">use_release</span><span class="p">(</span><span class="n">save_dir</span> <span class="o">=</span> <span class="s2">&quot;data/&quot;</span><span class="p">,</span> <span class="n">prebuilt_model</span><span class="o">=</span><span class="s2">&quot;NEON&quot;</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;Check the existance of, or download the latest model release from github</span>
 <span class="sd">        </span>
 <span class="sd">        Args:</span>
@@ -221,13 +220,26 @@
         <span class="c1">#Naming based on pre-built model</span>
         <span class="n">output_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">save_dir</span><span class="p">,</span><span class="n">prebuilt_model</span> <span class="o">+</span> <span class="s2">&quot;.h5&quot;</span><span class="p">)</span>    
         
-        <span class="c1">#Download if it doesn&#39;t exist</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">output_path</span><span class="p">):</span>
+        <span class="c1">#Check the release tagged locally</span>
+        <span class="k">try</span><span class="p">:</span>
+                <span class="n">release_txt</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">save_dir</span><span class="o">+</span><span class="s2">&quot;current_release.csv&quot;</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+                <span class="n">release_txt</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">&quot;current_release&quot;</span><span class="p">:</span> <span class="p">[</span><span class="kc">None</span><span class="p">]})</span>                
+        
+        <span class="c1">#Download the current release it doesn&#39;t exist</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">release_txt</span><span class="o">.</span><span class="n">current_release</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">_json</span><span class="p">[</span><span class="s2">&quot;html_url&quot;</span><span class="p">]:</span>
+                
                 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Downloading model from DeepForest release </span><span class="si">{}</span><span class="s2">, see </span><span class="si">{}</span><span class="s2"> for details&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">_json</span><span class="p">[</span><span class="s2">&quot;tag_name&quot;</span><span class="p">],</span><span class="n">_json</span><span class="p">[</span><span class="s2">&quot;html_url&quot;</span><span class="p">]))</span>                
+                
                 <span class="k">with</span> <span class="n">DownloadProgressBar</span><span class="p">(</span><span class="n">unit</span><span class="o">=</span><span class="s1">&#39;B&#39;</span><span class="p">,</span> <span class="n">unit_scale</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                                      <span class="n">miniters</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="n">url</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="k">as</span> <span class="n">t</span><span class="p">:</span>
                         <span class="n">urllib</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">urlretrieve</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="n">output_path</span><span class="p">,</span> <span class="n">reporthook</span><span class="o">=</span><span class="n">t</span><span class="o">.</span><span class="n">update_to</span><span class="p">)</span>           
-                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Model was downloaded and saved to </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">output_path</span><span class="p">))</span>                
+                
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Model was downloaded and saved to </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">output_path</span><span class="p">))</span>         
+               
+                <span class="c1">#record the release tag locally</span>
+                <span class="n">release_txt</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">&quot;current_release&quot;</span><span class="p">:[</span><span class="n">_json</span><span class="p">[</span><span class="s2">&quot;html_url&quot;</span><span class="p">]]})</span>
+                <span class="n">release_txt</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">save_dir</span><span class="o">+</span><span class="s2">&quot;current_release.csv&quot;</span><span class="p">)</span>                
         <span class="k">else</span><span class="p">:</span>
                 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Model from DeepForest release </span><span class="si">{}</span><span class="s2"> was already downloaded. Loading model from file.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">_json</span><span class="p">[</span><span class="s2">&quot;html_url&quot;</span><span class="p">]))</span>
                 

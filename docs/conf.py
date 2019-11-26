@@ -40,7 +40,8 @@ extensions = [
     'sphinx.ext.napoleon',
     'sphinx.ext.autosummary',
     'sphinx.ext.doctest',
-    'sphinx.ext.inheritance_diagram']
+    'sphinx.ext.inheritance_diagram',
+    'sphinx_markdown_tables']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

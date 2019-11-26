@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Installation &mdash; DeepForest 0.1.2 documentation</title>
+  <title>What is DeepForest? &mdash; DeepForest 0.1.2 documentation</title>
   
 
   
@@ -36,8 +36,8 @@
   <link rel="stylesheet" href="_static/graphviz.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Getting Started" href="getting_started.html" />
-    <link rel="prev" title="What is DeepForest?" href="landing.html" /> 
+    <link rel="next" title="Installation" href="installation.html" />
+    <link rel="prev" title="Welcome to DeepForest’s documentation!" href="index.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -87,12 +87,13 @@
             
               <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="landing.html">What is DeepForest?</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Installation</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#dependencies">Dependencies</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#conda-environment">Conda environment</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">What is DeepForest?</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#how-does-it-work">How does it work?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#license">License</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#citation">Citation</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="training.html">Training New Models</a></li>
 <li class="toctree-l1"><a class="reference internal" href="training_config.html">Configuration File</a></li>
@@ -142,13 +143,13 @@
     
       <li><a href="index.html">Docs</a> &raquo;</li>
         
-      <li>Installation</li>
+      <li>What is DeepForest?</li>
     
     
       <li class="wy-breadcrumbs-aside">
         
             
-            <a href="_sources/installation.md.txt" rel="nofollow"> View page source</a>
+            <a href="_sources/landing.md.txt" rel="nofollow"> View page source</a>
           
         
       </li>
@@ -161,28 +162,26 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="installation">
-<h1>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h1>
-<p>DeepForest can be installed from source using the github repository.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">clone</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">weecology</span><span class="o">/</span><span class="n">DeepForest</span><span class="o">.</span><span class="n">git</span>
-</pre></div>
+  <div class="section" id="what-is-deepforest">
+<h1>What is DeepForest?<a class="headerlink" href="#what-is-deepforest" title="Permalink to this headline">¶</a></h1>
+<p>DeepForest is a python package for training and predicting individual tree crowns from RGB imagery.</p>
+<p><img alt="Sample OSBS image" src="_images/image.png" /></p>
+<div class="section" id="how-does-it-work">
+<h2>How does it work?<a class="headerlink" href="#how-does-it-work" title="Permalink to this headline">¶</a></h2>
+<p>DeepForest uses deep learning object detection networks to predict bounding boxes corresponding to individual trees in RGB imagery. DeepForest is built on a fork of the <a class="reference external" href="https://github.com/fizyr/keras-retinanet">keras-retinanet</a> package and designed to make training models for tree detection simpler.</p>
 </div>
-<div class="section" id="dependencies">
-<h2>Dependencies<a class="headerlink" href="#dependencies" title="Permalink to this headline">¶</a></h2>
-<p>DeepForest depends on keras-retinanet to perform object detection</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">clone</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">fizyr</span><span class="o">/</span><span class="n">keras</span><span class="o">-</span><span class="n">retinanet</span><span class="o">.</span><span class="n">git</span>
-<span class="n">cd</span> <span class="n">keras</span><span class="o">-</span><span class="n">retinanet</span>
-<span class="n">pip</span> <span class="n">install</span> <span class="o">.</span>
-</pre></div>
+<div class="section" id="license">
+<h2>License<a class="headerlink" href="#license" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><p>Free software: <a class="reference external" href="https://github.com/weecology/DeepForest/blob/master/LICENSE">MIT license</a></p></li>
+</ul>
 </div>
-</div>
-<div class="section" id="conda-environment">
-<h2>Conda environment<a class="headerlink" href="#conda-environment" title="Permalink to this headline">¶</a></h2>
-<p>The python package dependencies are managed by conda.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">install</span> <span class="o">-</span><span class="n">f</span><span class="o">=</span><span class="n">environment</span><span class="o">.</span><span class="n">yml</span>
-</pre></div>
-</div>
-<p>Note: The installation of tensorflow varies widely among systems and may need to be installed seperately.</p>
+<div class="section" id="citation">
+<h2>Citation<a class="headerlink" href="#citation" title="Permalink to this headline">¶</a></h2>
+<p><a class="reference external" href="https://www.mdpi.com/2072-4292/11/11/1309">Weinstein, B.G.; Marconi, S.; Bohlman, S.; Zare, A.; White, E. Individual Tree-Crown Detection in RGB Imagery Using Semi-Supervised Deep Learning Neural Networks.
+Remote Sens. 2019, 11, 1309</a></p>
+<p><a class="reference external" href="https://www.biorxiv.org/content/10.1101/790071v1.abstract">Geographic Generalization in Airborne RGB Deep Learning Tree Detection Ben Weinstein, Sergio Marconi, Stephanie Bohlman, Alina Zare, Ethan P White
+bioRxiv 790071; doi: https://doi.org/10.1101/790071</a></p>
 </div>
 </div>
 
@@ -194,10 +193,10 @@
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="getting_started.html" class="btn btn-neutral float-right" title="Getting Started" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="installation.html" class="btn btn-neutral float-right" title="Installation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="landing.html" class="btn btn-neutral float-left" title="What is DeepForest?" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="index.html" class="btn btn-neutral float-left" title="Welcome to DeepForest’s documentation!" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   

@@ -1,4 +1,4 @@
-# Training new models - An Overview
+# Training New Models
 
 Our work has shown that starting training from the prebuilt model increases performance, regardless of the geographic location of your data. In the majority of cases, it will be useful for the model to have learned general tree representations that can be refined using hand annotated data.
 
@@ -21,9 +21,8 @@ DeepForest uses xml files produced by the commonly used annotation program RectL
 Rectlabel screenshot
 
 xml format explanation
+## fit_generator versus tfrecords
 
 ## Training Hardware
 
 Training neural networks is computationally intensive. While small amounts of data, on the order of several hundred trees, can be trained on a laptop in a few hours, large amounts of data are best trained on dedicated graphical processing units (GPUs). Many university clusters have GPUs available, and they can be rented for short periods of time on cloud servers (AWS, Google Cloud, Azure).
-
-For more details and recommendations for model training see [training overview]().

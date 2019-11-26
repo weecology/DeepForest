@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>What is DeepForest? &mdash; DeepForest 0.1.0 documentation</title>
+  <title>Getting Started &mdash; DeepForest 0.1.2 documentation</title>
   
 
   
@@ -36,8 +36,8 @@
   <link rel="stylesheet" href="_static/graphviz.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Installation" href="installation.html" />
-    <link rel="prev" title="Welcome to DeepForest’s documentation!" href="index.html" /> 
+    <link rel="next" title="Training New Models" href="training.html" />
+    <link rel="prev" title="Installation" href="installation.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -61,7 +61,7 @@
             
             
               <div class="version">
-                0.1.0
+                0.1.2
               </div>
             
           
@@ -87,17 +87,23 @@
             
               <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul class="current">
-<li class="toctree-l1 current"><a class="current reference internal" href="#">What is DeepForest?</a></li>
-<li class="toctree-l1"><a class="reference internal" href="#how-does-it-work">How does it work?</a></li>
-<li class="toctree-l1"><a class="reference internal" href="#prebuilt-models">Prebuilt models</a></li>
-<li class="toctree-l1"><a class="reference internal" href="#training">Training</a></li>
-<li class="toctree-l1"><a class="reference internal" href="#evaluation">Evaluation</a><ul>
+<li class="toctree-l1"><a class="reference internal" href="landing.html">What is DeepForest?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Getting Started</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#prebuilt-models">Prebuilt models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#prediction">Prediction</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#predict-a-single-image">Predict a single image</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#predict-a-tile">Predict a tile</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#predict-a-set-of-images">Predict a set of images</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#training">Training</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#evaluation">Evaluation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#neon-benchmark">NEON Benchmark</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="#prediction">Prediction</a></li>
-<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="training.html">Training new models - An Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="training.html">Training New Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="training_config.html">Configuration File</a></li>
 <li class="toctree-l1"><a class="reference internal" href="source/deepforest.html">deepforest package</a></li>
 </ul>
 
@@ -144,7 +150,7 @@
     
       <li><a href="index.html">Docs</a> &raquo;</li>
         
-      <li>What is DeepForest?</li>
+      <li>Getting Started</li>
     
     
       <li class="wy-breadcrumbs-aside">
@@ -163,33 +169,106 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="what-is-deepforest">
-<h1>What is DeepForest?<a class="headerlink" href="#what-is-deepforest" title="Permalink to this headline">¶</a></h1>
-<p>DeepForest is a python package for training and predicting individual tree crowns from RGB imagery.</p>
-</div>
-<div class="section" id="how-does-it-work">
-<h1>How does it work?<a class="headerlink" href="#how-does-it-work" title="Permalink to this headline">¶</a></h1>
-<p>DeepForest uses deep learning object detection networks to predict bounding boxes corresponding to individual trees in RGB imagery. DeepForest is built on top of the keras-retinanet () package and designed to make training models for tree detection simpler.</p>
-</div>
+  <div class="section" id="getting-started">
+<h1>Getting Started<a class="headerlink" href="#getting-started" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="prebuilt-models">
-<h1>Prebuilt models<a class="headerlink" href="#prebuilt-models" title="Permalink to this headline">¶</a></h1>
-<p>DeepForest has a prebuilt model trained on data from 21 sites from the National Ecological Observation Network (). The prebuilt model uses a semi-supervised approach in which annotations are generated using unsupervised tree detection algorithms, followed by hand annotations of RGB imagery. For more details on the modeling approach see</p>
+<h2>Prebuilt models<a class="headerlink" href="#prebuilt-models" title="Permalink to this headline">¶</a></h2>
+<p>DeepForest has a prebuilt model trained on data from 24 sites from the National Ecological Observation Network (https://www.neonscience.org/field-sites/field-sites-map). The prebuilt model uses a semi-supervised approach in which millions of moderate quality annotations are generated using a LiDAR unsupervised tree detection algorithm, followed by hand-annotations of RGB imagery from select sites. For more details on the modeling approach see</p>
 <p>Weinstein, B.G.; Marconi, S.; Bohlman, S.; Zare, A.; White, E. Individual Tree-Crown Detection in RGB Imagery Using Semi-Supervised Deep Learning Neural Networks. Remote Sens. 2019, 11, 1309.
 https://www.mdpi.com/2072-4292/11/11/1309</p>
 <p>Geographic Generalization in Airborne RGB Deep Learning Tree Detection
 Ben. G. Weinstein, Sergio Marconi, Stephanie A. Bohlman, Alina Zare, Ethan P. White
 bioRxiv 790071; doi: https://doi.org/10.1101/790071</p>
 </div>
-<div class="section" id="training">
-<h1>Training<a class="headerlink" href="#training" title="Permalink to this headline">¶</a></h1>
-<p>The prebuilt models can always be improved by adding data from the target area. In our work, we have found that even one hour worth of carefully chosen hand annotation can yield enormous improvements in accuracy and precision. We envision that for the majority of scientific applications, atleast some finetuning of the prebuilt model will be worthwhile.</p>
-<div class="highlight-{python} notranslate"><div class="highlight"><pre><span></span>
+<div class="section" id="prediction">
+<h2>Prediction<a class="headerlink" href="#prediction" title="Permalink to this headline">¶</a></h2>
+<p>DeepForest allows convenient prediction to new data based on the pre-built model or a trained model described below. There are three ways to format data for prediction.</p>
+<div class="section" id="predict-a-single-image">
+<h3>Predict a single image<a class="headerlink" href="#predict-a-single-image" title="Permalink to this headline">¶</a></h3>
+<p>For single images, predict_image can directly read an image from file and return predicted tree bounding boxes.</p>
+<div class="highlight-{python} notranslate"><div class="highlight"><pre><span></span>from deepforest import deepforest
 
+test_model = deepforest.deepforest()
+test_model.use_release()
+
+#Predict test image and return boxes
+boxes = test_model.predict_image(image_path=&quot;tests/data/OSBS_029.tif&quot;, show=False, return_plot = False)
+
+boxes.head()
+         xmin        ymin        xmax        ymax     score label
+0  222.136353  211.271133  253.000061  245.222580  0.790797  Tree
+1   52.070221   73.605804   82.522354  111.510605  0.781306  Tree
+2   96.324028  117.811966  123.224060  145.982407  0.778245  Tree
+3  336.983826  347.946747  375.369019  396.250580  0.677282  Tree
+4  247.689362   48.813339  279.102570   88.318176  0.675362  Tree
+</pre></div>
+</div>
+</div>
+<div class="section" id="predict-a-tile">
+<h3>Predict a tile<a class="headerlink" href="#predict-a-tile" title="Permalink to this headline">¶</a></h3>
+<p>Large tiles covering wide geographic extents cannot fit into memory during prediction, and would yield poor results. DeepForest has a <code class="docutils literal notranslate"><span class="pre">predict_tile</span></code> function to split the image into overlapping windows, perform prediction on each of the windows, and reassemble the resulting annotations.</p>
+</div>
+<div class="section" id="predict-a-set-of-images">
+<h3>Predict a set of images<a class="headerlink" href="#predict-a-set-of-images" title="Permalink to this headline">¶</a></h3>
+<p>Consider an annotations.csv file in the following format</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">image_path</span><span class="p">,</span> <span class="n">xmin</span><span class="p">,</span> <span class="n">ymin</span><span class="p">,</span> <span class="n">xmax</span><span class="p">,</span> <span class="n">ymax</span><span class="p">,</span> <span class="n">label</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="training">
+<h2>Training<a class="headerlink" href="#training" title="Permalink to this headline">¶</a></h2>
+<p>The prebuilt models will always be improved by adding data from the target area. In our work, we have found that even one hour’s worth of carefully chosen hand-annotation can yield enormous improvements in accuracy and precision. We envision that for the majority of scientific applications atleast some finetuning of the prebuilt model will be worthwhile.</p>
+<p>Consider an annotations.csv file in the following format</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">image_path</span><span class="p">,</span> <span class="n">xmin</span><span class="p">,</span> <span class="n">ymin</span><span class="p">,</span> <span class="n">xmax</span><span class="p">,</span> <span class="n">ymax</span><span class="p">,</span> <span class="n">label</span>
+</pre></div>
+</div>
+<p>testfile_deepforest.csv</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">head</span> <span class="n">testfile_deepforest</span><span class="o">.</span><span class="n">csv</span>
+<span class="n">OSBS_029</span><span class="o">.</span><span class="n">jpg</span><span class="p">,</span><span class="mi">256</span><span class="p">,</span><span class="mi">99</span><span class="p">,</span><span class="mi">288</span><span class="p">,</span><span class="mi">140</span><span class="p">,</span><span class="n">Tree</span>
+<span class="n">OSBS_029</span><span class="o">.</span><span class="n">jpg</span><span class="p">,</span><span class="mi">166</span><span class="p">,</span><span class="mi">253</span><span class="p">,</span><span class="mi">225</span><span class="p">,</span><span class="mi">304</span><span class="p">,</span><span class="n">Tree</span>
+<span class="n">OSBS_029</span><span class="o">.</span><span class="n">jpg</span><span class="p">,</span><span class="mi">365</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">400</span><span class="p">,</span><span class="mi">27</span><span class="p">,</span><span class="n">Tree</span>
+<span class="n">OSBS_029</span><span class="o">.</span><span class="n">jpg</span><span class="p">,</span><span class="mi">312</span><span class="p">,</span><span class="mi">13</span><span class="p">,</span><span class="mi">349</span><span class="p">,</span><span class="mi">47</span><span class="p">,</span><span class="n">Tree</span>
+<span class="n">OSBS_029</span><span class="o">.</span><span class="n">jpg</span><span class="p">,</span><span class="mi">365</span><span class="p">,</span><span class="mi">21</span><span class="p">,</span><span class="mi">400</span><span class="p">,</span><span class="mi">70</span><span class="p">,</span><span class="n">Tree</span>
+<span class="n">OSBS_029</span><span class="o">.</span><span class="n">jpg</span><span class="p">,</span><span class="mi">278</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">312</span><span class="p">,</span><span class="mi">37</span><span class="p">,</span><span class="n">Tree</span>
+<span class="n">OSBS_029</span><span class="o">.</span><span class="n">jpg</span><span class="p">,</span><span class="mi">364</span><span class="p">,</span><span class="mi">204</span><span class="p">,</span><span class="mi">400</span><span class="p">,</span><span class="mi">246</span><span class="p">,</span><span class="n">Tree</span>
+<span class="n">OSBS_029</span><span class="o">.</span><span class="n">jpg</span><span class="p">,</span><span class="mi">90</span><span class="p">,</span><span class="mi">117</span><span class="p">,</span><span class="mi">121</span><span class="p">,</span><span class="mi">145</span><span class="p">,</span><span class="n">Tree</span>
+<span class="n">OSBS_029</span><span class="o">.</span><span class="n">jpg</span><span class="p">,</span><span class="mi">115</span><span class="p">,</span><span class="mi">109</span><span class="p">,</span><span class="mi">150</span><span class="p">,</span><span class="mi">152</span><span class="p">,</span><span class="n">Tree</span>
+<span class="n">OSBS_029</span><span class="o">.</span><span class="n">jpg</span><span class="p">,</span><span class="mi">161</span><span class="p">,</span><span class="mi">155</span><span class="p">,</span><span class="mi">199</span><span class="p">,</span><span class="mi">191</span><span class="p">,</span><span class="n">Tree</span>
+</pre></div>
+</div>
+<p>and a classes.csv file in the same directory</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Tree</span><span class="p">,</span><span class="mi">0</span>
+</pre></div>
+</div>
+<div class="highlight-{python} notranslate"><div class="highlight"><pre><span></span>from deepforest import deepforest
+test_model = deepforest.deepforest()
+
+# Example run with short training
+test_model.config[&quot;epochs&quot;] = 1
+test_model.config[&quot;save-snapshot&quot;] = False
+test_model.config[&quot;steps&quot;] = 1
+
+test_model.train(annotations=&quot;data/testfile_deepforest.csv&quot;, input_type=&quot;fit_generator&quot;)
+
+No model initialized, either train or load an existing retinanet model
+There are 1 unique labels: [&#39;Tree&#39;]
+Disabling snapshot saving
+
+Training retinanet with the following args [&#39;--backbone&#39;, &#39;resnet50&#39;, &#39;--image-min-side&#39;, &#39;800&#39;, &#39;--multi-gpu&#39;, &#39;1&#39;, &#39;--epochs&#39;, &#39;1&#39;, &#39;--steps&#39;, &#39;1&#39;, &#39;--batch-size&#39;, &#39;1&#39;, &#39;--tensorboard-dir&#39;, &#39;None&#39;, &#39;--workers&#39;, &#39;1&#39;, &#39;--max-queue-size&#39;, &#39;10&#39;, &#39;--freeze-layers&#39;, &#39;0&#39;, &#39;--score-threshold&#39;, &#39;0.05&#39;, &#39;--save-path&#39;, &#39;snapshots/&#39;, &#39;--snapshot-path&#39;, &#39;snapshots/&#39;, &#39;--no-snapshots&#39;, &#39;csv&#39;, &#39;data/testfile_deepforest.csv&#39;, &#39;data/classes.csv&#39;]
+
+Creating model, this may take a second...
+
+... [omitting model summary]
+
+Epoch 1/1
+
+1/1 [==============================] - 11s 11s/step - loss: 4.0183 - regression_loss: 2.8889 - classification_loss: 1.1294
 </pre></div>
 </div>
 </div>
 <div class="section" id="evaluation">
-<h1>Evaluation<a class="headerlink" href="#evaluation" title="Permalink to this headline">¶</a></h1>
+<h2>Evaluation<a class="headerlink" href="#evaluation" title="Permalink to this headline">¶</a></h2>
 <p>Independent analysis of whether a model can generalize from training data to new areas is critical for creating a robust model. We stress that evaluation data must be different from training data, as neural networks have millions of parameters and can easily memorize thousands of samples. Therefore, while it would be rather easy to tune the model to get extremely high scores on the training data, it would fail when exposed to new images.</p>
 <p>DeepForest uses the keras-retinanet <code class="docutils literal notranslate"><span class="pre">evaluate</span></code> method to score images. This consists of an annotations.csv file in the following format</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">image_path</span><span class="p">,</span> <span class="n">xmin</span><span class="p">,</span> <span class="n">ymin</span><span class="p">,</span> <span class="n">xmax</span><span class="p">,</span> <span class="n">ymax</span><span class="p">,</span> <span class="n">label</span>
@@ -199,19 +278,12 @@ bioRxiv 790071; doi: https://doi.org/10.1101/790071</p>
 </pre></div>
 </div>
 <p>For more on evaluation, see the <a class="reference external" href="#">Evaluation Overview</a></p>
+</div>
 <div class="section" id="neon-benchmark">
 <h2>NEON Benchmark<a class="headerlink" href="#neon-benchmark" title="Permalink to this headline">¶</a></h2>
 <p>To standardize model evaluation, we have collected and published a benchmark dataset of nearly 20,000 crowns from sites in the National Ecological Observation Network.</p>
 <p>https://github.com/weecology/NeonTreeEvaluation</p>
 </div>
-</div>
-<div class="section" id="prediction">
-<h1>Prediction<a class="headerlink" href="#prediction" title="Permalink to this headline">¶</a></h1>
-<p>Once a satisfactory model has been trained, DeepForest allows convenient prediction to new data. There are three ways to format data for prediction. For single images, predict_image can directly read an image from file and return predicted tree bounding boxes.</p>
-<div class="highlight-{python} notranslate"><div class="highlight"><pre><span></span>
-</pre></div>
-</div>
-<p>For large tiles that cannot fit into memory, DeepForest has a <code class="docutils literal notranslate"><span class="pre">predict_tile</span></code> function to split the image into overlapping windows, perform prediction on each of the windows, and reassemble the resulting annotations.</p>
 </div>
 
 
@@ -222,10 +294,10 @@ bioRxiv 790071; doi: https://doi.org/10.1101/790071</p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="installation.html" class="btn btn-neutral float-right" title="Installation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="training.html" class="btn btn-neutral float-right" title="Training New Models" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="index.html" class="btn btn-neutral float-left" title="Welcome to DeepForest’s documentation!" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="installation.html" class="btn btn-neutral float-left" title="Installation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
