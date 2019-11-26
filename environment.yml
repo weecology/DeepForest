@@ -25,7 +25,7 @@ dependencies:
     - slidingwindow
     - keras==2.3.0
     - tensorflow==1.14
-    - sphinx-markdown-tables
+    - sphinx-markdown-tables  
 
 
 
