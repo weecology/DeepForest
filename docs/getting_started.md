@@ -15,7 +15,6 @@ bioRxiv 790071; doi: https://doi.org/10.1101/790071
 
 DeepForest allows convenient prediction to new data based on the pre-built model or a trained model described below. There are three ways to format data for prediction.
 
-
 ### Predict a single image
 
 For single images, predict_image can directly read an image from file and return predicted tree bounding boxes.
