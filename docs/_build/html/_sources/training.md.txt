@@ -18,7 +18,7 @@ It is natural to want the best model possible, but one can waste a tremendous am
 
 DeepForest uses xml files produced by the commonly used annotation program RectLabel. Please note that Rectlabel is an inexpensive program available only for Mac.
 
-Rectlabel screenshot
+![](../www/rectlabel.png)
 
 xml format explanation
 ## fit_generator versus tfrecords

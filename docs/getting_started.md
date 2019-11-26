@@ -4,7 +4,7 @@
 
 DeepForest has a prebuilt model trained on data from 24 sites from the [National Ecological Observation Network](https://www.neonscience.org/field-sites/field-sites-map). The prebuilt model uses a semi-supervised approach in which millions of moderate quality annotations are generated using a LiDAR unsupervised tree detection algorithm, followed by hand-annotations of RGB imagery from select sites.
 
-For more details on the modeling approach see [citations](landing.md##Citation)
+For more details on the modeling approach see [citations](landing.html#citation)
 
 ## Prediction
 

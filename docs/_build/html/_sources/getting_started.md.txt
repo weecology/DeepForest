@@ -2,23 +2,17 @@
 
 ## Prebuilt models
 
-DeepForest has a prebuilt model trained on data from 24 sites from the National Ecological Observation Network (https://www.neonscience.org/field-sites/field-sites-map). The prebuilt model uses a semi-supervised approach in which millions of moderate quality annotations are generated using a LiDAR unsupervised tree detection algorithm, followed by hand-annotations of RGB imagery from select sites. For more details on the modeling approach see
+DeepForest has a prebuilt model trained on data from 24 sites from the [National Ecological Observation Network](https://www.neonscience.org/field-sites/field-sites-map). The prebuilt model uses a semi-supervised approach in which millions of moderate quality annotations are generated using a LiDAR unsupervised tree detection algorithm, followed by hand-annotations of RGB imagery from select sites.
 
-Weinstein, B.G.; Marconi, S.; Bohlman, S.; Zare, A.; White, E. Individual Tree-Crown Detection in RGB Imagery Using Semi-Supervised Deep Learning Neural Networks. Remote Sens. 2019, 11, 1309.
-https://www.mdpi.com/2072-4292/11/11/1309
-
-Geographic Generalization in Airborne RGB Deep Learning Tree Detection
-Ben. G. Weinstein, Sergio Marconi, Stephanie A. Bohlman, Alina Zare, Ethan P. White
-bioRxiv 790071; doi: https://doi.org/10.1101/790071
+For more details on the modeling approach see [citations](landing.html#citation)
 
 ## Prediction
 
-DeepForest allows convenient prediction to new data based on the pre-built model or a trained model described below. There are three ways to format data for prediction.
-
+DeepForest allows convenient prediction of new data based on the prebuilt model or a trained model described below. There are three ways to format data for prediction.
 
 ### Predict a single image
 
-For single images, predict_image can directly read an image from file and return predicted tree bounding boxes.
+For single images, predict_image can read an image from memory or file and return predicted tree bounding boxes.
 
 ```{python}
 from deepforest import deepforest
@@ -39,15 +33,40 @@ boxes.head()
 ```
 
 ### Predict a tile
-Large tiles covering wide geographic extents cannot fit into memory during prediction, and would yield poor results. DeepForest has a ```predict_tile``` function to split the image into overlapping windows, perform prediction on each of the windows, and reassemble the resulting annotations.
 
-### Predict a set of images
+Large tiles covering wide geographic extents cannot fit into memory during prediction and would yield poor results due to the density of bounding boxes. Often provided as geospatial .tif files, remote sensing data is best suited for the ```predict_tile``` function, which splits the tile into overlapping windows, perform prediction on each of the windows, and then reassemble the resulting annotations.
 
-Consider an annotations.csv file in the following format
+```
+from deepforest import deepforest
+
+test_model = deepforest.deepforest()
+test_model.use_release()
+
+raster_path = "tests/data/OSBS_029.tif"
+#Window size of 300px with an overlap of 50% among windows
+predicted_raster = test_model.predict_tile(raster_path, return_plot = True, patch_size=300,patch_overlap=0.5)
+```
+
+### Predict a set of annotations
+
+During evaluation of ground truth data, it is useful to have a way to predict a set of images and combine them into a single dataframe.
+
+Consider a headerless annotations.csv file in the following format
 
 ```
 image_path, xmin, ymin, xmax, ymax, label
 ```
+
+```
+from deepforest import deepforest
+test_model = deepforest.deepforest()
+test_model.use_release()
+
+#Window size of 300px with an overlap of 50% among windows
+boxes = release_model.predict_generator(annotations="testfile_deepforest.csv")
+```
+
+For more information on data files, see below.
 
 ## Training
 
@@ -62,7 +81,6 @@ image_path, xmin, ymin, xmax, ymax, label
 testfile_deepforest.csv
 
 ```
-head testfile_deepforest.csv
 OSBS_029.jpg,256,99,288,140,Tree
 OSBS_029.jpg,166,253,225,304,Tree
 OSBS_029.jpg,365,2,400,27,Tree
@@ -128,4 +146,4 @@ For more on evaluation, see the [Evaluation Overview]()
 
 To standardize model evaluation, we have collected and published a benchmark dataset of nearly 20,000 crowns from sites in the National Ecological Observation Network.
 
-https://github.com/weecology/NeonTreeEvaluation
+[https://github.com/weecology/NeonTreeEvaluation]

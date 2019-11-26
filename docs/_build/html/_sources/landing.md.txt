@@ -2,7 +2,7 @@
 
 DeepForest is a python package for training and predicting individual tree crowns from RGB imagery.
 
-![Sample OSBS image](../www/image.png)
+![](../www/image.png)
 
 ## How does it work?
 DeepForest uses deep learning object detection networks to predict bounding boxes corresponding to individual trees in RGB imagery. DeepForest is built on a fork of the [keras-retinanet](https://github.com/fizyr/keras-retinanet) package and designed to make training models for tree detection simpler.
