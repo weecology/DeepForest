@@ -169,7 +169,7 @@
 <span class="kn">from</span> <span class="nn">keras_retinanet.preprocessing</span> <span class="k">import</span> <span class="n">csv_generator</span>
 <span class="kn">from</span> <span class="nn">keras_retinanet</span> <span class="k">import</span> <span class="n">models</span>
 
-<div class="viewcode-block" id="config"><a class="viewcode-back" href="../../source/tests.html#tests.test_tfrecords.config">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span><span class="p">()</span>
+<div class="viewcode-block" id="config"><a class="viewcode-back" href="../../tests.html#tests.test_tfrecords.config">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span><span class="p">()</span>
 <span class="k">def</span> <span class="nf">config</span><span class="p">():</span>
     <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Configuring tfrecord tests&quot;</span><span class="p">)</span>
     <span class="n">config</span> <span class="o">=</span> <span class="p">{}</span>
@@ -198,7 +198,7 @@
 <span class="c1">#Reading</span>
 
 <span class="c1">#Writing</span>
-<div class="viewcode-block" id="test_create_tfrecords"><a class="viewcode-back" href="../../source/tests.html#tests.test_tfrecords.test_create_tfrecords">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span><span class="p">()</span>
+<div class="viewcode-block" id="test_create_tfrecords"><a class="viewcode-back" href="../../tests.html#tests.test_tfrecords.test_create_tfrecords">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span><span class="p">()</span>
 <span class="k">def</span> <span class="nf">test_create_tfrecords</span><span class="p">(</span><span class="n">config</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;This test is in flux due to the fact that tensorflow and cv2 resize methods are not identical: https://jricheimer.github.io/tensorflow/2019/02/11/resize-confusion/ &quot;&quot;&quot;</span>
     <span class="n">created_records</span> <span class="o">=</span> <span class="n">tfrecords</span><span class="o">.</span><span class="n">create_tfrecords</span><span class="p">(</span><span class="n">annotations_file</span><span class="o">=</span><span class="s2">&quot;tests/data/testfile_tfrecords.csv&quot;</span><span class="p">,</span>
@@ -210,22 +210,22 @@
     <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s2">&quot;tests/data/testfile_tfrecords_0.tfrecord&quot;</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">created_records</span></div>
 
-<div class="viewcode-block" id="setup_create_tensors"><a class="viewcode-back" href="../../source/tests.html#tests.test_tfrecords.setup_create_tensors">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span><span class="p">()</span>
+<div class="viewcode-block" id="setup_create_tensors"><a class="viewcode-back" href="../../tests.html#tests.test_tfrecords.setup_create_tensors">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span><span class="p">()</span>
 <span class="k">def</span> <span class="nf">setup_create_tensors</span><span class="p">(</span><span class="n">test_create_tfrecords</span><span class="p">):</span>
     <span class="n">created_tensors</span> <span class="o">=</span> <span class="n">tfrecords</span><span class="o">.</span><span class="n">create_tensors</span><span class="p">(</span><span class="n">test_create_tfrecords</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">created_tensors</span></div>
 
-<div class="viewcode-block" id="test_create_tensors"><a class="viewcode-back" href="../../source/tests.html#tests.test_tfrecords.test_create_tensors">[docs]</a><span class="k">def</span> <span class="nf">test_create_tensors</span><span class="p">(</span><span class="n">test_create_tfrecords</span><span class="p">):</span>
+<div class="viewcode-block" id="test_create_tensors"><a class="viewcode-back" href="../../tests.html#tests.test_tfrecords.test_create_tensors">[docs]</a><span class="k">def</span> <span class="nf">test_create_tensors</span><span class="p">(</span><span class="n">test_create_tfrecords</span><span class="p">):</span>
     <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Testing that input tensors can be created&quot;</span><span class="p">)</span>
     <span class="n">created_tensors</span> <span class="o">=</span> <span class="n">tfrecords</span><span class="o">.</span><span class="n">create_tensors</span><span class="p">(</span><span class="n">test_create_tfrecords</span><span class="p">)</span>
     <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">created_tensors</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span>
     
     <span class="k">return</span> <span class="n">created_tensors</span></div>
 
-<div class="viewcode-block" id="test_create_dataset"><a class="viewcode-back" href="../../source/tests.html#tests.test_tfrecords.test_create_dataset">[docs]</a><span class="k">def</span> <span class="nf">test_create_dataset</span><span class="p">(</span><span class="n">test_create_tfrecords</span><span class="p">):</span>
+<div class="viewcode-block" id="test_create_dataset"><a class="viewcode-back" href="../../tests.html#tests.test_tfrecords.test_create_dataset">[docs]</a><span class="k">def</span> <span class="nf">test_create_dataset</span><span class="p">(</span><span class="n">test_create_tfrecords</span><span class="p">):</span>
     <span class="n">dataset</span> <span class="o">=</span> <span class="n">tfrecords</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="n">test_create_tfrecords</span><span class="p">)</span></div>
     
-<div class="viewcode-block" id="test_equivalence"><a class="viewcode-back" href="../../source/tests.html#tests.test_tfrecords.test_equivalence">[docs]</a><span class="k">def</span> <span class="nf">test_equivalence</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">setup_create_tensors</span><span class="p">):</span>
+<div class="viewcode-block" id="test_equivalence"><a class="viewcode-back" href="../../tests.html#tests.test_tfrecords.test_equivalence">[docs]</a><span class="k">def</span> <span class="nf">test_equivalence</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">setup_create_tensors</span><span class="p">):</span>
     
     <span class="c1">#unpack created tensors</span>
     <span class="n">tf_inputs</span><span class="p">,</span> <span class="n">tf_targets</span> <span class="o">=</span> <span class="n">setup_create_tensors</span>
@@ -287,14 +287,14 @@
     <span class="c1">#plt.show()        </span>
 
 <span class="c1">#Check for bad file types</span>
-<div class="viewcode-block" id="bad_annotations"><a class="viewcode-back" href="../../source/tests.html#tests.test_tfrecords.bad_annotations">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span><span class="p">()</span>
+<div class="viewcode-block" id="bad_annotations"><a class="viewcode-back" href="../../tests.html#tests.test_tfrecords.bad_annotations">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span><span class="p">()</span>
 <span class="k">def</span> <span class="nf">bad_annotations</span><span class="p">():</span>
     <span class="n">annotations</span> <span class="o">=</span> <span class="n">utilities</span><span class="o">.</span><span class="n">xml_to_annotations</span><span class="p">(</span><span class="s2">&quot;tests/data/OSBS_029.xml&quot;</span><span class="p">,</span><span class="n">rgb_dir</span><span class="o">=</span><span class="s2">&quot;tests/data&quot;</span><span class="p">)</span>
     <span class="n">f</span> <span class="o">=</span> <span class="s2">&quot;tests/data/testfile_error_deepforest.csv&quot;</span>
     <span class="n">annotations</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">f</span><span class="p">,</span><span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">header</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">f</span></div>
 
-<div class="viewcode-block" id="test_tfdataset_error"><a class="viewcode-back" href="../../source/tests.html#tests.test_tfrecords.test_tfdataset_error">[docs]</a><span class="k">def</span> <span class="nf">test_tfdataset_error</span><span class="p">(</span><span class="n">bad_annotations</span><span class="p">):</span>    
+<div class="viewcode-block" id="test_tfdataset_error"><a class="viewcode-back" href="../../tests.html#tests.test_tfrecords.test_tfdataset_error">[docs]</a><span class="k">def</span> <span class="nf">test_tfdataset_error</span><span class="p">(</span><span class="n">bad_annotations</span><span class="p">):</span>    
     <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">):</span>    
         <span class="n">records_created</span> <span class="o">=</span> <span class="n">tfrecords</span><span class="o">.</span><span class="n">create_tfrecords</span><span class="p">(</span><span class="n">annotations_file</span><span class="o">=</span><span class="n">bad_annotations</span><span class="p">,</span> <span class="n">class_file</span><span class="o">=</span><span class="s2">&quot;tests/data/classes.csv&quot;</span><span class="p">,</span> <span class="n">image_min_side</span><span class="o">=</span><span class="mi">800</span><span class="p">,</span> <span class="n">backbone_model</span><span class="o">=</span><span class="s2">&quot;resnet50&quot;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">savedir</span><span class="o">=</span><span class="s2">&quot;tests/data/&quot;</span><span class="p">)</span></div>
 </pre></div>

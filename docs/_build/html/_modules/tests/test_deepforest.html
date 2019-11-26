@@ -172,12 +172,12 @@
 <span class="kn">from</span> <span class="nn">deepforest</span> <span class="k">import</span> <span class="n">tfrecords</span>
 
 <span class="c1">#download latest release</span>
-<div class="viewcode-block" id="download_release"><a class="viewcode-back" href="../../source/tests.html#tests.test_deepforest.download_release">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span><span class="p">()</span>
+<div class="viewcode-block" id="download_release"><a class="viewcode-back" href="../../tests.html#tests.test_deepforest.download_release">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span><span class="p">()</span>
 <span class="k">def</span> <span class="nf">download_release</span><span class="p">():</span>
     <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;running fixtures&quot;</span><span class="p">)</span>
     <span class="n">utilities</span><span class="o">.</span><span class="n">use_release</span><span class="p">(</span><span class="n">save_dir</span> <span class="o">=</span> <span class="s2">&quot;tests/data&quot;</span><span class="p">)</span>    </div>
     
-<div class="viewcode-block" id="annotations"><a class="viewcode-back" href="../../source/tests.html#tests.test_deepforest.annotations">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span><span class="p">()</span>
+<div class="viewcode-block" id="annotations"><a class="viewcode-back" href="../../tests.html#tests.test_deepforest.annotations">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span><span class="p">()</span>
 <span class="k">def</span> <span class="nf">annotations</span><span class="p">():</span>
     <span class="n">annotations</span> <span class="o">=</span> <span class="n">utilities</span><span class="o">.</span><span class="n">xml_to_annotations</span><span class="p">(</span><span class="s2">&quot;tests/data/OSBS_029.xml&quot;</span><span class="p">,</span><span class="n">rgb_dir</span><span class="o">=</span><span class="s2">&quot;tests/data&quot;</span><span class="p">)</span>
     <span class="c1">#Point at the jpg version for tfrecords</span>
@@ -185,17 +185,17 @@
     <span class="n">annotations</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="s2">&quot;tests/data/testfile_deepforest.csv&quot;</span><span class="p">,</span><span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">header</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
     <span class="k">return</span> <span class="s2">&quot;tests/data/testfile_deepforest.csv&quot;</span></div>
 
-<div class="viewcode-block" id="prepare_tfdataset"><a class="viewcode-back" href="../../source/tests.html#tests.test_deepforest.prepare_tfdataset">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span><span class="p">()</span>
+<div class="viewcode-block" id="prepare_tfdataset"><a class="viewcode-back" href="../../tests.html#tests.test_deepforest.prepare_tfdataset">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span><span class="p">()</span>
 <span class="k">def</span> <span class="nf">prepare_tfdataset</span><span class="p">(</span><span class="n">annotations</span><span class="p">):</span>    
     <span class="n">records_created</span> <span class="o">=</span> <span class="n">tfrecords</span><span class="o">.</span><span class="n">create_tfrecords</span><span class="p">(</span><span class="n">annotations_file</span><span class="o">=</span><span class="n">annotations</span><span class="p">,</span> <span class="n">class_file</span><span class="o">=</span><span class="s2">&quot;tests/data/classes.csv&quot;</span><span class="p">,</span> <span class="n">image_min_side</span><span class="o">=</span><span class="mi">800</span><span class="p">,</span> <span class="n">backbone_model</span><span class="o">=</span><span class="s2">&quot;resnet50&quot;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">savedir</span><span class="o">=</span><span class="s2">&quot;tests/data/&quot;</span><span class="p">)</span>
     <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s2">&quot;tests/data/testfile_deepforest_0.tfrecord&quot;</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">records_created</span></div>
 
-<div class="viewcode-block" id="test_deepforest"><a class="viewcode-back" href="../../source/tests.html#tests.test_deepforest.test_deepforest">[docs]</a><span class="k">def</span> <span class="nf">test_deepforest</span><span class="p">():</span>
+<div class="viewcode-block" id="test_deepforest"><a class="viewcode-back" href="../../tests.html#tests.test_deepforest.test_deepforest">[docs]</a><span class="k">def</span> <span class="nf">test_deepforest</span><span class="p">():</span>
     <span class="n">model</span> <span class="o">=</span> <span class="n">deepforest</span><span class="o">.</span><span class="n">deepforest</span><span class="p">(</span><span class="n">weights</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
     <span class="k">assert</span> <span class="n">model</span><span class="o">.</span><span class="n">weights</span> <span class="ow">is</span> <span class="kc">None</span></div>
 
-<div class="viewcode-block" id="test_use_release"><a class="viewcode-back" href="../../source/tests.html#tests.test_deepforest.test_use_release">[docs]</a><span class="k">def</span> <span class="nf">test_use_release</span><span class="p">(</span><span class="n">download_release</span><span class="p">):</span>
+<div class="viewcode-block" id="test_use_release"><a class="viewcode-back" href="../../tests.html#tests.test_deepforest.test_use_release">[docs]</a><span class="k">def</span> <span class="nf">test_use_release</span><span class="p">(</span><span class="n">download_release</span><span class="p">):</span>
     <span class="n">test_model</span> <span class="o">=</span> <span class="n">deepforest</span><span class="o">.</span><span class="n">deepforest</span><span class="p">()</span> 
     <span class="n">test_model</span><span class="o">.</span><span class="n">use_release</span><span class="p">()</span>
     
@@ -205,7 +205,7 @@
     <span class="c1">#Assert is model instance    </span>
     <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">test_model</span><span class="o">.</span><span class="n">model</span><span class="p">,</span><span class="n">keras</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">Model</span><span class="p">)</span></div>
     
-<div class="viewcode-block" id="release_model"><a class="viewcode-back" href="../../source/tests.html#tests.test_deepforest.release_model">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span><span class="p">()</span>
+<div class="viewcode-block" id="release_model"><a class="viewcode-back" href="../../tests.html#tests.test_deepforest.release_model">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span><span class="p">()</span>
 <span class="k">def</span> <span class="nf">release_model</span><span class="p">(</span><span class="n">download_release</span><span class="p">):</span>
     <span class="n">test_model</span> <span class="o">=</span> <span class="n">deepforest</span><span class="o">.</span><span class="n">deepforest</span><span class="p">()</span> 
     <span class="n">test_model</span><span class="o">.</span><span class="n">use_release</span><span class="p">()</span>
@@ -218,7 +218,7 @@
     
     <span class="k">return</span> <span class="n">test_model</span></div>
 
-<div class="viewcode-block" id="test_predict_image"><a class="viewcode-back" href="../../source/tests.html#tests.test_deepforest.test_predict_image">[docs]</a><span class="k">def</span> <span class="nf">test_predict_image</span><span class="p">(</span><span class="n">download_release</span><span class="p">):</span>
+<div class="viewcode-block" id="test_predict_image"><a class="viewcode-back" href="../../tests.html#tests.test_deepforest.test_predict_image">[docs]</a><span class="k">def</span> <span class="nf">test_predict_image</span><span class="p">(</span><span class="n">download_release</span><span class="p">):</span>
     <span class="c1">#Load model</span>
     <span class="n">test_model</span> <span class="o">=</span> <span class="n">deepforest</span><span class="o">.</span><span class="n">deepforest</span><span class="p">(</span><span class="n">weights</span><span class="o">=</span><span class="s2">&quot;tests/data/NEON.h5&quot;</span><span class="p">)</span>    
     <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">test_model</span><span class="o">.</span><span class="n">model</span><span class="p">,</span><span class="n">keras</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">Model</span><span class="p">)</span>
@@ -229,7 +229,7 @@
     <span class="c1">#Returns a 6 column numpy array, xmin, ymin, xmax, ymax, score, label</span>
     <span class="k">assert</span> <span class="n">boxes</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">6</span></div>
 
-<div class="viewcode-block" id="test_train"><a class="viewcode-back" href="../../source/tests.html#tests.test_deepforest.test_train">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span><span class="p">()</span>
+<div class="viewcode-block" id="test_train"><a class="viewcode-back" href="../../tests.html#tests.test_deepforest.test_train">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span><span class="p">()</span>
 <span class="k">def</span> <span class="nf">test_train</span><span class="p">(</span><span class="n">annotations</span><span class="p">):</span>
     <span class="n">test_model</span> <span class="o">=</span> <span class="n">deepforest</span><span class="o">.</span><span class="n">deepforest</span><span class="p">()</span>
     <span class="n">test_model</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;epochs&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
@@ -239,7 +239,7 @@
     
     <span class="k">return</span> <span class="n">test_model</span></div>
 
-<div class="viewcode-block" id="test_train_no_freeze"><a class="viewcode-back" href="../../source/tests.html#tests.test_deepforest.test_train_no_freeze">[docs]</a><span class="k">def</span> <span class="nf">test_train_no_freeze</span><span class="p">(</span><span class="n">annotations</span><span class="p">,</span> <span class="n">test_train</span><span class="p">):</span>
+<div class="viewcode-block" id="test_train_no_freeze"><a class="viewcode-back" href="../../tests.html#tests.test_deepforest.test_train_no_freeze">[docs]</a><span class="k">def</span> <span class="nf">test_train_no_freeze</span><span class="p">(</span><span class="n">annotations</span><span class="p">,</span> <span class="n">test_train</span><span class="p">):</span>
     <span class="n">test_train</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;freeze_layers&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
     
     <span class="c1">#Get initial weights to compare from one layer</span>
@@ -254,7 +254,7 @@
     <span class="k">assert</span> <span class="n">test_train</span><span class="o">.</span><span class="n">training_model</span><span class="o">.</span><span class="n">layers</span><span class="p">[</span><span class="mi">100</span><span class="p">]</span><span class="o">.</span><span class="n">trainable</span>
     <span class="k">assert</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span><span class="n">before</span><span class="p">,</span> <span class="n">after</span><span class="p">)</span></div>
     
-<div class="viewcode-block" id="test_freeze_train"><a class="viewcode-back" href="../../source/tests.html#tests.test_deepforest.test_freeze_train">[docs]</a><span class="k">def</span> <span class="nf">test_freeze_train</span><span class="p">(</span><span class="n">annotations</span><span class="p">,</span> <span class="n">test_train</span><span class="p">):</span>
+<div class="viewcode-block" id="test_freeze_train"><a class="viewcode-back" href="../../tests.html#tests.test_deepforest.test_freeze_train">[docs]</a><span class="k">def</span> <span class="nf">test_freeze_train</span><span class="p">(</span><span class="n">annotations</span><span class="p">,</span> <span class="n">test_train</span><span class="p">):</span>
     <span class="n">test_train</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;freeze_resnet&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
     
     <span class="c1">#Get initial weights to compare from one layer, it should start in trainable mode</span>
@@ -274,17 +274,17 @@
     <span class="c1">#Because the network uses batch norm layers, there is a slight drift in weights. It should be very small.</span>
     <span class="c1">#assert np.array_equal(before, after)</span>
 
-<div class="viewcode-block" id="test_predict_generator"><a class="viewcode-back" href="../../source/tests.html#tests.test_deepforest.test_predict_generator">[docs]</a><span class="k">def</span> <span class="nf">test_predict_generator</span><span class="p">(</span><span class="n">release_model</span><span class="p">,</span> <span class="n">annotations</span><span class="p">):</span>
+<div class="viewcode-block" id="test_predict_generator"><a class="viewcode-back" href="../../tests.html#tests.test_deepforest.test_predict_generator">[docs]</a><span class="k">def</span> <span class="nf">test_predict_generator</span><span class="p">(</span><span class="n">release_model</span><span class="p">,</span> <span class="n">annotations</span><span class="p">):</span>
     <span class="n">boxes</span> <span class="o">=</span> <span class="n">release_model</span><span class="o">.</span><span class="n">predict_generator</span><span class="p">(</span><span class="n">annotations</span><span class="o">=</span><span class="n">annotations</span><span class="p">)</span>
     <span class="k">assert</span> <span class="n">boxes</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">7</span></div>
     
-<div class="viewcode-block" id="test_evaluate"><a class="viewcode-back" href="../../source/tests.html#tests.test_deepforest.test_evaluate">[docs]</a><span class="k">def</span> <span class="nf">test_evaluate</span><span class="p">(</span><span class="n">release_model</span><span class="p">,</span> <span class="n">annotations</span><span class="p">):</span>
+<div class="viewcode-block" id="test_evaluate"><a class="viewcode-back" href="../../tests.html#tests.test_deepforest.test_evaluate">[docs]</a><span class="k">def</span> <span class="nf">test_evaluate</span><span class="p">(</span><span class="n">release_model</span><span class="p">,</span> <span class="n">annotations</span><span class="p">):</span>
     <span class="n">mAP</span> <span class="o">=</span> <span class="n">release_model</span><span class="o">.</span><span class="n">evaluate_generator</span><span class="p">(</span><span class="n">annotations</span><span class="o">=</span><span class="n">annotations</span><span class="p">)</span>
     <span class="c1">#Assert that function returns a float numpy value</span>
     <span class="k">assert</span> <span class="n">mAP</span><span class="o">.</span><span class="n">dtype</span> <span class="o">==</span> <span class="nb">float</span></div>
 
 <span class="c1">#Training    </span>
-<div class="viewcode-block" id="test_tfrecord_train"><a class="viewcode-back" href="../../source/tests.html#tests.test_deepforest.test_tfrecord_train">[docs]</a><span class="k">def</span> <span class="nf">test_tfrecord_train</span><span class="p">(</span><span class="n">prepare_tfdataset</span><span class="p">,</span> <span class="n">annotations</span><span class="p">):</span>
+<div class="viewcode-block" id="test_tfrecord_train"><a class="viewcode-back" href="../../tests.html#tests.test_deepforest.test_tfrecord_train">[docs]</a><span class="k">def</span> <span class="nf">test_tfrecord_train</span><span class="p">(</span><span class="n">prepare_tfdataset</span><span class="p">,</span> <span class="n">annotations</span><span class="p">):</span>
     <span class="n">test_model</span> <span class="o">=</span> <span class="n">deepforest</span><span class="o">.</span><span class="n">deepforest</span><span class="p">()</span>
     <span class="n">test_model</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;epochs&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
     <span class="n">test_model</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;save-snapshot&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
@@ -293,13 +293,13 @@
     <span class="n">test_model</span><span class="o">.</span><span class="n">train</span><span class="p">(</span><span class="n">annotations</span><span class="o">=</span><span class="n">annotations</span><span class="p">,</span><span class="n">input_type</span><span class="o">=</span><span class="s2">&quot;tfrecord&quot;</span><span class="p">,</span> <span class="n">list_of_tfrecords</span><span class="o">=</span><span class="n">prepare_tfdataset</span><span class="p">,</span> <span class="n">images_per_epoch</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span></div>
 
 <span class="c1">#Test random transform</span>
-<div class="viewcode-block" id="test_random_transform"><a class="viewcode-back" href="../../source/tests.html#tests.test_deepforest.test_random_transform">[docs]</a><span class="k">def</span> <span class="nf">test_random_transform</span><span class="p">(</span><span class="n">annotations</span><span class="p">):</span>
+<div class="viewcode-block" id="test_random_transform"><a class="viewcode-back" href="../../tests.html#tests.test_deepforest.test_random_transform">[docs]</a><span class="k">def</span> <span class="nf">test_random_transform</span><span class="p">(</span><span class="n">annotations</span><span class="p">):</span>
     <span class="n">test_model</span> <span class="o">=</span> <span class="n">deepforest</span><span class="o">.</span><span class="n">deepforest</span><span class="p">()</span>
     <span class="n">test_model</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;random_transform&quot;</span><span class="p">]</span>
     <span class="n">arg_list</span> <span class="o">=</span> <span class="n">utilities</span><span class="o">.</span><span class="n">format_args</span><span class="p">(</span><span class="n">annotations</span><span class="p">,</span> <span class="n">test_model</span><span class="o">.</span><span class="n">config</span><span class="p">)</span>
     <span class="k">assert</span> <span class="s2">&quot;--random-transform&quot;</span> <span class="ow">in</span> <span class="n">arg_list</span></div>
 
-<div class="viewcode-block" id="test_predict_tile"><a class="viewcode-back" href="../../source/tests.html#tests.test_deepforest.test_predict_tile">[docs]</a><span class="k">def</span> <span class="nf">test_predict_tile</span><span class="p">(</span><span class="n">release_model</span><span class="p">):</span>
+<div class="viewcode-block" id="test_predict_tile"><a class="viewcode-back" href="../../tests.html#tests.test_deepforest.test_predict_tile">[docs]</a><span class="k">def</span> <span class="nf">test_predict_tile</span><span class="p">(</span><span class="n">release_model</span><span class="p">):</span>
     <span class="n">raster_path</span> <span class="o">=</span> <span class="s2">&quot;tests/data/OSBS_029.tif&quot;</span>
     <span class="n">original_raster</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">raster_path</span><span class="p">)</span>
     <span class="n">original_raster</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">original_raster</span><span class="p">)</span>  

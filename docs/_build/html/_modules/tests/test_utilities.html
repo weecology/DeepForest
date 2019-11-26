@@ -162,19 +162,19 @@
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">from</span> <span class="nn">deepforest</span> <span class="k">import</span> <span class="n">deepforest</span>
 
-<div class="viewcode-block" id="annotations"><a class="viewcode-back" href="../../source/tests.html#tests.test_utilities.annotations">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span><span class="p">()</span>
+<div class="viewcode-block" id="annotations"><a class="viewcode-back" href="../../tests.html#tests.test_utilities.annotations">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span><span class="p">()</span>
 <span class="k">def</span> <span class="nf">annotations</span><span class="p">():</span>
     <span class="n">annotations</span> <span class="o">=</span> <span class="n">utilities</span><span class="o">.</span><span class="n">xml_to_annotations</span><span class="p">(</span><span class="s2">&quot;tests/data/OSBS_029.xml&quot;</span><span class="p">,</span><span class="n">rgb_dir</span><span class="o">=</span><span class="s2">&quot;tests/data&quot;</span><span class="p">)</span>
     <span class="n">annotations_file</span> <span class="o">=</span> <span class="s2">&quot;tests/data/OSBS_029.csv&quot;</span>
     <span class="n">annotations</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="s2">&quot;tests/data/OSBS_029.csv&quot;</span><span class="p">,</span><span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">annotations_file</span></div>
 
-<div class="viewcode-block" id="config"><a class="viewcode-back" href="../../source/tests.html#tests.test_utilities.config">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span><span class="p">()</span>
+<div class="viewcode-block" id="config"><a class="viewcode-back" href="../../tests.html#tests.test_utilities.config">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span><span class="p">()</span>
 <span class="k">def</span> <span class="nf">config</span><span class="p">():</span>
     <span class="n">config</span>  <span class="o">=</span> <span class="n">utilities</span><span class="o">.</span><span class="n">read_config</span><span class="p">()</span>
     <span class="k">return</span> <span class="n">config</span></div>
     
-<div class="viewcode-block" id="test_xml_to_annotations"><a class="viewcode-back" href="../../source/tests.html#tests.test_utilities.test_xml_to_annotations">[docs]</a><span class="k">def</span> <span class="nf">test_xml_to_annotations</span><span class="p">():</span>
+<div class="viewcode-block" id="test_xml_to_annotations"><a class="viewcode-back" href="../../tests.html#tests.test_utilities.test_xml_to_annotations">[docs]</a><span class="k">def</span> <span class="nf">test_xml_to_annotations</span><span class="p">():</span>
     <span class="n">annotations</span> <span class="o">=</span> <span class="n">utilities</span><span class="o">.</span><span class="n">xml_to_annotations</span><span class="p">(</span><span class="n">xml_path</span> <span class="o">=</span> <span class="s2">&quot;tests/data/OSBS_029.xml&quot;</span><span class="p">,</span><span class="n">rgb_dir</span> <span class="o">=</span> <span class="s2">&quot;tests/data&quot;</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span><span class="n">annotations</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
     <span class="k">assert</span> <span class="n">annotations</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">60</span><span class="p">,</span><span class="mi">6</span><span class="p">)</span>
@@ -182,19 +182,19 @@
     <span class="c1">#bounding box extents should be int</span>
     <span class="k">assert</span> <span class="n">annotations</span><span class="p">[</span><span class="s2">&quot;xmin&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span> <span class="o">==</span> <span class="s2">&quot;int&quot;</span></div>
     
-<div class="viewcode-block" id="test_create_classes"><a class="viewcode-back" href="../../source/tests.html#tests.test_utilities.test_create_classes">[docs]</a><span class="k">def</span> <span class="nf">test_create_classes</span><span class="p">(</span><span class="n">annotations</span><span class="p">):</span>
+<div class="viewcode-block" id="test_create_classes"><a class="viewcode-back" href="../../tests.html#tests.test_utilities.test_create_classes">[docs]</a><span class="k">def</span> <span class="nf">test_create_classes</span><span class="p">(</span><span class="n">annotations</span><span class="p">):</span>
     <span class="n">classes_file</span> <span class="o">=</span> <span class="n">utilities</span><span class="o">.</span><span class="n">create_classes</span><span class="p">(</span><span class="n">annotations_file</span><span class="o">=</span><span class="n">annotations</span><span class="p">)</span>
     <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">classes_file</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="test_number_of_images"><a class="viewcode-back" href="../../source/tests.html#tests.test_utilities.test_number_of_images">[docs]</a><span class="k">def</span> <span class="nf">test_number_of_images</span><span class="p">(</span><span class="n">annotations</span><span class="p">):</span>
+<div class="viewcode-block" id="test_number_of_images"><a class="viewcode-back" href="../../tests.html#tests.test_utilities.test_number_of_images">[docs]</a><span class="k">def</span> <span class="nf">test_number_of_images</span><span class="p">(</span><span class="n">annotations</span><span class="p">):</span>
     <span class="n">n</span> <span class="o">=</span> <span class="n">utilities</span><span class="o">.</span><span class="n">number_of_images</span><span class="p">(</span><span class="n">annotations_file</span><span class="o">=</span><span class="n">annotations</span><span class="p">)</span>
     <span class="k">assert</span> <span class="n">n</span> <span class="o">==</span> <span class="mi">1</span></div>
     
-<div class="viewcode-block" id="test_format_args"><a class="viewcode-back" href="../../source/tests.html#tests.test_utilities.test_format_args">[docs]</a><span class="k">def</span> <span class="nf">test_format_args</span><span class="p">(</span><span class="n">annotations</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
+<div class="viewcode-block" id="test_format_args"><a class="viewcode-back" href="../../tests.html#tests.test_utilities.test_format_args">[docs]</a><span class="k">def</span> <span class="nf">test_format_args</span><span class="p">(</span><span class="n">annotations</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
     <span class="n">arg_list</span> <span class="o">=</span> <span class="n">utilities</span><span class="o">.</span><span class="n">format_args</span><span class="p">(</span><span class="n">annotations</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span>
     <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">arg_list</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="test_format_args_steps"><a class="viewcode-back" href="../../source/tests.html#tests.test_utilities.test_format_args_steps">[docs]</a><span class="k">def</span> <span class="nf">test_format_args_steps</span><span class="p">(</span><span class="n">annotations</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
+<div class="viewcode-block" id="test_format_args_steps"><a class="viewcode-back" href="../../tests.html#tests.test_utilities.test_format_args_steps">[docs]</a><span class="k">def</span> <span class="nf">test_format_args_steps</span><span class="p">(</span><span class="n">annotations</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
     <span class="n">arg_list</span> <span class="o">=</span> <span class="n">utilities</span><span class="o">.</span><span class="n">format_args</span><span class="p">(</span><span class="n">annotations</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">images_per_epoch</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
     <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">arg_list</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span>
     
@@ -202,7 +202,7 @@
     <span class="n">steps_position</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">([</span><span class="s2">&quot;--steps&quot;</span> <span class="ow">in</span> <span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">arg_list</span><span class="p">])[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span>
     <span class="k">assert</span> <span class="n">arg_list</span><span class="p">[</span><span class="n">steps_position</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;2&#39;</span></div>
 
-<div class="viewcode-block" id="test_use_release"><a class="viewcode-back" href="../../source/tests.html#tests.test_utilities.test_use_release">[docs]</a><span class="k">def</span> <span class="nf">test_use_release</span><span class="p">():</span>
+<div class="viewcode-block" id="test_use_release"><a class="viewcode-back" href="../../tests.html#tests.test_utilities.test_use_release">[docs]</a><span class="k">def</span> <span class="nf">test_use_release</span><span class="p">():</span>
     <span class="c1">#Download latest model from github release</span>
     <span class="n">release_tag</span><span class="p">,</span> <span class="n">weights</span> <span class="o">=</span> <span class="n">utilities</span><span class="o">.</span><span class="n">use_release</span><span class="p">()</span>
     <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s2">&quot;data/current_release.csv&quot;</span><span class="p">)</span></div>
