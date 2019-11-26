@@ -3,11 +3,11 @@
 DeepForest is a python package for training and predicting individual tree crowns from RGB imagery.
 
 # How does it work?
-DeepForest uses deep learning object detection networks to predict bounding boxes corresponding to individual trees in RGB imagery. DeepForest is built on top of the keras-retinanet () package and designed to make training models for tree detection simpler.
+DeepForest uses deep learning object detection networks to predict bounding boxes corresponding to individual trees in RGB imagery. DeepForest is built on a fork of the [keras-retinanet](https://github.com/fizyr/keras-retinanet) package and designed to make training models for tree detection simpler.
 
 # Prebuilt models
 
-DeepForest has a prebuilt model trained on data from 21 sites from the National Ecological Observation Network (). The prebuilt model uses a semi-supervised approach in which annotations are generated using unsupervised tree detection algorithms, followed by hand annotations of RGB imagery. For more details on the modeling approach see
+DeepForest has a prebuilt model trained on data from 24 sites from the National Ecological Observation Network (https://www.neonscience.org/field-sites/field-sites-map). The prebuilt model uses a semi-supervised approach in which millions of moderate quality annotations are generated using a LiDAR unsupervised tree detection algorithm, followed by hand-annotations of RGB imagery from select sites. For more details on the modeling approach see
 
 Weinstein, B.G.; Marconi, S.; Bohlman, S.; Zare, A.; White, E. Individual Tree-Crown Detection in RGB Imagery Using Semi-Supervised Deep Learning Neural Networks. Remote Sens. 2019, 11, 1309.
 https://www.mdpi.com/2072-4292/11/11/1309
@@ -18,7 +18,7 @@ bioRxiv 790071; doi: https://doi.org/10.1101/790071
 
 # Training
 
-The prebuilt models can always be improved by adding data from the target area. In our work, we have found that even one hour worth of carefully chosen hand annotation can yield enormous improvements in accuracy and precision. We envision that for the majority of scientific applications, atleast some finetuning of the prebuilt model will be worthwhile.
+The prebuilt models will always be improved by adding data from the target area. In our work, we have found that even one hour's worth of carefully chosen hand-annotation can yield enormous improvements in accuracy and precision. We envision that for the majority of scientific applications atleast some finetuning of the prebuilt model will be worthwhile.
 
 ```{python}
 
