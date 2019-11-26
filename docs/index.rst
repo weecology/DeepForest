@@ -8,9 +8,11 @@ Source code is available here: (https://github.com/weecology/DeepForest.git).
    :maxdepth: 2
    :caption: Contents:
 
-   getting_started
+   landing
    installation
+   getting_started
    training
+   training_config
    source/deepforest
    modules
 

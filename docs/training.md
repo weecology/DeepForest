@@ -1,4 +1,4 @@
-# Training Overview
+# Training New Models
 
 Our work has shown that starting training from the prebuilt model increases performance, regardless of the geographic location of your data. In the majority of cases, it will be useful for the model to have learned general tree representations that can be refined using hand annotated data.
 
