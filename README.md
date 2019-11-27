@@ -3,7 +3,7 @@
 [![Build Status](https://travis-ci.org/Weecology/DeepForest.svg?branch=master)](https://travis-ci.org/Weecology/DeepForest)
 [![Documentation Status](https://readthedocs.org/projects/deepforest/badge/?version=latest)](http://deepforest.readthedocs.io/en/latest/?badge=latest)
 
-Python package for training and predicting individual tree crowns in airborne imagery.
+DeepForest is a python package for training and predicting individual tree crowns from airborne RGB imagery. DeepForest comes with a prebuilt model trained on data from the National Ecological Observation Network. Users can extend this model by annotating and training custom models starting from the prebuilt model.
 
 ## Installation
 
@@ -25,7 +25,7 @@ conda activate DeepForest
 
 ```
 python
-(DeepForest) MacBook-Pro:DeepForest ben$ python
+(test) MacBook-Pro:DeepForest ben$ python
 Python 3.6.9 |Anaconda, Inc.| (default, Jul 30 2019, 13:42:17)
 [GCC 4.2.1 Compatible Clang 4.0.1 (tags/RELEASE_401/final)] on darwin
 Type "help", "copyright", "credits" or "license" for more information.
@@ -41,24 +41,22 @@ https://deepforest.readthedocs.io.
 
 ### Prediction
 
-Using DeepForest, users can predict individual tree crowns by loading pre-built models and applying them to RGB images.
+Using DeepForest, users can predict individual tree crowns by loading prebuilt models and applying them to RGB images.
 
 Currently there is 1 prebuilt model, "NEON", which was trained using a semi-supervised process from imagery from the National Ecological Observation Network.
-For more information on the pre-built models see [citations](https://github.com/weecology/DeepForest#citation).
+For more information on the prebuilt models see [citations](https://github.com/weecology/DeepForest#citation).
 
 ```{python}
 import matplotlib.pyplot as plt
 from deepforest import deepforest
-from deepforest import utilities
+from deepforest import get_data
 
-#Download latest model release from github
-utilities.use_release()    
-
-#Load model class with release weights
-test_model = deepforest.deepforest(weights="data/NEON.h5")
+test_model = deepforest.deepforest()
+test_model.use_release()
 
 #predict image
-image = test_model.predict_image(image_path = "tests/data/OSBS_029.tif")
+image_path = get_data("OSBS_029.tif")
+image = test_model.predict_image(image_path = image_path)
 
 #Show image, matplotlib expects RGB channel order, but keras-retinanet predicts in BGR
 plt.imshow(image[...,::-1])
@@ -74,25 +72,27 @@ DeepForest allows training through a keras-retinanet CSV generator. Input files 
 image_path, xmin, ymin, xmax, ymax, label
 ```
 
-Training config parameters are stored in deepforest_config.yml. They also can be changed at runtime.
+Training config parameters are stored in a [deepforest_config.yml](deepforest/data/deepforest_config.yml). They also can be changed at runtime.
 
 ```{python}
-#Load model class
+from deepforest import deepforest
+from deepforest import get_data
+
 test_model = deepforest.deepforest()
 
-#Change config
+# Example run with short training
 test_model.config["epochs"] = 1
 test_model.config["save-snapshot"] = False
 test_model.config["steps"] = 1
 
-#Train
-test_model.train(annotations="tests/data/testfile_deepforest.csv")
+#Path to sample file
+annotations_file = get_data("testfile_deepforest.csv")
 
-#save
+test_model.train(annotations=annotations_file, input_type="fit_generator")
+
+#save trained model
 test_model.model.save("snapshots/final_model.h5")
 ```
-
-DeepForest is developed using comet_ml dashboards for training visualization. Simply pass a comet_experiment object to train to log metrics and performance. See more at www.comet.ml  
 
 ## Web Demo
 

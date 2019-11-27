@@ -1,6 +1,5 @@
 # Installation
 
-
 DeepForest can be installed from source using the github repository.
 
 ```
