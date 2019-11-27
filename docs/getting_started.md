@@ -4,7 +4,7 @@
 
 DeepForest has a prebuilt model trained on data from 24 sites from the [National Ecological Observation Network](https://www.neonscience.org/field-sites/field-sites-map). The prebuilt model uses a semi-supervised approach in which millions of moderate quality annotations are generated using a LiDAR unsupervised tree detection algorithm, followed by hand-annotations of RGB imagery from select sites.
 
-For more details on the modeling approach see [citations](landing.html#citation)
+For more details on the modeling approach see [citations](landing.html#citation).
 
 ## Prediction
 
@@ -12,7 +12,7 @@ DeepForest allows convenient prediction of new data based on the prebuilt model 
 
 ### Predict a single image
 
-For single images, predict_image can read an image from memory or file and return predicted tree bounding boxes.
+For single images, ```predict_image``` can read an image from memory or file and return predicted tree bounding boxes.
 
 ```{python}
 from deepforest import deepforest
@@ -74,7 +74,7 @@ test_model.use_release()
 annotations_file = get_data("testfile_deepforest.csv")
 
 #Window size of 300px with an overlap of 50% among windows
-boxes = release_model.predict_generator(annotations=annotations_file)
+boxes = test_model.predict_generator(annotations=annotations_file)
 ```
 
 For more information on data files, see below.

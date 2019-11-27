@@ -1,1 +1,5 @@
 include deepforest/data/deepforest_config.yml
+include deepforest/data/testfile_deepforest.csv
+include deepforest/data/classes.csv
+include deepforest/data/OSBS_029*
+
