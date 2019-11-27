@@ -8,3 +8,4 @@ tests/data/
 *.tfrecord
 *.tfrecords
 _pycache_
+current_release.csv
