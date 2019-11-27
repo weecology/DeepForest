@@ -12,3 +12,5 @@ sphinxcontrib-napoleon
 sphinx_rtd_theme
 slidingwindow
 sphinx-markdown-tables
+opencv-python
+tqdm

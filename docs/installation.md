@@ -13,6 +13,7 @@ The python package dependencies are managed by conda. For help installing conda 
 
 ```
 conda env create --file=environment.yml
+conda activate DeepForest
 ```
 
 ## Dependencies
@@ -26,4 +27,4 @@ pip install .
 python setup.py build_ext --inplace
 ```
 
-Note: The installation of tensorflow varies widely among systems and may need to be installed seperately. 
+Note: The installation of tensorflow varies widely among systems and may need to be installed seperately.
