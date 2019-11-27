@@ -2,6 +2,18 @@
 
 For ease of experimentation, DeepForest reads the majority of training parameters from a .yml file. This allows a user to quickly survey and change the training settings without needing to dive into the source code. Deep learning models are complex, and DeepForest tries to set reasonable defaults when possible. To get the best performance, some parameter exploration will be required for most novel applications. To track  Experiments can be tracked using a [comet_ml](comet.ml) dashboard.
 
+By default DeepForest will look for ```deepforest_config.yml``` in the current working directory. If that fails the default config will be used from ```deepforest/data/deepforest_config.yml```.
+
+When a deepforest object is created, the user is notified of the path to the config used.
+
+```
+>>> from deepforest import deepforest
+>>> deepforest.deepforest()
+Reading config file: /Users/ben/miniconda3/envs/test/lib/python3.6/site-packages/deepforest/data/deepforest_config.yml
+No model initialized, either train or load an existing retinanet model
+<deepforest.deepforest.deepforest object at 0x6427290b8>
+```
+
 ## Sample deepforest_config.yml
 
 ```
@@ -53,9 +65,9 @@ These parameters effect training specifications.
 
 ### batch_size: 1
 
-Neural networks are often trained in batches of images, since the entire dataset is too large to read into memory at once. The size of these batches effects both the speed of training (larger batches train faster) and the stability of training (larger batches lead to more consistent results). The default batch_size of 1 is chosen because it is not possible to anticipate the available memory. Increase where possible. Typically batch sizes are evenly divisible by the size of the entire dataset.
+Neural networks are often trained in batches of images, since the entire dataset is too large to read into memory at once. The size of these batches affects both the speed of training (larger batches train faster) and the stability of training (larger batches lead to more consistent results). The default batch_size of 1 is chosen because it is not possible to anticipate the available memory. Increase where possible. Typically batch sizes are evenly divisible by the size of the entire dataset.
 
-** Note on batch_size: If using ```multi-gpu > 1```, batch_size refers to the total number of samples across all GPUs. For example, a ```batch_size: 18``` for ```multi-gpu: 3``` would produces 3 batches of 6 images, one set for each GPU. batch_size must therefore be larger than ```multi-gpu``` and evenly divisible.
+** Note on batch_size - If using ```multi-gpu > 1```, batch_size refers to the total number of samples across all GPUs. For example, a ```batch_size: 18``` for ```multi-gpu: 3``` would produces 3 batches of 6 images, one set for each GPU. batch_size must therefore be equal to, or larger than, ```multi-gpu``` and be evenly divisible.
 
 ### weights: None
 
@@ -80,9 +92,9 @@ test_model.model.save("trained_model.h5")
 
 ### backbone: resnet50
 
-This is the keras retinanet backbone documented:
-
+This is the keras retinanet backbone used for image processing.
 DeepForest has only been tested on resnet50 backbone.
+
 
 ### image-min-side: 800
 
@@ -94,7 +106,7 @@ Number of GPUs to run. Ignored if running on CPU, which is automatically detecte
 
 ### epochs: 1
 
-Number of times to show each image during training. At the end of an epoch, model checkpoint will save current weights if ```save-snapshot: True```. It is difficult to anticipate a default setting form epochs, which will vary heavily on whether model is being trained from scratch (more epochs), is very similar to target prediction data (more epochs) or is likely to overfit (fewer epochs).
+Number of times to show each image during training. At the end of an epoch, model checkpoint will save current weights if ```save-snapshot: True```. It is difficult to anticipate a default setting for epochs, which will vary heavily on whether a model is being trained from scratch (more epochs), is very similar to target prediction data (more epochs) or is likely to overfit (fewer epochs).
 
 ### freeze_layers: 0
 
@@ -102,7 +114,7 @@ Current deprecated. Option to freeze a portion of convolutional layers of the mo
 
 ### freeze_resnet: False
 
-Whether to allow training on the resnet background. Advanced feature for fine-tuning. If the target evaluation data is similar to the data in the ```weights: <path_to_file.h5>```, option to turn off classifiction training. Learn more about [finetuning](https://flyyufelix.github.io/2016/10/03/fine-tuning-in-keras-part1.html), and the [retinanet architecture](https://towardsdatascience.com/object-detection-on-aerial-imagery-using-retinanet-626130ba2203)
+Whether to allow training on the resnet backbone. This is an advanced feature for fine-tuning. If the target evaluation data is similar to the data in the ```weights: <path_to_file.h5>```, this option will turn off training on the backbone layers. Learn more about [finetuning](https://flyyufelix.github.io/2016/10/03/fine-tuning-in-keras-part1.html), and the [retinanet architecture](https://towardsdatascience.com/object-detection-on-aerial-imagery-using-retinanet-626130ba2203)
 
 ### score_threshold: 0.05
 
@@ -132,7 +144,7 @@ Number of images to queue in fit_generator
 
 ### random_transform: True
 
-Data augmentations following keras-retinanet. In the fit_generator method, each annotation can be augmented. May be useful for small datasets.
+Data augmentations following keras-retinanet. In the fit_generator method, each annotation can be augmented. This may be useful for small datasets.
 
 See [the retinanet repo](https://github.com/fizyr/keras-retinanet/blob/5524619f91699732ba24c6f52fb9e4b0b780b019/keras_retinanet/utils/transform.py#L27) for source of transformations.
 
