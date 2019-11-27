@@ -7,6 +7,7 @@ keras
 tensorflow
 pyyaml
 pytest
+sphinx
 sphinx_py3doc_enhanced_theme
 sphinxcontrib-napoleon
 sphinx_rtd_theme
@@ -14,3 +15,6 @@ slidingwindow
 sphinx-markdown-tables
 opencv-python
 tqdm
+xmltodict
+git+git://github.com/bw4sz/keras-retinanet.git
+
