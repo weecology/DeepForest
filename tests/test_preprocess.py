@@ -7,20 +7,20 @@ import os
 
 from deepforest import preprocess
 from deepforest import utilities
-
+from deepforest import get_data
 
 @pytest.fixture("module")
 def config():
-    config = {}
+    config = utilities.read_config(get_data("deepforest_config.yml"))
     config["patch_size"] = 200
     config["patch_overlap"] = 0.25
-    config["annotations_xml"] = "tests/data/OSBS_029.xml"
+    config["annotations_xml"] = get_data("OSBS_029.xml")
     config["rgb_dir"] = "tests/data"
     config["annotations_file"] = "tests/data/OSBS_029.csv"
-    config["path_to_raster"] ="tests/data/OSBS_029.tif"
+    config["path_to_raster"] = get_data("OSBS_029.tif")
     
     #Create a clean config test data
-    annotations = utilities.xml_to_annotations(xml_path = config["annotations_xml"],rgb_dir =  config["rgb_dir"])
+    annotations = utilities.xml_to_annotations(xml_path = config["annotations_xml"])
     annotations.to_csv("tests/data/OSBS_029.csv",index=False)
     
     return config

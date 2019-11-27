@@ -1,5 +1,6 @@
 # test_utilities
 from deepforest import utilities
+from deepforest import get_data
 import pytest
 import os
 import pandas as pd
@@ -8,20 +9,20 @@ from deepforest import deepforest
 
 @pytest.fixture()
 def annotations():
-    annotations = utilities.xml_to_annotations("tests/data/OSBS_029.xml",rgb_dir="tests/data")
+    annotations = utilities.xml_to_annotations(get_data("OSBS_029.xml"))
     annotations_file = "tests/data/OSBS_029.csv"
-    annotations.to_csv("tests/data/OSBS_029.csv",index=False, header=False)
+    annotations.to_csv(annotations_file,index=False, header=False)
     return annotations_file
 
 @pytest.fixture()
 def config():
-    config  = utilities.read_config()
+    config  = utilities.read_config(get_data("deepforest_config.yml"))
     return config
     
 def test_xml_to_annotations():
-    annotations = utilities.xml_to_annotations(xml_path = "tests/data/OSBS_029.xml",rgb_dir = "tests/data")
+    annotations = utilities.xml_to_annotations(xml_path = get_data("OSBS_029.xml"))
     print(annotations.shape)
-    assert annotations.shape == (60,6)
+    assert annotations.shape == (61 ,6)
     
     #bounding box extents should be int
     assert annotations["xmin"].dtype == "int"
@@ -49,4 +50,4 @@ def test_format_args_steps(annotations, config):
 def test_use_release():
     #Download latest model from github release
     release_tag, weights = utilities.use_release()
-    assert os.path.exists("data/current_release.csv")
+    assert os.path.exists(get_data("NEON.h5"))

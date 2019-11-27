@@ -2,6 +2,7 @@
 from deepforest import tfrecords
 from deepforest import utilities
 from deepforest import preprocess
+from deepforest import get_data
 
 import pytest
 import os
@@ -19,15 +20,15 @@ def config():
     config = {}
     config["patch_size"] = 200
     config["patch_overlap"] = 0.05
-    config["annotations_xml"] = "tests/data/OSBS_029.xml"
+    config["annotations_xml"] = get_data("OSBS_029.xml")
     config["rgb_dir"] = "tests/data"
     config["annotations_file"] = "tests/data/OSBS_029.csv"
-    config["path_to_raster"] ="tests/data/OSBS_029.tif"
+    config["path_to_raster"] =get_data("OSBS_029.tif")
     config["image-min-side"] = 800
     config["backbone"] = "resnet50"
     
     #Create a clean config test data
-    annotations = utilities.xml_to_annotations(xml_path=config["annotations_xml"],rgb_dir= config["rgb_dir"])
+    annotations = utilities.xml_to_annotations(xml_path=config["annotations_xml"])
     annotations.to_csv("tests/data/testtfrecords_OSBS_029.csv",index=False)
     
     annotations_file = preprocess.split_raster(path_to_raster=config["path_to_raster"],
@@ -133,11 +134,11 @@ def test_equivalence(config, setup_create_tensors):
 #Check for bad file types
 @pytest.fixture()
 def bad_annotations():
-    annotations = utilities.xml_to_annotations("tests/data/OSBS_029.xml",rgb_dir="tests/data")
+    annotations = utilities.xml_to_annotations(get_data("OSBS_029.xml"))
     f = "tests/data/testfile_error_deepforest.csv"
     annotations.to_csv(f,index=False,header=False)
     return f
 
 def test_tfdataset_error(bad_annotations):    
     with pytest.raises(ValueError):    
-        records_created = tfrecords.create_tfrecords(annotations_file=bad_annotations, class_file="tests/data/classes.csv", image_min_side=800, backbone_model="resnet50", size=100, savedir="tests/data/")
+        records_created = tfrecords.create_tfrecords(annotations_file=bad_annotations, class_file=get_data("classes.csv"), image_min_side=800, backbone_model="resnet50", size=100, savedir="tests/data/")

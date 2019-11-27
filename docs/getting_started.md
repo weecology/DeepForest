@@ -16,15 +16,21 @@ For single images, predict_image can read an image from memory or file and retur
 
 ```{python}
 from deepforest import deepforest
+from deepforest import get_data
 
 test_model = deepforest.deepforest()
 test_model.use_release()
 
 #Predict test image and return boxes
-boxes = test_model.predict_image(image_path="tests/data/OSBS_029.tif", show=False, return_plot = False)
+#Find path to test image. While it lives in deepforest/data, its best to use the function if installed as a python module
+image_path = get_data("OSBS_029.tif")
+boxes = test_model.predict_image(image_path=image_path, show=False, return_plot = False)
 
 boxes.head()
-         xmin        ymin        xmax        ymax     score label
+```
+
+```
+xmin        ymin        xmax        ymax     score label
 0  222.136353  211.271133  253.000061  245.222580  0.790797  Tree
 1   52.070221   73.605804   82.522354  111.510605  0.781306  Tree
 2   96.324028  117.811966  123.224060  145.982407  0.778245  Tree
@@ -38,11 +44,12 @@ Large tiles covering wide geographic extents cannot fit into memory during predi
 
 ```
 from deepforest import deepforest
+from deepforest import get_data
 
 test_model = deepforest.deepforest()
 test_model.use_release()
 
-raster_path = "tests/data/OSBS_029.tif"
+raster_path = get_data("OSBS_029.tif")
 #Window size of 300px with an overlap of 50% among windows
 predicted_raster = test_model.predict_tile(raster_path, return_plot = True, patch_size=300,patch_overlap=0.5)
 ```
@@ -59,11 +66,15 @@ image_path, xmin, ymin, xmax, ymax, label
 
 ```
 from deepforest import deepforest
+from deepforest import get_data
+
 test_model = deepforest.deepforest()
 test_model.use_release()
 
+annotations_file = get_data("testfile_deepforest.csv")
+
 #Window size of 300px with an overlap of 50% among windows
-boxes = release_model.predict_generator(annotations="testfile_deepforest.csv")
+boxes = release_model.predict_generator(annotations=annotations_file)
 ```
 
 For more information on data files, see below.
@@ -101,6 +112,8 @@ Tree,0
 
 ```{python}
 from deepforest import deepforest
+from deepforest import get_data
+
 test_model = deepforest.deepforest()
 
 # Example run with short training
@@ -108,8 +121,12 @@ test_model.config["epochs"] = 1
 test_model.config["save-snapshot"] = False
 test_model.config["steps"] = 1
 
-test_model.train(annotations="data/testfile_deepforest.csv", input_type="fit_generator")
+annotations_file = get_data("testfile_deepforest.csv")
 
+test_model.train(annotations=annotations_file, input_type="fit_generator")
+```
+
+```{python}
 No model initialized, either train or load an existing retinanet model
 There are 1 unique labels: ['Tree']
 Disabling snapshot saving
@@ -136,14 +153,42 @@ image_path, xmin, ymin, xmax, ymax, label
 ```
 
 ```{python}
+from deepforest import deepforest
+from deepforest import get_data
 
+test_model = deepforest.deepforest()
+test_model.use_release()
 
+annotations_file = get_data("testfile_deepforest.csv")
+mAP = test_model.evaluate_generator(annotations=annotations_file)
+print("Mean Average Precision is: {:.3f}".format(mAP))
 ```
 
-For more on evaluation, see the [Evaluation Overview]()
+```{python}
+Running network: 100% (1 of 1) |#########| Elapsed Time: 0:00:02 Time:  0:00:02
+Parsing annotations: N/A% (0 of 1) |     | Elapsed Time: 0:00:00 ETA:  --:--:--
+Parsing annotations: 100% (1 of 1) |#####| Elapsed Time: 0:00:00 Time:  0:00:00
+60 instances of class Tree with average precision: 0.3687
+mAP using the weighted average of precisions among classes: 0.3687
+mAP: 0.3687
+```
 
-## NEON Benchmark
+### NEON Benchmark
 
-To standardize model evaluation, we have collected and published a benchmark dataset of nearly 20,000 crowns from sites in the National Ecological Observation Network.
+To standardize model evaluation, we have collected and published a [benchmark dataset](https://github.com/weecology/NeonTreeEvaluation) of nearly 20,000 crowns from sites in the National Ecological Observation Network. We encourage users to download and evaluate against the benchmark.
 
-[https://github.com/weecology/NeonTreeEvaluation]
+```{}
+git clone https://github.com/weecology/NeonTreeEvaluation.git
+cd NeonTreeEvaluation
+python
+```
+
+```{python}
+from deepforest import deepforest
+
+test_model = deepforest.deepforest()
+test_model.use_release()
+
+mAP = test_model.evaluate_generator(annotations="evaluation/RGB/benchmark_annotations.csv")
+print("Mean Average Precision is: {:.3f}".format(mAP))
+```

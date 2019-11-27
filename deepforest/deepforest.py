@@ -12,6 +12,7 @@ import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
 
+from deepforest import get_data
 from deepforest import utilities
 from deepforest import predict
 from deepforest import preprocess
@@ -41,8 +42,17 @@ class deepforest:
         self.weights = weights
         self.saved_model = saved_model
         
-        #Read config file
-        self.config = utilities.read_config()
+        #Read config file - if a config file exists in local dir use it, if not use installed.
+        if os.path.exists("deepforest_config.yml"):
+            config_path = "deepforest_config.yml"
+        else:
+            try:
+                config_path = get_data("deepforest_config.yml")
+            except Exception as e:
+                raise ValueError("No deepforest_config.yml found either in local directory or in installed package location. {}".format(e))
+        
+        print("Reading config file: {}".format(config_path))                    
+        self.config = utilities.read_config(config_path)
         
         #Load saved model if needed
         if self.saved_model:

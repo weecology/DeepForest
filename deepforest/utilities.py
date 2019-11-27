@@ -2,7 +2,6 @@
 import os
 import yaml
 import sys
-from tqdm import tqdm
 import json
 import pandas as pd
 import numpy as np
@@ -11,19 +10,22 @@ import xmltodict
 import csv
 import warnings
 
+from tqdm import tqdm
 from keras_retinanet import models
+
+from deepforest import _ROOT
 
 def label_to_name(label):
         """ Map label to name.
         """
         return "Tree"
 
-def read_config():
+def read_config(config_path):
         try:
-                with open("deepforest_config.yml", 'r') as f:
+                with open(config_path, 'r') as f:
                         config = yaml.load(f)
         except Exception as e:
-                raise FileNotFoundError("There is no config file in dir:{}, yields {}".format(os.getcwd(),e))
+                raise FileNotFoundError("There is no config at, yields {}".format(config_path,e))
                 
         return config
 
@@ -41,11 +43,11 @@ class DownloadProgressBar(tqdm):
                         self.total = tsize
                 self.update(b * bsize - self.n)
                 
-def use_release(save_dir = "data/", prebuilt_model="NEON"):
+def use_release(save_dir = os.path.join(_ROOT,"data/") , prebuilt_model="NEON"):
         '''Check the existance of, or download the latest model release from github
         
         Args:
-                save_dir (str): Directory to save filepath, default to "data" in toplevel repo
+                save_dir (str): Directory to save filepath, default to "data" in deepforest repo
                 prebuilt_model: Currently only accepts "NEON", but could be expanded to include other prebuilt models. The local model will be called {prebuilt_model}.h5 on disk.
         
         Returns:
@@ -88,12 +90,11 @@ def use_release(save_dir = "data/", prebuilt_model="NEON"):
                 
         return _json["html_url"], output_path
 
-def xml_to_annotations(xml_path, rgb_dir):
+def xml_to_annotations(xml_path):
         """Load annotations from xml format (e.g. RectLabel editor) and convert them into retinanet annotations format. 
         
         Args:
                 xml_path (str): Path to the annotations xml, formatted by RectLabel
-                rgb_dir (str): Directory path to the rgb dir
         
         Returns:
                 Annotations (pandas dataframe): in the format -> path/to/image.jpg,x1,y1,x2,y2,class_name
