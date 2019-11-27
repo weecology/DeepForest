@@ -1,0 +1,14 @@
+setuptools
+tensorflow
+numpy
+numpydoc
+pandas
+keras
+tensorflow
+yaml
+pytest
+sphinx_py3doc_enhanced_theme
+sphinxcontrib-napoleon
+sphinx_rtd_theme
+slidingwindow
+sphinx-markdown-tables
