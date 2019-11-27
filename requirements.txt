@@ -5,7 +5,7 @@ numpydoc
 pandas
 keras
 tensorflow
-yaml
+pyyaml
 pytest
 sphinx_py3doc_enhanced_theme
 sphinxcontrib-napoleon
