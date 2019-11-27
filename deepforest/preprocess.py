@@ -71,27 +71,28 @@ def select_annotations(annotations, windows, index):
     image_basename = os.path.splitext(image_name)[0]
     selected_annotations.image_path = "{}_{}.jpg".format(image_basename,index) 
     
-    #If no matching annotations, return a line with the image name, but no records
-    if selected_annotations.empty:
-        selected_annotations = pd.DataFrame(["{}_{}.jpg".format(image_basename,index)],columns=["image_path"])
-        selected_annotations["xmin"] = ""
-        selected_annotations["ymin"] = ""
-        selected_annotations["xmax"] = ""
-        selected_annotations["ymax"] = ""
-        selected_annotations["label"] = ""
+    ##If no matching annotations, return a line with the image name, but no records
+    # TODO what happens if there was 1. Lidar data, but no RGB data (less likely), or no liDAR data and RGB data, this is risky at scale?
+    #if selected_annotations.empty:
+        #selected_annotations = pd.DataFrame(["{}_{}.jpg".format(image_basename,index)],columns=["image_path"])
+        #selected_annotations["xmin"] = ""
+        #selected_annotations["ymin"] = ""
+        #selected_annotations["xmax"] = ""
+        #selected_annotations["ymax"] = ""
+        #selected_annotations["label"] = ""
         
-    else:
-        #update coordinates with respect to origin
-        selected_annotations.xmax = (selected_annotations.xmin - window_xmin)  + (selected_annotations.xmax - selected_annotations.xmin)    
-        selected_annotations.xmin = (selected_annotations.xmin - window_xmin)
-        selected_annotations.ymax = (selected_annotations.ymin - window_ymin)  + (selected_annotations.ymax - selected_annotations.ymin)    
-        selected_annotations.ymin = (selected_annotations.ymin - window_ymin)
-        
-        #cut off any annotations over the border.
-        selected_annotations.xmin[selected_annotations.xmin < 0] = 0
-        selected_annotations.xmax[selected_annotations.xmax > w] = w   
-        selected_annotations.ymin[selected_annotations.ymin < 0] = 0
-        selected_annotations.ymax[selected_annotations.ymax > h] = h   
+    #else:
+    #update coordinates with respect to origin
+    selected_annotations.xmax = (selected_annotations.xmin - window_xmin)  + (selected_annotations.xmax - selected_annotations.xmin)    
+    selected_annotations.xmin = (selected_annotations.xmin - window_xmin)
+    selected_annotations.ymax = (selected_annotations.ymin - window_ymin)  + (selected_annotations.ymax - selected_annotations.ymin)    
+    selected_annotations.ymin = (selected_annotations.ymin - window_ymin)
+    
+    #cut off any annotations over the border.
+    selected_annotations.xmin[selected_annotations.xmin < 0] = 0
+    selected_annotations.xmax[selected_annotations.xmax > w] = w   
+    selected_annotations.ymin[selected_annotations.ymin < 0] = 0
+    selected_annotations.ymax[selected_annotations.ymax > h] = h   
         
     return selected_annotations
  
