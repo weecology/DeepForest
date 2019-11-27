@@ -9,7 +9,7 @@ For more details on the modeling approach see [citations](landing.html#citation)
 
 ## Prediction
 
-DeepForest allows convenient prediction of new data based on the prebuilt model or a trained model described below. There are three ways to format data for prediction.
+DeepForest allows convenient prediction of new data based on the prebuilt model or a [custom trained](getting_started.html#Training) model. There are three ways to format data for prediction.
 
 ### Predict a single image
 
