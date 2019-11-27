@@ -25,7 +25,7 @@ conda activate DeepForest
 
 ```
 python
-(test) MacBook-Pro:DeepForest ben$ python
+(DeepForest) MacBook-Pro:DeepForest ben$ python
 Python 3.6.9 |Anaconda, Inc.| (default, Jul 30 2019, 13:42:17)
 [GCC 4.2.1 Compatible Clang 4.0.1 (tags/RELEASE_401/final)] on darwin
 Type "help", "copyright", "credits" or "license" for more information.
