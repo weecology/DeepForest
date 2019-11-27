@@ -61,10 +61,21 @@ Neural networks are often trained in batches of images, since the entire dataset
 
 Neural networks consist of a set of matrix weights that are updated during model training. Starting from scratch with randomly initialized weights can significantly slow down training and decrease model performance. The ```weights:``` parameter allows you to start from previously saved weights, either from prebuilt models or from a custom session.
 
-Saving example:
-```
+```{python}
+from deepforest import deepforest
+from deepforest import get_data
 
+test_model = deepforest.deepforest()
 
+# Example run with short training
+test_model.config["epochs"] = 1
+test_model.config["save-snapshot"] = False
+test_model.config["steps"] = 1
+
+annotations_file = get_data("testfile_deepforest.csv")
+
+test_model.train(annotations=annotations_file, input_type="fit_generator")
+test_model.model.save("trained_model.h5")
 ```
 
 ### backbone: resnet50

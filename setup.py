@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 NAME ='deepforest'
 VERSION = '0.1.4'
-DESCRIPTION = 'Tree Crown Prediction using Deep Learning Retinanets'
+DESCRIPTION = 'Tree Crown Prediction using deep learning retinanets'
 URL = 'https://github.com/Weecology/DeepForest'
 AUTHOR = 'Ben Weinstein'
 LICENCE = 'MIT'
@@ -13,12 +13,12 @@ LONG_DESCRIPTION = """
 [http://deepforest.readthedocs.io/en/latest/](http://deepforest.readthedocs.io/en/latest/)
 ## Installation
 
-conda create --file=environment.yml
-
 ```
 Or install the latest version from Github  
 ```
 pip install git+git://github.com/Weecology/deepforest
+conda env create --file=environment.yml
+conda activate DeepForest
 ```
 
 ## Get in touch

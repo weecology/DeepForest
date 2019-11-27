@@ -1,9 +1,9 @@
 snapshots/
 logs/
-data/*.h5
+*.h5
 *.wpu
 *.wpr
-tests/data/*.h5
+tests/data/
 *.jpg
 *.tfrecord
 *.tfrecords

@@ -14,20 +14,24 @@ from matplotlib import pyplot as plt
 from deepforest import deepforest
 from deepforest import utilities
 from deepforest import tfrecords
+from deepforest import get_data
 
 #download latest release
 @pytest.fixture()
 def download_release():
     print("running fixtures")
-    utilities.use_release(save_dir = "tests/data")    
+    utilities.use_release()    
     
 @pytest.fixture()
 def annotations():
-    annotations = utilities.xml_to_annotations("tests/data/OSBS_029.xml",rgb_dir="tests/data")
+    annotations = utilities.xml_to_annotations(get_data("OSBS_029.xml"))
     #Point at the jpg version for tfrecords
     annotations.image_path = annotations.image_path.str.replace(".tif",".jpg")
-    annotations.to_csv("tests/data/testfile_deepforest.csv",index=False,header=False)
-    return "tests/data/testfile_deepforest.csv"
+    
+    annotations_file = get_data("testfile_deepforest.csv")
+    annotations.to_csv(annotations_file,index=False,header=False)
+    
+    return annotations_file
 
 @pytest.fixture()
 def prepare_tfdataset(annotations):    
@@ -64,11 +68,11 @@ def release_model(download_release):
 
 def test_predict_image(download_release):
     #Load model
-    test_model = deepforest.deepforest(weights="tests/data/NEON.h5")    
+    test_model = deepforest.deepforest(weights=get_data("NEON.h5"))    
     assert isinstance(test_model.model,keras.models.Model)
     
     #Predict test image and return boxes
-    boxes = test_model.predict_image(image_path="tests/data/OSBS_029.tif", show=False, return_plot = False)
+    boxes = test_model.predict_image(image_path=get_data("OSBS_029.tif"), show=False, return_plot = False)
     
     #Returns a 6 column numpy array, xmin, ymin, xmax, ymax, score, label
     assert boxes.shape[1] == 6
@@ -128,6 +132,8 @@ def test_evaluate(release_model, annotations):
     assert mAP.dtype == float
 
 #Training    
+
+@pytest.mark.skipif("TRAVIS" in os.environ and os.environ["TRAVIS"] == "true", reason="Skipping this test on Travis CI.")
 def test_tfrecord_train(prepare_tfdataset, annotations):
     test_model = deepforest.deepforest()
     test_model.config["epochs"] = 1
@@ -144,7 +150,7 @@ def test_random_transform(annotations):
     assert "--random-transform" in arg_list
 
 def test_predict_tile(release_model):
-    raster_path = "tests/data/OSBS_029.tif"
+    raster_path = get_data("OSBS_029.tif")
     original_raster = Image.open(raster_path)
     original_raster = np.array(original_raster)  
     
