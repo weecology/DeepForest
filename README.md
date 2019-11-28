@@ -1,6 +1,6 @@
 # DeepForest
 
-[![Build Status](https://travis-ci.org/Weecology/DeepForest.svg?branch=master)](https://travis-ci.org/Weecology/DeepForest)
+[![Build Status](https://travis-ci.org/weecology/DeepForest.svg?branch=master)](https://travis-ci.org/weecology/DeepForest)
 [![Documentation Status](https://readthedocs.org/projects/deepforest/badge/?version=latest)](http://deepforest.readthedocs.io/en/latest/?badge=latest)
 
 DeepForest is a python package for training and predicting individual tree crowns from airborne RGB imagery. DeepForest comes with a prebuilt model trained on data from the National Ecological Observation Network. Users can extend this model by annotating and training custom models starting from the prebuilt model.
@@ -61,7 +61,6 @@ image = test_model.predict_image(image_path = image_path)
 #Show image, matplotlib expects RGB channel order, but keras-retinanet predicts in BGR
 plt.imshow(image[...,::-1])
 ```
-
 ![test image](www/image.png)
 
 ## Training
