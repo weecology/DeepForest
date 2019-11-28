@@ -36,8 +36,7 @@ def compute_windows(numpy_image, patch_size, patch_overlap):
     return(windows)
 
 def select_annotations(annotations, windows, index):
-    """
-    Select annotations that overlap with selected image crop
+    """Select annotations that overlap with selected image crop
     
     Args:
         image_name (str): Name of the image in the annotations file to lookup. 
@@ -113,14 +112,15 @@ def save_crop(base_dir, image_name, index, crop):
     return filename
 
 def split_raster(path_to_raster, annotations_file, base_dir, patch_size, patch_overlap):
-    """
-    Divide a large tile into smaller arrays. Each crop will be saved to file
+    """Divide a large tile into smaller arrays. Each crop will be saved to file
+    
     Args:
         path_to_tile (str): Path to a tile that can be read by rasterio on disk
         annotations_file (str): Path to annotations file with data in the format -> image_path, xmin, ymin, xmax, ymax, label
         base_dir (str): Where to save the annotations and image crops relative to current working dir
         patch_size (int): Maximum dimensions of square window
         patch_overlap (float): Percent of overlap among windows 0->1
+        
     Returns:
         A pandas dataframe with annotations file for training.
     """
