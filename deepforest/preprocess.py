@@ -72,26 +72,28 @@ def select_annotations(annotations, windows, index, allow_empty=False):
     selected_annotations.image_path = "{}_{}.jpg".format(image_basename,index) 
     
     ##If no matching annotations, return a line with the image name, but no records
-    if allow_empty:
-        if selected_annotations.empty:
+    if selected_annotations.empty:
+        if allow_empty:
             selected_annotations = pd.DataFrame(["{}_{}.jpg".format(image_basename,index)],columns=["image_path"])
             selected_annotations["xmin"] = ""
             selected_annotations["ymin"] = ""
             selected_annotations["xmax"] = ""
             selected_annotations["ymax"] = ""
             selected_annotations["label"] = ""
+        else:
+            pass
+    else:
+        #update coordinates with respect to origin
+        selected_annotations.xmax = (selected_annotations.xmin - window_xmin)  + (selected_annotations.xmax - selected_annotations.xmin)    
+        selected_annotations.xmin = (selected_annotations.xmin - window_xmin)
+        selected_annotations.ymax = (selected_annotations.ymin - window_ymin)  + (selected_annotations.ymax - selected_annotations.ymin)    
+        selected_annotations.ymin = (selected_annotations.ymin - window_ymin)
         
-    #update coordinates with respect to origin
-    selected_annotations.xmax = (selected_annotations.xmin - window_xmin)  + (selected_annotations.xmax - selected_annotations.xmin)    
-    selected_annotations.xmin = (selected_annotations.xmin - window_xmin)
-    selected_annotations.ymax = (selected_annotations.ymin - window_ymin)  + (selected_annotations.ymax - selected_annotations.ymin)    
-    selected_annotations.ymin = (selected_annotations.ymin - window_ymin)
-    
-    #cut off any annotations over the border.
-    selected_annotations.xmin[selected_annotations.xmin < 0] = 0
-    selected_annotations.xmax[selected_annotations.xmax > w] = w   
-    selected_annotations.ymin[selected_annotations.ymin < 0] = 0
-    selected_annotations.ymax[selected_annotations.ymax > h] = h   
+        #cut off any annotations over the border.
+        selected_annotations.xmin[selected_annotations.xmin < 0] = 0
+        selected_annotations.xmax[selected_annotations.xmax > w] = w   
+        selected_annotations.ymin[selected_annotations.ymin < 0] = 0
+        selected_annotations.ymax[selected_annotations.ymax > h] = h   
         
     return selected_annotations
  
@@ -116,7 +118,7 @@ def split_raster(path_to_raster, annotations_file, base_dir, patch_size, patch_o
     
     Args:
         path_to_tile (str): Path to a tile that can be read by rasterio on disk
-        annotations_file (str): Path to annotations file with data in the format -> image_path, xmin, ymin, xmax, ymax, label
+        annotations_file (str): Path to annotations file (with column names) data in the format -> image_path, xmin, ymin, xmax, ymax, label
         base_dir (str): Where to save the annotations and image crops relative to current working dir
         patch_size (int): Maximum dimensions of square window
         patch_overlap (float): Percent of overlap among windows 0->1
