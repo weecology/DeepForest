@@ -3,7 +3,7 @@ Module: tfrecords
 
 Tfrecords creation and reader for improved performance across multi-gpu
 There were a tradeoffs made in this repo. It would be natural to save the generated prepreprocessed image to tfrecord from the generator. This results in enormous (100x) files. 
-The compromise was to read the original image from file using tensorflow's data pipeline. The opencv resize billinear method is marginally different then the tensorflow method, so we can assert they are the same array. 
+The compromise was to read the original image from file using tensorflow's data pipeline. The opencv resize billinear method is marginally different then the tensorflow method, so we can't literally assert they are the same array. 
 """
 import tensorflow as tf
 import os
