@@ -15,7 +15,6 @@ import keras
 import cv2
 import pandas as pd
 
-
 from keras_retinanet.preprocessing.csv_generator import CSVGenerator
 from keras_retinanet import models
 from keras_retinanet.models.retinanet import retinanet_bbox
@@ -162,7 +161,6 @@ def create_tfrecords(annotations_file, class_file, backbone_model="resnet50", im
     
     return written_files
         
-
 #Reading
 def _parse_fn(example):
     
@@ -256,18 +254,6 @@ def create_dataset(filepath, batch_size=1, shuffle=True):
     iterator = dataset.make_one_shot_iterator()    
     
     return iterator
-
-def model_with_weights(model, weights, skip_mismatch):
-    """ Load weights for model.
-
-    Args:
-        model         : The model to load weights for.
-        weights       : The weights to load.
-        skip_mismatch : If True, skips layers whose shape of weights doesn't match with the model.
-    """
-    if weights is not None:
-        model.load_weights(weights, by_name=True, skip_mismatch=skip_mismatch)
-    return model
 
 def create_tensors(list_of_tfrecords, backbone_name="resnet50", shuffle=True):
     """Create a wired tensor target from a list of tfrecords

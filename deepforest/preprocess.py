@@ -35,7 +35,7 @@ def compute_windows(numpy_image, patch_size, patch_overlap):
     
     return(windows)
 
-def select_annotations(annotations, windows, index):
+def select_annotations(annotations, windows, index, allow_empty=False):
     """Select annotations that overlap with selected image crop
     
     Args:
@@ -43,6 +43,7 @@ def select_annotations(annotations, windows, index):
         annotations_file: path to annotations file in the format -> image_path, xmin, ymin, xmax, ymax, label
         windows: A sliding window object (see compute_windows) 
         index: The index in the windows object to use a crop bounds
+        allow_empty (bool): If True, allow window crops that have no annotations to be included
     
     Returns:
         selected_annotations: a pandas dataframe of annotations 
@@ -71,16 +72,15 @@ def select_annotations(annotations, windows, index):
     selected_annotations.image_path = "{}_{}.jpg".format(image_basename,index) 
     
     ##If no matching annotations, return a line with the image name, but no records
-    # TODO what happens if there was 1. Lidar data, but no RGB data (less likely), or no liDAR data and RGB data, this is risky at scale?
-    #if selected_annotations.empty:
-        #selected_annotations = pd.DataFrame(["{}_{}.jpg".format(image_basename,index)],columns=["image_path"])
-        #selected_annotations["xmin"] = ""
-        #selected_annotations["ymin"] = ""
-        #selected_annotations["xmax"] = ""
-        #selected_annotations["ymax"] = ""
-        #selected_annotations["label"] = ""
+    if allow_empty:
+        if selected_annotations.empty:
+            selected_annotations = pd.DataFrame(["{}_{}.jpg".format(image_basename,index)],columns=["image_path"])
+            selected_annotations["xmin"] = ""
+            selected_annotations["ymin"] = ""
+            selected_annotations["xmax"] = ""
+            selected_annotations["ymax"] = ""
+            selected_annotations["label"] = ""
         
-    #else:
     #update coordinates with respect to origin
     selected_annotations.xmax = (selected_annotations.xmin - window_xmin)  + (selected_annotations.xmax - selected_annotations.xmin)    
     selected_annotations.xmin = (selected_annotations.xmin - window_xmin)
@@ -111,7 +111,7 @@ def save_crop(base_dir, image_name, index, crop):
     
     return filename
 
-def split_raster(path_to_raster, annotations_file, base_dir, patch_size, patch_overlap):
+def split_raster(path_to_raster, annotations_file, base_dir, patch_size, patch_overlap, allow_empty=False):
     """Divide a large tile into smaller arrays. Each crop will be saved to file
     
     Args:
@@ -120,6 +120,7 @@ def split_raster(path_to_raster, annotations_file, base_dir, patch_size, patch_o
         base_dir (str): Where to save the annotations and image crops relative to current working dir
         patch_size (int): Maximum dimensions of square window
         patch_overlap (float): Percent of overlap among windows 0->1
+        allow_empty: If True, include images with no annotations to be included in the dataset
         
     Returns:
         A pandas dataframe with annotations file for training.
@@ -150,7 +151,7 @@ def split_raster(path_to_raster, annotations_file, base_dir, patch_size, patch_o
         crop = numpy_image[windows[index].indices()]
         
         #Find annotations, image_name is the basename of the path
-        crop_annotations = select_annotations(image_annotations, windows, index)
+        crop_annotations = select_annotations(image_annotations, windows, index, allow_empty)
         
         #save annotations
         annotations_files.append(crop_annotations)
