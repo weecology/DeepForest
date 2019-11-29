@@ -66,13 +66,13 @@ def create_tfrecords(annotations_file, class_file, backbone_model="resnet50", im
     image_basename = os.path.splitext(os.path.basename(annotations_file))[0]
     
     ## Syntax checks
-    #Check annotations file only JPEG, PNG, GIF, or BMP are allowed.
-    df = pd.read_csv(annotations_file, names=["image_path","xmin","ymin","xmax","ymax","label"])
-    df['FileType'] = df.image_path.str.split('.').str[-1].str.lower()
-    bad_files = df[~df['FileType'].isin(["jpeg","jpg","png","gif","bmp"])]
+    ##Check annotations file only JPEG, PNG, GIF, or BMP are allowed.
+    #df = pd.read_csv(annotations_file, names=["image_path","xmin","ymin","xmax","ymax","label"])
+    #df['FileType'] = df.image_path.str.split('.').str[-1].str.lower()
+    #bad_files = df[~df['FileType'].isin(["jpeg","jpg","png","gif","bmp"])]
     
-    if not bad_files.empty:
-        raise ValueError("Check annotations file, only JPEG, PNG, GIF, or BMP are allowed, {} incorrect files found \n {}: ".format(bad_files.shape[0],bad_files.head()))
+    #if not bad_files.empty:
+        #raise ValueError("Check annotations file, only JPEG, PNG, GIF, or BMP are allowed, {} incorrect files found /n {}: ".format(bad_files.shape[0],bad_files.head()))
     
     #Check dtypes, cannot use pandas, or will coerce in the presence of NAs
     with open(annotations_file, 'r') as f:

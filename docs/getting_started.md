@@ -64,6 +64,7 @@ Consider a headerless annotations.csv file in the following format
 ```
 image_path, xmin, ymin, xmax, ymax, label
 ```
+with each bounding box on a seperate row. The image path is relative to the local of the annotations file.
 
 ```
 from deepforest import deepforest
