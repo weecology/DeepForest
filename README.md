@@ -70,6 +70,7 @@ DeepForest allows training through a keras-retinanet CSV generator. Input files 
 ```
 image_path, xmin, ymin, xmax, ymax, label
 ```
+With one bounding box for each line. The image path is relative to the location of the annotations file.
 
 Training config parameters are stored in a [deepforest_config.yml](deepforest/data/deepforest_config.yml). They also can be changed at runtime.
 
@@ -112,6 +113,4 @@ bioRxiv 790071; doi: https://doi.org/10.1101/790071](https://www.biorxiv.org/con
 
 ### Where can I get sample data?
 
-We are organizing a benchmark dataset for individual tree crown prediction in RGB imagery from the National Ecological Observation
-
-https://github.com/weecology/NeonTreeEvaluation
+We are organizing a benchmark dataset for individual tree crown prediction in RGB imagery from the National Ecological Observation Network: https://github.com/weecology/NeonTreeEvaluation
