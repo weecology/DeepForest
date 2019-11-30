@@ -9,3 +9,4 @@ tests/data/
 *.tfrecords
 _pycache_
 current_release.csv
+*.tif
