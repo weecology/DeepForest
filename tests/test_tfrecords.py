@@ -133,12 +133,12 @@ def test_equivalence(config, setup_create_tensors):
 
 #Check for bad file types
 @pytest.fixture()
-def bad_annotations():
-    annotations = utilities.xml_to_annotations(get_data("OSBS_029.xml"))
-    f = "tests/data/testfile_error_deepforest.csv"
-    annotations.to_csv(f,index=False,header=False)
-    return f
+#def bad_annotations():
+    #annotations = utilities.xml_to_annotations(get_data("OSBS_029.xml"))
+    #f = "tests/data/testfile_error_deepforest.csv"
+    #annotations.to_csv(f,index=False,header=False)
+    #return f
 
-def test_tfdataset_error(bad_annotations):    
-    with pytest.raises(ValueError):    
-        records_created = tfrecords.create_tfrecords(annotations_file=bad_annotations, class_file=get_data("classes.csv"), image_min_side=800, backbone_model="resnet50", size=100, savedir="tests/data/")
+#def test_tfdataset_error(bad_annotations):    
+    #with pytest.raises(ValueError):    
+        #records_created = tfrecords.create_tfrecords(annotations_file=bad_annotations, class_file=get_data("classes.csv"), image_min_side=800, backbone_model="resnet50", size=100, savedir="tests/data/")
