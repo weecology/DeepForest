@@ -31,6 +31,7 @@ After about 25 minutes of annotations, the evaluation tile is complete.
 The data are currently stored in an xml format.
 
 ```{python}
+from matplotlib import pyplot as plt
 from deepforest import deepforest
 from deepforest import utilities
 from deepforest import get_data
@@ -50,19 +51,43 @@ Split the evaluation tile into windows of 400px with an overlap of 5% among wind
 
 ```{python}
 YELL_test = get_data("2019_YELL_2_541000_4977000_image_crop.tiff")
+crop_dir = "tests/data/"
 cropped_annotations= preprocess.split_raster(path_to_raster=YELL_test,
                                  annotations_file="deepforest/data/example.csv",
-                                 base_dir="tests/data",
+                                 base_dir=crop_dir,
                                  patch_size=400,
                                  patch_overlap=0.05)
 
 cropped_annotations.head()
 
-#Write window annotations file without a header row
-cropped_annotations.to_csv("cropped_example.csv",index=False, header=None)
+#Write window annotations file without a header row, same location as the "base_dir" above.
+annotations_file= crop_dir + "cropped_example.csv"
+cropped_annotations.to_csv(annotations_file,index=False, header=None)
 ```
 
-### Evaluate against Prebuilt model
+```{python}
+Reading config file: deepforest_config.yml
+No model initialized, either train or load an existing retinanet model
+Downloading model from DeepForest release v0.2.1, see https://github.com/weecology/DeepForest/releases/tag/v0.2.1 for details
+
+finetuned_weights_20191126_170710.h5: 0.00B [00:00, ?B/s]
+finetuned_weights_20191126_170710.h5:   0%|          | 8.19k/146M [00:00<4:08:38, 9.79kB/s]
+...
+finetuned_weights_20191126_170710.h5: 100%|#########9| 146M/146M [00:34<00:00, 3.65MB/s]
+finetuned_weights_20191126_170710.h5: 146MB [00:34, 4.19MB/s]                           
+Model was downloaded and saved to /Users/ben/Documents/DeepForest/deepforest/data/NEON.h5
+Loading pre-built model: https://github.com/weecology/DeepForest/releases/tag/v0.2.1
+
+Running network:   8% (1 of 12) |        | Elapsed Time: 0:00:02 ETA:   0:00:29
+...
+Running network: 100% (12 of 12) |#######| Elapsed Time: 0:00:25 Time:  0:00:25
+135 instances of class Tree with average precision: 0.4147
+mAP using the weighted average of precisions among classes: 0.4147
+mAP: 0.4147
+Mean Average Precision is: 0.415
+```
+
+### Evaluate against prebuilt model
 
 Before training a new model, it is helpful to know the performance of the current benchmark model.
 
@@ -72,10 +97,23 @@ Evaluate prebuilt model
 test_model = deepforest.deepforest()
 test_model.use_release()
 
-annotations_file="/data/example.csv"
 mAP = test_model.evaluate_generator(annotations=annotations_file)
 print("Mean Average Precision is: {:.3f}".format(mAP))
 ```
+
+### Get a sample prediction
+
+```{python}
+
+image = test_model.predict_image("tests/data/2019_YELL_2_541000_4977000_image_crop_11.jpg", return_plot=True)
+
+#Matplotlib views in RGB order, but model returns BGR order
+plt.imshow(image[...,::-1])
+```
+
+![]("../www/example_image.png")
+
+These are pretty decent results, likely because the images are similar to those used to train the benchmark dataset. However, let's see if added local annotated data helps.
 
 ## Custom model
 
