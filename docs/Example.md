@@ -46,7 +46,8 @@ annotation.to_csv("deepforest/data/example.csv", index=False)
 
 ### Evaluation windows
 
-Split the evaluation tile into windows of 400px with an overlap of 5% among windows.
+Split the evaluation tile into windows of 400px with an overlap of 5% among windows. The windows will be named <image_name>_0.jpg, <image_name>_1.jpg, etc.
+
 ```{python}
 YELL_test = get_data("2019_YELL_2_541000_4977000_image_crop.tiff")
 cropped_annotations= preprocess.split_raster(path_to_raster=YELL_test,
@@ -55,10 +56,11 @@ cropped_annotations= preprocess.split_raster(path_to_raster=YELL_test,
                                  patch_size=400,
                                  patch_overlap=0.05)
 
-#Write new annotations file without a header row
+cropped_annotations.head()
+
+#Write window annotations file without a header row
 cropped_annotations.to_csv("cropped_example.csv",index=False, header=None)
 ```
-
 
 ### Evaluate against Prebuilt model
 
