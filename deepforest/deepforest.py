@@ -6,9 +6,11 @@
 .. moduleauthor:: Ben Weinstein <ben.weinstein@weecology.org>
 """
 import os
+import warnings
 from PIL import Image
 import tensorflow as tf
 import pandas as pd
+import cv2
 import numpy as np
 from matplotlib import pyplot as plt
 
@@ -231,7 +233,14 @@ class deepforest:
         #Check for model save
         if(self.prediction_model is None):
             raise ValueError("Model currently has no prediction weights, either train a new model using deepforest.train, loading existing model, or use prebuilt model (see deepforest.use_release()")
-                
+         
+        #Warning if image is very large and using the release model
+        if image_path:
+            raw_image = cv2.imread(image_path)    
+        if any([x > 400 for x in raw_image.shape[:2]]):
+            warnings.warn("Input image has a size of {}, but the release model was trained on crops of 400px x 400px, results may be poor. "
+                          "Use predict_tile for dividng large images into overlapping windows.".format(raw_image.shape[:2]))
+        
         if return_plot:
             image = predict.predict_image(self.prediction_model, image_path, raw_image, score_threshold, return_plot=return_plot)            
             #cv2 channel order
@@ -243,12 +252,13 @@ class deepforest:
             boxes = predict.predict_image(self.prediction_model, image_path=image_path, raw_image=raw_image, return_plot=return_plot)            
             return boxes            
 
-    def predict_tile(self, path_to_raster, patch_size=400,patch_overlap=0.1, return_plot=False):
+    def predict_tile(self, path_to_raster, patch_size=400,patch_overlap=0.1, iou_threshold=0.75, return_plot=False):
         """
         For images too large to input into the model, predict_tile cuts the image into overlapping windows, predicts trees on each window and reassambles into a single array. 
         
         Args:
             raster_path: Path to image on disk
+            iou_threshold: Minimum iou overlap among predictions between windows to be supressed. Defaults to 0.5. Lower values suppress more boxes at edges.
             return_plot: Should the image be returned with the predictions drawn?
         
         Returns:
@@ -287,10 +297,17 @@ class deepforest:
         
         #Non-max supression for overlapping boxes among window 
         with tf.Session() as sess:
-            new_boxes, new_scores, new_labels = predict.non_max_suppression(sess, predicted_boxes[["xmin","ymin","xmax","ymax"]].values, predicted_boxes.score.values, predicted_boxes.label.values)
+            print("{} predictions in overlapping windows, applying non-max supression".format(predicted_boxes.shape[0]))
+            new_boxes, new_scores, new_labels = predict.non_max_suppression(sess,
+                                                                            predicted_boxes[["xmin","ymin","xmax","ymax"]].values,
+                                                                            predicted_boxes.score.values, predicted_boxes.label.values,
+                                                                            max_output_size=predicted_boxes.shape[0],
+                                                                            iou_threshold=iou_threshold)
+            
             image_detections = np.concatenate([new_boxes, np.expand_dims(new_scores, axis=1), np.expand_dims(new_labels, axis=1)], axis=1)
             mosaic_df = pd.DataFrame(image_detections,columns=["xmin","ymin","xmax","ymax","score","label"])
             mosaic_df.label = mosaic_df.label.str.decode("utf-8")
+            print("{} predictions kept after non-max suppression".format(mosaic_df.shape[0]))
             
         if return_plot:
             #Draw predictions

@@ -41,7 +41,7 @@ xmin        ymin        xmax        ymax     score label
 
 ### Predict a tile
 
-Large tiles covering wide geographic extents cannot fit into memory during prediction and would yield poor results due to the density of bounding boxes. Often provided as geospatial .tif files, remote sensing data is best suited for the ```predict_tile``` function, which splits the tile into overlapping windows, perform prediction on each of the windows, and then reassemble the resulting annotations.
+Large tiles covering wide geographic extents cannot fit into memory during prediction and would yield poor results due to the density of bounding boxes. Often provided as geospatial .tif files, remote sensing data is best suited for the ```predict_tile``` function, which splits the tile into overlapping windows, perform prediction on each of the windows, and then reassembles the resulting annotations.
 
 ```
 from deepforest import deepforest
@@ -57,7 +57,7 @@ predicted_raster = test_model.predict_tile(raster_path, return_plot = True, patc
 
 ### Predict a set of annotations
 
-During evaluation of ground truth data, it is useful to have a way to predict a set of images and combine them into a single dataframe.
+During evaluation of ground truth data, it is useful to have a way to predict a set of images and combine them into a single dataframe. The ```predict_generator``` method allows a user to point towards a file of annotations and returns the predictions for all images.
 
 Consider a headerless annotations.csv file in the following format
 
@@ -146,7 +146,7 @@ Epoch 1/1
 
 ## Evaluation
 
-Independent analysis of whether a model can generalize from training data to new areas is critical for creating a robust model. We stress that evaluation data must be different from training data, as neural networks have millions of parameters and can easily memorize thousands of samples. Therefore, while it would be rather easy to tune the model to get extremely high scores on the training data, it would fail when exposed to new images.
+Independent analysis of whether a model can generalize from training data to new areas is critical for creating a robust workflow. We stress that evaluation data must be different from training data, as neural networks have millions of parameters and can easily memorize thousands of samples. Therefore, while it would be rather easy to tune the model to get extremely high scores on the training data, it would fail when exposed to new images.
 
 DeepForest uses the keras-retinanet ```evaluate``` method to score images. This consists of an annotations.csv file in the following format
 
