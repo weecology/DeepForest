@@ -102,7 +102,7 @@ Object detection algorithms, such as retinanets, work by specifying anchor boxes
 
 ### multi-gpu: 1
 
-Number of GPUs to run. Ignored if running on CPU, which is automatically detected by tensorflow. As multi-gpu increases, pay close attention to the batch_size, which must be evenly divisible and greater or equal to the number of GPUs. Multi-gpu will yield significant training gains for very large training datasets. See training.md##-Training Hardware for more discussion.
+The number of GPUs to run during model training. Ignored if running on CPU, which is automatically detected by tensorflow. As multi-gpu increases, pay close attention to the batch_size, which must be evenly divisible and greater or equal to the number of GPUs. Multi-gpu will yield significant training gains for very large training datasets. See training.md##-Training Hardware for more discussion.
 
 ### epochs: 1
 
