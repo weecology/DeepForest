@@ -53,6 +53,9 @@ def test_use_release(download_release):
     #Assert is model instance    
     assert isinstance(test_model.model,keras.models.Model)
     
+    assert test_model.config["weights"] == test_model.weights 
+    assert test_model.config["weights"] is not "None"
+    
 @pytest.fixture()
 def release_model(download_release):
     test_model = deepforest.deepforest() 
@@ -87,40 +90,40 @@ def test_train(annotations):
     
     return test_model
 
-def test_train_no_freeze(annotations, test_train):
-    test_train.config["freeze_layers"] = 0
+#def test_train_no_freeze(annotations, test_train):
+    #test_train.config["freeze_layers"] = 0
     
-    #Get initial weights to compare from one layer
-    before = test_train.training_model.layers[100].get_weights()
+    ##Get initial weights to compare from one layer
+    #before = test_train.training_model.layers[100].get_weights()
         
-    #retrain with no freezing
-    test_train.train(annotations=annotations, input_type="fit_generator")
+    ##retrain with no freezing
+    #test_train.train(annotations=annotations, input_type="fit_generator")
     
-    #Get updated weights to compare
-    after = test_train.training_model.layers[100].get_weights()
+    ##Get updated weights to compare
+    #after = test_train.training_model.layers[100].get_weights()
 
-    assert test_train.training_model.layers[100].trainable
-    assert not np.array_equal(before, after)
+    #assert test_train.training_model.layers[100].trainable
+    #assert not np.array_equal(before, after)
     
-def test_freeze_train(annotations, test_train):
-    test_train.config["freeze_resnet"] = True
+#def test_freeze_train(annotations, test_train):
+    #test_train.config["freeze_resnet"] = True
     
-    #Get initial weights to compare from one layer, it should start in trainable mode
-    print("Trainable layers before freezing: {}".format(len(test_train.training_model.trainable_weights)))
-    assert test_train.training_model.layers[6].trainable    
-    before = test_train.training_model.layers[6].get_weights()
+    ##Get initial weights to compare from one layer, it should start in trainable mode
+    #print("Trainable layers before freezing: {}".format(len(test_train.training_model.trainable_weights)))
+    #assert test_train.training_model.layers[6].trainable    
+    #before = test_train.training_model.layers[6].get_weights()
         
-    #retrain with no freezing
-    test_train.train(annotations=annotations, input_type="fit_generator")
+    ##retrain with no freezing
+    #test_train.train(annotations=annotations, input_type="fit_generator")
     
-    #Get updated weights to compare
-    after = test_train.training_model.layers[10].get_weights()
-    print("Trainable layers after freezing: {}".format(len(test_train.training_model.trainable_weights)))
+    ##Get updated weights to compare
+    #after = test_train.training_model.layers[10].get_weights()
+    #print("Trainable layers after freezing: {}".format(len(test_train.training_model.trainable_weights)))
 
-    assert not test_train.training_model.layers[10].trainable
+    #assert not test_train.training_model.layers[10].trainable
     
-    #Because the network uses batch norm layers, there is a slight drift in weights. It should be very small.
-    #assert np.array_equal(before, after)
+    ##Because the network uses batch norm layers, there is a slight drift in weights. It should be very small.
+    ##assert np.array_equal(before, after)
 
 def test_predict_generator(release_model, annotations):
     boxes = release_model.predict_generator(annotations=annotations)
@@ -145,7 +148,7 @@ def test_tfrecord_train(prepare_tfdataset, annotations):
 #Test random transform
 def test_random_transform(annotations):
     test_model = deepforest.deepforest()
-    test_model.config["random_transform"]
+    test_model.config["random_transform"] = True
     arg_list = utilities.format_args(annotations, test_model.config)
     assert "--random-transform" in arg_list
 
@@ -166,10 +169,20 @@ def test_predict_tile(release_model):
     
     assert original_raster.shape == predicted_raster.shape
     
-    fig=plt.figure()
-    fig.add_subplot(2,1,1)
-    plt.imshow(predicted_raster)
-    fig.add_subplot(2,1,2)    
-    plt.imshow(predicted_image[...,::-1])
-    plt.show()
+    #fig=plt.figure()
+    #fig.add_subplot(2,1,1)
+    #plt.imshow(predicted_raster)
+    #fig.add_subplot(2,1,2)    
+    #plt.imshow(predicted_image[...,::-1])
+    #plt.show()
     
+def test_retrain_release(annotations, release_model):
+    release_model.config["epochs"] = 1
+    release_model.config["save-snapshot"] = False
+    release_model.config["steps"] = 1
+    
+    assert release_model.config["weights"] == release_model.weights
+    
+    #test that it gets passed to retinanet
+    arg_list = utilities.format_args(annotations, self.config, images_per_epoch)
+    arg_list[np.where(arg_list,"weights")+1] == release_model.weights

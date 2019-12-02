@@ -87,10 +87,6 @@ class deepforest:
             trained model: without nms
         '''
         arg_list = utilities.format_args(annotations, self.config, images_per_epoch)
-        
-        if self.weights:
-            print("Beginning training from weights:{}".format(self.weights))
-            self.config["weights"] = self.weights
             
         print("Training retinanet with the following args {}".format(arg_list))
         
@@ -104,15 +100,19 @@ class deepforest:
             model (object): A trained keras model
         '''        
         #Download latest model from github release
-        release_tag, weights = utilities.use_release()  
+        release_tag, self.weights = utilities.use_release()  
         
         #load saved model and tag release
         self.__release_version__ = release_tag
         print("Loading pre-built model: {}".format(release_tag))
         
-        self.weights = weights
         self.model = utilities.read_model(self.weights, self.config)
+        
+        #Convert model
         self.prediction_model = convert_model(self.model)
+        
+        #add to config
+        self.config["weights"] = self.weights        
     
     def predict_generator(self, annotations, comet_experiment = None, iou_threshold=0.5, score_threshold=0.05, max_detections=200):
         """Predict bounding boxes for a model using a csv fit_generator
