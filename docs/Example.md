@@ -78,7 +78,7 @@ annotations_file= crop_dir + "cropped_example.csv"
 cropped_annotations.to_csv(annotations_file,index=False, header=None)
 ```
 
-### Evaluate against prebuilt model
+### Evaluate the prebuilt model
 
 Before training a new model, it is helpful to know the performance of the current benchmark model.
 
@@ -231,7 +231,7 @@ test_model.train(annotations=annotations_file, input_type="fit_generator")
 ```
 
 Estimated training time on CPU
-Training time on GPU: 
+Training time on GPU:
 
 #### Comet visualization
 
@@ -245,13 +245,7 @@ comet_experiment = Experiment(api_key=<api_key>,
 comet_experiment.log_parameters(deepforest_model.config)
 
 test_model.train(annotations=annotations_file, input_type="fit_generator",comet_experiment=comet_experiment)
-
 ```
-
-Comet compute_windows
-
-![]()
-![]()
 
 ## Evaluate
 
