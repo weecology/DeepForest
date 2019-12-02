@@ -92,7 +92,7 @@ mAP = test_model.evaluate_generator(annotations=annotations_file)
 print("Mean Average Precision is: {:.3f}".format(mAP))
 ```
 
-This returns
+returns
 
 ```{python}
 Reading config file: deepforest_config.yml
@@ -154,7 +154,7 @@ annotation.to_csv("deepforest/data/train_example.csv", index=False)
 #Find data on path
 YELL_train = get_data("2019_YELL_2_528000_4978000_image_crop2.tiff")
 crop_dir = "tests/data/"
-train_annotations= preprocess.split_raster(path_to_raster=YELL_test,
+train_annotations= preprocess.split_raster(path_to_raster=YELL_train,
                                  annotations_file="deepforest/data/train_example.csv",
                                  base_dir=crop_dir,
                                  patch_size=400,
@@ -164,7 +164,7 @@ train_annotations.head()
 
 #Write window annotations file without a header row, same location as the "base_dir" above.
 annotations_file= crop_dir + "train_example.csv"
-cropped_annotations.to_csv(annotations_file,index=False, header=None)
+train_annotations.to_csv(annotations_file,index=False, header=None)
 ```
 
 ### Config file
@@ -218,8 +218,6 @@ snapshot_path: snapshots/
 Using these settings, train a new model starting from the release model.
 
 ```{python}
-from deepforest import deepforest
-
 #Load the latest release
 test_model = deepforest.deepforest()
 test_model.use_release()
@@ -227,12 +225,13 @@ test_model.use_release()
 # Example run with short training
 test_model.config["epochs"] = 1
 test_model.config["save-snapshot"] = False
-test_model.config["steps"] = 1
-
-comet_experiment.log_parameters(deepforest_model.config)
+test_model.config["steps"] = 10
 
 test_model.train(annotations=annotations_file, input_type="fit_generator")
 ```
+
+Estimated training time on CPU
+Training time on GPU: 
 
 #### Comet visualization
 
@@ -242,6 +241,9 @@ For more visualization of model training, comet_ml is an extremely useful platfo
 from comet_ml import Experiment
 comet_experiment = Experiment(api_key=<api_key>,
                                   project_name=<project>, workspace=<"username">)
+
+comet_experiment.log_parameters(deepforest_model.config)
+
 test_model.train(annotations=annotations_file, input_type="fit_generator",comet_experiment=comet_experiment)
 
 ```
@@ -254,7 +256,8 @@ Comet compute_windows
 ## Evaluate
 
 ```{python}
-
+mAP = test_model.evaluate_generator(annotations=annotations_file)
+print("Mean Average Precision is: {:.3f}".format(mAP))
 ```
 
 ## Predict
