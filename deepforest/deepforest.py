@@ -89,8 +89,8 @@ class deepforest:
         arg_list = utilities.format_args(annotations, self.config, images_per_epoch)
         
         if self.weights:
-            print("Beginning training from weights:{}".format(weights))
-            self.config["weights"] = weights
+            print("Beginning training from weights:{}".format(self.weights))
+            self.config["weights"] = self.weights
             
         print("Training retinanet with the following args {}".format(arg_list))
         
