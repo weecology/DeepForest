@@ -15,10 +15,16 @@ LONG_DESCRIPTION = """
 ## Installation
 
 ```
+pip install DeepForest
+```
+
+```
 Or install the latest version from Github  
 ```
 git clone https://github.com/weecology/DeepForest.git
+
 conda env create --file=environment.yml
+
 conda activate DeepForest
 ```
 
@@ -41,6 +47,7 @@ Development of this software was funded by
 """
 setup(name=NAME,
       version=VERSION,
+      python_requires='>=3',
       description=DESCRIPTION,
       long_description = LONG_DESCRIPTION,
       long_description_content_type='text/markdown',
@@ -49,5 +56,6 @@ setup(name=NAME,
       license=LICENCE,
       packages=find_packages(),
       include_package_data=True,
-      install_requires=["keras > 2.3.0","tensorflow==1.14","pandas","matplotlib","pillow","numpy","pyyaml","http://github.com/bw4sz/keras-retinanet/tarball/master#egg=package-1.0"],
+      install_requires=["keras > 2.3.0","tensorflow==1.14","pillow","pandas","opencv-python","pyyaml","slidingwindow","matplotlib","xmltodict",
+                        "keras-retinanet @ http://github.com/bw4sz/keras-retinanet/archive/master.zip"],
       zip_safe=False)
