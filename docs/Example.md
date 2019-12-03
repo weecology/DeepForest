@@ -6,19 +6,15 @@ This document is a walkthrough of testing the DeepForest prebuilt model for a ne
 
 For this example, we would like to test the accuracy of the prebuilt model for a section of Yellowstone National Park. Data for this example can be downloaded from the NEON portal under site code [YELL](), along with hundreds of other tiles from the same site.
 
-### Sample Data
+### Sample Tile
 
 ![](../www/2019_YELL_2_541000_4977000_image.png)
 
 ## Evaluation Data
 
-For this minimal example, we take two 1km tiles. One will be used to train the model, one will be used to test the model. It is important that training and test data be geographically separate, as the model could easily memorize features from the training data. Before training, it is critical to have a set of evaluation data to understand model performance. Using the program RectLabel, let's create a small evaluation dataset.
-
-### Crop the evaluation tile
-
 Object detection models generally require that all target objects be labeled in an image. This means that we should cut the evaluation/training tiles into sections suitable for hand annotation. For this example, these crops will be small.
 
-After about 25 minutes of annotations, the evaluation tile is complete.
+After about 25 minutes of annotations, the evaluation data is complete.
 
 ![](../www/annotated_example.png)
 
@@ -136,3 +132,5 @@ image = test_model.predict_tile(YELL_test, return_plot=True, iou_threshold=0.75)
 #Matplotlib views in RGB order, but model returns BGR order
 plt.imshow(image[...,::-1])
 ```
+
+![](../www/predict_tile.png)
