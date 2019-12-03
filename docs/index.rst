@@ -11,9 +11,10 @@ Source code is available here: (https://github.com/weecology/DeepForest.git).
    landing
    installation
    getting_started
+   Example
    training
    training_config
-   Example
+   Performance
    FAQ
    code_of_conduct.rst
    source/deepforest

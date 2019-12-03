@@ -28,37 +28,138 @@ image_path, xmin, ymin, xmax, ymax, label
 
 Please note that for functions which are fed into keras-retinanet, such as ```evaluate_generator```, ```predict_generator``` and ```train``` this annotation file should be saved without column names. For ```preprocess.split_raster``` the column names should be maintained.
 
-## Training Hardware
+## Annotate training datasets
 
-Training neural networks is computationally intensive. While small amounts of data, on the order of several hundred trees, can be trained on a laptop in a few hours, large amounts of data are best trained on dedicated graphical processing units (GPUs). Many university clusters have GPUs available, and they can be rented for short periods of time on cloud servers (AWS, Google Cloud, Azure).
+As with the [evaluation example](Example.html), collect training labels from a crop of the training tile and split into smaller windows.
 
-## Fit_generator versus tfrecords
-
-There are currently two ways to train a deepforest model, directly using the annotations file described above, or wrapping those data into a tfrecords files. The benefits of annotations file, which uses a keras ```fit_generator``` method, is its simplicity and transparency. The downside is training speed. For the vast majority of projects, using a single GPU will be sufficient for training data. However, if you using any pretraining or semi-supervised approach, and have millions or tens of millions of samples, the ```fit_generator``` does not scale well across multiple GPUs. To create a tfrecords file:
-
-TODO which of these have headers?
-
-0. Optional -> generate crops from training tiles
+![](../www/YELL_train.png)
 
 ```{python}
-annotations_file = preprocess.split_raster(<path_to_raster>, config["annotations_file"], "tests/data/",config["patch_size"], config["patch_overlap"])
+#convert hand annotations from xml into retinanet format
+YELL_xml = get_data("2019_YELL_2_528000_4978000_image_crop2.xml")
+annotation = utilities.xml_to_annotations(YELL_xml)
+annotation.head()
+
+#Write converted dataframe to file. Saved alongside the images
+annotation.to_csv("deepforest/data/train_example.csv", index=False)
+
+#Find data on path
+YELL_train = get_data("2019_YELL_2_528000_4978000_image_crop2.tiff")
+crop_dir = "tests/data/"
+train_annotations= preprocess.split_raster(path_to_raster=YELL_train,
+                                 annotations_file="deepforest/data/train_example.csv",
+                                 base_dir=crop_dir,
+                                 patch_size=400,
+                                 patch_overlap=0.05)
+#View output
+train_annotations.head()
+
+#Write window annotations file without a header row, same location as the "base_dir" above.
+annotations_file= crop_dir + "train_example.csv"
+train_annotations.to_csv(annotations_file,index=False, header=None)
 ```
 
-1. Generate the anchors for training from the annotations file
+### Config file
+
+Training parameters are saved in a "deepforest_config.yml" file. By default DeepForest will look for this file in the current working directory.
+
+```
+###
+# Config file for DeepForest module
+# The following arguments
+###
+
+### Training
+### Batch size. If multi-gpu is > 1, this is the total number of images per batch across all GPUs. Must be evenly divisible by multi-gpu.
+batch_size: 1
+### Model weights to load before training. From keras.model.save_weights()
+weights: None
+### Retinanet backbone. See the keras-retinanet repo for options. Only resnet50 has been well explored.
+backbone: resnet50
+### Resize images to min size. Retinanet anchors may need to be remade if signficantly reducing image size.
+image-min-side: 800
+##Number of GPUs to train
+multi-gpu: 1
+#Number of full cycles of the input data to train
+epochs: 1
+#Validation annotations. If training using fit_generator, these will be evaluated as a callback at the end of each epoch.
+validation_annotations: None
+###Freeze layers. Used for model finetuning, freeze the bottom n layers.
+freeze_layers: 0
+###Freeze resnet backbone entirely.
+freeze_resnet: False
+
+###Evaluation
+###Score threshold, above which bounding boxes are included in evaluation predictions
+score_threshold: 0.05
+
+#Keras fit_generator methods, these do not apply to tfrecords input_type
+multiprocessing: False
+workers: 1
+max_queue_size: 10
+random_transform: False
+
+#save snapshot and images
+###Whether to save snapshots at the end of each epoch
+save-snapshot: False
+#Save directory for images and snapshots
+save_path: snapshots/
+snapshot_path: snapshots/
+```
+
+Using these settings, train a new model starting from the release model. We use are very small number of epochs since this is a sample toy dataset.
 
 ```{python}
-created_records = tfrecords.create_tfrecords(annotations_file="tests/data/testfile_tfrecords.csv",
-                           class_file="tests/data/classes.csv",
-                           image_min_side=config["image-min-side"],
-                           backbone_model=config["backbone"],
-                           size=100,
-                           savedir="tests/data/")
-```
+#Load the latest release
+test_model = deepforest.deepforest()
+test_model.use_release()
 
-2. Train the model by supplying a list of tfrecords and the original file
+# Example run with short training
+test_model.config["epochs"] = 1
+test_model.config["save-snapshot"] = False
+test_model.train(annotations=annotations_file, input_type="fit_generator")
+```
+* Estimated training time on CPU: ~ 6 min/epoch
+
+* Training time on GPU: 14 sec/epoch
+
+#### Comet visualization
+
+For more visualization of model training, comet_ml is an extremely useful platform for understanding machine learning results. There is a free tier for academic audiences. This is optional, but worth considering if you are going to do significant testing.
 
 ```{python}
-test_model.train(annotations="tests/data/testfile_tfrecords.csv",input_type="tfrecord", list_of_tfrecords=created_records)
+from comet_ml import Experiment
+comet_experiment = Experiment(api_key=<api_key>,
+                                  project_name=<project>, workspace=<"username">)
+
+comet_experiment.log_parameters(deepforest_model.config)
+
+test_model.train(annotations=annotations_file, input_type="fit_generator",comet_experiment=comet_experiment)
 ```
 
-This approach is >10X faster when used to scale across 8 GPUs on a single machine. Please note that tfrecords are very large on disk.
+## Training accuracy
+
+Find the training accuracy of the model predicted the data used for training
+
+```{python}
+mAP = test_model.evaluate_generator(annotations=annotations_file)
+print("Mean Average Precision is: {:.3f}".format(mAP))
+```
+
+returns
+
+```
+There are 1 unique labels: ['Tree']
+Disabling snapshot saving
+Running network: 100% (12 of 12) |#######################################################################################################################################################################################################| Elapsed Time: 0:00:02 Time:  0:00:02
+Parsing annotations: 100% (12 of 12) |###################################################################################################################################################################################################| Elapsed Time: 0:00:00 Time:  0:00:00
+431 instances of class Tree with average precision: 0.5076
+mAP using the weighted average of precisions among classes: 0.5076
+mAP: 0.5076
+```
+
+## Predict
+
+```{python}
+
+```

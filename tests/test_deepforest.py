@@ -184,5 +184,7 @@ def test_retrain_release(annotations, release_model):
     assert release_model.config["weights"] == release_model.weights
     
     #test that it gets passed to retinanet
-    arg_list = utilities.format_args(annotations, self.config, images_per_epoch)
-    arg_list[np.where(arg_list,"weights")+1] == release_model.weights
+    arg_list = utilities.format_args(annotations, release_model.config, images_per_epoch=1)
+    strs = ["--weights" == x for x in arg_list]
+    index = np.where(strs)[0][0] + 1
+    arg_list[index] == release_model.weights
