@@ -4,7 +4,7 @@ This document is a walkthrough of testing the DeepForest prebuilt model for a ne
 
 ## Goal
 
-For this example, we would like to test the accuracy of the prebuilt model for a section of Yellowstone National Park. Data for this example can be downloaded from the NEON portal under site code [YELL](), along with hundreds of other tiles from the same site.
+For this example, we would like to test the accuracy of the prebuilt model for a section of Yellowstone National Park. Data for this example can be downloaded from the NEON portal under site code [YELL](https://www.neonscience.org/field-sites/field-sites-map/YELL), along with hundreds of other tiles from the same site.
 
 ### Sample Tile
 
@@ -105,6 +105,7 @@ mAP using the weighted average of precisions among classes: 0.5400
 mAP: 0.5400
 ```
 
+These are pretty strong results, likely because the images are similar to those used to train the prebuilt model. In our experience, scores over 0.5 are unlikely to improve without significant additional training data, targeting a specific situation in which the model is performing poorly.
 [Learn more about the mAP metric.](https://towardsdatascience.com/breaking-down-mean-average-precision-map-ae462f623a52)
 
 ### Get a sample prediction
@@ -119,8 +120,6 @@ plt.imshow(image[...,::-1])
 ```
 
 ![](../www/example_image.png)
-
-These are pretty strong results, likely because the images are similar to those used to train the prebuilt model. In our experience, scores over 0.5 are unlikely to improve without significant additional training data, targeting a specific situation in which the model is performing poorly.
 
 ### Predict a large extent
 
