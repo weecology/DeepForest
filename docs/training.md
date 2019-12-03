@@ -12,7 +12,7 @@ Capturing the variability and the broad range of tree taxonomy and presentation 
 
 * What kind of accuracy do I need to answer my question?
 
-It is natural to want the best model possible, but one can waste a tremendous amount of time trying to eek out another 5% of recall without understanding whether that increase in performance will improve our understanding of a given ecological or natural resource question. Prioritize evaluation data that matches your desired outcomes. Don't obsess over small errors, but rather think about how to propagate and capture this uncertainty in the overall analysis. [All models are wrong, some are useful.](https://en.wikipedia.org/wiki/All_models_are_wrong).
+It is natural to want the best model possible, but one can waste a tremendous amount of time trying to eek out another 5% of recall without understanding whether that increase in performance will improve our understanding of a given ecological or natural resource question. Prioritize evaluation data that matches your desired outcomes. Don't obsess over small errors, but rather think about how to propagate and capture this uncertainty in the overall analysis. [All models are wrong, some are useful.](https://en.wikipedia.org/wiki/All_models_are_wrong)
 
 ## Gather annotations
 
@@ -139,7 +139,7 @@ test_model.train(annotations=annotations_file, input_type="fit_generator",comet_
 
 ## Training accuracy
 
-Find the training accuracy of the model predicted the data used for training
+Find the training accuracy of the model. We expect this value to be high (mAP > 0.5), if not, consider training for additional epochs.
 
 ```{python}
 mAP = test_model.evaluate_generator(annotations=annotations_file)
