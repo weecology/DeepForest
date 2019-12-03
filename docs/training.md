@@ -1,4 +1,4 @@
-# Training New Models
+# Training new models
 
 Our work has shown that starting training from the prebuilt model increases performance, regardless of the geographic location of your data. In the majority of cases, it will be useful for the model to have learned general tree representations that can be refined using hand annotated data.
 
@@ -27,8 +27,6 @@ image_path, xmin, ymin, xmax, ymax, label
 ```
 
 Please note that for functions which are fed into keras-retinanet, such as ```evaluate_generator```, ```predict_generator``` and ```train``` this annotation file should be saved without column names. For ```preprocess.split_raster``` the column names should be maintained.
-
-## Annotate training datasets
 
 As with the [evaluation example](Example.html), collect training labels from a crop of the training tile and split into smaller windows.
 

@@ -14,7 +14,7 @@ Source code is available here: (https://github.com/weecology/DeepForest.git).
    Example
    training
    training_config
-   Performance
+   performance
    FAQ
    code_of_conduct.rst
    source/deepforest
