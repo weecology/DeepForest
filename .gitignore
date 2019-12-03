@@ -1,3 +1,5 @@
+deepforest.egg-info/
+dist/
 snapshots/
 logs/
 *.h5
