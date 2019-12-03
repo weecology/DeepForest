@@ -132,5 +132,4 @@ image = test_model.predict_tile(YELL_test, return_plot=True, iou_threshold=0.75)
 #Matplotlib views in RGB order, but model returns BGR order
 plt.imshow(image[...,::-1])
 ```
-
 ![](../www/predict_tile.png)

@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 NAME ='deepforest'
 VERSION = '0.2.3'
-DESCRIPTION = 'Tree Crown Prediction using deep learning retinanets'
+DESCRIPTION = 'Tree crown prediction using deep learning retinanets'
 URL = 'https://github.com/Weecology/DeepForest'
 AUTHOR = 'Ben Weinstein'
 LICENCE = 'MIT'
@@ -11,12 +11,13 @@ LONG_DESCRIPTION = """
 
 ## Full documentation  
 [http://deepforest.readthedocs.io/en/latest/](http://deepforest.readthedocs.io/en/latest/)
+
 ## Installation
 
 ```
 Or install the latest version from Github  
 ```
-pip install git+git://github.com/Weecology/deepforest
+git clone https://github.com/weecology/DeepForest.git
 conda env create --file=environment.yml
 conda activate DeepForest
 ```
@@ -48,4 +49,5 @@ setup(name=NAME,
       license=LICENCE,
       packages=find_packages(),
       include_package_data=True,
+      install_requires=["keras > 2.3.0","tensorflow==1.14","pandas","matplotlib","pillow","numpy","pyyaml","http://github.com/bw4sz/keras-retinanet/tarball/master#egg=package-1.0"],
       zip_safe=False)

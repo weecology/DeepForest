@@ -1,4 +1,4 @@
-# Training New Models
+# Training models
 
 Our work has shown that starting training from the prebuilt model increases performance, regardless of the geographic location of your data. In the majority of cases, it will be useful for the model to have learned general tree representations that can be refined using hand annotated data.
 
@@ -27,8 +27,6 @@ image_path, xmin, ymin, xmax, ymax, label
 ```
 
 Please note that for functions which are fed into keras-retinanet, such as ```evaluate_generator```, ```predict_generator``` and ```train``` this annotation file should be saved without column names. For ```preprocess.split_raster``` the column names should be maintained.
-
-## Annotate training datasets
 
 As with the [evaluation example](Example.html), collect training labels from a crop of the training tile and split into smaller windows.
 
@@ -61,7 +59,7 @@ train_annotations.to_csv(annotations_file,index=False, header=None)
 
 ### Config file
 
-Training parameters are saved in a "deepforest_config.yml" file. By default DeepForest will look for this file in the current working directory.
+Training parameters are saved in a "deepforest_config.yml" file. By default DeepForest will look for this file in the current working directory. If none is found, a default file will be used.
 
 ```
 ###
@@ -125,7 +123,7 @@ test_model.train(annotations=annotations_file, input_type="fit_generator")
 
 #### Comet visualization
 
-For more visualization of model training, comet_ml is an extremely useful platform for understanding machine learning results. There is a free tier for academic audiences. This is optional, but worth considering if you are going to do significant testing.
+For more visualization of model training, comet_ml is an useful platform for understanding machine learning results. There is a free tier for academic audiences. This is optional, but worth considering if you are going to do significant testing.
 
 ```{python}
 from comet_ml import Experiment
@@ -156,10 +154,4 @@ Parsing annotations: 100% (12 of 12) |##########################################
 431 instances of class Tree with average precision: 0.5076
 mAP using the weighted average of precisions among classes: 0.5076
 mAP: 0.5076
-```
-
-## Predict
-
-```{python}
-
 ```
