@@ -15,11 +15,12 @@ dependencies:
   - numpy
   - pillow
   - scipy
-  - pbr
+  - bumpversion
   - pip
   - matplotlib
   - sphinx_rtd_theme
   - pandas
+  - twine
   - pip:
     - keras-resnet
     - opencv-python
