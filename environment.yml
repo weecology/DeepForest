@@ -15,7 +15,6 @@ dependencies:
   - numpy
   - pillow
   - scipy
-  - bumpversion
   - pip
   - matplotlib
   - sphinx_rtd_theme
@@ -28,6 +27,7 @@ dependencies:
     - keras==2.3.0
     - tensorflow==1.14
     - sphinx-markdown-tables  
+    - bumpversion
     - git+git://github.com/bw4sz/keras-retinanet.git
 
 
