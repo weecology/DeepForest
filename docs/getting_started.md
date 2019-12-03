@@ -57,7 +57,7 @@ predicted_raster = test_model.predict_tile(raster_path, return_plot = True, patc
 
 ### Predict a set of annotations
 
-During evaluation of ground truth data, it is useful to have a way to predict a set of images and combine them into a single dataframe. The ```predict_generator``` method allows a user to point towards a file of annotations and returns the predictions for all images.
+During evaluation of ground truth data, it is useful to have a way to predict a set of images and combine them into a single data frame. The ```predict_generator``` method allows a user to point towards a file of annotations and returns the predictions for all images.
 
 Consider a headerless annotations.csv file in the following format
 
