@@ -15,7 +15,10 @@ LONG_DESCRIPTION = """
 ## Installation
 
 ```
+#Install DeepForest
 pip install DeepForest
+#Install fork of the retinanet repo
+git+git://github.com/bw4sz/keras-retinanet.git
 ```
 
 ```
@@ -56,6 +59,5 @@ setup(name=NAME,
       license=LICENCE,
       packages=find_packages(),
       include_package_data=True,
-      install_requires=["keras > 2.3.0","tensorflow==1.14","pillow","pandas","opencv-python","pyyaml","slidingwindow","matplotlib","xmltodict",
-                        "keras-retinanet @ http://github.com/bw4sz/keras-retinanet/archive/master.zip"],
+      install_requires=["keras > 2.3.0","tensorflow==1.14","pillow","pandas","opencv-python","pyyaml","slidingwindow","matplotlib","xmltodict","tqdm"],
       zip_safe=False)
