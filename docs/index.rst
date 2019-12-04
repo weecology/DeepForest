@@ -15,6 +15,7 @@ Source code is available here: (https://github.com/weecology/DeepForest.git).
    training
    training_config
    performance
+   neon_benchmark.md
    FAQ
    code_of_conduct.rst
    source/deepforest
