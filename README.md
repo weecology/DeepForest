@@ -60,6 +60,7 @@ image = test_model.predict_image(image_path = image_path)
 
 #Show image, matplotlib expects RGB channel order, but keras-retinanet predicts in BGR
 plt.imshow(image[...,::-1])
+plt.show()
 ```
 ![test image](www/image.png)
 
