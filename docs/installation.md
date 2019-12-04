@@ -3,7 +3,7 @@
 DeepForest can be installed from source using the github repository.
 
 ```
-git clone https://github.com/weecology/DeepForest.git
+git clone https://github.com/weecology/DeepForest.git --depth 1
 cd DeepForest
 ```
 
@@ -24,5 +24,5 @@ Python 3.6.9 |Anaconda, Inc.| (default, Jul 30 2019, 13:42:17)
 Type "help", "copyright", "credits" or "license" for more information.
 >>> import deepforest
 >>> deepforest.__version__
-'0.2.2'
+'0.2.3'
 ```
