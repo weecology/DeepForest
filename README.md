@@ -37,6 +37,10 @@ Type "help", "copyright", "credits" or "license" for more information.
 
 https://deepforest.readthedocs.io.
 
+## Feedback
+
+All [issues](https://github.com/weecology/DeepForest/issues/) can be submitted to the github repo. We look forward to hearing about the performance of the prebuilt and custom models. We encourage all users to submit a sample image [issue](https://github.com/weecology/DeepForest/issues/49), regardless of performance, to the image gallery. We want to hear from you!
+
 ## Usage
 
 ### Prediction
@@ -60,6 +64,7 @@ image = test_model.predict_image(image_path = image_path)
 
 #Show image, matplotlib expects RGB channel order, but keras-retinanet predicts in BGR
 plt.imshow(image[...,::-1])
+plt.show()
 ```
 ![test image](www/image.png)
 
@@ -114,3 +119,10 @@ bioRxiv 790071; doi: https://doi.org/10.1101/790071](https://www.biorxiv.org/con
 ### Where can I get sample data?
 
 We are organizing a benchmark dataset for individual tree crown prediction in RGB imagery from the National Ecological Observation Network: https://github.com/weecology/NeonTreeEvaluation
+
+## Gallery
+
+DeepForest is an open-source tool that depends on engagement from the community. If you use DeepForest, please consider uploading an image to be shown in the gallery. This way the developers, and potential funding sources, can gather understanding on the kinds of images and use-cases. To upload, submit a new [issue](https://github.com/weecology/DeepForest/issues/49) on github
+
+<img src="https://github.com/weecology/DeepForest/blob/master/www/predict_tile.png" alt="Your image title" width="100"/>
+<img src="https://github.com/weecology/DeepForest/blob/master/www/example_image.png" alt="Your image title" width="100"/>

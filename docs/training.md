@@ -33,6 +33,10 @@ As with the [evaluation example](Example.html), collect training labels from a c
 ![](../www/YELL_train.png)
 
 ```{python}
+from deepforest import deepforest
+from deepforest import utilities
+from deepforest import preprocess
+
 #convert hand annotations from xml into retinanet format
 YELL_xml = get_data("2019_YELL_2_528000_4978000_image_crop2.xml")
 annotation = utilities.xml_to_annotations(YELL_xml)
