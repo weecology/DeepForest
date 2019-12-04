@@ -1,20 +1,6 @@
 # Configuration File
 
-For ease of experimentation, DeepForest reads the majority of training parameters from a .yml file. This allows a user to quickly survey and change the training settings without needing to dive into the source code. Deep learning models are complex, and DeepForest tries to set reasonable defaults when possible. To get the best performance, some parameter exploration will be required for most novel applications. To track experiments, we recommend using a [comet_ml](comet.ml) dashboard. DeepForest train and evaluate objects accept comet experiments.
-
-```{python}
-from comet_ml import Experiment
-from deepforest import deepforest
-
-test_model = deepforest.deepforest()
-
-comet_experiment = Experiment(api_key=<api_key>,
-                                  project_name=<project>, workspace=<"username">)
-
-comet_experiment.log_parameters(deepforest_model.config)
-
-test_model.train(annotations=annotations_file, input_type="fit_generator",comet_experiment=comet_experiment)
-```
+For ease of experimentation, DeepForest reads the majority of training parameters from a .yml file. This allows a user to quickly survey and change the training settings without needing to dive into the source code. Deep learning models are complex, and DeepForest tries to set reasonable defaults when possible. To get the best performance, some parameter exploration will be required for most novel applications. 
 
 By default DeepForest will look for ```deepforest_config.yml``` in the current working directory. If that fails the default config will be used from ```deepforest/data/deepforest_config.yml```.
 
