@@ -243,7 +243,7 @@ class deepforest:
             raw_image = cv2.imread(image_path)    
         if any([x > 400 for x in raw_image.shape[:2]]):
             warnings.warn("Input image has a size of {}, but the release model was trained on crops of 400px x 400px, results may be poor. "
-                          "Use predict_tile for dividng large images into overlapping windows.".format(raw_image.shape[:2]))
+                          "Use predict_tile for dividing large images into overlapping windows.".format(raw_image.shape[:2]))
         
         if return_plot:
             image = predict.predict_image(self.prediction_model, image_path, raw_image, score_threshold, return_plot=return_plot)            
