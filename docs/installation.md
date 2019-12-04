@@ -3,7 +3,7 @@
 DeepForest can be installed from source using the github repository.
 
 ```
-git clone https://github.com/weecology/DeepForest.git
+git clone https://github.com/weecology/DeepForest.git --depth 1
 cd DeepForest
 ```
 

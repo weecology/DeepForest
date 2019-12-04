@@ -17,8 +17,9 @@ LONG_DESCRIPTION = """
 ```
 #Install DeepForest
 pip install DeepForest
+
 #Install fork of the retinanet repo
-git+git://github.com/bw4sz/keras-retinanet.git
+pip install git+git://github.com/bw4sz/keras-retinanet.git
 ```
 
 ```

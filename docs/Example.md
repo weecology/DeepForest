@@ -25,6 +25,7 @@ image_path, xmin, ymin, xmax, ymax, label
 ```
 
 ```{python}
+import os
 from matplotlib import pyplot as plt
 from deepforest import deepforest
 from deepforest import utilities
@@ -36,8 +37,9 @@ YELL_xml = get_data("2019_YELL_2_541000_4977000_image_crop.xml")
 annotation = utilities.xml_to_annotations(YELL_xml)
 annotation.head()
 
-#Write converted dataframe to file. Saved alongside the images
-annotation.to_csv("deepforest/data/eval_example.csv", index=False)
+#Write converted dataframe to file alongside the provided example images
+eval_file = "eval_example.csv"
+annotation.to_csv(eval_file, index=False)
 ```
 
 ### Evaluation windows
@@ -54,9 +56,11 @@ Often the evaluation tile is too large to be predicted as single image, due to b
 ```{python}
 #Find data on path
 YELL_test = get_data("2019_YELL_2_541000_4977000_image_crop.tiff")
-crop_dir = "tests/data/"
+
+#Crop and save images in current directory
+crop_dir = os.getcwd()
 cropped_annotations= preprocess.split_raster(path_to_raster=YELL_test,
-                                 annotations_file="deepforest/data/eval_example.csv",
+                                 annotations_file=eval_file,
                                  base_dir=crop_dir,
                                  patch_size=400,
                                  patch_overlap=0.05)
@@ -64,7 +68,7 @@ cropped_annotations= preprocess.split_raster(path_to_raster=YELL_test,
 cropped_annotations.head()
 
 #Write window annotations file without a header row, same location as the "base_dir" above.
-eval_annotations_file= crop_dir + "cropped_example.csv"
+eval_annotations_file= "cropped_example.csv"
 cropped_annotations.to_csv(eval_annotations_file,index=False, header=None)
 ```
 
@@ -113,7 +117,8 @@ These are pretty strong results, likely because the images are similar to those 
 To view a prediction from the model, use ```predict_image```.
 
 ```{python}
-image = test_model.predict_image("tests/data/2019_YELL_2_541000_4977000_image_crop_11.jpg", return_plot=True)
+sample_file ="2019_YELL_2_541000_4977000_image_crop_11.jpg"
+image = test_model.predict_image(sample_file, return_plot=True)
 
 #Matplotlib views in RGB order, but model returns BGR order
 plt.imshow(image[...,::-1])
