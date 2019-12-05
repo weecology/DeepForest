@@ -1,6 +1,14 @@
 # Installation
 
-DeepForest can be installed from source using the github repository.
+
+DeepForest has a two step install process from pypi.
+
+```
+pip install DeepForest
+pip install git+git://github.com/bw4sz/keras-retinanet.git
+```
+
+DeepForest can alternatively be installed from source using the github repository.
 
 ```
 git clone https://github.com/weecology/DeepForest.git --depth 1

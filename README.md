@@ -39,7 +39,7 @@ https://deepforest.readthedocs.io.
 
 ## Feedback
 
-All [issues](https://github.com/weecology/DeepForest/issues/) can be submitted to the github repo. We look forward to hearing about the performance of the prebuilt and custom models. We encourage all users to submit a sample image [issue](https://github.com/weecology/DeepForest/issues/49), regardless of performance, to the image gallery. We want to hear from you!
+All [issues](https://github.com/weecology/DeepForest/issues/) can be submitted to the github repo. First have a look at [FAQ](https://deepforest.readthedocs.io/en/latest/FAQ.html) for a few common errors. We look forward to hearing about the performance of the prebuilt and custom models. We encourage all users to submit a sample image [issue](https://github.com/weecology/DeepForest/issues/49), regardless of performance, to the image gallery. We want to hear from you!
 
 ## Usage
 

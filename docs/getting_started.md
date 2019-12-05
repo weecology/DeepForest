@@ -7,6 +7,14 @@ DeepForest has a prebuilt model trained on data from 24 sites from the [National
 ![](../www/semi-supervised.png)
 For more details on the modeling approach see [citations](landing.html#citation).
 
+## Sample data
+
+DeepForest comes with a small set of sample data to help run the docs examples. Since users may install in a variety of manners, and it is impossible to know the relative location of the files, the helper function ```get_data``` is used. This function looks to where DeepForest is installed, and finds the deepforest/data/ directory.
+
+```
+YELL_xml = get_data("2019_YELL_2_541000_4977000_image_crop.xml")
+```
+
 ## Prediction
 
 DeepForest allows convenient prediction of new data based on the prebuilt model or a [custom trained](getting_started.html#Training) model. There are three ways to format data for prediction.
