@@ -1,5 +1,4 @@
 # What is DeepForest?
-
 DeepForest is a python package for training and predicting individual tree crowns from airborne RGB imagery. DeepForest comes with a prebuilt model trained on data from the National Ecological Observation Network. Users can extend this model by annotating and training custom models.
 
 ![](../www/image.png)
@@ -22,7 +21,6 @@ Remote sensing can transform the speed, scale, and cost of biodiversity and fore
 
 
 ## Feedback
-
 All [issues](https://github.com/weecology/DeepForest/issues/) can be submitted to the github repo. We look forward to hearing about the performance of the prebuilt and custom models. We encourage all users to submit a sample image [issue](https://github.com/weecology/DeepForest/issues/49), regardless of performance, to the [image gallery](https://weecology.github.io/DeepForest/). We want to hear from you!
 
 ## Citation

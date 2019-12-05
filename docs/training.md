@@ -43,13 +43,13 @@ annotation = utilities.xml_to_annotations(YELL_xml)
 annotation.head()
 
 #Write converted dataframe to file. Saved alongside the images
-annotation.to_csv("deepforest/data/train_example.csv", index=False)
+annotation.to_csv("train_example.csv", index=False)
 
 #Find data on path
 YELL_train = get_data("2019_YELL_2_528000_4978000_image_crop2.tiff")
-crop_dir = "tests/data/"
+crop_dir = os.getcwd()
 train_annotations= preprocess.split_raster(path_to_raster=YELL_train,
-                                 annotations_file="deepforest/data/train_example.csv",
+                                 annotations_file="train_example.csv",
                                  base_dir=crop_dir,
                                  patch_size=400,
                                  patch_overlap=0.05)
