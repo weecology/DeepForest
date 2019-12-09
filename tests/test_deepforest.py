@@ -12,6 +12,7 @@ from PIL import Image
 from matplotlib import pyplot as plt
 
 from deepforest import deepforest
+from deepforest import preprocess
 from deepforest import utilities
 from deepforest import tfrecords
 from deepforest import get_data
@@ -156,6 +157,20 @@ def test_predict_tile(release_model):
     raster_path = get_data("OSBS_029.tif")
     original_raster = Image.open(raster_path)
     original_raster = np.array(original_raster)  
+        
+    windows = preprocess.compute_windows(original_raster, patch_size=400,patch_overlap=0.1)
+    rgb = original_raster[windows[0].indices()]
+    bgr = rgb.copy()[...,::-1]
+    
+    rgb = release_model.predict_image(raw_image = rgb, return_plot = True, color=(0,255,0))
+    bgr = release_model.predict_image(raw_image = bgr, return_plot = True, color =(0,255,0))
+    
+    fig=plt.figure()
+    fig.add_subplot(2,1,1)
+    plt.imshow(rgb)
+    fig.add_subplot(2,1,2)    
+    plt.imshow(bgr)
+    plt.show()
     
     #This should make the same prediction?
     #predicted_raster = release_model.predict_tile(raster_path, return_plot = False, patch_size=400,patch_overlap=0)
