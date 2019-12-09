@@ -20,7 +20,7 @@ def label_to_name(image_classes, index):
     label = image_classes[index]
     return label
 
-def predict_image(model, image_path=None, raw_image = None, score_threshold = 0.05, max_detections= 200, return_plot=True, classes = ["Tree"]):
+def predict_image(model, image_path=None, raw_image = None, score_threshold = 0.05, max_detections= 200, return_plot=True, classes = ["Tree"], color=(0,0,0)):
     """
     Predict invidiual tree crown bounding boxes for a single image
     
@@ -36,10 +36,15 @@ def predict_image(model, image_path=None, raw_image = None, score_threshold = 0.
         raw_image (array): If return_plot is TRUE, the image with the overlaid boxes is returned
         image_detections: If return_plot is FALSE, a np.array of image_boxes, image_scores, image_labels
     """
-    #predict
-    if image_path:
-        raw_image = cv2.imread(image_path)       
-    image        = keras_retinanet_image.preprocess_image(raw_image)
+    
+    #Check for raw_image
+    if raw_image is not None:
+        numpy_image = raw_image.copy()
+    else:
+        #Read from path
+        numpy_image = cv2.imread(image_path)       
+        
+    image        = keras_retinanet_image.preprocess_image(numpy_image)
     image, scale = keras_retinanet_image.resize_image(image)
 
     if keras.backend.image_data_format() == 'channels_first':
@@ -67,13 +72,14 @@ def predict_image(model, image_path=None, raw_image = None, score_threshold = 0.
     image_detections = np.concatenate([image_boxes, np.expand_dims(image_scores, axis=1), np.expand_dims(image_labels, axis=1)], axis=1)
 
     df = pd.DataFrame(image_detections, columns = ["xmin","ymin","xmax","ymax","score","label"])
+    
     #Change numberic class into string label
     df.label = df.label.astype(int)
     df.label = df.label.apply(lambda x: classes[x])
     
     if return_plot:
-        draw_detections(raw_image, image_boxes, image_scores, image_labels, label_to_name=label_to_name, score_threshold=score_threshold)
-        return raw_image                
+        draw_detections(numpy_image, image_boxes, image_scores, image_labels, label_to_name=label_to_name, score_threshold=score_threshold, color=color)
+        return numpy_image                
     else:
         return df
 

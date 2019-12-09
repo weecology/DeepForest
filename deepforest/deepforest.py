@@ -41,6 +41,9 @@ class deepforest:
     '''
     
     def __init__(self, weights=None, saved_model=None):
+        #suppress tensorflow future warnings
+        tf.logging.set_verbosity(tf.logging.ERROR)
+        
         self.weights = weights
         self.saved_model = saved_model
         
@@ -56,6 +59,9 @@ class deepforest:
         print("Reading config file: {}".format(config_path))                    
         self.config = utilities.read_config(config_path)
         
+        #release version id to flag if release is being used
+        self.__release_version__ = None
+        
         #Load saved model if needed
         if self.saved_model:
             print("Loading saved model")
@@ -67,7 +73,7 @@ class deepforest:
             backbone = models.backbone(self.config["backbone"])            
             self.model, self.training_model, self.prediction_model = create_models(backbone.retinanet, num_classes=1, weights=self.weights)
         else:
-            print("No model initialized, either train or load an existing retinanet model")
+            print("A blank deepforest object created. To perform prediction, either train or load an existing model")
             self.model = None
             
     def train(self, annotations, input_type="fit_generator", list_of_tfrecords=None, comet_experiment=None, images_per_epoch=None):
@@ -221,12 +227,13 @@ class deepforest:
         print('mAP: {:.4f}'.format(mAP))   
         return mAP
 
-    def predict_image(self, image_path=None, raw_image=None, return_plot=True, score_threshold=0.05, max_detections=200, show=False):
+    def predict_image(self, image_path=None, raw_image=None, return_plot=True, show=False, color=(0,0,0)):
         """Predict tree crowns based on loaded (or trained) model
         
         Args:
             image_path (str): Path to image on disk
             raw_image (array): Numpy image array in BGR channel order following openCV convention
+            color (tuple): Color of bounding boxes in BGR order (0,0,0) black default 
             show (bool): Plot the predicted image with bounding boxes. Ignored if return_plot=False
             return_plot: Whether to return image with annotations overlaid, or just a numpy array of boxes
         
@@ -237,24 +244,30 @@ class deepforest:
         #Check for model save
         if(self.prediction_model is None):
             raise ValueError("Model currently has no prediction weights, either train a new model using deepforest.train, loading existing model, or use prebuilt model (see deepforest.use_release()")
-         
-        #Warning if image is very large and using the release model
-        if image_path:
-            raw_image = cv2.imread(image_path)    
-        if any([x > 400 for x in raw_image.shape[:2]]):
-            warnings.warn("Input image has a size of {}, but the release model was trained on crops of 400px x 400px, results may be poor. "
-                          "Use predict_tile for dividing large images into overlapping windows.".format(raw_image.shape[:2]))
         
-        if return_plot:
-            image = predict.predict_image(self.prediction_model, image_path, raw_image, score_threshold, return_plot=return_plot)            
-            #cv2 channel order
-            if show:
-                plt.imshow(image[:,:,::-1])
-                plt.show()             
-            return image
-        else:
-            boxes = predict.predict_image(self.prediction_model, image_path=image_path, raw_image=raw_image, return_plot=return_plot)            
-            return boxes            
+        #Check the formatting
+        if isinstance(image_path,np.ndarray):
+            raise ValueError("image_path should be a string, but is a numpy array. If predicting a loaded image (channel order BGR), use raw_image argument.")
+        
+        #Check for correct formatting
+        #Warning if image is very large and using the release model
+        if raw_image is None:
+            raw_image = cv2.imread(image_path)    
+        
+        if self.__release_version__ :
+            if any([x > 400 for x in raw_image.shape[:2]]):
+                warnings.warn("Input image has a size of {}, but the release model was trained on crops of 400px x 400px, results may be poor."
+                              "Use predict_tile for dividing large images into overlapping windows.".format(raw_image.shape[:2]))
+        
+        #Predict
+        prediction = predict.predict_image(self.prediction_model, image_path=image_path, raw_image=raw_image, return_plot=return_plot, color=color)            
+            
+        #cv2 channel order to matplotlib order
+        if return_plot & show:
+            plt.imshow(prediction[:,:,::-1])
+            plt.show()             
+
+        return prediction            
 
     def predict_tile(self, path_to_raster, patch_size=400,patch_overlap=0.1, iou_threshold=0.75, return_plot=False):
         """
