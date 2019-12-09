@@ -46,3 +46,7 @@ deepforest.predict_image(image_path="path to image")
 ```
 
 Deepforest will automatically read in the image as bgr, the user does not need to anything.
+
+4. Windows Installation
+
+See [installation guide](installation.md/#Windows-installation) on docs for more notes on windows.

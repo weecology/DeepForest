@@ -34,3 +34,13 @@ Type "help", "copyright", "credits" or "license" for more information.
 >>> deepforest.__version__
 '0.2.3'
 ```
+
+### Windows installation
+
+Windows users have reported needing to first install the major dependencies for DeepForest before pip install. The standard windows approach to installing site packages wheels will work and reduce clutter in installation. The following packages are the major functions in DeepForest
+
+* tensorflow
+* keras
+* shapely
+
+Conda install on windows will work well, especially for [shapely](https://towardsdatascience.com/install-shapely-on-windows-72b6581bb46c).
