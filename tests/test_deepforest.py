@@ -158,18 +158,34 @@ def test_predict_tile(release_model):
     original_raster = Image.open(raster_path)
     original_raster = np.array(original_raster)  
         
-    windows = preprocess.compute_windows(original_raster, patch_size=400,patch_overlap=0.1)
-    rgb = original_raster[windows[0].indices()]
-    bgr = rgb.copy()[...,::-1]
+    windows = preprocess.compute_windows(original_raster, patch_size=300,patch_overlap=0.2)
+    image1 = original_raster[windows[0].indices()][...,::-1]
+    image2 = original_raster[windows[1].indices()][...,::-1]
     
-    rgb = release_model.predict_image(raw_image = rgb, return_plot = True, color=(0,255,0))
-    bgr = release_model.predict_image(raw_image = bgr, return_plot = True, color =(0,255,0))
+    image1 = release_model.predict_image(raw_image = image1, return_plot = True, color =(0,0,0))
+    image2 = release_model.predict_image(raw_image = image2, return_plot = True, color =(0,0,0))
+    
+    image1_box = release_model.predict_image(raw_image = image1, return_plot = False, color =(0,0,0))
+    image2_box = release_model.predict_image(raw_image = image2, return_plot = False, color =(0,0,0))
+    
+    xmin, ymin, xmax, ymax = windows[0].getRect()
+    image1_box.xmin = image1_box.xmin + xmin
+    image1_box.xmax = image1_box.xmax + xmin
+    image1_box.ymin = image1_box.ymin + ymin
+    image1_box.ymax = image1_box.ymax + ymin
+
+    xmin, ymin, xmax, ymax = windows[1].getRect()
+    image2_box.xmin = image2_box.xmin + xmin
+    image2_box.xmax = image2_box.xmax + xmin
+    image2_box.ymin = image2_box.ymin + ymin
+    image2_box.ymax = image2_box.ymax + ymin
+    
     
     fig=plt.figure()
     fig.add_subplot(2,1,1)
-    plt.imshow(rgb)
+    plt.imshow(image1[...,::-1])
     fig.add_subplot(2,1,2)    
-    plt.imshow(bgr)
+    plt.imshow(image2[...,::-1])
     plt.show()
     
     #This should make the same prediction?
