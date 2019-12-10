@@ -17,6 +17,7 @@ from matplotlib import pyplot as plt
 from deepforest import get_data
 from deepforest import utilities
 from deepforest import predict
+from deepforest import boxes
 from deepforest import preprocess
 from deepforest.retinanet_train import main as retinanet_train
 from deepforest.retinanet_train import parse_args
@@ -227,7 +228,7 @@ class deepforest:
         print('mAP: {:.4f}'.format(mAP))   
         return mAP
 
-    def predict_image(self, image_path=None, raw_image=None, return_plot=True, show=False, color=(0,0,0)):
+    def predict_image(self, image_path=None, raw_image=None, return_plot=True, score_threshold=0.05, show=False, color=(0,0,0)):
         """Predict tree crowns based on loaded (or trained) model
         
         Args:
@@ -260,7 +261,7 @@ class deepforest:
                               "Use predict_tile for dividing large images into overlapping windows.".format(raw_image.shape[:2]))
         
         #Predict
-        prediction = predict.predict_image(self.prediction_model, image_path=image_path, raw_image=raw_image, return_plot=return_plot, color=color)            
+        prediction = predict.predict_image(self.prediction_model, image_path=image_path, raw_image=raw_image, return_plot=return_plot, score_threshold=score_threshold, color=color)            
             
         #cv2 channel order to matplotlib order
         if return_plot & show:
@@ -275,6 +276,8 @@ class deepforest:
         
         Args:
             raster_path: Path to image on disk
+            patch_overlap: Fraction of the tile to overlap among windows
+            patch_size: pixel size of the dimensions of a square window for prediction
             iou_threshold: Minimum iou overlap among predictions between windows to be supressed. Defaults to 0.5. Lower values suppress more boxes at edges.
             return_plot: Should the image be returned with the predictions drawn?
         
@@ -290,47 +293,70 @@ class deepforest:
         #Compute sliding window index
         windows = preprocess.compute_windows(numpy_image, patch_size,patch_overlap)
         
-        #Save images to tmpdir
         predicted_boxes = []
         
+        #Crop each window, predict, and reassign extent
         for index, window in enumerate(windows):
             #Crop window and predict
             crop = numpy_image[windows[index].indices()] 
             
             #Crop is RGB channel order, change to BGR
             crop = crop[...,::-1]
-            boxes = self.predict_image(raw_image=crop, return_plot=False, score_threshold=self.config["score_threshold"])            
+            tile_boxes = self.predict_image(raw_image=crop, return_plot=False, score_threshold=self.config["score_threshold"])            
             
             #transform coordinates to original system
             xmin, ymin, xmax, ymax = windows[index].getRect()
-            boxes.xmin = boxes.xmin + xmin
-            boxes.xmax = boxes.xmax + xmin
-            boxes.ymin = boxes.ymin + ymin
-            boxes.ymax = boxes.ymax + ymin
+            tile_boxes.xmin = tile_boxes.xmin + xmin
+            tile_boxes.xmax = tile_boxes.xmax + xmin
+            tile_boxes.ymin = tile_boxes.ymin + ymin
+            tile_boxes.ymax = tile_boxes.ymax + ymin
             
-            predicted_boxes.append(boxes)
+            #temporary assign crop index for overlapping merge
+            tile_boxes["crop_index"] = index
+            
+            predicted_boxes.append(tile_boxes)
             
         predicted_boxes = pd.concat(predicted_boxes)
         
-        #Non-max supression for overlapping boxes among window 
-        with tf.Session() as sess:
-            print("{} predictions in overlapping windows, applying non-max supression".format(predicted_boxes.shape[0]))
-            new_boxes, new_scores, new_labels = predict.non_max_suppression(sess,
-                                                                            predicted_boxes[["xmin","ymin","xmax","ymax"]].values,
-                                                                            predicted_boxes.score.values, predicted_boxes.label.values,
-                                                                            max_output_size=predicted_boxes.shape[0],
-                                                                            iou_threshold=iou_threshold)
+        print("{} predictions from overlapping windows. Joining overlapping window areas...".format(predicted_boxes.shape[0]))
+        
+        #iterate through windows and merge overlapping tile_boxes
+        for index, window in enumerate(windows):
+            xmin, ymin, xmax, ymax = windows[index].getRect()
             
-            image_detections = np.concatenate([new_boxes, np.expand_dims(new_scores, axis=1), np.expand_dims(new_labels, axis=1)], axis=1)
-            mosaic_df = pd.DataFrame(image_detections,columns=["xmin","ymin","xmax","ymax","score","label"])
-            mosaic_df.label = mosaic_df.label.str.decode("utf-8")
-            print("{} predictions kept after non-max suppression".format(mosaic_df.shape[0]))
+            #select annotations that match crop
+            target_df = predicted_boxes[predicted_boxes.crop_index == index]
             
+            #pool of all other crops (TODO make this more scalable?)
+            pool_df = predicted_boxes[~(predicted_boxes.crop_index == index)]
+            merged_boxes = boxes.merge_tiles(target_df=target_df, pool_df = pool_df, patch_size=patch_size)
+            
+            #replace tile_boxes from that crop, how does this scale?
+            predicted_boxes = pd.concat([pool_df, merged_boxes])
+            
+            if return_plot:
+                #Draw predictions
+                temp_image = numpy_image.copy()                
+                for box in merged_boxes[["xmin","ymin","xmax","ymax"]].values:
+                    #temp copy image
+                    draw_box(temp_image, box, [0,255,255])     
+                
+                for box in target_df[["xmin","ymin","xmax","ymax"]].values:
+                    #temp copy image
+                    draw_box(temp_image, box, [0,0,0])    
+                
+                for box in pool_df[["xmin","ymin","xmax","ymax"]].values:
+                    #temp copy image
+                    draw_box(temp_image, box, [255,0,0])                  
+                plt.imshow(temp_image)
+                plt.show()
+            print("Joining overlapping window complete, {} predictions remain".format(predicted_boxes.shape[0]))
+        
         if return_plot:
             #Draw predictions
-            for box in mosaic_df[["xmin","ymin","xmax","ymax"]].values:
+            for box in predicted_boxes[["xmin","ymin","xmax","ymax"]].values:
                 draw_box(numpy_image, box, [0,0,255])
             
             return numpy_image
         else:
-            return mosaic_df
+            return predicted_boxes

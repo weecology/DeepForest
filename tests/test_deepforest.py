@@ -155,58 +155,10 @@ def test_random_transform(annotations):
 
 def test_predict_tile(release_model):
     raster_path = get_data("OSBS_029.tif")
-    original_raster = Image.open(raster_path)
-    original_raster = np.array(original_raster)  
-        
-    windows = preprocess.compute_windows(original_raster, patch_size=300,patch_overlap=0.2)
-    image1 = original_raster[windows[0].indices()][...,::-1]
-    image2 = original_raster[windows[1].indices()][...,::-1]
-    
-    image1 = release_model.predict_image(raw_image = image1, return_plot = True, color =(0,0,0))
-    image2 = release_model.predict_image(raw_image = image2, return_plot = True, color =(0,0,0))
-    
-    image1_box = release_model.predict_image(raw_image = image1, return_plot = False, color =(0,0,0))
-    image2_box = release_model.predict_image(raw_image = image2, return_plot = False, color =(0,0,0))
-    
-    xmin, ymin, xmax, ymax = windows[0].getRect()
-    image1_box.xmin = image1_box.xmin + xmin
-    image1_box.xmax = image1_box.xmax + xmin
-    image1_box.ymin = image1_box.ymin + ymin
-    image1_box.ymax = image1_box.ymax + ymin
-
-    xmin, ymin, xmax, ymax = windows[1].getRect()
-    image2_box.xmin = image2_box.xmin + xmin
-    image2_box.xmax = image2_box.xmax + xmin
-    image2_box.ymin = image2_box.ymin + ymin
-    image2_box.ymax = image2_box.ymax + ymin
-    
-    
-    fig=plt.figure()
-    fig.add_subplot(2,1,1)
-    plt.imshow(image1[...,::-1])
-    fig.add_subplot(2,1,2)    
-    plt.imshow(image2[...,::-1])
+    image = release_model.predict_tile(raster_path,patch_size=200,patch_overlap=0.1,return_plot=True)
+    plt.imshow(image)
     plt.show()
-    
-    #This should make the same prediction?
-    #predicted_raster = release_model.predict_tile(raster_path, return_plot = False, patch_size=400,patch_overlap=0)
-    #predicted_image = release_model.predict_image(raster_path, return_plot = False)
-    
-    #assert predicted_raster.shape == predicted_image.shape
-    
-    #Debug
-    predicted_raster = release_model.predict_tile(raster_path, return_plot = True, patch_size=300,patch_overlap=0.5)
-    predicted_image = release_model.predict_image(raster_path, return_plot = True)
-    
-    assert original_raster.shape == predicted_raster.shape
-    
-    #fig=plt.figure()
-    #fig.add_subplot(2,1,1)
-    #plt.imshow(predicted_raster)
-    #fig.add_subplot(2,1,2)    
-    #plt.imshow(predicted_image[...,::-1])
-    #plt.show()
-    
+        
 def test_retrain_release(annotations, release_model):
     release_model.config["epochs"] = 1
     release_model.config["save-snapshot"] = False
