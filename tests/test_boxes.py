@@ -32,14 +32,14 @@ def test_box_from_df(df):
     
 def test_merge_boxes(df):
     box_list = boxes.box_from_df(df)
-    plot_box(box_list)
+    #plot_box(box_list)
     
     #Create an example
     merge_boxes = [box_list[0]]
     tile_boxes = box_list[1:]
     
     merged_boxes = boxes.merge_boxes(tile_boxes,merge_boxes)
-    plot_box(merged_boxes)
+    #plot_box(merged_boxes)
     
     assert len(merged_boxes) == 2
     
