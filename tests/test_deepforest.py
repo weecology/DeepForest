@@ -155,7 +155,7 @@ def test_random_transform(annotations):
 
 def test_predict_tile(release_model):
     raster_path = get_data("OSBS_029.tif")
-    image = release_model.predict_tile(raster_path,patch_size=200,patch_overlap=0.1,return_plot=True)
+    image = release_model.predict_tile(raster_path,patch_size=300,patch_overlap=0.5,return_plot=True)
     plt.imshow(image)
     plt.show()
         
