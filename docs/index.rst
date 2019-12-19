@@ -17,6 +17,7 @@ Source code is available here: (https://github.com/weecology/DeepForest.git).
    performance
    neon_benchmark.md
    FAQ
+   case_study_FrenchGuiana
    code_of_conduct.rst
    source/deepforest
    modules

@@ -1,7 +1,7 @@
 # FAQ
 
 Commonly encountered issues
-1. Conda version errors
+* Conda version errors
 
 Occasionally users report that conda enforces incorrect versions on install from source.
 
@@ -10,7 +10,7 @@ Occasionally users report that conda enforces incorrect versions on install from
  ```
 We have yet to find an example where this prevents DeepForest from operating successfully. From our perspective, this error can be ignored. If not, please open an [issue](https://github.com/weecology/DeepForest/issues) documenting your conda version and operating system.
 
-2. Tensorflow deprectation warnings
+* Tensorflow deprectation warnings
 
 ```
 >>> from deepforest import deepforest
@@ -19,7 +19,7 @@ We have yet to find an example where this prevents DeepForest from operating suc
 
 These warnings are upstream of DeepForest and can be ignored.
 
-2. Alpha channel
+* Alpha channel
 
 ```
 OSError: cannot write mode RGBA as JPEG
@@ -27,7 +27,7 @@ OSError: cannot write mode RGBA as JPEG
 
 If you are manually cropping an image, be careful not to save the alpha channel. For example, on OSX, the preview tool will save a 4 channel image (RGBA) instead of a three channel image (RGB) by default. When saving a crop, toggle alpha channel off.
 
-3. BGR versus RGB images
+* BGR versus RGB images
 
 Unfortunately, python has two standard libraries for image processing and visualization, matplotlib and opencv, that do not have the same default channel order. Matplotlib reads images into RedGreenBlue order, whereas Opencv reads in BlueGreenRed order. The machine learning module and the default backbone weights assume the image is BGR. Therefore there is some uncomfortable moments of visualizing data and not anticipating the channel order.
 
@@ -47,6 +47,6 @@ deepforest.predict_image(image_path="path to image")
 
 Deepforest will automatically read in the image as bgr, the user does not need to anything.
 
-4. Windows Installation
+* Windows Installation
 
 See [installation guide](installation.md/#Windows-installation) on docs for more notes on windows.

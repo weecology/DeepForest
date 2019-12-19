@@ -7,8 +7,13 @@
 """
 import os
 import warnings
+
 from PIL import Image
-import tensorflow as tf
+with warnings.catch_warnings():
+    #Suppress some of the verbose tensorboard warnings, compromise to avoid numpy version errors    
+    warnings.filterwarnings("ignore",category=FutureWarning)    
+    import tensorflow as tf
+    
 import pandas as pd
 import cv2
 import numpy as np
@@ -40,10 +45,7 @@ class deepforest:
         model: A keras training model from keras-retinanet
     '''
     
-    def __init__(self, weights=None, saved_model=None):
-        #suppress tensorflow future warnings
-        tf.logging.set_verbosity(tf.logging.ERROR)
-        
+    def __init__(self, weights=None, saved_model=None):        
         self.weights = weights
         self.saved_model = saved_model
         
@@ -65,7 +67,10 @@ class deepforest:
         #Load saved model if needed
         if self.saved_model:
             print("Loading saved model")
-            self.model = utilities.load_model(saved_model)
+            #Capture user warning, not relevant here
+            with warnings.catch_warnings():
+                warnings.filterwarnings("ignore",category=UserWarning)                    
+                self.model = utilities.load_model(saved_model)
             self.prediction_model = convert_model(self.model)
             
         if self.weights is not None:
@@ -73,7 +78,7 @@ class deepforest:
             backbone = models.backbone(self.config["backbone"])            
             self.model, self.training_model, self.prediction_model = create_models(backbone.retinanet, num_classes=1, weights=self.weights)
         else:
-            print("A blank deepforest object created. To perform prediction, either train or load an existing model")
+            print("A blank deepforest object created. To perform prediction, either train or load an existing model.")
             self.model = None
             
     def train(self, annotations, input_type="fit_generator", list_of_tfrecords=None, comet_experiment=None, images_per_epoch=None):
@@ -112,7 +117,10 @@ class deepforest:
         self.__release_version__ = release_tag
         print("Loading pre-built model: {}".format(release_tag))
         
-        self.model = utilities.read_model(self.weights, self.config)
+        with warnings.catch_warnings():
+            #Suppress compilte warning, not relevant here
+            warnings.filterwarnings("ignore",category=UserWarning)          
+            self.model = utilities.read_model(self.weights, self.config)
         
         #Convert model
         self.prediction_model = convert_model(self.model)

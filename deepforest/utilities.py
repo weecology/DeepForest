@@ -34,7 +34,11 @@ def read_model(model_path, config):
         """
         Read keras retinanet model from keras.model.save()
         """
-        model = models.load_model(model_path, backbone_name='resnet50')
+        #Suppress user warning, module does not need to be compiled for prediction
+        with warnings.catch_warnings():    
+                warnings.simplefilter('ignore', UserWarning)                
+                model = models.load_model(model_path, backbone_name='resnet50')
+                
         return model
 
 #Download progress bar
