@@ -1,4 +1,4 @@
-# Case Study - Drone Imagery
+# Case Study - Drones
 
 This is a demonstration notebook of using DeepForest to predict and train models for individual tree segmentation in drone imagery. The goal of this notebook is to orient users to the general DeepForest workflow. Due to data sharing agreements, the data in this example is not available. For more information on the data see the excellent:
 
@@ -6,8 +6,6 @@ Aubry-Kientz, M., Dutrieux, R., Ferraz, A., Saatchi, S., Hamraz, H., Williams, J
 
 I would like to thank the authors for sharing their data to test deepforest performance.
 
-Plese note that this demo uses a couple geospatial packages not installed in DeepForest. See
-https://github.com/weecology/DeepForest_French_Guiana
 
 ```python
 #Load packages
@@ -94,7 +92,7 @@ It is often useful to look at small piece of a large tile before performing pred
 
 
 ```python
-raster_path = "/Users/ben/Dropbox/Weecology/Drone/ForBen/RGB_allPlots/RetroProj_cropped/RP_2015_P1.tif"
+raster_path = "/Users/ben/Dropbox/Weecology/Drone/ForBen/RGB_allPlots/RetroProj_cropped/RP_2015_P15.tif"
 raster = Image.open(raster_path)
 numpy_image = np.array(raster)
 numpy_image.shape
@@ -103,13 +101,13 @@ numpy_image.shape
 
 
 
-    (3440, 3400, 3)
+    (3470, 3530, 3)
 
 
 
 Our image is 3440 by 3440 pixels with 3 channels
 
-## Crop a small window
+### Crop a small window
 
 
 ```python
@@ -129,7 +127,7 @@ plt.imshow(crop)
 
 
 
-    <matplotlib.image.AxesImage at 0x1489d6790>
+    <matplotlib.image.AxesImage at 0x147d6fe50>
 
 
 
@@ -165,7 +163,7 @@ plt.imshow(prediction[...,::-1]) #show in rgb channel order
 
 
 
-    <matplotlib.image.AxesImage at 0x14ae78450>
+    <matplotlib.image.AxesImage at 0x14fe44550>
 
 
 
@@ -217,47 +215,47 @@ prediction_boxes.head()
   <tbody>
     <tr>
       <th>0</th>
-      <td>39.942226</td>
-      <td>147.545990</td>
-      <td>125.531654</td>
-      <td>236.231201</td>
-      <td>0.784136</td>
+      <td>314.474884</td>
+      <td>248.668076</td>
+      <td>371.648193</td>
+      <td>304.204193</td>
+      <td>0.700159</td>
       <td>Tree</td>
     </tr>
     <tr>
       <th>1</th>
-      <td>304.032593</td>
-      <td>26.757530</td>
-      <td>357.015259</td>
-      <td>75.317200</td>
-      <td>0.625443</td>
+      <td>317.331421</td>
+      <td>308.574402</td>
+      <td>364.592255</td>
+      <td>357.247406</td>
+      <td>0.686024</td>
       <td>Tree</td>
     </tr>
     <tr>
       <th>2</th>
-      <td>317.521027</td>
-      <td>80.718277</td>
-      <td>350.360443</td>
-      <td>114.256851</td>
-      <td>0.577154</td>
+      <td>172.521942</td>
+      <td>170.743179</td>
+      <td>236.104370</td>
+      <td>237.100296</td>
+      <td>0.679066</td>
       <td>Tree</td>
     </tr>
     <tr>
       <th>3</th>
-      <td>206.558334</td>
-      <td>49.206478</td>
-      <td>283.817230</td>
-      <td>128.984558</td>
-      <td>0.554278</td>
+      <td>180.300705</td>
+      <td>79.773674</td>
+      <td>241.513123</td>
+      <td>142.817734</td>
+      <td>0.639935</td>
       <td>Tree</td>
     </tr>
     <tr>
       <th>4</th>
-      <td>150.457901</td>
-      <td>180.764999</td>
-      <td>214.140472</td>
-      <td>241.539474</td>
-      <td>0.550440</td>
+      <td>228.626373</td>
+      <td>153.100372</td>
+      <td>267.252045</td>
+      <td>196.547791</td>
+      <td>0.639300</td>
       <td>Tree</td>
     </tr>
   </tbody>
@@ -274,7 +272,7 @@ prediction_boxes.shape
 
 
 
-    (60, 6)
+    (75, 6)
 
 
 
@@ -294,7 +292,7 @@ for index in range(12):
 ![png](figures/output_28_0.png)
 
 
-### Predict entire tile
+## Predict entire tile
 
 The overall tile is too large to fit into memory. DeepForest will slide overlapping windows, same as the sized above, make a prediction on each window. Then reassemble and delete overlaps based on the highest scoring box. The reassembling process can be subtle, and requires the user to balance the amount of overlap (more predictions = slower), and the overall size of objects on interest.
 
@@ -305,8 +303,8 @@ tile = model.predict_tile(raster_path,return_plot=True,patch_overlap=0.3,iou_thr
 
     WARNING:tensorflow:From /Users/ben/Documents/DeepForest_French_Guiana/DeepForest/lib/python3.7/site-packages/deepforest/deepforest.py:324: The name tf.Session is deprecated. Please use tf.compat.v1.Session instead.
 
-    8671 predictions in overlapping windows, applying non-max supression
-    4622 predictions kept after non-max suppression
+    10724 predictions in overlapping windows, applying non-max supression
+    5422 predictions kept after non-max suppression
 
 
 
@@ -320,7 +318,7 @@ plt.savefig("/Users/Ben/Desktop/overlap30_iou20.png")
 ![png](figures/output_32_0.png)
 
 
-## Create shapefile of predictions
+### Create shapefile of predictions
 
 For this particular use case, we are interested in taking the bounding boxes and making a shapefile of bounding boxes. This section requires dependencies outside of DeepForest, and in particular geopandas can be annoying to install on windows due to GDAL. For this reason, these packages are not included in the main DeepForest install.
 
@@ -329,8 +327,8 @@ For this particular use case, we are interested in taking the bounding boxes and
 boxes = model.predict_tile(raster_path,return_plot=False,patch_overlap=0.3,iou_threshold=0.2)
 ```
 
-    8671 predictions in overlapping windows, applying non-max supression
-    4622 predictions kept after non-max suppression
+    10724 predictions in overlapping windows, applying non-max supression
+    5422 predictions kept after non-max suppression
 
 
 
@@ -385,7 +383,7 @@ model.config
 
 For more information on the parameter settings see https://deepforest.readthedocs.io/en/latest/training_config.html
 
-## Prepare annotation data for training
+### Prepare annotation data for training
 
 DeepForest trains on 400x400 pixel windows. The overall image is too large to fit into memory. We therefore need to split the annotations into windows and generate the crops for training
 
@@ -431,8 +429,8 @@ model.config["validation_annotations"] = test_file
 
 ```
 
-    There are 1720 training crown annotations
-    There are 72 test crown annotations
+    There are 1725 training crown annotations
+    There are 67 test crown annotations
 
 
 Before training lets get a bit of a baseline by getting the evaluation score on the test file using the prebuilt model.
@@ -448,19 +446,19 @@ model.evaluate_generator(test_file)
     Disabling snapshot saving
 
 
-    Running network: 100% (3 of 3) |#########| Elapsed Time: 0:00:05 Time:  0:00:05
+    Running network: 100% (3 of 3) |#########| Elapsed Time: 0:00:08 Time:  0:00:08
     Parsing annotations: 100% (3 of 3) |#####| Elapsed Time: 0:00:00 Time:  0:00:00
 
 
-    72 instances of class Tree with average precision: 0.3060
-    mAP using the weighted average of precisions among classes: 0.3060
-    mAP: 0.3060
+    67 instances of class Tree with average precision: 0.3950
+    mAP using the weighted average of precisions among classes: 0.3950
+    mAP: 0.3950
 
 
 
 
 
-    0.3060010280890328
+    0.39503491467743457
 
 
 
@@ -474,7 +472,7 @@ comet_experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2",
 comet_experiment.log_parameters(model.config)
 ```
 
-    COMET INFO: Experiment is live on comet.ml https://www.comet.ml/bw4sz/frenchguiana/038f0f3e5624473aa2cab878239a615f
+    COMET INFO: Experiment is live on comet.ml https://www.comet.ml/bw4sz/frenchguiana/8cae586158ee4d9aab3e9fa47cd83cf0
 
 
 
@@ -959,48 +957,48 @@ comet_experiment.end()
 
 
     Epoch 1/1
-     1/78 [..............................] - ETA: 12:25 - loss: 2.1641 - regression_loss: 1.8070 - classification_loss: 0.3571
+     1/78 [..............................] - ETA: 20:59 - loss: 2.5568 - regression_loss: 2.0908 - classification_loss: 0.4661
 
     COMET INFO: Ignoring automatic log_metric('batch_batch') because 'keras:batch_batch' is in COMET_LOGGING_METRICS_IGNORE
     COMET INFO: Ignoring automatic log_metric('batch_size') because 'keras:batch_size' is in COMET_LOGGING_METRICS_IGNORE
 
 
-    78/78 [==============================] - 661s 8s/step - loss: 1.9508 - regression_loss: 1.6466 - classification_loss: 0.3042
+    78/78 [==============================] - 640s 8s/step - loss: 1.9470 - regression_loss: 1.6433 - classification_loss: 0.3037
 
 
     Running network: N/A% (0 of 3) |         | Elapsed Time: 0:00:00 ETA:  --:--:--COMET ERROR: We failed to read file snapshots/0.png for uploading.
     Please double check the file path and permissions
-    Running network:  33% (1 of 3) |###      | Elapsed Time: 0:00:03 ETA:   0:00:06COMET ERROR: We failed to read file snapshots/1.png for uploading.
+    Running network:  33% (1 of 3) |###      | Elapsed Time: 0:00:02 ETA:   0:00:05COMET ERROR: We failed to read file snapshots/1.png for uploading.
     Please double check the file path and permissions
-    Running network:  66% (2 of 3) |######   | Elapsed Time: 0:00:05 ETA:   0:00:02COMET ERROR: We failed to read file snapshots/2.png for uploading.
+    Running network:  66% (2 of 3) |######   | Elapsed Time: 0:00:04 ETA:   0:00:02COMET ERROR: We failed to read file snapshots/2.png for uploading.
     Please double check the file path and permissions
-    Running network: 100% (3 of 3) |#########| Elapsed Time: 0:00:07 Time:  0:00:07
+    Running network: 100% (3 of 3) |#########| Elapsed Time: 0:00:06 Time:  0:00:06
     Parsing annotations: 100% (3 of 3) |#####| Elapsed Time: 0:00:00 Time:  0:00:00
     COMET INFO: ----------------------------
     COMET INFO: Comet.ml Experiment Summary:
     COMET INFO:   Data:
-    COMET INFO:     url: https://www.comet.ml/bw4sz/frenchguiana/038f0f3e5624473aa2cab878239a615f
+    COMET INFO:     url: https://www.comet.ml/bw4sz/frenchguiana/8cae586158ee4d9aab3e9fa47cd83cf0
     COMET INFO:   Metrics [count] (min, max):
     COMET INFO:     IoU_Precision                : (0.4519230769230769, 0.4519230769230769)
-    COMET INFO:     IoU_Recall                   : (0.6527777777777778, 0.6527777777777778)
-    COMET INFO:     batch_classification_loss [8]: (0.30411621928215027, 0.3570635914802551)
-    COMET INFO:     batch_loss [8]               : (1.60202956199646, 2.16408371925354)
-    COMET INFO:     batch_regression_loss [8]    : (1.6403381824493408, 1.8070200681686401)
-    COMET INFO:     classification_loss          : (0.3041943311691284, 0.3041943311691284)
-    COMET INFO:     epoch_duration               : (668.3979864470001, 668.3979864470001)
-    COMET INFO:     loss                         : (1.9508383533893487, 1.9508383533893487)
+    COMET INFO:     IoU_Recall                   : (0.7014925373134329, 0.7014925373134329)
+    COMET INFO:     batch_classification_loss [8]: (0.30692124366760254, 0.46607303619384766)
+    COMET INFO:     batch_loss [8]               : (1.7177107334136963, 2.556849956512451)
+    COMET INFO:     batch_regression_loss [8]    : (1.6597843170166016, 2.0907769203186035)
+    COMET INFO:     classification_loss          : (0.30372223258018494, 0.30372223258018494)
+    COMET INFO:     epoch_duration               : (646.173687453, 646.173687453)
+    COMET INFO:     loss                         : (1.9469952537463262, 1.9469952537463262)
     COMET INFO:     lr                           : (9.999999747378752e-06, 9.999999747378752e-06)
-    COMET INFO:     mAP                          : (0.5022406748716541, 0.5022406748716541)
-    COMET INFO:     regression_loss              : (1.6466437578201294, 1.6466437578201294)
+    COMET INFO:     mAP                          : (0.5501668504636403, 0.5501668504636403)
+    COMET INFO:     regression_loss              : (1.6432732343673706, 1.6432732343673706)
     COMET INFO:     step                         : 78
-    COMET INFO:     sys.cpu.percent.01 [10]      : (85.3, 99.0)
-    COMET INFO:     sys.cpu.percent.02 [10]      : (70.8, 90.0)
-    COMET INFO:     sys.cpu.percent.03 [10]      : (87.5, 99.0)
-    COMET INFO:     sys.cpu.percent.04 [10]      : (71.1, 89.7)
-    COMET INFO:     sys.cpu.percent.avg [10]     : (78.675, 93.45)
-    COMET INFO:     sys.load.avg [10]            : (5.263671875, 23.40478515625)
+    COMET INFO:     sys.cpu.percent.01 [10]      : (91.0, 98.0)
+    COMET INFO:     sys.cpu.percent.02 [10]      : (77.6, 89.2)
+    COMET INFO:     sys.cpu.percent.03 [10]      : (90.7, 97.9)
+    COMET INFO:     sys.cpu.percent.04 [10]      : (76.6, 88.3)
+    COMET INFO:     sys.cpu.percent.avg [10]     : (84.89999999999999, 93.05000000000001)
+    COMET INFO:     sys.load.avg [10]            : (5.98046875, 11.51513671875)
     COMET INFO:     sys.ram.total [10]           : (17179869184.0, 17179869184.0)
-    COMET INFO:     sys.ram.used [10]            : (7799394304.0, 9236971520.0)
+    COMET INFO:     sys.ram.used [10]            : (7930040320.0, 9078923264.0)
     COMET INFO:   Other [count]:
     COMET INFO:     trainable_params: 36382957
     COMET INFO:   Uploads:
@@ -1009,8 +1007,8 @@ comet_experiment.end()
 
 
     Logging Recall at score threshold 0.05
-    72 instances of class Tree with average precision: 0.5022
-    mAP: 0.5022
+    67 instances of class Tree with average precision: 0.5502
+    mAP: 0.5502
 
 
     COMET INFO: Uploading stats to Comet before program termination (may take several seconds)
@@ -1039,25 +1037,25 @@ model.evaluate_generator(annotations_file)
     Disabling snapshot saving
 
 
-    Running network: 100% (78 of 78) |#######| Elapsed Time: 0:02:31 Time:  0:02:31
+    Running network: 100% (78 of 78) |#######| Elapsed Time: 0:02:21 Time:  0:02:21
     Parsing annotations: 100% (78 of 78) |###| Elapsed Time: 0:00:00 Time:  0:00:00
 
 
-    1720 instances of class Tree with average precision: 0.5617
-    mAP using the weighted average of precisions among classes: 0.5617
-    mAP: 0.5617
+    1725 instances of class Tree with average precision: 0.5727
+    mAP using the weighted average of precisions among classes: 0.5727
+    mAP: 0.5727
 
 
 
 
 
-    0.561650822946452
+    0.5726555926724359
 
 
 
 A mAP score of 0.57 is pretty high and suggests we dare not train for more epochs without significantly more data.
 
-## Evaluation accuracy
+### Evaluation accuracy
 
 For this example we held out a few crops from training. In general, we recommend that any validation data be from a seperate geographic tile.
 
@@ -1076,19 +1074,19 @@ model.evaluate_generator(test_file)
     Parsing annotations: 100% (3 of 3) |#####| Elapsed Time: 0:00:00 Time:  0:00:00
 
 
-    72 instances of class Tree with average precision: 0.5022
-    mAP using the weighted average of precisions among classes: 0.5022
-    mAP: 0.5022
+    67 instances of class Tree with average precision: 0.5502
+    mAP using the weighted average of precisions among classes: 0.5502
+    mAP: 0.5502
 
 
 
 
 
-    0.5022406748716541
+    0.5501668504636403
 
 
 
-A jump from 0.31 to 0.50 in ten minutes of training on a laptop. That's an improvement of 63% on out of sample data. Some caveats needed for the spatial autocorrelation in training and test data. We always recommend having geographically seperate data.
+A jump from 0.39 to 0.55 in ten minutes of training on a laptop. That's an improvement of 63% on out of sample data. Some caveats needed for the spatial autocorrelation in training and test data. We always recommend having geographically seperate data.
 
 ## Predict new tile
 
@@ -1097,8 +1095,8 @@ A jump from 0.31 to 0.50 in ten minutes of training on a laptop. That's an impro
 trained_model_tile = model.predict_tile(raster_path,return_plot=True,patch_overlap=0.2,iou_threshold=0.15)
 ```
 
-    4300 predictions in overlapping windows, applying non-max supression
-    2483 predictions kept after non-max suppression
+    4910 predictions in overlapping windows, applying non-max supression
+    2961 predictions kept after non-max suppression
 
 
 
@@ -1117,8 +1115,8 @@ plt.savefig("/Users/Ben/Desktop/overlap30_iou20_trained.png")
 trained_model_boxes = model.predict_tile(raster_path,return_plot=False,patch_overlap=0.3,iou_threshold=0.2)
 ```
 
-    5085 predictions in overlapping windows, applying non-max supression
-    2644 predictions kept after non-max suppression
+    6253 predictions in overlapping windows, applying non-max supression
+    3137 predictions kept after non-max suppression
 
 
 
@@ -1150,14 +1148,3 @@ plt.show()
 
 
 ![png](figures/output_70_0.png)
-
-
-
-```python
-
-```
-
-
-```python
-
-```
