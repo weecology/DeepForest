@@ -9,7 +9,7 @@ LICENCE = 'MIT'
 LONG_DESCRIPTION = """
 # Deepforest
 
-## Full documentation  
+## Full documentation
 [http://deepforest.readthedocs.io/en/latest/](http://deepforest.readthedocs.io/en/latest/)
 
 ## Installation
@@ -22,8 +22,8 @@ pip install DeepForest
 pip install git+git://github.com/bw4sz/keras-retinanet.git
 ```
 
-```
-Or install the latest version from Github  
+
+Or install the latest version from Github
 ```
 git clone https://github.com/weecology/DeepForest.git
 
@@ -33,7 +33,7 @@ conda activate DeepForest
 ```
 
 ## Get in touch
-See the [GitHub Repo](https://github.com/Weecology/deepforest) to see the 
+See the [GitHub Repo](https://github.com/Weecology/deepforest) to see the
 source code or submit issues and feature requests.
 
 ## Citation

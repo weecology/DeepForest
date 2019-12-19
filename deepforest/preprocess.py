@@ -90,10 +90,10 @@ def select_annotations(annotations, windows, index, allow_empty=False):
         selected_annotations.ymin = (selected_annotations.ymin - window_ymin)
         
         #cut off any annotations over the border.
-        selected_annotations.xmin[selected_annotations.xmin < 0] = 0
-        selected_annotations.xmax[selected_annotations.xmax > w] = w   
-        selected_annotations.ymin[selected_annotations.ymin < 0] = 0
-        selected_annotations.ymax[selected_annotations.ymax > h] = h   
+        selected_annotations.loc[selected_annotations.xmin< 0,"xmin"] = 0
+        selected_annotations.loc[selected_annotations.xmax > w,"xmax"] = w
+        selected_annotations.loc[selected_annotations.ymin < 0,"ymin"] = 0
+        selected_annotations.loc[selected_annotations.ymax > h,"ymax"] = h   
         
     return selected_annotations
  

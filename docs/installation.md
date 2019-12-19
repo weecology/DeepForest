@@ -39,8 +39,7 @@ Type "help", "copyright", "credits" or "license" for more information.
 
 Windows users have reported needing to first install the major dependencies for DeepForest before pip install. The standard windows approach to installing site packages wheels will work and reduce clutter in installation. The following packages are the major functions in DeepForest
 
-* tensorflow
+* tensorflow==1.14.0
+1.14.0 has been tested, any version < 2.0 should work as well. Deepforest relies on keras retinanet which does not yet have a tensorflow 2.0 build.
 * keras
-* shapely
-
-Conda install on windows will work well, especially for [shapely](https://towardsdatascience.com/install-shapely-on-windows-72b6581bb46c).
+* OpenCV
