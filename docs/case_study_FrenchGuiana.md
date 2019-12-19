@@ -1,4 +1,4 @@
-# Introduction
+# Case Study - Drone Imagery
 
 This is a demonstration notebook of using DeepForest to predict and train models for individual tree segmentation in drone imagery. The goal of this notebook is to orient users to the general DeepForest workflow. Due to data sharing agreements, the data in this example is not available. For more information on the data see the excellent:
 
@@ -6,6 +6,8 @@ Aubry-Kientz, M., Dutrieux, R., Ferraz, A., Saatchi, S., Hamraz, H., Williams, J
 
 I would like to thank the authors for sharing their data to test deepforest performance.
 
+Plese note that this demo uses a couple geospatial packages not installed in DeepForest. See
+https://github.com/weecology/DeepForest_French_Guiana
 
 ```python
 #Load packages
@@ -40,7 +42,7 @@ These are version warnings for tensorflow and numpy and can be ignored. Dependin
 
 When faced with a new dataset, the first step is usually test the performance of the prebuilt model. For information on how this model was created see https://deepforest.readthedocs.io/en/latest/getting_started.html
 
-# Load DeepForest prebuilt model
+## Load DeepForest prebuilt model
 
 Create a new deepforest object and download the latest release of the prebuilt NEON model from github: https://github.com/weecology/DeepForest/releases
 
@@ -292,7 +294,7 @@ for index in range(12):
 ![png](figures/output_28_0.png)
 
 
-# Predict entire tile
+### Predict entire tile
 
 The overall tile is too large to fit into memory. DeepForest will slide overlapping windows, same as the sized above, make a prediction on each window. Then reassemble and delete overlaps based on the highest scoring box. The reassembling process can be subtle, and requires the user to balance the amount of overlap (more predictions = slower), and the overall size of objects on interest.
 
