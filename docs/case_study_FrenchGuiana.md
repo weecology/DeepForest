@@ -25,6 +25,7 @@ from deepforest import __version__
 #Geospatial packages
 import shapely
 import geopandas
+import rasterio
 
 #Check version
 print("This demo is run with deepforest version {}".format(__version__))
@@ -33,7 +34,7 @@ print("This demo is run with deepforest version {}".format(__version__))
     Using TensorFlow backend.
 
 
-    This demo is run with deepforest version 0.2.6
+    This demo is run with deepforest version 0.2.7
 
 
 These are version warnings for tensorflow and numpy and can be ignored. Depending on your operating system and specific build, there may be more deprecation warnings. I am happy to field any questions on the DeepForest git repo issues page: https://github.com/weecology/DeepForest/issues  
@@ -127,7 +128,7 @@ plt.imshow(crop)
 
 
 
-    <matplotlib.image.AxesImage at 0x147d6fe50>
+    <matplotlib.image.AxesImage at 0x151e0ee10>
 
 
 
@@ -163,7 +164,7 @@ plt.imshow(prediction[...,::-1]) #show in rgb channel order
 
 
 
-    <matplotlib.image.AxesImage at 0x14fe44550>
+    <matplotlib.image.AxesImage at 0x1516ff350>
 
 
 
@@ -324,25 +325,40 @@ For this particular use case, we are interested in taking the bounding boxes and
 
 
 ```python
-boxes = model.predict_tile(raster_path,return_plot=False,patch_overlap=0.3,iou_threshold=0.2)
+boxes = model.predict_tile(raster_path,return_plot=False,patch_overlap=0.2,iou_threshold=0.2)
 ```
 
-    10724 predictions in overlapping windows, applying non-max supression
-    5422 predictions kept after non-max suppression
+    8382 predictions in overlapping windows, applying non-max supression
+    5312 predictions kept after non-max suppression
 
 
 
 ```python
-# combine lat and lon column to a shapely Box() object, save shapefile
+#Georeference.
+#This isn't a true projection, but over small spatial scales it will be fine. Add the origin of the raster and multiply the box height and width by the cell size (m/cell).
+#read in extent using rasterio
+with rasterio.open(raster_path) as dataset:
+    bounds = dataset.bounds
+    pixelSizeX, pixelSizeY  = dataset.res
+
+#subtract origin. Recall that numpy origin is top left! Not bottom left.
+boxes["xmin"] = (boxes["xmin"] *pixelSizeX) + bounds.left
+boxes["xmax"] = (boxes["xmax"] * pixelSizeX) + bounds.left
+boxes["ymin"] = bounds.top - (boxes["ymin"] * pixelSizeY)
+boxes["ymax"] = bounds.top - (boxes["ymax"] * pixelSizeY)
+```
+
+
+```python
+# combine column to a shapely Box() object, save shapefile
 boxes['geometry'] = boxes.apply(lambda x: shapely.geometry.box(x.xmin,x.ymin,x.xmax,x.ymax), axis=1)
 boxes = geopandas.GeoDataFrame(boxes, geometry='geometry')
-boxes.to_file('PrebuiltModel.shp', driver='ESRI Shapefile')
-```
 
-
-```python
-boxes = geopandas.GeoDataFrame(boxes, geometry='geometry')
-boxes.to_file('PrebuiltModel.shp', driver='ESRI Shapefile')
+#set projection, (see dataset.crs) hard coded here
+boxes.crs = {'init' :'epsg:32622'}
+#get proj info see:https://gis.stackexchange.com/questions/204201/geopandas-to-file-saves-geodataframe-without-coordinate-system
+prj = 'PROJCS["WGS_1984_UTM_Zone_22N",GEOGCS["GCS_WGS_1984",DATUM["D_WGS_1984",SPHEROID["WGS_1984",6378137,298.257223563]],PRIMEM["Greenwich",0],UNIT["Degree",0.017453292519943295]],PROJECTION["Transverse_Mercator"],PARAMETER["latitude_of_origin",0],PARAMETER["central_meridian",-51],PARAMETER["scale_factor",0.9996],PARAMETER["false_easting",500000],PARAMETER["false_northing",0],UNIT["Meter",1]]'
+boxes.to_file('PrebuiltModel.shp', driver='ESRI Shapefile',crs_wkt=prj)
 ```
 
 ## Train Model
@@ -429,8 +445,8 @@ model.config["validation_annotations"] = test_file
 
 ```
 
-    There are 1725 training crown annotations
-    There are 67 test crown annotations
+    There are 1750 training crown annotations
+    There are 42 test crown annotations
 
 
 Before training lets get a bit of a baseline by getting the evaluation score on the test file using the prebuilt model.
@@ -440,25 +456,25 @@ Before training lets get a bit of a baseline by getting the evaluation score on 
 model.evaluate_generator(test_file)
 ```
 
-    Running network: N/A% (0 of 3) |         | Elapsed Time: 0:00:00 ETA:  --:--:--
+    Running network: N/A% (0 of 2) |         | Elapsed Time: 0:00:00 ETA:  --:--:--
 
     There are 1 unique labels: ['Tree']
     Disabling snapshot saving
 
 
-    Running network: 100% (3 of 3) |#########| Elapsed Time: 0:00:08 Time:  0:00:08
-    Parsing annotations: 100% (3 of 3) |#####| Elapsed Time: 0:00:00 Time:  0:00:00
+    Running network: 100% (2 of 2) |#########| Elapsed Time: 0:00:03 Time:  0:00:03
+    Parsing annotations: 100% (2 of 2) |#####| Elapsed Time: 0:00:00 Time:  0:00:00
 
 
-    67 instances of class Tree with average precision: 0.3950
-    mAP using the weighted average of precisions among classes: 0.3950
-    mAP: 0.3950
+    42 instances of class Tree with average precision: 0.3454
+    mAP using the weighted average of precisions among classes: 0.3454
+    mAP: 0.3454
 
 
 
 
 
-    0.39503491467743457
+    0.34535418112634
 
 
 
@@ -472,7 +488,8 @@ comet_experiment = Experiment(api_key="ypQZhYfs3nSyKzOfz13iuJpj2",
 comet_experiment.log_parameters(model.config)
 ```
 
-    COMET INFO: Experiment is live on comet.ml https://www.comet.ml/bw4sz/frenchguiana/8cae586158ee4d9aab3e9fa47cd83cf0
+    COMET INFO: old comet version (3.0.1) detected. current: 3.0.2 please update your comet lib with command: `pip install --no-cache-dir --upgrade comet_ml`
+    COMET INFO: Experiment is live on comet.ml https://www.comet.ml/bw4sz/frenchguiana/8c249285fdc048fc85ae982b22513ea8
 
 
 
@@ -484,7 +501,7 @@ comet_experiment.end()
 
     There are 1 unique labels: ['Tree']
     Disabling snapshot saving
-    Training retinanet with the following args ['--weights', '/Users/ben/Documents/DeepForest_French_Guiana/DeepForest/lib/python3.7/site-packages/deepforest/data/NEON.h5', '--backbone', 'resnet50', '--image-min-side', '800', '--multi-gpu', '1', '--epochs', '1', '--steps', '78', '--batch-size', '1', '--tensorboard-dir', 'None', '--workers', '1', '--max-queue-size', '10', '--freeze-layers', '0', '--score-threshold', '0.05', '--save-path', 'snapshots/', '--snapshot-path', 'snapshots/', '--no-snapshots', 'csv', 'crops/train.csv', 'crops/classes.csv', '--val-annotations', 'crops/test.csv']
+    Training retinanet with the following args ['--weights', '/Users/ben/Documents/DeepForest_French_Guiana/DeepForest/lib/python3.7/site-packages/deepforest/data/NEON.h5', '--backbone', 'resnet50', '--image-min-side', '800', '--multi-gpu', '1', '--epochs', '1', '--steps', '79', '--batch-size', '1', '--tensorboard-dir', 'None', '--workers', '1', '--max-queue-size', '10', '--freeze-layers', '0', '--score-threshold', '0.05', '--save-path', 'snapshots/', '--snapshot-path', 'snapshots/', '--no-snapshots', 'csv', 'crops/train.csv', 'crops/classes.csv', '--val-annotations', 'crops/test.csv']
     Creating model, this may take a second...
     tracking <tf.Variable 'Variable_5:0' shape=(9, 4) dtype=float32> anchors
     tracking <tf.Variable 'Variable_6:0' shape=(9, 4) dtype=float32> anchors
@@ -957,48 +974,46 @@ comet_experiment.end()
 
 
     Epoch 1/1
-     1/78 [..............................] - ETA: 20:59 - loss: 2.5568 - regression_loss: 2.0908 - classification_loss: 0.4661
+     1/79 [..............................] - ETA: 12:41 - loss: 2.7404 - regression_loss: 2.1358 - classification_loss: 0.6046
 
     COMET INFO: Ignoring automatic log_metric('batch_batch') because 'keras:batch_batch' is in COMET_LOGGING_METRICS_IGNORE
     COMET INFO: Ignoring automatic log_metric('batch_size') because 'keras:batch_size' is in COMET_LOGGING_METRICS_IGNORE
 
 
-    78/78 [==============================] - 640s 8s/step - loss: 1.9470 - regression_loss: 1.6433 - classification_loss: 0.3037
+    79/79 [==============================] - 561s 7s/step - loss: 1.9579 - regression_loss: 1.6512 - classification_loss: 0.3067
 
 
-    Running network: N/A% (0 of 3) |         | Elapsed Time: 0:00:00 ETA:  --:--:--COMET ERROR: We failed to read file snapshots/0.png for uploading.
+    Running network: N/A% (0 of 2) |         | Elapsed Time: 0:00:00 ETA:  --:--:--COMET ERROR: We failed to read file snapshots/0.png for uploading.
     Please double check the file path and permissions
-    Running network:  33% (1 of 3) |###      | Elapsed Time: 0:00:02 ETA:   0:00:05COMET ERROR: We failed to read file snapshots/1.png for uploading.
+    Running network:  50% (1 of 2) |####     | Elapsed Time: 0:00:02 ETA:   0:00:02COMET ERROR: We failed to read file snapshots/1.png for uploading.
     Please double check the file path and permissions
-    Running network:  66% (2 of 3) |######   | Elapsed Time: 0:00:04 ETA:   0:00:02COMET ERROR: We failed to read file snapshots/2.png for uploading.
-    Please double check the file path and permissions
-    Running network: 100% (3 of 3) |#########| Elapsed Time: 0:00:06 Time:  0:00:06
-    Parsing annotations: 100% (3 of 3) |#####| Elapsed Time: 0:00:00 Time:  0:00:00
+    Running network: 100% (2 of 2) |#########| Elapsed Time: 0:00:04 Time:  0:00:04
+    Parsing annotations: 100% (2 of 2) |#####| Elapsed Time: 0:00:00 Time:  0:00:00
     COMET INFO: ----------------------------
     COMET INFO: Comet.ml Experiment Summary:
     COMET INFO:   Data:
-    COMET INFO:     url: https://www.comet.ml/bw4sz/frenchguiana/8cae586158ee4d9aab3e9fa47cd83cf0
+    COMET INFO:     url: https://www.comet.ml/bw4sz/frenchguiana/8c249285fdc048fc85ae982b22513ea8
     COMET INFO:   Metrics [count] (min, max):
-    COMET INFO:     IoU_Precision                : (0.4519230769230769, 0.4519230769230769)
-    COMET INFO:     IoU_Recall                   : (0.7014925373134329, 0.7014925373134329)
-    COMET INFO:     batch_classification_loss [8]: (0.30692124366760254, 0.46607303619384766)
-    COMET INFO:     batch_loss [8]               : (1.7177107334136963, 2.556849956512451)
-    COMET INFO:     batch_regression_loss [8]    : (1.6597843170166016, 2.0907769203186035)
-    COMET INFO:     classification_loss          : (0.30372223258018494, 0.30372223258018494)
-    COMET INFO:     epoch_duration               : (646.173687453, 646.173687453)
-    COMET INFO:     loss                         : (1.9469952537463262, 1.9469952537463262)
+    COMET INFO:     IoU_Precision                : (0.463768115942029, 0.463768115942029)
+    COMET INFO:     IoU_Recall                   : (0.7619047619047619, 0.7619047619047619)
+    COMET INFO:     batch_classification_loss [8]: (0.3103673756122589, 0.604596734046936)
+    COMET INFO:     batch_loss [8]               : (1.6140611171722412, 2.7403717041015625)
+    COMET INFO:     batch_regression_loss [8]    : (1.6617974042892456, 2.135775089263916)
+    COMET INFO:     classification_loss          : (0.3067133128643036, 0.3067133128643036)
+    COMET INFO:     epoch_duration               : (564.777695078, 564.777695078)
+    COMET INFO:     loss                         : (1.9579109360900107, 1.9579109360900107)
     COMET INFO:     lr                           : (9.999999747378752e-06, 9.999999747378752e-06)
-    COMET INFO:     mAP                          : (0.5501668504636403, 0.5501668504636403)
-    COMET INFO:     regression_loss              : (1.6432732343673706, 1.6432732343673706)
-    COMET INFO:     step                         : 78
-    COMET INFO:     sys.cpu.percent.01 [10]      : (91.0, 98.0)
-    COMET INFO:     sys.cpu.percent.02 [10]      : (77.6, 89.2)
-    COMET INFO:     sys.cpu.percent.03 [10]      : (90.7, 97.9)
-    COMET INFO:     sys.cpu.percent.04 [10]      : (76.6, 88.3)
-    COMET INFO:     sys.cpu.percent.avg [10]     : (84.89999999999999, 93.05000000000001)
-    COMET INFO:     sys.load.avg [10]            : (5.98046875, 11.51513671875)
-    COMET INFO:     sys.ram.total [10]           : (17179869184.0, 17179869184.0)
-    COMET INFO:     sys.ram.used [10]            : (7930040320.0, 9078923264.0)
+    COMET INFO:     mAP                          : (0.6436343790438395, 0.6436343790438395)
+    COMET INFO:     regression_loss              : (1.6511974334716797, 1.6511974334716797)
+    COMET INFO:     step                         : 79
+    COMET INFO:     sys.cpu.percent.01 [9]       : (85.9, 97.7)
+    COMET INFO:     sys.cpu.percent.02 [9]       : (73.3, 92.3)
+    COMET INFO:     sys.cpu.percent.03 [9]       : (85.8, 97.6)
+    COMET INFO:     sys.cpu.percent.04 [9]       : (72.9, 92.0)
+    COMET INFO:     sys.cpu.percent.avg [9]      : (79.475, 94.75)
+    COMET INFO:     sys.load.avg [9]             : (4.1787109375, 9.97216796875)
+    COMET INFO:     sys.ram.total [9]            : (17179869184.0, 17179869184.0)
+    COMET INFO:     sys.ram.used [9]             : (7972057088.0, 9412104192.0)
     COMET INFO:   Other [count]:
     COMET INFO:     trainable_params: 36382957
     COMET INFO:   Uploads:
@@ -1007,8 +1022,8 @@ comet_experiment.end()
 
 
     Logging Recall at score threshold 0.05
-    67 instances of class Tree with average precision: 0.5502
-    mAP: 0.5502
+    42 instances of class Tree with average precision: 0.6436
+    mAP: 0.6436
 
 
     COMET INFO: Uploading stats to Comet before program termination (may take several seconds)
@@ -1031,25 +1046,25 @@ Use the model to predict the annotations used in training.
 model.evaluate_generator(annotations_file)
 ```
 
-    Running network: N/A% (0 of 78) |        | Elapsed Time: 0:00:00 ETA:  --:--:--
+    Running network: N/A% (0 of 79) |        | Elapsed Time: 0:00:00 ETA:  --:--:--
 
     There are 1 unique labels: ['Tree']
     Disabling snapshot saving
 
 
-    Running network: 100% (78 of 78) |#######| Elapsed Time: 0:02:21 Time:  0:02:21
-    Parsing annotations: 100% (78 of 78) |###| Elapsed Time: 0:00:00 Time:  0:00:00
+    Running network: 100% (79 of 79) |#######| Elapsed Time: 0:02:11 Time:  0:02:11
+    Parsing annotations: 100% (79 of 79) |###| Elapsed Time: 0:00:00 Time:  0:00:00
 
 
-    1725 instances of class Tree with average precision: 0.5727
-    mAP using the weighted average of precisions among classes: 0.5727
-    mAP: 0.5727
+    1750 instances of class Tree with average precision: 0.5703
+    mAP using the weighted average of precisions among classes: 0.5703
+    mAP: 0.5703
 
 
 
 
 
-    0.5726555926724359
+    0.5702998832136603
 
 
 
@@ -1064,25 +1079,25 @@ For this example we held out a few crops from training. In general, we recommend
 model.evaluate_generator(test_file)
 ```
 
-    Running network: N/A% (0 of 3) |         | Elapsed Time: 0:00:00 ETA:  --:--:--
+    Running network: N/A% (0 of 2) |         | Elapsed Time: 0:00:00 ETA:  --:--:--
 
     There are 1 unique labels: ['Tree']
     Disabling snapshot saving
 
 
-    Running network: 100% (3 of 3) |#########| Elapsed Time: 0:00:05 Time:  0:00:05
-    Parsing annotations: 100% (3 of 3) |#####| Elapsed Time: 0:00:00 Time:  0:00:00
+    Running network: 100% (2 of 2) |#########| Elapsed Time: 0:00:03 Time:  0:00:03
+    Parsing annotations: 100% (2 of 2) |#####| Elapsed Time: 0:00:00 Time:  0:00:00
 
 
-    67 instances of class Tree with average precision: 0.5502
-    mAP using the weighted average of precisions among classes: 0.5502
-    mAP: 0.5502
+    42 instances of class Tree with average precision: 0.6436
+    mAP using the weighted average of precisions among classes: 0.6436
+    mAP: 0.6436
 
 
 
 
 
-    0.5501668504636403
+    0.6436343790438395
 
 
 
@@ -1095,8 +1110,8 @@ A jump from 0.39 to 0.55 in ten minutes of training on a laptop. That's an impro
 trained_model_tile = model.predict_tile(raster_path,return_plot=True,patch_overlap=0.2,iou_threshold=0.15)
 ```
 
-    4910 predictions in overlapping windows, applying non-max supression
-    2961 predictions kept after non-max suppression
+    5106 predictions in overlapping windows, applying non-max supression
+    3091 predictions kept after non-max suppression
 
 
 
@@ -1112,19 +1127,40 @@ plt.savefig("/Users/Ben/Desktop/overlap30_iou20_trained.png")
 
 
 ```python
-trained_model_boxes = model.predict_tile(raster_path,return_plot=False,patch_overlap=0.3,iou_threshold=0.2)
+trained_model_boxes = model.predict_tile(raster_path,return_plot=False,patch_overlap=0.2,iou_threshold=0.2)
 ```
 
-    6253 predictions in overlapping windows, applying non-max supression
-    3137 predictions kept after non-max suppression
+    5106 predictions in overlapping windows, applying non-max supression
+    3194 predictions kept after non-max suppression
 
+
+
+```python
+# Add raster extent to boxes to place in utm system.
+#This isn't a true projection, but over small spatial scales will be fine. Add the origin of the raster and multiply the box height and width by the cell size (m/cell).
+#read in extent using rasterio
+
+
+with rasterio.open(raster_path) as dataset:
+    bounds = dataset.bounds
+    pixelSizeX, pixelSizeY  = dataset.res
+
+#subtract origin. Recall that numpy origin is top left! Not bottom left.
+trained_model_boxes["xmin"] = (trained_model_boxes["xmin"] * pixelSizeX) + bounds.left
+trained_model_boxes["xmax"] = (trained_model_boxes["xmax"] * pixelSizeX) + bounds.left
+trained_model_boxes["ymin"] = bounds.top - (trained_model_boxes["ymin"] * pixelSizeY)
+trained_model_boxes["ymax"] = bounds.top - (trained_model_boxes["ymax"] * pixelSizeY)
+```
 
 
 ```python
 # combine lat and lon column to a shapely Box() object, save shapefile
 trained_model_boxes['geometry'] = trained_model_boxes.apply(lambda x: shapely.geometry.box(x.xmin,x.ymin,x.xmax,x.ymax), axis=1)
 trained_model_boxes = geopandas.GeoDataFrame(trained_model_boxes, geometry='geometry')
-trained_model_boxes.to_file('TrainedModel.shp', driver='ESRI Shapefile')
+trained_model_boxes.crs = {'init' :'epsg:32622'}
+#manually look up epsg
+prj = 'PROJCS["WGS_1984_UTM_Zone_22N",GEOGCS["GCS_WGS_1984",DATUM["D_WGS_1984",SPHEROID["WGS_1984",6378137,298.257223563]],PRIMEM["Greenwich",0],UNIT["Degree",0.017453292519943295]],PROJECTION["Transverse_Mercator"],PARAMETER["latitude_of_origin",0],PARAMETER["central_meridian",-51],PARAMETER["scale_factor",0.9996],PARAMETER["false_easting",500000],PARAMETER["false_northing",0],UNIT["Meter",1]]'
+trained_model_boxes.to_file('TrainedModel.shp', driver='ESRI Shapefile',crs_wkt=prj)
 ```
 
 ### View samples
@@ -1147,4 +1183,4 @@ plt.show()
 ```
 
 
-![png](figures/output_70_0.png)
+![png](output_71_0.png)
