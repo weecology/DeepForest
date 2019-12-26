@@ -50,3 +50,20 @@ Deepforest will automatically read in the image as bgr, the user does not need t
 * Windows Installation
 
 See [installation guide](installation.md/#Windows-installation) on docs for more notes on windows.
+
+# How do I project the predictions into the coordinate system?
+
+```
+import rasterio
+raster_path = <path_to_raster>
+
+with rasterio.open(raster_path) as dataset:
+    bounds = dataset.bounds
+    pixelSizeX, pixelSizeY  = dataset.res
+
+#subtract origin. Recall that numpy origin is top left! Not bottom left.
+boxes["xmin"] = (boxes["xmin"] *pixelSizeX) + bounds.left
+boxes["xmax"] = (boxes["xmax"] * pixelSizeX) + bounds.left
+boxes["ymin"] = bounds.top - (boxes["ymin"] * pixelSizeY)
+boxes["ymax"] = bounds.top - (boxes["ymax"] * pixelSizeY)
+```

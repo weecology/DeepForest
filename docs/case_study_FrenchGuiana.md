@@ -37,7 +37,7 @@ print("This demo is run with deepforest version {}".format(__version__))
     This demo is run with deepforest version 0.2.7
 
 
-These are version warnings for tensorflow and numpy and can be ignored. Depending on your operating system and specific build, there may be more deprecation warnings. I am happy to field any questions on the DeepForest git repo issues page: https://github.com/weecology/DeepForest/issues  
+These are version warnings for tensorflow and numpy and can be ignored. Depending on your operating system and specific build, there may be more deprecation warnings. I am happy to field any questions on the DeepForest git repo issues [page](https://github.com/weecology/DeepForest/issues).
 
 When faced with a new dataset, the first step is usually test the performance of the prebuilt model. For information on how this model was created see https://deepforest.readthedocs.io/en/latest/getting_started.html
 
@@ -491,7 +491,7 @@ comet_experiment.log_parameters(model.config)
     COMET INFO: old comet version (3.0.1) detected. current: 3.0.2 please update your comet lib with command: `pip install --no-cache-dir --upgrade comet_ml`
     COMET INFO: Experiment is live on comet.ml https://www.comet.ml/bw4sz/frenchguiana/8c249285fdc048fc85ae982b22513ea8
 
-
+[Comet training dashboard](https://www.comet.ml/bw4sz/frenchguiana/8c249285fdc048fc85ae982b22513ea8)
 
 
 ```python
@@ -1101,7 +1101,7 @@ model.evaluate_generator(test_file)
 
 
 
-A jump from 0.39 to 0.55 in ten minutes of training on a laptop. That's an improvement of 63% on out of sample data. Some caveats needed for the spatial autocorrelation in training and test data. We always recommend having geographically seperate data.
+A jump from 0.34 to 0.64 in ten minutes of training on a laptop. That's an improvement of 80% on out of sample data. Some caveats needed for the *very* small validation data size, and the spatial autocorrelation in training and test data. This is best seen as sufficient as an example. We always recommend having geographically separate data.
 
 ## Predict new tile
 
@@ -1183,4 +1183,4 @@ plt.show()
 ```
 
 
-![png](output_71_0.png)
+![png](figures/output_71_0.png)
