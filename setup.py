@@ -1,4 +1,5 @@
 from setuptools import setup, find_packages
+from setuptools_scm import integration
 
 NAME ='deepforest'
 VERSION = '0.2.7'
@@ -49,7 +50,6 @@ Development of this software was funded by
 [the Gordon and Betty Moore Foundation's Data-Driven Discovery Initiative](http://www.moore.org/programs/science/data-driven-discovery) through
 [Grant GBMF4563](http://www.moore.org/grants/list/GBMF4563) to Ethan P. White.
 """
-from setuptools_scm import integration
 integration.find_files = lambda p: []
 
 setup(name=NAME,
