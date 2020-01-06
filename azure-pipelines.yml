@@ -30,6 +30,7 @@ steps:
 
 - script: |
     pip install pytest pytest-azurepipelines
+    conda activate DeepForest
     pytest
   displayName: 'pytest'
 
