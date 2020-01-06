@@ -60,5 +60,5 @@ setup(name=NAME,
       license=LICENCE,
       packages=find_packages(),
       include_package_data=True,
-      install_requires=["keras > 2.3.0","tensorflow==1.14","pillow","pandas","opencv-python","pyyaml","slidingwindow","matplotlib","xmltodict","tqdm","numpy"],
+      install_requires=["keras > 2.3.0","tensorflow==1.15","pillow","pandas","opencv-python","pyyaml","slidingwindow","matplotlib","xmltodict","tqdm","numpy","Cython"],
       zip_safe=False)
