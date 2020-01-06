@@ -22,19 +22,19 @@ steps:
     python -m pip install --upgrade pip
     conda env create --file=environment.yml
     conda init bash
-    eval "$(conda shell.bash hook)"
-    conda activate DeepForest
+    source activate DeepForest
     cd keras_retinanet
     python setup.py build_ext --inplace
   displayName: 'Create Conda environment and build retinanet'
 
 - script: |
+    source activate DeepForest
     pip install pytest pytest-azurepipelines
-    conda activate DeepForest
     pytest
   displayName: 'pytest'
 
 - script: |    
+    source activate DeepForest
     python setup.py sdist 
   displayName: 'Artifact creation'
 - task: CopyFiles@2  
