@@ -26,6 +26,7 @@ steps:
 - script: |
     python -m pip install --upgrade pip
     conda env create --file=environment.yml
+    conda init bash
     conda activate DeepForest
     cd keras-retinanet
     python setup.py build_ext --inplace
@@ -33,7 +34,6 @@ steps:
 
 - script: |
     pip install pytest pytest-azurepipelines
-    conda activate DeepForest
     pytest
   displayName: 'pytest'
 
