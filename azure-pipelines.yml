@@ -23,11 +23,7 @@ steps:
     conda env create --file=environment.yml
     conda init bash
     source activate DeepForest
-    pip install git+git://github.com/bw4sz/keras-retinanet.git
-    # cd keras_retinanet
-    # python setup.py build_ext
-    # python setup.py install
-  displayName: 'Create Conda environment and built retinanet cython extension'
+  displayName: 'Create Conda environment for DeepForest'
 
 - script: |
     source activate DeepForest
