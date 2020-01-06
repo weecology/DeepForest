@@ -137,14 +137,14 @@ def test_evaluate(release_model, annotations):
 
 #Training    
 
-@pytest.mark.skipif("TRAVIS" in os.environ and os.environ["TRAVIS"] == "true", reason="Skipping this test on Travis CI.")
-def test_tfrecord_train(prepare_tfdataset, annotations):
-    test_model = deepforest.deepforest()
-    test_model.config["epochs"] = 1
-    test_model.config["save-snapshot"] = False
+#@pytest.mark.skipif("TRAVIS" in os.environ and os.environ["TRAVIS"] == "true", reason="Skipping this test on Travis CI.")
+#def test_tfrecord_train(prepare_tfdataset, annotations):
+    #test_model = deepforest.deepforest()
+    #test_model.config["epochs"] = 1
+    #test_model.config["save-snapshot"] = False
     
-    print("Found {} tfrecords to train".format(len(prepare_tfdataset)))
-    test_model.train(annotations=annotations,input_type="tfrecord", list_of_tfrecords=prepare_tfdataset, images_per_epoch=1)
+    #print("Found {} tfrecords to train".format(len(prepare_tfdataset)))
+    #test_model.train(annotations=annotations,input_type="tfrecord", list_of_tfrecords=prepare_tfdataset, images_per_epoch=1)
 
 #Test random transform
 def test_random_transform(annotations):
