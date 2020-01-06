@@ -51,7 +51,7 @@ Deepforest will automatically read in the image as bgr, the user does not need t
 
 See [installation guide](installation.md/#Windows-installation) on docs for more notes on windows.
 
-# How do I project the predictions into the coordinate system?
+* How do I project the predictions into the coordinate system?
 
 ```
 import rasterio
