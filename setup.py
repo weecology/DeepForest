@@ -49,6 +49,9 @@ Development of this software was funded by
 [the Gordon and Betty Moore Foundation's Data-Driven Discovery Initiative](http://www.moore.org/programs/science/data-driven-discovery) through
 [Grant GBMF4563](http://www.moore.org/grants/list/GBMF4563) to Ethan P. White.
 """
+from setuptools_scm import integration
+integration.find_files = lambda p: []
+
 setup(name=NAME,
       version=VERSION,
       python_requires='>=3',
