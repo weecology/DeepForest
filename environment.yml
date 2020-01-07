@@ -27,7 +27,6 @@ dependencies:
     - tensorflow==1.14
     - sphinx-markdown-tables  
     - bumpversion
-    - setuptools_scm
     - git+git://github.com/bw4sz/keras-retinanet.git
 
 
