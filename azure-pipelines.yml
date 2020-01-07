@@ -38,10 +38,11 @@ steps:
 - script: |    
     source activate DeepForest
     rm -rf .git
-    python setup.py sdist 
+    python setup.py sdist bdist_wheel
   displayName: 'Remove git archive and artifact creation'
 - task: CopyFiles@2  
   inputs:    
+    sourceFolder: dist/
     targetFolder: $(Build.ArtifactStagingDirectory)
 
 - task: PublishBuildArtifacts@1  
