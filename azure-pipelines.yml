@@ -6,6 +6,9 @@
 trigger:
 - master
 
+variables:
+  CIBW_SKIP: 'cp27-* cp35-*'
+  
 pool:
   vmImage: 'ubuntu-latest'
 strategy:
