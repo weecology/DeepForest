@@ -10,9 +10,14 @@ DeepForest is a python package for training and predicting individual tree crown
 
 ```
 pip install DeepForest
-pip install git+git://github.com/bw4sz/keras-retinanet.git
 ```
 
+Installation has been currently validated on clean installs of 
+
+* Linux version 5.0.0-1027-azure (buildd@lgw01-amd64-033) (gcc version 7.4.0 (Ubuntu 7.4.0-1ubuntu1~18.04.1)
+* Mac OSX Mojave Python 3.7.5 
+
+## Source Installation
 DeepForest can alternatively be installed from source using the github repository. The python package dependencies are managed by conda. For help installing conda see: [conda quickstart](https://docs.conda.io/projects/conda/en/latest/user-guide/install/). DeepForest depends on a [fork](https://github.com/bw4sz/keras-retinanet.git) of the keras-retinanet to perform object detection. *For windows users, DeepForest may require functioning versions of keras and tensorflow before installation.*
 
 ```
@@ -20,6 +25,8 @@ git clone https://github.com/weecology/DeepForest.git
 cd DeepForest
 conda env create --file=environment.yml
 conda activate DeepForest
+#build c extentions for retinanet
+python setup.py build_ext --inplace 
 ```
 
 After installation confirm DeepForest is installed by checking the version
