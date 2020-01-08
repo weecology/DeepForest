@@ -8,7 +8,7 @@ dependencies:
   - pyyaml
   - pytest
   - numpydoc
-  - cython
+  - cython>=0.28
   - h5py
   - xmltodict
   - tqdm
