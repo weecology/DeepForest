@@ -1,4 +1,5 @@
 from setuptools import setup, find_packages
+import setuptools
 
 NAME ='deepforest'
 VERSION = '0.2.7'
@@ -61,4 +62,10 @@ setup(name=NAME,
       packages=find_packages(),
       include_package_data=True,
       install_requires=["keras > 2.3.0","tensorflow==1.15","pillow","pandas","opencv-python","pyyaml","slidingwindow","matplotlib","xmltodict","tqdm","numpy","Cython"],
+      ext_modules=[
+          setuptools.Extension(
+              name='keras-retinanet',
+              sources=[]
+          )
+      ],
       zip_safe=False)
