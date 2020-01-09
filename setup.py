@@ -17,12 +17,11 @@ LONG_DESCRIPTION = """
 
 ## Installation
 
+Compiled wheels have been made for linux, osx and windows
+
 ```
 #Install DeepForest
 pip install DeepForest
-
-#Install fork of the retinanet repo
-pip install git+git://github.com/bw4sz/keras-retinanet.git
 ```
 
 
