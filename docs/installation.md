@@ -1,11 +1,10 @@
 # Installation
 
 
-DeepForest has a two step install process from pypi.
+DeepForest has Windows, Linux and OSX prebuilt wheels on pypi
 
 ```
 pip install DeepForest
-pip install git+git://github.com/bw4sz/keras-retinanet.git
 ```
 
 DeepForest can alternatively be installed from source using the github repository.
@@ -46,4 +45,4 @@ version 1.14.0 has been tested, but any version < 2.0 should work as well. Deepf
 * keras
 * OpenCV
 
-The current github installation of keras-retinanet requires a valid c++ compiler on path for windows. 
+The current github installation of keras-retinanet requires a valid c++ compiler on path for windows.
