@@ -16,7 +16,7 @@ pip install DeepForest
 
 Installation has been currently validated on clean installs of 
 
-* Linux version 5.0.0-1027-azure (buildd@lgw01-amd64-033) (gcc version 7.4.0 (Ubuntu 7.4.0-1ubuntu1~18.04.1)
+* Linux version (Ubuntu 7.4.0)
 * Mac OSX Mojave Python 3.7.5 
 * Windows 2016+
 
