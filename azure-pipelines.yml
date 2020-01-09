@@ -37,7 +37,7 @@ jobs:
       python3 setup.py sdist
       
   - task: PublishBuildArtifacts@1
-  inputs: {pathtoPublish: 'dist'}
+    inputs: {pathtoPublish: 'dist'}
   displayName: 'source distribution'
     
 - job: linux
