@@ -7,6 +7,8 @@ DeepForest has a prebuilt model trained on data from 24 sites from the [National
 ![](../www/semi-supervised.png)
 For more details on the modeling approach see [citations](landing.html#citation).
 
+The prebuilt model was trained on 0.1m data in window sizes of 400px. As an initial test of performance, we recommend staying around this ground area for each prediction window. For example, if you had 2m satellite data, and wanted to predict on a similar ground area: 2m/0.1m = 20 and 400px/20=20px, so you should predict_images of 20px to use the prebuilt model.
+
 ## Sample data
 
 DeepForest comes with a small set of sample data to help run the docs examples. Since users may install in a variety of manners, and it is impossible to know the relative location of the files, the helper function ```get_data``` is used. This function looks to where DeepForest is installed, and finds the deepforest/data/ directory.

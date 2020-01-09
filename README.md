@@ -14,10 +14,10 @@ Compiled versions of DeepForest are available for Windows, Mac and Linux on pypi
 pip install DeepForest
 ```
 
-Installation has been currently validated on clean installs of 
+Installation has been currently validated on clean installs of
 
 * Linux version (Ubuntu 7.4.0)
-* Mac OSX Mojave Python 3.7.5 
+* Mac OSX Mojave Python 3.7.5
 * Windows 2016+
 
 ## Source Installation
@@ -30,7 +30,7 @@ cd DeepForest
 conda env create --file=environment.yml
 conda activate DeepForest
 #build c extentions for retinanet
-python setup.py build_ext --inplace 
+python setup.py build_ext --inplace
 ```
 
 After installation confirm DeepForest is installed by checking the version
@@ -78,6 +78,8 @@ plt.imshow(image[...,::-1])
 plt.show()
 ```
 ![test image](www/image.png)
+
+The prebuilt model was trained on 0.1m data in window sizes of 400px. As an initial test of performance, we recommend staying around this ground area for each prediction window. For example, if you had 1m satellite data, and wanted to predict on a similar ground area: 1m/0.1m = 10 and 400px/10=40px, so you should predict_images of 40x40px to use the prebuilt model effectively.
 
 ## Training
 
