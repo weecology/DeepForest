@@ -67,3 +67,9 @@ boxes["xmax"] = (boxes["xmax"] * pixelSizeX) + bounds.left
 boxes["ymin"] = bounds.top - (boxes["ymin"] * pixelSizeY)
 boxes["ymax"] = bounds.top - (boxes["ymax"] * pixelSizeY)
 ```
+
+* Linux Python 3.5
+
+There is one known bug in Ubuntu python 3.5 on use_release.
+https://github.com/weecology/DeepForest/issues/64
+Suggested to update to a more recent python version.
