@@ -36,7 +36,6 @@ def predict_image(model, image_path=None, raw_image = None, score_threshold = 0.
         raw_image (array): If return_plot is TRUE, the image with the overlaid boxes is returned
         image_detections: If return_plot is FALSE, a np.array of image_boxes, image_scores, image_labels
     """
-    
     #Check for raw_image
     if raw_image is not None:
         numpy_image = raw_image.copy()

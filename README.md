@@ -79,7 +79,7 @@ plt.show()
 ```
 ![test image](www/image.png)
 
-The prebuilt model was trained on 0.1m data in window sizes of 400px. As an initial test of performance, we recommend staying around this ground area for each prediction window. For example, if you had 1m satellite data, and wanted to predict on a similar ground area: 1m/0.1m = 10 and 400px/10=40px, so you should predict_images of 40x40px to use the prebuilt model effectively.
+Window size can be important and is worth playing with, especially when predicting data coarser than the 0.1m data used to train the prebuilt model. Users must balance that the trees must be recognizable, so the images cannot be cropped too small, but the trees cannot be so small that they cannot be seen.
 
 ## Training
 

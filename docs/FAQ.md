@@ -73,3 +73,21 @@ boxes["ymax"] = bounds.top - (boxes["ymax"] * pixelSizeY)
 There is one known bug in Ubuntu python 3.5 on use_release.
 https://github.com/weecology/DeepForest/issues/64
 Suggested to update to a more recent python version.
+
+* Cannot identify image
+```
+>>> Image.open("/Users/ben/Downloads/NAIP/East_ben.tif")
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+  File "/Users/ben/Documents/DeepForest_French_Guiana/DeepForest/lib/python3.7/site-packages/PIL/Image.py", line 2818, in open
+    raise IOError("cannot identify image file %r" % (filename if filename else fp))
+OSError: cannot identify image file '/Users/ben/Downloads/NAIP/East_ben.tif'
+```
+
+The python image library requires three band unsigned 8 bit images. Sometimes geotiff files have no-data values greater than 255 or other file types. To ensure unsigned 8bit rasters, we can use any number of programs. For example in R
+
+```
+library(raster)
+r<-stack("/Users/ben/Downloads/NAIP/East_clip2.tif")
+writeRaster(x=r,datatype="INT1U",filename="/Users/ben/Downloads/NAIP/East_ben.tiff")
+```
