@@ -7,7 +7,7 @@ DeepForest has a prebuilt model trained on data from 24 sites from the [National
 ![](../www/semi-supervised.png)
 For more details on the modeling approach see [citations](landing.html#citation).
 
-The prebuilt model was trained on 0.1m data in window sizes of 400px. As an initial test of performance, we recommend staying around this ground area for each prediction window. For example, if you had 2m satellite data, and wanted to predict on a similar ground area: 2m/0.1m = 20 and 400px/20=20px, so you should predict_images of 20px to use the prebuilt model.
+Setting the correct window size to match the prebuilt model takes a few tries. The model was trained on 0.1m data with 400m crops. For data of the same resolution, that window size is appropriate. For coarser data, we have experimentally found that larger windows are actually more useful in providing the model context (e.g 1500px windows). At some point windows become too large and the trees are too tiny to classify. Striking a balance is important.
 
 ## Sample data
 
@@ -53,6 +53,8 @@ xmin        ymin        xmax        ymax     score label
 
 Large tiles covering wide geographic extents cannot fit into memory during prediction and would yield poor results due to the density of bounding boxes. Often provided as geospatial .tif files, remote sensing data is best suited for the ```predict_tile``` function, which splits the tile into overlapping windows, perform prediction on each of the windows, and then reassembles the resulting annotations.
 
+Let's show an example with a small image. For larger images, patch_size should be increased.
+
 ```
 from deepforest import deepforest
 from deepforest import get_data
@@ -61,9 +63,11 @@ test_model = deepforest.deepforest()
 test_model.use_release()
 
 raster_path = get_data("OSBS_029.tif")
-#Window size of 300px with an overlap of 50% among windows
-predicted_raster = test_model.predict_tile(raster_path, return_plot = True, patch_size=300,patch_overlap=0.5)
+#Window size of 300px with an overlap of 25% among windows for this small tile.
+predicted_raster = test_model.predict_tile(raster_path, return_plot = True, patch_size=300,patch_overlap=0.25)
 ```
+
+** Please note the predict tile function is sensitive to patch_size, especially when using the prebuilt model on new data** We encourage users to try out a variety of patch sizes. For 0.1m data, 400-800px per window is appropriate, but it will depend on the density of tree plots. For coarser resolution tiles, >800px patch sizes have been effective, but we welcome feedback from users using a variety of spatial resolutions.
 
 ### Predict a set of annotations
 
