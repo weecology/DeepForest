@@ -12,3 +12,4 @@ tests/data/
 _pycache_
 current_release.csv
 *.tif
+*.DS_Store
