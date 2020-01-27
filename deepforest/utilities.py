@@ -12,7 +12,7 @@ import warnings
 
 from tqdm import tqdm
 from keras_retinanet import models
-
+from keras.utils import multi_gpu_model
 from deepforest import _ROOT
 
 def label_to_name(label):
@@ -36,9 +36,16 @@ def read_model(model_path, config):
         """
         #Suppress user warning, module does not need to be compiled for prediction
         with warnings.catch_warnings():    
-                warnings.simplefilter('ignore', UserWarning)                
-                model = models.load_model(model_path, backbone_name='resnet50')
-                
+                warnings.simplefilter('ignore', UserWarning) 
+                # Keras recommends initialising a multi-gpu model on the CPU to ease weight sharing, and to prevent OOM errors.
+                # optionally wrap in a parallel model
+                if config["multi-gpu"] > 1: 
+                        with tf.device('/cpu:0'):                        
+                                model = models.load_model(model_path, backbone_name='resnet50')
+                        model = multi_gpu_model(model, gpus=config["multi-gpu"])
+                else:
+                        model = models.load_model(model_path, backbone_name='resnet50')                        
+                        
         return model
 
 #Download progress bar
