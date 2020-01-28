@@ -82,7 +82,7 @@ def predict_image(model, image_path=None, raw_image = None, score_threshold = 0.
     else:
         return df
 
-def non_max_suppression(sess, boxes, scores, labels, max_output_size=200, iou_threshold=0.5):
+def non_max_suppression(sess, boxes, scores, labels, max_output_size=200, iou_threshold=0.15):
     '''
     Provide a tensorflow session and get non-maximum suppression
     Args:

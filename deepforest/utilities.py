@@ -9,11 +9,13 @@ import urllib
 import xmltodict
 import csv
 import warnings
+import tensorflow as tf
 
 from tqdm import tqdm
 from keras_retinanet import models
 from keras.utils import multi_gpu_model
 from deepforest import _ROOT
+
 
 def label_to_name(label):
         """ Map label to name.
