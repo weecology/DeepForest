@@ -71,7 +71,6 @@ class deepforest:
             with warnings.catch_warnings():
                 warnings.filterwarnings("ignore",category=UserWarning)                    
                 self.model = utilities.load_model(saved_model)
-            self.prediction_model = convert_model(self.model)
             
         if self.weights is not None:
             print("Creating model from weights")
@@ -123,7 +122,7 @@ class deepforest:
             self.model = utilities.read_model(self.weights, self.config)
         
         #Convert model
-        self.prediction_model = convert_model(self.model)
+        self.prediction_model =self.model
         
         #add to config
         self.config["weights"] = self.weights        
