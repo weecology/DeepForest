@@ -103,11 +103,12 @@ class deepforest:
         #Train model
         self.model, self.prediction_model, self.training_model = retinanet_train(args=arg_list, input_type = input_type, list_of_tfrecords = list_of_tfrecords, comet_experiment = comet_experiment)
     
-    def use_release(self):
+    def use_release(self, gpus=1):
         '''Use the latest DeepForest model release from github and load model. Optionally download if release doesn't exist
         
         Returns:
             model (object): A trained keras model
+            gpus: number of gpus to parallelize, default to 1
         '''        
         #Download latest model from github release
         release_tag, self.weights = utilities.use_release()  
@@ -116,13 +117,17 @@ class deepforest:
         self.__release_version__ = release_tag
         print("Loading pre-built model: {}".format(release_tag))
         
-        with warnings.catch_warnings():
-            #Suppress compilte warning, not relevant here
-            warnings.filterwarnings("ignore",category=UserWarning)          
-            self.model = utilities.read_model(self.weights, self.config)
-        
-        #Convert model
-        self.prediction_model =self.model
+        if gpus == 1:
+            with warnings.catch_warnings():
+                #Suppress compilte warning, not relevant here
+                warnings.filterwarnings("ignore",category=UserWarning)          
+                self.model = utilities.read_model(self.weights, self.config)
+            
+            #Convert model
+            self.prediction_model = convert_model(self.model)
+        elif gpus > 1:
+            backbone = models.backbone(self.config["backbone"])            
+            self.model, self.training_model, self.prediction_model = create_models(backbone.retinanet, num_classes=1, weights=self.weights,multi_gpu=multi_gpu)            
         
         #add to config
         self.config["weights"] = self.weights        

@@ -91,50 +91,10 @@ def test_train(annotations):
     
     return test_model
 
-#def test_train_no_freeze(annotations, test_train):
-    #test_train.config["freeze_layers"] = 0
-    
-    ##Get initial weights to compare from one layer
-    #before = test_train.training_model.layers[100].get_weights()
-        
-    ##retrain with no freezing
-    #test_train.train(annotations=annotations, input_type="fit_generator")
-    
-    ##Get updated weights to compare
-    #after = test_train.training_model.layers[100].get_weights()
-
-    #assert test_train.training_model.layers[100].trainable
-    #assert not np.array_equal(before, after)
-    
-#def test_freeze_train(annotations, test_train):
-    #test_train.config["freeze_resnet"] = True
-    
-    ##Get initial weights to compare from one layer, it should start in trainable mode
-    #print("Trainable layers before freezing: {}".format(len(test_train.training_model.trainable_weights)))
-    #assert test_train.training_model.layers[6].trainable    
-    #before = test_train.training_model.layers[6].get_weights()
-        
-    ##retrain with no freezing
-    #test_train.train(annotations=annotations, input_type="fit_generator")
-    
-    ##Get updated weights to compare
-    #after = test_train.training_model.layers[10].get_weights()
-    #print("Trainable layers after freezing: {}".format(len(test_train.training_model.trainable_weights)))
-
-    #assert not test_train.training_model.layers[10].trainable
-    
-    ##Because the network uses batch norm layers, there is a slight drift in weights. It should be very small.
-    ##assert np.array_equal(before, after)
-
 def test_predict_generator(release_model, annotations):
     boxes = release_model.predict_generator(annotations=annotations)
     assert boxes.shape[1] == 7
     
-def test_evaluate(release_model, annotations):
-    mAP = release_model.evaluate_generator(annotations=annotations)
-    #Assert that function returns a float numpy value
-    assert mAP.dtype == float
-
 #Test random transform
 def test_random_transform(annotations):
     test_model = deepforest.deepforest()
@@ -145,8 +105,6 @@ def test_random_transform(annotations):
 def test_predict_tile(release_model):
     raster_path = get_data("OSBS_029.tif")
     image = release_model.predict_tile(raster_path,patch_size=300,patch_overlap=0.5,return_plot=True)
-    plt.imshow(image)
-    plt.show()
         
 def test_retrain_release(annotations, release_model):
     release_model.config["epochs"] = 1
