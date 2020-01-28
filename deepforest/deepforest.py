@@ -127,7 +127,7 @@ class deepforest:
             self.prediction_model = convert_model(self.model)
         elif gpus > 1:
             backbone = models.backbone(self.config["backbone"])            
-            self.model, self.training_model, self.prediction_model = create_models(backbone.retinanet, num_classes=1, weights=self.weights,multi_gpu=multi_gpu)            
+            self.model, self.training_model, self.prediction_model = create_models(backbone.retinanet, num_classes=1, weights=self.weights, multi_gpu=gpus)            
         
         #add to config
         self.config["weights"] = self.weights        
