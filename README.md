@@ -6,6 +6,8 @@
 
 DeepForest is a python package for training and predicting individual tree crowns from airborne RGB imagery. DeepForest comes with a prebuilt model trained on data from the National Ecological Observation Network. Users can extend this model by annotating and training custom models starting from the prebuilt model.
 
+DeepForest es un paquete de python para formación y predicción para arboles individuales de imágenes de teledetección. DeepForest viene con un modelo entrenado por data de la Red nacional de observación ecológica. Los usuarios pueden ampliar el modelo por anotación y formación modelos personalizados a partir del modelo preconstruido por utilizando datos locales. La documentación de DeepForest esta escrito en ingles, pero nosotros agradecemos contribuciones para ampliarlo a otros idiomas. 
+
 ## Installation
 
 Compiled versions of DeepForest are available for Windows, Mac and Linux on pypi.
