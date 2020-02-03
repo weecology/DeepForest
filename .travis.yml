@@ -10,7 +10,6 @@ before_install:
 install:
 - conda env create --file=environment.yml
 - source activate DeepForest
-- cd keras_retinanet
 - python setup.py build_ext --inplace
 - cd ..
 env: TRAVIS=true
