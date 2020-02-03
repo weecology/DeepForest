@@ -4,7 +4,9 @@
 # https://docs.microsoft.com/azure/devops/pipelines/languages/python
 
 trigger:
-- master
+  tags:
+    include:
+    - v*
 
 variables:
   CIBW_SKIP: 'cp27-* cp35-*'
