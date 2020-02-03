@@ -6,7 +6,7 @@
 trigger:
   tags:
     include:
-    - v*
+    - '*'
 
 variables:
   CIBW_SKIP: 'cp27-* cp35-*'
