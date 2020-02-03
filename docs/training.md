@@ -20,7 +20,15 @@ DeepForest uses xml files produced by the commonly used annotation program RectL
 
 ![](../www/rectlabel.png)
 
- For annotations made in RectLabel, DeepForest has a parse function ```preprocess.xml_to_annotations```. For non-mac users, there are many alternative for object detection annotation. DeepForest only requires that the final annotations be in the following format.
+For annotations made in RectLabel, DeepForest has a parse function ```preprocess.xml_to_annotations```.
+
+For non-mac users, annotations can be made in any spatial analysis software (e.g QGIS, ArcGIS) and loaded using the shapefile_to_annotations [utility](https://gist.github.com/bw4sz/e2fff9c9df0ae26bd2bfa8953ec4a24c). Please note that due to the installation of GDAL, which can vary widely across systems, this utility is not included in DeepForest source and must be installed seperately.
+```
+conda install geopandas rasterio rtree
+```
+will work on most modern systems.
+
+At the end of the day, DeepForest only requires that the final annotations be in the following csv format.
 
 ```
 image_path, xmin, ymin, xmax, ymax, label
@@ -34,12 +42,13 @@ As with the [evaluation example](Example.html), collect training labels from a c
 
 ```{python}
 import os
+from deepforest import get_data
 from deepforest import deepforest
 from deepforest import utilities
 from deepforest import preprocess
 
 #convert hand annotations from xml into retinanet format
-YELL_xml = utilities.get_data("2019_YELL_2_528000_4978000_image_crop2.xml")
+YELL_xml = get_data("2019_YELL_2_528000_4978000_image_crop2.xml")
 annotation = utilities.xml_to_annotations(YELL_xml)
 annotation.head()
 

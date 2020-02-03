@@ -50,4 +50,4 @@ def test_format_args_steps(annotations, config):
 def test_use_release():
     #Download latest model from github release
     release_tag, weights = utilities.use_release()
-    assert os.path.exists(get_data("NEON.h5"))
+    assert os.path.exists(get_data("NEON.h5"))    
