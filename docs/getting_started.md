@@ -80,6 +80,8 @@ image_path, xmin, ymin, xmax, ymax, label
 ```
 with each bounding box on a seperate row. The image path is relative to the local of the annotations file.
 
+We can view predictions by supplying a save dir ("." = current directory). Predictions in green, annotations in black.
+
 ```
 from deepforest import deepforest
 from deepforest import get_data
@@ -89,7 +91,7 @@ test_model.use_release()
 
 annotations_file = get_data("testfile_deepforest.csv")
 
-#Window size of 300px with an overlap of 50% among windows
+test_model.config["save_dir"] = "."
 boxes = test_model.predict_generator(annotations=annotations_file)
 ```
 
