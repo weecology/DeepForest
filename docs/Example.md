@@ -76,12 +76,13 @@ cropped_annotations.to_csv(eval_annotations_file,index=False, header=None)
 
 Before training a new model, it is helpful to know the performance of the current benchmark model.
 
-Evaluate prebuilt model
+Evaluate prebuilt model. We can view predictions by supplying a save dir ("." = current directory). Predictions in green, annotations in black.
 
 ```{python}
 test_model = deepforest.deepforest()
 test_model.use_release()
 
+test_model.config["save_path"] = "."
 mAP = test_model.evaluate_generator(annotations=eval_annotations_file)
 print("Mean Average Precision is: {:.3f}".format(mAP))
 ```
