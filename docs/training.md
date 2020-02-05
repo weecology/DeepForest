@@ -2,6 +2,10 @@
 
 Our work has shown that starting training from the prebuilt model increases performance, regardless of the geographic location of your data. In the majority of cases, it will be useful for the model to have learned general tree representations that can be refined using hand annotated data.
 
+Here is a video walkthrough of this page
+
+<div style="position: relative; padding-bottom: 56.25%; height: 0;"><iframe src="https://www.loom.com/embed/21d33b2052a34e0fbdcd0f0578a67b2e" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe></div>
+
 ## Design evaluation data
 
 In our experience, defining a clear evaluation dataset and setting a threshold for desired performance is critical before training. It is common to just dive into training new data with only a vague sense of the desired outcome. This is always a mistake. We highly suggest users spend the time to answer 2 questions:
@@ -67,7 +71,7 @@ train_annotations= preprocess.split_raster(path_to_raster=YELL_train,
 train_annotations.head()
 
 #Write window annotations file without a header row, same location as the "base_dir" above.
-annotations_file= crop_dir + "train_example.csv"
+annotations_file= os.path.join(crop_dir, "train_example.csv")
 train_annotations.to_csv(annotations_file,index=False, header=None)
 ```
 
