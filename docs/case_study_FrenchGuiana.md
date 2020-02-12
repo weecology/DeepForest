@@ -149,7 +149,7 @@ crop = crop[...,::-1] #keras-retinanet requires bluegreered channel order
 
 
 ```python
-prediction = model.predict_image(raw_image = crop,return_plot=True, score_threshold=0.05)
+prediction = model.predict_image(numpy_image = crop,return_plot=True, score_threshold=0.05)
 ```
 
     WARNING:tensorflow:From /Users/ben/Documents/DeepForest_French_Guiana/DeepForest/lib/python3.7/site-packages/keras/backend/tensorflow_backend.py:422: The name tf.global_variables is deprecated. Please use tf.compat.v1.global_variables instead.
@@ -176,7 +176,7 @@ To get the bounding boxes as a dataframe, use return_plot=False
 
 
 ```python
-prediction_boxes = model.predict_image(raw_image = crop,return_plot=False, score_threshold=0.05)
+prediction_boxes = model.predict_image(numpy_image = crop,return_plot=False, score_threshold=0.05)
 ```
 
 
@@ -284,7 +284,7 @@ axes = axes.flatten()
 for index in range(12):
     crop = numpy_image[windows[index].indices()]
     #predict in bgr channel order
-    prediction = model.predict_image(raw_image = crop[...,::-1],return_plot=True, score_threshold=0.05)
+    prediction = model.predict_image(numpy_image = crop[...,::-1],return_plot=True, score_threshold=0.05)
     #but plot in rgb channel order
     axes[index].imshow(prediction[...,::-1])
 ```
@@ -1174,7 +1174,7 @@ axes = axes.flatten()
 for index in range(12):
     crop = numpy_image[windows[index].indices()]
     #predict in bgr channel order
-    prediction = model.predict_image(raw_image = crop[...,::-1],return_plot=True, score_threshold=0.05,color=(255,0,0))
+    prediction = model.predict_image(numpy_image = crop[...,::-1],return_plot=True, score_threshold=0.05,color=(255,0,0))
     #but plot in rgb channel order
     axes[index].imshow(prediction[...,::-1])
 

@@ -76,10 +76,12 @@ def test_predict_image(download_release):
     assert isinstance(test_model.model,keras.models.Model)
     
     #Predict test image and return boxes
-    boxes = test_model.predict_image(image_path=get_data("OSBS_029.tif"), show=False, return_plot = False)
+    boxes = test_model.predict_image(image_path=get_data("OSBS_029.tif"), show=False, return_plot = False, score_threshold=0.1)
     
     #Returns a 6 column numpy array, xmin, ymin, xmax, ymax, score, label
     assert boxes.shape[1] == 6
+    
+    assert boxes.score.min() > 0.1
 
 @pytest.fixture()
 def test_train(annotations):

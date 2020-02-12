@@ -101,7 +101,7 @@ class deepforest:
         print("Training retinanet with the following args {}".format(arg_list))
         
         #Train model
-        self.model, self.prediction_model, self.training_model = retinanet_train(args=arg_list, input_type = input_type, list_of_tfrecords = list_of_tfrecords, comet_experiment = comet_experiment)
+        self.model, self.prediction_model, self.training_model = retinanet_train(forest_object = self, args=arg_list, input_type = input_type, list_of_tfrecords = list_of_tfrecords, comet_experiment = comet_experiment)
     
     def use_release(self, gpus=1):
         '''Use the latest DeepForest model release from github and load model. Optionally download if release doesn't exist
@@ -132,13 +132,12 @@ class deepforest:
         #add to config
         self.config["weights"] = self.weights        
     
-    def predict_generator(self, annotations, comet_experiment = None, iou_threshold=0.5, score_threshold=0.05, max_detections=200):
+    def predict_generator(self, annotations, comet_experiment = None, iou_threshold=0.5, max_detections=200):
         """Predict bounding boxes for a model using a csv fit_generator
         
         Args:
             annotations (str): Path to csv label file, labels are in the format -> path/to/image.jpg,x1,y1,x2,y2,class_name
             iou_threshold(float): IoU Threshold to count for a positive detection (defaults to 0.5)
-            score_threshold (float): Eliminate bounding boxes under this threshold
             max_detections (int): Maximum number of bounding box predictions
             comet_experiment(object): A comet experiment class objects to track
         
@@ -183,13 +182,12 @@ class deepforest:
         
         return boxes_output
     
-    def evaluate_generator(self, annotations, comet_experiment = None, iou_threshold=0.5, score_threshold=0.05, max_detections=200):
+    def evaluate_generator(self, annotations, comet_experiment = None, iou_threshold=0.5, max_detections=200):
         """ Evaluate prediction model using a csv fit_generator
         
         Args:
             annotations (str): Path to csv label file, labels are in the format -> path/to/image.jpg,x1,y1,x2,y2,class_name
             iou_threshold(float): IoU Threshold to count for a positive detection (defaults to 0.5)
-            score_threshold (float): Eliminate bounding boxes under this threshold
             max_detections (int): Maximum number of bounding box predictions
             comet_experiment(object): A comet experiment class objects to track
         
@@ -239,12 +237,12 @@ class deepforest:
         print('mAP: {:.4f}'.format(mAP))   
         return mAP
 
-    def predict_image(self, image_path=None, raw_image=None, return_plot=True, score_threshold=0.05, show=False, color=(0,0,0)):
+    def predict_image(self, image_path=None, numpy_image=None, return_plot=True, score_threshold=0.05, show=False, color=(0,0,0)):
         """Predict tree crowns based on loaded (or trained) model
         
         Args:
             image_path (str): Path to image on disk
-            raw_image (array): Numpy image array in BGR channel order following openCV convention
+            numpy_image (array): Numpy image array in BGR channel order following openCV convention
             color (tuple): Color of bounding boxes in BGR order (0,0,0) black default 
             show (bool): Plot the predicted image with bounding boxes. Ignored if return_plot=False
             return_plot: Whether to return image with annotations overlaid, or just a numpy array of boxes
@@ -259,15 +257,15 @@ class deepforest:
         
         #Check the formatting
         if isinstance(image_path,np.ndarray):
-            raise ValueError("image_path should be a string, but is a numpy array. If predicting a loaded image (channel order BGR), use raw_image argument.")
+            raise ValueError("image_path should be a string, but is a numpy array. If predicting a loaded image (channel order BGR), use numpy_image argument.")
         
         #Check for correct formatting
         #Warning if image is very large and using the release model
-        if raw_image is None:
-            raw_image = cv2.imread(image_path)    
+        if numpy_image is None:
+            numpy_image = cv2.imread(image_path)    
         
         #Predict
-        prediction = predict.predict_image(self.prediction_model, image_path=image_path, raw_image=raw_image, return_plot=return_plot, score_threshold=score_threshold, color=color)            
+        prediction = predict.predict_image(self.prediction_model, image_path=image_path, raw_image=numpy_image, return_plot=return_plot, score_threshold=score_threshold, color=color)            
             
         #cv2 channel order to matplotlib order
         if return_plot & show:
@@ -276,26 +274,29 @@ class deepforest:
 
         return prediction            
 
-    def predict_tile(self, path_to_raster, patch_size=400, patch_overlap=0.15, iou_threshold=0.15, return_plot=False):
+    def predict_tile(self, raster_path=None, numpy_image=None, patch_size=400, patch_overlap=0.15, iou_threshold=0.15, return_plot=False):
         """
         For images too large to input into the model, predict_tile cuts the image into overlapping windows, predicts trees on each window and reassambles into a single array. 
     
         Args:
             raster_path: Path to image on disk
-            iou_threshold: Minimum iou overlap among predictions between windows to be supressed. Defaults to 0.5. Lower values suppress more boxes at edges.
+            numpy_image (array): Numpy image array in BGR channel order following openCV convention
+            iou_threshold: Minimum iou overlap among predictions between windows to be suppressed. Defaults to 0.5. Lower values suppress more boxes at edges.
             return_plot: Should the image be returned with the predictions drawn?
     
         Returns:
             boxes (array): if return_plot, an image. Otherwise a numpy array of predicted bounding boxes, scores and labels
         """   
     
-        #Load raster as image
-        raster = Image.open(path_to_raster)
-        numpy_image = np.array(raster)        
-        image_name = os.path.basename(path_to_raster)
+        if numpy_image:
+            pass
+        else:
+            #Load raster as image
+            raster = Image.open(raster_path)
+            numpy_image = np.array(raster)        
     
         #Compute sliding window index
-        windows = preprocess.compute_windows(numpy_image, patch_size,patch_overlap)
+        windows = preprocess.compute_windows(numpy_image, patch_size, patch_overlap)
     
         #Save images to tmpdir
         predicted_boxes = []
@@ -306,7 +307,7 @@ class deepforest:
     
             #Crop is RGB channel order, change to BGR
             crop = crop[...,::-1]
-            boxes = self.predict_image(raw_image=crop, return_plot=False, score_threshold=self.config["score_threshold"])            
+            boxes = self.predict_image(numpy_image=crop, return_plot=False, score_threshold=self.config["score_threshold"])            
     
             #transform coordinates to original system
             xmin, ymin, xmax, ymax = windows[index].getRect()
@@ -341,3 +342,33 @@ class deepforest:
             return numpy_image
         else:
             return mosaic_df
+    
+    def plot_curves(self):        
+        """Plot training curves"""
+        if self.history:
+            # Plot training & validation regression loss values
+            fig, axes, = plt.subplots(nrows=1,ncols=2)
+            axes = axes.flatten()
+            
+            #Regression Loss
+            axes[0].plot(self.history.history['regression_loss'])
+            axes[0].set_title('Bounding Box Loss')
+            axes[0].set_ylabel('Loss')
+            axes[0].set_xlabel('Epoch')
+            
+            #Classification Loss        
+            axes[1].plot(self.history.history['classification_loss'])
+            axes[1].set_title('Classification Loss')
+            axes[1].set_ylabel('Loss')
+            axes[1].set_xlabel('Epoch')
+            
+            # Plot validation mAP
+            if "mAP" in self.history.history.keys():
+                axes[2].plot(self.history.history['mAP'])
+                axes[2].set_title('Validation: Mean Average Precision')
+                axes[2].set_ylabel('mAP')
+                axes[2].set_xlabel('Epoch')
+            plt.show()        
+        else:
+            print("No training history found.")
+            return None

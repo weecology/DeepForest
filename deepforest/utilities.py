@@ -268,4 +268,4 @@ def format_args(annotations_file, config, images_per_epoch=None):
         #All need to be str classes to mimic sys.arg
         arg_list = [str(x) for x in arg_list]
         
-        return arg_list
+        return arg_list  

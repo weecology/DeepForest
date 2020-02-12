@@ -42,7 +42,12 @@ def predict_image(model, image_path=None, raw_image = None, score_threshold = 0.
     else:
         #Read from path
         numpy_image = cv2.imread(image_path)       
-        
+
+    #Check that its 3 band
+    bands = numpy_image.shape[2]
+    if not  bands == 3:
+        raise IOError("Input file {} has {} bands. DeepForest only accepts 3 band RGB rasters. If the image was cropped and saved as a .jpg, please ensure that no alpha channel was used.".format(path_to_raster, bands))
+
     image        = keras_retinanet_image.preprocess_image(numpy_image)
     image, scale = keras_retinanet_image.resize_image(image)
 
