@@ -173,3 +173,20 @@ Parsing annotations: 100% (12 of 12) |##########################################
 mAP using the weighted average of precisions among classes: 0.5076
 mAP: 0.5076
 ```
+
+## View the training plots
+
+To understand how the loss changes during training we can plot the regression box loss and the classification loss. The regression loss refers to the ability for the model to capture the extent of the bounding box. The classification loss is whether the target box exists, or in a multi-class context, which label to assign to a box. Learn more about [losses](https://machinelearningmastery.com/how-to-choose-loss-functions-when-training-deep-learning-neural-networks/).
+```
+test_model.plot_curves()
+```
+
+![](../www/loss.png)
+
+If validation annotations were specific during training
+
+```
+test_model.config["validation_annotations"] = <filename>
+```
+
+The mean average precision is computed after each epoch. This will also be shown alongside the training curves. Learn more about [mean average precision](https://medium.com/@jonathan_hui/map-mean-average-precision-for-object-detection-45c121a31173)
