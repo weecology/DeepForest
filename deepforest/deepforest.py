@@ -347,7 +347,7 @@ class deepforest:
         """Plot training curves"""
         if self.history:
             # Plot training & validation regression loss values
-            fig, axes, = plt.subplots(nrows=1,ncols=2)
+            fig, axes, = plt.subplots(nrows=1,ncols=3)
             axes = axes.flatten()
             
             #Regression Loss
