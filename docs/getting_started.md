@@ -99,7 +99,7 @@ For more information on data files, see below.
 
 ## Training
 
-The prebuilt models will always be improved by adding data from the target area. In our work, we have found that even one hour's worth of carefully chosen hand-annotation can yield enormous improvements in accuracy and precision. We envision that for the majority of scientific applications atleast some finetuning of the prebuilt model will be worthwhile.
+The prebuilt models will always be improved by adding data from the target area. In our work, we have found that even one hour's worth of carefully chosen hand-annotation can yield enormous improvements in accuracy and precision. We envision that for the majority of scientific applications atleast some finetuning of the prebuilt model will be worthwhile. When starting from the prebuilt model for training, we have found that 5-10 epochs is sufficient. We have never seen a retraining task that improved after 10 epochs, but it is possible if there are very large datasets with very diverse classes.
 
 Consider an annotations.csv file in the following format
 
@@ -189,4 +189,10 @@ Parsing annotations: 100% (1 of 1) |#####| Elapsed Time: 0:00:00 Time:  0:00:00
 60 instances of class Tree with average precision: 0.3687
 mAP using the weighted average of precisions among classes: 0.3687
 mAP: 0.3687
+```
+
+The evaluation file can also be run as a callback during training by setting the config file. This will allow the user to see evaluation performance at the end of each epoch.
+
+```{python}
+test_model.config["validation_annotations"] = "testfile_deepforest.csv"
 ```

@@ -324,10 +324,11 @@ def parse_args(args):
     return check_args(parser.parse_args(args))
 
 
-def main(args=None, input_type="fit_generator", list_of_tfrecords=None, comet_experiment=None):
+def main(forest_object, args=None, input_type="fit_generator", list_of_tfrecords=None, comet_experiment=None):
     """
     Main Training Loop
     Args:
+        forest_object: a deepforest class object
         args: Keras retinanet argparse
         list_of_tfrecords: list of tfrecords to parse
         input_type: "fit_generator" or "tfrecord" input type
@@ -392,6 +393,7 @@ def main(args=None, input_type="fit_generator", list_of_tfrecords=None, comet_ex
         if input_type == "fit_generator":
             num_of_classes = train_generator.num_classes()
         else:
+            #TO DO multiple classes tfrecords?
             num_of_classes = 1
             
         model, training_model, prediction_model = create_models(
@@ -430,7 +432,7 @@ def main(args=None, input_type="fit_generator", list_of_tfrecords=None, comet_ex
 
     # start training
     if input_type == "fit_generator":
-        training_model.fit_generator(
+        history = training_model.fit_generator(
             generator=train_generator,
             steps_per_epoch=args.steps,
             epochs=args.epochs,
@@ -444,13 +446,16 @@ def main(args=None, input_type="fit_generator", list_of_tfrecords=None, comet_ex
     elif input_type == "tfrecord":
         
         #Fit model
-        training_model.fit(
+        history = training_model.fit(
             x=inputs,
             steps_per_epoch=args.steps,
             epochs=args.epochs,
             callbacks=callbacks)
     else:
         raise ValueError("{} input type is invalid. Only 'tfrecord' or 'for_generator' input types are accepted for model training".format(input_type))
-        
+    
+    #Assign history to deepforest model class
+    forest_object.history = history 
+    
     #return trained model
     return model, prediction_model, training_model

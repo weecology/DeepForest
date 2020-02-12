@@ -47,25 +47,13 @@ deepforest.predict_image(image_path="path to image")
 
 Deepforest will automatically read in the image as bgr, the user does not need to anything.
 
-* Windows Installation
+* How do I convert annotations to image coordinates? How do I project the predictions into the coordinate system?
 
-See [installation guide](installation.md/#Windows-installation) on docs for more notes on windows.
+DeepForest makes predictions in the image coordinate system with the top left of the image as 0,0. To convert these coordinates into the input prediction projection we need to know the bounds of the image and the resolution. Please note that this makes sense over small geographic areas in which we don't need to consider the curvature of the earth. I've written two utility functions that are useful. One for going from shapefiles to annotations. Another for going from predictions to projected boxes. Note that these require the geopandas library which is not installed in DeepForest.
 
-* How do I project the predictions into the coordinate system?
+https://gist.github.com/bw4sz/e2fff9c9df0ae26bd2bfa8953ec4a24c
 
-```
-import rasterio
-raster_path = <path_to_raster>
 
-with rasterio.open(raster_path) as dataset:
-    bounds = dataset.bounds
-    pixelSizeX, pixelSizeY  = dataset.res
-
-#subtract origin. Recall that numpy origin is top left! Not bottom left.
-boxes["xmin"] = (boxes["xmin"] *pixelSizeX) + bounds.left
-boxes["xmax"] = (boxes["xmax"] * pixelSizeX) + bounds.left
-boxes["ymin"] = bounds.top - (boxes["ymin"] * pixelSizeY)
-boxes["ymax"] = bounds.top - (boxes["ymax"] * pixelSizeY)
 ```
 
 * Linux Python 3.5
@@ -84,7 +72,7 @@ Traceback (most recent call last):
 OSError: cannot identify image file '/Users/ben/Downloads/NAIP/East_ben.tif'
 ```
 
-The python image library requires three band unsigned 8 bit images. Sometimes geotiff files have no-data values greater than 255 or other file types. To ensure unsigned 8bit rasters, we can use any number of programs. For example in R
+The python image library requires three band unsigned 8 bit images. Sometimes geotiff files have no-data values greater than 255 or other file types. To ensure unsigned 8bit rasters, we can use any number of programs. For example in R using the raster package
 
 ```
 library(raster)
