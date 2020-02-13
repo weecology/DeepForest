@@ -13,7 +13,7 @@ import tensorflow as tf
 from keras_retinanet.utils import image as keras_retinanet_image
 from keras_retinanet.utils.visualization import draw_detections
 
-def predict_image(model, image_path=None, raw_image = None, score_threshold = 0.05, max_detections= 200, return_plot=True, classes = {"0":"Tree"}, color=(0,0,0)):
+def predict_image(model, image_path=None, raw_image = None, score_threshold = 0.05, max_detections= 200, return_plot=True, classes = {"0":"Tree"}, color=None):
     """
     Predict invidiual tree crown bounding boxes for a single image
     

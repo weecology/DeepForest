@@ -259,7 +259,7 @@ class deepforest:
         print('mAP: {:.4f}'.format(mAP))   
         return mAP
 
-    def predict_image(self, image_path=None, numpy_image=None, return_plot=True, score_threshold=0.05, show=False, color=(0,0,0)):
+    def predict_image(self, image_path=None, numpy_image=None, return_plot=True, score_threshold=0.05, show=False, color=None):
         """Predict tree crowns based on loaded (or trained) model
         
         Args:
