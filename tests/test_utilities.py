@@ -36,11 +36,13 @@ def test_number_of_images(annotations):
     assert n == 1
     
 def test_format_args(annotations, config):
-    arg_list = utilities.format_args(annotations, config)
+    classes_file = utilities.create_classes(annotations)
+    arg_list = utilities.format_args(annotations,classes_file, config)
     assert isinstance(arg_list, list)
 
 def test_format_args_steps(annotations, config):
-    arg_list = utilities.format_args(annotations, config, images_per_epoch=2)
+    classes_file = utilities.create_classes(annotations)    
+    arg_list = utilities.format_args(annotations,classes_file, config, images_per_epoch=2)
     assert isinstance(arg_list, list)
     
     #A bit ugly, but since its a list, what is the argument after --steps to assert
