@@ -29,16 +29,17 @@ def config():
     
     #Create a clean config test data
     annotations = utilities.xml_to_annotations(xml_path=config["annotations_xml"])
-    annotations.to_csv("tests/data/testtfrecords_OSBS_029.csv",index=False)
+    annotations.to_csv("tests/data/tfrecords_OSBS_029.csv",index=False)
     
-    class_file = utilities.create_classes("tests/data/testtfrecords_OSBS_029.csv")
     annotations_file = preprocess.split_raster(path_to_raster=config["path_to_raster"],
-                                                        annotations_file="tests/data/testtfrecords_OSBS_029.csv",
+                                                        annotations_file="tests/data/tfrecords_OSBS_029.csv",
                                                         base_dir= "tests/data/",
                                                         patch_size=config["patch_size"],
                                                         patch_overlap=config["patch_overlap"])
     
-    annotations_file.to_csv("tests/data/testfile_tfrecords.csv", index=False,header=False)
+    annotations_file.to_csv(index=False,header=False)
+    class_file = utilities.create_classes("tests/data/testfile_tfrecords.csv")    
+    
     return config
 
 #Reading
