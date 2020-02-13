@@ -109,6 +109,10 @@ def test_train(annotations):
 def test_predict_generator(release_model, annotations):
     boxes = release_model.predict_generator(annotations=annotations)
     assert boxes.shape[1] == 7
+   
+def test_evaluate_generator(release_model, annotations):
+    mAP = release_model.evaluate_generator(annotations=annotations)
+    assert isinstance(mAP, float)
     
 #Test random transform
 def test_random_transform(annotations):
