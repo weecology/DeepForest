@@ -11,7 +11,6 @@ install:
 - conda env create --file=environment.yml
 - source activate DeepForest
 - python setup.py build_ext --inplace
-- cd ..
 env: TRAVIS=true
 script:
 - pytest --ignore=keras-retinanet/
