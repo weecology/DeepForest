@@ -393,8 +393,7 @@ def main(forest_object, args=None, input_type="fit_generator", list_of_tfrecords
         if input_type == "fit_generator":
             num_of_classes = train_generator.num_classes()
         else:
-            #TO DO multiple classes tfrecords?
-            num_of_classes = 1
+            num_of_classes = len(forest_object.labels.keys())
             
         model, training_model, prediction_model = create_models(
             backbone_retinanet=backbone.retinanet,

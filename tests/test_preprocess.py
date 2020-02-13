@@ -16,12 +16,12 @@ def config():
     config["patch_overlap"] = 0.25
     config["annotations_xml"] = get_data("OSBS_029.xml")
     config["rgb_dir"] = "data"
-    config["annotations_file"] = "data/OSBS_029.csv"
+    config["annotations_file"] = "tests/data/OSBS_029.csv"
     config["path_to_raster"] = get_data("OSBS_029.tif")
     
     #Create a clean config test data
     annotations = utilities.xml_to_annotations(xml_path = config["annotations_xml"])
-    annotations.to_csv("data/OSBS_029.csv",index=False)
+    annotations.to_csv("tests/data/OSBS_029.csv",index=False)
     
     return config
 
@@ -36,7 +36,7 @@ def test_compute_windows(config, numpy_image):
 
 def test_select_annotations(config, numpy_image):      
     windows = preprocess.compute_windows(numpy_image, config["patch_size"], config["patch_overlap"])
-    image_annotations = pd.read_csv("data/OSBS_029.csv")
+    image_annotations = pd.read_csv("tests/data/OSBS_029.csv")
     selected_annotations = preprocess.select_annotations(image_annotations, windows, index=7)
     
     #Returns a 5 column matrix
@@ -48,7 +48,7 @@ def test_select_annotations(config, numpy_image):
 def test_select_annotations_tile(config, numpy_image):
     config["patch_size"] = 50
     windows = preprocess.compute_windows(numpy_image, config["patch_size"], config["patch_overlap"])
-    image_annotations = pd.read_csv("data/OSBS_029.csv")    
+    image_annotations = pd.read_csv("tests/data/OSBS_029.csv")    
     selected_annotations = preprocess.select_annotations(image_annotations, windows, index=10)
     
     #The largest box cannot be off the edge of the window
@@ -58,7 +58,7 @@ def test_select_annotations_tile(config, numpy_image):
     assert selected_annotations.ymax.max() <= config["patch_size"]
     
 def test_split_raster(config):
-    annotations_file = preprocess.split_raster(config["path_to_raster"], config["annotations_file"], "data/",config["patch_size"], config["patch_overlap"])
+    annotations_file = preprocess.split_raster(config["path_to_raster"], config["annotations_file"], "tests/data/",config["patch_size"], config["patch_overlap"])
     
     #Returns a 6 column pandas array
     assert annotations_file.shape[1] == 6
@@ -66,12 +66,12 @@ def test_split_raster(config):
 def test_split_raster_empty(config):
     #Blank annotations file
     blank_annotations = pd.DataFrame({"image_path":"OSBS_029.tif","xmin":[""],"ymin":[""],"xmax":[""],"ymax":[""],"label":[""]})
-    blank_annotations.to_csv("data/blank_annotations.csv",index=False)
+    blank_annotations.to_csv("tests/data/blank_annotations.csv",index=False)
     
     #Ignore blanks
-    annotations_file = preprocess.split_raster(config["path_to_raster"], "data/blank_annotations.csv", "data/",config["patch_size"], config["patch_overlap"], allow_empty=False)
+    annotations_file = preprocess.split_raster(config["path_to_raster"], "tests/data/blank_annotations.csv", "tests/data/",config["patch_size"], config["patch_overlap"], allow_empty=False)
     assert annotations_file.shape[0] == 0
     
     #Include blanks
-    annotations_file = preprocess.split_raster(config["path_to_raster"], "data/blank_annotations.csv", "data/",config["patch_size"], config["patch_overlap"], allow_empty=True)
+    annotations_file = preprocess.split_raster(config["path_to_raster"], "tests/data/blank_annotations.csv", "tests/data/",config["patch_size"], config["patch_overlap"], allow_empty=True)
     assert annotations_file.shape[0] > 0

@@ -138,11 +138,22 @@ def test_retrain_release(annotations, release_model):
 
 def test_multi_train(multi_annotations):    
     test_model = deepforest.deepforest()
+    test_model.use_release()
     test_model.config["epochs"] = 3
     test_model.config["save-snapshot"] = False
     test_model.config["steps"] = 1
     test_model.train(annotations=multi_annotations, input_type="fit_generator")
     
+    # Test labels
+    labels = list(test_model.labels.values())
+    labels.sort()
+    target_labels = ["Dead","Alive"]
+    target_labels.sort()
+    
+    assert labels == target_labels
+    
     image_path = get_data("SOAP_061.jpg")
-    image = test_model.predict_image(image_path= image_path, return_plot=True)    
+    image = test_model.predict_image(image_path= image_path, return_plot=True)
+    image = test_model.predict_image(image_path= image_path, return_plot=False)
+    
     plt.imshow(image[:,:,::-1])

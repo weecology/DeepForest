@@ -6,6 +6,7 @@
 .. moduleauthor:: Ben Weinstein <ben.weinstein@weecology.org>
 """
 import os
+import csv
 import warnings
 
 from PIL import Image
@@ -88,7 +89,7 @@ class deepforest:
         # parse the provided class file
         self.labels = {}        
         try:
-            with open(self.class_file, 'rb') as file:
+            with open(self.classes_file, 'r') as file:
                 self.classes = _read_classes(csv.reader(file, delimiter=','))
             for key, value in self.classes.items():
                 self.labels[value] = key            
@@ -111,7 +112,9 @@ class deepforest:
             prediction model: with bbox nms
             trained model: without nms
         '''
-        self.classes_file = utilities.create_classes(annotations)        
+        #Test if there is a new classes file in case # of classes has changed.
+        self.classes_file = utilities.create_classes(annotations)
+        self.read_classes()
         arg_list = utilities.format_args(annotations, self.classes_file, self.config, images_per_epoch)
             
         print("Training retinanet with the following args {}".format(arg_list))
@@ -283,7 +286,7 @@ class deepforest:
             numpy_image = cv2.imread(image_path)    
         
         #Predict
-        prediction = predict.predict_image(self.prediction_model, image_path=image_path, raw_image=numpy_image, return_plot=return_plot, score_threshold=score_threshold, color=color, classes=self.classes)            
+        prediction = predict.predict_image(self.prediction_model, image_path=image_path, raw_image=numpy_image, return_plot=return_plot, score_threshold=score_threshold, color=color, classes=self.labels)            
             
         #cv2 channel order to matplotlib order
         if return_plot & show:

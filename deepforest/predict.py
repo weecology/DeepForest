@@ -13,13 +13,6 @@ import tensorflow as tf
 from keras_retinanet.utils import image as keras_retinanet_image
 from keras_retinanet.utils.visualization import draw_detections
 
-#TODO check how this works with multiple classes
-def label_to_name(index):
-    """ Map label to name.
-    """
-    label = image_classes[index]
-    return label
-
 def predict_image(model, image_path=None, raw_image = None, score_threshold = 0.05, max_detections= 200, return_plot=True, classes = {"0":"Tree"}, color=(0,0,0)):
     """
     Predict invidiual tree crown bounding boxes for a single image
