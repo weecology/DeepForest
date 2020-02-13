@@ -216,7 +216,8 @@ class deepforest:
             mAP: Mean average precision of the evaluated data
         """
         #Format args for CSV generator 
-        arg_list = utilities.format_args(annotations, self.config)
+        classes_file = utilities.create_classes(annotations)
+        arg_list = utilities.format_args(annotations,classes_file, self.config)
         args = parse_args(arg_list)
         
         #create generator
