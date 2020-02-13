@@ -2,6 +2,9 @@
 # -*- coding: utf-8 -*-
 
 """Tests for `deepforest` package."""
+import matplotlib
+matplotlib.use("MacOSX")
+
 import os
 import sys
 import pytest
@@ -33,6 +36,16 @@ def annotations():
     annotations.to_csv(annotations_file,index=False,header=False)
     
     return annotations_file
+
+@pytest.fixture()
+def multi_annotations():
+    annotations = utilities.xml_to_annotations(get_data("SOAP_061.xml"))
+    annotations.image_path = annotations.image_path.str.replace(".tif",".jpg")
+    annotations_file = get_data("testfile_multi.csv")
+    annotations.to_csv(annotations_file,index=False,header=False)
+    
+    return annotations_file
+
 
 @pytest.fixture()
 def prepare_tfdataset(annotations):    
@@ -101,7 +114,8 @@ def test_predict_generator(release_model, annotations):
 def test_random_transform(annotations):
     test_model = deepforest.deepforest()
     test_model.config["random_transform"] = True
-    arg_list = utilities.format_args(annotations, test_model.config)
+    classes_file = utilities.create_classes(annotations)
+    arg_list = utilities.format_args(annotations, classes_file, test_model.config)
     assert "--random-transform" in arg_list
 
 def test_predict_tile(release_model):
@@ -116,7 +130,19 @@ def test_retrain_release(annotations, release_model):
     assert release_model.config["weights"] == release_model.weights
     
     #test that it gets passed to retinanet
-    arg_list = utilities.format_args(annotations, release_model.config, images_per_epoch=1)
+    classes_file = utilities.create_classes(annotations)
+    arg_list = utilities.format_args(annotations, classes_file, release_model.config, images_per_epoch=1)
     strs = ["--weights" == x for x in arg_list]
     index = np.where(strs)[0][0] + 1
-    arg_list[index] == release_model.weights
+    assert arg_list[index] == release_model.weights
+
+def test_multi_train(multi_annotations):    
+    test_model = deepforest.deepforest()
+    test_model.config["epochs"] = 3
+    test_model.config["save-snapshot"] = False
+    test_model.config["steps"] = 1
+    test_model.train(annotations=multi_annotations, input_type="fit_generator")
+    
+    image_path = get_data("SOAP_061.jpg")
+    image = test_model.predict_image(image_path= image_path, return_plot=True)    
+    plt.imshow(image[:,:,::-1])

@@ -29,7 +29,7 @@ from deepforest.retinanet_train import parse_args
 from keras_retinanet import models
 from keras_retinanet.models import convert_model
 from keras_retinanet.bin.train import create_models
-from keras_retinanet.preprocessing.csv_generator import CSVGenerator
+from keras_retinanet.preprocessing.csv_generator import CSVGenerator, _read_classes
 from keras_retinanet.utils.eval import evaluate
 from keras_retinanet.utils.eval import _get_detections
 from keras_retinanet.utils.visualization import draw_box
@@ -60,6 +60,9 @@ class deepforest:
         
         print("Reading config file: {}".format(config_path))                    
         self.config = utilities.read_config(config_path)
+    
+        #Create a label dict, defaults to "Tree"
+        self.read_classes()        
         
         #release version id to flag if release is being used
         self.__release_version__ = None
@@ -79,7 +82,19 @@ class deepforest:
         else:
             print("A blank deepforest object created. To perform prediction, either train or load an existing model.")
             self.model = None
-            
+
+    def read_classes(self):
+        """Read class file in case of multi-class training. If no file has been created, DeepForest assume there is 1 class, Tree"""
+        # parse the provided class file
+        self.labels = {}        
+        try:
+            with open(self.class_file, 'rb') as file:
+                self.classes = _read_classes(csv.reader(file, delimiter=','))
+            for key, value in self.classes.items():
+                self.labels[value] = key            
+        except:
+            self.labels[0] = "Tree"
+          
     def train(self, annotations, input_type="fit_generator", list_of_tfrecords=None, comet_experiment=None, images_per_epoch=None):
         '''Train a deep learning tree detection model using keras-retinanet.
         This is the main entry point for training a new model based on either existing weights or scratch
@@ -96,7 +111,8 @@ class deepforest:
             prediction model: with bbox nms
             trained model: without nms
         '''
-        arg_list = utilities.format_args(annotations, self.config, images_per_epoch)
+        self.classes_file = utilities.create_classes(annotations)        
+        arg_list = utilities.format_args(annotations, self.classes_file, self.config, images_per_epoch)
             
         print("Training retinanet with the following args {}".format(arg_list))
         
@@ -127,7 +143,8 @@ class deepforest:
             self.prediction_model = convert_model(self.model)
         elif gpus > 1:
             backbone = models.backbone(self.config["backbone"])            
-            self.model, self.training_model, self.prediction_model = create_models(backbone.retinanet, num_classes=1, weights=self.weights, multi_gpu=gpus)            
+            n_classes = len(self.labels.keys())
+            self.model, self.training_model, self.prediction_model = create_models(backbone.retinanet, num_classes=n_classes, weights=self.weights, multi_gpu=gpus)            
         
         #add to config
         self.config["weights"] = self.weights        
@@ -145,7 +162,8 @@ class deepforest:
             boxes_output: a pandas dataframe of bounding boxes for each image in the annotations file
         """
         #Format args for CSV generator 
-        arg_list = utilities.format_args(annotations, self.config)
+        classes_file = utilities.create_classes(annotations)
+        arg_list = utilities.format_args(annotations, classes_file, self.config)
         args = parse_args(arg_list)
         
         #create generator
@@ -265,7 +283,7 @@ class deepforest:
             numpy_image = cv2.imread(image_path)    
         
         #Predict
-        prediction = predict.predict_image(self.prediction_model, image_path=image_path, raw_image=numpy_image, return_plot=return_plot, score_threshold=score_threshold, color=color)            
+        prediction = predict.predict_image(self.prediction_model, image_path=image_path, raw_image=numpy_image, return_plot=return_plot, score_threshold=score_threshold, color=color, classes=self.classes)            
             
         #cv2 channel order to matplotlib order
         if return_plot & show:
@@ -342,7 +360,7 @@ class deepforest:
             return numpy_image
         else:
             return mosaic_df
-    
+                
     def plot_curves(self):        
         """Plot training curves"""
         if self.history:

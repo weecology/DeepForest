@@ -15,12 +15,12 @@ from tqdm import tqdm
 from keras_retinanet import models
 from keras.utils import multi_gpu_model
 from deepforest import _ROOT
-
-
-def label_to_name(label):
+                
+def label_to_name(class_dict, label):
         """ Map label to name.
         """
-        return "Tree"
+        name = class_dict[label]
+        return name
 
 def read_config(config_path):
         try:
@@ -172,9 +172,7 @@ def create_classes(annotations_file):
         labels = annotations.label.dropna().unique()
         n_classes = labels.shape[0]
         print("There are {} unique labels: {} ".format(n_classes,list(labels))) 
-        #if n_classes > 1:
-        #        raise ValueError("There are greater than 1 classes ({}), check annotation levels for file {}".format(list(labels), annotations_file))
-        
+
         #write label
         with open(classes_path,'w') as csv_file:
                 writer = csv.writer(csv_file)   
@@ -197,7 +195,7 @@ def number_of_images(annotations_file):
         n = len(df.image_path.unique())
         return n
         
-def format_args(annotations_file, config, images_per_epoch=None):
+def format_args(annotations_file, classes_file, config, images_per_epoch=None):
         """Format config file to match argparse list for retinainet
         
         Args:
@@ -210,7 +208,6 @@ def format_args(annotations_file, config, images_per_epoch=None):
         """
         #Format args. Retinanet uses argparse, so they need to be passed as a list
         args = {}
-        classes_file = create_classes(annotations_file)
 
         #remember that .yml reads None as a str
         if not config["weights"] == 'None':
