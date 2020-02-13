@@ -5,7 +5,7 @@ logs/
 *.h5
 *.wpu
 *.wpr
-tests/data/
+tests/data/*
 *.jpg
 *.tfrecord
 *.tfrecords
