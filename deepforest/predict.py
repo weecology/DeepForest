@@ -14,13 +14,13 @@ from keras_retinanet.utils import image as keras_retinanet_image
 from keras_retinanet.utils.visualization import draw_detections
 
 #TODO check how this works with multiple classes
-def label_to_name(image_classes, index):
+def label_to_name(index):
     """ Map label to name.
     """
     label = image_classes[index]
     return label
 
-def predict_image(model, image_path=None, raw_image = None, score_threshold = 0.05, max_detections= 200, return_plot=True, classes = ["Tree"], color=(0,0,0)):
+def predict_image(model, image_path=None, raw_image = None, score_threshold = 0.05, max_detections= 200, return_plot=True, classes = {"0":"Tree"}, color=(0,0,0)):
     """
     Predict invidiual tree crown bounding boxes for a single image
     
@@ -42,7 +42,13 @@ def predict_image(model, image_path=None, raw_image = None, score_threshold = 0.
     else:
         #Read from path
         numpy_image = cv2.imread(image_path)       
-
+    
+    #Make sure image exists
+    try:
+        numpy_image.shape
+    except:
+        raise IOError("Image file {} cannot be read, check that it exists".format(image_path))
+        
     #Check that its 3 band
     bands = numpy_image.shape[2]
     if not  bands == 3:
@@ -82,7 +88,7 @@ def predict_image(model, image_path=None, raw_image = None, score_threshold = 0.
     df.label = df.label.apply(lambda x: classes[x])
     
     if return_plot:
-        draw_detections(numpy_image, image_boxes, image_scores, image_labels, label_to_name=label_to_name, score_threshold=score_threshold, color=color)
+        draw_detections(numpy_image, image_boxes, image_scores, image_labels, label_to_name=None, score_threshold=score_threshold, color=color)
         return numpy_image                
     else:
         return df

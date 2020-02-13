@@ -21,23 +21,23 @@ def config():
     config["patch_size"] = 200
     config["patch_overlap"] = 0.05
     config["annotations_xml"] = get_data("OSBS_029.xml")
-    config["rgb_dir"] = "tests/data"
-    config["annotations_file"] = "tests/data/OSBS_029.csv"
+    config["rgb_dir"] = "data"
+    config["annotations_file"] = "data/OSBS_029.csv"
     config["path_to_raster"] =get_data("OSBS_029.tif")
     config["image-min-side"] = 800
     config["backbone"] = "resnet50"
     
     #Create a clean config test data
     annotations = utilities.xml_to_annotations(xml_path=config["annotations_xml"])
-    annotations.to_csv("tests/data/testtfrecords_OSBS_029.csv",index=False)
+    annotations.to_csv("data/testtfrecords_OSBS_029.csv",index=False)
     
     annotations_file = preprocess.split_raster(path_to_raster=config["path_to_raster"],
-                                                        annotations_file="tests/data/testtfrecords_OSBS_029.csv",
-                                                        base_dir= "tests/data/",
+                                                        annotations_file="data/testtfrecords_OSBS_029.csv",
+                                                        base_dir= "data/",
                                                         patch_size=config["patch_size"],
                                                         patch_overlap=config["patch_overlap"])
     
-    annotations_file.to_csv("tests/data/testfile_tfrecords.csv", index=False,header=False)
+    annotations_file.to_csv("data/testfile_tfrecords.csv", index=False,header=False)
     return config
 
 #Reading
@@ -46,13 +46,13 @@ def config():
 @pytest.fixture()
 def test_create_tfrecords(config):
     """This test is in flux due to the fact that tensorflow and cv2 resize methods are not identical: https://jricheimer.github.io/tensorflow/2019/02/11/resize-confusion/ """
-    created_records = tfrecords.create_tfrecords(annotations_file="tests/data/testfile_tfrecords.csv",
-                               class_file="tests/data/classes.csv",
+    created_records = tfrecords.create_tfrecords(annotations_file="data/testfile_tfrecords.csv",
+                               class_file="data/classes.csv",
                                image_min_side=config["image-min-side"], 
                                backbone_model=config["backbone"],
                                size=100,
-                               savedir="tests/data/")
-    assert os.path.exists("tests/data/testfile_tfrecords_0.tfrecord")
+                               savedir="data/")
+    assert os.path.exists("data/testfile_tfrecords_0.tfrecord")
     return created_records
 
 @pytest.fixture()
@@ -80,8 +80,8 @@ def test_equivalence(config, setup_create_tensors):
 
     #CSV generator
     generator = csv_generator.CSVGenerator(
-        csv_data_file="tests/data/testfile_tfrecords.csv",
-        csv_class_file="tests/data/classes.csv",
+        csv_data_file="data/testfile_tfrecords.csv",
+        csv_class_file="data/classes.csv",
         image_min_side=config["image-min-side"],
         preprocess_image=backbone.preprocess_image,
     )
