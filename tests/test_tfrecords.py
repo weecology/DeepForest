@@ -37,7 +37,7 @@ def config():
                                                         patch_size=config["patch_size"],
                                                         patch_overlap=config["patch_overlap"])
     
-    annotations_file.to_csv(index=False,header=False)
+    annotations_file.to_csv("tests/data/testfile_tfrecords.csv", index=False,header=False)
     class_file = utilities.create_classes("tests/data/testfile_tfrecords.csv")    
     
     return config
