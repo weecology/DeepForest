@@ -17,6 +17,8 @@ DeepForest comes with a small set of sample data to help run the docs examples. 
 YELL_xml = get_data("2019_YELL_2_541000_4977000_image_crop.xml")
 ```
 
+For more complete examples of DeepForest applications, see the DeepForest demo [repo](https://github.com/weecology/DeepForest_demos/).
+
 ## Prediction
 
 DeepForest allows convenient prediction of new data based on the prebuilt model or a [custom trained](getting_started.html#Training) model. There are three ways to format data for prediction.
