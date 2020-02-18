@@ -113,7 +113,7 @@ def save_crop(base_dir, image_name, index, crop):
     
     return filename
 
-def split_raster(path_to_raster, annotations_file, base_dir, patch_size, patch_overlap, allow_empty=False):
+def split_raster(path_to_raster, annotations_file, base_dir=".", patch_size=400, patch_overlap=0.05, allow_empty=False):
     """Divide a large tile into smaller arrays. Each crop will be saved to file
     
     Args:
