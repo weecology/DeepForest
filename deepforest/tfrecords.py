@@ -12,7 +12,6 @@ import numpy as np
 
 from math import ceil
 import keras 
-import cv2
 import pandas as pd
 
 from keras_retinanet.preprocessing.csv_generator import CSVGenerator

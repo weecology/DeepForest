@@ -13,3 +13,4 @@ _pycache_
 current_release.csv
 *.tif
 __pycache__
+tests/output/*

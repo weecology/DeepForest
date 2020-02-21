@@ -43,7 +43,7 @@ def test_select_annotations(config, numpy_image):
     assert selected_annotations.shape[0] == 17
     
     #image name should be name of image plus the index .tif
-    assert selected_annotations.image_path.unique()[0] == "OSBS_029_7.jpg"
+    assert selected_annotations.image_path.unique()[0] == "OSBS_029_7.png"
 
 def test_select_annotations_tile(config, numpy_image):
     config["patch_size"] = 50

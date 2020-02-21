@@ -69,12 +69,12 @@ def select_annotations(annotations, windows, index, allow_empty=False):
     #change the image name
     image_name = os.path.splitext("{}".format(annotations.image_path.unique()[0]))[0]
     image_basename = os.path.splitext(image_name)[0]
-    selected_annotations.image_path = "{}_{}.jpg".format(image_basename,index) 
+    selected_annotations.image_path = "{}_{}.png".format(image_basename,index) 
     
     ##If no matching annotations, return a line with the image name, but no records
     if selected_annotations.empty:
         if allow_empty:
-            selected_annotations = pd.DataFrame(["{}_{}.jpg".format(image_basename,index)],columns=["image_path"])
+            selected_annotations = pd.DataFrame(["{}_{}.png".format(image_basename,index)],columns=["image_path"])
             selected_annotations["xmin"] = ""
             selected_annotations["ymin"] = ""
             selected_annotations["xmax"] = ""
@@ -108,7 +108,7 @@ def save_crop(base_dir, image_name, index, crop):
     
     im = Image.fromarray(crop)
     image_basename = os.path.splitext(image_name)[0]    
-    filename = "{}/{}_{}.jpg".format(base_dir, image_basename, index)
+    filename = "{}/{}_{}.png".format(base_dir, image_basename, index)
     im.save(filename)   
     
     return filename
