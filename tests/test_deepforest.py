@@ -107,12 +107,12 @@ def test_train(annotations):
     return test_model
 
 def test_predict_generator(release_model, annotations):
-    release_model.config["save_path"] = "tests/data/"
+    release_model.config["save_path"] = "tests/output/"
     boxes = release_model.predict_generator(annotations=annotations, return_plot=False)
     assert boxes.shape[1] == 7
     
     release_model.predict_generator(annotations=annotations, return_plot=True)    
-    assert os.path.exists("tests/output/OSBS_029_0.png")
+    assert os.path.exists("tests/output/OSBS_029.png")
    
 def test_evaluate_generator(release_model, annotations):
     mAP = release_model.evaluate_generator(annotations=annotations)
