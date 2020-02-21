@@ -101,7 +101,7 @@ class deepforest:
         This is the main entry point for training a new model based on either existing weights or scratch
         
         Args:
-            annotations (str): Path to csv label file, labels are in the format -> path/to/image.jpg,x1,y1,x2,y2,class_name
+            annotations (str): Path to csv label file, labels are in the format -> path/to/image.png,x1,y1,x2,y2,class_name
             comet_experiment: A comet ml object to log images. Optional.
             list_of_tfrecords: Ignored if input_type != "tfrecord", list of tf records to process
             input_type: "fit_generator" or "tfrecord"
@@ -152,17 +152,19 @@ class deepforest:
         #add to config
         self.config["weights"] = self.weights        
     
-    def predict_generator(self, annotations, comet_experiment = None, iou_threshold=0.5, max_detections=200):
+    def predict_generator(self, annotations, comet_experiment = None, iou_threshold=0.5, max_detections=200, return_plot=False):
         """Predict bounding boxes for a model using a csv fit_generator
-        
+    
         Args:
-            annotations (str): Path to csv label file, labels are in the format -> path/to/image.jpg,x1,y1,x2,y2,class_name
+            annotations (str): Path to csv label file, labels are in the format -> path/to/image.png,x1,y1,x2,y2,class_name
             iou_threshold(float): IoU Threshold to count for a positive detection (defaults to 0.5)
             max_detections (int): Maximum number of bounding box predictions
             comet_experiment(object): A comet experiment class objects to track
+            return_plot: Whether to return prediction boxes (False) or Images (True). If True, files will be written to current working directory if model.config["save_path"] is not defined.
         
         Return:
-            boxes_output: a pandas dataframe of bounding boxes for each image in the annotations file
+            boxes_output: If return_plot=False, a pandas dataframe of bounding boxes for each image in the annotations file
+            None: If return_plot is True, images are written to save_dir as a side effect.
         """
         #Format args for CSV generator 
         classes_file = utilities.create_classes(annotations)
@@ -181,33 +183,47 @@ class deepforest:
         
         if self.prediction_model:
             boxes_output = [ ]
+            
             #For each image, gather predictions
             for i in range(generator.size()):
                 #pass image as path
                 plot_name = generator.image_names[i]
                 image_path = os.path.join(generator.base_dir,plot_name)
-                boxes = self.predict_image(image_path, return_plot=False, score_threshold=args.score_threshold)
+                result = self.predict_image(image_path, return_plot=return_plot, score_threshold=args.score_threshold)
                 
-                #Turn to pandas frame and save output
-                box_df = pd.DataFrame(boxes)
-                #use only plot name, not extension
-                box_df["plot_name"] = os.path.splitext(plot_name)[0]
-                boxes_output.append(box_df)
+                if return_plot:
+                    if not self.model.config["save_path"]:
+                        print("model.config['save_path'] is None, saving images to current working directory")
+                        save_path = "."
+                    else:
+                        save_path = self.config["save_path"]
+                    #Save image
+                    fname = os.path.join(save_path, plot_name)
+                    cv2.imwrite(fname, result)
+                    continue
+                else:    
+                    #Turn boxes to pandas frame and save output
+                    box_df = pd.DataFrame(result)
+                    #use only plot name, not extension
+                    box_df["plot_name"] = os.path.splitext(plot_name)[0]
+                    boxes_output.append(box_df)
         else:
                 raise ValueError("No prediction model loaded. Either load a retinanet from file, download the latest release or train a new model")
-    
-        #name columns and return box data
-        boxes_output = pd.concat(boxes_output)
-        boxes_output.columns = ["xmin","ymin","xmax","ymax","score","label","plot_name"]
-        boxes_output = boxes_output.reindex(columns= ["plot_name","xmin","ymin","xmax","ymax","score","label"])    
-        
-        return boxes_output
+       
+        if return_plot:
+            return None
+        else:
+            #if boxes, name columns and return box data
+            boxes_output = pd.concat(boxes_output)
+            boxes_output.columns = ["xmin","ymin","xmax","ymax","score","label","plot_name"]
+            boxes_output = boxes_output.reindex(columns= ["plot_name","xmin","ymin","xmax","ymax","score","label"])    
+            return boxes_output
     
     def evaluate_generator(self, annotations, comet_experiment = None, iou_threshold=0.5, max_detections=200):
         """ Evaluate prediction model using a csv fit_generator
         
         Args:
-            annotations (str): Path to csv label file, labels are in the format -> path/to/image.jpg,x1,y1,x2,y2,class_name
+            annotations (str): Path to csv label file, labels are in the format -> path/to/image.png,x1,y1,x2,y2,class_name
             iou_threshold(float): IoU Threshold to count for a positive detection (defaults to 0.5)
             max_detections (int): Maximum number of bounding box predictions
             comet_experiment(object): A comet experiment class objects to track
@@ -360,7 +376,8 @@ class deepforest:
             #Draw predictions
             for box in mosaic_df[["xmin","ymin","xmax","ymax"]].values:
                 draw_box(numpy_image, box, [0,0,255])
-    
+            
+            #Mantain consistancy with predict_image
             return numpy_image
         else:
             return mosaic_df

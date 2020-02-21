@@ -29,8 +29,8 @@ def download_release():
 @pytest.fixture()
 def annotations():
     annotations = utilities.xml_to_annotations(get_data("OSBS_029.xml"))
-    #Point at the jpg version for tfrecords
-    annotations.image_path = annotations.image_path.str.replace(".tif",".jpg")
+    #Point at the png version for tfrecords
+    annotations.image_path = annotations.image_path.str.replace(".tif",".png")
     
     annotations_file = get_data("testfile_deepforest.csv")
     annotations.to_csv(annotations_file,index=False,header=False)
@@ -40,7 +40,7 @@ def annotations():
 @pytest.fixture()
 def multi_annotations():
     annotations = utilities.xml_to_annotations(get_data("SOAP_061.xml"))
-    annotations.image_path = annotations.image_path.str.replace(".tif",".jpg")
+    annotations.image_path = annotations.image_path.str.replace(".tif",".png")
     annotations_file = get_data("testfile_multi.csv")
     annotations.to_csv(annotations_file,index=False,header=False)
     
@@ -107,8 +107,12 @@ def test_train(annotations):
     return test_model
 
 def test_predict_generator(release_model, annotations):
-    boxes = release_model.predict_generator(annotations=annotations)
+    release_model.config["save_path"] = "tests/data/"
+    boxes = release_model.predict_generator(annotations=annotations, return_plot=False)
     assert boxes.shape[1] == 7
+    
+    release_model.predict_generator(annotations=annotations, return_plot=True)    
+    assert os.path.exists("tests/output/OSBS_029_0.png")
    
 def test_evaluate_generator(release_model, annotations):
     mAP = release_model.evaluate_generator(annotations=annotations)

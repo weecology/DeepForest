@@ -1,31 +1,12 @@
 # FAQ
 
-Commonly encountered issues
-* Conda version errors
-
-Occasionally users report that conda enforces incorrect versions on install from source.
-
- ```
- ERROR: keras-retinanet 0.5.1 has requirement keras-resnet==0.1.0, but you'll have keras-resnet 0.2.0 which is incompatible.
- ```
-We have yet to find an example where this prevents DeepForest from operating successfully. From our perspective, this error can be ignored. If not, please open an [issue](https://github.com/weecology/DeepForest/issues) documenting your conda version and operating system.
-
-* Tensorflow deprectation warnings
-
-```
->>> from deepforest import deepforest
-/anaconda3/envs/DeepForest/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:516: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
-```
-
-These warnings are upstream of DeepForest and can be ignored.
-
 * Alpha channel
 
 ```
 OSError: cannot write mode RGBA as JPEG
 ```
 
-If you are manually cropping an image, be careful not to save the alpha channel. For example, on OSX, the preview tool will save a 4 channel image (RGBA) instead of a three channel image (RGB) by default. When saving a crop, toggle alpha channel off.
+If you are manually cropping an image and saving a JPG, be careful not to save the alpha channel. For example, on OSX, the preview tool will save a 4 channel image (RGBA) instead of a three channel image (RGB) by default. When saving a crop, toggle alpha channel off.
 
 * BGR versus RGB images
 
@@ -46,6 +27,8 @@ deepforest.predict_image(image_path="path to image")
 ```
 
 Deepforest will automatically read in the image as bgr, the user does not need to anything.
+
+In general DeepForest has adopted the philosophy that functions which interact with the images should read in arrays in BGR or from file and return images in BGR foramt.
 
 * How do I convert annotations to image coordinates? How do I project the predictions into the coordinate system?
 
@@ -79,3 +62,22 @@ library(raster)
 r<-stack("/Users/ben/Downloads/NAIP/East_clip2.tif")
 writeRaster(x=r,datatype="INT1U",filename="/Users/ben/Downloads/NAIP/East_ben.tiff")
 ```
+
+Commonly encountered issues
+* Conda version errors
+
+Occasionally users report that conda enforces incorrect versions on install from source.
+
+ ```
+ ERROR: keras-retinanet 0.5.1 has requirement keras-resnet==0.1.0, but you'll have keras-resnet 0.2.0 which is incompatible.
+ ```
+We have yet to find an example where this prevents DeepForest from operating successfully. From our perspective, this error can be ignored. If not, please open an [issue](https://github.com/weecology/DeepForest/issues) documenting your conda version and operating system.
+
+* Tensorflow deprectation warnings
+
+```
+>>> from deepforest import deepforest
+/anaconda3/envs/DeepForest/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:516: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+```
+
+These warnings are upstream of DeepForest and can be ignored.

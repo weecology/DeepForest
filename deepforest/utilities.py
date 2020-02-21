@@ -104,7 +104,7 @@ def xml_to_annotations(xml_path):
                 xml_path (str): Path to the annotations xml, formatted by RectLabel
         
         Returns:
-                Annotations (pandas dataframe): in the format -> path/to/image.jpg,x1,y1,x2,y2,class_name
+                Annotations (pandas dataframe): in the format -> path/to/image.png,x1,y1,x2,y2,class_name
         """
         #parse
         with open(xml_path) as fd:
@@ -157,7 +157,7 @@ def create_classes(annotations_file):
         """Create a class list in the format accepted by keras retinanet
         
         Args:
-                annotations_file: an annotation csv in the retinanet format path/to/image.jpg,x1,y1,x2,y2,class_name
+                annotations_file: an annotation csv in the retinanet format path/to/image.png,x1,y1,x2,y2,class_name
         
         Returns:
                 path to classes file
