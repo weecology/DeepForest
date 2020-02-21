@@ -220,7 +220,7 @@ class deepforest:
                                             score_threshold=args.score_threshold)
 
                 if return_plot:
-                    if not self.model.config["save_path"]:
+                    if not self.config["save_path"]:
                         print(
                             "model.config['save_path'] is None, saving images to current working directory"
                         )
