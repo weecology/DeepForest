@@ -9,8 +9,11 @@ tests/data/*
 *.jpg
 *.tfrecord
 *.tfrecords
-_pycache_
 current_release.csv
 *.tif
-__pycache__
+*__pycache__*
 tests/output/*
+.DS_Store
+docs/_build/
+.Rhistory
+.gitmodules
