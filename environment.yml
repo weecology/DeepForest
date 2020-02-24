@@ -1,6 +1,7 @@
 name: DeepForest
 channels:
   - defaults
+  - conda-forge
 dependencies:
   - python=3.6
   - sphinx

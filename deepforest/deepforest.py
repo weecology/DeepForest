@@ -423,29 +423,34 @@ class deepforest:
         predicted_boxes = pd.concat(predicted_boxes)
 
         #Non-max supression for overlapping boxes among window
-        with tf.Session() as sess:
-            print("{} predictions in overlapping windows, applying non-max supression".
-                  format(predicted_boxes.shape[0]))
-            new_boxes, new_scores, new_labels = predict.non_max_suppression(
-                sess,
-                predicted_boxes[["xmin", "ymin", "xmax", "ymax"]].values,
-                predicted_boxes.score.values,
-                predicted_boxes.label.values,
-                max_output_size=predicted_boxes.shape[0],
-                iou_threshold=iou_threshold)
-
-            image_detections = np.concatenate([
-                new_boxes,
-                np.expand_dims(new_scores, axis=1),
-                np.expand_dims(new_labels, axis=1)
-            ],
-                                              axis=1)
-            mosaic_df = pd.DataFrame(
-                image_detections,
-                columns=["xmin", "ymin", "xmax", "ymax", "score", "label"])
-            mosaic_df.label = mosaic_df.label.str.decode("utf-8")
-            print("{} predictions kept after non-max suppression".format(
-                mosaic_df.shape[0]))
+        if patch_overlap == 0:
+            mosaic_df = predicted_boxes
+        else:
+            with tf.Session() as sess:
+                print("{} predictions in overlapping windows, applying non-max supression".
+                      format(predicted_boxes.shape[0]))
+                new_boxes, new_scores, new_labels = predict.non_max_suppression(
+                    sess,
+                    predicted_boxes[["xmin", "ymin", "xmax", "ymax"]].values,
+                    predicted_boxes.score.values,
+                    predicted_boxes.label.values,
+                    max_output_size=predicted_boxes.shape[0],
+                    iou_threshold=iou_threshold)
+                
+                #Recreate box dataframe
+                image_detections = np.concatenate([
+                    new_boxes,
+                    np.expand_dims(new_scores, axis=1),
+                    np.expand_dims(new_labels, axis=1)
+                ],axis=1)
+                
+                mosaic_df = pd.DataFrame(
+                    image_detections,
+                    columns=["xmin", "ymin", "xmax", "ymax", "score", "label"])
+                mosaic_df.label = mosaic_df.label.str.decode("utf-8")
+                
+                print("{} predictions kept after non-max suppression".format(
+                    mosaic_df.shape[0]))
 
         if return_plot:
             #Draw predictions
