@@ -19,7 +19,7 @@ pip install DeepForest
 
 Installation has been currently validated on clean installs of
 
-* Linux version (Ubuntu 7.4.0)
+* Linux version (Ubuntu 17.4.0)
 * Mac OSX Mojave Python 3.7.5
 * Windows 2016+
 
