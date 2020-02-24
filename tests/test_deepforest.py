@@ -129,7 +129,11 @@ def test_random_transform(annotations):
 def test_predict_tile(release_model):
     raster_path = get_data("OSBS_029.tif")
     image = release_model.predict_tile(raster_path,patch_size=300,patch_overlap=0.5,return_plot=True)
-        
+
+    #Test no non-max suppression
+    boxes = release_model.predict_tile(raster_path,patch_size=100,patch_overlap=0,return_plot=False)
+    assert not boxes.empty
+    
 def test_retrain_release(annotations, release_model):
     release_model.config["epochs"] = 1
     release_model.config["save-snapshot"] = False
