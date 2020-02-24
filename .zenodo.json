@@ -1,0 +1,32 @@
+{
+"title": "DeepForest: Python Package for Tree Crown Detection in Airborne RGB imagery",
+"creators": [
+    {
+      "affiliation": "University of Florida",
+      "name": "Ben G. Weinstein",
+      "orcid": "0000-0002-2176-7935"
+    },
+    {
+      "affiliation": "University of Florida",
+      "name": "Sergio Marconi",
+      "orcid": "0000-0002-8096-754X"
+    },
+    {
+      "affiliation": "University of Florida",
+      "name": "Ethan P. White",
+      "orcid": "0000-0001-6728-7745"
+    }
+],
+    "description": "This Python package detects individual tree crowns in RGB imagery using deep learning.",
+    "keywords": [
+    "ecology",
+    "remote sensing",
+    "forests",
+    "trees",
+    "deep learning",
+    "Python"
+  ],
+    "access_right": "open",
+    "license": "mit-license",
+    "upload_type": "software"
+}

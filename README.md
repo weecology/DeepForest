@@ -3,6 +3,7 @@
 [![Build Status](https://travis-ci.org/weecology/DeepForest.svg?branch=master)](https://travis-ci.org/weecology/DeepForest)
 [![Documentation Status](https://readthedocs.org/projects/deepforest/badge/?version=latest)](http://deepforest.readthedocs.io/en/latest/?badge=latest)
 [![Version](https://img.shields.io/pypi/v/DeepForest.svg)](https://pypi.python.org/pypi/DeepForest)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.2538143.svg)](https://doi.org/10.5281/zenodo.2538143)
 
 DeepForest is a python package for training and predicting individual tree crowns from airborne RGB imagery. DeepForest comes with a prebuilt model trained on data from the National Ecological Observation Network. Users can extend this model by annotating and training custom models starting from the prebuilt model.
 
@@ -18,7 +19,7 @@ pip install DeepForest
 
 Installation has been currently validated on clean installs of
 
-* Linux version (Ubuntu 7.4.0)
+* Linux version (Ubuntu 17.4.0)
 * Mac OSX Mojave Python 3.7.5
 * Windows 2016+
 
