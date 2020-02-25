@@ -1,16 +1,15 @@
 deepforest package
 ==================
 
+Subpackages
+-----------
+
+.. toctree::
+
+   deepforest.data
+
 Submodules
 ----------
-
-deepforest.cli module
----------------------
-
-.. automodule:: deepforest.cli
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
 deepforest.deepforest module
 ----------------------------

@@ -4,10 +4,34 @@ tests package
 Submodules
 ----------
 
+tests.multi module
+------------------
+
+.. automodule:: tests.multi
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+tests.test\_data module
+-----------------------
+
+.. automodule:: tests.test_data
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 tests.test\_deepforest module
 -----------------------------
 
 .. automodule:: tests.test_deepforest
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+tests.test\_keras\_retinanet module
+-----------------------------------
+
+.. automodule:: tests.test_keras_retinanet
    :members:
    :undoc-members:
    :show-inheritance:
