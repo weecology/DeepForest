@@ -14,7 +14,6 @@ import keras.preprocessing.image
 import tensorflow as tf
 
 #Retinanet
-from keras_retinanet import layers
 from keras_retinanet import losses
 from keras_retinanet import models
 from keras_retinanet.callbacks import RedirectModel
@@ -29,7 +28,7 @@ from keras_retinanet.utils.transform import random_transform_generator
 from keras_retinanet.utils.image import random_visual_effect_generator
 from keras_retinanet.utils.gpu import setup_gpu
 
-from deepforest import tfrecords
+from deepforest.lib import tfrecords
 
 
 def makedirs(path):

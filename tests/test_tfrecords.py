@@ -1,15 +1,10 @@
 #test module for tfrecords
-from deepforest import tfrecords
-from deepforest import utilities
-from deepforest import preprocess
+from deepforest.lib import preprocess, tfrecords, utilities
 from deepforest import get_data
 
 import pytest
 import os
-import glob
 import tensorflow as tf
-import numpy as np
-import matplotlib.pyplot as plt
 
 from keras_retinanet.preprocessing import csv_generator
 from keras_retinanet import models
@@ -26,20 +21,20 @@ def config():
     config["path_to_raster"] =get_data("OSBS_029.tif")
     config["image-min-side"] = 800
     config["backbone"] = "resnet50"
-    
+
     #Create a clean config test data
     annotations = utilities.xml_to_annotations(xml_path=config["annotations_xml"])
     annotations.to_csv("tests/data/tfrecords_OSBS_029.csv",index=False)
-    
+
     annotations_file = preprocess.split_raster(path_to_raster=config["path_to_raster"],
-                                                        annotations_file="tests/data/tfrecords_OSBS_029.csv",
-                                                        base_dir= "tests/data/",
-                                                        patch_size=config["patch_size"],
-                                                        patch_overlap=config["patch_overlap"])
-    
+                                               annotations_file="tests/data/tfrecords_OSBS_029.csv",
+                                               base_dir= "tests/data/",
+                                               patch_size=config["patch_size"],
+                                               patch_overlap=config["patch_overlap"])
+
     annotations_file.to_csv("tests/data/testfile_tfrecords.csv", index=False,header=False)
-    class_file = utilities.create_classes("tests/data/testfile_tfrecords.csv")    
-    
+    class_file = utilities.create_classes("tests/data/testfile_tfrecords.csv")
+
     return config
 
 #Reading
@@ -49,11 +44,11 @@ def config():
 def test_create_tfrecords(config):
     """This test is in flux due to the fact that tensorflow and cv2 resize methods are not identical: https://jricheimer.github.io/tensorflow/2019/02/11/resize-confusion/ """
     created_records = tfrecords.create_tfrecords(annotations_file="tests/data/testfile_tfrecords.csv",
-                               class_file="tests/data/classes.csv",
-                               image_min_side=config["image-min-side"], 
-                               backbone_model=config["backbone"],
-                               size=100,
-                               savedir="tests/data/")
+                                                 class_file="tests/data/classes.csv",
+                                                 image_min_side=config["image-min-side"],
+                                                 backbone_model=config["backbone"],
+                                                 size=100,
+                                                 savedir="tests/data/")
     assert os.path.exists("tests/data/testfile_tfrecords_0.tfrecord")
     return created_records
 
@@ -66,17 +61,17 @@ def test_create_tensors(test_create_tfrecords):
     print("Testing that input tensors can be created")
     created_tensors = tfrecords.create_tensors(test_create_tfrecords)
     assert len(created_tensors) == 2
-    
+
     return created_tensors
 
 def test_create_dataset(test_create_tfrecords):
     dataset = tfrecords.create_dataset(test_create_tfrecords)
-    
+
 def test_equivalence(config, setup_create_tensors):
-    
+
     #unpack created tensors
     tf_inputs, tf_targets = setup_create_tensors
-    
+
     #the image going in to tensorflow should be equivalent to the image from the fit_generator
     backbone = models.backbone(config["backbone"])
 
@@ -122,16 +117,16 @@ def test_equivalence(config, setup_create_tensors):
     ##Useful for debug to plot
     #fig = plt.figure()
     #ax1 = fig.add_subplot(1,4,1)
-    #ax1.title.set_text('Fit Gen Original')    
+    #ax1.title.set_text('Fit Gen Original')
     #plt.imshow(original_image[...,::-1])
     #ax1 = fig.add_subplot(1,4,2)
-    #ax1.title.set_text('Fit Generator')    
+    #ax1.title.set_text('Fit Generator')
     #plt.imshow(image)
     #ax2 = fig.add_subplot(1,4,3)
     #ax2 = fig.add_subplot(1,4,4)
-    #ax2.title.set_text('Loaded Image')        
+    #ax2.title.set_text('Loaded Image')
     #plt.imshow(tf_inputs)
-    #plt.show()        
+    #plt.show()
 
 #Check for bad file types
 #@pytest.fixture()
@@ -139,8 +134,8 @@ def test_equivalence(config, setup_create_tensors):
     #annotations = utilities.xml_to_annotations(get_data("OSBS_029.xml"))
     #f = "tests/data/testfile_error_deepforest.csv"
     #annotations.to_csv(f,index=False,header=False)
-    #return f   
+    #return f
 
-#def test_tfdataset_error(bad_annotations):    
-    #with pytest.raises(ValueError):    
+#def test_tfdataset_error(bad_annotations):
+    #with pytest.raises(ValueError):
         #records_created = tfrecords.create_tfrecords(annotations_file=bad_annotations, class_file=get_data("classes.csv"), image_min_side=800, backbone_model="resnet50", size=100, savedir="tests/data/")
