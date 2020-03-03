@@ -36,6 +36,14 @@ deepforest.lib.tfrecords module
    :undoc-members:
    :show-inheritance:
 
+deepforest.lib.utilities module
+-------------------------------
+
+.. automodule:: deepforest.lib.utilities
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 
 Module contents
 ---------------
