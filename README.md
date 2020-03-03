@@ -93,7 +93,7 @@ image_path, xmin, ymin, xmax, ymax, label
 ```
 With one bounding box for each line. The image path is relative to the location of the annotations file.
 
-Training config parameters are stored in a [deepforest_config.yml](deepforest/data/deepforest_config.yml). They also can be changed at runtime.
+Training config parameters are stored in a [deepforest_config.yml](data/deepforest_config.yml). They also can be changed at runtime.
 
 ```{python}
 from deepforest import deepforest
