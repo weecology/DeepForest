@@ -20,10 +20,18 @@
 #
 import os
 import sys
+curr_path = os.path.dirname(os.path.abspath(os.path.expanduser(__file__)))
+sys.path.insert(0, os.path.join(curr_path, '..'))
 sys.path.insert(0, os.path.abspath('..'))
+
+import recommonmark
+# import sphinx_gallery
+from recommonmark.parser import CommonMarkParser
+from recommonmark.transform import AutoStructify
 from recommonmark.parser import CommonMarkParser
 
 import deepforest
+extensions = ['recommonmark']
 
 # -- General configuration ---------------------------------------------
 
@@ -41,18 +49,30 @@ extensions = [
     'sphinx.ext.autosummary',
     'sphinx.ext.doctest',
     'sphinx.ext.inheritance_diagram',
-    'sphinx_markdown_tables']
+    'sphinx_markdown_tables',
+    'sphinx.ext.intersphinx',
+    'pygments.sphinxext'
 
+]
+
+extensions = extensions+ [
+    # 'nbsphinx',
+    'sphinx.ext.mathjax', 'sphinx.ext.autodoc',
+    'IPython.sphinxext.ipython_console_highlighting',
+]
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
 #
-source_suffix = ['.rst', '.md']
-source_parsers = {
-    '.md': CommonMarkParser,
-}
+from recommonmark.parser import CommonMarkParser
+
+# source_parsers = {
+#     '.md': CommonMarkParser,
+# }
+# source_suffix = ['.rst', '.md']
+# source_suffix = ['.rst', '.md']
 
 # The master toctree document.
 master_doc = 'index'
@@ -81,7 +101,7 @@ language = None
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This patterns also effect to html_static_path and html_extra_path
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', '**.ipynb_checkpoints']
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
@@ -102,7 +122,8 @@ on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 if not on_rtd:  # only import and set the theme if we're building docs locally
     import sphinx_rtd_theme
     html_theme = 'sphinx_rtd_theme'
-    html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
+    html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]+["../.."]
+
 
 # Theme options are theme-specific and customize the look and feel of a
 # theme further.  For a list of options available for each theme, see the
@@ -179,3 +200,46 @@ texinfo_documents = [
 
 
 autodoc_mock_imports = ["tensorflow","keras"]
+
+
+from recommonmark.transform import AutoStructify
+
+# The suffix(es) of source filenames. You can specify multiple suffix
+# as a dictionary mapping file extensions to file types
+# https://www.sphinx-doc.org/en/master/usage/markdown.html
+source_suffix = {
+    '.rst': 'restructuredtext',
+    '.md': 'markdown',
+}
+
+
+# Temporary workaround to remove multiple build warnings caused by upstream bug.
+# See https://github.com/zulip/zulip/issues/13263 for details.
+from recommonmark.parser import CommonMarkParser
+from typing import Any, Dict, List, Optional
+
+class CustomCommonMarkParser(CommonMarkParser):
+    def visit_document(self, node):
+        pass
+
+def setup(app: Any) -> None:
+
+    app.add_source_parser(CustomCommonMarkParser)
+    app.add_config_value('recommonmark_config', {
+        'enable_eval_rst': True,
+        # Turn off recommonmark features we aren't using.
+        'enable_auto_doc_ref': False,
+        'auto_toc_tree_section': None,
+        'enable_auto_toc_tree': False,
+        'enable_math': False,
+        'enable_inline_math': False,
+        'url_resolver': lambda x: x,
+    }, True)
+
+    # Enable `eval_rst`, and any other features enabled in recommonmark_config.
+    # Docs: http://recommonmark.readthedocs.io/en/latest/auto_structify.html
+    # (But NB those docs are for master, not latest release.)
+    app.add_transform(AutoStructify)
+
+    # overrides for wide tables in RTD theme
+    app.add_stylesheet('theme_overrides.css')  # path relative to _static

@@ -2,8 +2,8 @@
 Module: tfrecords
 
 Tfrecords creation and reader for improved performance across multi-gpu
-There were a tradeoffs made in this repo. It would be natural to save the generated prepreprocessed image to tfrecord from the generator. This results in enormous (100x) files. 
-The compromise was to read the original image from file using tensorflow's data pipeline. The opencv resize billinear method is marginally different then the tensorflow method, so we can't literally assert they are the same array. 
+There were a tradeoffs made in this repo. It would be natural to save the generated prepreprocessed image to tfrecord from the generator. This results in enormous (100x) files.
+The compromise was to read the original image from file using tensorflow's data pipeline. The opencv resize billinear method is marginally different then the tensorflow method, so we can't literally assert they are the same array.
 """
 import tensorflow as tf
 import os
@@ -14,11 +14,13 @@ from math import ceil
 import keras
 import pandas as pd
 
-from keras_retinanet.preprocessing.csv_generator import CSVGenerator
-from keras_retinanet import models
-from keras_retinanet.models.retinanet import retinanet_bbox
-from keras_retinanet import losses
-
+try:
+    from keras_retinanet.preprocessing.csv_generator import CSVGenerator
+    from keras_retinanet import models
+    from keras_retinanet.models.retinanet import retinanet_bbox
+    from keras_retinanet import losses
+except:
+    pass
 import matplotlib.pyplot as plt
 import psutil
 import gc
@@ -74,7 +76,7 @@ def create_tfrecords(annotations_file,
         image_min_side: resized image object minimum size
         size: Number of images per tfrecord
         savedir: dir path to save tfrecords files
-    
+
     Returns:
         written_files: A list of path names of written tfrecords
     """
@@ -256,7 +258,7 @@ def create_dataset(filepath, batch_size=1, shuffle=True):
     Args:
         filepath: list of tfrecord files
         batch_size: number of images per batch
-        
+
     Returns:
         dataset: a tensorflow dataset object for model training or prediction
     """
@@ -288,11 +290,11 @@ def create_dataset(filepath, batch_size=1, shuffle=True):
 
 def create_tensors(list_of_tfrecords, backbone_name="resnet50", shuffle=True):
     """Create a wired tensor target from a list of tfrecords
-    
+
     Args:
         list_of_tfrecords: a list of tfrecord on disk to turn into a tfdataset
         backbone_name: keras retinanet backbone
-        
+
     Returns:
         inputs: input tensors of images
         targets: target tensors of bounding boxes and classes
