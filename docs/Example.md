@@ -24,7 +24,8 @@ The data are currently stored in an xml format. These need to be converted to th
 image_path, xmin, ymin, xmax, ymax, label
 ```
 
-```python
+```Python
+
 import os
 from matplotlib import pyplot as plt
 from deepforest import deepforest
@@ -53,7 +54,9 @@ Often the evaluation tile is too large to be predicted as single image, due to b
 3) Gather the correct annotations that match each window.
 
 
-```python
+```Python
+
+
 #Find data on path
 YELL_test = get_data("2019_YELL_2_541000_4977000_image_crop.tiff")
 
@@ -70,6 +73,7 @@ cropped_annotations.head()
 #Write window annotations file without a header row, same location as the "base_dir" above.
 eval_annotations_file= "cropped_example.csv"
 cropped_annotations.to_csv(eval_annotations_file,index=False, header=None)
+
 ```
 
 ### Evaluate the prebuilt model
@@ -78,18 +82,22 @@ Before training a new model, it is helpful to know the performance of the curren
 
 Evaluate prebuilt model. We can view predictions by supplying a save dir ("." = current directory). Predictions in green, annotations in black.
 
-```python
+```Python
+
 test_model = deepforest.deepforest()
 test_model.use_release()
 
 test_model.config["save_path"] = "."
 mAP = test_model.evaluate_generator(annotations=eval_annotations_file)
 print("Mean Average Precision is: {:.3f}".format(mAP))
+
 ```
 
 returns
 
-```python
+```Python
+
+
 Reading config file: deepforest_config.yml
 No model initialized, either train or load an existing retinanet model
 Downloading model from DeepForest release v0.2.1, see https://github.com/weecology/DeepForest/releases/tag/v0.2.1 for details
@@ -108,6 +116,7 @@ Running network: 100% (12 of 12) |#######| Elapsed Time: 0:00:25 Time:  0:00:25
 431 instances of class Tree with average precision: 0.5400
 mAP using the weighted average of precisions among classes: 0.5400
 mAP: 0.5400
+
 ```
 
 These are pretty strong results, likely because the images are similar to those used to train the prebuilt model. In our experience, scores over 0.5 are unlikely to improve without significant additional training data, targeting a specific situation in which the model is performing poorly.
@@ -117,13 +126,16 @@ These are pretty strong results, likely because the images are similar to those 
 
 To view a prediction from the model, use ```predict_image```.
 
-```python
+```Python
+
+
 sample_file ="2019_YELL_2_541000_4977000_image_crop_11.jpg"
 image = test_model.predict_image(sample_file, return_plot=True)
 
 #Matplotlib views in RGB order, but model returns BGR order
 plt.imshow(image[...,::-1])
 plt.show()
+
 ```
 
 ![](../www/example_image.png)
@@ -132,11 +144,14 @@ plt.show()
 
 To predict a large extent, we can crop overlapping windows, predict trees for each window, and reassemble the final tile after applying non-max suppression to the trees that overlap in multiple windows. Non-max suppression finds overlapping boxes and keeps the box with the higher confidence score. The threshold of overlap can be set using the ```iou_threshold``` argument.
 
-```python
+```Python
+
+
 image = test_model.predict_tile(YELL_test, return_plot=True, iou_threshold=0.75)
 
 #Matplotlib views in RGB order, but model returns BGR order
 plt.imshow(image[...,::-1])
 plt.show()
+
 ```
 ![](../www/predict_tile.png)
