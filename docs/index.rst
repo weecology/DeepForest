@@ -12,6 +12,9 @@ Source code is available here: (https://github.com/weecology/DeepForest.git).
    installation
    getting_started
    Example
+   example_gist.md
+   history.rst
+   authors.rst
    training
    training_config
    performance
@@ -20,7 +23,7 @@ Source code is available here: (https://github.com/weecology/DeepForest.git).
    case_study_FrenchGuiana
    code_of_conduct.rst
    source/deepforest
-   modules
+   source/modules
 
 Indices and tables
 ==================

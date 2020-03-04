@@ -40,7 +40,7 @@ image_path, xmin, ymin, xmax, ymax, label
 
 Please note that for functions which are fed into keras-retinanet, such as ```evaluate_generator```, ```predict_generator``` and ```train``` this annotation file should be saved without column names. For ```preprocess.split_raster``` the column names should be maintained.
 
-As with the [evaluation example](Example.html), collect training labels from a crop of the training tile and split into smaller windows.
+As with the [evaluation example](example.html), collect training labels from a crop of the training tile and split into smaller windows.
 
 ![](../www/YELL_train.png)
 

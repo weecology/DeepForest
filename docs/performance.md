@@ -6,9 +6,10 @@ Training neural networks is computationally intensive. While small amounts of da
 
 ## Tracking experiments
 
-To track experiments, we recommend using a [comet_ml](comet.ml) dashboard. DeepForest train and evaluate objects accept comet experiments.
+To track experiments, we recommend using a [comet_ml](https://www.comet.ml/docs/python-sdk/getting-started/) dashboard. DeepForest train and evaluate objects accept comet experiments.
 
 ```python
+
 from comet_ml import Experiment
 from deepforest import deepforest
 
