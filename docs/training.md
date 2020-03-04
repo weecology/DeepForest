@@ -44,7 +44,7 @@ As with the [evaluation example](Example.html), collect training labels from a c
 
 ![](../www/YELL_train.png)
 
-```{python}
+```python
 import os
 from deepforest import get_data
 from deepforest import deepforest
@@ -125,7 +125,7 @@ snapshot_path: snapshots/
 
 Using these settings, train a new model starting from the release model. We use are very small number of epochs since this is a sample toy dataset.
 
-```{python}
+```python
 #Load the latest release
 test_model = deepforest.deepforest()
 test_model.use_release()
@@ -143,7 +143,7 @@ test_model.train(annotations=annotations_file, input_type="fit_generator")
 
 For more visualization of model training, comet_ml is an useful platform for understanding machine learning results. There is a free tier for academic audiences. This is optional, but worth considering if you are going to do significant testing.
 
-```{python}
+```python
 from comet_ml import Experiment
 comet_experiment = Experiment(api_key=<api_key>,
                                   project_name=<project>, workspace=<"username">)
@@ -157,7 +157,7 @@ test_model.train(annotations=annotations_file, input_type="fit_generator",comet_
 
 Find the training accuracy of the model. We expect this value to be high (mAP > 0.5), if not, consider training for additional epochs.
 
-```{python}
+```python
 mAP = test_model.evaluate_generator(annotations=annotations_file)
 print("Mean Average Precision is: {:.3f}".format(mAP))
 ```

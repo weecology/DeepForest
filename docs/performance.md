@@ -8,7 +8,7 @@ Training neural networks is computationally intensive. While small amounts of da
 
 To track experiments, we recommend using a [comet_ml](comet.ml) dashboard. DeepForest train and evaluate objects accept comet experiments.
 
-```{python}
+```python
 from comet_ml import Experiment
 from deepforest import deepforest
 
@@ -28,13 +28,13 @@ There are currently two ways to train a deepforest model, directly using the ann
 
 0. Optional -> generate crops from training tiles
 
-```{python}
+```python
 annotations_file = preprocess.split_raster(<path_to_raster>, config["annotations_file"], "tests/data/",config["patch_size"], config["patch_overlap"])
 ```
 
 1. Generate the anchors for training from the annotations file
 
-```{python}
+```python
 created_records = tfrecords.create_tfrecords(annotations_file="tests/data/testfile_tfrecords.csv",
                            class_file="tests/data/classes.csv",
                            image_min_side=config["image-min-side"],
@@ -45,7 +45,7 @@ created_records = tfrecords.create_tfrecords(annotations_file="tests/data/testfi
 
 2. Train the model by supplying a list of tfrecords and the original file
 
-```{python}
+```python
 test_model.train(annotations="tests/data/testfile_tfrecords.csv",input_type="tfrecord", list_of_tfrecords=created_records)
 ```
 

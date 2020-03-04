@@ -24,7 +24,7 @@ The data are currently stored in an xml format. These need to be converted to th
 image_path, xmin, ymin, xmax, ymax, label
 ```
 
-```{python}
+```python
 import os
 from matplotlib import pyplot as plt
 from deepforest import deepforest
@@ -53,7 +53,7 @@ Often the evaluation tile is too large to be predicted as single image, due to b
 3) Gather the correct annotations that match each window.
 
 
-```{python}
+```python
 #Find data on path
 YELL_test = get_data("2019_YELL_2_541000_4977000_image_crop.tiff")
 
@@ -78,7 +78,7 @@ Before training a new model, it is helpful to know the performance of the curren
 
 Evaluate prebuilt model. We can view predictions by supplying a save dir ("." = current directory). Predictions in green, annotations in black.
 
-```{python}
+```python
 test_model = deepforest.deepforest()
 test_model.use_release()
 
@@ -89,7 +89,7 @@ print("Mean Average Precision is: {:.3f}".format(mAP))
 
 returns
 
-```{python}
+```python
 Reading config file: deepforest_config.yml
 No model initialized, either train or load an existing retinanet model
 Downloading model from DeepForest release v0.2.1, see https://github.com/weecology/DeepForest/releases/tag/v0.2.1 for details
@@ -117,7 +117,7 @@ These are pretty strong results, likely because the images are similar to those 
 
 To view a prediction from the model, use ```predict_image```.
 
-```{python}
+```python
 sample_file ="2019_YELL_2_541000_4977000_image_crop_11.jpg"
 image = test_model.predict_image(sample_file, return_plot=True)
 
@@ -132,7 +132,7 @@ plt.show()
 
 To predict a large extent, we can crop overlapping windows, predict trees for each window, and reassemble the final tile after applying non-max suppression to the trees that overlap in multiple windows. Non-max suppression finds overlapping boxes and keeps the box with the higher confidence score. The threshold of overlap can be set using the ```iou_threshold``` argument.
 
-```{python}
+```python
 image = test_model.predict_tile(YELL_test, return_plot=True, iou_threshold=0.75)
 
 #Matplotlib views in RGB order, but model returns BGR order

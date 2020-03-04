@@ -8,7 +8,7 @@ cd NeonTreeEvaluation
 python
 ```
 
-```{python}
+```python
 from deepforest import deepforest
 
 test_model = deepforest.deepforest()

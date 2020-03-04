@@ -13,7 +13,7 @@ Setting the correct window size to match the prebuilt model takes a few tries. T
 
 DeepForest comes with a small set of sample data to help run the docs examples. Since users may install in a variety of manners, and it is impossible to know the relative location of the files, the helper function ```get_data``` is used. This function looks to where DeepForest is installed, and finds the deepforest/data/ directory.
 
-```{python}
+```python
 import deepforest
 
 YELL_xml = deepforest.get_data("2019_YELL_2_541000_4977000_image_crop.xml")
@@ -29,7 +29,7 @@ DeepForest allows convenient prediction of new data based on the prebuilt model 
 
 For single images, ```predict_image``` can read an image from memory or file and return predicted tree bounding boxes.
 
-```{python}
+```python
 from deepforest import deepforest
 from deepforest import get_data
 
@@ -132,7 +132,7 @@ and a classes.csv file in the same directory
 Tree,0
 ```
 
-```{python}
+```python
 from deepforest import deepforest
 from deepforest import get_data
 
@@ -148,7 +148,7 @@ annotations_file = get_data("testfile_deepforest.csv")
 test_model.train(annotations=annotations_file, input_type="fit_generator")
 ```
 
-```{python}
+```python
 No model initialized, either train or load an existing retinanet model
 There are 1 unique labels: ['Tree']
 Disabling snapshot saving
@@ -174,7 +174,7 @@ DeepForest uses the keras-retinanet ```evaluate``` method to score images. This 
 image_path, xmin, ymin, xmax, ymax, label
 ```
 
-```{python}
+```python
 from deepforest import deepforest
 from deepforest import get_data
 
@@ -186,7 +186,7 @@ mAP = test_model.evaluate_generator(annotations=annotations_file)
 print("Mean Average Precision is: {:.3f}".format(mAP))
 ```
 
-```{python}
+```python
 Running network: 100% (1 of 1) |#########| Elapsed Time: 0:00:02 Time:  0:00:02
 Parsing annotations: N/A% (0 of 1) |     | Elapsed Time: 0:00:00 ETA:  --:--:--
 Parsing annotations: 100% (1 of 1) |#####| Elapsed Time: 0:00:00 Time:  0:00:00
@@ -197,6 +197,6 @@ mAP: 0.3687
 
 The evaluation file can also be run as a callback during training by setting the config file. This will allow the user to see evaluation performance at the end of each epoch.
 
-```{python}
+```python
 test_model.config["validation_annotations"] = "testfile_deepforest.csv"
 ```
