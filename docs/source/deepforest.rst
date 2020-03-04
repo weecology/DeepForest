@@ -11,6 +11,14 @@ Subpackages
 Submodules
 ----------
 
+deepforest.\_version module
+---------------------------
+
+.. automodule:: deepforest._version
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 deepforest.deepforest module
 ----------------------------
 
