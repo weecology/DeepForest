@@ -1,7 +1,7 @@
 #Retinanet training
-#!/usr/bin/env python
 """
-Derived from Fizyr keras-retinanet (https://fizyr.com)
+Retinanet training module.
+Developed from keras-retinanet repo
 """
 
 import argparse
@@ -492,7 +492,7 @@ def main(forest_object,
             num_of_classes = train_generator.num_classes()
         else:
             #Add background class
-            num_of_classes = len(forest_object.labels.keys()) + 1
+            num_of_classes = len(forest_object.labels.keys())
 
         model, training_model, prediction_model = create_models(
             backbone_retinanet=backbone.retinanet,

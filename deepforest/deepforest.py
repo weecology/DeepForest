@@ -1,9 +1,5 @@
 """
-.. module:: deepforest
-   :platform: Unix, Windows
-   :synopsis: A module for individual tree crown detection using deep learning neural networks. see Weinstein et al. Remote Sensing. 2019
-
-.. moduleauthor:: Ben Weinstein <ben.weinstein@weecology.org>
+Deepforest main module. This module holds the deepforest class for model building and training
 """
 import os
 import csv
@@ -37,7 +33,8 @@ from keras_retinanet.utils.visualization import draw_box
 
 
 class deepforest:
-    ''' Class for training and predicting tree crowns in RGB images
+    ''' 
+    Class for training and predicting tree crowns in RGB images
     
     Args:
         weights (str): Path to model saved on disk from keras.model.save_weights(). A new model is created and weights are copied. Default is None. 

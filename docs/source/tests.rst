@@ -4,14 +4,6 @@ tests package
 Submodules
 ----------
 
-tests.multi module
-------------------
-
-.. automodule:: tests.multi
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 tests.test\_data module
 -----------------------
 

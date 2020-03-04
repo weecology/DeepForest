@@ -147,6 +147,9 @@ def test_retrain_release(annotations, release_model):
     strs = ["--weights" == x for x in arg_list]
     index = np.where(strs)[0][0] + 1
     assert arg_list[index] == release_model.weights
+    
+    release_model.train(annotations=annotations, input_type="fit_generator")
+    
 
 def test_multi_train(multi_annotations):    
     test_model = deepforest.deepforest()
