@@ -118,7 +118,7 @@ These are pretty strong results, likely because the images are similar to those 
 To view a prediction from the model, use ```predict_image```.
 
 ```{python}
-sample_file ="2019_YELL_2_541000_4977000_image_crop_11.jpg"
+sample_file ="2019_YELL_2_541000_4977000_image_crop_11.png"
 image = test_model.predict_image(sample_file, return_plot=True)
 
 #Matplotlib views in RGB order, but model returns BGR order

@@ -30,7 +30,7 @@ def read_config(config_path):
             config = yaml.load(f, Loader=yaml.FullLoader)
 
     except Exception as e:
-        raise FileNotFoundError("There is no config at, yields {}".format(config_path, e))
+        raise FileNotFoundError("There is no config at {}, yields {}".format(config_path, e))
 
     return config
 
