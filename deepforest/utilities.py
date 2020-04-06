@@ -198,7 +198,7 @@ def create_classes(annotations_file):
     print("There are {} unique labels: {} ".format(n_classes, list(labels)))
 
     #write label
-    with open(classes_path, 'w') as csv_file:
+    with open(classes_path,'w', newline='\n', encoding='utf-8') as csv_file:
         writer = csv.writer(csv_file)
         for index, label in enumerate(labels):
             writer.writerow([label, index])

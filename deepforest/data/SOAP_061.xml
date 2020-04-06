@@ -1,12 +1,38 @@
 <annotation>
     <folder>data</folder>
-    <filename>SOAP_061.tif</filename>
+    <filename>SOAP_061.png</filename>
     <size>
         <width>400</width>
         <height>400</height>
         <depth>3</depth>
     </size>
     <segmented>0</segmented>
+    <object>
+        <name>Dead</name>
+        <pose>Unspecified</pose>
+        <truncated>0</truncated>
+        <occluded>0</occluded>
+        <difficult>0</difficult>
+        <bndbox>
+            <xmin>149</xmin>
+            <ymin>105</ymin>
+            <xmax>173</xmax>
+            <ymax>129</ymax>
+        </bndbox>
+    </object>
+    <object>
+        <name>Dead</name>
+        <pose>Unspecified</pose>
+        <truncated>0</truncated>
+        <occluded>0</occluded>
+        <difficult>0</difficult>
+        <bndbox>
+            <xmin>382</xmin>
+            <ymin>4</ymin>
+            <xmax>395</xmax>
+            <ymax>20</ymax>
+        </bndbox>
+    </object>
     <object>
         <name>Dead</name>
         <pose>Unspecified</pose>
@@ -340,8 +366,8 @@
         <difficult>0</difficult>
         <bndbox>
             <xmin>127</xmin>
-            <ymin>75</ymin>
-            <xmax>195</xmax>
+            <ymin>103</ymin>
+            <xmax>148</xmax>
             <ymax>129</ymax>
         </bndbox>
     </object>

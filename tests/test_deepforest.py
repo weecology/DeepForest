@@ -3,7 +3,7 @@
 
 """Tests for `deepforest` package."""
 import matplotlib
-matplotlib.use("MacOSX")
+#matplotlib.use("MacOSX")
 
 import os
 import sys
