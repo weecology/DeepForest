@@ -25,7 +25,7 @@ def test_xml_to_annotations():
     assert annotations.shape == (61 ,6)
     
     #bounding box extents should be int
-    assert annotations["xmin"].dtype == "int"
+    assert annotations["xmin"].dtype == np.int64
     
 def test_create_classes(annotations):
     classes_file = utilities.create_classes(annotations_file=annotations)
