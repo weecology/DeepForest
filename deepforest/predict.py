@@ -13,7 +13,6 @@ import tensorflow as tf
 from keras_retinanet.utils import image as keras_retinanet_image
 from keras_retinanet.utils.visualization import draw_detections
 
-
 def predict_image(model,
                   image_path=None,
                   raw_image=None,
@@ -56,7 +55,7 @@ def predict_image(model,
     if not bands == 3:
         raise IOError(
             "Input file {} has {} bands. DeepForest only accepts 3 band RGB rasters. If the image was cropped and saved as a .jpg, please ensure that no alpha channel was used."
-            .format(path_to_raster, bands))
+            .format(image_path, bands))
 
     image = keras_retinanet_image.preprocess_image(numpy_image)
     image, scale = keras_retinanet_image.resize_image(image)
