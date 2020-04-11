@@ -165,3 +165,28 @@ def test_multi_train(multi_annotations):
     target_labels.sort()
     
     assert labels == target_labels
+    
+def test_reload_model(release_model):
+    release_model.model.save("tests/output/example_saved_model.h5")
+    reloaded = deepforest.deepforest(saved_model="tests/output/example_saved_model.h5")
+    assert reloaded.prediction_model
+    
+    #Predict test image and return boxes
+    boxes = reloaded.predict_image(image_path=get_data("OSBS_029.tif"), show=False, return_plot = False, score_threshold=0.1)
+    
+    #Returns a 6 column numpy array, xmin, ymin, xmax, ymax, score, label
+    assert boxes.shape[1] == 6
+    
+    assert boxes.score.min() > 0.1
+    
+def test_reload_weights(release_model):
+    release_model.model.save_weights("tests/output/example_saved_weights.h5")    
+    reloaded = deepforest.deepforest(weights="tests/output/example_saved_weights.h5")
+    assert reloaded.prediction_model
+    
+    #Predict test image and return boxes
+    boxes = reloaded.predict_image(image_path=get_data("OSBS_029.tif"), show=False, return_plot = False, score_threshold=0.1)
+    
+    #Returns a 6 column numpy array, xmin, ymin, xmax, ymax, score, label
+    assert boxes.shape[1] == 6
+        

@@ -52,6 +52,7 @@ from deepforest import utilities
 from deepforest import preprocess
 
 #convert hand annotations from xml into retinanet format
+#The get_data function is only needed when fetching sample package data
 YELL_xml = get_data("2019_YELL_2_528000_4978000_image_crop2.xml")
 annotation = utilities.xml_to_annotations(YELL_xml)
 annotation.head()

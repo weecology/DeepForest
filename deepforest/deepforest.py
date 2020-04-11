@@ -74,9 +74,10 @@ class deepforest:
             #Capture user warning, not relevant here
             with warnings.catch_warnings():
                 warnings.filterwarnings("ignore", category=UserWarning)
-                self.model = utilities.load_model(saved_model)
+                self.model = models.load_model(saved_model)
+                self.prediction_model = convert_model(self.model)                
 
-        if self.weights is not None:
+        elif self.weights:
             print("Creating model from weights")
             backbone = models.backbone(self.config["backbone"])
             self.model, self.training_model, self.prediction_model = create_models(

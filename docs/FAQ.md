@@ -74,14 +74,13 @@ r<-stack("/Users/ben/Downloads/NAIP/East_clip2.tif")
 writeRaster(x=r,datatype="INT1U",filename="/Users/ben/Downloads/NAIP/East_ben.tiff")
 ```
 
-
 6. Errors versus warnings
 
 Occasionally users report that conda enforces incorrect versions on install from source.
 
- ```
+```
  ERROR: keras-retinanet 0.5.1 has requirement keras-resnet==0.1.0, but you'll have keras-resnet 0.2.0 which is incompatible.
- ```
+```
 We have yet to find an example where this prevents DeepForest from operating successfully. From our perspective, this error can be ignored. If not, please open an [issue](https://github.com/weecology/DeepForest/issues) documenting your conda version and operating system.
 
 * Tensorflow deprectation warnings
