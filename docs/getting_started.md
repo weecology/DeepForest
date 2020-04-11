@@ -200,3 +200,47 @@ The evaluation file can also be run as a callback during training by setting the
 ```{python}
 test_model.config["validation_annotations"] = "testfile_deepforest.csv"
 ```
+
+## Loading saved models for prediction
+
+DeepForest uses the keras saving workflow, which means users can save the entire model architecture, or just the weights. For more explanation on Keras see [here](https://stackoverflow.com/questions/42621864/difference-between-keras-model-save-and-model-save-weights).
+
+### Saved Model
+To access the training model for saving, use
+
+```
+test_model.model.save("example_saved.h5")
+```
+
+which can be reloaded
+
+```
+reloaded = deepforest.deepforest(saved_model="example_saved.h5")
+Reading config file: deepforest_config.yml
+Loading saved model
+```
+
+The actual prediction model can be accessed
+```
+reloaded.prediction_model
+<keras.engine.training.Model object at 0x646ca3b70>
+```
+
+but in most cases it is better to just use the deepforest workflow functions such as predict_image.
+
+### Model Weights
+
+If you just want to weights of the model layer, you can do.
+
+```
+test_model.model.save_weights("example_save_weights.h5")
+reloaded = deepforest.deepforest(weights="example_save_weights.h5")
+```
+
+Now you can use
+
+```
+reloaded.predict_image()
+```
+
+as described above.
