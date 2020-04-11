@@ -15,7 +15,7 @@ Please provide a sample image or screenshot of the type of trees you are trying 
 
 ## Have you tried annotating local data and retraining?
 
-The DeepForest prebuilt model is a good starting point for many trees. Nothing is can be substitute for adding a small amount of local data to improve performance. 
+The DeepForest prebuilt model is a good starting point for many trees. Adding a small amount of local data will almost always improve performance. 
 
 * How many trees did you annotate?
 * Did you remember to label ALL trees in an image?
