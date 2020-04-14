@@ -26,7 +26,9 @@ DeepForest uses xml files produced by the commonly used annotation program RectL
 
 For annotations made in RectLabel, DeepForest has a parse function ```preprocess.xml_to_annotations```.
 
-For non-mac users, annotations can be made in any spatial analysis software (e.g QGIS, ArcGIS) and loaded using the shapefile_to_annotations [utility](https://gist.github.com/bw4sz/e2fff9c9df0ae26bd2bfa8953ec4a24c). Please note that due to the installation of GDAL, which can vary widely across systems, this utility is not included in DeepForest source and must be installed seperately.
+An alternative annotator is labelme, which works for mac, windows and ubuntu. Users report that [annotation export in VOC format](https://github.com/wkentaro/labelme/tree/master/examples/bbox_detection) can be parsed by the xml_to_annotations function above.
+
+Bounding box annotations can also be made in any spatial analysis software (e.g QGIS, ArcGIS) and loaded using the shapefile_to_annotations [utility](https://gist.github.com/bw4sz/e2fff9c9df0ae26bd2bfa8953ec4a24c). Please note that due to the installation of GDAL, which can vary widely across systems, this utility is not included in DeepForest source and must be installed separately.
 ```
 conda install geopandas rasterio rtree
 ```

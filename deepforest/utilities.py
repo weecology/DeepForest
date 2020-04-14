@@ -38,7 +38,6 @@ def read_config(config_path):
 
     return config
 
-
 def read_model(model_path, config):
     """
         Read keras retinanet model from keras.model.save()
