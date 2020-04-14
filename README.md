@@ -25,7 +25,7 @@ Installation has been currently validated on clean installs of
 
 ## Source Installation
 
-DeepForest can alternatively be installed from source using the github repository. The python package dependencies are managed by conda. For help installing conda see: [conda quickstart](https://docs.conda.io/projects/conda/en/latest/user-guide/install/). DeepForest depends on a [fork](https://github.com/bw4sz/keras-retinanet.git) of the keras-retinanet to perform object detection. *For windows users, DeepForest may require functioning versions of keras and tensorflow before installation.*
+DeepForest can alternatively be installed from source using the github repository. The python package dependencies are managed by conda. For help installing conda see: [conda quickstart](https://docs.conda.io/projects/conda/en/latest/user-guide/install/).
 
 ```
 git clone https://github.com/weecology/DeepForest.git
