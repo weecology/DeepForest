@@ -53,3 +53,13 @@ def test_use_release():
     #Download latest model from github release
     release_tag, weights = utilities.use_release()
     assert os.path.exists(get_data("NEON.h5"))    
+    
+def test_float_warning(config):
+    """Users should get a rounding warning when adding annotations with floats"""
+    float_annotations = "tests/data/float_annotations.txt"
+    annotations = utilities.xml_to_annotations(float_annotations)
+    assert annotations.xmin.dtype is np.dtype('int64')
+     
+    
+    
+    
