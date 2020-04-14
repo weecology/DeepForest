@@ -159,11 +159,11 @@ def xml_to_annotations(xml_path):
 
     rgb_name = os.path.basename(doc["annotation"]["filename"])
 
-    #set dtypes
-    xmin = [int(x) for x in xmin]
-    xmax = [int(x) for x in xmax]
-    ymin = [int(x) for x in ymin]
-    ymax = [int(x) for x in ymax]
+    #set dtypes, check for floats and round    
+    xmin = [round_with_floats(x) for x in xmin]
+    xmax = [round_with_floats(x) for x in xmax]
+    ymin = [round_with_floats(x) for x in ymin]
+    ymax = [round_with_floats(x) for x in ymax]
 
     annotations = pd.DataFrame({
         "image_path": rgb_name,
@@ -175,7 +175,17 @@ def xml_to_annotations(xml_path):
     })
     return (annotations)
 
-
+def round_with_floats(x):
+    """Check if string x is float or int, return int, rounded if needed"""
+    
+    try:
+        result = int(x)
+    except:
+        warnings.warn("Annotations file contained non-integer coordinates. Since the prediction occurs on the image coordinate system, all coordinates must be rounded to the nearest pixel. If you are attempting to use projected data, see FAQ for suggestions.")
+        result = int(np.round(float(x)))
+    
+    return result
+    
 def create_classes(annotations_file):
     """Create a class list in the format accepted by keras retinanet
         

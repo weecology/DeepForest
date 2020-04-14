@@ -1,13 +1,14 @@
 # FAQ
 
-1. Problem: DeepForest claims my image is not a 3 band raster!
+## DeepForest claims my image is not a 3 band raster!
+
 Potential Solution: Check for an alpha channel when saving as a jpg.
 
 ```
 OSError: cannot write mode RGBA as JPEG
 ```
 
-or 
+or
 
 ```
 IOError: DeepForest only accepts 3 band RGB rasters.
@@ -15,8 +16,7 @@ IOError: DeepForest only accepts 3 band RGB rasters.
 
 If you are manually cropping an image and saving a JPG, be careful not to save the alpha channel. For example, on OSX, the preview tool will save a 4 channel image (RGBA) instead of a three channel image (RGB) by default. When saving a crop, toggle alpha channel off.
 
-2.
-Problem: The plotted image looks wrong, the trees are blue!
+## The plotted image looks wrong, the trees are blue!
 Solution: You are plotting the BlueGreenRed (BGR) image channel order. You want the RGB image channel ordering.
 
 Unfortunately, python has two standard libraries for image processing and visualization, matplotlib and opencv, that do not have the same default channel order. Matplotlib reads images into RedGreenBlue order, whereas Opencv reads in BlueGreenRed order. The machine learning module and the default backbone weights assume the image is BGR. Therefore there is some uncomfortable moments of visualizing data and not anticipating the channel order.
@@ -39,19 +39,19 @@ Deepforest will automatically read in the image as bgr, the user does not need t
 
 In general DeepForest has adopted the philosophy that functions which interact with the images should read in arrays in BGR or from file and return images in BGR foramt.
 
-3. Problem: How do I convert projected annotations to image coordinates? How do I project the predictions into the image coordinate system?
+## How do I convert projected annotations to image coordinates? How do I project the predictions into the image coordinate system?
 Potential Solution: https://gist.github.com/bw4sz/e2fff9c9df0ae26bd2bfa8953ec4a24c
 
 DeepForest makes predictions in the image coordinate system with the top left of the image as 0,0. To convert these coordinates into the input prediction projection we need to know the bounds of the image and the resolution. Please note that this makes sense over small geographic areas in which we don't need to consider the curvature of the earth. I've written two utility functions that are useful. One for going from shapefiles to annotations. Another for going from predictions to projected boxes. Note that these require the geopandas library which is not installed in DeepForest.
 
-4. Problem: Linux Python 3.5 doesn't work.
+## Linux Python 3.5 doesn't work.
 Solution: Updated to Python >3.6
 
 There is one known bug in Ubuntu python 3.5 on use_release.
 https://github.com/weecology/DeepForest/issues/64
 Suggested to update to a more recent python version.
 
-5. Problem: DeepForest cannot read my image. I get "Cannot identify image".
+## DeepForest cannot read my image. I get "Cannot identify image".
 
 ```
 >>> Image.open("/Users/ben/Downloads/NAIP/East_ben.tif")
@@ -62,9 +62,9 @@ Traceback (most recent call last):
 OSError: cannot identify image file '/Users/ben/Downloads/NAIP/East_ben.tif'
 ```
 
-The python image library requires three band unsigned 8 bit images. Sometimes geotiff files have no-data values greater than 255 or other file types. 
+The python image library requires three band unsigned 8 bit images. Sometimes geotiff files have no-data values greater than 255 or other file types.
 
-Solution: 
+Solution:
 
 To ensure unsigned 8bit rasters, we can use any number of programs. For example in R using the raster package
 
@@ -74,7 +74,7 @@ r<-stack("/Users/ben/Downloads/NAIP/East_clip2.tif")
 writeRaster(x=r,datatype="INT1U",filename="/Users/ben/Downloads/NAIP/East_ben.tiff")
 ```
 
-6. Errors versus warnings
+## I'm seeing alot of deprecation warnings
 
 Occasionally users report that conda enforces incorrect versions on install from source.
 
@@ -83,7 +83,7 @@ Occasionally users report that conda enforces incorrect versions on install from
 ```
 We have yet to find an example where this prevents DeepForest from operating successfully. From our perspective, this error can be ignored. If not, please open an [issue](https://github.com/weecology/DeepForest/issues) documenting your conda version and operating system.
 
-* Tensorflow deprectation warnings
+### Tensorflow deprectation warnings
 
 ```
 >>> from deepforest import deepforest
