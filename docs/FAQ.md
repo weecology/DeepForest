@@ -39,17 +39,19 @@ Deepforest will automatically read in the image as bgr, the user does not need t
 
 In general DeepForest has adopted the philosophy that functions which interact with the images should read in arrays in BGR or from file and return images in BGR foramt.
 
-## How do I convert projected annotations to image coordinates? How do I project the predictions into the image coordinate system?
-Potential Solution: https://gist.github.com/bw4sz/e2fff9c9df0ae26bd2bfa8953ec4a24c
+## How do I convert projected annotations to image coordinates?
+
+I've made a small utility to convert projected data, such as utm coordinates, into the image coordinates.
+
+[UTM_to_Image Gist](https://gist.github.com/bw4sz/e2fff9c9df0ae26bd2bfa8953ec4a24c)
 
 DeepForest makes predictions in the image coordinate system with the top left of the image as 0,0. To convert these coordinates into the input prediction projection we need to know the bounds of the image and the resolution. Please note that this makes sense over small geographic areas in which we don't need to consider the curvature of the earth. I've written two utility functions that are useful. One for going from shapefiles to annotations. Another for going from predictions to projected boxes. Note that these require the geopandas library which is not installed in DeepForest.
 
 ## Linux Python 3.5 doesn't work.
 Solution: Updated to Python >3.6
 
-There is one known bug in Ubuntu python 3.5 on use_release.
-https://github.com/weecology/DeepForest/issues/64
-Suggested to update to a more recent python version.
+There is one known [bug](https://github.com/weecology/DeepForest/issues/64) in Ubuntu python 3.5 on use_release.
+It is suggested to update to a more recent python version.
 
 ## DeepForest cannot read my image. I get "Cannot identify image".
 
@@ -74,7 +76,7 @@ r<-stack("/Users/ben/Downloads/NAIP/East_clip2.tif")
 writeRaster(x=r,datatype="INT1U",filename="/Users/ben/Downloads/NAIP/East_ben.tiff")
 ```
 
-## I'm seeing alot of deprecation warnings
+## I'm seeing alot of deprecation warnings.
 
 Occasionally users report that conda enforces incorrect versions on install from source.
 

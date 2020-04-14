@@ -9,8 +9,12 @@ import urllib
 import xmltodict
 import csv
 import warnings
-import tensorflow as tf
-
+with warnings.catch_warnings():
+    #Suppress some of the verbose tensorboard warnings, compromise to avoid numpy version errors
+    warnings.filterwarnings("ignore", category=FutureWarning)
+    warnings.filterwarnings("ignore", category=DeprecationWarning)
+    import tensorflow as tf
+    
 from tqdm import tqdm
 from keras_retinanet import models
 from keras.utils import multi_gpu_model
@@ -41,7 +45,7 @@ def read_model(model_path, config):
         """
     #Suppress user warning, module does not need to be compiled for prediction
     with warnings.catch_warnings():
-        warnings.simplefilter('ignore', UserWarning)
+        #warnings.simplefilter('ignore', UserWarning)
         model = models.load_model(model_path, backbone_name='resnet50')
 
     return model
@@ -181,7 +185,7 @@ def round_with_floats(x):
     try:
         result = int(x)
     except:
-        warnings.warn("Annotations file contained non-integer coordinates. Since the prediction occurs on the image coordinate system, all coordinates must be rounded to the nearest pixel. If you are attempting to use projected data, see FAQ for suggestions.")
+        warnings.warn("Annotations file contained non-integer coordinates. These coordinates were rounded to nearest int. All coordinates must correspond to pixels in the image coordinate system. If you are attempting to use projected data, first convert it into image coordinates see FAQ for suggestions.")
         result = int(np.round(float(x)))
     
     return result
