@@ -13,7 +13,9 @@ current_release.csv
 *.tif
 *__pycache__*
 tests/output/*
-.DS_Store
+*.DS_Store*
 docs/_build/
 .Rhistory
 .gitmodules
+*.idea*
+build
