@@ -370,7 +370,7 @@ class deepforest:
                      raster_path=None,
                      numpy_image=None,
                      patch_size=400,
-                     patch_overlap=0.15,
+                     patch_overlap=0.05,
                      iou_threshold=0.15,
                      return_plot=False):
         """
@@ -425,7 +425,7 @@ class deepforest:
             mosaic_df = predicted_boxes
         else:
             with tf.Session() as sess:
-                print("{} predictions in overlapping windows, applying non-max supression".
+                print("{} predictions in overlapping windows, applying non-max suppression".
                       format(predicted_boxes.shape[0]))
                 new_boxes, new_scores, new_labels = predict.non_max_suppression(
                     sess,
