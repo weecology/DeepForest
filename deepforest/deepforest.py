@@ -33,13 +33,13 @@ from keras_retinanet.utils.visualization import draw_box
 
 
 class deepforest:
-    ''' 
+    '''
     Class for training and predicting tree crowns in RGB images
-    
+
     Args:
-        weights (str): Path to model saved on disk from keras.model.save_weights(). A new model is created and weights are copied. Default is None. 
+        weights (str): Path to model saved on disk from keras.model.save_weights(). A new model is created and weights are copied. Default is None.
         saved_model: Path to a saved model from disk using keras.model.save(). No new model is created.
-    
+
     Attributes:
         model: A keras training model from keras-retinanet
     '''
@@ -75,7 +75,7 @@ class deepforest:
             with warnings.catch_warnings():
                 warnings.filterwarnings("ignore", category=UserWarning)
                 self.model = models.load_model(saved_model)
-                self.prediction_model = convert_model(self.model)                
+                self.prediction_model = convert_model(self.model)
 
         elif self.weights:
             print("Creating model from weights")
@@ -108,14 +108,14 @@ class deepforest:
               images_per_epoch=None):
         '''Train a deep learning tree detection model using keras-retinanet.
         This is the main entry point for training a new model based on either existing weights or scratch
-        
+
         Args:
             annotations (str): Path to csv label file, labels are in the format -> path/to/image.png,x1,y1,x2,y2,class_name
             comet_experiment: A comet ml object to log images. Optional.
             list_of_tfrecords: Ignored if input_type != "tfrecord", list of tf records to process
             input_type: "fit_generator" or "tfrecord"
             images_per_epoch: number of images to override default config of # images in annotations file / batch size. Useful for debug
-        
+
         Returns:
             model (object): A trained keras model
             prediction model: with bbox nms
@@ -139,7 +139,7 @@ class deepforest:
 
     def use_release(self, gpus=1):
         '''Use the latest DeepForest model release from github and load model. Optionally download if release doesn't exist
-        
+
         Returns:
             model (object): A trained keras model
             gpus: number of gpus to parallelize, default to 1
@@ -178,14 +178,14 @@ class deepforest:
                           max_detections=200,
                           return_plot=False):
         """Predict bounding boxes for a model using a csv fit_generator
-    
+
         Args:
             annotations (str): Path to csv label file, labels are in the format -> path/to/image.png,x1,y1,x2,y2,class_name
             iou_threshold(float): IoU Threshold to count for a positive detection (defaults to 0.5)
             max_detections (int): Maximum number of bounding box predictions
             comet_experiment(object): A comet experiment class objects to track
             return_plot: Whether to return prediction boxes (False) or Images (True). If True, files will be written to current working directory if model.config["save_path"] is not defined.
-        
+
         Return:
             boxes_output: If return_plot=False, a pandas dataframe of bounding boxes for each image in the annotations file
             None: If return_plot is True, images are written to save_dir as a side effect.
@@ -258,13 +258,13 @@ class deepforest:
                            iou_threshold=0.5,
                            max_detections=200):
         """ Evaluate prediction model using a csv fit_generator
-        
+
         Args:
             annotations (str): Path to csv label file, labels are in the format -> path/to/image.png,x1,y1,x2,y2,class_name
             iou_threshold(float): IoU Threshold to count for a positive detection (defaults to 0.5)
             max_detections (int): Maximum number of bounding box predictions
             comet_experiment(object): A comet experiment class objects to track
-        
+
         Return:
             mAP: Mean average precision of the evaluated data
         """
@@ -321,14 +321,14 @@ class deepforest:
                       show=False,
                       color=None):
         """Predict tree crowns based on loaded (or trained) model
-        
+
         Args:
             image_path (str): Path to image on disk
             numpy_image (array): Numpy image array in BGR channel order following openCV convention
-            color (tuple): Color of bounding boxes in BGR order (0,0,0) black default 
+            color (tuple): Color of bounding boxes in BGR order (0,0,0) black default
             show (bool): Plot the predicted image with bounding boxes. Ignored if return_plot=False
             return_plot: Whether to return image with annotations overlaid, or just a numpy array of boxes
-        
+
         Returns:
             predictions (array): if return_plot, an image. Otherwise a numpy array of predicted bounding boxes, with scores and labels
         """
@@ -374,14 +374,14 @@ class deepforest:
                      iou_threshold=0.15,
                      return_plot=False):
         """
-        For images too large to input into the model, predict_tile cuts the image into overlapping windows, predicts trees on each window and reassambles into a single array. 
-    
+        For images too large to input into the model, predict_tile cuts the image into overlapping windows, predicts trees on each window and reassambles into a single array.
+
         Args:
             raster_path: Path to image on disk
             numpy_image (array): Numpy image array in BGR channel order following openCV convention
             iou_threshold: Minimum iou overlap among predictions between windows to be suppressed. Defaults to 0.5. Lower values suppress more boxes at edges.
             return_plot: Should the image be returned with the predictions drawn?
-    
+
         Returns:
             boxes (array): if return_plot, an image. Otherwise a numpy array of predicted bounding boxes, scores and labels
         """
@@ -434,19 +434,19 @@ class deepforest:
                     predicted_boxes.label.values,
                     max_output_size=predicted_boxes.shape[0],
                     iou_threshold=iou_threshold)
-                
+
                 #Recreate box dataframe
                 image_detections = np.concatenate([
                     new_boxes,
                     np.expand_dims(new_scores, axis=1),
                     np.expand_dims(new_labels, axis=1)
                 ],axis=1)
-                
+
                 mosaic_df = pd.DataFrame(
                     image_detections,
                     columns=["xmin", "ymin", "xmax", "ymax", "score", "label"])
                 mosaic_df.label = mosaic_df.label.str.decode("utf-8")
-                
+
                 print("{} predictions kept after non-max suppression".format(
                     mosaic_df.shape[0]))
 
