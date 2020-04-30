@@ -1,5 +1,18 @@
 # Getting started
 
+Here is a simple example of how to predict a single image.
+
+```
+from deepforest import deepforest
+import matplotlib.pyplot as plt
+model = deepforest.deepforest()
+model.use_release()
+img=model.predict_image("/Users/ben/Documents/NeonTreeEvaluation/evaluation/RGB/JERC_019.tif",return_plot=True)
+
+#predict_image returns plot in BlueGreenRed (opencv style), but matplotlib likes RedGreenBlue, switch the channel order.
+plt.imshow(img[:,:,::-1])
+```
+
 ## Prebuilt models
 
 DeepForest has a prebuilt model trained on data from 24 sites from the [National Ecological Observation Network](https://www.neonscience.org/field-sites/field-sites-map). The prebuilt model uses a semi-supervised approach in which millions of moderate quality annotations are generated using a LiDAR unsupervised tree detection algorithm, followed by hand-annotations of RGB imagery from select sites.
@@ -37,7 +50,7 @@ test_model = deepforest.deepforest()
 test_model.use_release()
 
 #Predict test image and return boxes
-#Find path to test image. While it lives in deepforest/data, its best to use the function if installed as a python module
+#Find path to test image. While it lives in deepforest/data, its best to use the function if installed as a python module. For non-tutorial images, you do not need the get_data function, jut provide the full path to the data anywhere on your computer.
 image_path = get_data("OSBS_029.tif")
 boxes = test_model.predict_image(image_path=image_path, show=False, return_plot = False)
 
@@ -66,6 +79,8 @@ from deepforest import get_data
 test_model = deepforest.deepforest()
 test_model.use_release()
 
+#Find the tutorial data using the get data function. For non-tutorial images, you do not need the get_data function, jut provide the full path to the data anywhere on your computer.
+
 raster_path = get_data("OSBS_029.tif")
 #Window size of 300px with an overlap of 25% among windows for this small tile.
 predicted_raster = test_model.predict_tile(raster_path, return_plot = True, patch_size=300,patch_overlap=0.25)
@@ -93,6 +108,7 @@ from deepforest import get_data
 test_model = deepforest.deepforest()
 test_model.use_release()
 
+#Find the tutorial csv file. For non-tutorial images, you do not need the get_data function, jut provide the full path to the data anywhere on your computer.
 annotations_file = get_data("testfile_deepforest.csv")
 
 test_model.config["save_dir"] = "."

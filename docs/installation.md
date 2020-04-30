@@ -33,3 +33,7 @@ Type "help", "copyright", "credits" or "license" for more information.
 >>> deepforest.__version__
 '0.2.3'
 ```
+
+### Tensorflow dependency
+
+Some users have choosen to install tensorflow seperately. We recommend to just pip install DeepForest to ensure the latest dependencies are downloaded. If you do want to go down this route for some reason, please be sure to use tensorflow < 2.0. The keras retinanet is not 2.0 ready at this time.
