@@ -86,7 +86,9 @@ raster_path = get_data("OSBS_029.tif")
 predicted_raster = test_model.predict_tile(raster_path, return_plot = True, patch_size=300,patch_overlap=0.25)
 ```
 
-** Please note the predict tile function is sensitive to patch_size, especially when using the prebuilt model on new data** We encourage users to try out a variety of patch sizes. For 0.1m data, 400-800px per window is appropriate, but it will depend on the density of tree plots. For coarser resolution tiles, >800px patch sizes have been effective, but we welcome feedback from users using a variety of spatial resolutions.
+** Please note the predict tile function is sensitive to patch_size, especially when using the prebuilt model on new data** 
+
+We encourage users to try out a variety of patch sizes. For 0.1m data, 400-800px per window is appropriate, but it will depend on the density of tree plots. For coarser resolution tiles, >800px patch sizes have been effective, but we welcome feedback from users using a variety of spatial resolutions.
 
 ### Predict a set of annotations
 
