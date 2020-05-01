@@ -12,7 +12,6 @@ Source code is available here: (https://github.com/weecology/DeepForest.git).
    installation
    getting_started
    Example
-   example_gist.md
    training
    training_config
    performance
