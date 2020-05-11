@@ -89,7 +89,7 @@ def select_annotations(annotations, windows, index, allow_empty=False):
             selected_annotations["ymax"] = ""
             selected_annotations["label"] = ""
         else:
-            pass
+            return None
     else:
         #update coordinates with respect to origin
         selected_annotations.xmax = (selected_annotations.xmin - window_xmin) + (
@@ -187,12 +187,14 @@ def split_raster(path_to_raster,
         #Find annotations, image_name is the basename of the path
         crop_annotations = select_annotations(image_annotations, windows, index,
                                               allow_empty)
-
-        #save annotations
-        annotations_files.append(crop_annotations)
-
-        #save image crop
-        save_crop(base_dir, image_name, index, crop)
+        
+        #If empty images not allowed, select annotations returns None
+        if crop_annotations:
+            #save annotations
+            annotations_files.append(crop_annotations)
+    
+            #save image crop
+            save_crop(base_dir, image_name, index, crop)
 
     annotations_files = pd.concat(annotations_files)
 
