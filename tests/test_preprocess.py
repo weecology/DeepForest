@@ -3,6 +3,7 @@ from PIL import Image
 import numpy as np
 import pytest
 import pandas as pd
+import glob
 import os
 
 from deepforest import preprocess
@@ -64,14 +65,21 @@ def test_split_raster(config):
     assert annotations_file.shape[1] == 6
     
 def test_split_raster_empty(config):
+    #Clean output folder
+    for f in glob.glob("tests/output/empty/*"):
+        os.remove(f)
+    
     #Blank annotations file
     blank_annotations = pd.DataFrame({"image_path":"OSBS_029.tif","xmin":[""],"ymin":[""],"xmax":[""],"ymax":[""],"label":[""]})
     blank_annotations.to_csv("tests/data/blank_annotations.csv",index=False)
     
     #Ignore blanks
-    annotations_file = preprocess.split_raster(config["path_to_raster"], "tests/data/blank_annotations.csv", "tests/data/",config["patch_size"], config["patch_overlap"], allow_empty=False)
-    assert annotations_file.shape[0] == 0
+    with pytest.raises(ValueError):
+        annotations_file = preprocess.split_raster(config["path_to_raster"], "tests/data/blank_annotations.csv", "tests/output/empty/",config["patch_size"], config["patch_overlap"], allow_empty=False)
+        assert annotations_file.shape[0] == 0
+    assert not os.path.exists("tests/output/empty/OSBS_029_1.png")
     
-    #Include blanks
-    annotations_file = preprocess.split_raster(config["path_to_raster"], "tests/data/blank_annotations.csv", "tests/data/",config["patch_size"], config["patch_overlap"], allow_empty=True)
+    ##Include blanks
+    annotations_file = preprocess.split_raster(config["path_to_raster"], "tests/data/blank_annotations.csv", "tests/output/empty/",config["patch_size"], config["patch_overlap"], allow_empty=True)
     assert annotations_file.shape[0] > 0
+    assert os.path.exists("tests/output/empty/OSBS_029_1.png")
