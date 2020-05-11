@@ -202,12 +202,9 @@ def _parse_fn(example):
     image_cols = tf.cast(example['image/width'], tf.int32)
     
     #Wrap in a try catch and report file failure, this can be not graceful exiting
-    try:
-        loaded_image = tf.reshape(loaded_image,
-                              tf.stack([image_rows, image_cols, 3]),
-                              name="cast_loaded_image")
-    except Exception as e:
-        print("Image filename: {} yielded {}".format(filename, e))
+    loaded_image = tf.reshape(loaded_image,
+                          tf.stack([image_rows, image_cols, 3]),
+                          name="cast_loaded_image")
         
     # needs to be float to subtract weights below
     loaded_image = tf.cast(loaded_image, tf.float32)
