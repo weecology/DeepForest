@@ -189,13 +189,15 @@ def split_raster(path_to_raster,
                                               allow_empty)
         
         #If empty images not allowed, select annotations returns None
-        if crop_annotations:
+        if crop_annotations is not None:
             #save annotations
             annotations_files.append(crop_annotations)
     
             #save image crop
             save_crop(base_dir, image_name, index, crop)
-
+    if len(annotations_files)==0:
+        raise ValueError("Input file has no overlapping annotations and allow_empty is {}".format(allow_empty))
+    
     annotations_files = pd.concat(annotations_files)
 
     #Checkpoint csv files, useful for parallelization
