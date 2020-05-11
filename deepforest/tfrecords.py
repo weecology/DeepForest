@@ -166,11 +166,11 @@ def create_tfrecords(annotations_file,
 
         memory_used.append(psutil.virtual_memory().used / 2 ** 30)
 
-    plt.plot(memory_used)
-    plt.title('Evolution of memory')
-    plt.xlabel('iteration')
-    plt.ylabel('memory used (GB)')
-    plt.savefig(os.path.join(savedir, "memory.png"))
+    #plt.plot(memory_used)
+    #plt.title('Evolution of memory')
+    #plt.xlabel('iteration')
+    #plt.ylabel('memory used (GB)')
+    #plt.savefig(os.path.join(savedir, "memory.png"))
 
     return written_files
 
@@ -200,10 +200,15 @@ def _parse_fn(example):
     # Reshape to known shape
     image_rows = tf.cast(example['image/height'], tf.int32)
     image_cols = tf.cast(example['image/width'], tf.int32)
-    loaded_image = tf.reshape(loaded_image,
+    
+    #Wrap in a try catch and report file failure, this can be not graceful exiting
+    try:
+        loaded_image = tf.reshape(loaded_image,
                               tf.stack([image_rows, image_cols, 3]),
                               name="cast_loaded_image")
-
+    except Exception as e:
+        print("Image filename: {} yielded {}".format(filename, e))
+        
     # needs to be float to subtract weights below
     loaded_image = tf.cast(loaded_image, tf.float32)
 
@@ -261,7 +266,7 @@ def create_dataset(filepath, batch_size=1, shuffle=True):
     ## This dataset will go on forever
     dataset = dataset.repeat()
 
-    # Maps the parser on every filepath in the array. You can set the number of parallel loaders here
+    # Maps the parser on every filepath in the array. You can set the number of parallel loaders here. Wrap in a catch loop to report errors
     dataset = dataset.map(_parse_fn, num_parallel_calls=tf.data.experimental.AUTOTUNE)
 
     ## Set the batchsize
