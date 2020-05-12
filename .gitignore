@@ -19,3 +19,5 @@ docs/_build/
 .gitmodules
 *.idea*
 build
+*.pyc
+*keras_retinanet/__pycache__*

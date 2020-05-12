@@ -99,7 +99,7 @@ finetuned_weights_20191126_170710.h5: 0.00B [00:00, ?B/s]
 finetuned_weights_20191126_170710.h5:   0%|          | 8.19k/146M [00:00<4:08:38, 9.79kB/s]
 ...
 finetuned_weights_20191126_170710.h5: 100%|#########9| 146M/146M [00:34<00:00, 3.65MB/s]
-finetuned_weights_20191126_170710.h5: 146MB [00:34, 4.19MB/s]                           
+finetuned_weights_20191126_170710.h5: 146MB [00:34, 4.19MB/s]
 Model was downloaded and saved to /Users/ben/Documents/DeepForest/deepforest/data/NEON.h5
 Loading pre-built model: https://github.com/weecology/DeepForest/releases/tag/v0.2.1
 

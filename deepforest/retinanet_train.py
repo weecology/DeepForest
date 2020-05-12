@@ -13,22 +13,24 @@ import keras
 import keras.preprocessing.image
 import tensorflow as tf
 
-#Retinanet
-from keras_retinanet import layers
-from keras_retinanet import losses
-from keras_retinanet import models
-from keras_retinanet.callbacks import RedirectModel
-from keras_retinanet.callbacks.eval import Evaluate
-from keras_retinanet.models.retinanet import retinanet_bbox
-from keras_retinanet.preprocessing.csv_generator import CSVGenerator
-from keras_retinanet.utils.anchors import make_shapes_callback
-from keras_retinanet.utils.config import read_config_file, parse_anchor_parameters
-from keras_retinanet.utils.keras_version import check_keras_version
-from keras_retinanet.utils.model import freeze as freeze_model
-from keras_retinanet.utils.transform import random_transform_generator
-from keras_retinanet.utils.image import random_visual_effect_generator
-from keras_retinanet.utils.gpu import setup_gpu
-
+try:
+    #Retinanet
+    from keras_retinanet import layers
+    from keras_retinanet import losses
+    from keras_retinanet import models
+    from keras_retinanet.callbacks import RedirectModel
+    from keras_retinanet.callbacks.eval import Evaluate
+    from keras_retinanet.models.retinanet import retinanet_bbox
+    from keras_retinanet.preprocessing.csv_generator import CSVGenerator
+    from keras_retinanet.utils.anchors import make_shapes_callback
+    from keras_retinanet.utils.config import read_config_file, parse_anchor_parameters
+    from keras_retinanet.utils.keras_version import check_keras_version
+    from keras_retinanet.utils.model import freeze as freeze_model
+    from keras_retinanet.utils.transform import random_transform_generator
+    from keras_retinanet.utils.image import random_visual_effect_generator
+    from keras_retinanet.utils.gpu import setup_gpu
+except:
+    pass
 from deepforest import tfrecords
 
 

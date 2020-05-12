@@ -24,7 +24,7 @@ Source code is available here: (https://github.com/weecology/DeepForest.git).
    history.rst
    source/deepforest
    authors.rst
-   modules
+   source/modules.rst
 
 Indices and tables
 ==================

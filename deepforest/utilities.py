@@ -16,8 +16,11 @@ with warnings.catch_warnings():
     import tensorflow as tf
 
 from tqdm import tqdm
-from keras_retinanet import models
-from keras.utils import multi_gpu_model
+try:
+    from keras_retinanet import models
+    from keras.utils import multi_gpu_model
+except:
+    pass
 from deepforest import _ROOT
 
 

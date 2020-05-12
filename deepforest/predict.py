@@ -7,10 +7,12 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 
-# Retinanet-viz
-from keras_retinanet.utils import image as keras_retinanet_image
-from keras_retinanet.utils.visualization import draw_detections
-
+try:
+    # Retinanet-viz
+    from keras_retinanet.utils import image as keras_retinanet_image
+    from keras_retinanet.utils.visualization import draw_detections
+except:
+    pass
 
 def predict_image(model,
                   image_path=None,

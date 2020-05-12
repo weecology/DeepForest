@@ -1,6 +1,6 @@
 # Configuration File
 
-For ease of experimentation, DeepForest reads the majority of training parameters from a .yml file. This allows a user to quickly survey and change the training settings without needing to dive into the source code. Deep learning models are complex, and DeepForest tries to set reasonable defaults when possible. To get the best performance, some parameter exploration will be required for most novel applications. 
+For ease of experimentation, DeepForest reads the majority of training parameters from a .yml file. This allows a user to quickly survey and change the training settings without needing to dive into the source code. Deep learning models are complex, and DeepForest tries to set reasonable defaults when possible. To get the best performance, some parameter exploration will be required for most novel applications.
 
 By default DeepForest will look for ```deepforest_config.yml``` in the current working directory. If that fails the default config will be used from ```deepforest/data/deepforest_config.yml```.
 

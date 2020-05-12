@@ -13,8 +13,11 @@ import numpy as np
 import psutil
 import tensorflow as tf
 
-from keras_retinanet import models
-from keras_retinanet.preprocessing.csv_generator import CSVGenerator
+try:
+    from keras_retinanet import models
+    from keras_retinanet.preprocessing.csv_generator import CSVGenerator
+except:
+    pass
 
 
 def create_tf_example(image, regression_target, class_target, fname, original_image):

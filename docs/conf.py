@@ -20,7 +20,14 @@
 #
 import os
 import sys
+curr_path = os.path.dirname(os.path.abspath(os.path.expanduser(__file__)))
+sys.path.insert(0, os.path.join(curr_path, '..'))
 sys.path.insert(0, os.path.abspath('..'))
+
+import recommonmark
+# import sphinx_gallery
+from recommonmark.parser import CommonMarkParser
+from recommonmark.transform import AutoStructify
 from recommonmark.parser import CommonMarkParser
 
 import deepforest
@@ -29,19 +36,41 @@ import deepforest
 
 # If your documentation needs a minimal Sphinx version, state it here.
 #
-# needs_sphinx = '1.0'
+needs_sphinx = "1.8"
+
+
+# Sphinx 1.8+ prefers this to `autodoc_default_flags`. It's documented that
+# either True or None mean the same thing as just setting the flag, but
+# only None works in 1.8 (True works in 2.0)
+autodoc_default_options = {
+    'members': None,
+    'show-inheritance': None,
+}
+autodoc_member_order = 'groupwise'
+autoclass_content = 'both'
+
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
+
 extensions = [
+    'IPython.sphinxext.ipython_console_highlighting',
+    'nbsphinx',
+    # 'numpydoc',
+    'pygments.sphinxext',
     'sphinx.ext.autodoc',
-    'sphinx.ext.mathjax',
-    'sphinx.ext.viewcode',
-    'sphinx.ext.napoleon',
     'sphinx.ext.autosummary',
     'sphinx.ext.doctest',
+    'sphinx.ext.githubpages',
     'sphinx.ext.inheritance_diagram',
-    'sphinx_markdown_tables']
+    'sphinx.ext.intersphinx',
+    'sphinx.ext.mathjax',
+    'sphinx.ext.napoleon',
+    'sphinx.ext.todo',
+    'sphinx.ext.viewcode',
+    'sphinx_markdown_tables',
+    # 'recommonmark'
+]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -49,10 +78,13 @@ templates_path = ['_templates']
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
 #
-source_suffix = ['.rst', '.md']
-source_parsers = {
-    '.md': CommonMarkParser,
-}
+from recommonmark.parser import CommonMarkParser
+
+# source_parsers = {
+#     '.md': CommonMarkParser,
+# }
+# source_suffix = ['.rst', '.md']
+# source_suffix = ['.rst', '.md']
 
 # The master toctree document.
 master_doc = 'index'
@@ -81,7 +113,7 @@ language = None
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This patterns also effect to html_static_path and html_extra_path
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store','**.ipynb_checkpoints']
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
@@ -102,7 +134,8 @@ on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 if not on_rtd:  # only import and set the theme if we're building docs locally
     import sphinx_rtd_theme
     html_theme = 'sphinx_rtd_theme'
-    html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
+    html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]+["../.."]
+
 
 # Theme options are theme-specific and customize the look and feel of a
 # theme further.  For a list of options available for each theme, see the
@@ -113,7 +146,7 @@ if not on_rtd:  # only import and set the theme if we're building docs locally
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+html_static_path = []
 
 
 # -- Options for HTMLHelp output ---------------------------------------
@@ -179,3 +212,46 @@ texinfo_documents = [
 
 
 autodoc_mock_imports = ["tensorflow","keras"]
+
+
+from recommonmark.transform import AutoStructify
+
+# The suffix(es) of source filenames. You can specify multiple suffix
+# as a dictionary mapping file extensions to file types
+# https://www.sphinx-doc.org/en/master/usage/markdown.html
+source_suffix = {
+    '.rst': 'restructuredtext',
+    '.md': 'markdown',
+}
+
+
+# Temporary workaround to remove multiple build warnings caused by upstream bug.
+# See https://github.com/zulip/zulip/issues/13263 for details.
+from recommonmark.parser import CommonMarkParser
+from typing import Any, Dict, List, Optional
+
+class CustomCommonMarkParser(CommonMarkParser):
+    def visit_document(self, node):
+        pass
+
+def setup(app: Any) -> None:
+
+    app.add_source_parser(CustomCommonMarkParser)
+    app.add_config_value('recommonmark_config', {
+        'enable_eval_rst': True,
+        # Turn off recommonmark features we aren't using.
+        'enable_auto_doc_ref': False,
+        'auto_toc_tree_section': None,
+        'enable_auto_toc_tree': False,
+        'enable_math': False,
+        'enable_inline_math': False,
+        'url_resolver': lambda x: x,
+    }, True)
+
+    # Enable `eval_rst`, and any other features enabled in recommonmark_config.
+    # Docs: http://recommonmark.readthedocs.io/en/latest/auto_structify.html
+    # (But NB those docs are for master, not latest release.)
+    app.add_transform(AutoStructify)
+
+    # overrides for wide tables in RTD theme
+    app.add_stylesheet('theme_overrides.css')  # path relative to _static

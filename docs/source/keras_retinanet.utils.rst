@@ -36,6 +36,14 @@ keras\_retinanet.utils.compute\_overlap module
    :undoc-members:
    :show-inheritance:
 
+keras\_retinanet.utils.compute\_overlap module
+----------------------------------------------
+
+.. automodule:: keras_retinanet.utils.compute_overlap
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 keras\_retinanet.utils.config module
 ------------------------------------
 
