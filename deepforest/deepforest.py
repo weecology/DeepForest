@@ -1,13 +1,14 @@
 """
 Deepforest main module. This module holds the deepforest class for model building and training
 """
-import os
 import csv
+import os
 import warnings
 
 from PIL import Image
+
 with warnings.catch_warnings():
-    #Suppress some of the verbose tensorboard warnings, compromise to avoid numpy version errors
+    # Suppress some of the verbose tensorboard warnings, compromise to avoid numpy version errors
     warnings.filterwarnings("ignore", category=FutureWarning)
     import tensorflow as tf
 
@@ -28,7 +29,6 @@ from keras_retinanet.models import convert_model
 from keras_retinanet.bin.train import create_models
 from keras_retinanet.preprocessing.csv_generator import CSVGenerator, _read_classes
 from keras_retinanet.utils.eval import evaluate
-from keras_retinanet.utils.eval import _get_detections
 from keras_retinanet.utils.visualization import draw_box
 
 
@@ -48,7 +48,7 @@ class deepforest:
         self.weights = weights
         self.saved_model = saved_model
 
-        #Read config file - if a config file exists in local dir use it, if not use installed.
+        # Read config file - if a config file exists in local dir use it, if not use installed.
         if os.path.exists("deepforest_config.yml"):
             config_path = "deepforest_config.yml"
         else:
@@ -57,21 +57,21 @@ class deepforest:
             except Exception as e:
                 raise ValueError(
                     "No deepforest_config.yml found either in local directory or in installed package location. {}"
-                    .format(e))
+                        .format(e))
 
         print("Reading config file: {}".format(config_path))
         self.config = utilities.read_config(config_path)
 
-        #Create a label dict, defaults to "Tree"
+        # Create a label dict, defaults to "Tree"
         self.read_classes()
 
-        #release version id to flag if release is being used
+        # release version id to flag if release is being used
         self.__release_version__ = None
 
-        #Load saved model if needed
+        # Load saved model if needed
         if self.saved_model:
             print("Loading saved model")
-            #Capture user warning, not relevant here
+            # Capture user warning, not relevant here
             with warnings.catch_warnings():
                 warnings.filterwarnings("ignore", category=UserWarning)
                 self.model = models.load_model(saved_model)
@@ -121,7 +121,7 @@ class deepforest:
             prediction model: with bbox nms
             trained model: without nms
         '''
-        #Test if there is a new classes file in case # of classes has changed.
+        # Test if there is a new classes file in case # of classes has changed.
         self.classes_file = utilities.create_classes(annotations)
         self.read_classes()
         arg_list = utilities.format_args(annotations, self.classes_file, self.config,
@@ -129,7 +129,7 @@ class deepforest:
 
         print("Training retinanet with the following args {}".format(arg_list))
 
-        #Train model
+        # Train model
         self.model, self.prediction_model, self.training_model = retinanet_train(
             forest_object=self,
             args=arg_list,
@@ -144,20 +144,20 @@ class deepforest:
             model (object): A trained keras model
             gpus: number of gpus to parallelize, default to 1
         '''
-        #Download latest model from github release
+        # Download latest model from github release
         release_tag, self.weights = utilities.use_release()
 
-        #load saved model and tag release
+        # load saved model and tag release
         self.__release_version__ = release_tag
         print("Loading pre-built model: {}".format(release_tag))
 
         if gpus == 1:
             with warnings.catch_warnings():
-                #Suppress compilte warning, not relevant here
+                # Suppress compilte warning, not relevant here
                 warnings.filterwarnings("ignore", category=UserWarning)
                 self.model = utilities.read_model(self.weights, self.config)
 
-            #Convert model
+            # Convert model
             self.prediction_model = convert_model(self.model)
         elif gpus > 1:
             backbone = models.backbone(self.config["backbone"])
@@ -168,7 +168,7 @@ class deepforest:
                 weights=self.weights,
                 multi_gpu=gpus)
 
-        #add to config
+        # add to config
         self.config["weights"] = self.weights
 
     def predict_generator(self,
@@ -190,12 +190,12 @@ class deepforest:
             boxes_output: If return_plot=False, a pandas dataframe of bounding boxes for each image in the annotations file
             None: If return_plot is True, images are written to save_dir as a side effect.
         """
-        #Format args for CSV generator
+        # Format args for CSV generator
         classes_file = utilities.create_classes(annotations)
         arg_list = utilities.format_args(annotations, classes_file, self.config)
         args = parse_args(arg_list)
 
-        #create generator
+        # create generator
         generator = CSVGenerator(
             args.annotations,
             args.classes,
@@ -208,9 +208,9 @@ class deepforest:
         if self.prediction_model:
             boxes_output = []
 
-            #For each image, gather predictions
+            # For each image, gather predictions
             for i in range(generator.size()):
-                #pass image as path
+                # pass image as path
                 plot_name = generator.image_names[i]
                 image_path = os.path.join(generator.base_dir, plot_name)
                 result = self.predict_image(image_path,
@@ -225,14 +225,14 @@ class deepforest:
                         save_path = "."
                     else:
                         save_path = self.config["save_path"]
-                    #Save image
+                    # Save image
                     fname = os.path.join(save_path, plot_name)
                     cv2.imwrite(fname, result)
                     continue
                 else:
-                    #Turn boxes to pandas frame and save output
+                    # Turn boxes to pandas frame and save output
                     box_df = pd.DataFrame(result)
-                    #use only plot name, not extension
+                    # use only plot name, not extension
                     box_df["plot_name"] = os.path.splitext(plot_name)[0]
                     boxes_output.append(box_df)
         else:
@@ -243,7 +243,7 @@ class deepforest:
         if return_plot:
             return None
         else:
-            #if boxes, name columns and return box data
+            # if boxes, name columns and return box data
             boxes_output = pd.concat(boxes_output)
             boxes_output.columns = [
                 "xmin", "ymin", "xmax", "ymax", "score", "label", "plot_name"
@@ -268,12 +268,12 @@ class deepforest:
         Return:
             mAP: Mean average precision of the evaluated data
         """
-        #Format args for CSV generator
+        # Format args for CSV generator
         classes_file = utilities.create_classes(annotations)
         arg_list = utilities.format_args(annotations, classes_file, self.config)
         args = parse_args(arg_list)
 
-        #create generator
+        # create generator
         validation_generator = CSVGenerator(
             args.annotations,
             args.classes,
@@ -333,24 +333,24 @@ class deepforest:
             predictions (array): if return_plot, an image. Otherwise a numpy array of predicted bounding boxes, with scores and labels
         """
 
-        #Check for model save
+        # Check for model save
         if (self.prediction_model is None):
             raise ValueError(
                 "Model currently has no prediction weights, either train a new model using deepforest.train, loading existing model, or use prebuilt model (see deepforest.use_release()"
             )
 
-        #Check the formatting
+        # Check the formatting
         if isinstance(image_path, np.ndarray):
             raise ValueError(
                 "image_path should be a string, but is a numpy array. If predicting a loaded image (channel order BGR), use numpy_image argument."
             )
 
-        #Check for correct formatting
-        #Warning if image is very large and using the release model
+        # Check for correct formatting
+        # Warning if image is very large and using the release model
         if numpy_image is None:
             numpy_image = cv2.imread(image_path)
 
-        #Predict
+        # Predict
         prediction = predict.predict_image(self.prediction_model,
                                            image_path=image_path,
                                            raw_image=numpy_image,
@@ -359,7 +359,7 @@ class deepforest:
                                            color=color,
                                            classes=self.labels)
 
-        #cv2 channel order to matplotlib order
+        # cv2 channel order to matplotlib order
         if return_plot & show:
             plt.imshow(prediction[:, :, ::-1])
             plt.show()
@@ -389,27 +389,27 @@ class deepforest:
         if numpy_image:
             pass
         else:
-            #Load raster as image
+            # Load raster as image
             raster = Image.open(raster_path)
             numpy_image = np.array(raster)
 
-        #Compute sliding window index
+        # Compute sliding window index
         windows = preprocess.compute_windows(numpy_image, patch_size, patch_overlap)
 
-        #Save images to tmpdir
+        # Save images to tmpdir
         predicted_boxes = []
 
         for index, window in enumerate(windows):
-            #Crop window and predict
+            # Crop window and predict
             crop = numpy_image[windows[index].indices()]
 
-            #Crop is RGB channel order, change to BGR
+            # Crop is RGB channel order, change to BGR
             crop = crop[..., ::-1]
             boxes = self.predict_image(numpy_image=crop,
                                        return_plot=False,
                                        score_threshold=self.config["score_threshold"])
 
-            #transform coordinates to original system
+            # transform coordinates to original system
             xmin, ymin, xmax, ymax = windows[index].getRect()
             boxes.xmin = boxes.xmin + xmin
             boxes.xmax = boxes.xmax + xmin
@@ -420,14 +420,14 @@ class deepforest:
 
         predicted_boxes = pd.concat(predicted_boxes)
 
-        #Non-max supression for overlapping boxes among window
+        # Non-max supression for overlapping boxes among window
         if patch_overlap == 0:
             mosaic_df = predicted_boxes
         else:
             with tf.Session() as sess:
                 print(
                     "{} predictions in overlapping windows, applying non-max supression".
-                    format(predicted_boxes.shape[0]))
+                        format(predicted_boxes.shape[0]))
                 new_boxes, new_scores, new_labels = predict.non_max_suppression(
                     sess,
                     predicted_boxes[["xmin", "ymin", "xmax", "ymax"]].values,
@@ -436,13 +436,13 @@ class deepforest:
                     max_output_size=predicted_boxes.shape[0],
                     iou_threshold=iou_threshold)
 
-                #Recreate box dataframe
+                # Recreate box dataframe
                 image_detections = np.concatenate([
                     new_boxes,
                     np.expand_dims(new_scores, axis=1),
                     np.expand_dims(new_labels, axis=1)
                 ],
-                                                  axis=1)
+                    axis=1)
 
                 mosaic_df = pd.DataFrame(
                     image_detections,
@@ -453,11 +453,11 @@ class deepforest:
                     mosaic_df.shape[0]))
 
         if return_plot:
-            #Draw predictions
+            # Draw predictions
             for box in mosaic_df[["xmin", "ymin", "xmax", "ymax"]].values:
                 draw_box(numpy_image, box, [0, 0, 255])
 
-            #Mantain consistancy with predict_image
+            # Mantain consistancy with predict_image
             return numpy_image
         else:
             return mosaic_df
@@ -469,13 +469,13 @@ class deepforest:
             fig, axes, = plt.subplots(nrows=1, ncols=3)
             axes = axes.flatten()
 
-            #Regression Loss
+            # Regression Loss
             axes[0].plot(self.history.history['regression_loss'])
             axes[0].set_title('Bounding Box Loss')
             axes[0].set_ylabel('Loss')
             axes[0].set_xlabel('Epoch')
 
-            #Classification Loss
+            # Classification Loss
             axes[1].plot(self.history.history['classification_loss'])
             axes[1].set_title('Classification Loss')
             axes[1].set_ylabel('Loss')

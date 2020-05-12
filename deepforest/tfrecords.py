@@ -97,7 +97,7 @@ def create_tfrecords(annotations_file,
         if row[1].count(".") > 0:
             raise ValueError(
                 "Annotation files should be headerless with integer box, {} is not a int".
-                format(row[1]))
+                    format(row[1]))
 
     # Create generator - because of how retinanet yields data, this should always be 1. Shape problems in the future?
     train_generator = CSVGenerator(annotations_file,
@@ -162,12 +162,12 @@ def create_tfrecords(annotations_file,
             filename.append(fname)
 
         for image, regression_target, class_target, fname, orig_image in zip(
-                images, regression_targets, class_targets, filename, original_image):
+            images, regression_targets, class_targets, filename, original_image):
             tf_example = create_tf_example(image, regression_target, class_target, fname,
                                            orig_image)
             writer.write(tf_example.SerializeToString())
 
-        memory_used.append(psutil.virtual_memory().used / 2**30)
+        memory_used.append(psutil.virtual_memory().used / 2 ** 30)
 
     plt.plot(memory_used)
     plt.title('Evolution of memory')

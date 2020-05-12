@@ -1,4 +1,4 @@
-#Retinanet training
+# Retinanet training
 """
 Retinanet training module.
 Developed from keras-retinanet repo
@@ -14,7 +14,7 @@ import keras.preprocessing.image
 import tensorflow as tf
 
 try:
-    #Retinanet
+    # Retinanet
     from keras_retinanet import layers
     from keras_retinanet import losses
     from keras_retinanet import models
@@ -87,7 +87,7 @@ def create_models(backbone_retinanet,
         prediction_model : The model wrapped with utility functions to perform object detection (applies regression values and performs NMS).
     """
 
-    #if not modifier:
+    # if not modifier:
     modifier = freeze_model if freeze_backbone else None
 
     # load anchor parameters, or pass None (so that defaults will be used)
@@ -119,22 +119,22 @@ def create_models(backbone_retinanet,
     # make prediction model
     prediction_model = retinanet_bbox(model=model, anchor_params=anchor_params)
 
-    #Compile model
+    # Compile model
     if targets:
-        #tfdataset target tensor from tfrecords pipelione
+        # tfdataset target tensor from tfrecords pipelione
         training_model.compile(loss={
             'regression': losses.smooth_l1(),
             'classification': losses.focal()
         },
-                               optimizer=keras.optimizers.adam(lr=lr, clipnorm=0.001),
-                               target_tensors=targets)
+            optimizer=keras.optimizers.adam(lr=lr, clipnorm=0.001),
+            target_tensors=targets)
     else:
         # compile model
         training_model.compile(loss={
             'regression': losses.smooth_l1(),
             'classification': losses.focal()
         },
-                               optimizer=keras.optimizers.adam(lr=lr, clipnorm=0.001))
+            optimizer=keras.optimizers.adam(lr=lr, clipnorm=0.001))
 
     return model, training_model, prediction_model
 
@@ -266,12 +266,12 @@ def check_args(parsed_args):
     if parsed_args.multi_gpu > 1 and parsed_args.batch_size < parsed_args.multi_gpu:
         raise ValueError(
             "Batch size ({}) must be equal to or higher than the number of GPUs ({})".
-            format(parsed_args.batch_size, parsed_args.multi_gpu))
+                format(parsed_args.batch_size, parsed_args.multi_gpu))
 
     if parsed_args.multi_gpu > 1 and parsed_args.snapshot:
         raise ValueError(
             "Multi GPU training ({}) and resuming from snapshots ({}) is not supported.".
-            format(parsed_args.multi_gpu, parsed_args.snapshot))
+                format(parsed_args.multi_gpu, parsed_args.snapshot))
 
     if parsed_args.multi_gpu > 1 and not parsed_args.multi_gpu_force:
         raise ValueError(
@@ -281,7 +281,7 @@ def check_args(parsed_args):
     if 'resnet' not in parsed_args.backbone:
         warnings.warn(
             'Using experimental backbone {}. Only resnet50 has been properly tested.'.
-            format(parsed_args.backbone))
+                format(parsed_args.backbone))
 
     return parsed_args
 
@@ -408,7 +408,7 @@ def parse_args(args):
                         type=int,
                         default=10)
 
-    #callback arguments
+    # callback arguments
     parser.add_argument('--score-threshold',
                         help="Minimum bounding box score to be considered in prediction",
                         type=float,
@@ -449,21 +449,21 @@ def main(forest_object,
     if args.config:
         args.config = read_config_file(args.config)
 
-    #data input
+    # data input
     if input_type == "fit_generator":
         # create the generators
         train_generator, validation_generator = create_generators(
             args, backbone.preprocess_image)
 
-        #placeholder target tensor for creating models
+        # placeholder target tensor for creating models
         targets = None
 
     elif input_type == "tfrecord":
-        #Create tensorflow iterators
+        # Create tensorflow iterators
         iterator = tfrecords.create_dataset(list_of_tfrecords, args.batch_size)
         next_element = iterator.get_next()
 
-        #Split into inputs and targets
+        # Split into inputs and targets
         inputs = next_element[0]
         targets = [next_element[1], next_element[2]]
 
@@ -472,7 +472,7 @@ def main(forest_object,
     else:
         raise ValueError(
             "{} input type is invalid. Only 'tfrecord' or 'for_generator' input types are accepted for model training"
-            .format(input_type))
+                .format(input_type))
 
     # create the model
     if args.snapshot is not None:
@@ -493,7 +493,7 @@ def main(forest_object,
         if input_type == "fit_generator":
             num_of_classes = train_generator.num_classes()
         else:
-            #Add background class
+            # Add background class
             num_of_classes = len(forest_object.labels.keys())
 
         model, training_model, prediction_model = create_models(
@@ -536,7 +536,7 @@ def main(forest_object,
                                                validation_data=validation_generator)
     elif input_type == "tfrecord":
 
-        #Fit model
+        # Fit model
         history = training_model.fit(x=inputs,
                                      steps_per_epoch=args.steps,
                                      epochs=args.epochs,
@@ -544,10 +544,10 @@ def main(forest_object,
     else:
         raise ValueError(
             "{} input type is invalid. Only 'tfrecord' or 'for_generator' input types are accepted for model training"
-            .format(input_type))
+                .format(input_type))
 
-    #Assign history to deepforest model class
+    # Assign history to deepforest model class
     forest_object.history = history
 
-    #return trained model
+    # return trained model
     return model, prediction_model, training_model
