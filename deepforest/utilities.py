@@ -37,7 +37,8 @@ def read_config(config_path):
             config = yaml.load(f, Loader=yaml.FullLoader)
 
     except Exception as e:
-        raise FileNotFoundError("There is no config at {}, yields {}".format(config_path, e))
+        raise FileNotFoundError("There is no config at {}, yields {}".format(
+            config_path, e))
 
     return config
 
@@ -182,16 +183,20 @@ def xml_to_annotations(xml_path):
     })
     return (annotations)
 
+
 def round_with_floats(x):
     """Check if string x is float or int, return int, rounded if needed"""
 
     try:
         result = int(x)
     except:
-        warnings.warn("Annotations file contained non-integer coordinates. These coordinates were rounded to nearest int. All coordinates must correspond to pixels in the image coordinate system. If you are attempting to use projected data, first convert it into image coordinates see FAQ for suggestions.")
+        warnings.warn(
+            "Annotations file contained non-integer coordinates. These coordinates were rounded to nearest int. All coordinates must correspond to pixels in the image coordinate system. If you are attempting to use projected data, first convert it into image coordinates see FAQ for suggestions."
+        )
         result = int(np.round(float(x)))
 
     return result
+
 
 def create_classes(annotations_file):
     """Create a class list in the format accepted by keras retinanet
@@ -215,7 +220,7 @@ def create_classes(annotations_file):
     print("There are {} unique labels: {} ".format(n_classes, list(labels)))
 
     #write label
-    with open(classes_path,'w', newline='\n', encoding='utf-8') as csv_file:
+    with open(classes_path, 'w', newline='\n', encoding='utf-8') as csv_file:
         writer = csv.writer(csv_file)
         for index, label in enumerate(labels):
             writer.writerow([label, index])
