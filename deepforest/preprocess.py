@@ -163,8 +163,7 @@ def split_raster(path_to_raster,
         raise IOError(
             "Input file {} has {} bands. DeepForest only accepts 3 band RGB rasters. "
             "If the image was cropped and saved as a .jpg, "
-            "please ensure that no alpha channel was used."
-                .format(path_to_raster, bands))
+            "please ensure that no alpha channel was used.".format(path_to_raster, bands))
 
     # Compute sliding window index
     windows = compute_windows(numpy_image, patch_size, patch_overlap)
@@ -184,14 +183,12 @@ def split_raster(path_to_raster,
             "No image names match between the file:{} and the image_path: {}. "
             "Reminder that image paths should be the relative "
             "path (e.g. 'image_name.tif'), not the full path "
-            "(e.g. path/to/dir/image_name.tif)"
-                .format(annotations_file, image_name))
+            "(e.g. path/to/dir/image_name.tif)".format(annotations_file, image_name))
 
     if not annotations.shape[1] == 6:
-        raise ValueError(
-            "Annotations file has {} columns, should have format "
-            "image_path, xmin, ymin, xmax, ymax, label"
-                .format(annotations.shape[1]))
+        raise ValueError("Annotations file has {} columns, should have format "
+                         "image_path, xmin, ymin, xmax, ymax, label".format(
+                             annotations.shape[1]))
 
     annotations_files = []
     for index, window in enumerate(windows):

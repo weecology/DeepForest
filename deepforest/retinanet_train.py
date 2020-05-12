@@ -135,15 +135,15 @@ def create_models(backbone_retinanet,
             'regression': losses.smooth_l1(),
             'classification': losses.focal()
         },
-            optimizer=keras.optimizers.adam(lr=lr, clipnorm=0.001),
-            target_tensors=targets)
+                               optimizer=keras.optimizers.adam(lr=lr, clipnorm=0.001),
+                               target_tensors=targets)
     else:
         # compile model
         training_model.compile(loss={
             'regression': losses.smooth_l1(),
             'classification': losses.focal()
         },
-            optimizer=keras.optimizers.adam(lr=lr, clipnorm=0.001))
+                               optimizer=keras.optimizers.adam(lr=lr, clipnorm=0.001))
 
     return model, training_model, prediction_model
 
@@ -275,23 +275,21 @@ def check_args(parsed_args):
     if parsed_args.multi_gpu > 1 and parsed_args.batch_size < parsed_args.multi_gpu:
         raise ValueError(
             "Batch size ({}) must be equal to or higher than the number of GPUs ({})".
-                format(parsed_args.batch_size, parsed_args.multi_gpu))
+            format(parsed_args.batch_size, parsed_args.multi_gpu))
 
     if parsed_args.multi_gpu > 1 and parsed_args.snapshot:
         raise ValueError(
             "Multi GPU training ({}) and resuming from snapshots ({}) is not supported.".
-                format(parsed_args.multi_gpu, parsed_args.snapshot))
+            format(parsed_args.multi_gpu, parsed_args.snapshot))
 
     if parsed_args.multi_gpu > 1 and not parsed_args.multi_gpu_force:
-        raise ValueError(
-            "Multi-GPU support is experimental, use at own risk! "
-            "Run with --multi-gpu-force if you wish to continue."
-        )
+        raise ValueError("Multi-GPU support is experimental, use at own risk! "
+                         "Run with --multi-gpu-force if you wish to continue.")
 
     if 'resnet' not in parsed_args.backbone:
         warnings.warn(
             'Using experimental backbone {}. Only resnet50 has been properly tested.'.
-                format(parsed_args.backbone))
+            format(parsed_args.backbone))
 
     return parsed_args
 
@@ -480,10 +478,8 @@ def main(forest_object,
         validation_generator = None
 
     else:
-        raise ValueError(
-            "{} input type is invalid. Only 'tfrecord' or 'for_generator' "
-            "input types are accepted for model training"
-                .format(input_type))
+        raise ValueError("{} input type is invalid. Only 'tfrecord' or 'for_generator' "
+                         "input types are accepted for model training".format(input_type))
 
     # create the model
     if args.snapshot is not None:
@@ -553,10 +549,8 @@ def main(forest_object,
                                      epochs=args.epochs,
                                      callbacks=callbacks)
     else:
-        raise ValueError(
-            "{} input type is invalid. Only 'tfrecord' or 'for_generator' "
-            "input types are accepted for model training"
-                .format(input_type))
+        raise ValueError("{} input type is invalid. Only 'tfrecord' or 'for_generator' "
+                         "input types are accepted for model training".format(input_type))
 
     # Assign history to deepforest model class
     forest_object.history = history

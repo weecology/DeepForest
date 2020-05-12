@@ -118,7 +118,7 @@ def use_release(save_dir=os.path.join(_ROOT, "data/"), prebuilt_model="NEON"):
     else:
         print(
             "Model from DeepForest release {} was already downloaded. Loading model from file."
-                .format(_json["html_url"]))
+            .format(_json["html_url"]))
 
     return _json["html_url"], output_path
 
@@ -201,8 +201,7 @@ def round_with_floats(x):
             "These coordinates were rounded to nearest int. "
             "All coordinates must correspond to pixels in the image coordinate system. "
             "If you are attempting to use projected data, "
-            "first convert it into image coordinates see FAQ for suggestions."
-        )
+            "first convert it into image coordinates see FAQ for suggestions.")
         result = int(np.round(float(x)))
 
     return result

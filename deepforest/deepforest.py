@@ -61,8 +61,7 @@ class deepforest:
             except Exception as e:
                 raise ValueError(
                     "No deepforest_config.yml found either in local "
-                    "directory or in installed package location. {}"
-                        .format(e))
+                    "directory or in installed package location. {}".format(e))
 
         print("Reading config file: {}".format(config_path))
         self.config = utilities.read_config(config_path)
@@ -88,10 +87,8 @@ class deepforest:
             self.model, self.training_model, self.prediction_model = create_models(
                 backbone.retinanet, num_classes=1, weights=self.weights)
         else:
-            print(
-                "A blank deepforest object created. "
-                "To perform prediction, either train or load an existing model."
-            )
+            print("A blank deepforest object created. "
+                  "To perform prediction, either train or load an existing model.")
             self.model = None
 
     def read_classes(self):
@@ -257,8 +254,7 @@ class deepforest:
         else:
             raise ValueError(
                 "No prediction model loaded. Either load a retinanet from file, "
-                "download the latest release or train a new model"
-            )
+                "download the latest release or train a new model")
 
         if return_plot:
             return None
@@ -362,20 +358,16 @@ class deepforest:
 
         # Check for model save
         if (self.prediction_model is None):
-            raise ValueError(
-                "Model currently has no prediction weights, "
-                "either train a new model using deepforest.train, "
-                "loading existing model, or use prebuilt model "
-                "(see deepforest.use_release()"
-            )
+            raise ValueError("Model currently has no prediction weights, "
+                             "either train a new model using deepforest.train, "
+                             "loading existing model, or use prebuilt model "
+                             "(see deepforest.use_release()")
 
         # Check the formatting
         if isinstance(image_path, np.ndarray):
-            raise ValueError(
-                "image_path should be a string, but is a numpy array. "
-                "If predicting a loaded image (channel order BGR), "
-                "use numpy_image argument."
-            )
+            raise ValueError("image_path should be a string, but is a numpy array. "
+                             "If predicting a loaded image (channel order BGR), "
+                             "use numpy_image argument.")
 
         # Check for correct formatting
         # Warning if image is very large and using the release model
@@ -465,7 +457,7 @@ class deepforest:
             with tf.Session() as sess:
                 print(
                     "{} predictions in overlapping windows, applying non-max supression".
-                        format(predicted_boxes.shape[0]))
+                    format(predicted_boxes.shape[0]))
                 new_boxes, new_scores, new_labels = predict.non_max_suppression(
                     sess,
                     predicted_boxes[["xmin", "ymin", "xmax", "ymax"]].values,
@@ -480,7 +472,7 @@ class deepforest:
                     np.expand_dims(new_scores, axis=1),
                     np.expand_dims(new_labels, axis=1)
                 ],
-                    axis=1)
+                                                  axis=1)
 
                 mosaic_df = pd.DataFrame(
                     image_detections,
