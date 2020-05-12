@@ -263,12 +263,13 @@ def _parse_fn(example):
     return loaded_image, regression_target, class_target
 
 
-def create_dataset(filepath, batch_size=1, shuffle=True):
+def create_dataset(filepath, batch_size=1, shuffle=True, repeat=True):
     """
     Args:
         filepath: list of tfrecord files
         batch_size: number of images per batch
-
+        shuffle: shuffle order or images
+        repeat: repeat the dataset forever
     Returns:
         dataset: a tensorflow dataset object for model training or prediction
     """
@@ -281,7 +282,8 @@ def create_dataset(filepath, batch_size=1, shuffle=True):
         dataset = dataset.shuffle(800)
 
     ## This dataset will go on forever
-    dataset = dataset.repeat()
+    if repeat:
+        dataset = dataset.repeat()
 
     # Maps the parser on every filepath in the array. You can set the number of parallel loaders here. Wrap in a catch loop to report errors
     dataset = dataset.map(_parse_fn, num_parallel_calls=tf.data.experimental.AUTOTUNE)
@@ -298,20 +300,22 @@ def create_dataset(filepath, batch_size=1, shuffle=True):
     return iterator
 
 
-def create_tensors(list_of_tfrecords, backbone_name="resnet50", shuffle=True):
+def create_tensors(list_of_tfrecords, backbone_name="resnet50", shuffle=True, repeat=True):
     """
     Create a wired tensor target from a list of tfrecords
 
     Args:
         list_of_tfrecords: a list of tfrecord on disk to turn into a tfdataset
         backbone_name: keras retinanet backbone
+        repeat: repeat images forever
+        shuffle: shuffle image order
 
     Returns:
         inputs: input tensors of images
         targets: target tensors of bounding boxes and classes
     """
     # Create tensorflow iterator
-    iterator = create_dataset(list_of_tfrecords, shuffle=shuffle)
+    iterator = create_dataset(list_of_tfrecords, shuffle=shuffle, repeat=repeat)
     next_element = iterator.get_next()
 
     # Split into inputs and targets
