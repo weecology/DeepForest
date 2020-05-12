@@ -174,6 +174,26 @@ def create_tfrecords(annotations_file,
 
     return written_files
 
+def _parse_filename_(example):
+    """Primarily used for debugging, this function attempts to cast an tfrecord image and returns the filename if successful"""
+    # Define features
+    features = {
+        'image/filename': tf.io.FixedLenFeature([], tf.string),
+        "image/height": tf.FixedLenFeature([], tf.int64),
+        "image/width": tf.FixedLenFeature([], tf.int64)}
+    
+    # Load one example and parse
+    example = tf.io.parse_single_example(example, features)
+    filename = tf.cast(example["image/filename"], tf.string)
+    loaded_image = tf.read_file(filename)
+    loaded_image = tf.image.decode_image(loaded_image, 3)
+    image_rows = tf.cast(example['image/height'], tf.int32)
+    image_cols = tf.cast(example['image/width'], tf.int32)
+    loaded_image = tf.reshape(loaded_image,
+                          tf.stack([image_rows, image_cols, 3]),
+                          name="cast_loaded_image")
+    
+    return filename
 
 # Reading
 def _parse_fn(example):
