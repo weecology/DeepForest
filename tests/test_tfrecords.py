@@ -14,6 +14,26 @@ import matplotlib.pyplot as plt
 from keras_retinanet.preprocessing import csv_generator
 from keras_retinanet import models
 
+#Helper function to check filenames
+def find_tf_filenames(path):
+    list_of_tfrecords = glob.glob(path)    
+    dataset = tf.data.TFRecordDataset(list_of_tfrecords)
+    #Create dataset and filter out errors
+    dataset = dataset.apply(tf.data.experimental.ignore_errors())
+    dataset = dataset.map(tfrecords._parse_filename_)
+    iterator = dataset.make_one_shot_iterator()
+    next_element = iterator.get_next()
+    sess = tf.Session()
+    tf_filenames = []
+    while True:
+        try:
+            f = sess.run(next_element)
+            tf_filenames.append(f.decode("utf-8") )
+        except tf.errors.OutOfRangeError as e:
+            print("Tensor completed")
+            break
+    return tf_filenames
+
 @pytest.fixture()
 def config():
     print("Configuring tfrecord tests")
@@ -29,16 +49,16 @@ def config():
     
     #Create a clean config test data
     annotations = utilities.xml_to_annotations(xml_path=config["annotations_xml"])
-    annotations.to_csv("tests/data/tfrecords_OSBS_029.csv",index=False)
+    annotations.to_csv("tests/output/tfrecords_OSBS_029.csv",index=False)
     
     annotations_file = preprocess.split_raster(path_to_raster=config["path_to_raster"],
-                                                        annotations_file="tests/data/tfrecords_OSBS_029.csv",
-                                                        base_dir= "tests/data/",
+                                                        annotations_file="tests/output/tfrecords_OSBS_029.csv",
+                                                        base_dir= "tests/output/",
                                                         patch_size=config["patch_size"],
                                                         patch_overlap=config["patch_overlap"])
     
-    annotations_file.to_csv("tests/data/testfile_tfrecords.csv", index=False,header=False)
-    class_file = utilities.create_classes("tests/data/testfile_tfrecords.csv")    
+    annotations_file.to_csv("tests/output/testfile_tfrecords.csv", index=False,header=False)
+    class_file = utilities.create_classes("tests/output/testfile_tfrecords.csv")    
     
     return config
 
@@ -71,9 +91,33 @@ def test_create_tensors(test_create_tfrecords):
 
 def test_create_dataset(test_create_tfrecords):
     dataset = tfrecords.create_dataset(test_create_tfrecords)
+
+def test_lengths(config):
+    """Assert that a csv generator and tfrecords create the same number of images in a epoch"""   
+    
+    created_records = tfrecords.create_tfrecords(annotations_file="tests/output/testfile_tfrecords.csv",
+                                                 class_file="tests/output/classes.csv",
+                               image_min_side=config["image-min-side"], 
+                               backbone_model=config["backbone"],
+                               size=100,
+                               savedir="tests/output/")
+    
+    #tfdata
+    tf_filenames = find_tf_filenames(path="tests/output/*.tfrecord")
+    
+    #keras generator
+    backbone = models.backbone(config["backbone"])    
+    generator = csv_generator.CSVGenerator(
+        csv_data_file="tests/output/testfile_tfrecords.csv",
+        csv_class_file="tests/output/classes.csv",
+        image_min_side=config["image-min-side"],
+        preprocess_image=backbone.preprocess_image,
+    )    
+    
+    fit_genertor_length = generator.size()
+    assert len(tf_filenames) == fit_genertor_length
     
 def test_equivalence(config, setup_create_tensors):
-    
     #unpack created tensors
     tf_inputs, tf_targets = setup_create_tensors
     
