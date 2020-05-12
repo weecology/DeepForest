@@ -1,5 +1,6 @@
 """
-Deepforest main module. This module holds the deepforest class for model building and training
+Deepforest main module.
+This module holds the deepforest class for model building and training
 """
 import csv
 import os
@@ -8,7 +9,8 @@ import warnings
 from PIL import Image
 
 with warnings.catch_warnings():
-    # Suppress some of the verbose tensorboard warnings, compromise to avoid numpy version errors
+    # Suppress some of the verbose tensorboard warnings,
+    # compromise to avoid numpy version errors
     warnings.filterwarnings("ignore", category=FutureWarning)
     import tensorflow as tf
 
@@ -37,8 +39,10 @@ class deepforest:
     Class for training and predicting tree crowns in RGB images
 
     Args:
-        weights (str): Path to model saved on disk from keras.model.save_weights(). A new model is created and weights are copied. Default is None.
-        saved_model: Path to a saved model from disk using keras.model.save(). No new model is created.
+        weights (str): Path to model saved on disk from keras.model.save_weights().
+        A new model is created and weights are copied. Default is None.
+        saved_model: Path to a saved model from disk using keras.model.save().
+        No new model is created.
 
     Attributes:
         model: A keras training model from keras-retinanet
@@ -56,7 +60,8 @@ class deepforest:
                 config_path = get_data("deepforest_config.yml")
             except Exception as e:
                 raise ValueError(
-                    "No deepforest_config.yml found either in local directory or in installed package location. {}"
+                    "No deepforest_config.yml found either in local "
+                    "directory or in installed package location. {}"
                         .format(e))
 
         print("Reading config file: {}".format(config_path))
@@ -84,12 +89,14 @@ class deepforest:
                 backbone.retinanet, num_classes=1, weights=self.weights)
         else:
             print(
-                "A blank deepforest object created. To perform prediction, either train or load an existing model."
+                "A blank deepforest object created. "
+                "To perform prediction, either train or load an existing model."
             )
             self.model = None
 
     def read_classes(self):
-        """Read class file in case of multi-class training. If no file has been created, DeepForest assume there is 1 class, Tree"""
+        """Read class file in case of multi-class training.
+        If no file has been created, DeepForest assume there is 1 class, Tree"""
         # parse the provided class file
         self.labels = {}
         try:
@@ -106,21 +113,27 @@ class deepforest:
               list_of_tfrecords=None,
               comet_experiment=None,
               images_per_epoch=None):
-        '''Train a deep learning tree detection model using keras-retinanet.
-        This is the main entry point for training a new model based on either existing weights or scratch
+        """
+        Train a deep learning tree detection model using keras-retinanet.
+        This is the main entry point for training a new model
+        based on either existing weights or scratch
 
         Args:
-            annotations (str): Path to csv label file, labels are in the format -> path/to/image.png,x1,y1,x2,y2,class_name
+            annotations (str): Path to csv label file,
+            labels are in the format -> path/to/image.png,x1,y1,x2,y2,class_name
             comet_experiment: A comet ml object to log images. Optional.
-            list_of_tfrecords: Ignored if input_type != "tfrecord", list of tf records to process
+            list_of_tfrecords: Ignored if input_type != "tfrecord",
+            list of tf records to process
             input_type: "fit_generator" or "tfrecord"
-            images_per_epoch: number of images to override default config of # images in annotations file / batch size. Useful for debug
+            images_per_epoch: number of images to override default config of
+            # images in annotations file / batch size. Useful for debug
 
         Returns:
             model (object): A trained keras model
             prediction model: with bbox nms
             trained model: without nms
-        '''
+
+        """
         # Test if there is a new classes file in case # of classes has changed.
         self.classes_file = utilities.create_classes(annotations)
         self.read_classes()
@@ -138,7 +151,8 @@ class deepforest:
             comet_experiment=comet_experiment)
 
     def use_release(self, gpus=1):
-        '''Use the latest DeepForest model release from github and load model. Optionally download if release doesn't exist
+        '''Use the latest DeepForest model release from github and load model.
+        Optionally download if release doesn't exist
 
         Returns:
             model (object): A trained keras model
@@ -180,14 +194,19 @@ class deepforest:
         """Predict bounding boxes for a model using a csv fit_generator
 
         Args:
-            annotations (str): Path to csv label file, labels are in the format -> path/to/image.png,x1,y1,x2,y2,class_name
-            iou_threshold(float): IoU Threshold to count for a positive detection (defaults to 0.5)
+            annotations (str): Path to csv label file, labels are in the
+            format -> path/to/image.png,x1,y1,x2,y2,class_name
+            iou_threshold(float): IoU Threshold to count for a positive detection
+            (defaults to 0.5)
             max_detections (int): Maximum number of bounding box predictions
             comet_experiment(object): A comet experiment class objects to track
-            return_plot: Whether to return prediction boxes (False) or Images (True). If True, files will be written to current working directory if model.config["save_path"] is not defined.
+            return_plot: Whether to return prediction boxes (False) or Images (True).
+            If True, files will be written to current working directory
+            if model.config["save_path"] is not defined.
 
         Return:
-            boxes_output: If return_plot=False, a pandas dataframe of bounding boxes for each image in the annotations file
+            boxes_output: If return_plot=False, a pandas dataframe of bounding boxes
+            for each image in the annotations file
             None: If return_plot is True, images are written to save_dir as a side effect.
         """
         # Format args for CSV generator
@@ -237,7 +256,8 @@ class deepforest:
                     boxes_output.append(box_df)
         else:
             raise ValueError(
-                "No prediction model loaded. Either load a retinanet from file, download the latest release or train a new model"
+                "No prediction model loaded. Either load a retinanet from file, "
+                "download the latest release or train a new model"
             )
 
         if return_plot:
@@ -260,8 +280,10 @@ class deepforest:
         """ Evaluate prediction model using a csv fit_generator
 
         Args:
-            annotations (str): Path to csv label file, labels are in the format -> path/to/image.png,x1,y1,x2,y2,class_name
-            iou_threshold(float): IoU Threshold to count for a positive detection (defaults to 0.5)
+            annotations (str): Path to csv label file, labels are in the
+            format -> path/to/image.png,x1,y1,x2,y2,class_name
+            iou_threshold(float): IoU Threshold to count for a positive detection
+            (defaults to 0.5)
             max_detections (int): Maximum number of bounding box predictions
             comet_experiment(object): A comet experiment class objects to track
 
@@ -324,25 +346,35 @@ class deepforest:
 
         Args:
             image_path (str): Path to image on disk
-            numpy_image (array): Numpy image array in BGR channel order following openCV convention
-            color (tuple): Color of bounding boxes in BGR order (0,0,0) black default
-            show (bool): Plot the predicted image with bounding boxes. Ignored if return_plot=False
-            return_plot: Whether to return image with annotations overlaid, or just a numpy array of boxes
+            numpy_image (array): Numpy image array in BGR channel order
+            following openCV convention
+            color (tuple): Color of bounding boxes in BGR order (0,0,0)
+            black default
+            show (bool): Plot the predicted image with bounding boxes.
+            Ignored if return_plot=False
+            return_plot: Whether to return image with annotations overlaid,
+            or just a numpy array of boxes
 
         Returns:
-            predictions (array): if return_plot, an image. Otherwise a numpy array of predicted bounding boxes, with scores and labels
+            predictions (array): if return_plot, an image. Otherwise a numpy array
+            of predicted bounding boxes, with scores and labels
         """
 
         # Check for model save
         if (self.prediction_model is None):
             raise ValueError(
-                "Model currently has no prediction weights, either train a new model using deepforest.train, loading existing model, or use prebuilt model (see deepforest.use_release()"
+                "Model currently has no prediction weights, "
+                "either train a new model using deepforest.train, "
+                "loading existing model, or use prebuilt model "
+                "(see deepforest.use_release()"
             )
 
         # Check the formatting
         if isinstance(image_path, np.ndarray):
             raise ValueError(
-                "image_path should be a string, but is a numpy array. If predicting a loaded image (channel order BGR), use numpy_image argument."
+                "image_path should be a string, but is a numpy array. "
+                "If predicting a loaded image (channel order BGR), "
+                "use numpy_image argument."
             )
 
         # Check for correct formatting
@@ -374,16 +406,22 @@ class deepforest:
                      iou_threshold=0.15,
                      return_plot=False):
         """
-        For images too large to input into the model, predict_tile cuts the image into overlapping windows, predicts trees on each window and reassambles into a single array.
+        For images too large to input into the model,
+        predict_tile cuts the image into overlapping windows,
+        predicts trees on each window and reassambles into a single array.
 
         Args:
             raster_path: Path to image on disk
-            numpy_image (array): Numpy image array in BGR channel order following openCV convention
-            iou_threshold: Minimum iou overlap among predictions between windows to be suppressed. Defaults to 0.5. Lower values suppress more boxes at edges.
+            numpy_image (array): Numpy image array in BGR channel order
+            following openCV convention
+            iou_threshold: Minimum iou overlap among predictions between
+            windows to be suppressed. Defaults to 0.5.
+            Lower values suppress more boxes at edges.
             return_plot: Should the image be returned with the predictions drawn?
 
         Returns:
-            boxes (array): if return_plot, an image. Otherwise a numpy array of predicted bounding boxes, scores and labels
+            boxes (array): if return_plot, an image.
+            Otherwise a numpy array of predicted bounding boxes, scores and labels
         """
 
         if numpy_image:

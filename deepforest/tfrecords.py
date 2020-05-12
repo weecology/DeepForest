@@ -1,8 +1,12 @@
 """
 Tfrecord module
 Tfrecords creation and reader for improved performance across multi-gpu
-There were a tradeoffs made in this repo. It would be natural to save the generated prepreprocessed image to tfrecord from the generator. This results in enormous (100x) files.
-The compromise was to read the original image from file using tensorflow's data pipeline. The opencv resize billinear method is marginally different then the tensorflow method, so we can't literally assert they are the same array.
+There were a tradeoffs made in this repo. It would be natural to save
+the generated prepreprocessed image to tfrecord from the generator.
+This results in enormous (100x) files.
+The compromise was to read the original image from file using
+tensorflow's data pipeline. The opencv resize billinear method is marginally different
+then the tensorflow method, so we can't literally assert they are the same array.
 """
 import csv
 import os
@@ -64,7 +68,8 @@ def create_tfrecords(annotations_file,
                      savedir="./"):
     """
     Args:
-        annotations_file: path to 6 column data in form image_path, xmin, ymin, xmax, ymax, label
+        annotations_file: path to 6 column data in form
+        image_path, xmin, ymin, xmax, ymax, label
         backbone_model: A keras retinanet backbone
         image_min_side: resized image object minimum size
         size: Number of images per tfrecord
@@ -83,12 +88,14 @@ def create_tfrecords(annotations_file,
 
     ## Syntax checks
     ##Check annotations file only JPEG, PNG, GIF, or BMP are allowed.
-    # df = pd.read_csv(annotations_file, names=["image_path","xmin","ymin","xmax","ymax","label"])
+    # df = pd.read_csv(annotations_file,
+    # names=["image_path","xmin","ymin","xmax","ymax","label"])
     # df['FileType'] = df.image_path.str.split('.').str[-1].str.lower()
     # bad_files = df[~df['FileType'].isin(["jpeg","jpg","png","gif","bmp"])]
 
     # if not bad_files.empty:
-    # raise ValueError("Check annotations file, only JPEG, PNG, GIF, or BMP are allowed, {} incorrect files found /n {}: ".format(bad_files.shape[0],bad_files.head()))
+    # raise ValueError("Check annotations file, only JPEG, PNG, GIF, or BMP are allowed,
+    # {} incorrect files found /n {}: ".format(bad_files.shape[0],bad_files.head()))
 
     # Check dtypes, cannot use pandas, or will coerce in the presence of NAs
     with open(annotations_file, 'r') as f:
@@ -99,7 +106,8 @@ def create_tfrecords(annotations_file,
                 "Annotation files should be headerless with integer box, {} is not a int".
                     format(row[1]))
 
-    # Create generator - because of how retinanet yields data, this should always be 1. Shape problems in the future?
+    # Create generator - because of how retinanet yields data,
+    # this should always be 1. Shape problems in the future?
     train_generator = CSVGenerator(annotations_file,
                                    class_file,
                                    batch_size=1,
@@ -139,15 +147,19 @@ def create_tfrecords(annotations_file,
             regression_batch, labels_batch = targets
 
             # grab regression anchors
-            # regression_batch: batch that contains bounding-box regression targets for an image & anchor states (np.array of shape (batch_size, N, 4 + 1),
-            # where N is the number of anchors for an image, the first 4 columns define regression targets for (x1, y1, x2, y2) and the
+            # regression_batch: batch that contains bounding-box regression targets
+            # for an image & anchor states (np.array of shape (batch_size, N, 4 + 1),
+            # where N is the number of anchors for an image, the first 4 columns
+            # define regression targets for (x1, y1, x2, y2) and the
             # last column defines anchor states (-1 for ignore, 0 for bg, 1 for fg).
             regression_anchors = regression_batch[0, ...]
             regression_targets.append(regression_anchors)
 
             # grab class labels - squeeze out batch size
-            # From retinanet: labels_batch: batch that contains labels & anchor states (np.array of shape (batch_size, N, num_classes + 1),
-            # where N is the number of anchors for an image and the last column defines the anchor state (-1 for ignore, 0 for bg, 1 for fg).
+            # From retinanet: labels_batch: batch that contains labels & anchor states
+            # (np.array of shape (batch_size, N, num_classes + 1),
+            # where N is the number of anchors for an image and the last column defines
+            # the anchor state (-1 for ignore, 0 for bg, 1 for fg).
             labels = labels_batch[0, ...]
             print("Label shape is: {}".format(labels.shape))
             class_targets.append(labels)
@@ -210,7 +222,8 @@ def _parse_fn(example):
     # needs to be float to subtract weights below
     loaded_image = tf.cast(loaded_image, tf.float32)
 
-    # Turn loaded image from rgb into bgr and subtract imagenet means, see keras_retinanet.utils.image.preprocess_image
+    # Turn loaded image from rgb into bgr and subtract imagenet means,
+    # see keras_retinanet.utils.image.preprocess_image
     red, green, blue = tf.unstack(loaded_image, axis=-1)
 
     # Subtract imagenet means
@@ -264,7 +277,8 @@ def create_dataset(filepath, batch_size=1, shuffle=True):
     ## This dataset will go on forever
     dataset = dataset.repeat()
 
-    # Maps the parser on every filepath in the array. You can set the number of parallel loaders here
+    # Maps the parser on every filepath in the array.
+    # You can set the number of parallel loaders here
     dataset = dataset.map(_parse_fn, num_parallel_calls=tf.data.experimental.AUTOTUNE)
 
     ## Set the batchsize

@@ -11,7 +11,8 @@ import xmltodict
 import yaml
 
 with warnings.catch_warnings():
-    # Suppress some of the verbose tensorboard warnings, compromise to avoid numpy version errors
+    # Suppress some of the verbose tensorboard warnings,
+    # compromise to avoid numpy version errors
     warnings.filterwarnings("ignore", category=FutureWarning)
     warnings.filterwarnings("ignore", category=DeprecationWarning)
 
@@ -69,8 +70,10 @@ def use_release(save_dir=os.path.join(_ROOT, "data/"), prebuilt_model="NEON"):
     '''Check the existance of, or download the latest model release from github
 
         Args:
-                save_dir (str): Directory to save filepath, default to "data" in deepforest repo
-                prebuilt_model: Currently only accepts "NEON", but could be expanded to include other prebuilt models. The local model will be called {prebuilt_model}.h5 on disk.
+                save_dir (str): Directory to save filepath,
+                default to "data" in deepforest repo
+                prebuilt_model: Currently only accepts "NEON", but could be expanded to
+                include other prebuilt models. The local model will be called {prebuilt_model}.h5 on disk.
 
         Returns:
                 release_tag, output_path (str): path to downloaded model
@@ -121,13 +124,15 @@ def use_release(save_dir=os.path.join(_ROOT, "data/"), prebuilt_model="NEON"):
 
 
 def xml_to_annotations(xml_path):
-    """Load annotations from xml format (e.g. RectLabel editor) and convert them into retinanet annotations format.
+    """Load annotations from xml format (e.g. RectLabel editor) a
+    nd convert them into retinanet annotations format.
 
         Args:
                 xml_path (str): Path to the annotations xml, formatted by RectLabel
 
         Returns:
-                Annotations (pandas dataframe): in the format -> path/to/image.png,x1,y1,x2,y2,class_name
+                Annotations (pandas dataframe): in the
+                format -> path/to/image.png,x1,y1,x2,y2,class_name
         """
     # parse
     with open(xml_path) as fd:
@@ -192,7 +197,11 @@ def round_with_floats(x):
         result = int(x)
     except:
         warnings.warn(
-            "Annotations file contained non-integer coordinates. These coordinates were rounded to nearest int. All coordinates must correspond to pixels in the image coordinate system. If you are attempting to use projected data, first convert it into image coordinates see FAQ for suggestions."
+            "Annotations file contained non-integer coordinates. "
+            "These coordinates were rounded to nearest int. "
+            "All coordinates must correspond to pixels in the image coordinate system. "
+            "If you are attempting to use projected data, "
+            "first convert it into image coordinates see FAQ for suggestions."
         )
         result = int(np.round(float(x)))
 
@@ -203,7 +212,8 @@ def create_classes(annotations_file):
     """Create a class list in the format accepted by keras retinanet
 
         Args:
-                annotations_file: an annotation csv in the retinanet format path/to/image.png,x1,y1,x2,y2,class_name
+                annotations_file: an annotation csv in the retinanet
+                format path/to/image.png,x1,y1,x2,y2,class_name
 
         Returns:
                 path to classes file
@@ -250,12 +260,15 @@ def format_args(annotations_file, classes_file, config, images_per_epoch=None):
     """Format config file to match argparse list for retinainet
 
         Args:
-                annotations_file: a path to a csv  dataframe of annotations to get number of images, no header
+                annotations_file: a path to a csv
+                dataframe of annotations to get number of images, no header
                 config (dict): a dictionary object to convert into a list for argparse
-                images_per_epoch (int): Override default steps per epoch (n images/batch size) by manually setting a number of images
+                images_per_epoch (int): Override default steps per epoch
+                (n images/batch size) by manually setting a number of images
 
         Returns:
-                arg_list (list): a list structure that mimics argparse input arguments for retinanet
+                arg_list (list): a list structure that mimics
+                argparse input arguments for retinanet
         """
     # Format args. Retinanet uses argparse, so they need to be passed as a list
     args = {}

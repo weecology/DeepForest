@@ -1,7 +1,8 @@
 # Deepforest Preprocessing model
-'''
-The preprocessing module is used to reshape data into format suitable for training or prediction. For example cutting large tiles into smaller images.
-'''
+"""
+The preprocessing module is used to reshape data into format suitable for
+training or prediction. For example cutting large tiles into smaller images.
+"""
 import os
 
 import numpy as np
@@ -46,10 +47,12 @@ def select_annotations(annotations, windows, index, allow_empty=False):
 
     Args:
         image_name (str): Name of the image in the annotations file to lookup.
-        annotations_file: path to annotations file in the format -> image_path, xmin, ymin, xmax, ymax, label
+        annotations_file: path to annotations file in
+        the format -> image_path, xmin, ymin, xmax, ymax, label
         windows: A sliding window object (see compute_windows)
         index: The index in the windows object to use a crop bounds
-        allow_empty (bool): If True, allow window crops that have no annotations to be included
+        allow_empty (bool): If True, allow window crops
+        that have no annotations to be included
 
     Returns:
         selected_annotations: a pandas dataframe of annotations
@@ -60,7 +63,8 @@ def select_annotations(annotations, windows, index, allow_empty=False):
     window_xmax = window_xmin + w
     window_ymax = window_ymin + h
 
-    # buffer coordinates a bit to grab boxes that might start just against the image edge. Don't allow boxes that start and end after the offset
+    # buffer coordinates a bit to grab boxes that might start just against
+    # the image edge. Don't allow boxes that start and end after the offset
     offset = 40
     selected_annotations = annotations[(annotations.xmin > (window_xmin - offset)) &
                                        (annotations.xmin < (window_xmax)) &
@@ -111,7 +115,8 @@ def select_annotations(annotations, windows, index, allow_empty=False):
 
 def save_crop(base_dir, image_name, index, crop):
     """
-    Save window crop as image file to be read by PIL. Filename should match the image_name + window index
+    Save window crop as image file to be read by PIL.
+    Filename should match the image_name + window index
 
     """
     # create dir if needed
@@ -136,11 +141,14 @@ def split_raster(path_to_raster,
 
     Args:
         path_to_tile (str): Path to a tile that can be read by rasterio on disk
-        annotations_file (str): Path to annotations file (with column names) data in the format -> image_path, xmin, ymin, xmax, ymax, label
-        base_dir (str): Where to save the annotations and image crops relative to current working dir
+        annotations_file (str): Path to annotations file (with column names)
+        data in the format -> image_path, xmin, ymin, xmax, ymax, label
+        base_dir (str): Where to save the annotations and image
+        crops relative to current working dir
         patch_size (int): Maximum dimensions of square window
         patch_overlap (float): Percent of overlap among windows 0->1
-        allow_empty: If True, include images with no annotations to be included in the dataset
+        allow_empty: If True, include images with no annotations
+        to be included in the dataset
 
     Returns:
         A pandas dataframe with annotations file for training.
@@ -153,7 +161,9 @@ def split_raster(path_to_raster,
     bands = numpy_image.shape[2]
     if not bands == 3:
         raise IOError(
-            "Input file {} has {} bands. DeepForest only accepts 3 band RGB rasters. If the image was cropped and saved as a .jpg, please ensure that no alpha channel was used."
+            "Input file {} has {} bands. DeepForest only accepts 3 band RGB rasters. "
+            "If the image was cropped and saved as a .jpg, "
+            "please ensure that no alpha channel was used."
                 .format(path_to_raster, bands))
 
     # Compute sliding window index
@@ -171,12 +181,16 @@ def split_raster(path_to_raster,
     # Sanity checks
     if image_annotations.empty:
         raise ValueError(
-            "No image names match between the file:{} and the image_path: {}. Reminder that image paths should be the relative path (e.g. 'image_name.tif'), not the full path (e.g. path/to/dir/image_name.tif)"
+            "No image names match between the file:{} and the image_path: {}. "
+            "Reminder that image paths should be the relative "
+            "path (e.g. 'image_name.tif'), not the full path "
+            "(e.g. path/to/dir/image_name.tif)"
                 .format(annotations_file, image_name))
 
     if not annotations.shape[1] == 6:
         raise ValueError(
-            "Annotations file has {} columns, should have format image_path, xmin, ymin, xmax, ymax, label"
+            "Annotations file has {} columns, should have format "
+            "image_path, xmin, ymin, xmax, ymax, label"
                 .format(annotations.shape[1]))
 
     annotations_files = []

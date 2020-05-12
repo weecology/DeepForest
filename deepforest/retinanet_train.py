@@ -51,7 +51,8 @@ def model_with_weights(model, weights, skip_mismatch):
     Args:
         model         : The model to load weights for.
         weights       : The weights to load.
-        skip_mismatch : If True, skips layers whose shape of weights doesn't match with the model.
+        skip_mismatch : If True, skips layers whose shape of weights doesn't
+        match with the model.
     """
     if weights is not None:
         model.load_weights(weights, by_name=True, skip_mismatch=skip_mismatch)
@@ -71,20 +72,27 @@ def create_models(backbone_retinanet,
     """ Creates three models (model, training_model, prediction_model).
 
     Args:
-        backbone_retinanet : A function to call to create a retinanet model with a given backbone.
+        backbone_retinanet : A function to call to create a retinanet model
+        with a given backbone.
         num_classes        : The number of classes to train.
         weights            : The weights to load into the model.
         multi_gpu          : The number of GPUs to use for training.
         freeze_backbone    : If True, disables learning for the backbone.
         config             : Config parameters, None indicates the default configuration.
         targets            : Target tensors if training a model with tfrecord inputs
-        freeze_layers    : int layer number to freeze from bottom of the retinanet network during finetuning. e.g. 10 will set layers 0:10 to layer.trainable = False. 0 is default, no freezing.
-        modifier           : function that takes in a model and freezes resnet layers, returns modified object
+        freeze_layers    : int layer number to freeze from bottom of the retinanet
+        network during finetuning. e.g. 10 will set
+        layers 0:10 to layer.trainable = False. 0 is default, no freezing.
+        modifier           : function that takes in a model and freezes resnet layers,
+        returns modified object
 
     Returns:
-        model            : The base model. This is also the model that is saved in snapshots.
-        training_model   : The training model. If multi_gpu=0, this is identical to model.
-        prediction_model : The model wrapped with utility functions to perform object detection (applies regression values and performs NMS).
+        model            : The base model.
+        This is also the model that is saved in snapshots.
+        training_model   : The training model.
+        If multi_gpu=0, this is identical to model.
+        prediction_model : The model wrapped with utility functions to perform
+        object detection (applies regression values and performs NMS).
     """
 
     # if not modifier:
@@ -97,7 +105,8 @@ def create_models(backbone_retinanet,
         anchor_params = parse_anchor_parameters(config)
         num_anchors = anchor_params.num_anchors()
 
-    # Keras recommends initialising a multi-gpu model on the CPU to ease weight sharing, and to prevent OOM errors.
+    # Keras recommends initialising a multi-gpu model on the CPU to ease weight sharing,
+    # and to prevent OOM errors.
     # optionally wrap in a parallel model
     if multi_gpu > 1:
         from keras.utils import multi_gpu_model
@@ -275,7 +284,8 @@ def check_args(parsed_args):
 
     if parsed_args.multi_gpu > 1 and not parsed_args.multi_gpu_force:
         raise ValueError(
-            "Multi-GPU support is experimental, use at own risk! Run with --multi-gpu-force if you wish to continue."
+            "Multi-GPU support is experimental, use at own risk! "
+            "Run with --multi-gpu-force if you wish to continue."
         )
 
     if 'resnet' not in parsed_args.backbone:
@@ -471,7 +481,8 @@ def main(forest_object,
 
     else:
         raise ValueError(
-            "{} input type is invalid. Only 'tfrecord' or 'for_generator' input types are accepted for model training"
+            "{} input type is invalid. Only 'tfrecord' or 'for_generator' "
+            "input types are accepted for model training"
                 .format(input_type))
 
     # create the model
@@ -543,7 +554,8 @@ def main(forest_object,
                                      callbacks=callbacks)
     else:
         raise ValueError(
-            "{} input type is invalid. Only 'tfrecord' or 'for_generator' input types are accepted for model training"
+            "{} input type is invalid. Only 'tfrecord' or 'for_generator' "
+            "input types are accepted for model training"
                 .format(input_type))
 
     # Assign history to deepforest model class
