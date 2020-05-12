@@ -6,7 +6,7 @@ By default DeepForest will look for ```deepforest_config.yml``` in the current w
 
 When a deepforest object is created, the user is notified of the path to the config used.
 
-```
+```python
 >>> from deepforest import deepforest
 >>> deepforest.deepforest()
 Reading config file: /Users/ben/miniconda3/envs/test/lib/python3.6/site-packages/deepforest/data/deepforest_config.yml
@@ -73,7 +73,7 @@ Neural networks are often trained in batches of images, since the entire dataset
 
 Neural networks consist of a set of matrix weights that are updated during model training. Starting from scratch with randomly initialized weights can significantly slow down training and decrease model performance. The ```weights:``` parameter allows you to start from previously saved weights, either from prebuilt models or from a custom session.
 
-```{python}
+```python
 from deepforest import deepforest
 from deepforest import get_data
 

@@ -54,8 +54,8 @@ def read_model(model_path, config):
     return model
 
 
-# Download progress bar
 class DownloadProgressBar(tqdm):
+    """Download progress bar class."""
 
     def update_to(self, b=1, bsize=1, tsize=None):
         if tsize is not None:
@@ -64,17 +64,18 @@ class DownloadProgressBar(tqdm):
 
 
 def use_release(save_dir=os.path.join(_ROOT, "data/"), prebuilt_model="NEON"):
-    """Check the existance of, or download the latest model release from
+    """Check the existence of, or download the latest model release from
     github.
 
     Args:
-            save_dir (str): Directory to save filepath,
-            default to "data" in deepforest repo
-            prebuilt_model: Currently only accepts "NEON", but could be expanded to
-            include other prebuilt models. The local model will be called {prebuilt_model}.h5 on disk.
+        save_dir: Directory to save filepath,
+        default to "data" in deepforest repo
+        prebuilt_model: Currently only accepts "NEON", but could be expanded to
+        include other prebuilt models. The local model will be
+        called {prebuilt_model}.h5 on disk.
 
     Returns:
-            release_tag, output_path (str): path to downloaded model
+        release_tag, output_path (str): path to downloaded model
     """
 
     # Find latest github tag release from the DeepLidar repo
@@ -126,11 +127,11 @@ def xml_to_annotations(xml_path):
     them into retinanet annotations format.
 
     Args:
-            xml_path (str): Path to the annotations xml, formatted by RectLabel
+        xml_path (str): Path to the annotations xml, formatted by RectLabel
 
     Returns:
-            Annotations (pandas dataframe): in the
-            format -> path/to/image.png,x1,y1,x2,y2,class_name
+        Annotations (pandas dataframe): in the
+        format -> path/to/image.png,x1,y1,x2,y2,class_name
     """
     # parse
     with open(xml_path) as fd:
@@ -209,11 +210,11 @@ def create_classes(annotations_file):
     """Create a class list in the format accepted by keras retinanet.
 
     Args:
-            annotations_file: an annotation csv in the retinanet
-            format path/to/image.png,x1,y1,x2,y2,class_name
+        annotations_file: an annotation csv in the retinanet
+        format path/to/image.png,x1,y1,x2,y2,class_name
 
     Returns:
-            path to classes file
+        path to classes file
     """
     annotations = pd.read_csv(
         annotations_file, names=["image_path", "xmin", "ymin", "xmax", "ymax", "label"])
@@ -240,10 +241,10 @@ def number_of_images(annotations_file):
     """How many images in the annotations file?
 
     Args:
-            annotations_file (str):
+        annotations_file (str):
 
     Returns:
-            n (int): Number of images
+        n (int): Number of images
     """
 
     df = pd.read_csv(annotations_file,
@@ -257,15 +258,15 @@ def format_args(annotations_file, classes_file, config, images_per_epoch=None):
     """Format config file to match argparse list for retinainet.
 
     Args:
-            annotations_file: a path to a csv
-            dataframe of annotations to get number of images, no header
-            config (dict): a dictionary object to convert into a list for argparse
-            images_per_epoch (int): Override default steps per epoch
-            (n images/batch size) by manually setting a number of images
+        annotations_file: a path to a csv
+        classes_file: dataframe of annotations to get number of images, no header
+        config (dict): a dictionary object to convert into a list for argparse
+        images_per_epoch (int): Override default steps per epoch
+        (n images/batch size) by manually setting a number of images
 
     Returns:
-            arg_list (list): a list structure that mimics
-            argparse input arguments for retinanet
+        arg_list (list): a list structure that mimics
+        argparse input arguments for retinanet
     """
     # Format args. Retinanet uses argparse, so they need to be passed as a list
     args = {}
