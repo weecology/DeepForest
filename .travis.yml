@@ -1,16 +1,26 @@
 language: python
 python:
-- 3.6
+  - 3.6
 before_install:
-- wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
-- chmod +x miniconda.sh
-- "./miniconda.sh -b"
-- export PATH=/home/travis/miniconda3/bin:$PATH
-- conda update --yes conda
+  - wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+  - chmod +x miniconda.sh
+  - "./miniconda.sh -b"
+  - export PATH=/home/travis/miniconda3/bin:$PATH
+  - hash -r
+  - conda config --set always_yes yes --set changeps1 no
+  - conda update --yes conda
+  - conda install conda-build
+  - conda config --set anaconda_upload no
+
 install:
-- conda env create --file=environment.yml
-- source activate DeepForest
-- python setup.py build_ext --inplace
+  - conda env create --file=environment.yml
+  - source activate DeepForest
+  # install DeepForest using conda-build
+  # internally runs `python setup.py install`
+  - conda build conda_recipe/meta.yaml -c conda-forge -c defaults
+  - conda install deepforest --use-local
+
+
 env: TRAVIS=true
 script:
-- pytest --ignore=keras-retinanet/
+  - pytest --ignore=keras-retinanet/
