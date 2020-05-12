@@ -1,12 +1,12 @@
-"""
-Tfrecord module
-Tfrecords creation and reader for improved performance across multi-gpu
-There were a tradeoffs made in this repo. It would be natural to save
-the generated prepreprocessed image to tfrecord from the generator.
-This results in enormous (100x) files.
-The compromise was to read the original image from file using
-tensorflow's data pipeline. The opencv resize billinear method is marginally different
-then the tensorflow method, so we can't literally assert they are the same array.
+"""Tfrecord module Tfrecords creation and reader for improved performance
+across multi-gpu There were a tradeoffs made in this repo.
+
+It would be natural to save the generated prepreprocessed image to
+tfrecord from the generator. This results in enormous (100x) files. The
+compromise was to read the original image from file using tensorflow's
+data pipeline. The opencv resize billinear method is marginally
+different then the tensorflow method, so we can't literally assert they
+are the same array.
 """
 import csv
 import os
@@ -294,8 +294,7 @@ def create_dataset(filepath, batch_size=1, shuffle=True):
 
 
 def create_tensors(list_of_tfrecords, backbone_name="resnet50", shuffle=True):
-    """
-    Create a wired tensor target from a list of tfrecords
+    """Create a wired tensor target from a list of tfrecords.
 
     Args:
         list_of_tfrecords: a list of tfrecord on disk to turn into a tfdataset

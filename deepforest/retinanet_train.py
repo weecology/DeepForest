@@ -1,6 +1,6 @@
 # Retinanet training
-"""
-Retinanet training module.
+"""Retinanet training module.
+
 Developed from keras-retinanet repo
 """
 
@@ -9,10 +9,12 @@ import os
 import sys
 import warnings
 
-import keras
-import keras.preprocessing.image
-import tensorflow as tf
-
+try:
+    import keras
+    import keras.preprocessing.image
+    import tensorflow as tf
+except:
+    pass
 try:
     # Retinanet
     from keras_retinanet import layers
@@ -46,7 +48,7 @@ def makedirs(path):
 
 
 def model_with_weights(model, weights, skip_mismatch):
-    """ Load weights for model.
+    """Load weights for model.
 
     Args:
         model         : The model to load weights for.
@@ -69,7 +71,7 @@ def create_models(backbone_retinanet,
                   targets=None,
                   freeze_layers=0,
                   modifier=None):
-    """ Creates three models (model, training_model, prediction_model).
+    """Creates three models (model, training_model, prediction_model).
 
     Args:
         backbone_retinanet : A function to call to create a retinanet model
@@ -150,7 +152,7 @@ def create_models(backbone_retinanet,
 
 def create_callbacks(model, training_model, prediction_model, validation_generator, args,
                      comet_experiment):
-    """ Creates the callbacks to use during training.
+    """Creates the callbacks to use during training.
 
     Args
         model: The base model.
@@ -204,7 +206,7 @@ def create_callbacks(model, training_model, prediction_model, validation_generat
 
 
 def create_generators(args, preprocess_image):
-    """ Create generators for training and validation.
+    """Create generators for training and validation.
 
     Args:
         args             : parseargs object containing configuration for generators.
@@ -261,9 +263,9 @@ def create_generators(args, preprocess_image):
 
 
 def check_args(parsed_args):
-    """ Function to check for inherent contradictions within parsed arguments.
-    For example, batch_size < num_gpus
-    Intended to raise errors prior to backend initialisation.
+    """Function to check for inherent contradictions within parsed arguments.
+    For example, batch_size < num_gpus Intended to raise errors prior to
+    backend initialisation.
 
     Args:
         parsed_args: parser.parse_args()
@@ -295,8 +297,7 @@ def check_args(parsed_args):
 
 
 def parse_args(args):
-    """ Parse the arguments.
-    """
+    """Parse the arguments."""
     parser = argparse.ArgumentParser(
         description='Simple training script for training a RetinaNet network.')
     subparsers = parser.add_subparsers(help='Arguments for specific dataset types.',

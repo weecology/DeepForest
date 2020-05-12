@@ -1,6 +1,7 @@
-"""
-Prediction module.
-This module consists of predict utility function for the deepforest class
+"""Prediction module.
+
+This module consists of predict utility function for the deepforest
+class
 """
 import cv2
 import keras
@@ -24,8 +25,7 @@ def predict_image(model,
                   return_plot=True,
                   classes={"0": "Tree"},
                   color=None):
-    """
-    Predict invidiual tree crown bounding boxes for a single image
+    """Predict invidiual tree crown bounding boxes for a single image.
 
     Args:
         model (object): A keras-retinanet model to predict bounding boxes, either
@@ -123,7 +123,7 @@ def predict_image(model,
 
 
 def non_max_suppression(sess, boxes, scores, labels, max_output_size=200, iou_threshold=0.15):
-    """Provide a tensorflow session and get non-maximum suppression
+    """Provide a tensorflow session and get non-maximum suppression.
 
     Args:
         sess: a tensorflow session
@@ -134,7 +134,6 @@ def non_max_suppression(sess, boxes, scores, labels, max_output_size=200, iou_th
         iou_threshold: passed to tf.image.non_max_suppression
 
     Returns:
-
     """
     non_max_idxs = tf.image.non_max_suppression(boxes,
                                                 scores,

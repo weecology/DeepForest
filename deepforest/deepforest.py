@@ -1,5 +1,5 @@
-"""
-Deepforest main module.
+"""Deepforest main module.
+
 This module holds the deepforest class for model building and training
 """
 import csv
@@ -26,17 +26,19 @@ from deepforest import preprocess
 from deepforest.retinanet_train import main as retinanet_train
 from deepforest.retinanet_train import parse_args
 
-from keras_retinanet import models
-from keras_retinanet.models import convert_model
-from keras_retinanet.bin.train import create_models
-from keras_retinanet.preprocessing.csv_generator import CSVGenerator, _read_classes
-from keras_retinanet.utils.eval import evaluate
-from keras_retinanet.utils.visualization import draw_box
+try:
+    from keras_retinanet import models
+    from keras_retinanet.models import convert_model
+    from keras_retinanet.bin.train import create_models
+    from keras_retinanet.preprocessing.csv_generator import CSVGenerator, _read_classes
+    from keras_retinanet.utils.eval import evaluate
+    from keras_retinanet.utils.visualization import draw_box
+except:
+    pass
 
 
 class deepforest:
-    '''
-    Class for training and predicting tree crowns in RGB images
+    """Class for training and predicting tree crowns in RGB images.
 
     Args:
         weights (str): Path to model saved on disk from keras.model.save_weights().
@@ -46,7 +48,7 @@ class deepforest:
 
     Attributes:
         model: A keras training model from keras-retinanet
-    '''
+    """
 
     def __init__(self, weights=None, saved_model=None):
         self.weights = weights
@@ -93,7 +95,10 @@ class deepforest:
 
     def read_classes(self):
         """Read class file in case of multi-class training.
-        If no file has been created, DeepForest assume there is 1 class, Tree"""
+
+        If no file has been created, DeepForest assume there is 1 class,
+        Tree
+        """
         # parse the provided class file
         self.labels = {}
         try:
@@ -110,10 +115,9 @@ class deepforest:
               list_of_tfrecords=None,
               comet_experiment=None,
               images_per_epoch=None):
-        """
-        Train a deep learning tree detection model using keras-retinanet.
-        This is the main entry point for training a new model
-        based on either existing weights or scratch
+        """Train a deep learning tree detection model using keras-retinanet.
+        This is the main entry point for training a new model based on either
+        existing weights or scratch.
 
         Args:
             annotations (str): Path to csv label file,
@@ -129,7 +133,6 @@ class deepforest:
             model (object): A trained keras model
             prediction model: with bbox nms
             trained model: without nms
-
         """
         # Test if there is a new classes file in case # of classes has changed.
         self.classes_file = utilities.create_classes(annotations)
@@ -148,13 +151,13 @@ class deepforest:
             comet_experiment=comet_experiment)
 
     def use_release(self, gpus=1):
-        '''Use the latest DeepForest model release from github and load model.
-        Optionally download if release doesn't exist
+        """Use the latest DeepForest model release from github and load model.
+        Optionally download if release doesn't exist.
 
         Returns:
             model (object): A trained keras model
             gpus: number of gpus to parallelize, default to 1
-        '''
+        """
         # Download latest model from github release
         release_tag, self.weights = utilities.use_release()
 
@@ -188,7 +191,7 @@ class deepforest:
                           iou_threshold=0.5,
                           max_detections=200,
                           return_plot=False):
-        """Predict bounding boxes for a model using a csv fit_generator
+        """Predict bounding boxes for a model using a csv fit_generator.
 
         Args:
             annotations (str): Path to csv label file, labels are in the
@@ -273,7 +276,7 @@ class deepforest:
                            comet_experiment=None,
                            iou_threshold=0.5,
                            max_detections=200):
-        """ Evaluate prediction model using a csv fit_generator
+        """Evaluate prediction model using a csv fit_generator.
 
         Args:
             annotations (str): Path to csv label file, labels are in the
@@ -338,7 +341,7 @@ class deepforest:
                       score_threshold=0.05,
                       show=False,
                       color=None):
-        """Predict tree crowns based on loaded (or trained) model
+        """Predict tree crowns based on loaded (or trained) model.
 
         Args:
             image_path (str): Path to image on disk
@@ -397,10 +400,9 @@ class deepforest:
                      patch_overlap=0.15,
                      iou_threshold=0.15,
                      return_plot=False):
-        """
-        For images too large to input into the model,
-        predict_tile cuts the image into overlapping windows,
-        predicts trees on each window and reassambles into a single array.
+        """For images too large to input into the model, predict_tile cuts the
+        image into overlapping windows, predicts trees on each window and
+        reassambles into a single array.
 
         Args:
             raster_path: Path to image on disk
@@ -493,7 +495,7 @@ class deepforest:
             return mosaic_df
 
     def plot_curves(self):
-        """Plot training curves"""
+        """Plot training curves."""
         if self.history:
             # Plot training & validation regression loss values
             fig, axes, = plt.subplots(nrows=1, ncols=3)

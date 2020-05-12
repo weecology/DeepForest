@@ -1,20 +1,22 @@
 # Deepforest Preprocessing model
-"""
-The preprocessing module is used to reshape data into format suitable for
-training or prediction. For example cutting large tiles into smaller images.
+"""The preprocessing module is used to reshape data into format suitable for
+training or prediction.
+
+For example cutting large tiles into smaller images.
 """
 import os
 
 import numpy as np
 import pandas as pd
-import slidingwindow
-from PIL import Image
+try:
+    import slidingwindow
+    from PIL import Image
+except:
+    pass
 
 
 def image_name_from_path(image_path):
-    """
-    Convert path to image name for use in indexing
-    """
+    """Convert path to image name for use in indexing."""
     image_name = os.path.basename(image_path)
     image_name = os.path.splitext(image_name)[0]
 
@@ -22,7 +24,7 @@ def image_name_from_path(image_path):
 
 
 def compute_windows(numpy_image, patch_size, patch_overlap):
-    """Create a sliding window object from a raster tile
+    """Create a sliding window object from a raster tile.
 
     Args:
         numpy_image (array): Raster object as numpy array to cut into crops
@@ -43,7 +45,7 @@ def compute_windows(numpy_image, patch_size, patch_overlap):
 
 
 def select_annotations(annotations, windows, index, allow_empty=False):
-    """Select annotations that overlap with selected image crop
+    """Select annotations that overlap with selected image crop.
 
     Args:
         image_name (str): Name of the image in the annotations file to lookup.
@@ -114,10 +116,9 @@ def select_annotations(annotations, windows, index, allow_empty=False):
 
 
 def save_crop(base_dir, image_name, index, crop):
-    """
-    Save window crop as image file to be read by PIL.
-    Filename should match the image_name + window index
+    """Save window crop as image file to be read by PIL.
 
+    Filename should match the image_name + window index
     """
     # create dir if needed
     if not os.path.exists(base_dir):
@@ -137,7 +138,8 @@ def split_raster(path_to_raster,
                  patch_size=400,
                  patch_overlap=0.05,
                  allow_empty=False):
-    """Divide a large tile into smaller arrays. Each crop will be saved to file
+    """Divide a large tile into smaller arrays. Each crop will be saved to
+    file.
 
     Args:
         path_to_raster: (str): Path to a tile that can be read by rasterio on disk
