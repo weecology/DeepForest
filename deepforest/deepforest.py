@@ -457,7 +457,7 @@ class deepforest:
             with tf.Session() as sess:
                 print(
                     "{} predictions in overlapping windows, applying non-max supression".
-                    format(predicted_boxes.shape[0]))
+                        format(predicted_boxes.shape[0]))
                 new_boxes, new_scores, new_labels = predict.non_max_suppression(
                     sess,
                     predicted_boxes[["xmin", "ymin", "xmax", "ymax"]].values,
@@ -472,7 +472,7 @@ class deepforest:
                     np.expand_dims(new_scores, axis=1),
                     np.expand_dims(new_labels, axis=1)
                 ],
-                                                  axis=1)
+                    axis=1)
 
                 mosaic_df = pd.DataFrame(
                     image_detections,

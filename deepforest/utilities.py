@@ -27,8 +27,7 @@ from deepforest import _ROOT
 
 
 def label_to_name(class_dict, label):
-    """ Map label to name.
-        """
+    """ Map label to name."""
     name = class_dict[label]
     return name
 
@@ -46,9 +45,7 @@ def read_config(config_path):
 
 
 def read_model(model_path, config):
-    """
-        Read keras retinanet model from keras.model.save()
-        """
+    """Read keras retinanet model from keras.model.save()"""
     # Suppress user warning, module does not need to be compiled for prediction
     with warnings.catch_warnings():
         # warnings.simplefilter('ignore', UserWarning)
@@ -67,7 +64,7 @@ class DownloadProgressBar(tqdm):
 
 
 def use_release(save_dir=os.path.join(_ROOT, "data/"), prebuilt_model="NEON"):
-    '''Check the existance of, or download the latest model release from github
+    """Check the existance of, or download the latest model release from github
 
         Args:
                 save_dir (str): Directory to save filepath,
@@ -77,7 +74,8 @@ def use_release(save_dir=os.path.join(_ROOT, "data/"), prebuilt_model="NEON"):
 
         Returns:
                 release_tag, output_path (str): path to downloaded model
-        '''
+
+    """
 
     # Find latest github tag release from the DeepLidar repo
     _json = json.loads(
@@ -118,7 +116,7 @@ def use_release(save_dir=os.path.join(_ROOT, "data/"), prebuilt_model="NEON"):
     else:
         print(
             "Model from DeepForest release {} was already downloaded. Loading model from file."
-            .format(_json["html_url"]))
+                .format(_json["html_url"]))
 
     return _json["html_url"], output_path
 

@@ -86,8 +86,8 @@ def create_tfrecords(annotations_file,
     # filebase name
     image_basename = os.path.splitext(os.path.basename(annotations_file))[0]
 
-    ## Syntax checks
-    ##Check annotations file only JPEG, PNG, GIF, or BMP are allowed.
+    # Syntax checks
+    # Check annotations file only JPEG, PNG, GIF, or BMP are allowed.
     # df = pd.read_csv(annotations_file,
     # names=["image_path","xmin","ymin","xmax","ymax","label"])
     # df['FileType'] = df.image_path.str.split('.').str[-1].str.lower()
@@ -270,24 +270,24 @@ def create_dataset(filepath, batch_size=1, shuffle=True):
     # This works with arrays as well
     dataset = tf.data.TFRecordDataset(filepath)
 
-    ## Set the number of datapoints you want to load and shuffle
+    # Set the number of datapoints you want to load and shuffle
     if shuffle:
         dataset = dataset.shuffle(800)
 
-    ## This dataset will go on forever
+    # This dataset will go on forever
     dataset = dataset.repeat()
 
     # Maps the parser on every filepath in the array.
     # You can set the number of parallel loaders here
     dataset = dataset.map(_parse_fn, num_parallel_calls=tf.data.experimental.AUTOTUNE)
 
-    ## Set the batchsize
+    # Set the batchsize
     dataset = dataset.batch(batch_size=batch_size, drop_remainder=True)
 
     # Collect a queue of data tensors
     dataset = dataset.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
 
-    ## Create an iterator
+    # Create an iterator
     iterator = dataset.make_one_shot_iterator()
 
     return iterator

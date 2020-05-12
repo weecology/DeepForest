@@ -100,7 +100,7 @@ def predict_image(model,
         np.expand_dims(image_scores, axis=1),
         np.expand_dims(image_labels, axis=1)
     ],
-                                      axis=1)
+        axis=1)
 
     df = pd.DataFrame(image_detections,
                       columns=["xmin", "ymin", "xmax", "ymax", "score", "label"])
@@ -122,18 +122,20 @@ def predict_image(model,
         return df
 
 
-def non_max_suppression(sess,
-                        boxes,
-                        scores,
-                        labels,
-                        max_output_size=200,
-                        iou_threshold=0.15):
-    '''
-    Provide a tensorflow session and get non-maximum suppression
+def non_max_suppression(sess, boxes, scores, labels, max_output_size=200, iou_threshold=0.15):
+    """Provide a tensorflow session and get non-maximum suppression
+
     Args:
-        sess: a tensorfloe
-    max_output_size, iou_threshold are passed to tf.image.non_max_suppression
-    '''
+        sess: a tensorflow session
+        boxes: boxes
+        scores: scores
+        labels: labels
+        max_output_size: passed to tf.image.non_max_suppression
+        iou_threshold: passed to tf.image.non_max_suppression
+
+    Returns:
+
+    """
     non_max_idxs = tf.image.non_max_suppression(boxes,
                                                 scores,
                                                 max_output_size=max_output_size,

@@ -22,14 +22,14 @@ def image_name_from_path(image_path):
 
 
 def compute_windows(numpy_image, patch_size, patch_overlap):
-    ''''Create a sliding window object from a raster tile
+    """Create a sliding window object from a raster tile
 
     Args:
         numpy_image (array): Raster object as numpy array to cut into crops
 
     Returns:
         windows (list): a sliding windows object
-    '''
+    """
 
     if patch_overlap > 1:
         raise ValueError("Patch overlap {} must be between 0 - 1".format(patch_overlap))
@@ -83,7 +83,7 @@ def select_annotations(annotations, windows, index, allow_empty=False):
     image_basename = os.path.splitext(image_name)[0]
     selected_annotations.image_path = "{}_{}.png".format(image_basename, index)
 
-    ##If no matching annotations, return a line with the image name, but no records
+    # If no matching annotations, return a line with the image name, but no records
     if selected_annotations.empty:
         if allow_empty:
             selected_annotations = pd.DataFrame(
@@ -140,7 +140,7 @@ def split_raster(path_to_raster,
     """Divide a large tile into smaller arrays. Each crop will be saved to file
 
     Args:
-        path_to_tile (str): Path to a tile that can be read by rasterio on disk
+        path_to_raster: (str): Path to a tile that can be read by rasterio on disk
         annotations_file (str): Path to annotations file (with column names)
         data in the format -> image_path, xmin, ymin, xmax, ymax, label
         base_dir (str): Where to save the annotations and image
@@ -188,7 +188,7 @@ def split_raster(path_to_raster,
     if not annotations.shape[1] == 6:
         raise ValueError("Annotations file has {} columns, should have format "
                          "image_path, xmin, ymin, xmax, ymax, label".format(
-                             annotations.shape[1]))
+            annotations.shape[1]))
 
     annotations_files = []
     for index, window in enumerate(windows):
