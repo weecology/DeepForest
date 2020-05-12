@@ -83,3 +83,7 @@ def test_split_raster_empty(config):
     annotations_file = preprocess.split_raster(config["path_to_raster"], "tests/data/blank_annotations.csv", "tests/output/empty/",config["patch_size"], config["patch_overlap"], allow_empty=True)
     assert annotations_file.shape[0] > 0
     assert os.path.exists("tests/output/empty/OSBS_029_1.png")
+
+def test_split_size_error(config):
+    with pytest.raises(ValueError):
+        annotations_file = preprocess.split_raster(config["path_to_raster"], config["annotations_file"], "tests/data/", 2000, config["patch_overlap"])

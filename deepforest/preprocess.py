@@ -152,9 +152,15 @@ def split_raster(path_to_raster,
     bands = numpy_image.shape[2]
     if not bands == 3:
         raise IOError(
-            "Input file {} has {} bands. DeepForest only accepts 3 band RGB rasters. If the image was cropped and saved as a .jpg, please ensure that no alpha channel was used."
+            "Input file {} has {} bands. DeepForest only accepts 3 band RGB rasters in the order (height, width, channels). If the image was cropped and saved as a .jpg, please ensure that no alpha channel was used."
             .format(path_to_raster, bands))
-
+    
+    #Check that patch size is greater than image size
+    height = numpy_image.shape[0]
+    width = numpy_image.shape[1]
+    if any(np.array([height,width]) < patch_size):
+        raise ValueError("Patch size of {} is larger than the image dimensions {}".format(patch_size,[height,width]))
+    
     #Compute sliding window index
     windows = compute_windows(numpy_image, patch_size, patch_overlap)
 
