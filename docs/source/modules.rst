@@ -6,5 +6,4 @@ DeepForest
 
    deepforest
    keras_retinanet
-   setup
    tests

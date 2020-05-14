@@ -22,6 +22,7 @@ dependencies:
   - twine
   - rasterstats
   - pycocotools
+  - psutil
   - pip:
     - keras-resnet
     - opencv-python

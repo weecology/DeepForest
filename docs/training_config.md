@@ -16,7 +16,7 @@ No model initialized, either train or load an existing retinanet model
 
 ## Sample deepforest_config.yml
 
-```
+```yaml
 ###
 # Config file for DeepForest module
 ###

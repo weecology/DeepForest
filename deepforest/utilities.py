@@ -9,14 +9,13 @@ import numpy as np
 import pandas as pd
 import xmltodict
 import yaml
+from tqdm import tqdm
 
 with warnings.catch_warnings():
     # Suppress some of the verbose tensorboard warnings,
     # compromise to avoid numpy version errors
     warnings.filterwarnings("ignore", category=FutureWarning)
     warnings.filterwarnings("ignore", category=DeprecationWarning)
-
-from tqdm import tqdm
 
 try:
     from keras_retinanet import models
