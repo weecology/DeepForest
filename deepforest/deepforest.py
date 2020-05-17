@@ -30,7 +30,7 @@ from keras_retinanet.preprocessing.csv_generator import CSVGenerator, _read_clas
 from keras_retinanet.utils.eval import evaluate
 from keras_retinanet.utils.eval import _get_detections
 from keras_retinanet.utils.visualization import draw_box
-
+    
 class deepforest:
     '''
     Class for training and predicting tree crowns in RGB images

@@ -178,4 +178,4 @@ texinfo_documents = [
 ]
 
 
-autodoc_mock_imports = ["tensorflow","keras"]
+autodoc_mock_imports = ["tensorflow","keras","cv2"]
