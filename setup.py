@@ -94,7 +94,7 @@ extensions = [
 
 setup(name=NAME,
       version=VERSION,
-      python_requires='>=3',
+      python_requires='>3.5',
       description=DESCRIPTION,
       long_description = LONG_DESCRIPTION,
       long_description_content_type='text/markdown',
