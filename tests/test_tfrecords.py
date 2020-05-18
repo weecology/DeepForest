@@ -68,13 +68,13 @@ def config():
 @pytest.fixture()
 def test_create_tfrecords(config):
     """This test is in flux due to the fact that tensorflow and cv2 resize methods are not identical: https://jricheimer.github.io/tensorflow/2019/02/11/resize-confusion/ """
-    created_records = tfrecords.create_tfrecords(annotations_file="tests/data/testfile_tfrecords.csv",
+    created_records = tfrecords.create_tfrecords(annotations_file="tests/output/testfile_tfrecords.csv",
                                class_file="tests/data/classes.csv",
                                image_min_side=config["image-min-side"], 
                                backbone_model=config["backbone"],
                                size=100,
-                               savedir="tests/data/")
-    assert os.path.exists("tests/data/testfile_tfrecords_0.tfrecord")
+                               savedir="tests/output/")
+    assert os.path.exists("tests/output/testfile_tfrecords_0.tfrecord")
     return created_records
 
 @pytest.fixture()
@@ -126,7 +126,7 @@ def test_equivalence(config, setup_create_tensors):
 
     #CSV generator
     generator = csv_generator.CSVGenerator(
-        csv_data_file="tests/data/testfile_tfrecords.csv",
+        csv_data_file="tests/output/testfile_tfrecords.csv",
         csv_class_file="tests/data/classes.csv",
         image_min_side=config["image-min-side"],
         preprocess_image=backbone.preprocess_image,
