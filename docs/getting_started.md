@@ -26,7 +26,7 @@ Setting the correct window size to match the prebuilt model takes a few tries. T
 
 DeepForest comes with a small set of sample data to help run the docs examples. Since users may install in a variety of manners, and it is impossible to know the relative location of the files, the helper function ```get_data``` is used. This function looks to where DeepForest is installed, and finds the deepforest/data/ directory.
 
-```{python}
+```python
 import deepforest
 
 YELL_xml = deepforest.get_data("2019_YELL_2_541000_4977000_image_crop.xml")
@@ -42,15 +42,18 @@ DeepForest allows convenient prediction of new data based on the prebuilt model 
 
 For single images, ```predict_image``` can read an image from memory or file and return predicted tree bounding boxes.
 
-```{python}
+```python
 from deepforest import deepforest
 from deepforest import get_data
 
 test_model = deepforest.deepforest()
 test_model.use_release()
 
-#Predict test image and return boxes
-#Find path to test image. While it lives in deepforest/data, its best to use the function if installed as a python module. For non-tutorial images, you do not need the get_data function, jut provide the full path to the data anywhere on your computer.
+# Predict test image and return boxes
+# Find path to test image. While it lives in deepforest/data,
+# it is best to use the function if installed as a python module.
+# For non-tutorial images, you do not need the get_data function,
+# just provide the full path to the data anywhere on your computer.
 image_path = get_data("OSBS_029.tif")
 boxes = test_model.predict_image(image_path=image_path, show=False, return_plot = False)
 
@@ -72,23 +75,23 @@ Large tiles covering wide geographic extents cannot fit into memory during predi
 
 Let's show an example with a small image. For larger images, patch_size should be increased.
 
-```
+```python
 from deepforest import deepforest
 from deepforest import get_data
 
 test_model = deepforest.deepforest()
 test_model.use_release()
 
-#Find the tutorial data using the get data function. For non-tutorial images, you do not need the get_data function, jut provide the full path to the data anywhere on your computer.
+# Find the tutorial data using the get data function.
+# For non-tutorial images, you do not need the get_data function,
+# provide the full path to the data anywhere on your computer.
 
 raster_path = get_data("OSBS_029.tif")
-#Window size of 300px with an overlap of 25% among windows for this small tile.
+# Window size of 300px with an overlap of 25% among windows for this small tile.
 predicted_raster = test_model.predict_tile(raster_path, return_plot = True, patch_size=300,patch_overlap=0.25)
 ```
 
-** Please note the predict tile function is sensitive to patch_size, especially when using the prebuilt model on new data** 
-
-We encourage users to try out a variety of patch sizes. For 0.1m data, 400-800px per window is appropriate, but it will depend on the density of tree plots. For coarser resolution tiles, >800px patch sizes have been effective, but we welcome feedback from users using a variety of spatial resolutions.
+** Please note the predict tile function is sensitive to patch_size, especially when using the prebuilt model on new data** We encourage users to try out a variety of patch sizes. For 0.1m data, 400-800px per window is appropriate, but it will depend on the density of tree plots. For coarser resolution tiles, >800px patch sizes have been effective, but we welcome feedback from users using a variety of spatial resolutions.
 
 ### Predict a set of annotations
 
@@ -103,14 +106,14 @@ with each bounding box on a seperate row. The image path is relative to the loca
 
 We can view predictions by supplying a save dir ("." = current directory). Predictions in green, annotations in black.
 
-```
+```python
 from deepforest import deepforest
 from deepforest import get_data
 
 test_model = deepforest.deepforest()
 test_model.use_release()
 
-#Find the tutorial csv file. For non-tutorial images, you do not need the get_data function, jut provide the full path to the data anywhere on your computer.
+# Find the tutorial csv file. For non-tutorial images, you do not need the get_data function, jut provide the full path to the data anywhere on your computer.
 annotations_file = get_data("testfile_deepforest.csv")
 
 test_model.config["save_dir"] = "."
@@ -150,7 +153,7 @@ and a classes.csv file in the same directory
 Tree,0
 ```
 
-```{python}
+```python
 from deepforest import deepforest
 from deepforest import get_data
 
@@ -166,7 +169,7 @@ annotations_file = get_data("testfile_deepforest.csv")
 test_model.train(annotations=annotations_file, input_type="fit_generator")
 ```
 
-```{python}
+```python
 No model initialized, either train or load an existing retinanet model
 There are 1 unique labels: ['Tree']
 Disabling snapshot saving
@@ -192,7 +195,7 @@ DeepForest uses the keras-retinanet ```evaluate``` method to score images. This 
 image_path, xmin, ymin, xmax, ymax, label
 ```
 
-```{python}
+```python
 from deepforest import deepforest
 from deepforest import get_data
 
@@ -204,7 +207,7 @@ mAP = test_model.evaluate_generator(annotations=annotations_file)
 print("Mean Average Precision is: {:.3f}".format(mAP))
 ```
 
-```{python}
+```
 Running network: 100% (1 of 1) |#########| Elapsed Time: 0:00:02 Time:  0:00:02
 Parsing annotations: N/A% (0 of 1) |     | Elapsed Time: 0:00:00 ETA:  --:--:--
 Parsing annotations: 100% (1 of 1) |#####| Elapsed Time: 0:00:00 Time:  0:00:00
@@ -215,7 +218,7 @@ mAP: 0.3687
 
 The evaluation file can also be run as a callback during training by setting the config file. This will allow the user to see evaluation performance at the end of each epoch.
 
-```{python}
+```python
 test_model.config["validation_annotations"] = "testfile_deepforest.csv"
 ```
 
@@ -226,7 +229,7 @@ DeepForest uses the keras saving workflow, which means users can save the entire
 ### Saved Model
 To access the training model for saving, use
 
-```
+```python
 test_model.model.save("example_saved.h5")
 ```
 
@@ -239,7 +242,8 @@ Loading saved model
 ```
 
 The actual prediction model can be accessed
-```
+
+```python
 reloaded.prediction_model
 <keras.engine.training.Model object at 0x646ca3b70>
 ```
@@ -250,14 +254,14 @@ but in most cases it is better to just use the deepforest workflow functions suc
 
 If you just want to weights of the model layer, you can do.
 
-```
+```python
 test_model.model.save_weights("example_save_weights.h5")
 reloaded = deepforest.deepforest(weights="example_save_weights.h5")
 ```
 
 Now you can use
 
-```
+```python
 reloaded.predict_image()
 ```
 

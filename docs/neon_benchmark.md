@@ -2,13 +2,13 @@
 
 To standardize model evaluation, we have collected and published a [benchmark dataset](https://github.com/weecology/NeonTreeEvaluation) of nearly 20,000 crowns from sites in the National Ecological Observation Network. We encourage users to download and evaluate against the benchmark.
 
-```{}
+```bash
 git clone https://github.com/weecology/NeonTreeEvaluation.git
 cd NeonTreeEvaluation
 python
 ```
 
-```{python}
+```python
 from deepforest import deepforest
 
 test_model = deepforest.deepforest()

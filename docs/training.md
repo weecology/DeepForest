@@ -26,9 +26,7 @@ DeepForest uses xml files produced by the commonly used annotation program RectL
 
 For annotations made in RectLabel, DeepForest has a parse function ```preprocess.xml_to_annotations```.
 
-An alternative annotator is labelme, which works for mac, windows and ubuntu. Users report that [annotation export in VOC format](https://github.com/wkentaro/labelme/tree/master/examples/bbox_detection) can be parsed by the xml_to_annotations function above.
-
-Bounding box annotations can also be made in any spatial analysis software (e.g QGIS, ArcGIS) and loaded using the shapefile_to_annotations [utility](https://gist.github.com/bw4sz/e2fff9c9df0ae26bd2bfa8953ec4a24c). Please note that due to the installation of GDAL, which can vary widely across systems, this utility is not included in DeepForest source and must be installed separately.
+For non-mac users, annotations can be made in any spatial analysis software (e.g QGIS, ArcGIS) and loaded using the shapefile_to_annotations [utility](https://gist.github.com/bw4sz/e2fff9c9df0ae26bd2bfa8953ec4a24c). Please note that due to the installation of GDAL, which can vary widely across systems, this utility is not included in DeepForest source and must be installed seperately.
 ```
 conda install geopandas rasterio rtree
 ```
@@ -42,11 +40,11 @@ image_path, xmin, ymin, xmax, ymax, label
 
 Please note that for functions which are fed into keras-retinanet, such as ```evaluate_generator```, ```predict_generator``` and ```train``` this annotation file should be saved without column names. For ```preprocess.split_raster``` the column names should be maintained.
 
-As with the [evaluation example](Example.html), collect training labels from a crop of the training tile and split into smaller windows.
+As with the [evaluation example](#Example.html), collect training labels from a crop of the training tile and split into smaller windows.
 
 ![](../www/YELL_train.png)
 
-```{python}
+```python
 import os
 from deepforest import get_data
 from deepforest import deepforest
@@ -82,7 +80,7 @@ train_annotations.to_csv(annotations_file,index=False, header=None)
 
 Training parameters are saved in a "deepforest_config.yml" file. By default DeepForest will look for this file in the current working directory. If none is found, a default file will be used.
 
-```
+```yaml
 ###
 # Config file for DeepForest module
 # The following arguments
@@ -128,7 +126,7 @@ snapshot_path: snapshots/
 
 Using these settings, train a new model starting from the release model. We use are very small number of epochs since this is a sample toy dataset.
 
-```{python}
+```python
 #Load the latest release
 test_model = deepforest.deepforest()
 test_model.use_release()
@@ -146,7 +144,7 @@ test_model.train(annotations=annotations_file, input_type="fit_generator")
 
 For more visualization of model training, comet_ml is an useful platform for understanding machine learning results. There is a free tier for academic audiences. This is optional, but worth considering if you are going to do significant testing.
 
-```{python}
+```python
 from comet_ml import Experiment
 comet_experiment = Experiment(api_key=<api_key>,
                                   project_name=<project>, workspace=<"username">)
@@ -160,7 +158,7 @@ test_model.train(annotations=annotations_file, input_type="fit_generator",comet_
 
 Find the training accuracy of the model. We expect this value to be high (mAP > 0.5), if not, consider training for additional epochs.
 
-```{python}
+```python
 mAP = test_model.evaluate_generator(annotations=annotations_file)
 print("Mean Average Precision is: {:.3f}".format(mAP))
 ```
@@ -180,7 +178,8 @@ mAP: 0.5076
 ## View the training plots
 
 To understand how the loss changes during training we can plot the regression box loss and the classification loss. The regression loss refers to the ability for the model to capture the extent of the bounding box. The classification loss is whether the target box exists, or in a multi-class context, which label to assign to a box. Learn more about [losses](https://machinelearningmastery.com/how-to-choose-loss-functions-when-training-deep-learning-neural-networks/).
-```
+
+```python
 test_model.plot_curves()
 ```
 
