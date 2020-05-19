@@ -7,6 +7,10 @@ before_install:
 - "./miniconda.sh -b"
 - export PATH=/home/travis/miniconda3/bin:$PATH
 - conda update --yes conda
+- conda config --set always_yes yes --set changeps1 no
+- conda update --yes conda
+- conda install conda-build
+
 install:
 - conda env create --file=environment.yml
 - source activate DeepForest
@@ -14,3 +18,5 @@ install:
 env: TRAVIS=true
 script:
 - pytest --ignore=keras-retinanet/
+# Build and Test conda package
+- conda build conda_recipe/meta.yaml -c conda-forge -c defaults
