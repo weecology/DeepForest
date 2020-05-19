@@ -1,6 +1,6 @@
-#Retinanet training
-"""
-Retinanet training module.
+# Retinanet training
+"""Retinanet training module.
+
 Developed from keras-retinanet repo
 """
 
@@ -9,26 +9,30 @@ import os
 import sys
 import warnings
 
-import keras
-import keras.preprocessing.image
-import tensorflow as tf
-
-#Retinanet
-from keras_retinanet import layers
-from keras_retinanet import losses
-from keras_retinanet import models
-from keras_retinanet.callbacks import RedirectModel
-from keras_retinanet.callbacks.eval import Evaluate
-from keras_retinanet.models.retinanet import retinanet_bbox
-from keras_retinanet.preprocessing.csv_generator import CSVGenerator
-from keras_retinanet.utils.anchors import make_shapes_callback
-from keras_retinanet.utils.config import read_config_file, parse_anchor_parameters
-from keras_retinanet.utils.keras_version import check_keras_version
-from keras_retinanet.utils.model import freeze as freeze_model
-from keras_retinanet.utils.transform import random_transform_generator
-from keras_retinanet.utils.image import random_visual_effect_generator
-from keras_retinanet.utils.gpu import setup_gpu
-
+try:
+    import keras
+    import keras.preprocessing.image
+    import tensorflow as tf
+except:
+    pass
+try:
+    # Retinanet
+    from keras_retinanet import layers
+    from keras_retinanet import losses
+    from keras_retinanet import models
+    from keras_retinanet.callbacks import RedirectModel
+    from keras_retinanet.callbacks.eval import Evaluate
+    from keras_retinanet.models.retinanet import retinanet_bbox
+    from keras_retinanet.preprocessing.csv_generator import CSVGenerator
+    from keras_retinanet.utils.anchors import make_shapes_callback
+    from keras_retinanet.utils.config import read_config_file, parse_anchor_parameters
+    from keras_retinanet.utils.keras_version import check_keras_version
+    from keras_retinanet.utils.model import freeze as freeze_model
+    from keras_retinanet.utils.transform import random_transform_generator
+    from keras_retinanet.utils.image import random_visual_effect_generator
+    from keras_retinanet.utils.gpu import setup_gpu
+except:
+    pass
 from deepforest import tfrecords
 
 
@@ -44,12 +48,13 @@ def makedirs(path):
 
 
 def model_with_weights(model, weights, skip_mismatch):
-    """ Load weights for model.
+    """Load weights for model.
 
     Args:
         model         : The model to load weights for.
         weights       : The weights to load.
-        skip_mismatch : If True, skips layers whose shape of weights doesn't match with the model.
+        skip_mismatch : If True, skips layers whose shape of weights doesn't
+            match with the model.
     """
     if weights is not None:
         model.load_weights(weights, by_name=True, skip_mismatch=skip_mismatch)
@@ -66,26 +71,33 @@ def create_models(backbone_retinanet,
                   targets=None,
                   freeze_layers=0,
                   modifier=None):
-    """ Creates three models (model, training_model, prediction_model).
+    """Creates three models (model, training_model, prediction_model).
 
     Args:
-        backbone_retinanet : A function to call to create a retinanet model with a given backbone.
+        backbone_retinanet : A function to call to create a retinanet model
+            with a given backbone.
         num_classes        : The number of classes to train.
         weights            : The weights to load into the model.
         multi_gpu          : The number of GPUs to use for training.
         freeze_backbone    : If True, disables learning for the backbone.
         config             : Config parameters, None indicates the default configuration.
         targets            : Target tensors if training a model with tfrecord inputs
-        freeze_layers    : int layer number to freeze from bottom of the retinanet network during finetuning. e.g. 10 will set layers 0:10 to layer.trainable = False. 0 is default, no freezing.
-        modifier           : function that takes in a model and freezes resnet layers, returns modified object
+        freeze_layers    : int layer number to freeze from bottom of the retinanet
+            network during finetuning. e.g. 10 will set
+            layers 0:10 to layer.trainable = False. 0 is default, no freezing.
+        modifier           : function that takes in a model and freezes resnet layers,
+            returns modified object
 
     Returns:
-        model            : The base model. This is also the model that is saved in snapshots.
-        training_model   : The training model. If multi_gpu=0, this is identical to model.
-        prediction_model : The model wrapped with utility functions to perform object detection (applies regression values and performs NMS).
+        model            : The base model.
+            This is also the model that is saved in snapshots.
+        training_model   : The training model.
+            If multi_gpu=0, this is identical to model.
+        prediction_model : The model wrapped with utility functions to perform
+            object detection (applies regression values and performs NMS).
     """
 
-    #if not modifier:
+    # if not modifier:
     modifier = freeze_model if freeze_backbone else None
 
     # load anchor parameters, or pass None (so that defaults will be used)
@@ -95,7 +107,8 @@ def create_models(backbone_retinanet,
         anchor_params = parse_anchor_parameters(config)
         num_anchors = anchor_params.num_anchors()
 
-    # Keras recommends initialising a multi-gpu model on the CPU to ease weight sharing, and to prevent OOM errors.
+    # Keras recommends initialising a multi-gpu model on the CPU to ease weight sharing,
+    # and to prevent OOM errors.
     # optionally wrap in a parallel model
     if multi_gpu > 1:
         from keras.utils import multi_gpu_model
@@ -117,9 +130,9 @@ def create_models(backbone_retinanet,
     # make prediction model
     prediction_model = retinanet_bbox(model=model, anchor_params=anchor_params)
 
-    #Compile model
+    # Compile model
     if targets:
-        #tfdataset target tensor from tfrecords pipelione
+        # tfdataset target tensor from tfrecords pipelione
         training_model.compile(loss={
             'regression': losses.smooth_l1(),
             'classification': losses.focal()
@@ -139,7 +152,7 @@ def create_models(backbone_retinanet,
 
 def create_callbacks(model, training_model, prediction_model, validation_generator, args,
                      comet_experiment):
-    """ Creates the callbacks to use during training.
+    """Creates the callbacks to use during training.
 
     Args
         model: The base model.
@@ -193,7 +206,7 @@ def create_callbacks(model, training_model, prediction_model, validation_generat
 
 
 def create_generators(args, preprocess_image):
-    """ Create generators for training and validation.
+    """Create generators for training and validation.
 
     Args:
         args             : parseargs object containing configuration for generators.
@@ -250,9 +263,9 @@ def create_generators(args, preprocess_image):
 
 
 def check_args(parsed_args):
-    """ Function to check for inherent contradictions within parsed arguments.
-    For example, batch_size < num_gpus
-    Intended to raise errors prior to backend initialisation.
+    """Function to check for inherent contradictions within parsed arguments.
+    For example, batch_size < num_gpus Intended to raise errors prior to
+    backend initialisation.
 
     Args:
         parsed_args: parser.parse_args()
@@ -272,9 +285,8 @@ def check_args(parsed_args):
             format(parsed_args.multi_gpu, parsed_args.snapshot))
 
     if parsed_args.multi_gpu > 1 and not parsed_args.multi_gpu_force:
-        raise ValueError(
-            "Multi-GPU support is experimental, use at own risk! Run with --multi-gpu-force if you wish to continue."
-        )
+        raise ValueError("Multi-GPU support is experimental, use at own risk! "
+                         "Run with --multi-gpu-force if you wish to continue.")
 
     if 'resnet' not in parsed_args.backbone:
         warnings.warn(
@@ -285,8 +297,7 @@ def check_args(parsed_args):
 
 
 def parse_args(args):
-    """ Parse the arguments.
-    """
+    """Parse the arguments."""
     parser = argparse.ArgumentParser(
         description='Simple training script for training a RetinaNet network.')
     subparsers = parser.add_subparsers(help='Arguments for specific dataset types.',
@@ -406,7 +417,7 @@ def parse_args(args):
                         type=int,
                         default=10)
 
-    #callback arguments
+    # callback arguments
     parser.add_argument('--score-threshold',
                         help="Minimum bounding box score to be considered in prediction",
                         type=float,
@@ -447,30 +458,29 @@ def main(forest_object,
     if args.config:
         args.config = read_config_file(args.config)
 
-    #data input
+    # data input
     if input_type == "fit_generator":
         # create the generators
         train_generator, validation_generator = create_generators(
             args, backbone.preprocess_image)
 
-        #placeholder target tensor for creating models
+        # placeholder target tensor for creating models
         targets = None
 
     elif input_type == "tfrecord":
-        #Create tensorflow iterators
+        # Create tensorflow iterators
         iterator = tfrecords.create_dataset(list_of_tfrecords, args.batch_size)
         next_element = iterator.get_next()
 
-        #Split into inputs and targets
+        # Split into inputs and targets
         inputs = next_element[0]
         targets = [next_element[1], next_element[2]]
 
         validation_generator = None
 
     else:
-        raise ValueError(
-            "{} input type is invalid. Only 'tfrecord' or 'for_generator' input types are accepted for model training"
-            .format(input_type))
+        raise ValueError("{} input type is invalid. Only 'tfrecord' or 'for_generator' "
+                         "input types are accepted for model training".format(input_type))
 
     # create the model
     if args.snapshot is not None:
@@ -491,7 +501,7 @@ def main(forest_object,
         if input_type == "fit_generator":
             num_of_classes = train_generator.num_classes()
         else:
-            #Add background class
+            # Add background class
             num_of_classes = len(forest_object.labels.keys())
 
         model, training_model, prediction_model = create_models(
@@ -534,18 +544,17 @@ def main(forest_object,
                                                validation_data=validation_generator)
     elif input_type == "tfrecord":
 
-        #Fit model
+        # Fit model
         history = training_model.fit(x=inputs,
                                      steps_per_epoch=args.steps,
                                      epochs=args.epochs,
                                      callbacks=callbacks)
     else:
-        raise ValueError(
-            "{} input type is invalid. Only 'tfrecord' or 'for_generator' input types are accepted for model training"
-            .format(input_type))
+        raise ValueError("{} input type is invalid. Only 'tfrecord' or 'for_generator' "
+                         "input types are accepted for model training".format(input_type))
 
-    #Assign history to deepforest model class
+    # Assign history to deepforest model class
     forest_object.history = history
 
-    #return trained model
+    # return trained model
     return model, prediction_model, training_model
