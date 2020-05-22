@@ -175,7 +175,8 @@ class deepforest:
                           comet_experiment=None,
                           iou_threshold=0.5,
                           max_detections=200,
-                          return_plot=False):
+                          return_plot=False,
+                          color=None):
         """Predict bounding boxes for a model using a csv fit_generator
 
         Args:
@@ -183,6 +184,7 @@ class deepforest:
             iou_threshold(float): IoU Threshold to count for a positive detection (defaults to 0.5)
             max_detections (int): Maximum number of bounding box predictions
             comet_experiment(object): A comet experiment class objects to track
+            color: rgb color for the box annotations if return_plot is True e.g. (255,140,0) is orange. 
             return_plot: Whether to return prediction boxes (False) or Images (True). If True, files will be written to current working directory if model.config["save_path"] is not defined.
 
         Return:
@@ -214,7 +216,8 @@ class deepforest:
                 image_path = os.path.join(generator.base_dir, plot_name)
                 result = self.predict_image(image_path,
                                             return_plot=return_plot,
-                                            score_threshold=args.score_threshold)
+                                            score_threshold=args.score_threshold,
+                                            color=color)
 
                 if return_plot:
                     if not self.config["save_path"]:
@@ -345,10 +348,12 @@ class deepforest:
             )
 
         #Check for correct formatting
-        #Warning if image is very large and using the release model
         if numpy_image is None:
-            numpy_image = cv2.imread(image_path)
-
+            if image_path is not None:
+                numpy_image = cv2.imread(image_path)
+            else:
+                raise ValueError("No input specified. deepforest.predict_image() requires either a numpy_image array or a path to a file to read.")
+            
         #Predict
         prediction = predict.predict_image(self.prediction_model,
                                            image_path=image_path,
