@@ -15,7 +15,6 @@ sphinx_rtd_theme
 pandas
 twine
 rasterstats
-pycocotools
 psutil
 keras-resnet
 opencv-python
