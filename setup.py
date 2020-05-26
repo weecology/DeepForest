@@ -94,7 +94,11 @@ extensions = [
 
 setup(name=NAME,
       version=VERSION,
+<<<<<<< HEAD
       python_requires='>3.5',
+=======
+      python_requires='>=3.6',
+>>>>>>> 662f2669981f9d40ea8cdfd0896165688f3c93b0
       description=DESCRIPTION,
       long_description = LONG_DESCRIPTION,
       long_description_content_type='text/markdown',
@@ -103,8 +107,8 @@ setup(name=NAME,
       license=LICENCE,
       packages=find_packages(),
       include_package_data=True,
-      cmdclass         = {'build_ext': BuildExtension},      
+      cmdclass         = {'build_ext': BuildExtension},
       install_requires=["keras > 2.3.0","keras-resnet==0.1.0","six","scipy","tensorflow==1.14.0","Pillow","pandas","opencv-python","pyyaml","slidingwindow","matplotlib","xmltodict","tqdm","progressbar2"],
       ext_modules    = extensions,
-      setup_requires = ["cython>=0.28", "numpy>=1.14.0"],    
+      setup_requires = ["cython>=0.28", "numpy>=1.14.0"],
       zip_safe=False)
