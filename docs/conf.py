@@ -25,7 +25,6 @@ autodoc_member_order = 'groupwise'
 autoclass_content = 'both'
 
 extensions = [
-    'nbsphinx',
     'pygments.sphinxext',
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',

@@ -1,4 +1,4 @@
-sphinx
+  sphinx
 recommonmark
 pyyaml
 pytest
