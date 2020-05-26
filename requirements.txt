@@ -19,10 +19,10 @@ tensorflow==1.14
 twine
 tqdm
 xmltodict
-git+git://github.com/bw4sz/keras-retinanet.git
 #Pip specific in reference to environment.yml
 bumpversion
 keras==2.3.0
 keras-resnet
 opencv-python
 slidingwindow
+git+git://github.com/bw4sz/keras-retinanet.git

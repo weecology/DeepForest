@@ -23,11 +23,11 @@ dependencies:
   - twine
   - xmltodict
   - pip:
+    - tensorflow==1.14
     - bumpversion
     - keras==2.3.0
     - keras-resnet
     - opencv-python
     - slidingwindow
     - sphinx-markdown-tables
-    - tensorflow==1.14
     - git+git://github.com/bw4sz/keras-retinanet.git
