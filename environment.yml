@@ -24,7 +24,7 @@ dependencies:
   - xmltodict
   - pip:
     - bumpversion
-    - keras>= 2.3.0
+    - keras== 2.3.0
     - keras-resnet
     - git+git://github.com/bw4sz/keras-retinanet.git
     - opencv-python
