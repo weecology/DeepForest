@@ -105,17 +105,12 @@ def test_predict_image(download_release):
 
     assert boxes.score.min() > 0.1
 
-<<<<<<< HEAD
 def test_predict_image_raise_error(download_release):
-    #Predict test image and return boxes    
-    test_model = deepforest.deepforest(weights=get_data("NEON.h5"))  
+    #Predict test image and return boxes
+    test_model = deepforest.deepforest(weights=get_data("NEON.h5"))
     with pytest.raises(ValueError):
         boxes = test_model.predict_image()
-    
-    
-=======
 
->>>>>>> 662f2669981f9d40ea8cdfd0896165688f3c93b0
 @pytest.fixture()
 def test_train(annotations):
     test_model = deepforest.deepforest()
