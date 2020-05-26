@@ -26,8 +26,8 @@ dependencies:
     - bumpversion
     - keras==2.3.0
     - keras-resnet
-    - git+git://github.com/bw4sz/keras-retinanet.git
     - opencv-python
     - slidingwindow
     - sphinx-markdown-tables
     - tensorflow==1.14
+    - git+git://github.com/bw4sz/keras-retinanet.git
