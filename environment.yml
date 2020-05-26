@@ -1,33 +1,33 @@
-at  name: DeepForest
+name: DeepForest
 channels:
   - defaults
   - conda-forge
 dependencies:
-  - python>=3.6
-  - sphinx
-  - recommonmark
-  - pyyaml
-  - pytest
-  - numpydoc
   - cython>=0.28
   - h5py
-  - xmltodict
-  - tqdm
+  - matplotlib
   - numpy
+  - numpydoc
+  - pandas
   - pillow
   - pip
-  - matplotlib
-  - sphinx_rtd_theme
-  - pandas
-  - twine
-  - rasterstats
+  - progressbar2
   - psutil
+  - pyyaml
+  - pytest
+  - python>3.5
+  - recommonmark
+  - sphinx
+  - sphinx_rtd_theme
+  - tqdm
+  - twine
+  - xmltodict
   - pip:
+    - bumpversion
+    - keras>= 2.3.0
     - keras-resnet
+    - git+git://github.com/bw4sz/keras-retinanet.git
     - opencv-python
     - slidingwindow
-    - keras>= 2.3.0
-    - tensorflow==1.14
     - sphinx-markdown-tables
-    - bumpversion
-    - git+git://github.com/bw4sz/keras-retinanet.git
+    - tensorflow==1.14
