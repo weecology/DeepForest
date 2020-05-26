@@ -1,8 +1,12 @@
-"""
-Tfrecord module
-Tfrecords creation and reader for improved performance across multi-gpu
-There were a tradeoffs made in this repo. It would be natural to save the generated prepreprocessed image to tfrecord from the generator. This results in enormous (100x) files.
-The compromise was to read the original image from file using tensorflow's data pipeline. The opencv resize billinear method is marginally different then the tensorflow method, so we can't literally assert they are the same array.
+"""Tfrecord module Tfrecords creation and reader for improved performance
+across multi-gpu There were a tradeoffs made in this repo.
+
+It would be natural to save the generated prepreprocessed image to
+tfrecord from the generator. This results in enormous (100x) files. The
+compromise was to read the original image from file using tensorflow's
+data pipeline. The opencv resize billinear method is marginally
+different then the tensorflow method, so we can't literally assert they
+are the same array.
 """
 import csv
 import os
@@ -13,8 +17,11 @@ import numpy as np
 import psutil
 import tensorflow as tf
 
-from keras_retinanet import models
-from keras_retinanet.preprocessing.csv_generator import CSVGenerator
+try:
+    from keras_retinanet import models
+    from keras_retinanet.preprocessing.csv_generator import CSVGenerator
+except:
+    pass
 
 
 def create_tf_example(image, regression_target, class_target, fname, original_image):
@@ -61,7 +68,8 @@ def create_tfrecords(annotations_file,
                      savedir="./"):
     """
     Args:
-        annotations_file: path to 6 column data in form image_path, xmin, ymin, xmax, ymax, label
+        annotations_file: path to 6 column data in form
+            image_path, xmin, ymin, xmax, ymax, label
         backbone_model: A keras retinanet backbone
         image_min_side: resized image object minimum size
         size: Number of images per tfrecord
@@ -78,14 +86,16 @@ def create_tfrecords(annotations_file,
     # filebase name
     image_basename = os.path.splitext(os.path.basename(annotations_file))[0]
 
-    ## Syntax checks
-    ##Check annotations file only JPEG, PNG, GIF, or BMP are allowed.
-    # df = pd.read_csv(annotations_file, names=["image_path","xmin","ymin","xmax","ymax","label"])
+    # Syntax checks
+    # Check annotations file only JPEG, PNG, GIF, or BMP are allowed.
+    # df = pd.read_csv(annotations_file,
+    # names=["image_path","xmin","ymin","xmax","ymax","label"])
     # df['FileType'] = df.image_path.str.split('.').str[-1].str.lower()
     # bad_files = df[~df['FileType'].isin(["jpeg","jpg","png","gif","bmp"])]
 
     # if not bad_files.empty:
-    # raise ValueError("Check annotations file, only JPEG, PNG, GIF, or BMP are allowed, {} incorrect files found /n {}: ".format(bad_files.shape[0],bad_files.head()))
+    # raise ValueError("Check annotations file, only JPEG, PNG, GIF, or BMP are allowed,
+    # {} incorrect files found /n {}: ".format(bad_files.shape[0],bad_files.head()))
 
     # Check dtypes, cannot use pandas, or will coerce in the presence of NAs
     with open(annotations_file, 'r') as f:
@@ -94,9 +104,10 @@ def create_tfrecords(annotations_file,
         if row[1].count(".") > 0:
             raise ValueError(
                 "Annotation files should be headerless with integer box, {} is not a int".
-                    format(row[1]))
+                format(row[1]))
 
-    # Create generator - because of how retinanet yields data, this should always be 1. Shape problems in the future?
+    # Create generator - because of how retinanet yields data,
+    # this should always be 1. Shape problems in the future?
     train_generator = CSVGenerator(annotations_file,
                                    class_file,
                                    batch_size=1,
@@ -136,15 +147,19 @@ def create_tfrecords(annotations_file,
             regression_batch, labels_batch = targets
 
             # grab regression anchors
-            # regression_batch: batch that contains bounding-box regression targets for an image & anchor states (np.array of shape (batch_size, N, 4 + 1),
-            # where N is the number of anchors for an image, the first 4 columns define regression targets for (x1, y1, x2, y2) and the
+            # regression_batch: batch that contains bounding-box regression targets
+            # for an image & anchor states (np.array of shape (batch_size, N, 4 + 1),
+            # where N is the number of anchors for an image, the first 4 columns
+            # define regression targets for (x1, y1, x2, y2) and the
             # last column defines anchor states (-1 for ignore, 0 for bg, 1 for fg).
             regression_anchors = regression_batch[0, ...]
             regression_targets.append(regression_anchors)
 
             # grab class labels - squeeze out batch size
-            # From retinanet: labels_batch: batch that contains labels & anchor states (np.array of shape (batch_size, N, num_classes + 1),
-            # where N is the number of anchors for an image and the last column defines the anchor state (-1 for ignore, 0 for bg, 1 for fg).
+            # From retinanet: labels_batch: batch that contains labels & anchor states
+            # (np.array of shape (batch_size, N, num_classes + 1),
+            # where N is the number of anchors for an image and the last column defines
+            # the anchor state (-1 for ignore, 0 for bg, 1 for fg).
             labels = labels_batch[0, ...]
             print("Label shape is: {}".format(labels.shape))
             class_targets.append(labels)
@@ -159,12 +174,12 @@ def create_tfrecords(annotations_file,
             filename.append(fname)
 
         for image, regression_target, class_target, fname, orig_image in zip(
-            images, regression_targets, class_targets, filename, original_image):
+                images, regression_targets, class_targets, filename, original_image):
             tf_example = create_tf_example(image, regression_target, class_target, fname,
                                            orig_image)
             writer.write(tf_example.SerializeToString())
 
-        memory_used.append(psutil.virtual_memory().used / 2 ** 30)
+        memory_used.append(psutil.virtual_memory().used / 2**30)
 
     #plt.plot(memory_used)
     #plt.title('Evolution of memory')
@@ -174,14 +189,18 @@ def create_tfrecords(annotations_file,
 
     return written_files
 
+
 def _parse_filename_(example):
-    """Primarily used for debugging, this function attempts to cast an tfrecord image and returns the filename if successful"""
+    """Primarily used for debugging, this function attempts to
+    cast an tfrecord image and returns the filename if successful
+    """
     # Define features
     features = {
         'image/filename': tf.io.FixedLenFeature([], tf.string),
         "image/height": tf.FixedLenFeature([], tf.int64),
-        "image/width": tf.FixedLenFeature([], tf.int64)}
-    
+        "image/width": tf.FixedLenFeature([], tf.int64)
+    }
+
     # Load one example and parse
     example = tf.io.parse_single_example(example, features)
     filename = tf.cast(example["image/filename"], tf.string)
@@ -190,10 +209,11 @@ def _parse_filename_(example):
     image_rows = tf.cast(example['image/height'], tf.int32)
     image_cols = tf.cast(example['image/width'], tf.int32)
     loaded_image = tf.reshape(loaded_image,
-                          tf.stack([image_rows, image_cols, 3]),
-                          name="cast_loaded_image")
-    
+                              tf.stack([image_rows, image_cols, 3]),
+                              name="cast_loaded_image")
+
     return filename
+
 
 # Reading
 def _parse_fn(example):
@@ -220,16 +240,15 @@ def _parse_fn(example):
     # Reshape to known shape
     image_rows = tf.cast(example['image/height'], tf.int32)
     image_cols = tf.cast(example['image/width'], tf.int32)
-    
-    #Wrap in a try catch and report file failure, this can be not graceful exiting
     loaded_image = tf.reshape(loaded_image,
-                          tf.stack([image_rows, image_cols, 3]),
-                          name="cast_loaded_image")
-        
+                              tf.stack([image_rows, image_cols, 3]),
+                              name="cast_loaded_image")
+
     # needs to be float to subtract weights below
     loaded_image = tf.cast(loaded_image, tf.float32)
 
-    # Turn loaded image from rgb into bgr and subtract imagenet means, see keras_retinanet.utils.image.preprocess_image
+    # Turn loaded image from rgb into bgr and subtract imagenet means,
+    # see keras_retinanet.utils.image.preprocess_image
     red, green, blue = tf.unstack(loaded_image, axis=-1)
 
     # Subtract imagenet means
@@ -277,30 +296,34 @@ def create_dataset(filepath, batch_size=1, shuffle=True, repeat=True):
     # This works with arrays as well
     dataset = tf.data.TFRecordDataset(filepath)
 
-    ## Set the number of datapoints you want to load and shuffle
+    # Set the number of datapoints you want to load and shuffle
     if shuffle:
         dataset = dataset.shuffle(800)
 
-    ## This dataset will go on forever
+    # This dataset will go on forever
     if repeat:
         dataset = dataset.repeat()
 
-    # Maps the parser on every filepath in the array. You can set the number of parallel loaders here. Wrap in a catch loop to report errors
+    # Maps the parser on every filepath in the array.
+    # You can set the number of parallel loaders here
     dataset = dataset.map(_parse_fn, num_parallel_calls=tf.data.experimental.AUTOTUNE)
 
-    ## Set the batchsize
+    # Set the batchsize
     dataset = dataset.batch(batch_size=batch_size, drop_remainder=True)
 
     # Collect a queue of data tensors
     dataset = dataset.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
 
-    ## Create an iterator
+    # Create an iterator
     iterator = dataset.make_one_shot_iterator()
 
     return iterator
 
 
-def create_tensors(list_of_tfrecords, backbone_name="resnet50", shuffle=True, repeat=True):
+def create_tensors(list_of_tfrecords,
+                   backbone_name="resnet50",
+                   shuffle=True,
+                   repeat=True):
     """
     Create a wired tensor target from a list of tfrecords
 
