@@ -1,12 +1,12 @@
 # Configuration File
 
-For ease of experimentation, DeepForest reads the majority of training parameters from a .yml file. This allows a user to quickly survey and change the training settings without needing to dive into the source code. Deep learning models are complex, and DeepForest tries to set reasonable defaults when possible. To get the best performance, some parameter exploration will be required for most novel applications. 
+For ease of experimentation, DeepForest reads the majority of training parameters from a .yml file. This allows a user to quickly survey and change the training settings without needing to dive into the source code. Deep learning models are complex, and DeepForest tries to set reasonable defaults when possible. To get the best performance, some parameter exploration will be required for most novel applications.
 
 By default DeepForest will look for ```deepforest_config.yml``` in the current working directory. If that fails the default config will be used from ```deepforest/data/deepforest_config.yml```.
 
 When a deepforest object is created, the user is notified of the path to the config used.
 
-```
+```python
 >>> from deepforest import deepforest
 >>> deepforest.deepforest()
 Reading config file: /Users/ben/miniconda3/envs/test/lib/python3.6/site-packages/deepforest/data/deepforest_config.yml
@@ -16,7 +16,7 @@ No model initialized, either train or load an existing retinanet model
 
 ## Sample deepforest_config.yml
 
-```
+```yaml
 ###
 # Config file for DeepForest module
 ###
@@ -73,7 +73,7 @@ Neural networks are often trained in batches of images, since the entire dataset
 
 Neural networks consist of a set of matrix weights that are updated during model training. Starting from scratch with randomly initialized weights can significantly slow down training and decrease model performance. The ```weights:``` parameter allows you to start from previously saved weights, either from prebuilt models or from a custom session.
 
-```{python}
+```python
 from deepforest import deepforest
 from deepforest import get_data
 
