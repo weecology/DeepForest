@@ -11,7 +11,6 @@ import tensorflow as tf
 from keras_retinanet.utils import image as keras_retinanet_image
 from keras_retinanet.utils.visualization import draw_detections
 
-
 def predict_image(model,
                   image_path=None,
                   raw_image=None,
