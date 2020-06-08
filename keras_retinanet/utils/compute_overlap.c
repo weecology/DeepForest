@@ -2006,7 +2006,7 @@ static PyObject *__pyx_pf_15keras_retinanet_5utils_15compute_overlap_compute_ove
  *     cdef unsigned int k, n
  *     for k in range(K):             # <<<<<<<<<<<<<<
  *         box_area = (
- *             (query_boxes[k, 2] - query_boxes[k, 0] + 1) *
+ *             (query_boxes[k, 2] - query_boxes[k, 0]) *
  */
   __pyx_t_7 = __pyx_v_K;
   __pyx_t_8 = __pyx_t_7;
@@ -2016,8 +2016,8 @@ static PyObject *__pyx_pf_15keras_retinanet_5utils_15compute_overlap_compute_ove
     /* "keras_retinanet/utils/compute_overlap.pyx":33
  *     for k in range(K):
  *         box_area = (
- *             (query_boxes[k, 2] - query_boxes[k, 0] + 1) *             # <<<<<<<<<<<<<<
- *             (query_boxes[k, 3] - query_boxes[k, 1] + 1)
+ *             (query_boxes[k, 2] - query_boxes[k, 0]) *             # <<<<<<<<<<<<<<
+ *             (query_boxes[k, 3] - query_boxes[k, 1])
  *         )
  */
     __pyx_t_10 = __pyx_v_k;
@@ -2047,8 +2047,8 @@ static PyObject *__pyx_pf_15keras_retinanet_5utils_15compute_overlap_compute_ove
 
     /* "keras_retinanet/utils/compute_overlap.pyx":34
  *         box_area = (
- *             (query_boxes[k, 2] - query_boxes[k, 0] + 1) *
- *             (query_boxes[k, 3] - query_boxes[k, 1] + 1)             # <<<<<<<<<<<<<<
+ *             (query_boxes[k, 2] - query_boxes[k, 0]) *
+ *             (query_boxes[k, 3] - query_boxes[k, 1])             # <<<<<<<<<<<<<<
  *         )
  *         for n in range(N):
  */
@@ -2080,14 +2080,14 @@ static PyObject *__pyx_pf_15keras_retinanet_5utils_15compute_overlap_compute_ove
     /* "keras_retinanet/utils/compute_overlap.pyx":33
  *     for k in range(K):
  *         box_area = (
- *             (query_boxes[k, 2] - query_boxes[k, 0] + 1) *             # <<<<<<<<<<<<<<
- *             (query_boxes[k, 3] - query_boxes[k, 1] + 1)
+ *             (query_boxes[k, 2] - query_boxes[k, 0]) *             # <<<<<<<<<<<<<<
+ *             (query_boxes[k, 3] - query_boxes[k, 1])
  *         )
  */
-    __pyx_v_box_area = ((((*__Pyx_BufPtrStrided2d(double *, __pyx_pybuffernd_query_boxes.rcbuffer->pybuffer.buf, __pyx_t_10, __pyx_pybuffernd_query_boxes.diminfo[0].strides, __pyx_t_11, __pyx_pybuffernd_query_boxes.diminfo[1].strides)) - (*__Pyx_BufPtrStrided2d(double *, __pyx_pybuffernd_query_boxes.rcbuffer->pybuffer.buf, __pyx_t_13, __pyx_pybuffernd_query_boxes.diminfo[0].strides, __pyx_t_14, __pyx_pybuffernd_query_boxes.diminfo[1].strides))) + 1.0) * (((*__Pyx_BufPtrStrided2d(double *, __pyx_pybuffernd_query_boxes.rcbuffer->pybuffer.buf, __pyx_t_15, __pyx_pybuffernd_query_boxes.diminfo[0].strides, __pyx_t_16, __pyx_pybuffernd_query_boxes.diminfo[1].strides)) - (*__Pyx_BufPtrStrided2d(double *, __pyx_pybuffernd_query_boxes.rcbuffer->pybuffer.buf, __pyx_t_17, __pyx_pybuffernd_query_boxes.diminfo[0].strides, __pyx_t_18, __pyx_pybuffernd_query_boxes.diminfo[1].strides))) + 1.0));
+    __pyx_v_box_area = (((*__Pyx_BufPtrStrided2d(double *, __pyx_pybuffernd_query_boxes.rcbuffer->pybuffer.buf, __pyx_t_10, __pyx_pybuffernd_query_boxes.diminfo[0].strides, __pyx_t_11, __pyx_pybuffernd_query_boxes.diminfo[1].strides)) - (*__Pyx_BufPtrStrided2d(double *, __pyx_pybuffernd_query_boxes.rcbuffer->pybuffer.buf, __pyx_t_13, __pyx_pybuffernd_query_boxes.diminfo[0].strides, __pyx_t_14, __pyx_pybuffernd_query_boxes.diminfo[1].strides))) * ((*__Pyx_BufPtrStrided2d(double *, __pyx_pybuffernd_query_boxes.rcbuffer->pybuffer.buf, __pyx_t_15, __pyx_pybuffernd_query_boxes.diminfo[0].strides, __pyx_t_16, __pyx_pybuffernd_query_boxes.diminfo[1].strides)) - (*__Pyx_BufPtrStrided2d(double *, __pyx_pybuffernd_query_boxes.rcbuffer->pybuffer.buf, __pyx_t_17, __pyx_pybuffernd_query_boxes.diminfo[0].strides, __pyx_t_18, __pyx_pybuffernd_query_boxes.diminfo[1].strides))));
 
     /* "keras_retinanet/utils/compute_overlap.pyx":36
- *             (query_boxes[k, 3] - query_boxes[k, 1] + 1)
+ *             (query_boxes[k, 3] - query_boxes[k, 1])
  *         )
  *         for n in range(N):             # <<<<<<<<<<<<<<
  *             iw = (
@@ -2102,7 +2102,7 @@ static PyObject *__pyx_pf_15keras_retinanet_5utils_15compute_overlap_compute_ove
  *         for n in range(N):
  *             iw = (
  *                 min(boxes[n, 2], query_boxes[k, 2]) -             # <<<<<<<<<<<<<<
- *                 max(boxes[n, 0], query_boxes[k, 0]) + 1
+ *                 max(boxes[n, 0], query_boxes[k, 0])
  *             )
  */
       __pyx_t_22 = __pyx_v_k;
@@ -2140,7 +2140,7 @@ static PyObject *__pyx_pf_15keras_retinanet_5utils_15compute_overlap_compute_ove
       /* "keras_retinanet/utils/compute_overlap.pyx":39
  *             iw = (
  *                 min(boxes[n, 2], query_boxes[k, 2]) -
- *                 max(boxes[n, 0], query_boxes[k, 0]) + 1             # <<<<<<<<<<<<<<
+ *                 max(boxes[n, 0], query_boxes[k, 0])             # <<<<<<<<<<<<<<
  *             )
  *             if iw > 0:
  */
@@ -2180,13 +2180,13 @@ static PyObject *__pyx_pf_15keras_retinanet_5utils_15compute_overlap_compute_ove
  *         for n in range(N):
  *             iw = (
  *                 min(boxes[n, 2], query_boxes[k, 2]) -             # <<<<<<<<<<<<<<
- *                 max(boxes[n, 0], query_boxes[k, 0]) + 1
+ *                 max(boxes[n, 0], query_boxes[k, 0])
  *             )
  */
-      __pyx_v_iw = ((__pyx_t_28 - __pyx_t_33) + 1.0);
+      __pyx_v_iw = (__pyx_t_28 - __pyx_t_33);
 
       /* "keras_retinanet/utils/compute_overlap.pyx":41
- *                 max(boxes[n, 0], query_boxes[k, 0]) + 1
+ *                 max(boxes[n, 0], query_boxes[k, 0])
  *             )
  *             if iw > 0:             # <<<<<<<<<<<<<<
  *                 ih = (
@@ -2199,7 +2199,7 @@ static PyObject *__pyx_pf_15keras_retinanet_5utils_15compute_overlap_compute_ove
  *             if iw > 0:
  *                 ih = (
  *                     min(boxes[n, 3], query_boxes[k, 3]) -             # <<<<<<<<<<<<<<
- *                     max(boxes[n, 1], query_boxes[k, 1]) + 1
+ *                     max(boxes[n, 1], query_boxes[k, 1])
  *                 )
  */
         __pyx_t_35 = __pyx_v_k;
@@ -2237,7 +2237,7 @@ static PyObject *__pyx_pf_15keras_retinanet_5utils_15compute_overlap_compute_ove
         /* "keras_retinanet/utils/compute_overlap.pyx":44
  *                 ih = (
  *                     min(boxes[n, 3], query_boxes[k, 3]) -
- *                     max(boxes[n, 1], query_boxes[k, 1]) + 1             # <<<<<<<<<<<<<<
+ *                     max(boxes[n, 1], query_boxes[k, 1])             # <<<<<<<<<<<<<<
  *                 )
  *                 if ih > 0:
  */
@@ -2277,17 +2277,17 @@ static PyObject *__pyx_pf_15keras_retinanet_5utils_15compute_overlap_compute_ove
  *             if iw > 0:
  *                 ih = (
  *                     min(boxes[n, 3], query_boxes[k, 3]) -             # <<<<<<<<<<<<<<
- *                     max(boxes[n, 1], query_boxes[k, 1]) + 1
+ *                     max(boxes[n, 1], query_boxes[k, 1])
  *                 )
  */
-        __pyx_v_ih = ((__pyx_t_24 - __pyx_t_27) + 1.0);
+        __pyx_v_ih = (__pyx_t_24 - __pyx_t_27);
 
         /* "keras_retinanet/utils/compute_overlap.pyx":46
- *                     max(boxes[n, 1], query_boxes[k, 1]) + 1
+ *                     max(boxes[n, 1], query_boxes[k, 1])
  *                 )
  *                 if ih > 0:             # <<<<<<<<<<<<<<
  *                     ua = np.float64(
- *                         (boxes[n, 2] - boxes[n, 0] + 1) *
+ *                         (boxes[n, 2] - boxes[n, 0]) *
  */
         __pyx_t_34 = ((__pyx_v_ih > 0.0) != 0);
         if (__pyx_t_34) {
@@ -2296,8 +2296,8 @@ static PyObject *__pyx_pf_15keras_retinanet_5utils_15compute_overlap_compute_ove
  *                 )
  *                 if ih > 0:
  *                     ua = np.float64(             # <<<<<<<<<<<<<<
- *                         (boxes[n, 2] - boxes[n, 0] + 1) *
- *                         (boxes[n, 3] - boxes[n, 1] + 1) +
+ *                         (boxes[n, 2] - boxes[n, 0]) *
+ *                         (boxes[n, 3] - boxes[n, 1]) +
  */
           __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_n_s_np); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 47, __pyx_L1_error)
           __Pyx_GOTREF(__pyx_t_4);
@@ -2308,8 +2308,8 @@ static PyObject *__pyx_pf_15keras_retinanet_5utils_15compute_overlap_compute_ove
           /* "keras_retinanet/utils/compute_overlap.pyx":48
  *                 if ih > 0:
  *                     ua = np.float64(
- *                         (boxes[n, 2] - boxes[n, 0] + 1) *             # <<<<<<<<<<<<<<
- *                         (boxes[n, 3] - boxes[n, 1] + 1) +
+ *                         (boxes[n, 2] - boxes[n, 0]) *             # <<<<<<<<<<<<<<
+ *                         (boxes[n, 3] - boxes[n, 1]) +
  *                         box_area - iw * ih
  */
           __pyx_t_43 = __pyx_v_n;
@@ -2339,8 +2339,8 @@ static PyObject *__pyx_pf_15keras_retinanet_5utils_15compute_overlap_compute_ove
 
           /* "keras_retinanet/utils/compute_overlap.pyx":49
  *                     ua = np.float64(
- *                         (boxes[n, 2] - boxes[n, 0] + 1) *
- *                         (boxes[n, 3] - boxes[n, 1] + 1) +             # <<<<<<<<<<<<<<
+ *                         (boxes[n, 2] - boxes[n, 0]) *
+ *                         (boxes[n, 3] - boxes[n, 1]) +             # <<<<<<<<<<<<<<
  *                         box_area - iw * ih
  *                     )
  */
@@ -2370,13 +2370,13 @@ static PyObject *__pyx_pf_15keras_retinanet_5utils_15compute_overlap_compute_ove
           }
 
           /* "keras_retinanet/utils/compute_overlap.pyx":50
- *                         (boxes[n, 2] - boxes[n, 0] + 1) *
- *                         (boxes[n, 3] - boxes[n, 1] + 1) +
+ *                         (boxes[n, 2] - boxes[n, 0]) *
+ *                         (boxes[n, 3] - boxes[n, 1]) +
  *                         box_area - iw * ih             # <<<<<<<<<<<<<<
  *                     )
  *                     overlaps[n, k] = iw * ih / ua
  */
-          __pyx_t_4 = PyFloat_FromDouble(((((((*__Pyx_BufPtrStrided2d(double *, __pyx_pybuffernd_boxes.rcbuffer->pybuffer.buf, __pyx_t_43, __pyx_pybuffernd_boxes.diminfo[0].strides, __pyx_t_44, __pyx_pybuffernd_boxes.diminfo[1].strides)) - (*__Pyx_BufPtrStrided2d(double *, __pyx_pybuffernd_boxes.rcbuffer->pybuffer.buf, __pyx_t_45, __pyx_pybuffernd_boxes.diminfo[0].strides, __pyx_t_46, __pyx_pybuffernd_boxes.diminfo[1].strides))) + 1.0) * (((*__Pyx_BufPtrStrided2d(double *, __pyx_pybuffernd_boxes.rcbuffer->pybuffer.buf, __pyx_t_47, __pyx_pybuffernd_boxes.diminfo[0].strides, __pyx_t_48, __pyx_pybuffernd_boxes.diminfo[1].strides)) - (*__Pyx_BufPtrStrided2d(double *, __pyx_pybuffernd_boxes.rcbuffer->pybuffer.buf, __pyx_t_49, __pyx_pybuffernd_boxes.diminfo[0].strides, __pyx_t_50, __pyx_pybuffernd_boxes.diminfo[1].strides))) + 1.0)) + __pyx_v_box_area) - (__pyx_v_iw * __pyx_v_ih))); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 50, __pyx_L1_error)
+          __pyx_t_4 = PyFloat_FromDouble((((((*__Pyx_BufPtrStrided2d(double *, __pyx_pybuffernd_boxes.rcbuffer->pybuffer.buf, __pyx_t_43, __pyx_pybuffernd_boxes.diminfo[0].strides, __pyx_t_44, __pyx_pybuffernd_boxes.diminfo[1].strides)) - (*__Pyx_BufPtrStrided2d(double *, __pyx_pybuffernd_boxes.rcbuffer->pybuffer.buf, __pyx_t_45, __pyx_pybuffernd_boxes.diminfo[0].strides, __pyx_t_46, __pyx_pybuffernd_boxes.diminfo[1].strides))) * ((*__Pyx_BufPtrStrided2d(double *, __pyx_pybuffernd_boxes.rcbuffer->pybuffer.buf, __pyx_t_47, __pyx_pybuffernd_boxes.diminfo[0].strides, __pyx_t_48, __pyx_pybuffernd_boxes.diminfo[1].strides)) - (*__Pyx_BufPtrStrided2d(double *, __pyx_pybuffernd_boxes.rcbuffer->pybuffer.buf, __pyx_t_49, __pyx_pybuffernd_boxes.diminfo[0].strides, __pyx_t_50, __pyx_pybuffernd_boxes.diminfo[1].strides)))) + __pyx_v_box_area) - (__pyx_v_iw * __pyx_v_ih))); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 50, __pyx_L1_error)
           __Pyx_GOTREF(__pyx_t_4);
           __pyx_t_2 = NULL;
           if (CYTHON_UNPACK_METHODS && unlikely(PyMethod_Check(__pyx_t_3))) {
@@ -2399,8 +2399,8 @@ static PyObject *__pyx_pf_15keras_retinanet_5utils_15compute_overlap_compute_ove
  *                 )
  *                 if ih > 0:
  *                     ua = np.float64(             # <<<<<<<<<<<<<<
- *                         (boxes[n, 2] - boxes[n, 0] + 1) *
- *                         (boxes[n, 3] - boxes[n, 1] + 1) +
+ *                         (boxes[n, 2] - boxes[n, 0]) *
+ *                         (boxes[n, 3] - boxes[n, 1]) +
  */
           __pyx_t_27 = __pyx_PyFloat_AsDouble(__pyx_t_5); if (unlikely((__pyx_t_27 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 47, __pyx_L1_error)
           __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
@@ -2429,16 +2429,16 @@ static PyObject *__pyx_pf_15keras_retinanet_5utils_15compute_overlap_compute_ove
           *__Pyx_BufPtrStrided2d(double *, __pyx_pybuffernd_overlaps.rcbuffer->pybuffer.buf, __pyx_t_51, __pyx_pybuffernd_overlaps.diminfo[0].strides, __pyx_t_52, __pyx_pybuffernd_overlaps.diminfo[1].strides) = (__pyx_t_27 / __pyx_v_ua);
 
           /* "keras_retinanet/utils/compute_overlap.pyx":46
- *                     max(boxes[n, 1], query_boxes[k, 1]) + 1
+ *                     max(boxes[n, 1], query_boxes[k, 1])
  *                 )
  *                 if ih > 0:             # <<<<<<<<<<<<<<
  *                     ua = np.float64(
- *                         (boxes[n, 2] - boxes[n, 0] + 1) *
+ *                         (boxes[n, 2] - boxes[n, 0]) *
  */
         }
 
         /* "keras_retinanet/utils/compute_overlap.pyx":41
- *                 max(boxes[n, 0], query_boxes[k, 0]) + 1
+ *                 max(boxes[n, 0], query_boxes[k, 0])
  *             )
  *             if iw > 0:             # <<<<<<<<<<<<<<
  *                 ih = (

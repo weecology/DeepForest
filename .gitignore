@@ -19,3 +19,4 @@ docs/_build/
 .gitmodules
 *.idea*
 build
+compute_overlap.cpython-37m-darwin.so
