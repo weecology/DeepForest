@@ -19,11 +19,13 @@ Source code is available here: (https://github.com/weecology/DeepForest.git).
    FAQ
    case_study_FrenchGuiana
    multiclass
+   better
    code_of_conduct.rst
    history.rst
    source/deepforest
    authors.rst
    source/modules.rst
+   developer
 
 Indices and tables
 ==================
