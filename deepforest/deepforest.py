@@ -26,15 +26,12 @@ from deepforest import preprocess
 from deepforest.retinanet_train import main as retinanet_train
 from deepforest.retinanet_train import parse_args
 
-try:
-    from keras_retinanet import models
-    from keras_retinanet.models import convert_model
-    from keras_retinanet.bin.train import create_models
-    from keras_retinanet.preprocessing.csv_generator import CSVGenerator, _read_classes
-    from keras_retinanet.utils.eval import evaluate
-    from keras_retinanet.utils.visualization import draw_box
-except:
-    pass
+from deepforest.keras_retinanet import models
+from deepforest.keras_retinanet.models import convert_model
+from deepforest.keras_retinanet.bin.train import create_models
+from deepforest.keras_retinanet.preprocessing.csv_generator import CSVGenerator, _read_classes
+from deepforest.keras_retinanet.utils.eval import evaluate
+from deepforest.keras_retinanet.utils.visualization import draw_box
 
 
 class deepforest:

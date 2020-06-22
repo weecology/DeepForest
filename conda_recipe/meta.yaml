@@ -1,36 +1,35 @@
 {% set name = "deepforest" %}
-{% set version = "0.2.15" %}
-{% set sha256 = "8860ce455f3a03704f80f8efbdbbd240e2bdd10446c7ddd1cd8acc5b3b1bc189" %}
-{% set python_version = "3.6" %}
+{% set version = "0.2.19" %}
+{% set sha256 = "d2121897d6e32db577326f45871990721d835de38805e0547ebaa2ebe4b28dce" %}
 
 package:
-  name: {{ name|lower }}
-  version: {{ version }}
+  name: "{{ name|lower }}"
+  version: "{{ version }}"
 
 source:
-  path: ../
+  url: "https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz"
+  sha256: {{ sha256 }}
 
 build:
-  noarch: python
+  skip: True  # [win or py<36]
   number: 0
-  skip: True  # [py==37]
   script:
     - export SETUPTOOLS_SCM_PRETEND_VERSION={{ version }}    # [unix]
-    - set SETUPTOOLS_SCM_PRETEND_VERSION={{ version }}    # [win]
-    - {{ PYTHON }} -m pip install .
+    - "{{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv "
+
 requirements:
   build:
     - {{ compiler('c') }}
+    - {{ compiler('cxx') }}
   host:
-    - python={{ python_version }}
-    - setuptools
-    - setuptools_scm
+    - python
     - pip >=20.1
     - numpy >=1.14.0
     - cython >=0.28
+
   run:
-    - python={{ python_version }}
-    - matplotlib
+    - python
+    - matplotlib-base
     - sphinx
     - recommonmark
     - pyyaml
@@ -42,24 +41,22 @@ requirements:
     - tqdm
     - numpy >=1.14.0
     - pillow
-    - pip >=20.1
     - sphinx_rtd_theme
     - pandas
     - twine
+    - rasterstats
     - psutil
-    - keras
 
 test:
   imports:
-    - keras
-#    - deepforest
 
   source_files:
     - tests/*
     - requirements.txt
 
   commands:
-    - PYTHON  -m pip install -r  requirements.txt && pytest -v --ignore=keras-retinanet/
+    - {{ PYTHON }} -m pip install -r requirements.txt && pytest -v --ignore=keras-retinanet/    # [unix]
+    - {{ PYTHON }} -c 'import deepforest; print(deepforest.__version__)'    # [win]
 
 about:
   home: https://github.com/weecology/DeepForest
@@ -90,4 +87,3 @@ extra:
   recipe-maintainers:
     - bw4sz
     - henrykironde
-    - ethanwhite

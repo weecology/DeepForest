@@ -17,11 +17,9 @@ with warnings.catch_warnings():
     warnings.filterwarnings("ignore", category=FutureWarning)
     warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-try:
-    from keras_retinanet import models
-    from keras.utils import multi_gpu_model
-except:
-    pass
+from deepforest.keras_retinanet import models
+from keras.utils import multi_gpu_model
+
 from deepforest import _ROOT
 
 

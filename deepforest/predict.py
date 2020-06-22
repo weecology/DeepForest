@@ -9,12 +9,9 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 
-try:
-    # Retinanet-viz
-    from keras_retinanet.utils import image as keras_retinanet_image
-    from keras_retinanet.utils.visualization import draw_detections
-except:
-    pass
+# Retinanet-viz
+from deepforest.keras_retinanet.utils import image as keras_retinanet_image
+from deepforest.keras_retinanet.utils.visualization import draw_detections
 
 def predict_image(model,
                   image_path=None,

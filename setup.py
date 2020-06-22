@@ -4,7 +4,7 @@ from setuptools.extension import Extension
 from distutils.command.build_ext import build_ext as DistUtilsBuildExt
 
 NAME ='deepforest'
-VERSION = '0.2.18'
+VERSION = '0.3.0'
 DESCRIPTION = 'Tree crown prediction using deep learning retinanets'
 URL = 'https://github.com/Weecology/DeepForest'
 AUTHOR = 'Ben Weinstein'
@@ -86,8 +86,8 @@ class BuildExtension(setuptools.Command):
 
 extensions = [
     Extension(
-        'keras_retinanet.utils.compute_overlap',
-        ['keras_retinanet/utils/compute_overlap.pyx']
+        'deepforest.keras_retinanet.utils.compute_overlap',
+        ['deepforest/keras_retinanet/utils/compute_overlap.pyx']
     ),
 ]
 

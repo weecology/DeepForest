@@ -7,6 +7,8 @@ import pytest
 from deepforest import get_data
 from deepforest import utilities
 
+#import general model fixture
+from .conftest import download_release
 
 @pytest.fixture()
 def annotations():
@@ -60,7 +62,7 @@ def test_format_args_steps(annotations, config):
     assert arg_list[steps_position] == '2'
 
 
-def test_use_release():
+def test_use_release(download_release):
     # Download latest model from github release
     release_tag, weights = utilities.use_release()
     assert os.path.exists(get_data("NEON.h5"))

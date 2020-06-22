@@ -14,13 +14,8 @@ from deepforest import get_data
 from deepforest import tfrecords
 from deepforest import utilities
 
-
-# download latest release
-@pytest.fixture()
-def download_release():
-    print("running fixtures")
-    utilities.use_release()
-
+#import general model fixture
+from .conftest import download_release
 
 @pytest.fixture()
 def annotations():

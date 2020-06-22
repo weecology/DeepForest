@@ -1,7 +1,7 @@
 # Installation
 
 
-DeepForest has Windows, Linux and OSX prebuilt wheels on pypi
+DeepForest has Windows, Linux and OSX prebuilt wheels on pypi. We *strongly* recommend using a conda or virtualenv to create a clean installation container.
 
 ```
 pip install DeepForest
