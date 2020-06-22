@@ -17,11 +17,8 @@ import numpy as np
 import psutil
 import tensorflow as tf
 
-try:
-    from keras_retinanet import models
-    from keras_retinanet.preprocessing.csv_generator import CSVGenerator
-except:
-    pass
+from deepforest.keras_retinanet import models
+from deepforest.keras_retinanet.preprocessing.csv_generator import CSVGenerator
 
 
 def create_tf_example(image, regression_target, class_target, fname, original_image):
@@ -248,7 +245,7 @@ def _parse_fn(example):
     loaded_image = tf.cast(loaded_image, tf.float32)
 
     # Turn loaded image from rgb into bgr and subtract imagenet means,
-    # see keras_retinanet.utils.image.preprocess_image
+    # see deepforest.keras_retinanet.utils.image.preprocess_image
     red, green, blue = tf.unstack(loaded_image, axis=-1)
 
     # Subtract imagenet means

@@ -9,8 +9,8 @@ from deepforest import get_data
 from deepforest import preprocess
 from deepforest import tfrecords
 from deepforest import utilities
-from keras_retinanet import models
-from keras_retinanet.preprocessing import csv_generator
+from deepforest.keras_retinanet import models
+from deepforest.keras_retinanet.preprocessing import csv_generator
 
 
 # Helper function to check filenames

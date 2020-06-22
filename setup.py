@@ -86,8 +86,8 @@ class BuildExtension(setuptools.Command):
 
 extensions = [
     Extension(
-        'keras_retinanet.utils.compute_overlap',
-        ['keras_retinanet/utils/compute_overlap.pyx']
+        'deepforest.keras_retinanet.utils.compute_overlap',
+        ['deepforest/keras_retinanet/utils/compute_overlap.pyx']
     ),
 ]
 

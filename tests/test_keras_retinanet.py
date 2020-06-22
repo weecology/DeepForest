@@ -1,6 +1,6 @@
 # test loading of keras retinanet
 import os
-from keras_retinanet.utils.anchors import compute_overlap
+from deepforest.keras_retinanet.utils.anchors import compute_overlap
 import numpy as np
 
 def test_keras_retinanet():
