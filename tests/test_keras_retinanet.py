@@ -8,8 +8,8 @@ def test_keras_retinanet():
 
 
 def test_Cython_build():
-    import keras_retinanet.utils.compute_overlap
-    assert os.path.exists(keras_retinanet.utils.compute_overlap.__file__)
+    import deepforest.keras_retinanet.utils.compute_overlap
+    assert os.path.exists(deepforest.keras_retinanet.utils.compute_overlap.__file__)
 
 def test_iou():
     true_array = np.expand_dims(np.array([0.,0.,5.,5.]),axis=0)
