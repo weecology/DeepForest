@@ -4,7 +4,7 @@ from setuptools.extension import Extension
 from distutils.command.build_ext import build_ext as DistUtilsBuildExt
 
 NAME ='deepforest'
-VERSION = '0.3.0'
+VERSION = '0.3.1'
 DESCRIPTION = 'Tree crown prediction using deep learning retinanets'
 URL = 'https://github.com/Weecology/DeepForest'
 AUTHOR = 'Ben Weinstein'
