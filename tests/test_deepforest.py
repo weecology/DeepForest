@@ -4,6 +4,7 @@
 # matplotlib.use("MacOSX")
 
 import os
+import cv2
 
 import keras
 import numpy as np
@@ -149,6 +150,14 @@ def test_predict_tile(release_model):
 
     # Test no non-max suppression
     boxes = release_model.predict_tile(raster_path,
+                                       patch_size=100,
+                                       patch_overlap=0,
+                                       return_plot=False)
+    assert not boxes.empty
+
+    # Test numpy_image read
+    numpy_array = cv2.imread(raster_path)
+    boxes = release_model.predict_tile(numpy_image =numpy_array,
                                        patch_size=100,
                                        patch_overlap=0,
                                        return_plot=False)

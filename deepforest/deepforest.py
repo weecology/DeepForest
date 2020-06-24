@@ -418,7 +418,7 @@ class deepforest:
                 Otherwise a numpy array of predicted bounding boxes, scores and labels
         """
 
-        if numpy_image:
+        if numpy_image is not None:
             pass
         else:
             # Load raster as image
