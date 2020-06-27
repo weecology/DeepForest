@@ -62,7 +62,7 @@ def test_format_args_steps(annotations, config):
     assert arg_list[steps_position] == '2'
 
 
-def test_use_release(download_release):
+def test_use_release():
     # Download latest model from github release
     release_tag, weights = utilities.use_release()
     assert os.path.exists(get_data("NEON.h5"))
