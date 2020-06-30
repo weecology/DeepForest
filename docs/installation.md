@@ -6,7 +6,7 @@ DeepForest has Windows, Linux and OSX prebuilt wheels on pypi. We *strongly* rec
 pip install DeepForest
 ```
 
-DeepForest is also available on conda-forge to help users compile code and manage dependencies. Conda builds are currently available for osx and linux, python 3.6 or 3.7. For help installing conda see: [conda quickstart](https://docs.conda.io/projects/conda/en/latest/user-guide/install/).
+DeepForest is also available on conda-forge to help users compile code and manage dependencies. Conda builds are currently available for windows, osx and linux, python 3.6 or 3.7. For help installing conda see: [conda quickstart](https://docs.conda.io/projects/conda/en/latest/user-guide/install/).
 
 For example, to create a env test with python 3.7
 ```
