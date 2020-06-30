@@ -1,39 +1,31 @@
 # Installation
 
-
 DeepForest has Windows, Linux and OSX prebuilt wheels on pypi. We *strongly* recommend using a conda or virtualenv to create a clean installation container.
 
 ```
 pip install DeepForest
 ```
 
-DeepForest can alternatively be installed from source using the github repository.
+DeepForest is also available on conda-forge to help users compile code and manage dependencies. Conda builds are currently available for osx and linux, python 3.6 or 3.7. For help installing conda see: [conda quickstart](https://docs.conda.io/projects/conda/en/latest/user-guide/install/).
+
+For example, to create a env test with python 3.7
+```
+conda create --name test python=3.7
+conda activate test
+conda install -c conda-forge deepforest
+```
+
+For questions on conda-forge installation, please submit issues to the feedstock repo: https://github.com/conda-forge/deepforest-feedstock
+
+## Source Installation
+
+DeepForest can alternatively be installed from source using the github repository. The python package dependencies are managed by conda.
 
 ```
-git clone https://github.com/weecology/DeepForest.git --depth 1
+git clone https://github.com/weecology/DeepForest.git
 cd DeepForest
-```
-
-## Conda environment
-
-The python package dependencies are managed by conda. For help installing conda see: [conda quickstart](https://docs.conda.io/projects/conda/en/latest/user-guide/install/). The conda installation of DeepForest installs a [fork](https://github.com/bw4sz/keras-retinanet.git) of the keras-retinanet to perform object detection.
-
-```
 conda env create --file=environment.yml
 conda activate DeepForest
+#build c extentions for retinanet
+python setup.py build_ext --inplace
 ```
-
-```
-python
-(test) MacBook-Pro:DeepForest ben$ python
-Python 3.6.9 |Anaconda, Inc.| (default, Jul 30 2019, 13:42:17)
-[GCC 4.2.1 Compatible Clang 4.0.1 (tags/RELEASE_401/final)] on darwin
-Type "help", "copyright", "credits" or "license" for more information.
->>> import deepforest
->>> deepforest.__version__
-'0.2.3'
-```
-
-### Tensorflow dependency
-
-Some users have choosen to install tensorflow seperately. We recommend to just pip install DeepForest to ensure the latest dependencies are downloaded. If you do want to go down this route for some reason, please be sure to use tensorflow < 2.0. The keras retinanet is not 2.0 ready at this time.

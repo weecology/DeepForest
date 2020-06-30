@@ -11,17 +11,27 @@ DeepForest es un paquete de python para la predicción de coronas de árboles in
 
 ## Installation
 
-Compiled versions of DeepForest are available for Windows, Mac and Linux on pypi.
+DeepForest has Windows, Linux and OSX prebuilt wheels on pypi. We *strongly* recommend using a conda or virtualenv to create a clean installation container.
 
 ```
 pip install DeepForest
 ```
 
+DeepForest is also available on conda-forge to help users compile code and manage dependencies. Conda builds are currently available for osx and linux, python 3.6 or 3.7.
+
+For example, to create a env test with python 3.7
+```
+conda create --name test python=3.7
+conda activate test
+conda install -c conda-forge deepforest
+```
 Installation has been currently validated on clean installs of
 
 * Linux version (Ubuntu 17.4.0)
 * Mac OSX Mojave Python 3.7.5
 * Windows 2016+
+
+For questions on conda-forge installation, please submit issues to the feedstock repo: https://github.com/conda-forge/deepforest-feedstock
 
 ## Source Installation
 
