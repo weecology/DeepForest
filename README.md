@@ -152,9 +152,3 @@ bioRxiv 790071; doi: https://doi.org/10.1101/790071](https://www.biorxiv.org/con
 ### Where can I get sample data?
 
 We are organizing a benchmark dataset for individual tree crown prediction in RGB imagery from the National Ecological Observation Network: https://github.com/weecology/NeonTreeEvaluation
-
-## Gallery
-
-DeepForest is an open-source tool that depends on engagement from the community. If you use DeepForest, please consider uploading an image to be shown in the gallery. This way the developers, and potential funding sources, can gather understanding on the kinds of images and use-cases. To upload, submit a new [issue](https://github.com/weecology/DeepForest/issues/49) on github.
-
-[DeepForest Gallery](https://weecology.github.io/DeepForest/)
