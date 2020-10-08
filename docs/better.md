@@ -22,6 +22,11 @@ Here is 1000 px patches.
 
 improved.
 
+For more on this theme see:
+https://github.com/weecology/DeepForest_demos/blob/master/street_tree/StreetTrees.ipynb
+
+The cross-resolution prediction remains an open area of debate and should be explored carefully. For images similar to the 10cm data used to train the release model, keeping a 40m focal view is likely a good choice. For coarser resolutions, the answer will be best found through trial and error, but is almost certainly a wider field of view. This is likely less of an issue if you retrain the model based on data at the desired resolution, rather than directly use the release model to predict trees at novel resolutions.
+
 ## IoU threshold
 
 Object detection models have no inherent logic about overlapping bounding box proposals. For tree crown detection, we expect trees in dense forests to have some overlap, but not be completely intertwined. We therefore apply a postprocessing filter called ‘non-max-suppression’, which is a common approach in the broader computer vision literature. This routine starts with the boxes with the highest confidence scores and removes any overlapping boxes greater than the intersection-over-union threshold (IoU). Intersection-over-union is the most common object detection metric, defined as the area of intersection between two boxes divided by the area of union. If users find that there is too much overlap among boxes, increasing the IoU will return fewer boxes. To in-crease the number of overlapping boxes, reduce the IoU threshold.
