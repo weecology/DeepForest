@@ -12,7 +12,7 @@ from deepforest import preprocess
 from deepforest import utilities
 
 
-@pytest.fixture("module")
+@pytest.fixture()
 def config():
     config = utilities.read_config(get_data("deepforest_config.yml"))
     config["patch_size"] = 200
