@@ -24,7 +24,7 @@ DeepForest uses xml files produced by the commonly used annotation program RectL
 
 ![](../www/rectlabel.png)
 
-For annotations made in RectLabel, DeepForest has a parse function ```preprocess.xml_to_annotations```.
+For annotations made in RectLabel, DeepForest has a parse function ```utilities.xml_to_annotations```.
 
 An alternative annotator is labelme, which works for mac, windows and ubuntu. Users report that [annotation export in VOC format](https://github.com/wkentaro/labelme/tree/master/examples/bbox_detection) can be parsed by the xml_to_annotations function above.
 
