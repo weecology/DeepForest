@@ -20,7 +20,8 @@ def predict_image(model,
                   max_detections=200,
                   return_plot=True,
                   classes={"0": "Tree"},
-                  color=None):
+                  color=None,
+                  thickness=1):
     """Predict invidiual tree crown bounding boxes for a single image.
 
     Args:
@@ -37,6 +38,7 @@ def predict_image(model,
             boxes as a numpy array
         classes: classes default 0 to Tree
         color: color default none
+        thickness: thickness of boundingbox default 1
 
     Returns:
         raw_image (array): If return_plot is TRUE, the image with the overlaid
@@ -112,7 +114,8 @@ def predict_image(model,
                         image_labels,
                         label_to_name=None,
                         score_threshold=score_threshold,
-                        color=color)
+                        color=color,
+                        thickness=thickness)
         return numpy_image
     else:
         return df
