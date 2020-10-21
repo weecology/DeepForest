@@ -17,6 +17,7 @@ with warnings.catch_warnings():
 import pandas as pd
 import cv2
 import numpy as np
+from tqdm import tqdm
 from matplotlib import pyplot as plt
 
 from deepforest import get_data
@@ -431,7 +432,7 @@ class deepforest:
         # Save images to tmpdir
         predicted_boxes = []
 
-        for index, window in enumerate(windows):
+        for index, window in enumerate(tqdm(windows)):
             # Crop window and predict
             crop = numpy_image[windows[index].indices()]
 
