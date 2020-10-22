@@ -55,18 +55,22 @@ def _compute_ap(recall, precision):
     return ap
 
 
-def _get_detections(generator, model, score_threshold=0.05, max_detections=100, save_path=None, comet_experiment=None):
+def _get_detections(generator, model, score_threshold=0.05, max_detections=100, save_path=None, comet_experiment=None, color_annotation=(0,0,0), color_detection=None, thickness_annotate=1, thickness_detect=1):
     """ Get the detections from the model using the generator.
 
     The result is a list of lists such that the size is:
         all_detections[num_images][num_classes] = detections[num_detections, 4 + num_classes]
 
     # Arguments
-        generator       : The generator used to run images through the model.
-        model           : The model to run on the images.
-        score_threshold : The score confidence threshold to use.
-        max_detections  : The maximum number of detections to use per image.
-        save_path       : The path to save the images with visualized detections to.
+        generator         : The generator used to run images through the model.
+        model             : The model to run on the images.
+        score_threshold   : The score confidence threshold to use.
+        max_detections    : The maximum number of detections to use per image.
+        save_path         : The path to save the images with visualized detections to.
+        color_annotation  : The color used for manual annotation, by default is black.
+        color_detection   : The color used for model prediction label, by default the color from keras_retinanet.utils.colors.label_color will be used.
+        thickness_annotate: The thickness of the lines to draw a annotation box with.
+        thickness_detect  : The thickness of the lines to draw a detection box with.
     # Returns
         A list of lists containing the detections for each image in the generator.
     """
@@ -102,8 +106,8 @@ def _get_detections(generator, model, score_threshold=0.05, max_detections=100, 
         image_detections = np.concatenate([image_boxes, np.expand_dims(image_scores, axis=1), np.expand_dims(image_labels, axis=1)], axis=1)
 
         if save_path is not None:
-            draw_annotations(raw_image, generator.load_annotations(i), label_to_name=generator.label_to_name)
-            draw_detections(raw_image, image_boxes, image_scores, image_labels, label_to_name=generator.label_to_name, score_threshold=score_threshold)
+            draw_annotations(raw_image, generator.load_annotations(i),color=color_annotation, label_to_name=generator.label_to_name,thickness=thickness_annotate)
+            draw_detections(raw_image, image_boxes, image_scores, image_labels, color=color_detection, label_to_name=generator.label_to_name, score_threshold=score_threshold, thickness=thickness_detect)
             
             image_path = os.path.join(save_path, '{}.png'.format(i))
             cv2.imwrite(image_path, raw_image)
@@ -157,23 +161,32 @@ def evaluate(
     score_threshold=0.05,
     max_detections=100,
     save_path=None,
-    comet_experiment=None
+    comet_experiment=None,
+    color_annotation=(0,0,0),
+    color_detection=None,
+    thickness_annotate=1,
+    thickness_detect=1
 ):
     """ Evaluate a given dataset using a given model.
 
     # Arguments
-        generator       : The generator that represents the dataset to evaluate.
-        model           : The model to evaluate.
-        iou_threshold   : The threshold used to consider when a detection is positive or negative.
-        score_threshold : The score confidence threshold to use for detections.
-        max_detections  : The maximum number of detections to use per image.
-        save_path       : The path to save images with visualized detections to.
-        comet_experiment: A cometml object to log images
+        generator         : The generator that represents the dataset to evaluate.
+        model             : The model to evaluate.
+        iou_threshold     : The threshold used to consider when a detection is positive or negative.
+        score_threshold   : The score confidence threshold to use for detections.
+        max_detections    : The maximum number of detections to use per image.
+        save_path         : The path to save images with visualized detections to.
+        comet_experiment  : A cometml object to log images
+        color_annotation  : The color used for manual annotation, by default is black.
+        color_detection   : The color used for model prediction label, by default the color from keras_retinanet.utils.colors.label_color will be used.
+        thickness_annotate: The thickness of the lines to draw a annotation box with.
+        thickness_detect  : The thickness of the lines to draw a detection box with.
     # Returns
         A dict mapping class names to mAP scores.
     """
     # gather all detections and annotations
-    all_detections     = _get_detections(generator, model, score_threshold=score_threshold, max_detections=max_detections, save_path=save_path, comet_experiment=comet_experiment)
+    all_detections     = _get_detections(generator, model, score_threshold=score_threshold, max_detections=max_detections, save_path=save_path, comet_experiment=comet_experiment, 
+                                                           color_annotation=color_annotation, color_detection=color_detection, thickness_annotate=thickness_annotate, thickness_detect=thickness_detect)
     all_annotations    = _get_annotations(generator)
     average_precisions = {}
 
