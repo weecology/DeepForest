@@ -81,7 +81,7 @@ def draw_detections(image, boxes, scores, labels, color=None, label_to_name=None
         #draw_caption(image, boxes[i, :], caption)
 
 
-def draw_annotations(image, annotations, color=(0, 0, 0), label_to_name=None):
+def draw_annotations(image, annotations, color=(0, 0, 0), label_to_name=None, thickness=1):
     """ Draws annotations in an image.
 
     # Arguments
@@ -89,6 +89,7 @@ def draw_annotations(image, annotations, color=(0, 0, 0), label_to_name=None):
         annotations   : A [N, 5] matrix (x1, y1, x2, y2, label) or dictionary containing bboxes (shaped [N, 4]) and labels (shaped [N]).
         color         : The color of the boxes. By default the color from keras_retinanet.utils.colors.label_color will be used.
         label_to_name : (optional) Functor for mapping a label to a name.
+        thickness     : The thickness of the lines to draw boxes with.
     """
     if isinstance(annotations, np.ndarray):
         annotations = {'bboxes': annotations[:, :4], 'labels': annotations[:, 4]}
@@ -102,4 +103,4 @@ def draw_annotations(image, annotations, color=(0, 0, 0), label_to_name=None):
         c       = color if color is not None else label_color(label)
         #caption = '{}'.format(label_to_name(label) if label_to_name else label)
         #draw_caption(image, annotations['bboxes'][i], caption)
-        draw_box(image, annotations['bboxes'][i], color=c)
+        draw_box(image, annotations['bboxes'][i], color=c, thickness=thickness)
