@@ -17,6 +17,7 @@ with warnings.catch_warnings():
 import pandas as pd
 import cv2
 import numpy as np
+from tqdm import tqdm
 from matplotlib import pyplot as plt
 
 from deepforest import get_data
@@ -270,7 +271,11 @@ class deepforest:
                            annotations,
                            comet_experiment=None,
                            iou_threshold=0.5,
-                           max_detections=200):
+                           max_detections=200,
+                           color_annotation=(0,0,0),
+                           color_detection=None,
+                           thickness_annotate=1,
+                           thickness_detect=1):
         """Evaluate prediction model using a csv fit_generator.
 
         Args:
@@ -280,7 +285,10 @@ class deepforest:
             iou_threshold(float): IoU Threshold to count for a positive detection
                 (defaults to 0.5)
             max_detections (int): Maximum number of bounding box predictions
-
+            color_annotation  : The color used for manual annotation, by default is black.
+            color_detection   : The color used for model prediction label, by default the color from keras_retinanet.utils.colors.label_color will be used.
+            thickness_annotate: The thickness of the lines to draw a annotation box with.
+            thickness_detect  : The thickness of the lines to draw a detection box with.
         Return:
             mAP: Mean average precision of the evaluated data
         """
@@ -305,7 +313,11 @@ class deepforest:
                                       score_threshold=args.score_threshold,
                                       max_detections=max_detections,
                                       save_path=args.save_path,
-                                      comet_experiment=comet_experiment)
+                                      comet_experiment=comet_experiment,
+                                      color_annotation=color_annotation,
+                                      color_detection=color_detection,
+                                      thickness_annotate=thickness_annotate,
+                                      thickness_detect=thickness_detect)
 
         # print evaluation
         total_instances = []
@@ -431,7 +443,7 @@ class deepforest:
         # Save images to tmpdir
         predicted_boxes = []
 
-        for index, window in enumerate(windows):
+        for index, window in enumerate(tqdm(windows)):
             # Crop window and predict
             crop = numpy_image[windows[index].indices()]
 

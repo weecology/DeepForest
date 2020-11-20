@@ -10,7 +10,7 @@ dependencies:
   - pytest
   - numpydoc
   - cython>=0.28
-  - h5py
+  - h5py=2.10.0
   - xmltodict
   - tqdm
   - numpy

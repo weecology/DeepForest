@@ -136,7 +136,7 @@ test_model.model.save("snapshots/final_model.h5")
 
 Thanks to Microsoft AI4Earth grant for hosting a azure web demo of the trained model.
 
-http://tree.westus.cloudapp.azure.com/shiny/
+http://tree.westus.cloudapp.azure.com/trees/
 
 ## License
 * Free software: [MIT license](https://github.com/weecology/DeepForest/blob/master/LICENSE)
