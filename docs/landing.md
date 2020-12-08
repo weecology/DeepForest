@@ -25,7 +25,7 @@ img=model.predict_image(<path_to_image>,return_plot=True)
 ## Demo
 For a quick example of model performance on sample images, see our demo shiny app. Please note that the model continues to improve and the app model may not reflect results from the current release.
 
-[http://tree.westus.cloudapp.azure.com/shiny/](http://tree.westus.cloudapp.azure.com/shiny/)
+[http://tree.westus.cloudapp.azure.com/trees/](http://tree.westus.cloudapp.azure.com/trees/)
 
 ## License
 Free software: [MIT license](https://github.com/weecology/DeepForest/blob/master/LICENSE)
