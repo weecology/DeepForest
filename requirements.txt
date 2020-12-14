@@ -25,4 +25,3 @@ keras==2.3.0
 keras-resnet
 opencv-python
 slidingwindow
-git+git://github.com/bw4sz/keras-retinanet.git
