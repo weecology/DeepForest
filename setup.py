@@ -103,7 +103,7 @@ setup(name=NAME,
       packages=find_packages(),
       include_package_data=True,
       cmdclass         = {'build_ext': BuildExtension},
-      install_requires=["tensorflow==1.14.0","keras==2.3.0","keras-resnet==0.1.0","h5py==2.10.0","matplotlib","opencv-python","Pillow","pandas","pyyaml>5.1.0","progressbar2","six","scipy","slidingwindow","tqdm","xmltodict"],
+      install_requires=["tensorflow==2.4.0","keras==2.3.0","keras-resnet==0.1.0","h5py==2.10.0","matplotlib","opencv-python","Pillow","pandas","pyyaml>5.1.0","progressbar2","six","scipy","slidingwindow","tqdm","xmltodict"],
       ext_modules    = extensions,
       setup_requires = ["cython>=0.28", "numpy>=1.14.0"],
       zip_safe=False)
