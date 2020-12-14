@@ -6,7 +6,7 @@ dependencies:
   - python=3.6
   - sphinx
   - recommonmark
-  - pyyaml
+  - pyyaml>=5.1.0
   - pytest
   - numpydoc
   - cython>=0.28

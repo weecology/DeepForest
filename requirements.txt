@@ -10,7 +10,7 @@ pip
 progressbar2
 psutil
 pytest
-pyyaml
+pyyaml>=5.1.0
 recommonmark
 sphinx
 sphinx-markdown-tables
