@@ -1,0 +1,79 @@
+# Python package
+# Create and test a Python package on multiple Python versions.
+# Add steps that analyze code, save the dist with the build record, publish to a PyPI-compatible index, and more:
+# https://docs.microsoft.com/azure/devops/pipelines/languages/python
+
+#Trigger on pull requests from master
+pr:
+- master
+
+trigger:
+  branches:
+    include:
+    - refs/tags/*
+
+variables:
+  CIBW_SKIP: 'cp27-* cp35-*'
+
+jobs:
+- job: Testing
+  pool:
+    vmImage: 'ubuntu-latest'
+    
+  steps:
+  - bash: echo "##vso[task.prependpath]$CONDA/bin"
+    displayName: Add conda to PATH
+  
+  - script: |
+      python -m pip install --upgrade pip
+      conda env create --file=environment.yml
+      conda init bash
+      source activate DeepForest_pytorch
+    displayName: 'Create Conda environment for DeepForest'
+  
+  - script: |
+      source activate DeepForest_pytorch
+      pip install pytest pytest-azurepipelines
+      pytest
+    displayName: 'pytest'
+    
+  - bash: |
+      source activate DeepForest
+      python3 setup.py sdist
+      
+  - task: PublishBuildArtifacts@1
+    inputs: {pathtoPublish: 'dist'}
+  displayName: 'source distribution'
+    
+- job: linux
+  pool: {vmImage: 'Ubuntu-16.04'}
+  steps:
+    - task: UsePythonVersion@0
+    - bash: |
+        python -m pip install --upgrade pip
+        pip install cibuildwheel==1.1.0
+        cibuildwheel --output-dir wheelhouse .
+    - task: PublishBuildArtifacts@1
+      inputs: {pathtoPublish: 'wheelhouse'}
+- job: macos
+  pool: {vmImage: 'macOS-10.14'}
+  steps:
+    - task: UsePythonVersion@0
+    - bash: |
+        python -m pip install --upgrade pip
+        pip install cibuildwheel==1.1.0
+        cibuildwheel --output-dir wheelhouse .
+    - task: PublishBuildArtifacts@1
+      inputs: {pathtoPublish: 'wheelhouse'}
+- job: windows
+  pool: {vmImage: 'vs2017-win2016'}
+  steps:
+    - task: UsePythonVersion@0
+    - script: choco install vcpython27 -f -y
+      displayName: Install Visual C++ for Python 2.7
+    - bash: |
+        python -m pip install --upgrade pip
+        pip install cibuildwheel==1.1.0
+        cibuildwheel --output-dir wheelhouse .
+    - task: PublishBuildArtifacts@1
+      inputs: {pathtoPublish: 'wheelhouse'}

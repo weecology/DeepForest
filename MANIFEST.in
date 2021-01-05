@@ -1,0 +1,13 @@
+include deepforest/data/deepforest_config.yml
+include deepforest/data/testfile_deepforest.csv
+include deepforest/data/testfile_multi.csv
+include deepforest/data/classes.csv
+include deepforest/data/OSBS_029*
+include deepforest/data/SOAP_031*
+include deepforest/data/SOAP_061*
+include deepforest/data/2019_YELL_2_541000_4977000_image_crop.tiff
+include deepforest/data/2019_YELL_2_541000_4977000_image_crop.xml
+include deepforest/data/2019_YELL_2_528000_4978000_image_crop2.tiff
+include deepforest/data/2019_YELL_2_528000_4978000_image_crop2.xml
+include LICENSE
+include requirements.txt
