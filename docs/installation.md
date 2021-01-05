@@ -6,7 +6,7 @@ DeepForest has Windows, Linux and OSX prebuilt wheels on pypi. We *strongly* rec
 pip install DeepForest
 ```
 
-*UPDATE* 1/5/2021 - Pip is not respecting the tensorflow 1.14.0 (). If you choose to pip install, you need to manually force it afterwards. This is known and being investigated (https://github.com/weecology/DeepForest/issues/153). 
+*UPDATE* 1/5/2021 - Pip is not respecting the tensorflow 1.14.0. If you choose to pip install, you need to manually force it afterwards. This is known and being investigated (https://github.com/weecology/DeepForest/issues/153). 
 
 add 
 ```
