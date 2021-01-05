@@ -6,14 +6,6 @@ DeepForest has Windows, Linux and OSX prebuilt wheels on pypi. We *strongly* rec
 pip install DeepForest
 ```
 
-*UPDATE* 1/5/2021 - Pip is not respecting the tensorflow 1.14.0. If you choose to pip install, you need to manually force it afterwards. This is known and being investigated (https://github.com/weecology/DeepForest/issues/153). 
-
-add 
-```
-pip install tensorflow==1.14.0 
-```
-Please leave a note on the issue if this was successful/failure. Alternatively, all tests have passed on the conda install below.
-
 DeepForest is also available on conda-forge to help users compile code and manage dependencies. Conda builds are currently available for windows, osx and linux, python 3.6 or 3.7. For help installing conda see: [conda quickstart](https://docs.conda.io/projects/conda/en/latest/user-guide/install/).
 
 For example, to create a env test with python 3.7
