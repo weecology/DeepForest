@@ -277,7 +277,7 @@ class deepforest:
                            thickness_annotate=1,
                            thickness_detect=1):
         """Evaluate prediction model using a csv fit_generator.
-
+        To save the predictions to file, provide a valid save_path to the deepforest config. 
         Args:
             annotations (str): Path to csv label file, labels are in the
                 format -> path/to/image.png,x1,y1,x2,y2,class_name
