@@ -23,26 +23,27 @@ def config():
     config["path_to_raster"] = get_data("OSBS_029.tif")
 
     # Create a clean config test data
-    annotations = utilities.xml_to_annotations(xml_path=config["annotations_xml"])
+    annotations = utilities.xml_to_annotations(
+        xml_path=config["annotations_xml"])
     annotations.to_csv("tests/data/OSBS_029.csv", index=False)
 
     return config
 
 
 @pytest.fixture()
-def numpy_image(config):
+def image(config):
     raster = Image.open(config["path_to_raster"])
     return np.array(raster)
 
 
-def test_compute_windows(config, numpy_image):
-    windows = preprocess.compute_windows(numpy_image, config["patch_size"],
+def test_compute_windows(config, image):
+    windows = preprocess.compute_windows(image, config["patch_size"],
                                          config["patch_overlap"])
     assert len(windows) == 9
 
 
-def test_select_annotations(config, numpy_image):
-    windows = preprocess.compute_windows(numpy_image, config["patch_size"],
+def test_select_annotations(config, image):
+    windows = preprocess.compute_windows(image, config["patch_size"],
                                          config["patch_overlap"])
     image_annotations = pd.read_csv("tests/data/OSBS_029.csv")
     selected_annotations = preprocess.select_annotations(image_annotations,
@@ -56,9 +57,9 @@ def test_select_annotations(config, numpy_image):
     assert selected_annotations.image_path.unique()[0] == "OSBS_029_7.png"
 
 
-def test_select_annotations_tile(config, numpy_image):
+def test_select_annotations_tile(config, image):
     config["patch_size"] = 50
-    windows = preprocess.compute_windows(numpy_image, config["patch_size"],
+    windows = preprocess.compute_windows(image, config["patch_size"],
                                          config["patch_overlap"])
     image_annotations = pd.read_csv("tests/data/OSBS_029.csv")
     selected_annotations = preprocess.select_annotations(image_annotations,
@@ -74,7 +75,8 @@ def test_select_annotations_tile(config, numpy_image):
 
 def test_split_raster(config):
     annotations_file = preprocess.split_raster(config["path_to_raster"],
-                                               config["annotations_file"], "tests/data/",
+                                               config["annotations_file"],
+                                               "tests/data/",
                                                config["patch_size"],
                                                config["patch_overlap"])
 
@@ -100,22 +102,24 @@ def test_split_raster_empty(config):
 
     # Ignore blanks
     with pytest.raises(ValueError):
-        annotations_file = preprocess.split_raster(config["path_to_raster"],
-                                                   "tests/data/blank_annotations.csv",
-                                                   "tests/output/empty/",
-                                                   config["patch_size"],
-                                                   config["patch_overlap"],
-                                                   allow_empty=False)
+        annotations_file = preprocess.split_raster(
+            config["path_to_raster"],
+            "tests/data/blank_annotations.csv",
+            "tests/output/empty/",
+            config["patch_size"],
+            config["patch_overlap"],
+            allow_empty=False)
         assert annotations_file.shape[0] == 0
     assert not os.path.exists("tests/output/empty/OSBS_029_1.png")
 
     # Include blanks
-    annotations_file = preprocess.split_raster(config["path_to_raster"],
-                                               "tests/data/blank_annotations.csv",
-                                               "tests/output/empty/",
-                                               config["patch_size"],
-                                               config["patch_overlap"],
-                                               allow_empty=True)
+    annotations_file = preprocess.split_raster(
+        config["path_to_raster"],
+        "tests/data/blank_annotations.csv",
+        "tests/output/empty/",
+        config["patch_size"],
+        config["patch_overlap"],
+        allow_empty=True)
     assert annotations_file.shape[0] > 0
     assert os.path.exists("tests/output/empty/OSBS_029_1.png")
 

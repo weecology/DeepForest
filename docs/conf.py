@@ -75,14 +75,15 @@ htmlhelp_basename = 'deepforestdoc'
 
 latex_elements = {}
 latex_documents = [
-    (master_doc, 'deepforest.tex', u'DeepForest Documentation', u'Ben Weinstein',
-     'manual'),
+    (master_doc, 'deepforest.tex', u'DeepForest Documentation',
+     u'Ben Weinstein', 'manual'),
 ]
 
 # -- Options for manual page output ------------------------------------
 
 # One entry per manual page. List of tuples
-man_pages = [(master_doc, 'deepforest', u'DeepForest Documentation', [author], 1)]
+man_pages = [(master_doc, 'deepforest', u'DeepForest Documentation', [author],
+              1)]
 
 # -- Options for Texinfo output ----------------------------------------
 
@@ -90,11 +91,11 @@ man_pages = [(master_doc, 'deepforest', u'DeepForest Documentation', [author], 1
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'deepforest', u'DeepForest Documentation', author, 'deepforest',
-     'One line description of project.', 'Miscellaneous'),
+    (master_doc, 'deepforest', u'DeepForest Documentation', author,
+     'deepforest', 'One line description of project.', 'Miscellaneous'),
 ]
 
-autodoc_mock_imports = ["tensorflow", "keras","deepforest.keras_retinanet"]
+autodoc_mock_imports = ["tensorflow", "keras", "deepforest.keras_retinanet"]
 source_suffix = {
     '.rst': 'restructuredtext',
     '.md': 'markdown',
@@ -105,7 +106,6 @@ source_suffix = {
 
 
 class CustomCommonMarkParser(CommonMarkParser):
-
     def visit_document(self, node):
         pass
 

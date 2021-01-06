@@ -2,13 +2,17 @@
 Utilities model
 """
 import json
+import numpy as np
 import os
 import pandas as pd
 import urllib
 from tqdm import tqdm
+import xmltodict
+import warnings
 import yaml
 
 from deepforest import _ROOT
+
 
 def read_config(config_path):
     try:
@@ -24,7 +28,6 @@ def read_config(config_path):
 
 class DownloadProgressBar(tqdm):
     """Download progress bar class."""
-
     def update_to(self, b=1, bsize=1, tsize=None):
         if tsize is not None:
             self.total = tsize
@@ -66,14 +69,17 @@ def use_release(save_dir=os.path.join(_ROOT, "data/"), prebuilt_model="NEON"):
     # Download the current release it doesn't exist
     if not release_txt.current_release[0] == _json["html_url"]:
 
-        print("Downloading model from DeepForest release {}, see {} for details".format(
-            _json["tag_name"], _json["html_url"]))
+        print(
+            "Downloading model from DeepForest release {}, see {} for details".
+            format(_json["tag_name"], _json["html_url"]))
 
         with DownloadProgressBar(unit='B',
                                  unit_scale=True,
                                  miniters=1,
                                  desc=url.split('/')[-1]) as t:
-            urllib.request.urlretrieve(url, filename=output_path, reporthook=t.update_to)
+            urllib.request.urlretrieve(url,
+                                       filename=output_path,
+                                       reporthook=t.update_to)
 
         print("Model was downloaded and saved to {}".format(output_path))
 
@@ -85,6 +91,7 @@ def use_release(save_dir=os.path.join(_ROOT, "data/"), prebuilt_model="NEON"):
               "Loading model from file.".format(_json["html_url"]))
 
     return _json["html_url"], output_path
+
 
 def xml_to_annotations(xml_path):
     """Load annotations from xml format (e.g. RectLabel editor) and convert
@@ -166,6 +173,7 @@ def round_with_floats(x):
         result = int(np.round(float(x)))
 
     return result
+
 
 def load_saved_model():
     pass

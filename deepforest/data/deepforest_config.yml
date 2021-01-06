@@ -3,6 +3,8 @@
 # The following arguments
 ###
 
+image_dir: #Directory of images to load
+
 ### Training
 ### Batch size. If multi-gpu is > 1, this is the total number of images per batch across all GPUs. Must be evenly divisible by multi-gpu. 
 batch_size: 1 

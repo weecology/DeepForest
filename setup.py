@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 import setuptools
 from distutils.command.build_ext import build_ext as DistUtilsBuildExt
 
-NAME ='deepforest'
+NAME = 'deepforest'
 VERSION = '0.3.4'
 DESCRIPTION = 'Tree crown prediction using deep learning retinanets'
 URL = 'https://github.com/Weecology/DeepForest-pytorch'
@@ -54,12 +54,16 @@ setup(name=NAME,
       version=VERSION,
       python_requires='>3.5',
       description=DESCRIPTION,
-      long_description = LONG_DESCRIPTION,
+      long_description=LONG_DESCRIPTION,
       long_description_content_type='text/markdown',
       url=URL,
       author=AUTHOR,
       license=LICENCE,
       packages=find_packages(),
       include_package_data=True,
-      install_requires=["pytorch","torchvision","matplotlib","opencv","Pillow","pandas","pyyaml>5.1.0","progressbar2","six","scipy","slidingwindow","tqdm","xmltodict","numpy"],
+      install_requires=[
+          "pytorch", "torchvision", "matplotlib", "opencv", "Pillow", "pandas",
+          "pyyaml>5.1.0", "progressbar2", "six", "scipy", "slidingwindow",
+          "tqdm", "xmltodict", "numpy"
+      ],
       zip_safe=False)
