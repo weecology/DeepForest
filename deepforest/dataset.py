@@ -17,6 +17,7 @@ import pandas as pd
 from skimage import io
 from torch.utils.data import Dataset
 from deepforest import transforms as T
+from deepforest.preprocess import preprocess_image
 
 def get_transform(train):
     transforms = []
@@ -49,10 +50,8 @@ class TreeDataset(Dataset):
         path = self.annotations.loc[idx, "image_path"]
         img_name = os.path.join(self.root_dir, path)
         image = io.imread(img_name)
-
-        #rescale to 0-1
-        image = image/255
-
+        image = image/255   
+        
         #select annotations
         image_annotations = self.annotations[self.annotations.image_path ==
                                              path]

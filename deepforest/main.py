@@ -1,7 +1,8 @@
 #entry point for deepforest model
 import os
-import torch
+import pandas as pd
 from skimage import io
+from matplotlib import pyplot
 
 from deepforest import utilities
 from deepforest import dataset
@@ -85,14 +86,57 @@ class deepforest:
         df = df[df.scores > score_threshold]
         
         if return_plot:
-            img  = visualize.plot_predictions(image, df)
-            return img
+            #Matplotlib likes no batch dim and channels first
+            image = image.squeeze(0).permute(1,2,0)
+            plot  = visualize.plot_predictions(image, df)
+            return plot
         else:
             return df
                                                  
-    def predict_file(self, file):
-        """Create a dataset and predict entire annotation file"""
-        pass
+    def predict_file(self, csv_file, root_dir, save_dir=None):
+        """Create a dataset and predict entire annotation file
+        
+        Csv file format is .csv file with the columns "image_path", "xmin","ymin","xmax","ymax" for the image name and bounding box position. 
+        Image_path is the relative filename, not absolute path, which is in the root_dir directory. One bounding box per line. 
+        
+        Args:
+            csv_file: path to csv file 
+            root_dir: directory of images. If none, uses "image_dir" in config
+            savedir: Optional. Directory to save image plots.
+        Returns:
+            df: pandas dataframe with bounding boxes, label and scores for each image in the csv file
+        """
+        
+        self.backbone.eval()
+        input_csv = pd.read_csv(csv_file)
+        
+        #Just predict each image once. 
+        images = input_csv.image_path.unique() 
+        
+        if root_dir is None:
+            root_dir = self.config["image_dir"]
+        
+        prediction_list = []
+        for path in images:
+            image = io.imread("{}/{}".format(root_dir,path))
+            image = preprocess.preprocess_image(image)
+            
+            #Just predict the images, even though we have the annotations
+            prediction = self.backbone(image)
+            prediction = visualize.format_predictions(prediction[0])
+            prediction["image_path"] = path
+            prediction_list.append(prediction)
+            
+            if save_dir:
+                image = image.squeeze(0).permute(1,2,0)                
+                plot = visualize.plot_predictions(image, prediction)
+                annotations = input_csv[input_csv.image_path==path]
+                plot = visualize.add_annotations(plot,annotations)
+                pyplot.savefig("{}/{}.png".format(save_dir,os.path.splitext(path)[0]))
+            
+        df = pd.concat(prediction_list,ignore_index=True)
+        
+        return df
     
     def predict_tile(self,
                      raster_path=None,
