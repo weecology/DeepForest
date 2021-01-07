@@ -50,12 +50,13 @@ def train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq):
 
     return metric_logger
 
-def run(train_ds, model, config):
+def run(train_ds, model, config, debug=False):
     """Train a Deepforest model in pytorch
     Args:
         train_ds: a pytorch dataset, see main.load_dataset
         model: a deepforest model see main.create() or main.load_model()
         config: a deepforest config object
+        debug: used for tests, to keep training loop short. Take 1 batch from the data to train
     """
     
     #put model to device
@@ -71,9 +72,14 @@ def run(train_ds, model, config):
     train_batch_sampler = torch.utils.data.BatchSampler(
         train_sampler, config["batch_size"], drop_last=True)
     
-    data_loader_train = torch.utils.data.DataLoader(
-        train_ds, batch_sampler=train_batch_sampler, num_workers=config["workers"],
-        collate_fn=utils.collate_fn)
+    if debug:
+        data_loader_train = torch.utils.data.DataLoader(
+            train_ds, sampler=torch.utils.data.sampler.SubsetRandomSampler([1]), num_workers=config["workers"],
+            collate_fn=utils.collate_fn)        
+    else:
+        data_loader_train = torch.utils.data.DataLoader(
+            train_ds, batch_sampler=train_batch_sampler, num_workers=config["workers"],
+            collate_fn=utils.collate_fn)        
     
     num_epochs = config["epochs"]
     for epoch in range(num_epochs):

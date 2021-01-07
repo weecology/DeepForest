@@ -20,4 +20,4 @@ def test_main():
     from deepforest import main
 
 def test_train(model):
-    model.train()
+    model.train(debug=True)

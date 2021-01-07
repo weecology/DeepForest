@@ -101,9 +101,9 @@ class deepforest:
                               root_dir=root_dir,
                               transforms=dataset.get_transform(train=train))
 
-    def train(self):
+    def train(self, debug=False):
         """Train on a loaded dataset"""
-        training.run(train_ds=self.ds, model=self.backbone, config=self.config)
+        training.run(train_ds=self.ds, model=self.backbone, config=self.config, debug=debug)
         #check is dataset has been created?
 
         #check is model has been created?
