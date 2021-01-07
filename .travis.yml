@@ -13,7 +13,7 @@ before_install:
 
 install:
 - conda env create --file=environment.yml
-- source activate DeepForest-pytorch
+- source activate DeepForest_pytorch
 env: TRAVIS=true
 script:
 - pytest 
