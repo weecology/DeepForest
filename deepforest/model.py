@@ -1,6 +1,5 @@
 #Model
 import torchvision
-import torchvision.transforms as transforms
 import torch
 import cv2
 import numpy as np

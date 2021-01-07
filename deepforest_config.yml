@@ -3,6 +3,9 @@
 # The following arguments
 ###
 
+#directory of images to default if not specific in model.load_dataset
+image_dir: 
+
 ### Training
 ### Batch size. If multi-gpu is > 1, this is the total number of images per batch across all GPUs. Must be evenly divisible by multi-gpu. 
 batch_size: 1 
@@ -22,16 +25,17 @@ validation_annotations: None
 freeze_layers: 0
 ###Freeze resnet backbone entirely.
 freeze_resnet: False
+#Learning rate
+lr: 0.001
+#Frequently to announce loss, every n epochs.
+print_freq: 1
 
 ###Evaluation
 ###Score threshold, above which bounding boxes are included in evaluation predictions
 score_threshold: 0.05
 
-#Keras fit_generator methods, these do not apply to tfrecords input_type
-multiprocessing: False 
+#Pytorch dataset methods
 workers: 1
-max_queue_size: 10
-random_transform: False
 
 #save snapshot and images
 ###Whether to save snapshots at the end of each epoch

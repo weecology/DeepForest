@@ -2,7 +2,7 @@
 import os
 
 from deepforest import utilities
-from deepforest.dataset import TreeDataset
+from deepforest import dataset
 from deepforest import get_data
 from deepforest import training
 from deepforest import model
@@ -81,7 +81,7 @@ class deepforest:
         pass
         
 
-    def load_dataset(self, csv_file, root_dir=None, transforms=None):
+    def load_dataset(self, csv_file, root_dir=None, train=False):
         """Create a tree dataset for inference
         Csv file format is .csv file with the columns "image_path", "xmin","ymin","xmax","ymax" for the image name and bounding box position. 
         Image_path is the relative filename, not absolute path, which is in the root_dir directory. One bounding box per line. 
@@ -89,21 +89,21 @@ class deepforest:
         Args:
             csv_file: path to csv file 
             root_dir: directory of images. If none, uses "image_dir" in config
-            transforms: a torchvision transforms function to compose augmentations
+            train: Whether to create a training dataset, this deactivates data augmentations
         Returns:
             self.ds: a pytorch dataset
         """
         
         if root_dir is None:
             root_dir = self.config["image_dir"]
-            
-        self.ds = TreeDataset(csv_file=csv_file,
+                
+        self.ds = dataset.TreeDataset(csv_file=csv_file,
                               root_dir=root_dir,
-                              transforms=transforms)
+                              transforms=dataset.get_transform(train=train))
 
     def train(self):
         """Train on a loaded dataset"""
-        training.run(ds=self.ds, model=self.backbone, config=self.config)
+        training.run(train_ds=self.ds, model=self.backbone, config=self.config)
         #check is dataset has been created?
 
         #check is model has been created?

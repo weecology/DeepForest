@@ -16,7 +16,19 @@ import os
 import pandas as pd
 from skimage import io
 from torch.utils.data import Dataset
+from deepforest import transforms as T
+import numpy as np
 
+def get_transform(train):
+    transforms = []
+    transforms.append(T.ToTensor())
+    if train:
+        transforms.append(T.RandomHorizontalFlip(0.5))
+    return T.Compose(transforms)
+
+idx_to_label = {
+    "Tree": 0
+}
 
 class TreeDataset(Dataset):
     def __init__(self, csv_file, root_dir, transforms):
@@ -27,7 +39,6 @@ class TreeDataset(Dataset):
             transform (callable, optional): Optional transform to be applied
                 on a sample.
         """
-
         self.annotations = pd.read_csv(csv_file)
         self.root_dir = root_dir
         self.transform = transforms
@@ -41,17 +52,19 @@ class TreeDataset(Dataset):
         image = io.imread(img_name)
 
         #rescale to 0-1
-        image = image / 255
+        image = image/255
 
         #select annotations
         image_annotations = self.annotations[self.annotations.image_path ==
                                              path]
-        boxes = image_annotations[["xmin", "ymin", "xmax",
+        targets = {}
+        targets["boxes"] = image_annotations[["xmin", "ymin", "xmax",
                                    "ymax"]].values.astype(float)
+        
+        #Labels need to be encoded? 0 or 1 indexed?, ALl tree for the moment.
+        targets["labels"] = image_annotations.label.apply(lambda x: idx_to_label[x]).values.astype(int)
 
         if self.transform:
-            image = self.transform(image)
+            image, targets = self.transform(image, targets)
 
-        sample = {'image': image, 'boxes': boxes}
-
-        return sample
+        return image, targets   
