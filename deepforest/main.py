@@ -1,6 +1,7 @@
 #entry point for deepforest model
 import os
 import torch
+from skimage import io
 
 from deepforest import utilities
 from deepforest import dataset
@@ -8,7 +9,7 @@ from deepforest import get_data
 from deepforest import training
 from deepforest import model
 from deepforest import preprocess
-
+from deepforest import visualize
 
 class deepforest:
     """Class for training and predicting tree crowns in RGB images
@@ -52,12 +53,43 @@ class deepforest:
         """Define a deepforest retinanet architecture"""
         self.backbone = model.load_backbone()
         
-    def predict_image(self, image):
-        """Predict an image with a deepforest model"""
-        self.backbone.eval()
+    def predict_image(self, image=None, path=None, return_plot=False,score_threshold=0.01):
+        """Predict an image with a deepforest model
+        Args:
+            image: a numpy array of a RGB image ranged from 0-255
+            path: optional path to read image from disk instead of passing image arg
+            return_plot: Return image with plotted detections
+            score_threshold: float [0,1] minimum probability score to return/plot.
+        Returns:
+            boxes: A pandas dataframe of predictions (Default)
+            img: The input with predictions overlaid (Optional)
+        """
+        if isinstance(image,str):
+            raise ValueError("Path provided instead of image. If you want to predict an image from disk, is path =")
+  
+        if path:
+            if not isinstance(path,str):
+                raise ValueError("Path expects a string path to image on disk")            
+            image = io.imread(path)
+        
+        self.backbone.eval()        
         image = preprocess.preprocess_image(image)
         prediction = self.backbone(image)
         
+        #return None for no predictions
+        if len(prediction[0]["boxes"])==0:
+            return None
+        
+        #This function on takes in a single image.
+        df = visualize.format_predictions(prediction[0])
+        df = df[df.scores > score_threshold]
+        
+        if return_plot:
+            img  = visualize.plot_predictions(image, df)
+            return img
+        else:
+            return df
+                                                 
     def predict_file(self, file):
         """Create a dataset and predict entire annotation file"""
         pass
