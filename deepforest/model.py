@@ -1,8 +1,6 @@
 #Model
 import torchvision
 import torch
-import cv2
-import numpy as np
 
 
 def load_backbone():
@@ -18,8 +16,4 @@ def create_model():
 
 
 def load_model():
-    pass
-
-
-def retinanet_train():
     pass

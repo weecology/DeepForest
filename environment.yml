@@ -25,5 +25,5 @@ dependencies:
   - torchvision
   - slidingwindow
   - bumpversion
-  - rasterio
+  - scikit-image
   

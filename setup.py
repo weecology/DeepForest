@@ -63,7 +63,7 @@ setup(name=NAME,
       include_package_data=True,
       install_requires=[
           "pytorch", "torchvision", "matplotlib", "opencv", "Pillow", "pandas",
-          "pyyaml>5.1.0", "progressbar2", "six", "scipy", "slidingwindow",
+          "pyyaml>5.1.0", "progressbar2", "six", "scipy", "slidingwindow","scikit-image"
           "tqdm", "xmltodict", "numpy"
       ],
       zip_safe=False)

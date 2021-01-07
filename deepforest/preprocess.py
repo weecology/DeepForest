@@ -8,12 +8,14 @@ import os
 
 import numpy as np
 import pandas as pd
-try:
-    import slidingwindow
-    from PIL import Image
-except:
-    pass
+import slidingwindow
+from PIL import Image
+import torch
 
+def preprocess_image(image):   
+    """Preprocess a single numpy array as a prediction"""
+    image = torch.tensor(image).unsqueeze(0)
+    image = image/255    
 
 def image_name_from_path(image_path):
     """Convert path to image name for use in indexing."""

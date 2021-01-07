@@ -1,11 +1,14 @@
 #entry point for deepforest model
 import os
+import torch
 
 from deepforest import utilities
 from deepforest import dataset
 from deepforest import get_data
 from deepforest import training
 from deepforest import model
+from deepforest import preprocess
+
 
 class deepforest:
     """Class for training and predicting tree crowns in RGB images
@@ -49,8 +52,14 @@ class deepforest:
         """Define a deepforest retinanet architecture"""
         self.backbone = model.load_backbone()
         
-    def predict_image(self):
+    def predict_image(self, image):
         """Predict an image with a deepforest model"""
+        self.backbone.eval()
+        image = preprocess.preprocess_image(image)
+        prediction = self.backbone(image)
+        
+    def predict_file(self, file):
+        """Create a dataset and predict entire annotation file"""
         pass
     
     def predict_tile(self,
@@ -103,10 +112,16 @@ class deepforest:
 
     def train(self, debug=False):
         """Train on a loaded dataset"""
-        training.run(train_ds=self.ds, model=self.backbone, config=self.config, debug=debug)
         #check is dataset has been created?
-
+        if not self.ds:
+            raise ValueError("Cannot train a model with first loading data, see deepforest.load_dataset(csv_file=<>)")
         #check is model has been created?
-
+        if not self.backbone:
+            raise ValueError("Cannot train a model with first creating a model instance, see deepforest.create_model().")
+        
+        self.backbone.train()
+        training.run(train_ds=self.ds, model=self.backbone, config=self.config, debug=debug)
+        
+        
     def evaluate(csv_file):
         pass

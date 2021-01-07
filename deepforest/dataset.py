@@ -17,7 +17,6 @@ import pandas as pd
 from skimage import io
 from torch.utils.data import Dataset
 from deepforest import transforms as T
-import numpy as np
 
 def get_transform(train):
     transforms = []
