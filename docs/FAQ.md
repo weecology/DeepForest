@@ -104,3 +104,22 @@ We have yet to find an example where this prevents DeepForest from operating suc
 ```
 
 These warnings are upstream of DeepForest and can be ignored. They are there for developers and future users.
+
+# Cannot draw boxes on image
+
+```
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+  File "/home/b.weinstein/.local/lib/python3.7/site-packages/deepforest/deepforest.py", line 502, in predict_tile
+    draw_box(numpy_image, box, [0, 0, 255])
+  File "/home/b.weinstein/.local/lib/python3.7/site-packages/deepforest/keras_retinanet/utils/visualization.py", line 32, in draw_box
+    cv2.rectangle(image, (b[0], b[1]), (b[2], b[3]), color, thickness, cv2.LINE_AA)
+TypeError: Expected Ptr<cv::UMat> for argument 'img'
+```
+
+The image has a data type not registered to opencv, often a .tif. Try converting to float32.
+
+```
+numpy_image = numpy_image.astype('float32')
+img = model.predict_tile(numpy_image=numpy_image, return_plot=True)
+```
