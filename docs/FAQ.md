@@ -16,6 +16,17 @@ IOError: DeepForest only accepts 3 band RGB rasters.
 
 If you are manually cropping an image and saving a JPG, be careful not to save the alpha channel. For example, on OSX, the preview tool will save a 4 channel image (RGBA) instead of a three channel image (RGB) by default. When saving a crop, toggle alpha channel off.
 
+If you need to select a set of rasters, the easiest thing to do is read in the data with a package like rasterio (not installed) and select the needed bands
+
+```
+src = rio.open("/orange/ewhite/everglades/Palmyra/example.tif")
+numpy_image = src.read()
+numpy_image = np.moveaxis(numpy_image,0,2)
+numpy_image = numpy_image[:,:,:3]
+```
+
+Note that by default rasterio reads in the order, (channels, height, width), whereas DeepForest requires (height, width, channels). Using np.moveaxis to move the channels from the first to last positoon.
+
 ## The plotted image looks wrong, the trees are blue!
 Solution: You are plotting the BlueGreenRed (BGR) image channel order. You want the RGB image channel ordering.
 
