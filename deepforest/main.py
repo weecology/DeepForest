@@ -2,7 +2,10 @@
 import os
 import pandas as pd
 from skimage import io
-from matplotlib import pyplot
+
+from matplotlib import pyplot as plt
+import torch
+from torchvision.ops import nms 
 
 from deepforest import utilities
 from deepforest import dataset
@@ -88,7 +91,7 @@ class deepforest:
         if return_plot:
             #Matplotlib likes no batch dim and channels first
             image = image.squeeze(0).permute(1,2,0)
-            plot  = visualize.plot_predictions(image, df)
+            plot, ax = visualize.plot_predictions(image, df)
             return plot
         else:
             return df
@@ -129,10 +132,10 @@ class deepforest:
             
             if save_dir:
                 image = image.squeeze(0).permute(1,2,0)                
-                plot = visualize.plot_predictions(image, prediction)
+                plot, ax = visualize.plot_predictions(image, prediction)
                 annotations = input_csv[input_csv.image_path==path]
-                plot = visualize.add_annotations(plot,annotations)
-                pyplot.savefig("{}/{}.png".format(save_dir,os.path.splitext(path)[0]))
+                plot = visualize.add_annotations(plot, ax, annotations)
+                plot.savefig("{}/{}.png".format(save_dir,os.path.splitext(path)[0]))
             
         df = pd.concat(prediction_list,ignore_index=True)
         
@@ -163,8 +166,72 @@ class deepforest:
                 Otherwise a numpy array of predicted bounding boxes, scores and labels
         """
         
-        pass
+        if image is not None:
+            pass
+        else:
+            #load raster as image
+            image = io.imread(path)
         
+        # Compute sliding window index
+        windows = preprocess.compute_windows(image, patch_size, patch_overlap)
+        # Save images to tempdir
+        predicted_boxes = []
+        
+        for index, window in enumerate(tqdm(windows)):
+            #crop window and predict
+            crop = image[windows[index].indices()] 
+            
+            #crop is RGB channel order, change to BGR
+            crop = crop[:,:,::-1]
+            boxes = self.predict_image(image=crop,
+                                    return_plot=False,
+                                    score_threshold=self.config['score_threshold'])
+            
+            #transform the coordinates to original system
+            xmin, ymin, xmax, ymax = windows[index].getRect()
+            boxes.xmin = boxes.xmin + xmin
+            boxes.xmax = boxes.xmax + xmin
+            boxes.ymin = boxes.ymin + ymin
+            boxes.ymax = boxes.ymax + ymin
+
+            predicted_boxes.append(boxes)
+        
+        predicted_boxes = pd.concat(predicted_boxes)
+        # Non-max supression for overlapping boxes among window
+        if patch_overlap == 0:
+            mosaic_df = predicted_boxes
+        else:
+            print(f"{predicted_boxes.shape[0]} predictions in overlapping windows, applying non-max supression")
+            #move prediciton to tensor 
+            boxes = torch.tensor(predicted_boxes[["xmin", "ymin", "xmax", "ymax"]].values, dtype = torch.float32)
+            scores = torch.tensor(predicted_boxes.score.values, dtype = torch.float32)
+            labels = predicted_boxes.label.values
+            
+            #Performs non-maximum suppression (NMS) on the boxes according to their intersection-over-union (IoU).
+            bbox_left_idx = nms(boxes = boxes, scores = scores, iou_threshold=iou_threshold)
+            new_boxes, new_scores, new_labels = boxes[bbox_left_idx], scores[bbox_left_idx], labels[bbox_left_idx]
+            
+            #Recreate box dataframe
+            image_detections = np.concatenate([
+                    new_boxes,
+                    np.expand_dims(new_scores, axis=1),
+                    np.expand_dims(new_labels, axis=1)
+                    ],axis=1)
+            
+            mosaic_df = pd.DataFrame(
+                    image_detections,
+                    columns=["xmin", "ymin", "xmax", "ymax", "score", "label"])
+
+            print(f"{mosaic_df.shape[0]} predictions kept after non-max suppression")
+        
+        if return_plot:
+            # Draw predictions
+            plot, _ = visualize.plot_predictions(image, mosaic_df)
+            # Mantain consistancy with predict_image
+            return plot
+        else:
+            return mosaic_df
+
 
     def load_dataset(self, csv_file, root_dir=None, train=False):
         """Create a tree dataset for inference
