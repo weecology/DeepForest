@@ -163,14 +163,14 @@ class deepforest:
             return_plot: Should the image be returned with the predictions drawn?
         Returns:
             boxes (array): if return_plot, an image.
-                Otherwise a numpy array of predicted bounding boxes, scores and labels
+            Otherwise a numpy array of predicted bounding boxes, scores and labels
         """
         
         if image is not None:
             pass
         else:
             #load raster as image
-            image = io.imread(path)
+            image = io.imread(raster_path)
         
         # Compute sliding window index
         windows = preprocess.compute_windows(image, patch_size, patch_overlap)
@@ -209,18 +209,18 @@ class deepforest:
             
             #Performs non-maximum suppression (NMS) on the boxes according to their intersection-over-union (IoU).
             bbox_left_idx = nms(boxes = boxes, scores = scores, iou_threshold=iou_threshold)
-            new_boxes, new_scores, new_labels = boxes[bbox_left_idx], scores[bbox_left_idx], labels[bbox_left_idx]
+            new_boxes, new_labels, new_scores = boxes[bbox_left_idx], labels[bbox_left_idx], scores[bbox_left_idx]
             
             #Recreate box dataframe
             image_detections = np.concatenate([
                     new_boxes,
-                    np.expand_dims(new_scores, axis=1),
-                    np.expand_dims(new_labels, axis=1)
+                    np.expand_dims(new_labels, axis=1),
+                    np.expand_dims(new_scores, axis=1)
                     ],axis=1)
             
             mosaic_df = pd.DataFrame(
                     image_detections,
-                    columns=["xmin", "ymin", "xmax", "ymax", "score", "label"])
+                    columns=["xmin", "ymin", "xmax", "ymax", "label","score"])
 
             print(f"{mosaic_df.shape[0]} predictions kept after non-max suppression")
         
