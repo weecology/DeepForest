@@ -2,6 +2,7 @@
 import os
 import pandas as pd
 from skimage import io
+from tqdm import tqdm
 
 from matplotlib import pyplot as plt
 import torch
