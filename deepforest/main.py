@@ -1,5 +1,6 @@
 #entry point for deepforest model
 import os
+import numpy as np
 import pandas as pd
 from skimage import io
 from tqdm import tqdm
@@ -183,7 +184,7 @@ class deepforest:
             crop = image[windows[index].indices()] 
             
             #crop is RGB channel order, change to BGR
-            crop = crop[:,:,::-1]
+            crop = crop[...,::-1]
             boxes = self.predict_image(image=crop,
                                     return_plot=False,
                                     score_threshold=self.config['score_threshold'])
@@ -205,12 +206,12 @@ class deepforest:
             print(f"{predicted_boxes.shape[0]} predictions in overlapping windows, applying non-max supression")
             #move prediciton to tensor 
             boxes = torch.tensor(predicted_boxes[["xmin", "ymin", "xmax", "ymax"]].values, dtype = torch.float32)
-            scores = torch.tensor(predicted_boxes.score.values, dtype = torch.float32)
+            scores = torch.tensor(predicted_boxes.scores.values, dtype = torch.float32)
             labels = predicted_boxes.label.values
             
             #Performs non-maximum suppression (NMS) on the boxes according to their intersection-over-union (IoU).
             bbox_left_idx = nms(boxes = boxes, scores = scores, iou_threshold=iou_threshold)
-            new_boxes, new_labels, new_scores = boxes[bbox_left_idx], labels[bbox_left_idx], scores[bbox_left_idx]
+            new_boxes, new_labels, new_scores = boxes[bbox_left_idx].type(torch.int), labels[bbox_left_idx], scores[bbox_left_idx]
             
             #Recreate box dataframe
             image_detections = np.concatenate([
