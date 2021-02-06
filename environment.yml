@@ -19,7 +19,6 @@ dependencies:
   - sphinx_rtd_theme
   - pandas
   - twine
-  - opencv
   - psutil
   - pytorch
   - torchvision

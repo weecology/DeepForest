@@ -1,8 +1,10 @@
-DeepForest
-==========
+DeepForest-pytorch
+==================
 
 .. toctree::
    :maxdepth: 4
 
    deepforest
-   keras_retinanet
+   evaluate
+   setup
+   tests

@@ -5,24 +5,33 @@ Subpackages
 -----------
 
 .. toctree::
+   :maxdepth: 4
 
    deepforest.data
 
 Submodules
 ----------
 
-deepforest.deepforest module
-----------------------------
+deepforest.dataset module
+-------------------------
 
-.. automodule:: deepforest.deepforest
+.. automodule:: deepforest.dataset
    :members:
    :undoc-members:
    :show-inheritance:
 
-deepforest.predict module
--------------------------
+deepforest.main module
+----------------------
 
-.. automodule:: deepforest.predict
+.. automodule:: deepforest.main
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+deepforest.model module
+-----------------------
+
+.. automodule:: deepforest.model
    :members:
    :undoc-members:
    :show-inheritance:
@@ -35,18 +44,26 @@ deepforest.preprocess module
    :undoc-members:
    :show-inheritance:
 
-deepforest.retinanet\_train module
-----------------------------------
+deepforest.training module
+--------------------------
 
-.. automodule:: deepforest.retinanet_train
+.. automodule:: deepforest.training
    :members:
    :undoc-members:
    :show-inheritance:
 
-deepforest.tfrecords module
----------------------------
+deepforest.training\_utils module
+---------------------------------
 
-.. automodule:: deepforest.tfrecords
+.. automodule:: deepforest.training_utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+deepforest.transforms module
+----------------------------
+
+.. automodule:: deepforest.transforms
    :members:
    :undoc-members:
    :show-inheritance:
@@ -59,6 +76,13 @@ deepforest.utilities module
    :undoc-members:
    :show-inheritance:
 
+deepforest.visualize module
+---------------------------
+
+.. automodule:: deepforest.visualize
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 Module contents
 ---------------
