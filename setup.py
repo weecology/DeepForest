@@ -62,7 +62,7 @@ setup(name=NAME,
       packages=find_packages(),
       include_package_data=True,
       install_requires=[
-          "pytorch", "torchvision", "matplotlib", "opencv", "Pillow", "pandas",
+          "torch", "torchvision", "matplotlib", "Pillow", "pandas",
           "pyyaml>5.1.0", "progressbar2", "six", "scipy", "slidingwindow","scikit-image"
           "tqdm", "xmltodict", "numpy"
       ],
