@@ -12,8 +12,8 @@ def format_predictions(prediction):
     return df
 
 def plot_predictions(image, df):
-    plt.imshow(image)
-    ax = plt.gca()
+    fig, ax = plt.subplots()
+    ax.imshow(image)
     for index, row in df.iterrows():
         xmin = row["xmin"]
         ymin = row["ymin"]
@@ -21,8 +21,10 @@ def plot_predictions(image, df):
         height = row["ymax"] - ymin
         rect = create_box(xmin=xmin,ymin=ymin, height=height, width=width)
         ax.add_patch(rect)
-    
-    return ax
+    #no axis show up
+    plt.axis('off')
+
+    return fig, ax
         
 def create_box(xmin, ymin, height, width, color="cyan",linewidth=1):
     rect = patches.Rectangle((xmin,ymin),
@@ -33,13 +35,14 @@ def create_box(xmin, ymin, height, width, color="cyan",linewidth=1):
                      fill = False)
     return rect
 
-def add_annotations(plot,annotations):
+def add_annotations(plot, ax, annotations):
     """Add annotations to an already created visuale.plot_predictions
     Args:
-        plot: maplotlib axes object
+        plot: matplotlib figure object
+        ax: maplotlib axes object
         annotations: pandas dataframe of bounding box annotations
     Returns:
-        plot: matplotlib object
+        plot: matplotlib figure object
     """
     for index, row in annotations.iterrows():
         xmin = row["xmin"]
@@ -47,6 +50,6 @@ def add_annotations(plot,annotations):
         width = row["xmax"] - xmin
         height = row["ymax"] - ymin
         rect = create_box(xmin=xmin,ymin=ymin, height=height, width=width, color="orange")
-        plot.add_patch(rect) 
+        ax.add_patch(rect) 
     
     return plot

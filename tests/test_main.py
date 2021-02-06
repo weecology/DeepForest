@@ -74,6 +74,30 @@ def test_predict_file(trained_model, tmpdir):
     printed_plots = glob.glob("{}/*.png".format(tmpdir))
     assert len(printed_plots) == 1
 
-def test_predict_tile():
-    pass
+def test_predict_tile(trained_model):
+    #test raster prediction 
+    raster_path = get_data(path= 'OSBS_029.tif')
+    prediction = trained_model.predict_tile(raster_path = raster_path,
+                                            patch_size = 300,
+                                            patch_overlap = 0.5,
+                                            return_plot = False)
+    assert isinstance(prediction, pd.DataFrame)
+    assert set(prediction.columns) == {"xmin","ymin","xmax","ymax","label","score"}
+    assert not prediction.empty
+
+    #test predict numpy image
+    image = io.imread(raster_path)
+    prediction = trained_model.predict_tile(image = image,
+                                patch_size = 300,
+                                patch_overlap = 0.5,
+                                return_plot = False)
+    assert not prediction.empty
+
+    # Test no non-max suppression
+    prediction = trained_model.predict_tile(raster_path = raster_path,
+                                       patch_size=300,
+                                       patch_overlap=0,
+                                       return_plot=False)
+    assert not prediction.empty
+
 
