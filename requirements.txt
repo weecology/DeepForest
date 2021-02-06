@@ -1,7 +1,6 @@
 bumpversion
 numpydoc
 h5py
-opencv
 pandas
 pillow
 pip

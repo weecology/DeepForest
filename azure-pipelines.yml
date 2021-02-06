@@ -38,7 +38,7 @@ jobs:
     displayName: 'pytest'
     
   - bash: |
-      source activate DeepForest
+      source activate DeepForest_pytorch
       python3 setup.py sdist
       
   - task: PublishBuildArtifacts@1
