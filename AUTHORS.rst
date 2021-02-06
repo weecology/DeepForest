@@ -23,3 +23,5 @@ Check GitHub for recent `contributors <https://github.com/weecology/DeepForest/g
 We would like to thank everyone who has contributed to the project in any way.
 
 * `Henry Senyondo <https://github.com/henrykironde>`_
+
+* `Dingyi Fang https://github.com/dingyif`_
