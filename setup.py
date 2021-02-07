@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 import setuptools
 from distutils.command.build_ext import build_ext as DistUtilsBuildExt
 
-NAME = 'deepforest-pytorch'
+NAME = 'deepforest_pytorch'
 VERSION = '0.0.1'
 DESCRIPTION = 'Tree crown prediction using deep learning retinanets'
 URL = 'https://github.com/Weecology/DeepForest-pytorch'
