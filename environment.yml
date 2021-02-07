@@ -20,7 +20,7 @@ dependencies:
   - pandas
   - twine
   - psutil
-  - torch
+  - pytorch
   - torchvision
   - slidingwindow
   - bumpversion
