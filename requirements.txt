@@ -5,7 +5,7 @@ pandas
 pillow
 pip
 psutil
-pytorch
+torch
 pyyaml>=5.1.0
 pytest
 matplotlib
