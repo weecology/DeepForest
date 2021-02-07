@@ -16,6 +16,7 @@ scikit-image
 sphinx
 slidingwindow
 sphinx_rtd_theme
+sphinx_markdown_tables
 tqdm
 twine
 torchvision
