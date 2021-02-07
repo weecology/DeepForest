@@ -17,7 +17,6 @@ dependencies:
   - pip
   - matplotlib
   - sphinx_rtd_theme
-  - sphinx_markdown_tables
   - pandas
   - twine
   - psutil
