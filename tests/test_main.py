@@ -92,8 +92,8 @@ def test_predict_tile(trained_model):
                                             return_plot = False,
                                             method =2)
     assert isinstance(soft_nms_pred, pd.DataFrame)
-    assert set(prediction.columns) == {"xmin","ymin","xmax","ymax","label","score"}
-    assert not prediction.empty
+    assert set(soft_nms_pred.columns) == {"xmin","ymin","xmax","ymax","label","score"}
+    assert not soft_nms_pred.empty
 
     #test predict numpy image
     image = io.imread(raster_path)
