@@ -12,7 +12,7 @@ LONG_DESCRIPTION = """
 # Deepforest
 
 ## Full documentation
-[http://deepforest.readthedocs.io/en/latest/](http://deepforest.readthedocs.io/en/latest/)
+[http://deepforest-pytorch.readthedocs.io/en/latest/](http://deepforest-pytorch.readthedocs.io/en/latest/)
 
 ## Installation
 
@@ -20,16 +20,7 @@ Compiled wheels have been made for linux, osx and windows
 
 ```
 #Install DeepForest
-pip install DeepForest
-```
-
-Or install the latest version from Github
-```
-git clone https://github.com/weecology/DeepForest-pytorch.git
-
-conda env create --file=environment.yml
-
-conda activate DeepForest
+pip install deepforest-pytorch
 ```
 
 ## Get in touch

@@ -13,3 +13,12 @@ DeepForest(PyTorch版本)是一个Python软件包，它可以被用来训练以�
 The original repo is written in tensorflow and can be found on pypi, conda and source (https://github.com/Weecology/DeepForest). After https://github.com/fizyr/keras-retinanet was deprecated, it became obvious that the shelf life of models that depend on tensorflow 1.0 was limited. The machine learning community is moving more towards pytorch, where many new models can be found. 
 
 This project was just initiated. See https://github.com/weecology/DeepForest-pytorch/issues/1 to contribute to the roadmap.
+
+# Installation
+
+Compiled wheels have been made for linux, osx and windows
+
+```
+#Install DeepForest-pytorch
+pip install deepforest-pytorch
+```
