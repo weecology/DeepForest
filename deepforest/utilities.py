@@ -10,6 +10,7 @@ from tqdm import tqdm
 import xmltodict
 import warnings
 import yaml
+import torch
 
 from deepforest import _ROOT
 
@@ -174,6 +175,65 @@ def round_with_floats(x):
 
     return result
 
+def soft_nms(boxes,scores,sigma = 0.5, thresh = 0.001):
+    '''
+    Perform python soft_nms to reduce the confidances of the proposals proportional  to IoU value
+    Paper: Improving Object Detection With One Line of Code
+    Code : https://github.com/DocF/Soft-NMS/blob/master/softnms_pytorch.py
+    Args:
+        boxes: predicitons bounding boxes tensor format [x1,y1,x2,y2] 
+        scores: the score corresponding to each box tensors
+        sigma: variance of Gaussian function
+        thresh: score thresh 
+    Return:
+        idxs_keep: the index list of the selected boxes
+    
+    '''
+    # indexes concatenate boxes with the last column
+    N = boxes.shape[0]
+    indexes = torch.arange(0, N, dtype=torch.float).view(N, 1)
+
+    boxes = torch.cat((boxes, indexes), dim=1)
+
+
+    # The order of boxes coordinate is [x1,y1,y2,x2]
+    x1 = boxes[:, 0]
+    y1 = boxes[:, 1]
+    x2 = boxes[:, 2]
+    y2 = boxes[:, 3]
+    areas = (x2 - x1 + 1) * (y2 - y1 + 1)
+
+    for i in range(N):
+        # intermediate parameters for later parameters exchange
+        tscore = scores[i].clone()
+        pos = i + 1
+
+        if i != N - 1:
+            maxscore, maxpos = torch.max(scores[pos:], dim=0)
+            if tscore < maxscore:
+                boxes[i], boxes[maxpos.item() + i + 1] = boxes[maxpos.item() + i + 1].clone(), boxes[i].clone()
+                scores[i], scores[maxpos.item() + i + 1] = scores[maxpos.item() + i + 1].clone(), scores[i].clone()
+                areas[i], areas[maxpos + i + 1] = areas[maxpos + i + 1].clone(), areas[i].clone()
+
+        # IoU calculate
+        xx1 = np.maximum(boxes[i, 0].numpy(), boxes[pos:, 0].numpy())
+        yy1 = np.maximum(boxes[i, 1].numpy(), boxes[pos:, 1].numpy())
+        xx2 = np.minimum(boxes[i, 2].numpy(), boxes[pos:, 2].numpy())
+        yy2 = np.minimum(boxes[i, 3].numpy(), boxes[pos:, 3].numpy())
+        
+        w = np.maximum(0.0, xx2 - xx1 + 1)
+        h = np.maximum(0.0, yy2 - yy1 + 1)
+        inter = torch.tensor(w * h)
+        ovr = torch.div(inter, (areas[i] + areas[pos:] - inter))
+
+        # Gaussian decay
+        weight = torch.exp(-(ovr * ovr) / sigma)
+        scores[pos:] = weight * scores[pos:]
+
+    # select the boxes and keep the corresponding indexes
+    idxs_keep = boxes[:, 4][scores > thresh].int()
+
+    return idxs_keep
 
 def load_saved_model():
     pass
