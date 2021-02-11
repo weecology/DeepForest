@@ -149,7 +149,10 @@ class deepforest:
                      patch_size=400,
                      patch_overlap=0.05,
                      iou_threshold=0.15,
-                     return_plot=False):
+                     return_plot=False,
+                     soft_nms = False,
+                     sigma = 0.5,
+                     thresh = 0.001):
         """For images too large to input into the model, predict_tile cuts the
         image into overlapping windows, predicts trees on each window and
         reassambles into a single array.
@@ -163,6 +166,9 @@ class deepforest:
                 windows to be suppressed. Defaults to 0.5.
                 Lower values suppress more boxes at edges.
             return_plot: Should the image be returned with the predictions drawn?
+            soft_nms: whether to perform Gaussian Soft NMS or not, if false, default perform NMS. 
+            sigma: variance of Gaussian function used in Gaussian Soft NMS
+            thresh: the score thresh used to filter bboxes after soft-nms performed
         Returns:
             boxes (array): if return_plot, an image.
             Otherwise a numpy array of predicted bounding boxes, scores and labels
@@ -209,8 +215,14 @@ class deepforest:
             scores = torch.tensor(predicted_boxes.scores.values, dtype = torch.float32)
             labels = predicted_boxes.label.values
             
-            #Performs non-maximum suppression (NMS) on the boxes according to their intersection-over-union (IoU).
-            bbox_left_idx = nms(boxes = boxes, scores = scores, iou_threshold=iou_threshold)
+            if soft_nms == False:
+                #Performs non-maximum suppression (NMS) on the boxes according to their intersection-over-union (IoU).
+                bbox_left_idx = nms(boxes = boxes, scores = scores, iou_threshold=iou_threshold)
+            else:
+                #Performs soft non-maximum suppression (soft-NMS) on the boxes.
+                bbox_left_idx = utilities.soft_nms(boxes = boxes, scores = scores, sigma = sigma, thresh=thresh)
+            
+            bbox_left_idx = bbox_left_idx.numpy()
             new_boxes, new_labels, new_scores = boxes[bbox_left_idx].type(torch.int), labels[bbox_left_idx], scores[bbox_left_idx]
             
             #Recreate box dataframe

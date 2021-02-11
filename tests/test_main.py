@@ -1,4 +1,5 @@
 #test main
+from deepforest.utilities import soft_nms
 import os
 import glob
 import pytest
@@ -84,6 +85,16 @@ def test_predict_tile(trained_model):
     assert isinstance(prediction, pd.DataFrame)
     assert set(prediction.columns) == {"xmin","ymin","xmax","ymax","label","score"}
     assert not prediction.empty
+
+    #test soft-nms method
+    soft_nms_pred = trained_model.predict_tile(raster_path = raster_path,
+                                            patch_size = 300,
+                                            patch_overlap = 0.5,
+                                            return_plot = False,
+                                            soft_nms =True)
+    assert isinstance(soft_nms_pred, pd.DataFrame)
+    assert set(soft_nms_pred.columns) == {"xmin","ymin","xmax","ymax","label","score"}
+    assert not soft_nms_pred.empty
 
     #test predict numpy image
     image = io.imread(raster_path)
