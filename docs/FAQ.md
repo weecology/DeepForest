@@ -16,6 +16,17 @@ IOError: DeepForest only accepts 3 band RGB rasters.
 
 If you are manually cropping an image and saving a JPG, be careful not to save the alpha channel. For example, on OSX, the preview tool will save a 4 channel image (RGBA) instead of a three channel image (RGB) by default. When saving a crop, toggle alpha channel off.
 
+If you need to select a set of rasters, the easiest thing to do is read in the data with a package like rasterio (not installed) and select the needed bands
+
+```
+src = rio.open("/orange/ewhite/everglades/Palmyra/example.tif")
+numpy_image = src.read()
+numpy_image = np.moveaxis(numpy_image,0,2)
+numpy_image = numpy_image[:,:,:3]
+```
+
+Note that by default rasterio reads in the order, (channels, height, width), whereas DeepForest requires (height, width, channels). Using np.moveaxis to move the channels from the first to last positoon.
+
 ## The plotted image looks wrong, the trees are blue!
 Solution: You are plotting the BlueGreenRed (BGR) image channel order. You want the RGB image channel ordering.
 
@@ -93,3 +104,22 @@ We have yet to find an example where this prevents DeepForest from operating suc
 ```
 
 These warnings are upstream of DeepForest and can be ignored. They are there for developers and future users.
+
+# Cannot draw boxes on image
+
+```
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+  File "/home/b.weinstein/.local/lib/python3.7/site-packages/deepforest/deepforest.py", line 502, in predict_tile
+    draw_box(numpy_image, box, [0, 0, 255])
+  File "/home/b.weinstein/.local/lib/python3.7/site-packages/deepforest/keras_retinanet/utils/visualization.py", line 32, in draw_box
+    cv2.rectangle(image, (b[0], b[1]), (b[2], b[3]), color, thickness, cv2.LINE_AA)
+TypeError: Expected Ptr<cv::UMat> for argument 'img'
+```
+
+The image has a data type not registered to opencv, often a .tif. Try converting to float32.
+
+```
+numpy_image = numpy_image.astype('float32')
+img = model.predict_tile(numpy_image=numpy_image, return_plot=True)
+```
