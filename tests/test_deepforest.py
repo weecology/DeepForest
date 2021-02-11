@@ -163,6 +163,15 @@ def test_predict_tile(release_model):
                                        return_plot=False)
     assert not boxes.empty
 
+    numpy_array = cv2.imread(raster_path)
+    
+    #Check image creation
+    image = release_model.predict_tile(numpy_image =numpy_array,
+                                       patch_size=100,
+                                       patch_overlap=0,
+                                       return_plot=True)
+    
+    assert image.shape == numpy_array.shape
 
 def test_retrain_release(annotations, release_model):
     release_model.config["epochs"] = 1

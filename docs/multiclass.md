@@ -13,3 +13,16 @@ Finetuning of the prebuilt model often takes only a few epochs (5-10). I anticip
 3. Consider a cascaded network to separately predict classes and trees.
 
 An alternative strategy is to first use DeepForest is delineate trees, and then feed these crops into a 2nd neural network for classification. This may be an easier way of dealing with incomplete labels.
+
+A couple notes on multi-class, if you trained a multi-class model and need to reload the model, make sure to reload the classes file, or else all objects will be labeled (tree)[https://github.com/weecology/DeepForest/issues/150]
+
+```
+from deepforest import deepforest
+from deepforest import utilities
+m = deepforest.deepforest("/orange/ewhite/everglades/Zooniverse/predictions/20210211_072221.h5")
+m.classes_file = utilities.create_classes("/orange/ewhite/everglades/Zooniverse/parsed_images/test.csv")
+m.read_classes()
+```
+
+Also note there is likely some integration errors with the comet dashboard, I recommend not using comet for multi-species models, as there are too many assumptions for single tree species.
+
