@@ -219,8 +219,9 @@ def create_classes(annotations_file):
     dirname = os.path.split(annotations_file)[0]
     classes_path = os.path.join(dirname, "classes.csv")
 
-    # get unique labels
+    # get unique labels, sorted alphanumeric
     labels = annotations.label.dropna().unique()
+    labels = np.sort(labels)
     n_classes = labels.shape[0]
     print("There are {} unique labels: {} ".format(n_classes, list(labels)))
 

@@ -96,7 +96,7 @@ Occasionally users report that conda enforces incorrect versions on install from
 ```
 We have yet to find an example where this prevents DeepForest from operating successfully. From our perspective, this error can be ignored. If not, please open an [issue](https://github.com/weecology/DeepForest/issues) documenting your conda version and operating system.
 
-### Tensorflow deprectation warnings
+## Tensorflow deprectation warnings
 
 ```
 >>> from deepforest import deepforest
@@ -105,7 +105,7 @@ We have yet to find an example where this prevents DeepForest from operating suc
 
 These warnings are upstream of DeepForest and can be ignored. They are there for developers and future users.
 
-# Cannot draw boxes on image
+## Cannot draw boxes on image
 
 ```
 Traceback (most recent call last):
