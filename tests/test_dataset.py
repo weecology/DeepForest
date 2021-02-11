@@ -21,13 +21,13 @@ def test_TreeDataset():
         assert targets["labels"].shape == (79,)
         
 
-@pytest.mark.parametrize("train",[True,False])
-def test_TreeDataset_transform(train):
+@pytest.mark.parametrize("augment",[True,False])
+def test_TreeDataset_transform(augment):
     csv_file = get_data("example.csv")
     root_dir = os.path.dirname(csv_file)
     ds = dataset.TreeDataset(csv_file=csv_file,
                              root_dir=root_dir,
-                             transforms=dataset.get_transform(train=train))
+                             transforms=dataset.get_transform(augment=augment))
 
     for i in range(len(ds)):
         #Between 0 and 1

@@ -235,7 +235,7 @@ class deepforest:
             return mosaic_df
 
 
-    def load_dataset(self, csv_file, root_dir=None, train=False):
+    def load_dataset(self, csv_file, root_dir=None, augment=False):
         """Create a tree dataset for inference
         Csv file format is .csv file with the columns "image_path", "xmin","ymin","xmax","ymax" for the image name and bounding box position. 
         Image_path is the relative filename, not absolute path, which is in the root_dir directory. One bounding box per line. 
@@ -243,7 +243,7 @@ class deepforest:
         Args:
             csv_file: path to csv file 
             root_dir: directory of images. If none, uses "image_dir" in config
-            train: Whether to create a training dataset, this deactivates data augmentations
+            augment: Whether to create a training dataset, this deactivates data augmentations
         Returns:
             self.ds: a pytorch dataset
         """
@@ -253,7 +253,7 @@ class deepforest:
                 
         self.ds = dataset.TreeDataset(csv_file=csv_file,
                               root_dir=root_dir,
-                              transforms=dataset.get_transform(train=train))
+                              transforms=dataset.get_transform(augment=augment))
 
     def train(self, debug=False):
         """Train on a loaded dataset"""

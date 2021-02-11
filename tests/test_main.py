@@ -18,7 +18,7 @@ def m():
     m.config["epochs"] = 1
     m.config["batch_size"] = 2
     m.create_model()
-    m.load_dataset(csv_file=csv_file, root_dir=os.path.dirname(csv_file), train=True)
+    m.load_dataset(csv_file=csv_file, root_dir=os.path.dirname(csv_file), augment=True)
     
     return m
 
@@ -29,7 +29,7 @@ def trained_model():
     m.config["epochs"] = 1
     m.config["batch_size"] = 2
     m.create_model()
-    m.load_dataset(csv_file=csv_file, root_dir=os.path.dirname(csv_file), train=True)
+    m.load_dataset(csv_file=csv_file, root_dir=os.path.dirname(csv_file), augment=True)
     m.train(debug=True)        
     
     return m

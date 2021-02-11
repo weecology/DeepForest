@@ -19,7 +19,7 @@ LONG_DESCRIPTION = """
 Compiled wheels have been made for linux, osx and windows
 
 ```
-#Install DeepForest
+#Install DeepForest-pytorch
 pip install deepforest-pytorch
 ```
 

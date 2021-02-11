@@ -19,10 +19,10 @@ from torch.utils.data import Dataset
 from deepforest import transforms as T
 from deepforest.preprocess import preprocess_image
 
-def get_transform(train):
+def get_transform(augment):
     transforms = []
     transforms.append(T.ToTensor())
-    if train:
+    if augment:
         transforms.append(T.RandomHorizontalFlip(0.5))
     return T.Compose(transforms)
 
