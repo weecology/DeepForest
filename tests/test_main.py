@@ -10,7 +10,7 @@ from skimage import io
 
 from deepforest import main
 from deepforest import get_data
-
+from deepforest import callbacks
 
 @pytest.fixture()
 def m():
@@ -112,3 +112,18 @@ def test_predict_tile(trained_model):
     assert not prediction.empty
 
 
+@pytest.fixture()
+class fake_callback(callbacks.Callback):
+    def after_epoch(self, epoch):
+        print("Finished epoch {}")
+    def after_fit(self):
+        print("Done training")
+
+def test_train_callbacks(m, fake_callback):
+    m.train(debug=True, callbacks=[fake_callback])
+    
+    
+    
+        
+        
+    

@@ -267,8 +267,12 @@ class deepforest:
                               root_dir=root_dir,
                               transforms=dataset.get_transform(augment=augment))
 
-    def train(self, debug=False):
-        """Train on a loaded dataset"""
+    def train(self, callbacks=None, debug=False):
+        """Train on a loaded dataset
+        Args:
+            debug: run a small training step for testing
+            callbacks: a list of deepforest.callbacks that implements a training callback
+        """
         #check is dataset has been created?
         if not self.ds:
             raise ValueError("Cannot train a model with first loading data, see deepforest.load_dataset(csv_file=<>)")
@@ -277,8 +281,15 @@ class deepforest:
             raise ValueError("Cannot train a model with first creating a model instance, see deepforest.create_model().")
         
         self.backbone.train()
-        training.run(train_ds=self.ds, model=self.backbone, config=self.config, debug=debug)
+        self.model = training.run(train_ds=self.ds, model=self.backbone, config=self.config, debug=debug, callbacks=callbacks)
         
         
-    def evaluate(csv_file):
+    def evaluate(csv_file, metrics, iou_threshold):
         pass
+
+    def save():
+        pass
+    
+    def load():
+        pass
+    

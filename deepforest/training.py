@@ -84,7 +84,6 @@ def run(train_ds, model, config, debug=False):
     num_epochs = config["epochs"]
     for epoch in range(num_epochs):
         train_one_epoch(model, optimizer, data_loader_train, device, epoch, print_freq=config["print_freq"])
-        
-        #TODO Evaluate on epoch end
-
+    
+    return model
 
