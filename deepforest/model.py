@@ -14,6 +14,5 @@ def load_backbone():
 def create_model():
     pass
 
-
 def load_model():
     pass

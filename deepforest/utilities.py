@@ -1,19 +1,21 @@
 """
 Utilities model
 """
+import geopandas as gpd
 import json
 import numpy as np
 import os
 import pandas as pd
+import rasterio
+import shapely
+import torch
 import urllib
 from tqdm import tqdm
 import xmltodict
 import warnings
 import yaml
-import torch
 
 from deepforest import _ROOT
-
 
 def read_config(config_path):
     try:
@@ -237,3 +239,45 @@ def soft_nms(boxes,scores,sigma = 0.5, thresh = 0.001):
 
 def load_saved_model():
     pass
+
+def check_file(df):
+    """Check a file format for correct column names and structure"""
+    
+    if not all(x in df.columns for x in ["image_path","xmin","xmax","ymin","ymax","label"]):
+        raise IOError("Input file has incorrect column names, the following columns must exist 'image_path','xmin','ymin','xmax','ymax','label'.")
+    
+    return df
+
+def project_boxes(df, root_dir, transform = True):
+    """Convert from image coordinates to geopgraphic cooridinates
+    Note that this assumes df is just a single plot being passed to this function
+    df: a pandas type dataframe with columns name, xmin, ymin, xmax, ymax, name. Name is the relative path to the root_dir arg.
+    root_dir: directory of images
+    transform: If true, convert from image to geographic coordinates
+    """
+    plot_names = df.image_path.unique()
+    if len(plot_names) > 1:
+        raise ValueError("This function projects a single plots worth of data. Multiple plot names found {}".format(plot_names))
+    else:
+        plot_name = plot_names[0]
+    
+    rgb_path = "{}/{}".format(root_dir, plot_name)
+    with rasterio.open(rgb_path) as dataset:
+        bounds = dataset.bounds
+        pixelSizeX, pixelSizeY  = dataset.res
+        crs = dataset.crs
+            
+    if transform:
+        #subtract origin. Recall that numpy origin is top left! Not bottom left.
+        df["xmin"] = (df["xmin"].astype(float) *pixelSizeX) + bounds.left
+        df["xmax"] = (df["xmax"].astype(float) * pixelSizeX) + bounds.left
+        df["ymin"] = bounds.top - (df["ymin"].astype(float) * pixelSizeY) 
+        df["ymax"] = bounds.top - (df["ymax"].astype(float) * pixelSizeY)
+    
+    # combine column to a shapely Box() object, save shapefile
+    df['geometry'] = df.apply(lambda x: shapely.geometry.box(x.xmin,x.ymin,x.xmax,x.ymax), axis=1)
+    df = gpd.GeoDataFrame(df, geometry='geometry')
+    
+    df.crs = crs
+    
+    return df

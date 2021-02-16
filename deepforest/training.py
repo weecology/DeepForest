@@ -50,12 +50,13 @@ def train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq):
 
     return metric_logger
 
-def run(train_ds, model, config, debug=False):
+def run(train_ds, model, config, debug=False, callbacks=None):
     """Train a Deepforest model in pytorch
     Args:
         train_ds: a pytorch dataset, see main.load_dataset
         model: a deepforest model see main.create() or main.load_model()
         config: a deepforest config object
+        callbacks: a list of callbacks to insert into the training loop
         debug: used for tests, to keep training loop short. Take 1 batch from the data to train
     """
     

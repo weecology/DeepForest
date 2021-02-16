@@ -1,6 +1,7 @@
 bumpversion
 numpydoc
 h5py
+geopandas
 pandas
 pillow
 pip
@@ -12,6 +13,7 @@ matplotlib
 numpy
 recommonmark
 rasterio
+rtree
 scikit-image
 sphinx
 slidingwindow

@@ -9,6 +9,7 @@ dependencies:
   - pyyaml>=5.1.0
   - pytest
   - numpydoc
+  - geopandas
   - h5py
   - xmltodict
   - tqdm
@@ -19,6 +20,7 @@ dependencies:
   - sphinx_rtd_theme
   - pandas
   - twine
+  - rtree
   - psutil
   - pytorch
   - torchvision

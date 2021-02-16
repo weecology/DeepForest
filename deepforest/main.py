@@ -16,6 +16,7 @@ from deepforest import training
 from deepforest import model
 from deepforest import preprocess
 from deepforest import visualize
+from deepforest import evaluate as evaluate_iou
 
 class deepforest:
     """Class for training and predicting tree crowns in RGB images
@@ -116,7 +117,7 @@ class deepforest:
         input_csv = pd.read_csv(csv_file)
         
         #Just predict each image once. 
-        images = input_csv.image_path.unique() 
+        images = input_csv["image_path"].unique() 
         
         if root_dir is None:
             root_dir = self.config["image_dir"]
@@ -284,8 +285,31 @@ class deepforest:
         self.model = training.run(train_ds=self.ds, model=self.backbone, config=self.config, debug=debug, callbacks=callbacks)
         
         
-    def evaluate(self, csv_file, metrics, iou_threshold):
-        pass
+    def evaluate(self, csv_file, root_dir, iou_threshold=0.5, probability_threshold=0, show_plot=False, project=False):
+        """Compute intersection-over-union and precision/recall for a given iou_threshold
+        Args:
+            df: a pandas-type dataframe (geopandas is fine) with columns "name","xmin","ymin","xmax","ymax","label", each box in a row
+            root_dir: location of files in the dataframe 'name' column.
+            iou_threshold: float [0,1] intersection-over-union union between annotation and prediction to be scored true positive
+            probability_threshold: float [0,1] minimum probability score to be included in evaluation
+            project: Logical. Whether to project predictions that are in image coordinates (0,0 origin) into the geographic coordinates of the ground truth image. The CRS is take from the image file using rasterio.crs
+            show_plot: open a blocking matplotlib window to show plot and annotations, useful for debugging.
+        Returns:
+            results: tuple of (precision, recall) for a given threshold
+        """
+        predictions = self.predict_file(csv_file, root_dir)
+        ground_df = pd.read_csv(csv_file)
+        
+        results = evaluate_iou.evaluate(
+            predictions=predictions,
+            ground_df=ground_df,
+            root_dir=root_dir,
+            project=project,
+            iou_threshold=iou_threshold,
+            probability_threshold=probability_threshold,
+            show_plot=show_plot)
+        
+        return results
 
     def save(self):
         pass
