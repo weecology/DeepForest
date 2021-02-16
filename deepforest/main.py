@@ -284,12 +284,12 @@ class deepforest:
         self.model = training.run(train_ds=self.ds, model=self.backbone, config=self.config, debug=debug, callbacks=callbacks)
         
         
-    def evaluate(csv_file, metrics, iou_threshold):
+    def evaluate(self, csv_file, metrics, iou_threshold):
         pass
 
-    def save():
+    def save(self):
         pass
     
-    def load():
+    def load(self):
         pass
     
