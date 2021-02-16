@@ -12,12 +12,12 @@ from deepforest import IoU
 from deepforest.utilities import check_file
 from deepforest.utilities import project_boxes
 
-def evaluate_image(predictions, ground_df, project, probability_threshold, show_plot, root_dir):
+def evaluate_image(predictions, ground_df, project, score_threshold, show_plot, root_dir):
     """
     df: a pandas dataframe with columns name, xmin, xmax, ymin, ymax, label. The 'name' column should be the path relative to the location of the file.
     show: Whether to show boxes as they are plotted
     summarize: Whether to group statistics by plot and overall score
-    probability_threshold: minimum probability to be included in predictions
+    score_threshold: minimum probability to be included in predictions
     image_coordinates: Whether the current boxes are in coordinate system of the image, e.g. origin (0,0) upper left.
     project: Logical. Whether to project predictions that are in image coordinates (0,0 origin) into the geographic coordinates of the ground truth image. The CRS is take from the image file using rasterio.crs
     root_dir: Where to search for image names in df
@@ -50,7 +50,7 @@ def evaluate_image(predictions, ground_df, project, probability_threshold, show_
     
     return result    
 
-def evaluate(predictions, ground_df, root_dir, project=False, show_plot=True, iou_threshold=0.4, probability_threshold=0):
+def evaluate(predictions, ground_df, root_dir, project=False, show_plot=True, iou_threshold=0.4, score_threshold=0):
     """Image annotated crown evaluation routine
     submission can be submitted as a .shp, existing pandas dataframe or .csv path
     
@@ -58,7 +58,7 @@ def evaluate(predictions, ground_df, root_dir, project=False, show_plot=True, io
         predictions: a pandas dataframe, if supplied a root dir is needed to give the relative path of files in df.name
         ground_df: a pandas dataframe, if supplied a root dir is needed to give the relative path of files in df.name
         root_dir: location of files in the dataframe 'name' column.
-        probability_threshold: minimum probability to be included in predictions
+        score_threshold: minimum probability to be included in predictions
         show_plot: Whether to show boxes as they are plotted
         project: Logical. Whether to project predictions that are in image coordinates (0,0 origin) into the geographic coordinates of the ground truth image. The CRS is take from the image file using rasterio.crs
     Returns:
@@ -73,7 +73,7 @@ def evaluate(predictions, ground_df, root_dir, project=False, show_plot=True, io
     results = [ ]
     for image_path, group in predictions.groupby("image_path"):
         plot_ground_truth = ground_df[ground_df["image_path"] == image_path]
-        result = evaluate_image(predictions=group, ground_df=plot_ground_truth, project=project, show_plot=show_plot, probability_threshold=probability_threshold, root_dir=root_dir)
+        result = evaluate_image(predictions=group, ground_df=plot_ground_truth, project=project, show_plot=show_plot, score_threshold=score_threshold, root_dir=root_dir)
         results.append(result)
 
     results = pd.concat(results)

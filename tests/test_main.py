@@ -1,5 +1,4 @@
 #test main
-from deepforest.utilities import soft_nms
 import os
 import glob
 import pytest
@@ -10,7 +9,6 @@ from skimage import io
 
 from deepforest import main
 from deepforest import get_data
-from deepforest import callbacks
         
 @pytest.fixture()
 def m():
@@ -91,7 +89,7 @@ def test_predict_tile(trained_model):
                                             patch_size = 300,
                                             patch_overlap = 0.5,
                                             return_plot = False,
-                                            soft_nms =True)
+                                            use_soft_nms =True)
     assert isinstance(soft_nms_pred, pd.DataFrame)
     assert set(soft_nms_pred.columns) == {"xmin","ymin","xmax","ymax","label","score"}
     assert not soft_nms_pred.empty
@@ -111,15 +109,16 @@ def test_predict_tile(trained_model):
                                        return_plot=False)
     assert not prediction.empty
 
-def test_train_callbacks(m):
+def test_train_callbacks(m, capsys):
     
-    class fake_callback(callbacks.Callback):
-        def after_epoch(self, epoch):
+    class fake_callback():
+        def on_epoch_end(self, epoch):
             print("Finished epoch {}")
-        def after_fit(self):
+        def on_fit_end(self):
             print("Done training")
-            
-    m.train(debug=True, callbacks=[fake_callback])
+    captured = capsys.readouterr()    
+    m.train(debug=True, callbacks=[fake_callback()])
+    assert captured.out == "Finished epoch 1\n Done Training\n"
     
 def test_evaluate(m):
     csv_file = get_data("example.csv")

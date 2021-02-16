@@ -50,7 +50,7 @@ def train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq):
 
     return metric_logger
 
-def run(train_ds, model, config, debug=False, callbacks=None):
+def run(train_ds, model, config, debug=False, callback_list=None):
     """Train a Deepforest model in pytorch
     Args:
         train_ds: a pytorch dataset, see main.load_dataset
@@ -66,7 +66,7 @@ def run(train_ds, model, config, debug=False, callbacks=None):
         
     #set configs
     # Observe that all parameters are being optimized
-    optimizer = optim.SGD(model.parameters(), lr=config["lr"], momentum=0.9)
+    optimizer = optim.SGD(model.parameters(), lr=config["train"]["lr"], momentum=0.9)
     
     #Randomly sample each epoch
     train_sampler = torch.utils.data.RandomSampler(train_ds)
@@ -75,16 +75,23 @@ def run(train_ds, model, config, debug=False, callbacks=None):
     
     if debug:
         data_loader_train = torch.utils.data.DataLoader(
-            train_ds, sampler=torch.utils.data.sampler.SubsetRandomSampler([1]), num_workers=config["workers"],
+            train_ds, sampler=torch.utils.data.sampler.SubsetRandomSampler([1]), num_workers=config["train"]["workers"],
             collate_fn=utils.collate_fn)        
     else:
         data_loader_train = torch.utils.data.DataLoader(
-            train_ds, batch_sampler=train_batch_sampler, num_workers=config["workers"],
+            train_ds, batch_sampler=train_batch_sampler, num_workers=config["train"]["workers"],
             collate_fn=utils.collate_fn)        
     
     num_epochs = config["epochs"]
     for epoch in range(num_epochs):
-        train_one_epoch(model, optimizer, data_loader_train, device, epoch, print_freq=config["print_freq"])
+        train_one_epoch(model, optimizer, data_loader_train, device, epoch, print_freq=config["train"]["print_freq"])
+        #run on_epoch_end callbacks
+        if len(callback_list) > 0:
+            [x.on_epoch_end(model, epoch) for x in callback_list]
     
+    #Run on fit end callbacks
+    if len(callback_list) > 0:
+        [x.on_fit_end(model, epoch) for x in callback_list]
+        
     return model
 

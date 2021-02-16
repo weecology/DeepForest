@@ -3,19 +3,13 @@ import os
 import numpy as np
 import pandas as pd
 from skimage import io
-from tqdm import tqdm
-
-from matplotlib import pyplot as plt
-import torch
-from torchvision.ops import nms 
 
 from deepforest import utilities
 from deepforest import dataset
 from deepforest import get_data
 from deepforest import training
 from deepforest import model
-from deepforest import preprocess
-from deepforest import visualize
+from deepforest import predict
 from deepforest import evaluate as evaluate_iou
 
 class deepforest:
@@ -62,6 +56,7 @@ class deepforest:
         
     def predict_image(self, image=None, path=None, return_plot=False,score_threshold=0.01):
         """Predict an image with a deepforest model
+        
         Args:
             image: a numpy array of a RGB image ranged from 0-255
             path: optional path to read image from disk instead of passing image arg
@@ -79,25 +74,10 @@ class deepforest:
                 raise ValueError("Path expects a string path to image on disk")            
             image = io.imread(path)
         
-        self.backbone.eval()        
-        image = preprocess.preprocess_image(image)
-        prediction = self.backbone(image)
+        self.backbone.eval()   
+        result = predict.predict_image(model =  self.backbone, image = image, return_plot = return_plot, score_threshold = score_threshold)
         
-        #return None for no predictions
-        if len(prediction[0]["boxes"])==0:
-            return None
-        
-        #This function on takes in a single image.
-        df = visualize.format_predictions(prediction[0])
-        df = df[df.scores > score_threshold]
-        
-        if return_plot:
-            #Matplotlib likes no batch dim and channels first
-            image = image.squeeze(0).permute(1,2,0)
-            plot, ax = visualize.plot_predictions(image, df)
-            return plot
-        else:
-            return df
+        return result
                                                  
     def predict_file(self, csv_file, root_dir, save_dir=None):
         """Create a dataset and predict entire annotation file
@@ -114,34 +94,8 @@ class deepforest:
         """
         
         self.backbone.eval()
-        input_csv = pd.read_csv(csv_file)
-        
-        #Just predict each image once. 
-        images = input_csv["image_path"].unique() 
-        
-        if root_dir is None:
-            root_dir = self.config["image_dir"]
-        
-        prediction_list = []
-        for path in images:
-            image = io.imread("{}/{}".format(root_dir,path))
-            image = preprocess.preprocess_image(image)
-            
-            #Just predict the images, even though we have the annotations
-            prediction = self.backbone(image)
-            prediction = visualize.format_predictions(prediction[0])
-            prediction["image_path"] = path
-            prediction_list.append(prediction)
-            
-            if save_dir:
-                image = image.squeeze(0).permute(1,2,0)                
-                plot, ax = visualize.plot_predictions(image, prediction)
-                annotations = input_csv[input_csv.image_path==path]
-                plot = visualize.add_annotations(plot, ax, annotations)
-                plot.savefig("{}/{}.png".format(save_dir,os.path.splitext(path)[0]))
-            
-        df = pd.concat(prediction_list,ignore_index=True)
-        
+        df = predict.predict_file(self.backbone, csv_file, root_dir, save_dir)
+
         return df
     
     def predict_tile(self,
@@ -150,13 +104,15 @@ class deepforest:
                      patch_size=400,
                      patch_overlap=0.05,
                      iou_threshold=0.15,
+                     score_threshold=0,
                      return_plot=False,
-                     soft_nms = False,
+                     use_soft_nms = False,
                      sigma = 0.5,
                      thresh = 0.001):
         """For images too large to input into the model, predict_tile cuts the
         image into overlapping windows, predicts trees on each window and
         reassambles into a single array.
+        
         Args:
             raster_path: Path to image on disk
             image (array): Numpy image array in BGR channel order
@@ -167,86 +123,32 @@ class deepforest:
                 windows to be suppressed. Defaults to 0.5.
                 Lower values suppress more boxes at edges.
             return_plot: Should the image be returned with the predictions drawn?
-            soft_nms: whether to perform Gaussian Soft NMS or not, if false, default perform NMS. 
+            use_soft_nms: whether to perform Gaussian Soft NMS or not, if false, default perform NMS. 
             sigma: variance of Gaussian function used in Gaussian Soft NMS
             thresh: the score thresh used to filter bboxes after soft-nms performed
+        
         Returns:
             boxes (array): if return_plot, an image.
             Otherwise a numpy array of predicted bounding boxes, scores and labels
         """
         
-        if image is not None:
-            pass
-        else:
-            #load raster as image
-            image = io.imread(raster_path)
+        self.backbone.eval()
         
-        # Compute sliding window index
-        windows = preprocess.compute_windows(image, patch_size, patch_overlap)
-        # Save images to tempdir
-        predicted_boxes = []
+        result = predict.predict_tile(
+            model = self.backbone,
+            raster_path=raster_path,
+            image=image,
+            patch_size=patch_size,
+            patch_overlap=patch_overlap,
+            iou_threshold=iou_threshold,
+            score_threshold=score_threshold,
+            return_plot=return_plot,
+            use_soft_nms = use_soft_nms,
+            sigma = sigma,
+            thresh = thresh)
         
-        for index, window in enumerate(tqdm(windows)):
-            #crop window and predict
-            crop = image[windows[index].indices()] 
-            
-            #crop is RGB channel order, change to BGR
-            crop = crop[...,::-1]
-            boxes = self.predict_image(image=crop,
-                                    return_plot=False,
-                                    score_threshold=self.config['score_threshold'])
-            
-            #transform the coordinates to original system
-            xmin, ymin, xmax, ymax = windows[index].getRect()
-            boxes.xmin = boxes.xmin + xmin
-            boxes.xmax = boxes.xmax + xmin
-            boxes.ymin = boxes.ymin + ymin
-            boxes.ymax = boxes.ymax + ymin
-
-            predicted_boxes.append(boxes)
+        return result
         
-        predicted_boxes = pd.concat(predicted_boxes)
-        # Non-max supression for overlapping boxes among window
-        if patch_overlap == 0:
-            mosaic_df = predicted_boxes
-        else:
-            print(f"{predicted_boxes.shape[0]} predictions in overlapping windows, applying non-max supression")
-            #move prediciton to tensor 
-            boxes = torch.tensor(predicted_boxes[["xmin", "ymin", "xmax", "ymax"]].values, dtype = torch.float32)
-            scores = torch.tensor(predicted_boxes.scores.values, dtype = torch.float32)
-            labels = predicted_boxes.label.values
-            
-            if soft_nms == False:
-                #Performs non-maximum suppression (NMS) on the boxes according to their intersection-over-union (IoU).
-                bbox_left_idx = nms(boxes = boxes, scores = scores, iou_threshold=iou_threshold)
-            else:
-                #Performs soft non-maximum suppression (soft-NMS) on the boxes.
-                bbox_left_idx = utilities.soft_nms(boxes = boxes, scores = scores, sigma = sigma, thresh=thresh)
-            
-            bbox_left_idx = bbox_left_idx.numpy()
-            new_boxes, new_labels, new_scores = boxes[bbox_left_idx].type(torch.int), labels[bbox_left_idx], scores[bbox_left_idx]
-            
-            #Recreate box dataframe
-            image_detections = np.concatenate([
-                    new_boxes,
-                    np.expand_dims(new_labels, axis=1),
-                    np.expand_dims(new_scores, axis=1)
-                    ],axis=1)
-            
-            mosaic_df = pd.DataFrame(
-                    image_detections,
-                    columns=["xmin", "ymin", "xmax", "ymax", "label","score"])
-
-            print(f"{mosaic_df.shape[0]} predictions kept after non-max suppression")
-        
-        if return_plot:
-            # Draw predictions
-            plot, _ = visualize.plot_predictions(image, mosaic_df)
-            # Mantain consistancy with predict_image
-            return plot
-        else:
-            return mosaic_df
-
 
     def load_dataset(self, csv_file, root_dir=None, augment=False):
         """Create a tree dataset for inference
@@ -270,6 +172,7 @@ class deepforest:
 
     def train(self, callbacks=None, debug=False):
         """Train on a loaded dataset
+        
         Args:
             debug: run a small training step for testing
             callbacks: a list of deepforest.callbacks that implements a training callback
@@ -281,17 +184,28 @@ class deepforest:
         if not self.backbone:
             raise ValueError("Cannot train a model with first creating a model instance, see deepforest.create_model().")
         
+        #Construct callbacks
+        callback_list = []
+        if self.config["train"]["validation_callback"] is not None:
+            self.val_dataset = self.load_dataset(self.config["validation"], augment=False)
+            val_callback = callbacks.validation(model = self.backbone, dataset=self.val_dataset)
+            callback_list.append(val_callback)
+        if callbacks:
+            for x in callbacks:
+                callback_list.append(x)
+            
         self.backbone.train()
-        self.model = training.run(train_ds=self.ds, model=self.backbone, config=self.config, debug=debug, callbacks=callbacks)
+        self.model = training.run(train_ds=self.ds, model=self.backbone, config=self.config, debug=debug, callback_list=callback_list)
         
         
-    def evaluate(self, csv_file, root_dir, iou_threshold=0.5, probability_threshold=0, show_plot=False, project=False):
+    def evaluate(self, csv_file, root_dir, iou_threshold=0.5, score_threshold=0, show_plot=False, project=False):
         """Compute intersection-over-union and precision/recall for a given iou_threshold
+        
         Args:
             df: a pandas-type dataframe (geopandas is fine) with columns "name","xmin","ymin","xmax","ymax","label", each box in a row
             root_dir: location of files in the dataframe 'name' column.
             iou_threshold: float [0,1] intersection-over-union union between annotation and prediction to be scored true positive
-            probability_threshold: float [0,1] minimum probability score to be included in evaluation
+            score_threshold: float [0,1] minimum probability score to be included in evaluation
             project: Logical. Whether to project predictions that are in image coordinates (0,0 origin) into the geographic coordinates of the ground truth image. The CRS is take from the image file using rasterio.crs
             show_plot: open a blocking matplotlib window to show plot and annotations, useful for debugging.
         Returns:
@@ -306,7 +220,7 @@ class deepforest:
             root_dir=root_dir,
             project=project,
             iou_threshold=iou_threshold,
-            probability_threshold=probability_threshold,
+            score_threshold=score_threshold,
             show_plot=show_plot)
         
         return results
