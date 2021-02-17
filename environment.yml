@@ -16,7 +16,7 @@ dependencies:
   - numpy
   - pillow
   - pip
-  - pytorch_lightning
+  - pytorch-lightning
   - matplotlib
   - sphinx_rtd_theme
   - pandas
