@@ -7,8 +7,10 @@
 from deepforest import evaluate
 from deepforest import predict
 import pandas as pd        
-    
-class validation():
+
+from pytorch_lightning import Callback
+
+class comet_validation(Callback):
     """Run evaluation on a file of annotations during training
     Args:
         model: pytorch model
@@ -25,7 +27,7 @@ class validation():
         None: either prints validation scores or logs them to a comet experiment
         """
     
-    def __init__(self, csv_file, root_dir, iou_threshold, probability_threshold, project=False, savedir=None, experiment=None, n=1):
+    def __init__(self, csv_file, root_dir, iou_threshold=0.5, probability_threshold=0, project=False, savedir=None, experiment=None, n=1):
         self.csv_file = csv_file
         self.experiment = experiment
         self.savedir = savedir
@@ -35,8 +37,8 @@ class validation():
         self.probability_threshold = probability_threshold
         self.n = n
     
-    def log_predictions(self, model, epoch):
-        predictions = predict.predict_file(model=model, self.csv_file, self.root_dir, savedir=self.savedir)
+    def log_predictions(self, pl_module):
+        predictions = predict.predict_file(pl_module, self.csv_file, self.root_dir, savedir=self.savedir)
         ground_df = pd.read_csv(self.csv_file)
         
         results = evaluate.evaluate(
@@ -49,18 +51,24 @@ class validation():
             show_plot=False)
         
         if self.experiment:
-            self.experiment.log_metric("Precision",results[0], epoch=epoch)
-            self.experiment.log_metric("Recall",results[1], epoch=epoch)
+            self.experiment.log_metric("Precision",results[0])
+            self.experiment.log_metric("Recall",results[1])
         else:
-            print("Validation precision at epoch {}: {}".format(epoch, results[0]))
-            print("Validation precision at epoch {}: {}".format(epoch, results[1]))
-            
-    def on_epoch_end(self,model, epoch):
-        if epoch % self.n == 0:
-            self.log_predictions(model, epoch)
+            print("Validation precision at epoch {}: {}".format(pl_module.current_epoch, results[0]))
+            print("Validation precision at epoch {}: {}".format(pl_module.current_epoch, results[1]))
+     
+    def on_init_end(self, trainer):
+        print('Running with comet validation callback')
+        
+    def on_epoch_end(self,trainer, pl_module):
+        print("on epoch end")
+        if pl_module.current_epoch % self.n == 0:
+            print("correct epoch")
+            self.log_predictions(pl_module)
     
-    def on_fit_end(self, model, epoch):
-        self.log_predictions(model, epoch)
+    def on_train_end(self, trainer, pl_module):
+        print("running on train end")
+        self.log_predictions(pl_module)
 
         
         

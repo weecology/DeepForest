@@ -6,42 +6,41 @@ import pandas as pd
 import numpy as np
 
 from skimage import io
-
+    
 from deepforest import main
 from deepforest import get_data
-        
+from pytorch_lightning import Trainer
+from pytorch_lightning.callbacks import Callback
+from deepforest.callbacks import comet_validation
+
 @pytest.fixture()
 def m():
-    csv_file = get_data("example.csv")
     m = main.deepforest()
     m.config["epochs"] = 1
     m.config["batch_size"] = 2
-    m.create_model()
-    m.load_dataset(csv_file=csv_file, root_dir=os.path.dirname(csv_file), augment=True)
     
     return m
 
 @pytest.fixture()
 def trained_model():
-    csv_file = get_data("example.csv")
     m = main.deepforest()
-    m.config["epochs"] = 1
-    m.config["batch_size"] = 2
-    m.create_model()
-    m.load_dataset(csv_file=csv_file, root_dir=os.path.dirname(csv_file), augment=True)
-    m.train(debug=True)        
-    
+        
     return m
 
 def test_main():
     from deepforest import main
 
-def test_train(m):
-    m.train(debug=True)
+def test_train(m):    
+    csv_file = get_data("example.csv") 
+    root_dir = os.path.dirname(csv_file)
+    train_ds = m.load_dataset(csv_file, root_dir=root_dir)
+    trainer = Trainer(fast_dev_run=True)
+    trainer.fit(m, train_ds)
 
 def test_predict_image_empty(m):
     image = np.random.random((400,400,3))
     prediction = m.predict_image(image = image)
+    
     assert prediction is None
     
 def test_predict_image_fromfile(trained_model):
@@ -108,21 +107,61 @@ def test_predict_tile(trained_model):
                                        patch_overlap=0,
                                        return_plot=False)
     assert not prediction.empty
-
-def test_train_callbacks(m, capsys):
-    
-    class fake_callback():
-        def on_epoch_end(self, epoch):
-            print("Finished epoch {}")
-        def on_fit_end(self):
-            print("Done training")
-    captured = capsys.readouterr()    
-    m.train(debug=True, callbacks=[fake_callback()])
-    assert captured.out == "Finished epoch 1\n Done Training\n"
     
 def test_evaluate(m):
     csv_file = get_data("example.csv")
     root_dir = os.path.dirname(csv_file)
     precision, recall = m.evaluate(csv_file, root_dir, iou_threshold = 0.5)
     
+def test_train_callbacks(m):
+    csv_file = get_data("example.csv") 
+    root_dir = os.path.dirname(csv_file)
+    train_ds = m.load_dataset(csv_file, root_dir=root_dir)
     
+    class MyPrintingCallback(Callback):
+    
+        def on_init_start(self, trainer):
+            print('Starting to init trainer!')
+    
+        def on_init_end(self, trainer):
+            print('trainer is init now')
+    
+        def on_train_end(self, trainer, pl_module):
+            print('do something when training ends')
+    
+    trainer = Trainer(callbacks=[MyPrintingCallback()])
+    
+    trainer = Trainer(fast_dev_run=True)
+    trainer.fit(m, train_ds)    
+    
+def test_precision_recall_callbacks(m):
+    csv_file = get_data("example.csv") 
+    root_dir = os.path.dirname(csv_file)
+    train_ds = m.load_dataset(csv_file, root_dir=root_dir)
+    
+    eval_callback = comet_validation(csv_file, root_dir)
+    
+    trainer = Trainer(callbacks=[eval_callback])
+    
+    trainer = Trainer(fast_dev_run=True)
+    trainer.fit(m, train_ds)    
+    
+def test_precision_recall_callbacks(m):
+    csv_file = get_data("example.csv") 
+    root_dir = os.path.dirname(csv_file)
+    train_ds = m.load_dataset(csv_file, root_dir=root_dir)
+    
+    eval_callback = comet_validation(csv_file, root_dir)
+    
+    is_travis = 'TRAVIS' in os.environ
+    if not is_travis:
+        from comet_ml import Experiment 
+        experiment = Experiment(project_name="deepforest-pytorch", workspace="bw4sz")
+        experiment.add_tag("testing") 
+    else:
+        experiment = None
+        
+    trainer = Trainer(callbacks=[eval_callback])
+    
+    trainer = Trainer(fast_dev_run=True)
+    trainer.fit(m, train_ds)    

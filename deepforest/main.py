@@ -3,19 +3,24 @@ import os
 import numpy as np
 import pandas as pd
 from skimage import io
+import torch
+
+import pytorch_lightning as pl
+from torch import optim
 
 from deepforest import utilities
 from deepforest import dataset
 from deepforest import get_data
-from deepforest import training
 from deepforest import model
 from deepforest import predict
 from deepforest import evaluate as evaluate_iou
 
-class deepforest:
+class deepforest(pl.LightningModule):
     """Class for training and predicting tree crowns in RGB images
     """
     def __init__(self, saved_model=None):
+        super().__init__()
+        
         # Read config file - if a config file exists in local dir use it,
         # if not use installed.
         if os.path.exists("deepforest_config.yml"):
@@ -36,6 +41,8 @@ class deepforest:
 
         if saved_model:
             utilities.load_saved_model(saved_model)
+        else:
+            self.create_model()
 
     def use_release(self):
         """Use the latest DeepForest model release from github and load model.
@@ -158,46 +165,58 @@ class deepforest:
         Args:
             csv_file: path to csv file 
             root_dir: directory of images. If none, uses "image_dir" in config
-            augment: Whether to create a training dataset, this deactivates data augmentations
+            augment: Whether to create a training dataset, this activates data augmentations
         Returns:
-            self.ds: a pytorch dataset
+            ds: a pytorch dataset
         """
         
-        if root_dir is None:
-            root_dir = self.config["image_dir"]
-                
-        self.ds = dataset.TreeDataset(csv_file=csv_file,
+        ds = dataset.TreeDataset(csv_file=csv_file,
                               root_dir=root_dir,
                               transforms=dataset.get_transform(augment=augment))
+        
+        train_sampler = torch.utils.data.RandomSampler(ds)
+        train_batch_sampler = torch.utils.data.BatchSampler(
+            train_sampler, self.config["train"]["batch_size"], drop_last=True)
+        
+        data_loader = torch.utils.data.DataLoader(
+            ds, batch_sampler=train_batch_sampler, num_workers=self.config["train"]["workers"],
+            collate_fn=utilities.collate_fn)    
+        
+        return data_loader
 
-    def train(self, callbacks=None, debug=False):
+    def training_step(self, batch, batch_idx):
         """Train on a loaded dataset
+        """        
+        images, targets = batch
         
-        Args:
-            debug: run a small training step for testing
-            callbacks: a list of deepforest.callbacks that implements a training callback
+        loss_dict = self.backbone.forward(images, targets)
+        
+        #sum of regression and classification loss        
+        losses = sum(loss for loss in loss_dict.values())
+        
+        return losses
+    
+    def validation_step(self, batch, batch_idx):
+        """Train on a loaded dataset
+
         """
-        #check is dataset has been created?
-        if not self.ds:
-            raise ValueError("Cannot train a model with first loading data, see deepforest.load_dataset(csv_file=<>)")
-        #check is model has been created?
-        if not self.backbone:
-            raise ValueError("Cannot train a model with first creating a model instance, see deepforest.create_model().")
+        images, targets = batch
         
-        #Construct callbacks
-        callback_list = []
-        if self.config["train"]["validation_callback"] is not None:
-            self.val_dataset = self.load_dataset(self.config["validation"], augment=False)
-            val_callback = callbacks.validation(model = self.backbone, dataset=self.val_dataset)
-            callback_list.append(val_callback)
-        if callbacks:
-            for x in callbacks:
-                callback_list.append(x)
+        loss_dict = self.backbone.forward(images, targets)
+        #sum of regression and classification loss
+        losses = sum(loss for loss in loss_dict.values())
+        
+        return losses
+    
+    def configure_optimizers(self):
+        self.optimizer = optim.SGD(self.backbone.parameters(), lr=self.config["train"]["lr"], momentum=0.9)
+        self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, mode='min', 
+                                                           factor=0.1, patience=10, 
+                                                           verbose=False, threshold=0.0001, 
+                                                           threshold_mode='rel', cooldown=0, 
+                                                           min_lr=0, eps=1e-08)
+        return self.optimizer
             
-        self.backbone.train()
-        self.model = training.run(train_ds=self.ds, model=self.backbone, config=self.config, debug=debug, callback_list=callback_list)
-        
-        
     def evaluate(self, csv_file, root_dir, iou_threshold=0.5, score_threshold=0, show_plot=False, project=False):
         """Compute intersection-over-union and precision/recall for a given iou_threshold
         

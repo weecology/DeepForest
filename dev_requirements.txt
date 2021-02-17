@@ -6,6 +6,7 @@ pandas
 pillow
 pip
 psutil
+pytorch_lightning
 torch
 pyyaml>=5.1.0
 pytest
@@ -23,3 +24,4 @@ tqdm
 twine
 torchvision
 xmltodict
+comet_ml

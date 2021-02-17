@@ -221,3 +221,7 @@ def project_boxes(df, root_dir, transform = True):
     df.crs = crs
     
     return df
+
+
+def collate_fn(batch):
+    return tuple(zip(*batch))

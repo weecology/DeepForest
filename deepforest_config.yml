@@ -12,3 +12,7 @@ train:
     
     #Print loss every n epochs
     print_freq: 1
+    
+    epochs: 1
+    
+    batch_size: 1
