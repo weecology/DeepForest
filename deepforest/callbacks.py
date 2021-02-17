@@ -10,7 +10,7 @@ import pandas as pd
 
 from pytorch_lightning import Callback
 
-class comet_validation(Callback):
+class evaluate_callback(Callback):
     """Run evaluation on a file of annotations during training
     Args:
         model: pytorch model
@@ -27,18 +27,19 @@ class comet_validation(Callback):
         None: either prints validation scores or logs them to a comet experiment
         """
     
-    def __init__(self, csv_file, root_dir, iou_threshold=0.5, probability_threshold=0, project=False, savedir=None, experiment=None, n=1):
+    def __init__(self, csv_file, root_dir, iou_threshold=0.5, score_threshold=0, project=False, savedir=None, experiment=None, n=1):
         self.csv_file = csv_file
         self.experiment = experiment
         self.savedir = savedir
         self.project = project
         self.root_dir = root_dir
         self.iou_threshold = iou_threshold
-        self.probability_threshold = probability_threshold
+        self.score_threshold = score_threshold
         self.n = n
     
     def log_predictions(self, pl_module):
-        predictions = predict.predict_file(pl_module, self.csv_file, self.root_dir, savedir=self.savedir)
+        pl_module.backbone.eval()
+        predictions = predict.predict_file(pl_module.backbone, self.csv_file, self.root_dir, savedir=self.savedir)
         ground_df = pd.read_csv(self.csv_file)
         
         results = evaluate.evaluate(
@@ -47,7 +48,7 @@ class comet_validation(Callback):
             root_dir=self.root_dir,
             project=self.project,
             iou_threshold=self.iou_threshold,
-            probability_threshold=self.probability_threshold,
+            score_threshold=self.score_threshold,
             show_plot=False)
         
         if self.experiment:
@@ -61,13 +62,10 @@ class comet_validation(Callback):
         print('Running with comet validation callback')
         
     def on_epoch_end(self,trainer, pl_module):
-        print("on epoch end")
         if pl_module.current_epoch % self.n == 0:
-            print("correct epoch")
             self.log_predictions(pl_module)
     
-    def on_train_end(self, trainer, pl_module):
-        print("running on train end")
+    def on_validation_end(self, trainer, pl_module):
         self.log_predictions(pl_module)
 
         

@@ -4,14 +4,17 @@ import glob
 import pytest
 import pandas as pd
 import numpy as np
-
 from skimage import io
-    
+import torch
+
 from deepforest import main
 from deepforest import get_data
+from deepforest.utilities import collate_fn
+from deepforest.callbacks import evaluate_callback
+
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import Callback
-from deepforest.callbacks import comet_validation
+
 
 @pytest.fixture()
 def m():
@@ -138,20 +141,7 @@ def test_precision_recall_callbacks(m):
     csv_file = get_data("example.csv") 
     root_dir = os.path.dirname(csv_file)
     train_ds = m.load_dataset(csv_file, root_dir=root_dir)
-    
-    eval_callback = comet_validation(csv_file, root_dir)
-    
-    trainer = Trainer(callbacks=[eval_callback])
-    
-    trainer = Trainer(fast_dev_run=True)
-    trainer.fit(m, train_ds)    
-    
-def test_precision_recall_callbacks(m):
-    csv_file = get_data("example.csv") 
-    root_dir = os.path.dirname(csv_file)
-    train_ds = m.load_dataset(csv_file, root_dir=root_dir)
-    
-    eval_callback = comet_validation(csv_file, root_dir)
+    eval_callback = evaluate_callback(csv_file, root_dir)
     
     is_travis = 'TRAVIS' in os.environ
     if not is_travis:
@@ -161,7 +151,5 @@ def test_precision_recall_callbacks(m):
     else:
         experiment = None
         
-    trainer = Trainer(callbacks=[eval_callback])
-    
-    trainer = Trainer(fast_dev_run=True)
+    trainer = Trainer(callbacks=[eval_callback], limit_train_batches=0.01, limit_val_batches=0.01, max_epochs= 1)
     trainer.fit(m, train_ds)    
