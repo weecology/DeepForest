@@ -142,14 +142,6 @@ def test_precision_recall_callbacks(m):
     root_dir = os.path.dirname(csv_file)
     train_ds = m.load_dataset(csv_file, root_dir=root_dir)
     eval_callback = evaluate_callback(csv_file, root_dir)
-    
-    is_travis = 'TRAVIS' in os.environ
-    if not is_travis:
-        from comet_ml import Experiment 
-        experiment = Experiment(project_name="deepforest-pytorch", workspace="bw4sz")
-        experiment.add_tag("testing") 
-    else:
-        experiment = None
         
     trainer = Trainer(callbacks=[eval_callback], limit_train_batches=0.01, limit_val_batches=0.01, max_epochs= 1)
     trainer.fit(m, train_ds)    
