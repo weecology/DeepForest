@@ -58,7 +58,7 @@ class evaluate_callback(Callback):
             print("Validation precision at epoch {}: {}".format(pl_module.current_epoch, results[0]))
             print("Validation precision at epoch {}: {}".format(pl_module.current_epoch, results[1]))
      
-    def on_init_end(self, trainer):
+    def on_init_end(self, trainer, pl_module):
         print('Running with comet validation callback')
         
     def on_epoch_end(self,trainer, pl_module):
