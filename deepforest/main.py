@@ -174,13 +174,7 @@ class deepforest(pl.LightningModule):
                               root_dir=root_dir,
                               transforms=dataset.get_transform(augment=augment))
         
-        train_sampler = torch.utils.data.RandomSampler(ds)
-        train_batch_sampler = torch.utils.data.BatchSampler(
-            train_sampler, self.config["train"]["batch_size"], drop_last=True)
-        
-        data_loader = torch.utils.data.DataLoader(
-            ds, batch_sampler=train_batch_sampler, num_workers=self.config["train"]["workers"],
-            collate_fn=utilities.collate_fn)    
+        data_loader = torch.utils.data.DataLoader(ds, batch_size=self.config["train"]["batch_size"], shuffle=True, drop_last=True, collate_fn=utilities.collate_fn)
         
         return data_loader
 
@@ -192,7 +186,7 @@ class deepforest(pl.LightningModule):
         loss_dict = self.backbone.forward(images, targets)
         
         #sum of regression and classification loss        
-        losses = sum(loss for loss in loss_dict.values())
+        losses = sum([loss for loss in loss_dict.values()])
         
         return losses
     
