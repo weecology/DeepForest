@@ -207,7 +207,7 @@ def split_raster(path_to_raster,
             "(e.g. path/to/dir/image_name.tif)".format(annotations_file,
                                                        image_name))
 
-    if not annotations.shape[1] == 6:
+    if not all([x in annotations.columns for x in ["image_path", "xmin", "ymin", "xmax", "ymax", "label"]]):
         raise ValueError(
             "Annotations file has {} columns, should have "
             "format image_path, xmin, ymin, xmax, ymax, label".format(

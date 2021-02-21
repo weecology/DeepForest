@@ -198,7 +198,7 @@ class deepforest(pl.LightningModule):
         
         loss_dict = self.backbone.forward(images, targets)
         #sum of regression and classification loss
-        losses = sum(loss for loss in loss_dict.values())
+        losses = sum([loss for loss in loss_dict.values()])
         
         return losses
     
