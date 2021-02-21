@@ -174,7 +174,7 @@ class deepforest(pl.LightningModule):
                               root_dir=root_dir,
                               transforms=dataset.get_transform(augment=augment))
         
-        data_loader = torch.utils.data.DataLoader(ds, batch_size=self.config["train"]["batch_size"], shuffle=True, drop_last=True, collate_fn=utilities.collate_fn)
+        data_loader = torch.utils.data.DataLoader(ds, batch_size=self.config["train"]["batch_size"], shuffle=True, drop_last=True, collate_fn=utilities.collate_fn, num_workers=self.config["train"]["workers"])
         
         return data_loader
 
