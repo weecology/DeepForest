@@ -40,6 +40,14 @@ def test_train(m):
     trainer = Trainer(fast_dev_run=True)
     trainer.fit(m, train_ds)
 
+
+def test_train_validation_step(m):    
+    csv_file = get_data("example.csv") 
+    root_dir = os.path.dirname(csv_file)
+    train_ds = m.load_dataset(csv_file, root_dir=root_dir)
+    trainer = Trainer(fast_dev_run=True)
+    trainer.fit(m, train_ds, train_ds)
+    
 def test_predict_image_empty(m):
     image = np.random.random((400,400,3))
     prediction = m.predict_image(image = image)
