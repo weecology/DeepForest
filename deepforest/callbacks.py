@@ -38,7 +38,7 @@ class images_callback(Callback):
         self.ground_truth = pd.read_csv(self.csv_file)
         
     def log_images(self, pl_module):
-        ds = pl_module.load_dataset(self.csv_file, self.root_dir)
+        ds = pl_module.load_dataset(self.csv_file, self.root_dir, batch_size=1)
         
         #Make sure the n images is not larger than the dataset
         if self.n > len(ds):
@@ -46,20 +46,24 @@ class images_callback(Callback):
             
         for x in np.arange(self.n):
             batch = next(iter(ds))
-            path, image, targets = batch
+            path, images, targets = batch
             pl_module.backbone.eval()
-            predictions = pl_module.backbone(image)
             
-            result = []
+            #put images on correct device
+            if not pl_module.device.type=="cpu":
+                images = [x.to(pl_module.device) for x in images]
+            
+            predictions = pl_module.backbone(images)
+            
+            if not pl_module.device.type=="cpu":
+                predictions = [x.detach().cpu().numpy() for x in predictions]
+                
             for index, prediction in enumerate(predictions):
-                formatted_prediction = visualize.format_predictions(prediction)
-                formatted_prediction["image_path"] = path[index]
-                result.append(formatted_prediction)
-            df = pd.concat(result)
-            
-            df = df[df.scores > self.score_threshold]
-            visualize.plot_prediction_dataframe(df, self.ground_truth, self.root_dir, self.savedir)
-            
+                df = visualize.format_predictions(prediction)
+                df["image_path"] = path[index]
+                df = df[df.scores > self.score_threshold]
+                visualize.plot_prediction_dataframe(df, self.ground_truth, self.root_dir, self.savedir)            
+
         if self.experiment:
             saved_plots = glob.glob("{}/*.png".format(self.savedir))
             for x in saved_plots:

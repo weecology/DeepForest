@@ -81,7 +81,7 @@ class deepforest(pl.LightningModule):
     def run_train(self):
         self.trainer.fit(self)
 
-    def load_dataset(self, csv_file, root_dir=None, augment=False, shuffle=True):
+    def load_dataset(self, csv_file, root_dir=None, augment=False, shuffle=True, batch_size=1):
         """Create a tree dataset for inference
         Csv file format is .csv file with the columns "image_path", "xmin","ymin","xmax","ymax" for the image name and bounding box position. 
         Image_path is the relative filename, not absolute path, which is in the root_dir directory. One bounding box per line. 
@@ -99,7 +99,7 @@ class deepforest(pl.LightningModule):
                               transforms=dataset.get_transform(augment=augment))
         
         data_loader = torch.utils.data.DataLoader(ds,
-                                                  batch_size=self.config["batch_size"],
+                                                  batch_size=batch_size,
                                                   shuffle=shuffle,
                                                   collate_fn=utilities.collate_fn,
                                                   num_workers=self.config["workers"])
@@ -107,17 +107,17 @@ class deepforest(pl.LightningModule):
         return data_loader
     
     def train_dataloader(self):
-        loader = self.load_dataset(csv_file=self.config["train"]["csv_file"], root_dir=self.config["train"]["root_dir"], augment=True, shuffle=True)
+        loader = self.load_dataset(csv_file=self.config["train"]["csv_file"], root_dir=self.config["train"]["root_dir"], augment=True, shuffle=True, batch_size=self.config["batch_size"])
         
         return loader
     
     def test_dataloader(self):
-        loader = self.load_dataset(csv_file=self.config["evaluation"]["csv_file"], root_dir=self.config["evaluation"]["root_dir"], augment=False, shuffle=False)
+        loader = self.load_dataset(csv_file=self.config["evaluation"]["csv_file"], root_dir=self.config["evaluation"]["root_dir"], augment=False, shuffle=False, batch_size=self.config["batch_size"])
         
         return loader
     
     def validation_dataloader(self):
-        loader = self.load_dataset(csv_file=self.config["evaluation"]["csv_file"], root_dir=self.config["evaluation"]["root_dir"], augment=False, shuffle=False)
+        loader = self.load_dataset(csv_file=self.config["evaluation"]["csv_file"], root_dir=self.config["evaluation"]["root_dir"], augment=False, shuffle=False, batch_size=self.config["batch_size"])
         
         return loader    
     
@@ -166,7 +166,7 @@ class deepforest(pl.LightningModule):
             df: pandas dataframe with bounding boxes, label and scores for each image in the csv file
         """
         
-        loader = self.load_dataset(csv_file=csv_file, root_dir=root_dir)
+        loader = self.load_dataset(csv_file=csv_file, root_dir=root_dir, batch_size=self.config["batch_size"])
         df = self.trainer.test(self, loader)
         result = df[0]["gathered_results"]
         
@@ -310,7 +310,7 @@ class deepforest(pl.LightningModule):
         Returns:
             results: tuple of (precision, recall) for a given threshold
         """
-        ds = self.load_dataset(csv_file=csv_file, root_dir=root_dir)
+        ds = self.load_dataset(csv_file=csv_file, root_dir=root_dir, batch_size=self.config["batch_size"])
         predictions = self.trainer.test(self, test_dataloaders=ds)
         
         ground_df = pd.read_csv(csv_file)
