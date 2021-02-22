@@ -3,6 +3,7 @@ from deepforest import get_data
 from deepforest import dataset
 import os
 import pytest
+import pandas as pd
 
 def test_TreeDataset():
     csv_file = get_data("example.csv")
@@ -10,7 +11,10 @@ def test_TreeDataset():
     ds = dataset.TreeDataset(csv_file=csv_file,
                              root_dir=root_dir,
                              transforms=None)
-
+    raw_data = pd.read_csv(csv_file)
+    
+    assert len(ds) == len(raw_data.image_path.unique())
+    
     for i in range(len(ds)):
         #Between 0 and 1
         path, image, targets = ds[i]

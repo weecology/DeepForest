@@ -41,19 +41,19 @@ class TreeDataset(Dataset):
         self.annotations = pd.read_csv(csv_file)
         self.root_dir = root_dir
         self.transform = transforms
+        self.image_names = self.annotations.image_path.unique()
 
     def __len__(self):
-        return self.annotations.shape[0]
+        return len(self.image_names)
 
     def __getitem__(self, idx):
-        path = self.annotations.loc[idx, "image_path"]
-        img_name = os.path.join(self.root_dir, path)
+        img_name = os.path.join(self.root_dir, self.image_names[idx])
         image = io.imread(img_name)
         image = image/255   
         
         #select annotations
         image_annotations = self.annotations[self.annotations.image_path ==
-                                             path]
+                                             self.image_names[idx]]
         targets = {}
         targets["boxes"] = image_annotations[["xmin", "ymin", "xmax",
                                    "ymax"]].values.astype(float)
@@ -64,4 +64,4 @@ class TreeDataset(Dataset):
         if self.transform:
             image, targets = self.transform(image, targets)
 
-        return path, image, targets
+        return self.image_names[idx], image, targets

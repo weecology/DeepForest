@@ -30,7 +30,7 @@ def plot_predictions(image, df):
         ymin = row["ymin"]
         width = row["xmax"] - xmin
         height = row["ymax"] - ymin
-        rect = create_box(xmin=xmin,ymin=ymin, height=height, width=width)
+        rect = create_box(xmin=xmin,ymin=ymin, height=height, width=width,color="cyan")
         ax.add_patch(rect)
     #no axis show up
     plt.axis('off')

@@ -62,8 +62,11 @@ class deepforest(pl.LightningModule):
         """Define a deepforest retinanet architecture"""
         self.backbone = model.load_backbone()
     
-    def create_trainer(self):
-        """Create a pytorch ligthning training by reading config files"""
+    def create_trainer(self, callbacks=None):
+        """Create a pytorch ligthning training by reading config files
+        Args:
+            callbacks (list): a list of pytorch-lightning callback classes
+        """
         
         self.trainer = pl.Trainer(
             logger=self.logger,
@@ -71,7 +74,8 @@ class deepforest(pl.LightningModule):
             gpus=self.config["gpus"],
             checkpoint_callback=False,
             distributed_backend=self.config["distributed_backend"],
-            fast_dev_run=self.config["train"]["fast_dev_run"]
+            fast_dev_run=self.config["train"]["fast_dev_run"],
+            callbacks=callbacks
         )        
     
     def run_train(self):
@@ -97,7 +101,6 @@ class deepforest(pl.LightningModule):
         data_loader = torch.utils.data.DataLoader(ds,
                                                   batch_size=self.config["batch_size"],
                                                   shuffle=shuffle,
-                                                  drop_last=True,
                                                   collate_fn=utilities.collate_fn,
                                                   num_workers=self.config["workers"])
         
