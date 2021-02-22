@@ -54,9 +54,6 @@ class images_callback(Callback):
                 images = [x.to(pl_module.device) for x in images]
             
             predictions = pl_module.backbone(images)
-            
-            if not pl_module.device.type=="cpu":
-                predictions = [x.detach().cpu().numpy() for x in predictions]
                 
             for index, prediction in enumerate(predictions):
                 df = visualize.format_predictions(prediction)
