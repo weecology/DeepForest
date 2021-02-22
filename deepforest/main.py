@@ -157,7 +157,7 @@ class deepforest(pl.LightningModule):
         return result
         
 
-    def load_dataset(self, csv_file, root_dir=None, augment=False):
+    def load_dataset(self, csv_file, root_dir=None, augment=False, shuffle=True):
         """Create a tree dataset for inference
         Csv file format is .csv file with the columns "image_path", "xmin","ymin","xmax","ymax" for the image name and bounding box position. 
         Image_path is the relative filename, not absolute path, which is in the root_dir directory. One bounding box per line. 
