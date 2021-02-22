@@ -11,7 +11,7 @@ from deepforest import preprocess
 from deepforest import visualize
 from skimage import io
 
-def predict_image(model, image, score_threshold, return_plot, device="cpu"):
+def predict_image(model, image, score_threshold, return_plot, device):
     """Predict an image with a deepforest model
     
     Args:
@@ -19,13 +19,17 @@ def predict_image(model, image, score_threshold, return_plot, device="cpu"):
         path: optional path to read image from disk instead of passing image arg
         return_plot: Return image with plotted detections
         score_threshold: float [0,1] minimum probability score to return/plot.
+        device: pytorch device of 'cuda' or 'cpu' for gpu prediction. Set internally.
     Returns:
         boxes: A pandas dataframe of predictions (Default)
         img: The input with predictions overlaid (Optional)
     """        
     image = preprocess.preprocess_image(image)
-    image = torch.tensor(image, device=device).float()            
+    image = image.to(device)
     prediction = model(image)
+        
+    if not device.type=="cpu":
+        prediction = prediction.detach().cpu().numpy()
         
     #return None for no predictions
     if len(prediction[0]["boxes"])==0:
@@ -43,7 +47,7 @@ def predict_image(model, image, score_threshold, return_plot, device="cpu"):
     else:
         return df
     
-def predict_file(model,csv_file,root_dir, savedir, device="cpu"):
+def predict_file(model,csv_file,root_dir, savedir, device):
     """Create a dataset and predict entire annotation file
     
     Csv file format is .csv file with the columns "image_path", "xmin","ymin","xmax","ymax" for the image name and bounding box position. 
@@ -53,6 +57,7 @@ def predict_file(model,csv_file,root_dir, savedir, device="cpu"):
         csv_file: path to csv file 
         root_dir: directory of images. If none, uses "image_dir" in config
         savedir: Optional. Directory to save image plots.
+        device: pytorch device of 'cuda' or 'cpu' for gpu prediction. Set internally.
     Returns:
         df: pandas dataframe with bounding boxes, label and scores for each image in the csv file
     """    
@@ -70,6 +75,11 @@ def predict_file(model,csv_file,root_dir, savedir, device="cpu"):
         #Just predict the images, even though we have the annotations
         image = torch.tensor(image, device=device).float()                
         prediction = model(image)        
+        
+        #If on gpu, bring back to cpu
+        if not device.type=="cpu":
+            prediction = prediction.detach().cpu().numpy()
+        
         prediction = visualize.format_predictions(prediction[0])
         prediction["image_path"] = path
         prediction_list.append(prediction)
@@ -86,6 +96,7 @@ def predict_file(model,csv_file,root_dir, savedir, device="cpu"):
     return df
 
 def predict_tile(model,
+                 device,
                  raster_path=None,
                  image=None,
                  patch_size=400,
@@ -95,8 +106,7 @@ def predict_tile(model,
                  return_plot=False,
                  use_soft_nms = False,
                  sigma = 0.5,
-                 thresh = 0.001,
-                 device="cpu"):
+                 thresh = 0.001):
     """For images too large to input into the model, predict_tile cuts the
     image into overlapping windows, predicts trees on each window and
     reassambles into a single array.
@@ -116,6 +126,7 @@ def predict_tile(model,
         use_soft_nms: whether to perform Gaussian Soft NMS or not, if false, default perform NMS. 
         sigma: variance of Gaussian function used in Gaussian Soft NMS
         thresh: the score thresh used to filter bboxes after soft-nms performed
+        device: pytorch device of 'cuda' or 'cpu' for gpu prediction. Set internally.
     
     Returns:
         boxes (array): if return_plot, an image.
@@ -137,7 +148,7 @@ def predict_tile(model,
         #crop window and predict
         crop = image[windows[index].indices()] 
         
-        #crop is RGB channel order, change to BGR
+        #crop is RGB channel order, change to BGR?
         crop = crop[...,::-1]
         boxes = predict_image(model=model,
                               image=crop,

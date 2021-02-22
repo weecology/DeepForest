@@ -1,7 +1,6 @@
 #test dataset model
 from deepforest import get_data
 from deepforest import dataset
-from torch.utils.data import DataLoader
 import os
 import pytest
 
@@ -14,7 +13,7 @@ def test_TreeDataset():
 
     for i in range(len(ds)):
         #Between 0 and 1
-        image, targets = ds[i]
+        path, image, targets = ds[i]
         assert image.max() <= 1
         assert image.min() >= 0
         assert targets["boxes"].shape == (79, 4)
@@ -31,7 +30,7 @@ def test_TreeDataset_transform(augment):
 
     for i in range(len(ds)):
         #Between 0 and 1
-        image, targets = ds[i]
+        path, image, targets = ds[i]
         assert image.max() <= 1
         assert image.min() >= 0
         assert targets["boxes"].shape == (79, 4)

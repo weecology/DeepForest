@@ -17,7 +17,6 @@ import pandas as pd
 from skimage import io
 from torch.utils.data import Dataset
 from deepforest import transforms as T
-from deepforest.preprocess import preprocess_image
 
 def get_transform(augment):
     transforms = []
@@ -65,4 +64,4 @@ class TreeDataset(Dataset):
         if self.transform:
             image, targets = self.transform(image, targets)
 
-        return image, targets   
+        return path, image, targets

@@ -14,11 +14,12 @@ from deepforest import get_data
 from deepforest import model
 from deepforest import predict
 from deepforest import evaluate as evaluate_iou
+from deepforest import visualize
 
 class deepforest(pl.LightningModule):
     """Class for training and predicting tree crowns in RGB images
     """
-    def __init__(self, saved_model=None):
+    def __init__(self, saved_model=None, logger=None):
         super().__init__()
         
         # Read config file - if a config file exists in local dir use it,
@@ -60,11 +61,63 @@ class deepforest(pl.LightningModule):
     def create_model(self):
         """Define a deepforest retinanet architecture"""
         self.backbone = model.load_backbone()
+    
+    def create_trainer(self):
+        """Create a pytorch ligthning training by reading config files"""
         
-        #Load on GPU is available
-        if torch.cuda.is_available:
-            self.backbone.to(self.device)
-            
+        self.trainer = pl.Trainer(
+            logger=self.logger,
+            max_epochs=self.config["train"]["epochs"],
+            gpus=self.config["gpus"],
+            checkpoint_callback=False,
+            distributed_backend=self.config["distributed_backend"],
+            fast_dev_run=self.config["train"]["fast_dev_run"]
+        )        
+    
+    def run_train(self):
+        self.trainer.fit(self)
+
+    def load_dataset(self, csv_file, root_dir=None, augment=False, shuffle=True):
+        """Create a tree dataset for inference
+        Csv file format is .csv file with the columns "image_path", "xmin","ymin","xmax","ymax" for the image name and bounding box position. 
+        Image_path is the relative filename, not absolute path, which is in the root_dir directory. One bounding box per line. 
+        
+        Args:
+            csv_file: path to csv file 
+            root_dir: directory of images. If none, uses "image_dir" in config
+            augment: Whether to create a training dataset, this activates data augmentations
+        Returns:
+            ds: a pytorch dataset
+        """
+        
+        ds = dataset.TreeDataset(csv_file=csv_file,
+                              root_dir=root_dir,
+                              transforms=dataset.get_transform(augment=augment))
+        
+        data_loader = torch.utils.data.DataLoader(ds,
+                                                  batch_size=self.config["batch_size"],
+                                                  shuffle=shuffle,
+                                                  drop_last=True,
+                                                  collate_fn=utilities.collate_fn,
+                                                  num_workers=self.config["workers"])
+        
+        return data_loader
+    
+    def train_dataloader(self):
+        loader = self.load_dataset(csv_file=self.config["train"]["csv_file"], root_dir=self.config["train"]["root_dir"], augment=True, shuffle=True)
+        
+        return loader
+    
+    def test_dataloader(self):
+        loader = self.load_dataset(csv_file=self.config["evaluation"]["csv_file"], root_dir=self.config["evaluation"]["root_dir"], augment=False, shuffle=False)
+        
+        return loader
+    
+    def validation_dataloader(self):
+        loader = self.load_dataset(csv_file=self.config["evaluation"]["csv_file"], root_dir=self.config["evaluation"]["root_dir"], augment=False, shuffle=False)
+        
+        return loader    
+    
     def predict_image(self, image=None, path=None, return_plot=False,score_threshold=0.01):
         """Predict an image with a deepforest model
         
@@ -85,6 +138,10 @@ class deepforest(pl.LightningModule):
                 raise ValueError("Path expects a string path to image on disk")            
             image = io.imread(path)
         
+            #Load on GPU is available
+        if torch.cuda.is_available:
+            self.backbone.to(self.device)   
+            
         self.backbone.eval()   
         
         #Check if GPU is available and pass image to gpu
@@ -92,7 +149,7 @@ class deepforest(pl.LightningModule):
         
         return result
                                                  
-    def predict_file(self, csv_file, root_dir, save_dir=None):
+    def predict_file(self, csv_file, root_dir, savedir=None):
         """Create a dataset and predict entire annotation file
         
         Csv file format is .csv file with the columns "image_path", "xmin","ymin","xmax","ymax" for the image name and bounding box position. 
@@ -106,10 +163,16 @@ class deepforest(pl.LightningModule):
             df: pandas dataframe with bounding boxes, label and scores for each image in the csv file
         """
         
-        self.backbone.eval()
-        df = predict.predict_file(self.backbone, csv_file, root_dir, save_dir)
-
-        return df
+        loader = self.load_dataset(csv_file=csv_file, root_dir=root_dir)
+        df = self.trainer.test(self, loader)
+        result = df[0]["gathered_results"]
+        
+        if savedir:
+            ground_truth = pd.read_csv(csv_file)
+            utilities.check_file(ground_truth)
+            visualize.plot_prediction_dataframe(result, ground_truth=ground_truth, root_dir=root_dir, savedir=savedir)
+            
+        return result
     
     def predict_tile(self,
                      raster_path=None,
@@ -146,7 +209,7 @@ class deepforest(pl.LightningModule):
         """
         
         self.backbone.eval()
-        
+
         result = predict.predict_tile(
             model = self.backbone,
             raster_path=raster_path,
@@ -158,36 +221,16 @@ class deepforest(pl.LightningModule):
             return_plot=return_plot,
             use_soft_nms = use_soft_nms,
             sigma = sigma,
-            thresh = thresh)
+            thresh = thresh,
+            device=self.device
+        )
         
         return result
-        
-
-    def load_dataset(self, csv_file, root_dir=None, augment=False, shuffle=True):
-        """Create a tree dataset for inference
-        Csv file format is .csv file with the columns "image_path", "xmin","ymin","xmax","ymax" for the image name and bounding box position. 
-        Image_path is the relative filename, not absolute path, which is in the root_dir directory. One bounding box per line. 
-        
-        Args:
-            csv_file: path to csv file 
-            root_dir: directory of images. If none, uses "image_dir" in config
-            augment: Whether to create a training dataset, this activates data augmentations
-        Returns:
-            ds: a pytorch dataset
-        """
-        
-        ds = dataset.TreeDataset(csv_file=csv_file,
-                              root_dir=root_dir,
-                              transforms=dataset.get_transform(augment=augment))
-        
-        data_loader = torch.utils.data.DataLoader(ds, batch_size=self.config["train"]["batch_size"], shuffle=True, drop_last=True, collate_fn=utilities.collate_fn, num_workers=self.config["train"]["workers"])
-        
-        return data_loader
 
     def training_step(self, batch, batch_idx):
         """Train on a loaded dataset
         """        
-        images, targets = batch
+        path, images, targets = batch
         
         loss_dict = self.backbone.forward(images, targets)
         
@@ -200,7 +243,7 @@ class deepforest(pl.LightningModule):
         """Train on a loaded dataset
 
         """
-        images, targets = batch
+        path, images, targets = batch
         
         self.backbone.train()
         loss_dict = self.backbone.forward(images, targets)
@@ -210,15 +253,38 @@ class deepforest(pl.LightningModule):
         
         #Log loss
         for key, value in loss_dict.items():
-            self.log(key,value, on_epoch=True)
+            self.log("val_{}".format(key),value, on_epoch=True)
         
         return losses
     
+    def test_step(self, batch, batch_idx):
+        path, images, targets = batch
+        predictions = self.backbone.forward(images)
+        
+        result = []
+        for index, prediction in enumerate(predictions):
+            formatted_prediction = visualize.format_predictions(prediction)
+            formatted_prediction["image_path"] = path[index]
+            result.append(formatted_prediction)
+        result = pd.concat(result)
+        
+        return {"predictions":result}
+    
+    def test_epoch_end(self, outputs):
+        """At the end of testing loop, gather all outputs into a single dataframe"""
+        gathered = list()
+        for batch in outputs:
+            gathered.append(batch["predictions"])
+        gathered = pd.concat(gathered)
+        
+        return {"gathered_results": gathered}
+        
     def validation_end(self, outputs):
         avg_loss = torch.stack([x['val_loss'] for x in outputs]).mean()
         comet_logs = {'val_loss': avg_loss}
+        
         return {'avg_val_loss': avg_loss, 'log': comet_logs}
-    
+        
     def configure_optimizers(self):
         self.optimizer = optim.SGD(self.backbone.parameters(), lr=self.config["train"]["lr"], momentum=0.9)
         self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, mode='min', 
@@ -241,11 +307,13 @@ class deepforest(pl.LightningModule):
         Returns:
             results: tuple of (precision, recall) for a given threshold
         """
-        predictions = self.predict_file(csv_file, root_dir)
+        ds = self.load_dataset(csv_file=csv_file, root_dir=root_dir)
+        predictions = self.trainer.test(self, test_dataloaders=ds)
+        
         ground_df = pd.read_csv(csv_file)
         
         results = evaluate_iou.evaluate(
-            predictions=predictions,
+            predictions=predictions[0]["gathered_results"],
             ground_df=ground_df,
             root_dir=root_dir,
             project=project,
@@ -254,10 +322,3 @@ class deepforest(pl.LightningModule):
             show_plot=show_plot)
         
         return results
-
-    def save(self):
-        pass
-    
-    def load(self):
-        pass
-    

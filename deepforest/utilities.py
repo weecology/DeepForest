@@ -123,8 +123,6 @@ def xml_to_annotations(xml_path):
     label = []
 
     if type(tile_xml) == list:
-        treeID = np.arange(len(tile_xml))
-
         # Construct frame if multiple trees
         for tree in tile_xml:
             xmin.append(tree["bndbox"]["xmin"])
@@ -133,9 +131,6 @@ def xml_to_annotations(xml_path):
             ymax.append(tree["bndbox"]["ymax"])
             label.append(tree['name'])
     else:
-        # One tree
-        treeID = 0
-
         xmin.append(tile_xml["bndbox"]["xmin"])
         xmax.append(tile_xml["bndbox"]["xmax"])
         ymin.append(tile_xml["bndbox"]["ymin"])

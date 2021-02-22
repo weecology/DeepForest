@@ -1,7 +1,9 @@
 #Visualize module for plotting and handling predictions
+import os
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
+from skimage import io
 
 def format_predictions(prediction):
     """Format a retinanet prediction into a pandas dataframe for a single image"""
@@ -11,6 +13,15 @@ def format_predictions(prediction):
     
     return df
 
+def plot_prediction_dataframe(df, ground_truth, root_dir, savedir):
+    """For each row in dataframe, call plot predictions"""
+    for name, group in df.groupby("image_path"):
+        image = io.imread("{}/{}".format(root_dir,name))
+        plot, ax = plot_predictions(image, group)
+        annotations = ground_truth[ground_truth.image_path==name]
+        plot = add_annotations(plot, ax, annotations)
+        plot.savefig("{}/{}.png".format(savedir,os.path.splitext(name)[0]))        
+        
 def plot_predictions(image, df):
     fig, ax = plt.subplots()
     ax.imshow(image)
