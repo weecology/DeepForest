@@ -11,7 +11,7 @@ from deepforest import preprocess
 from deepforest import visualize
 from skimage import io
 
-def predict_image(model, image, score_threshold, return_plot):
+def predict_image(model, image, score_threshold, return_plot, device="cpu"):
     """Predict an image with a deepforest model
     
     Args:
@@ -24,8 +24,9 @@ def predict_image(model, image, score_threshold, return_plot):
         img: The input with predictions overlaid (Optional)
     """        
     image = preprocess.preprocess_image(image)
+    image = torch.tensor(image, device=device).float()            
     prediction = model(image)
-    
+        
     #return None for no predictions
     if len(prediction[0]["boxes"])==0:
         return None
@@ -42,7 +43,7 @@ def predict_image(model, image, score_threshold, return_plot):
     else:
         return df
     
-def predict_file(model,csv_file,root_dir, savedir):
+def predict_file(model,csv_file,root_dir, savedir, device="cpu"):
     """Create a dataset and predict entire annotation file
     
     Csv file format is .csv file with the columns "image_path", "xmin","ymin","xmax","ymax" for the image name and bounding box position. 
@@ -67,7 +68,8 @@ def predict_file(model,csv_file,root_dir, savedir):
         image = preprocess.preprocess_image(image)
         
         #Just predict the images, even though we have the annotations
-        prediction = model(image)
+        image = torch.tensor(image, device=device).float()                
+        prediction = model(image)        
         prediction = visualize.format_predictions(prediction[0])
         prediction["image_path"] = path
         prediction_list.append(prediction)
@@ -93,7 +95,8 @@ def predict_tile(model,
                  return_plot=False,
                  use_soft_nms = False,
                  sigma = 0.5,
-                 thresh = 0.001):
+                 thresh = 0.001,
+                 device="cpu"):
     """For images too large to input into the model, predict_tile cuts the
     image into overlapping windows, predicts trees on each window and
     reassambles into a single array.
@@ -139,7 +142,8 @@ def predict_tile(model,
         boxes = predict_image(model=model,
                               image=crop,
                               return_plot=False,
-                              score_threshold=score_threshold)
+                              score_threshold=score_threshold,
+                              device=device)
         
         #transform the coordinates to original system
         xmin, ymin, xmax, ymax = windows[index].getRect()

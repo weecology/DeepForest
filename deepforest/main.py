@@ -40,7 +40,7 @@ class deepforest(pl.LightningModule):
         self.__release_version__ = None
 
         if saved_model:
-            utilities.load_saved_model(saved_model)
+            utilities.load_saved_model(saved_model)                
         else:
             self.create_model()
 
@@ -61,6 +61,10 @@ class deepforest(pl.LightningModule):
         """Define a deepforest retinanet architecture"""
         self.backbone = model.load_backbone()
         
+        #Load on GPU is available
+        if torch.cuda.is_available:
+            self.backbone.to(self.device)
+            
     def predict_image(self, image=None, path=None, return_plot=False,score_threshold=0.01):
         """Predict an image with a deepforest model
         
@@ -82,7 +86,9 @@ class deepforest(pl.LightningModule):
             image = io.imread(path)
         
         self.backbone.eval()   
-        result = predict.predict_image(model =  self.backbone, image = image, return_plot = return_plot, score_threshold = score_threshold)
+        
+        #Check if GPU is available and pass image to gpu
+        result = predict.predict_image(model =  self.backbone, image = image, return_plot = return_plot, score_threshold = score_threshold, device=self.device)
         
         return result
                                                  
@@ -203,9 +209,15 @@ class deepforest(pl.LightningModule):
         losses = sum([loss for loss in loss_dict.values()])
         
         #Log loss
-        self.log('val_loss', loss_dict, on_epoch=True)
+        for key, value in loss_dict.items():
+            self.log(key,value, on_epoch=True)
         
         return losses
+    
+    def validation_end(self, outputs):
+        avg_loss = torch.stack([x['val_loss'] for x in outputs]).mean()
+        comet_logs = {'val_loss': avg_loss}
+        return {'avg_val_loss': avg_loss, 'log': comet_logs}
     
     def configure_optimizers(self):
         self.optimizer = optim.SGD(self.backbone.parameters(), lr=self.config["train"]["lr"], momentum=0.9)
