@@ -46,13 +46,13 @@ class images_callback(Callback):
         for x in np.arange(self.n):
             batch = next(iter(ds))
             path, images, targets = batch
-            pl_module.backbone.eval()
+            pl_module.model.eval()
             
             #put images on correct device
             if not pl_module.device.type=="cpu":
                 images = [x.to(pl_module.device) for x in images]
             
-            predictions = pl_module.backbone(images)
+            predictions = pl_module.model(images)
                 
             for index, prediction in enumerate(predictions):
                 df = visualize.format_predictions(prediction)

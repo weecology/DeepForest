@@ -23,7 +23,18 @@ pip install deepforest-pytorch
 
 # Usage
 
+## Train a model
+
+```
+from deepforest import main
+m = main.deepforest()
+m.create_trainer()
+m.run_train()
+m.evaluate(csv_file=m.config["validation"]["csv_file"], root_dir=m.config["validation"]["root_dir"])
+```
+
 ## Predict a single image
+
 ```
 from deepforest import main
 csv_file = '/Users/benweinstein/Documents/DeepForest-pytorch/deepforest/data/OSBS_029.tif'
@@ -54,6 +65,19 @@ v0.0.2 will be the first stable release pending the following milestones.
 1. Train a deepforest-pytorch release model
 2. Update docs and tutorials to reflect new workflow
 3. Clean builds on travis and azure dev ops for pypi builds.
+
+
+# Config
+
+
+# Benchmark score
+
+Tree detection is a central task in forest ecology and remote sensing. The Weecology Lab at the University of Florida has built a tree detection benchmark for evaluation.
+
+```
+
+```
+
 
 # Integration with pytorch-lightning
 
