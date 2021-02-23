@@ -25,7 +25,7 @@ validation:
     #callback args
     csv_file: 
     root_dir:
-    project:
+    project: False
     #Intersection over union evaluation
     iou_threshold: 0.4
     score_threshold: 0

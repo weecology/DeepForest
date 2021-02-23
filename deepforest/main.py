@@ -19,7 +19,13 @@ from deepforest import visualize
 class deepforest(pl.LightningModule):
     """Class for training and predicting tree crowns in RGB images
     """
-    def __init__(self, saved_model=None):
+    def __init__(self, num_classes, saved_model=None):
+        """
+        Args:
+            num_classes (int): number of classes in the model
+        Returns:
+            self: a deepforest pytorch ligthning module
+        """
         super().__init__()
         
         # Read config file - if a config file exists in local dir use it,
@@ -44,6 +50,9 @@ class deepforest(pl.LightningModule):
             utilities.load_saved_model(saved_model)                
         else:
             self.create_model()
+        
+        #Add a background class
+        self.num_classes = num_classes +1 
 
     def use_release(self):
         """Use the latest DeepForest model release from github and load model.
@@ -60,9 +69,9 @@ class deepforest(pl.LightningModule):
     
     def create_model(self):
         """Define a deepforest retinanet architecture"""
-        self.backbone = model.load_backbone()
+        self.model = model.create_model(self.num_classes)
     
-    def create_trainer(self, logger, callbacks=None):
+    def create_trainer(self, logger=None, callbacks=None):
         """Create a pytorch ligthning training by reading config files
         Args:
             callbacks (list): a list of pytorch-lightning callback classes
@@ -143,12 +152,12 @@ class deepforest(pl.LightningModule):
         
             #Load on GPU is available
         if torch.cuda.is_available:
-            self.backbone.to(self.device)   
+            self.model.to(self.device)   
             
-        self.backbone.eval()   
+        self.model.eval()   
         
         #Check if GPU is available and pass image to gpu
-        result = predict.predict_image(model =  self.backbone, image = image, return_plot = return_plot, score_threshold = score_threshold, device=self.device)
+        result = predict.predict_image(model =  self.model, image = image, return_plot = return_plot, score_threshold = score_threshold, device=self.device)
         
         return result
                                                  
@@ -211,10 +220,10 @@ class deepforest(pl.LightningModule):
             Otherwise a numpy array of predicted bounding boxes, scores and labels
         """
         
-        self.backbone.eval()
+        self.model.eval()
 
         result = predict.predict_tile(
-            model = self.backbone,
+            model = self.model,
             raster_path=raster_path,
             image=image,
             patch_size=patch_size,
@@ -235,7 +244,7 @@ class deepforest(pl.LightningModule):
         """        
         path, images, targets = batch
         
-        loss_dict = self.backbone.forward(images, targets)
+        loss_dict = self.model.forward(images, targets)
         
         #sum of regression and classification loss        
         losses = sum([loss for loss in loss_dict.values()])
@@ -248,8 +257,8 @@ class deepforest(pl.LightningModule):
         """
         path, images, targets = batch
         
-        self.backbone.train()
-        loss_dict = self.backbone.forward(images, targets)
+        self.model.train()
+        loss_dict = self.model.forward(images, targets)
         
         #sum of regression and classification loss
         losses = sum([loss for loss in loss_dict.values()])
@@ -257,17 +266,12 @@ class deepforest(pl.LightningModule):
         #Log loss
         for key, value in loss_dict.items():
             self.log("val_{}".format(key),value, on_epoch=True)
-        
-        try:
-            self.logger.experiment.log_metrics(loss_dict)
-        except:
-            pass
                 
         return losses
     
     def test_step(self, batch, batch_idx):
         path, images, targets = batch
-        predictions = self.backbone.forward(images)
+        predictions = self.model.forward(images)
         
         result = []
         for index, prediction in enumerate(predictions):
@@ -298,28 +302,17 @@ class deepforest(pl.LightningModule):
         
         self.log("test_precision", precision)
         self.log("test_recall",recall)
-        
-        try:
-            self.logger.experiment.log_metric("test_precision", precision)
-            self.logger.experiment.log_metric("test_recall", recall)            
-        except:
-            pass
-        
+
         return {"gathered_results": gathered}
         
     def validation_end(self, outputs):
         avg_loss = torch.stack([x['val_loss'] for x in outputs]).mean()
         comet_logs = {'val_loss': avg_loss}
-        
-        try:
-            self.logger.experiment.log_metric(comet_logs)
-        except:
-            pass
-        
+
         return {'avg_val_loss': avg_loss, 'log': comet_logs}
         
     def configure_optimizers(self):
-        self.optimizer = optim.SGD(self.backbone.parameters(), lr=self.config["train"]["lr"], momentum=0.9)
+        self.optimizer = optim.SGD(self.model.parameters(), lr=self.config["train"]["lr"], momentum=0.9)
         self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, mode='min', 
                                                            factor=0.1, patience=10, 
                                                            verbose=False, threshold=0.0001, 
