@@ -258,6 +258,11 @@ class deepforest(pl.LightningModule):
         for key, value in loss_dict.items():
             self.log("val_{}".format(key),value, on_epoch=True)
         
+        try:
+            self.logger.experiment.log_metrics(loss_dict)
+        except:
+            pass
+                
         return losses
     
     def test_step(self, batch, batch_idx):
@@ -294,11 +299,22 @@ class deepforest(pl.LightningModule):
         self.log("test_precision", precision)
         self.log("test_recall",recall)
         
+        try:
+            self.logger.experiment.log_metric("test_precision", precision)
+            self.logger.experiment.log_metric("test_recall", recall)            
+        except:
+            pass
+        
         return {"gathered_results": gathered}
         
     def validation_end(self, outputs):
         avg_loss = torch.stack([x['val_loss'] for x in outputs]).mean()
         comet_logs = {'val_loss': avg_loss}
+        
+        try:
+            self.logger.experiment.log_metric(comet_logs)
+        except:
+            pass
         
         return {'avg_val_loss': avg_loss, 'log': comet_logs}
         
