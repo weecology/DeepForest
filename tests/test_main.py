@@ -5,6 +5,7 @@ import pytest
 import pandas as pd
 import numpy as np
 from skimage import io
+import torch
 
 from deepforest import main
 from deepforest import get_data
@@ -24,11 +25,9 @@ def m():
        
     m.config["validation"]["csv_file"] = get_data("example.csv") 
     m.config["validation"]["root_dir"] = os.path.dirname(get_data("example.csv"))
-    
-    #Just use the backbone trained model for the moment, or else no predictions because of random weights
-    m.model = model.load_backbone()
-    
+       
     m.create_trainer()
+    m.model = model.load_backbone()
     
     return m
 
@@ -36,7 +35,7 @@ def test_main():
     from deepforest import main
 
 def test_train(m):
-    m.run_train()
+    m.trainer.fit(m)
     
 def test_predict_image_empty(m):
     image = np.random.random((400,400,3))
@@ -113,7 +112,7 @@ def test_evaluate(m):
     csv_file = get_data("example.csv")
     root_dir = os.path.dirname(csv_file)
     precision, recall = m.evaluate(csv_file, root_dir, iou_threshold = 0.5)
-    
+
 def test_train_callbacks(m):
     csv_file = get_data("example.csv") 
     root_dir = os.path.dirname(csv_file)
@@ -134,3 +133,8 @@ def test_train_callbacks(m):
     
     trainer = Trainer(fast_dev_run=True)
     trainer.fit(m, train_ds)
+    
+def test_save_and_reload(m, tmpdir):
+    m.trainer.fit(m)
+    torch.save(m.model,"{}/checkpoint.pt".format(tmpdir))
+    m.model = torch.load("{}/checkpoint.pt".format(tmpdir))

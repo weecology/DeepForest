@@ -149,21 +149,20 @@ def predict_tile(model,
         crop = image[windows[index].indices()] 
         
         #crop is RGB channel order, change to BGR?
-        crop = crop[...,::-1]
         boxes = predict_image(model=model,
                               image=crop,
                               return_plot=False,
                               score_threshold=score_threshold,
                               device=device)
-        
-        #transform the coordinates to original system
-        xmin, ymin, xmax, ymax = windows[index].getRect()
-        boxes.xmin = boxes.xmin + xmin
-        boxes.xmax = boxes.xmax + xmin
-        boxes.ymin = boxes.ymin + ymin
-        boxes.ymax = boxes.ymax + ymin
-
-        predicted_boxes.append(boxes)
+        if not boxes is None:
+            #transform the coordinates to original system
+            xmin, ymin, xmax, ymax = windows[index].getRect()
+            boxes.xmin = boxes.xmin + xmin
+            boxes.xmax = boxes.xmax + xmin
+            boxes.ymin = boxes.ymin + ymin
+            boxes.ymax = boxes.ymax + ymin
+    
+            predicted_boxes.append(boxes)
     
     predicted_boxes = pd.concat(predicted_boxes)
     # Non-max supression for overlapping boxes among window

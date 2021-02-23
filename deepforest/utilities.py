@@ -226,9 +226,6 @@ def round_with_floats(x):
 
     return result
 
-def load_saved_model():
-    pass
-
 def check_file(df):
     """Check a file format for correct column names and structure"""
     

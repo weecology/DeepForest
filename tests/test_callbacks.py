@@ -27,7 +27,7 @@ def test_log_images(m, tmpdir):
     im_callback = callbacks.images_callback(csv_file=m.config["validation"]["csv_file"], root_dir=m.config["validation"]["root_dir"], savedir=tmpdir)
     m.create_trainer(callbacks=[im_callback])
     m.max_steps = 2
-    m.run_train()
+    m.trainer.fit(m)
     saved_images = glob.glob("{}/*.png".format(tmpdir))
     assert len(saved_images) == 1
     

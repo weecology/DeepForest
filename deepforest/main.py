@@ -19,7 +19,7 @@ from deepforest import visualize
 class deepforest(pl.LightningModule):
     """Class for training and predicting tree crowns in RGB images
     """
-    def __init__(self, num_classes=1, saved_model=None):
+    def __init__(self, num_classes=1):
         """
         Args:
             num_classes (int): number of classes in the model
@@ -45,12 +45,9 @@ class deepforest(pl.LightningModule):
 
         # release version id to flag if release is being used
         self.__release_version__ = None
-        
-        if saved_model:
-            utilities.load_saved_model(saved_model)                
-        else:
-            self.num_classes = num_classes            
-            self.create_model()
+           
+        self.num_classes = num_classes            
+        self.create_model()
 
     def use_release(self):
         """Use the latest DeepForest model release from github and load model.
@@ -84,11 +81,8 @@ class deepforest(pl.LightningModule):
             fast_dev_run=self.config["train"]["fast_dev_run"],
             callbacks=callbacks,
             **kwargs
-        )        
-    
-    def run_train(self):
-        self.trainer.fit(self)
-
+        )
+        
     def load_dataset(self, csv_file, root_dir=None, augment=False, shuffle=True, batch_size=1):
         """Create a tree dataset for inference
         Csv file format is .csv file with the columns "image_path", "xmin","ymin","xmax","ymax" for the image name and bounding box position. 
