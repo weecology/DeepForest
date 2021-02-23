@@ -7,11 +7,21 @@ def test_load_backbone():
     retinanet = model.load_backbone()
     retinanet.eval()
     x = [torch.rand(3, 300, 400), torch.rand(3, 500, 400)]
-    prediction = retinanet(x)
-    
-    prediction["classes"] == 1
-    
+    prediction = retinanet(x)    
 
 def test_create_model():
     retinanet_model = model.create_model(num_classes=2)
-    assert retinanet_model.parameters
+    
+    retinanet_model.eval()
+    x = [torch.rand(3, 300, 400), torch.rand(3, 500, 400)]
+    predictions = retinanet_model(x)    
+    for prediction in predictions:
+        assert [x == 1 for x in prediction["labels"]]
+    
+    retinanet_model = model.create_model(num_classes=3)
+    
+    retinanet_model.eval()
+    x = [torch.rand(3, 300, 400), torch.rand(3, 500, 400)]
+    predictions = retinanet_model(x)    
+    for prediction in predictions:
+        assert [x in [1,2] for x in prediction["labels"]]    
