@@ -19,7 +19,7 @@ from deepforest import visualize
 class deepforest(pl.LightningModule):
     """Class for training and predicting tree crowns in RGB images
     """
-    def __init__(self, saved_model=None, logger=None):
+    def __init__(self, saved_model=None):
         super().__init__()
         
         # Read config file - if a config file exists in local dir use it,
@@ -39,7 +39,6 @@ class deepforest(pl.LightningModule):
 
         # release version id to flag if release is being used
         self.__release_version__ = None
-        self.logger = logger
         
         if saved_model:
             utilities.load_saved_model(saved_model)                
@@ -63,14 +62,14 @@ class deepforest(pl.LightningModule):
         """Define a deepforest retinanet architecture"""
         self.backbone = model.load_backbone()
     
-    def create_trainer(self, callbacks=None):
+    def create_trainer(self, logger, callbacks=None):
         """Create a pytorch ligthning training by reading config files
         Args:
             callbacks (list): a list of pytorch-lightning callback classes
         """
         
         self.trainer = pl.Trainer(
-            logger=self.logger,
+            logger=logger,
             max_epochs=self.config["train"]["epochs"],
             gpus=self.config["gpus"],
             checkpoint_callback=False,
