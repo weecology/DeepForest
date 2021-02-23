@@ -135,13 +135,9 @@ guimgr.overall-gui-state = {'windowing-policy': 'combined-window',
                        'tree-state': {'expanded-nodes': [(0,),
         (0,
          0),
-        (4,),
-        (4,
-         10)],
-                                      'selected-nodes': [(4,
-        10)],
-                                      'top-node': (4,
-        2)}}),
+        (4,)],
+                                      'selected-nodes': [(4,)],
+                                      'top-node': (0,)}}),
                      ('debug-io',
                       'wide',
                       1,
@@ -651,14 +647,13 @@ guimgr.overall-gui-state = {'windowing-policy': 'combined-window',
         18),
         ('deepforest|0|.test_epoch_end|0|',
          275)],
-                                'code-line': '        return {"gathered_resu'\
-        'lts": gathered}\n',
+                                'code-line': '        gathered = list()\n',
                                 'first-line': 266L,
                                 'folded-linenos': [],
-                                'sel-line': 296L,
-                                'sel-line-start': 12044L,
-                                'selection_end': 12082L,
-                                'selection_start': 12082L,
+                                'sel-line': 277L,
+                                'sel-line-start': 11298L,
+                                'selection_end': 11323L,
+                                'selection_start': 11323L,
                                 'zoom': 0L}),
                               (loc('deepforest/predict.py'),
                                {'attrib-starts': [('predict_file|0|',
@@ -718,7 +713,7 @@ guimgr.overall-gui-state = {'windowing-policy': 'combined-window',
                                 'selection_end': 1421L,
                                 'selection_start': 1421L,
                                 'zoom': 0L})],
-        'has-focus': False,
+        'has-focus': True,
         'locked': False},
         [loc('../../opt/miniconda3/envs/DeepForest_pytorch/lib/python3.8/site-packages/pandas/core/indexes/base.py'),
          loc('deepforest/callbacks.py'),
@@ -2887,130 +2882,11 @@ testing.stored-results = (1,
                               None,
                               None),
                              ('test_predict_file',
-                              1,
+                              0,
                               None,
                               None,
-                              ('',
-                               "<ExceptionInfo TypeError(\"log() missing 1 r"\
-                               "equired positional argument: 'value'\") tble"\
-                               "n=12>",
-                               "TypeError: log() missing 1 required position"\
-                               "al argument: 'value'",
-                               [(u'/Users/benweinstein/Documents/DeepForest-pytorch/tests/test_main.py',
-                                 '/Users/benweinstein/Documents/DeepForest-p'\
-                                 'ytorch/tests/test_main.py',
-                                 66,
-                                 'test_predict_file',
-                                 None,
-                                 '    df = m.predict_file(csv_file, root_dir'\
-                                 ' = os.path.dirname(csv_file), savedir=tmpd'\
-                                 'ir)'),
-                                (u'/Users/benweinstein/Documents/DeepForest-pytorch/deepforest/main.py',
-                                 '/Users/benweinstein/Documents/DeepForest-p'\
-                                 'ytorch/deepforest/main.py',
-                                 170,
-                                 'predict_file',
-                                 None,
-                                 '        df = self.trainer.test(self, loade'\
-                                 'r)'),
-                                (u'/Users/benweinstein/opt/miniconda3/envs/DeepForest_pytorch/lib/python3.8/site-packages/pytorch_lightning/trainer/trainer.py',
-                                 '/Users/benweinstein/opt/miniconda3/envs/De'\
-                                 'epForest_pytorch/lib/python3.8/site-packag'\
-                                 'es/pytorch_lightning/trainer/trainer.py',
-                                 752,
-                                 'test',
-                                 None,
-                                 '            results = self.__test_given_mo'\
-                                 'del(model, test_dataloaders)'),
-                                (u'/Users/benweinstein/opt/miniconda3/envs/DeepForest_pytorch/lib/python3.8/site-packages/pytorch_lightning/trainer/trainer.py',
-                                 '/Users/benweinstein/opt/miniconda3/envs/De'\
-                                 'epForest_pytorch/lib/python3.8/site-packag'\
-                                 'es/pytorch_lightning/trainer/trainer.py',
-                                 817,
-                                 '__test_given_model',
-                                 None,
-                                 '        results = self.fit(model)'),
-                                (u'/Users/benweinstein/opt/miniconda3/envs/DeepForest_pytorch/lib/python3.8/site-packages/pytorch_lightning/trainer/trainer.py',
-                                 '/Users/benweinstein/opt/miniconda3/envs/De'\
-                                 'epForest_pytorch/lib/python3.8/site-packag'\
-                                 'es/pytorch_lightning/trainer/trainer.py',
-                                 470,
-                                 'fit',
-                                 None,
-                                 '        results = self.accelerator_backend'\
-                                 '.train()'),
-                                (u'/Users/benweinstein/opt/miniconda3/envs/DeepForest_pytorch/lib/python3.8/site-packages/pytorch_lightning/accelerators/cpu_accelerator.py',
-                                 '/Users/benweinstein/opt/miniconda3/envs/De'\
-                                 'epForest_pytorch/lib/python3.8/site-packag'\
-                                 'es/pytorch_lightning/accelerators/cpu_acce'\
-                                 'lerator.py',
-                                 62,
-                                 'train',
-                                 None,
-                                 '        results = self.train_or_test()'),
-                                (u'/Users/benweinstein/opt/miniconda3/envs/DeepForest_pytorch/lib/python3.8/site-packages/pytorch_lightning/accelerators/accelerator.py',
-                                 '/Users/benweinstein/opt/miniconda3/envs/De'\
-                                 'epForest_pytorch/lib/python3.8/site-packag'\
-                                 'es/pytorch_lightning/accelerators/accelera'\
-                                 'tor.py',
-                                 67,
-                                 'train_or_test',
-                                 None,
-                                 '            results = self.trainer.run_tes'\
-                                 't()'),
-                                (u'/Users/benweinstein/opt/miniconda3/envs/DeepForest_pytorch/lib/python3.8/site-packages/pytorch_lightning/trainer/trainer.py',
-                                 '/Users/benweinstein/opt/miniconda3/envs/De'\
-                                 'epForest_pytorch/lib/python3.8/site-packag'\
-                                 'es/pytorch_lightning/trainer/trainer.py',
-                                 659,
-                                 'run_test',
-                                 None,
-                                 '            eval_loop_results, _ = self.ru'\
-                                 'n_evaluation(test_mode=True)'),
-                                (u'/Users/benweinstein/opt/miniconda3/envs/DeepForest_pytorch/lib/python3.8/site-packages/pytorch_lightning/trainer/trainer.py',
-                                 '/Users/benweinstein/opt/miniconda3/envs/De'\
-                                 'epForest_pytorch/lib/python3.8/site-packag'\
-                                 'es/pytorch_lightning/trainer/trainer.py',
-                                 622,
-                                 'run_evaluation',
-                                 None,
-                                 '        deprecated_eval_results = self.eva'\
-                                 'luation_loop.evaluation_epoch_end()'),
-                                (u'/Users/benweinstein/opt/miniconda3/envs/DeepForest_pytorch/lib/python3.8/site-packages/pytorch_lightning/trainer/evaluation_loop.py',
-                                 '/Users/benweinstein/opt/miniconda3/envs/De'\
-                                 'epForest_pytorch/lib/python3.8/site-packag'\
-                                 'es/pytorch_lightning/trainer/evaluation_lo'\
-                                 'op.py',
-                                 208,
-                                 'evaluation_epoch_end',
-                                 None,
-                                 '        deprecated_results = self.__run_ev'\
-                                 'al_epoch_end(self.num_dataloaders, using_e'\
-                                 'val_result)'),
-                                (u'/Users/benweinstein/opt/miniconda3/envs/DeepForest_pytorch/lib/python3.8/site-packages/pytorch_lightning/trainer/evaluation_loop.py',
-                                 '/Users/benweinstein/opt/miniconda3/envs/De'\
-                                 'epForest_pytorch/lib/python3.8/site-packag'\
-                                 'es/pytorch_lightning/trainer/evaluation_lo'\
-                                 'op.py',
-                                 238,
-                                 '__run_eval_epoch_end',
-                                 None,
-                                 '                eval_results = model.test_'\
-                                 'epoch_end(eval_results)'),
-                                (u'/Users/benweinstein/Documents/DeepForest-pytorch/deepforest/main.py',
-                                 '/Users/benweinstein/Documents/DeepForest-p'\
-                                 'ytorch/deepforest/main.py',
-                                 294,
-                                 'test_epoch_end',
-                                 None,
-                                 '        self.log({"test_precision": precis'\
-                                 'ion,"test_recall":recall})')],
-                               0,
-                               None,
-                               None,
-                               None,
-                               None),
-                              1614038406,
+                              None,
+                              1614038515,
                               63),
                              ('test_main',
                               0,

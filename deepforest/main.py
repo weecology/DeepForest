@@ -79,7 +79,7 @@ class deepforest(pl.LightningModule):
         )        
     
     def run_train(self):
-        self.trainer.fit(self, val_dataloaders=self.validation_dataloader)
+        self.trainer.fit(self)
 
     def load_dataset(self, csv_file, root_dir=None, augment=False, shuffle=True, batch_size=1):
         """Create a tree dataset for inference
