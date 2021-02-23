@@ -28,9 +28,8 @@ class images_callback(Callback):
         None: either prints validation scores or logs them to a comet experiment
         """
     
-    def __init__(self, csv_file, root_dir, savedir, score_threshold=0, experiment=None, n=2):
+    def __init__(self, csv_file, root_dir, savedir, score_threshold=0, n=2):
         self.csv_file = csv_file
-        self.experiment = experiment
         self.savedir = savedir
         self.root_dir = root_dir
         self.score_threshold = score_threshold
@@ -59,12 +58,13 @@ class images_callback(Callback):
                 df = visualize.format_predictions(prediction)
                 df["image_path"] = path[index]
                 df = df[df.scores > self.score_threshold]
-                visualize.plot_prediction_dataframe(df, self.ground_truth, self.root_dir, self.savedir)            
-
-        if self.experiment:
+                visualize.plot_prediction_dataframe(df, self.ground_truth, self.root_dir, self.savedir)
+        try:
             saved_plots = glob.glob("{}/*.png".format(self.savedir))
             for x in saved_plots:
-                self.experiment.log_image(x)
+                pl_module.logger.experiment.log_image(x)
+        except Exception as e:
+            print("Could not find logger in ligthning module, skipping upload, images were saved to {}, error was rasied {}".format(self.savedir, e))
         
     def on_epoch_end(self,trainer, pl_module):
         self.log_images(pl_module)

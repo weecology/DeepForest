@@ -19,7 +19,7 @@ from deepforest import visualize
 class deepforest(pl.LightningModule):
     """Class for training and predicting tree crowns in RGB images
     """
-    def __init__(self, num_classes, saved_model=None):
+    def __init__(self, num_classes=1, saved_model=None):
         """
         Args:
             num_classes (int): number of classes in the model
@@ -27,7 +27,7 @@ class deepforest(pl.LightningModule):
             self: a deepforest pytorch ligthning module
         """
         super().__init__()
-        
+                
         # Read config file - if a config file exists in local dir use it,
         # if not use installed.
         if os.path.exists("deepforest_config.yml"):
@@ -49,10 +49,8 @@ class deepforest(pl.LightningModule):
         if saved_model:
             utilities.load_saved_model(saved_model)                
         else:
+            self.num_classes = num_classes            
             self.create_model()
-        
-        #Add a background class
-        self.num_classes = num_classes +1 
 
     def use_release(self):
         """Use the latest DeepForest model release from github and load model.
@@ -302,6 +300,12 @@ class deepforest(pl.LightningModule):
         
         self.log("test_precision", precision)
         self.log("test_recall",recall)
+        
+        try:
+            self.logger.experiment.log_metric("test_precision",precision)
+            self.logger.experiment.log_metric("test_recall",recall)
+        except Exception as e:
+            print("test epoch could not find logger {}".format(e))
 
         return {"gathered_results": gathered}
         

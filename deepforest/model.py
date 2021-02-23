@@ -18,7 +18,7 @@ def create_anchor_generator():
      # aspect ratios
     #Documented https://github.com/pytorch/vision/blob/67b25288ca202d027e8b06e17111f1bcebd2046c/torchvision/models/detection/anchor_utils.py#L9
     
-    anchor_generator = AnchorGenerator(sizes=((8,16,32,64,128,256),),aspect_ratios=((0.5, 1.0, 2.0),))
+    anchor_generator = AnchorGenerator(sizes=((8,16,32,64,128,256,400),),aspect_ratios=((0.5, 1.0, 2.0),))
     
     return anchor_generator
     
@@ -26,6 +26,6 @@ def create_model(num_classes):
     backbone = load_backbone()
     anchor_generator = create_anchor_generator()
     
-    model = RetinaNet(backbone, num_classes=num_classes, anchor_generator=anchor_generator)
+    model = RetinaNet(backbone.backbone, num_classes=num_classes)
     
     return model

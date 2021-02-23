@@ -39,22 +39,6 @@ def predict_image(model, image, score_threshold, return_plot, device, iou_thresh
     df = visualize.format_predictions(prediction[0])
     df = df[df.scores > score_threshold]
     
-    #apply nms
-    boxes = torch.tensor(df[["xmin", "ymin", "xmax", "ymax"]].values, dtype = torch.float32)
-    scores = torch.tensor(df.scores.values, dtype = torch.float32)    
-    labels = torch.tensor(df.label.values, dtype = torch.float32)        
-    bbox_left_idx = nms(boxes, scores, iou_threshold) 
-    new_boxes, new_labels, new_scores = boxes[bbox_left_idx].type(torch.int), labels[bbox_left_idx], scores[bbox_left_idx]
-    
-    #Recreate box dataframe
-    image_detections = np.concatenate([
-            new_boxes,
-            np.expand_dims(new_labels, axis=1),
-            np.expand_dims(new_scores, axis=1)
-            ],axis=1)    
-    
-    df = pd.DataFrame(image_detections, columns=["xmin","ymin","xmax","ymax","label","scores"])
-    
     if return_plot:
         #Matplotlib likes no batch dim and channels first
         image = image.squeeze(0).permute(1,2,0)

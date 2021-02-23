@@ -8,6 +8,7 @@ from skimage import io
 
 from deepforest import main
 from deepforest import get_data
+from deepforest import model
 
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import Callback
@@ -23,6 +24,9 @@ def m():
        
     m.config["validation"]["csv_file"] = get_data("example.csv") 
     m.config["validation"]["root_dir"] = os.path.dirname(get_data("example.csv"))
+    
+    #Just use the backbone trained model for the moment, or else no predictions because of random weights
+    m.model = model.load_backbone()
     
     m.create_trainer()
     
