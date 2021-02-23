@@ -79,7 +79,7 @@ class deepforest(pl.LightningModule):
         )        
     
     def run_train(self):
-        self.trainer.fit(self)
+        self.trainer.fit(self, val_dataloaders=self.validation_dataloader)
 
     def load_dataset(self, csv_file, root_dir=None, augment=False, shuffle=True, batch_size=1):
         """Create a tree dataset for inference
@@ -116,7 +116,7 @@ class deepforest(pl.LightningModule):
         
         return loader
     
-    def validation_dataloader(self):
+    def val_dataloader(self):
         loader = self.load_dataset(csv_file=self.config["evaluation"]["csv_file"], root_dir=self.config["evaluation"]["root_dir"], augment=False, shuffle=False, batch_size=self.config["batch_size"])
         
         return loader    
@@ -280,6 +280,20 @@ class deepforest(pl.LightningModule):
             gathered.append(batch["predictions"])
         gathered = pd.concat(gathered)
         
+        ground_df = pd.read_csv(self.config["validation"]["csv_file"])
+        
+        precision, recall = evaluate_iou.evaluate(
+            predictions=gathered,
+            ground_df=ground_df,
+            root_dir=self.config["validation"]["root_dir"],
+            project=self.config["validation"]["project"],
+            iou_threshold=self.config["validation"]["iou_threshold"],
+            score_threshold=self.config["validation"]["score_threshold"],
+            show_plot=False)
+        
+        self.log("test_precision", precision)
+        self.log("test_recall",recall)
+        
         return {"gathered_results": gathered}
         
     def validation_end(self, outputs):
@@ -310,13 +324,11 @@ class deepforest(pl.LightningModule):
         Returns:
             results: tuple of (precision, recall) for a given threshold
         """
-        ds = self.load_dataset(csv_file=csv_file, root_dir=root_dir, batch_size=self.config["batch_size"])
-        predictions = self.trainer.test(self, test_dataloaders=ds)
-        
+        predictions = self.predict_file(csv_file, root_dir)
         ground_df = pd.read_csv(csv_file)
         
         results = evaluate_iou.evaluate(
-            predictions=predictions[0]["gathered_results"],
+            predictions=predictions,
             ground_df=ground_df,
             root_dir=root_dir,
             project=project,
