@@ -39,7 +39,8 @@ class deepforest(pl.LightningModule):
 
         # release version id to flag if release is being used
         self.__release_version__ = None
-
+        self.logger = logger
+        
         if saved_model:
             utilities.load_saved_model(saved_model)                
         else:
