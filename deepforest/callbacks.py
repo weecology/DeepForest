@@ -67,6 +67,7 @@ class images_callback(Callback):
             print("Could not find logger in ligthning module, skipping upload, images were saved to {}, error was rasied {}".format(self.savedir, e))
         
     def on_epoch_end(self,trainer, pl_module):
+        print("Running image callback")
         self.log_images(pl_module)
 
         

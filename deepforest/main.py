@@ -69,7 +69,7 @@ class deepforest(pl.LightningModule):
         """Define a deepforest retinanet architecture"""
         self.model = model.create_model(self.num_classes)
     
-    def create_trainer(self, logger=None, callbacks=None):
+    def create_trainer(self, logger=None, callbacks=None, **kwargs):
         """Create a pytorch ligthning training by reading config files
         Args:
             callbacks (list): a list of pytorch-lightning callback classes
@@ -82,7 +82,8 @@ class deepforest(pl.LightningModule):
             checkpoint_callback=False,
             distributed_backend=self.config["distributed_backend"],
             fast_dev_run=self.config["train"]["fast_dev_run"],
-            callbacks=callbacks
+            callbacks=callbacks,
+            **kwargs
         )        
     
     def run_train(self):

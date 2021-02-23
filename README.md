@@ -75,6 +75,7 @@ v0.0.2 will be the first stable release pending the following milestones.
 Tree detection is a central task in forest ecology and remote sensing. The Weecology Lab at the University of Florida has built a tree detection benchmark for evaluation.
 
 ```
+git clone 
 
 ```
 
