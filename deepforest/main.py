@@ -112,12 +112,12 @@ class deepforest(pl.LightningModule):
         return loader
     
     def test_dataloader(self):
-        loader = self.load_dataset(csv_file=self.config["evaluation"]["csv_file"], root_dir=self.config["evaluation"]["root_dir"], augment=False, shuffle=False, batch_size=self.config["batch_size"])
+        loader = self.load_dataset(csv_file=self.config["validation"]["csv_file"], root_dir=self.config["validation"]["root_dir"], augment=False, shuffle=False, batch_size=self.config["batch_size"])
         
         return loader
     
     def val_dataloader(self):
-        loader = self.load_dataset(csv_file=self.config["evaluation"]["csv_file"], root_dir=self.config["evaluation"]["root_dir"], augment=False, shuffle=False, batch_size=self.config["batch_size"])
+        loader = self.load_dataset(csv_file=self.config["validation"]["csv_file"], root_dir=self.config["validation"]["root_dir"], augment=False, shuffle=False, batch_size=self.config["batch_size"])
         
         return loader    
     
