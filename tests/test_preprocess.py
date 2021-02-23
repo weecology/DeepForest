@@ -131,19 +131,3 @@ def test_split_size_error(config):
                                                    config["annotations_file"],
                                                    "tests/data/", 2000,
                                                    config["patch_overlap"])
-
-def test_split_large_tile(tmpdir):
-    df = utilities.shapefile_to_annotations(shapefile="/Users/benweinstein/Downloads/temp_training/2019_OSBS_5_410000_3282000_image_crop.shp", rgb="/Users/benweinstein/Downloads/temp_training/2019_OSBS_5_410000_3282000_image_crop.tif")
-    df.to_csv("{}/annotations.csv".format(tmpdir))
-    split_df = preprocess.split_raster("/Users/benweinstein/Downloads/temp_training/2019_OSBS_5_410000_3282000_image_crop.tif",
-                            annotations_file="{}/annotations.csv".format(tmpdir),base_dir=tmpdir, patch_size=400,
-                            patch_overlap=0.05,
-                            allow_empty=False)
-    
-    created_crops = glob.glob("{}/*".format(tmpdir))
-    b = rasterio.open("{}/2019_OSBS_5_410000_3282000_image_crop_0.png".format(tmpdir))
-    crop_data = b.read()
-    assert crop_data.shape == (3, 400,400)
-    annotations_per_crop = split_df.groupby("image_path").size()
-    assert all(annotations_per_crop < 200)
-        
