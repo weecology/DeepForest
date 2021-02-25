@@ -138,7 +138,8 @@ def split_raster(annotations_file,
                  base_dir=".",
                  patch_size=400,
                  patch_overlap=0.05,
-                 allow_empty=False):
+                 allow_empty=False,
+                 image_name = None):
     """Divide a large tile into smaller arrays. Each crop will be saved to
     file.
 
@@ -153,6 +154,7 @@ def split_raster(annotations_file,
         patch_overlap (float): Percent of overlap among windows 0->1
         allow_empty: If True, include images with no annotations
             to be included in the dataset
+        image_name (str): If numpy_image arg is used, what name to give the raster?
 
     Returns:
         A pandas dataframe with annotations file for training.
@@ -164,6 +166,9 @@ def split_raster(annotations_file,
     if path_to_raster:
         raster = Image.open(path_to_raster)
         numpy_image = np.array(raster)
+    else:
+        if image_name is None:
+            raise(IOError("If passing an numpy_image, please also specify a image_name to match the column in the annotation.csv file"))
 
     # Check that its 3 band
     bands = numpy_image.shape[2]
