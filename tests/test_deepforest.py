@@ -9,6 +9,7 @@ import cv2
 import keras
 import numpy as np
 import pytest
+import pandas as pd
 
 from deepforest import deepforest
 from deepforest import get_data
@@ -193,12 +194,15 @@ def test_retrain_release(annotations, release_model):
     release_model.train(annotations=annotations, input_type="fit_generator")
 
 
-def test_multi_train(multi_annotations):
+def test_multi_train(multi_annotations, tmpdir):
     test_model = deepforest.deepforest()
+    test_model.use_release()
     test_model.config["epochs"] = 1
     test_model.config["save-snapshot"] = False
-    test_model.config["steps"] = 1
+    test_model.config["steps"] = 5
     test_model.train(annotations=multi_annotations, input_type="fit_generator")
+    
+    boxes = test_model.predict_generator(annotations=multi_annotations)
 
     # Test labels
     labels = list(test_model.labels.values())
@@ -207,7 +211,17 @@ def test_multi_train(multi_annotations):
     target_labels.sort()
 
     assert labels == target_labels
-
+    
+    #Test reload models
+    test_model.model.save("{}/prediction_model.h5".format(tmpdir))
+    
+    # new object
+    new_session = deepforest.deepforest(saved_model="{}/prediction_model.h5".format(tmpdir))
+    new_boxes = new_session.predict_generator(annotations=multi_annotations)
+    
+    assert labels == new_boxes.labels.unique()    
+    pd.testing.assert_frame_equal(boxes,new_boxes)
+    
 
 def test_reload_model(release_model):
     release_model.model.save("tests/output/example_saved_model.h5")

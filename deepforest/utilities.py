@@ -246,7 +246,7 @@ def number_of_images(annotations_file):
 
     df = pd.read_csv(annotations_file,
                      index_col=False,
-                     names=["image_path", "xmin", "ymin", "xmax", "ymax"])
+                     names=["image_path", "xmin", "ymin", "xmax", "ymax","label"])
     n = len(df.image_path.unique())
     return n
 
