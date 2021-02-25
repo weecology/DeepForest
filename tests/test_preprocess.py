@@ -73,15 +73,16 @@ def test_select_annotations_tile(config, numpy_image):
 
 
 def test_split_raster(config):
-    annotations_file = preprocess.split_raster(config["path_to_raster"],
-                                               config["annotations_file"], "tests/data/",
-                                               config["patch_size"],
-                                               config["patch_overlap"])
+    annotations_file = preprocess.split_raster(annotations_file=config["annotations_file"],
+                                               path_to_raster=config["path_to_raster"],
+                                               base_dir="tests/data/",
+                                               patch_size=config["patch_size"],
+                                               patch_overlap=config["patch_overlap"])
 
     # Returns a 6 column pandas array
     assert annotations_file.shape[1] == 6
 
-
+    
 def test_split_raster_empty(config):
     # Clean output folder
     for f in glob.glob("tests/output/empty/*"):
@@ -100,21 +101,21 @@ def test_split_raster_empty(config):
 
     # Ignore blanks
     with pytest.raises(ValueError):
-        annotations_file = preprocess.split_raster(config["path_to_raster"],
-                                                   "tests/data/blank_annotations.csv",
-                                                   "tests/output/empty/",
-                                                   config["patch_size"],
-                                                   config["patch_overlap"],
+        annotations_file = preprocess.split_raster(annotations_file="tests/data/blank_annotations.csv",
+                                                   path_to_raster=config["path_to_raster"],
+                                                   base_dir="tests/output/empty/",
+                                                   patch_size=config["patch_size"],
+                                                   patch_overlap=config["patch_overlap"],
                                                    allow_empty=False)
         assert annotations_file.shape[0] == 0
     assert not os.path.exists("tests/output/empty/OSBS_029_1.png")
 
     # Include blanks
-    annotations_file = preprocess.split_raster(config["path_to_raster"],
-                                               "tests/data/blank_annotations.csv",
-                                               "tests/output/empty/",
-                                               config["patch_size"],
-                                               config["patch_overlap"],
+    annotations_file = preprocess.split_raster(annotations_file="tests/data/blank_annotations.csv",
+                                               path_to_raster=config["path_to_raster"],
+                                               base_dir="tests/output/empty/",
+                                               patch_size=config["patch_size"],
+                                               patch_overlap=config["patch_overlap"],
                                                allow_empty=True)
     assert annotations_file.shape[0] > 0
     assert os.path.exists("tests/output/empty/OSBS_029_1.png")
@@ -122,7 +123,8 @@ def test_split_raster_empty(config):
 
 def test_split_size_error(config):
     with pytest.raises(ValueError):
-        annotations_file = preprocess.split_raster(config["path_to_raster"],
-                                                   config["annotations_file"],
-                                                   "tests/data/", 2000,
-                                                   config["patch_overlap"])
+        annotations_file = preprocess.split_raster(annotations_file=config["annotations_file"],
+                                                   path_to_raster=config["path_to_raster"],
+                                                   base_dir="tests/data/", 
+                                                   patch_size=2000,
+                                                   patch_overlap=config["patch_overlap"])
