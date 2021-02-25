@@ -82,7 +82,23 @@ def test_split_raster(config):
     # Returns a 6 column pandas array
     assert annotations_file.shape[1] == 6
 
+
+def test_split_raster_from_numpy(config):
+    img = Image.open(config["path_to_raster"])
+    numpy_image = np.array(img)
+    image_name = os.path.basename(config["annotations_file"]).replace(".csv",".tif")
     
+    annotations_file = preprocess.split_raster(numpy_image=numpy_image,
+                                               image_name=image_name,
+                                               annotations_file=config["annotations_file"],
+                                               base_dir="tests/data/",
+                                               patch_size=config["patch_size"],
+                                               patch_overlap=config["patch_overlap"])
+
+    # Returns a 6 column pandas array
+    assert annotations_file.shape[1] == 6
+
+
 def test_split_raster_empty(config):
     # Clean output folder
     for f in glob.glob("tests/output/empty/*"):
