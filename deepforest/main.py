@@ -64,7 +64,7 @@ class deepforest(pl.LightningModule):
     
     def create_model(self):
         """Define a deepforest retinanet architecture"""
-        self.model = model.create_model(self.num_classes, self.config["nms_thresh"])
+        self.model = model.create_model(self.num_classes, self.config["nms_thresh"], self.config["score_thresh"])
     
     def create_trainer(self, logger=None, callbacks=None, **kwargs):
         """Create a pytorch ligthning training by reading config files
@@ -290,7 +290,7 @@ class deepforest(pl.LightningModule):
             root_dir=self.config["validation"]["root_dir"],
             project=self.config["validation"]["project"],
             iou_threshold=self.config["validation"]["iou_threshold"],
-            score_threshold=self.config["validation"]["score_threshold"],
+            score_threshold=self.config["score_thresh"],
             show_plot=False)
         
         self.log("test_precision", precision)

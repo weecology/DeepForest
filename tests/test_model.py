@@ -10,7 +10,7 @@ def test_load_backbone():
     prediction = retinanet(x)    
 
 def test_create_model():
-    retinanet_model = model.create_model(num_classes=2,nms_thresh=0.1)
+    retinanet_model = model.create_model(num_classes=2,nms_thresh=0.1, score_thresh=0.2)
     
     #retinanet_model.eval()
     #x = [torch.rand(3, 300, 400), torch.rand(3, 500, 400)]
