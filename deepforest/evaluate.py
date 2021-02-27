@@ -50,7 +50,7 @@ def evaluate_image(predictions, ground_df, project, score_threshold, show_plot, 
     
     return result    
 
-def evaluate(predictions, ground_df, root_dir, project=False, show_plot=True, iou_threshold=0.4, score_threshold=0):
+def evaluate(predictions, ground_df, root_dir, project=False, show_plot=True, iou_threshold=0.4, score_threshold=0.05):
     """Image annotated crown evaluation routine
     submission can be submitted as a .shp, existing pandas dataframe or .csv path
     

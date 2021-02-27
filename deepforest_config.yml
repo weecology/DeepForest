@@ -7,6 +7,9 @@ gpus:
 distributed_backend:
 batch_size: 1
 
+#Non-max supression of overlapping predictions
+nms_thresh: 0.05
+
 train:
 
     csv_file:
@@ -14,7 +17,7 @@ train:
     
     #Optomizer  initial learning rate
     lr: 0.001
-    
+
     #Print loss every n epochs
     print_freq: 1
     epochs: 1

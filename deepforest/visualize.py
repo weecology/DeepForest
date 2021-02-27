@@ -1,9 +1,11 @@
 #Visualize module for plotting and handling predictions
 import os
 import pandas as pd
+import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from skimage import io
+import numpy as np
 
 def format_predictions(prediction):
     """Format a retinanet prediction into a pandas dataframe for a single image"""
@@ -30,7 +32,8 @@ def plot_predictions(image, df):
         ymin = row["ymin"]
         width = row["xmax"] - xmin
         height = row["ymax"] - ymin
-        rect = create_box(xmin=xmin,ymin=ymin, height=height, width=width,color="cyan")
+        color = label_to_color(row["label"])
+        rect = create_box(xmin=xmin,ymin=ymin, height=height, width=width,color=color)
         ax.add_patch(rect)
     #no axis show up
     plt.axis('off')
@@ -64,3 +67,23 @@ def add_annotations(plot, ax, annotations):
         ax.add_patch(rect) 
     
     return plot
+
+def label_to_color(label):
+    color_dict = {}
+    colors = [list((matplotlib.colors.hsv_to_rgb([x, 1.0, 1.0]) * 255).astype(int)) for x in np.arange(0, 1, 1.0 / 80)]
+    for index, color in enumerate(colors):
+        color_dict[index] = color
+    
+    #hand pick the first few colors
+    color[0] = "cyan"
+    color[1] = "tomato"
+    color[2] = "blue"
+    color[3] = "limegreen"
+    color[4] = "orchid"
+    color[5] = "crimson"
+    color[6] = "peru"
+    color[7] = "dodgerblue"
+    color[8] = "gold"
+    color[9] = "blueviolet"
+    
+    return color_dict[label]

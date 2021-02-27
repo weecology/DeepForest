@@ -22,9 +22,10 @@ def create_anchor_generator():
     
     return anchor_generator
     
-def create_model(num_classes):
+def create_model(num_classes, nms_thresh):
     backbone = load_backbone()
     model = RetinaNet(backbone.backbone, num_classes=num_classes)
+    model.nms_thresh = nms_thresh
     
     #Optionally allow anchor generator parameters to be created here
     #https://pytorch.org/vision/stable/_modules/torchvision/models/detection/retinanet.html

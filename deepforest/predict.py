@@ -164,6 +164,10 @@ def predict_tile(model,
     
             predicted_boxes.append(boxes)
     
+    if len(predicted_boxes) == 0:
+        print("No predictions made, returning None")
+        return None
+    
     predicted_boxes = pd.concat(predicted_boxes)
     # Non-max supression for overlapping boxes among window
     if patch_overlap == 0:
