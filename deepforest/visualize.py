@@ -70,20 +70,20 @@ def add_annotations(plot, ax, annotations):
 
 def label_to_color(label):
     color_dict = {}
-    colors = [list((matplotlib.colors.hsv_to_rgb([x, 1.0, 1.0]) * 255).astype(int)) for x in np.arange(0, 1, 1.0 / 80)]
+    colors = [list((matplotlib.colors.hsv_to_rgb([x, 1.0, 1.0])).astype(int)) for x in np.arange(0, 1, 1.0 / 80)]
     for index, color in enumerate(colors):
         color_dict[index] = color
     
     #hand pick the first few colors
-    color[0] = "cyan"
-    color[1] = "tomato"
-    color[2] = "blue"
-    color[3] = "limegreen"
-    color[4] = "orchid"
-    color[5] = "crimson"
-    color[6] = "peru"
-    color[7] = "dodgerblue"
-    color[8] = "gold"
-    color[9] = "blueviolet"
+    color_dict[0] = "cyan"
+    color_dict[1] = "tomato"
+    color_dict[2] = "blue"
+    color_dict[3] = "limegreen"
+    color_dict[4] = "orchid"
+    color_dict[5] = "crimson"
+    color_dict[6] = "peru"
+    color_dict[7] = "dodgerblue"
+    color_dict[8] = "gold"
+    color_dict[9] = "blueviolet"
     
     return color_dict[label]
