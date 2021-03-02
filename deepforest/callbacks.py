@@ -23,7 +23,8 @@ class images_callback(Callback):
         root_dir: root directory of images to search for 'image path' values from the csv file
         iou_threshold: intersection-over-union threshold, see deepforest.evaluate
         probability_threshold: minimum probablity for inclusion, see deepforest.evaluate
-        n: run callback on every n epochs
+        n: number of images to upload
+        every_n_epochs: run epoch interval
     Returns:
         None: either prints validation scores or logs them to a comet experiment
         """
@@ -55,10 +56,11 @@ class images_callback(Callback):
             predictions = pl_module.model(images)
                 
             for index, prediction in enumerate(predictions):
-                df = visualize.format_predictions(prediction)
+                df = visualize.format_boxes(prediction)
                 df["image_path"] = path[index]
                 df = df[df.scores > self.score_threshold]
-                visualize.plot_prediction_dataframe(df, self.ground_truth, self.root_dir, self.savedir)
+                image_name = path[index]
+                visualize.plot_prediction_and_targets(df, targets, self.root_dir, image_name, self.savedir)
         try:
             saved_plots = glob.glob("{}/*.png".format(self.savedir))
             for x in saved_plots:
