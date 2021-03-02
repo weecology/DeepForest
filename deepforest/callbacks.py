@@ -8,6 +8,7 @@ from deepforest import visualize
 import pandas as pd
 import numpy as np
 import glob
+import torch
 
 from pytorch_lightning import Callback
 
@@ -56,6 +57,7 @@ class images_callback(Callback):
             predictions = pl_module.model(images)
                 
             for path, image, prediction, target in zip(paths, images, predictions,targets):
+                image = torch.roll(image,0,3)
                 visualize.plot_prediction_and_targets(
                     image=image,
                     predictions=prediction,
