@@ -7,13 +7,32 @@ import matplotlib.patches as patches
 from skimage import io
 import numpy as np
 
-def format_predictions(prediction):
-    """Format a retinanet prediction into a pandas dataframe for a single image"""
+def format_boxes(prediction, scores = True):
+    """Format a retinanet prediction into a pandas dataframe for a single image
+       Args:
+           prediction: a dictionary with keys 'boxes' and 'labels' coming from a retinanet
+           scores: Whether boxes come with scores, during prediction, or without scores, as in during training.
+        Returns:
+           df: a pandas dataframe
+    """
+            
     df = pd.DataFrame(prediction["boxes"].cpu().detach().numpy(),columns=["xmin","ymin","xmax","ymax"])
     df["label"] = prediction["labels"].cpu().detach().numpy()
-    df["scores"] = prediction["scores"].cpu().detach().numpy()
     
-    return df
+    if scores:
+        df["scores"] = prediction["scores"].cpu().detach().numpy()
+    
+    return df 
+
+def plot_prediction_and_targets(image, predictions, targets, image_name, savedir, score_threshold=0):
+    """Plot an image, its predictions, and its ground truth targets for debugging"""
+    prediction_df = format_boxes(predictions)
+    plot, ax = plot_predictions(image, prediction_df)
+    target_df = format_boxes(targets, scores=False)    
+    plot = add_annotations(plot, ax, target_df)
+    plot.savefig("{}/{}.png".format(savedir,image_name))        
+    
+    return "{}/{}.png".format(savedir,image_name)
 
 def plot_prediction_dataframe(df, ground_truth, root_dir, savedir):
     """For each row in dataframe, call plot predictions"""
@@ -22,9 +41,10 @@ def plot_prediction_dataframe(df, ground_truth, root_dir, savedir):
         plot, ax = plot_predictions(image, group)
         annotations = ground_truth[ground_truth.image_path==name]
         plot = add_annotations(plot, ax, annotations)
-        plot.savefig("{}/{}.png".format(savedir,os.path.splitext(name)[0]))        
+        plot.savefig("{}/{}.png".format(savedir,os.path.splitext(name)[0]))    
         
 def plot_predictions(image, df):
+    """channel order is channels first for pytorch"""
     fig, ax = plt.subplots()
     ax.imshow(image)
     for index, row in df.iterrows():

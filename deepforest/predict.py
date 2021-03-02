@@ -36,7 +36,7 @@ def predict_image(model, image, score_threshold, return_plot, device, iou_thresh
         return None
     
     #This function on takes in a single image.
-    df = visualize.format_predictions(prediction[0])
+    df = visualize.format_boxes(prediction[0])
     df = df[df.scores > score_threshold]
     
     if return_plot:
@@ -80,7 +80,7 @@ def predict_file(model,csv_file,root_dir, savedir, device):
         if not device.type=="cpu":
             prediction = prediction.detach().cpu().numpy()
         
-        prediction = visualize.format_predictions(prediction[0])
+        prediction = visualize.format_boxes(prediction[0])
         prediction["image_path"] = path
         prediction_list.append(prediction)
         

@@ -276,7 +276,7 @@ class deepforest(pl.LightningModule):
         
         result = []
         for index, prediction in enumerate(predictions):
-            formatted_prediction = visualize.format_predictions(prediction)
+            formatted_prediction = visualize.format_boxes(prediction)
             formatted_prediction["image_path"] = path[index]
             result.append(formatted_prediction)
         result = pd.concat(result)

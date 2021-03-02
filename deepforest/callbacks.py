@@ -8,6 +8,7 @@ from deepforest import visualize
 import pandas as pd
 import numpy as np
 import glob
+import torch
 
 from pytorch_lightning import Callback
 
@@ -23,7 +24,8 @@ class images_callback(Callback):
         root_dir: root directory of images to search for 'image path' values from the csv file
         iou_threshold: intersection-over-union threshold, see deepforest.evaluate
         probability_threshold: minimum probablity for inclusion, see deepforest.evaluate
-        n: run callback on every n epochs
+        n: number of images to upload
+        every_n_epochs: run epoch interval
     Returns:
         None: either prints validation scores or logs them to a comet experiment
         """
@@ -45,20 +47,22 @@ class images_callback(Callback):
             
         for x in np.arange(self.n):
             batch = next(iter(ds))
-            path, images, targets = batch
+            paths, images, targets = batch
             pl_module.model.eval()
             
-            #put images on correct device
-            if not pl_module.device.type=="cpu":
-                images = [x.to(pl_module.device) for x in images]
-            
             predictions = pl_module.model(images)
-                
-            for index, prediction in enumerate(predictions):
-                df = visualize.format_predictions(prediction)
-                df["image_path"] = path[index]
-                df = df[df.scores > self.score_threshold]
-                visualize.plot_prediction_dataframe(df, self.ground_truth, self.root_dir, self.savedir)
+            
+            
+            for path, image, prediction, target in zip(paths, images, predictions,targets):
+                image = image.permute(1,2,0)
+                image = image.cpu()
+                visualize.plot_prediction_and_targets(
+                    image=image,
+                    predictions=prediction,
+                    targets=target,
+                    image_name=path,
+                    savedir=self.savedir,
+                    score_threshold=self.score_threshold)
         try:
             saved_plots = glob.glob("{}/*.png".format(self.savedir))
             for x in saved_plots:
