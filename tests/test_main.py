@@ -22,12 +22,12 @@ def m():
     m.config["train"]["root_dir"] = os.path.dirname(get_data("example.csv"))
     m.config["train"]["fast_dev_run"] = True
     m.config["batch_size"] = 2
-       
+        
     m.config["validation"]["csv_file"] = get_data("example.csv") 
     m.config["validation"]["root_dir"] = os.path.dirname(get_data("example.csv"))
-       
+
     m.create_trainer()
-    m.model = model.load_backbone()
+    m.create_model()
     
     return m
 
@@ -135,6 +135,16 @@ def test_train_callbacks(m):
     trainer.fit(m, train_ds)
     
 def test_save_and_reload(m, tmpdir):
+    img_path = get_data(path="2019_YELL_2_528000_4978000_image_crop2.png")
+
     m.trainer.fit(m)
-    torch.save(m.model,"{}/checkpoint.pt".format(tmpdir))
-    m.model = torch.load("{}/checkpoint.pt".format(tmpdir))
+    #save the prediction dataframe after training and compare with prediction after reload checkpoint 
+    pred_after_train = m.predict_image(path = img_path)
+    m.save_model("{}/checkpoint.pl".format(tmpdir))
+    #reload the checkpoint to model object
+    m.model = m.load_from_checkpoint("{}/checkpoint.pl".format(tmpdir))
+    pred_after_reload = m.predict_image(path = img_path)
+
+    assert not pred_after_train.empty
+    assert not pred_after_reload.empty
+    assert pred_after_train == pred_after_reload

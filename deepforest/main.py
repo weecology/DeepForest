@@ -82,6 +82,14 @@ class deepforest(pl.LightningModule):
             callbacks=callbacks,
             **kwargs
         )
+    
+    def save_model(self, path):
+        """Save the trainer checkpoint in user defined path, in order to access in future
+        Arg:
+            Path: the path located the model checkpoint
+        """
+        self.trainer.save_checkpoint(path)
+        
         
     def load_dataset(self, csv_file, root_dir=None, augment=False, shuffle=True, batch_size=1):
         """Create a tree dataset for inference
