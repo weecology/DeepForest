@@ -88,7 +88,7 @@ class deepforest(pl.LightningModule):
         Arg:
             Path: the path located the model checkpoint
         """
-        self.trainer.save_checkpoint(path)
+        self.trainer.save_checkpoint("{}/hand_annotated.pl".format(path))
         
         
     def load_dataset(self, csv_file, root_dir=None, augment=False, shuffle=True, batch_size=1):
