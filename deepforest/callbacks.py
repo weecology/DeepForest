@@ -40,9 +40,7 @@ class images_callback(Callback):
         
     def log_images(self, pl_module):
         ds = pl_module.load_dataset(self.csv_file, self.root_dir, batch_size=1)
-        
-        print("pl_model device is:{}".format(pl_module.device))
-        
+                
         #Make sure the n images is not larger than the dataset
         if self.n > len(ds):
             self.n = len(ds)
@@ -51,9 +49,10 @@ class images_callback(Callback):
             batch = next(iter(ds))
             paths, images, targets = batch
             pl_module.model.eval()
-            print("model device is:{}".format(next(pl_module.model.parameters()).device))
-            print("image device is:{}".format(images[0].device))
             
+            if not pl_module.device.type=="cpu":
+                images = [x.to(pl_module.device) for x in images]
+                
             predictions = pl_module.model(images)
             
             
