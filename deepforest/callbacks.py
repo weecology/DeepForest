@@ -55,9 +55,9 @@ class images_callback(Callback):
                 images = [x.to(pl_module.device) for x in images]
             
             predictions = pl_module.model(images)
-                
+            
             for path, image, prediction, target in zip(paths, images, predictions,targets):
-                image = torch.roll(image,0,3)
+                image = image.permute(1,2,0)
                 visualize.plot_prediction_and_targets(
                     image=image,
                     predictions=prediction,
