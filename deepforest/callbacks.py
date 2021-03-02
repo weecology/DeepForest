@@ -46,7 +46,7 @@ class images_callback(Callback):
             
         for x in np.arange(self.n):
             batch = next(iter(ds))
-            path, images, targets = batch
+            paths, images, targets = batch
             pl_module.model.eval()
             
             #put images on correct device
@@ -55,12 +55,14 @@ class images_callback(Callback):
             
             predictions = pl_module.model(images)
                 
-            for index, prediction in enumerate(predictions):
-                df = visualize.format_boxes(prediction)
-                df["image_path"] = path[index]
-                df = df[df.scores > self.score_threshold]
-                image_name = path[index]
-                visualize.plot_prediction_and_targets(df, targets[index], self.root_dir, image_name, self.savedir)
+            for path, image, prediction, target in zip(paths, images, predictions,targets):
+                visualize.plot_prediction_and_targets(
+                    image=image,
+                    predictions=prediction,
+                    targets=target,
+                    image_name=path,
+                    savedir=self.savedir,
+                    score_threshold=self.score_threshold)
         try:
             saved_plots = glob.glob("{}/*.png".format(self.savedir))
             for x in saved_plots:

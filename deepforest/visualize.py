@@ -24,7 +24,7 @@ def format_boxes(prediction, scores = True):
     
     return df 
 
-def plot_prediction_and_targets(image, predictions, targets, image_name, savedir):
+def plot_prediction_and_targets(image, predictions, targets, image_name, savedir, score_threshold=0):
     """Plot an image, its predictions, and its ground truth targets for debugging"""
     prediction_df = format_boxes(predictions)
     plot, ax = plot_predictions(image, prediction_df)
