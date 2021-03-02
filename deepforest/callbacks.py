@@ -50,14 +50,12 @@ class images_callback(Callback):
             paths, images, targets = batch
             pl_module.model.eval()
             
-            #put images on correct device
-            if not pl_module.device.type=="cpu":
-                images = [x.to(pl_module.device) for x in images]
-            
             predictions = pl_module.model(images)
+            
             
             for path, image, prediction, target in zip(paths, images, predictions,targets):
                 image = image.permute(1,2,0)
+                image = image.cpu()
                 visualize.plot_prediction_and_targets(
                     image=image,
                     predictions=prediction,
