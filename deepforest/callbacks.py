@@ -60,7 +60,7 @@ class images_callback(Callback):
                 df["image_path"] = path[index]
                 df = df[df.scores > self.score_threshold]
                 image_name = path[index]
-                visualize.plot_prediction_and_targets(df, targets, self.root_dir, image_name, self.savedir)
+                visualize.plot_prediction_and_targets(df, targets[index], self.root_dir, image_name, self.savedir)
         try:
             saved_plots = glob.glob("{}/*.png".format(self.savedir))
             for x in saved_plots:
