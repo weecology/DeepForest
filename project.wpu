@@ -148,8 +148,7 @@ guimgr.overall-gui-state = {'windowing-policy': 'combined-window',
          7),
         (5,),
         (8,)],
-                                      'selected-nodes': [(0,
-        0)],
+                                      'selected-nodes': [(0,)],
                                       'top-node': (0,)}}),
                      ('debug-io',
                       'wide',
@@ -245,31 +244,14 @@ guimgr.overall-gui-state = {'windowing-policy': 'combined-window',
                       '(prediction, targets[index], self.root_dir, image_nam'\
                       'e, self.savedir, score_threshold=self.score_threshold'\
                       ')\n',
-         'first-line': 40L,
+         'first-line': 46L,
          'folded-linenos': [],
          'sel-line': 59L,
          'sel-line-start': 2302L,
-         'selection_end': 2461L,
-         'selection_start': 2461L,
+         'selection_end': 2462L,
+         'selection_start': 2302L,
          'zoom': 0L},
-        1614718567.386677],
-        [loc('deepforest/callbacks.py'),
-         {'attrib-starts': [('images_callback|0|',
-                             13),
-                            ('images_callback|0|.log_images|0|',
-                             39)],
-          'code-line': '                visualize.plot_prediction_and_target'\
-                       's(prediction, targets[index], self.root_dir, image_n'\
-                       'ame, self.savedir, score_threshold=self.score_thresh'\
-                       'old)\n',
-          'first-line': 46L,
-          'folded-linenos': [],
-          'sel-line': 59L,
-          'sel-line-start': 2302L,
-          'selection_end': 2462L,
-          'selection_start': 2302L,
-          'zoom': 0L},
-         1614718570.41172],
+        1614718570.41172],
         [loc('deepforest/visualize.py'),
          {'attrib-starts': [('plot_prediction_and_targets|0|',
                              26)],
@@ -508,7 +490,22 @@ guimgr.overall-gui-state = {'windowing-policy': 'combined-window',
           'selection_end': 272L,
           'selection_start': 272L,
           'zoom': 0L},
-         1614719055.296371]],
+         1614719055.296371],
+        [loc('deepforest/callbacks.py'),
+         {'attrib-starts': [('images_callback|0|',
+                             14),
+                            ('images_callback|0|.log_images|0|',
+                             40)],
+          'code-line': '            print("image device is:{}".format(images'\
+                       '.device))\n',
+          'first-line': 37L,
+          'folded-linenos': [],
+          'sel-line': 54L,
+          'sel-line-start': 2108L,
+          'selection_end': 2160L,
+          'selection_start': 2160L,
+          'zoom': 0L},
+         1614721244.64605]],
         20),
         'current-loc': loc('deepforest/callbacks.py'),
         'editor-state-list': [(loc('deepforest/callbacks.py'),
@@ -516,14 +513,13 @@ guimgr.overall-gui-state = {'windowing-policy': 'combined-window',
         14),
         ('images_callback|0|.log_images|0|',
          40)],
-                                'code-line': '                image = image.'\
-        'cpu()\n',
-                                'first-line': 44L,
+                                'code-line': '            \n',
+                                'first-line': 40L,
                                 'folded-linenos': [],
-                                'sel-line': 57L,
-                                'sel-line-start': 2190L,
-                                'selection_end': 2214L,
-                                'selection_start': 2214L,
+                                'sel-line': 55L,
+                                'sel-line-start': 2189L,
+                                'selection_end': 2201L,
+                                'selection_start': 2201L,
                                 'zoom': 0L}),
                               (loc('deepforest/dataset.py'),
                                {'attrib-starts': [('TreeDataset|0|',
@@ -2807,11 +2803,128 @@ testing.stored-results = (1,
                               26)]),
                            (u'/Users/benweinstein/Documents/DeepForest-pytorch/tests/test_callbacks.py',
                             [('test_log_images',
-                              0,
+                              1,
                               None,
                               None,
-                              None,
-                              1614719560,
+                              ('',
+                               "<ExceptionInfo ModuleAttributeError(\"'Retin"\
+                               "aNet' object has no attribute 'device'\") tb"\
+                               "len=12>",
+                               "torch.nn.modules.module.ModuleAttributeError"\
+                               ": 'RetinaNet' object has no attribute 'devic"\
+                               "e'",
+                               [(u'/Users/benweinstein/Documents/DeepForest-pytorch/tests/test_callbacks.py',
+                                 '/Users/benweinstein/Documents/DeepForest-p'\
+                                 'ytorch/tests/test_callbacks.py',
+                                 30,
+                                 'test_log_images',
+                                 None,
+                                 '    m.trainer.fit(m)'),
+                                (u'/Users/benweinstein/opt/miniconda3/envs/DeepForest_pytorch/lib/python3.8/site-packages/pytorch_lightning/trainer/trainer.py',
+                                 '/Users/benweinstein/opt/miniconda3/envs/De'\
+                                 'epForest_pytorch/lib/python3.8/site-packag'\
+                                 'es/pytorch_lightning/trainer/trainer.py',
+                                 470,
+                                 'fit',
+                                 None,
+                                 '        results = self.accelerator_backend'\
+                                 '.train()'),
+                                (u'/Users/benweinstein/opt/miniconda3/envs/DeepForest_pytorch/lib/python3.8/site-packages/pytorch_lightning/accelerators/cpu_accelerator.py',
+                                 '/Users/benweinstein/opt/miniconda3/envs/De'\
+                                 'epForest_pytorch/lib/python3.8/site-packag'\
+                                 'es/pytorch_lightning/accelerators/cpu_acce'\
+                                 'lerator.py',
+                                 62,
+                                 'train',
+                                 None,
+                                 '        results = self.train_or_test()'),
+                                (u'/Users/benweinstein/opt/miniconda3/envs/DeepForest_pytorch/lib/python3.8/site-packages/pytorch_lightning/accelerators/accelerator.py',
+                                 '/Users/benweinstein/opt/miniconda3/envs/De'\
+                                 'epForest_pytorch/lib/python3.8/site-packag'\
+                                 'es/pytorch_lightning/accelerators/accelera'\
+                                 'tor.py',
+                                 69,
+                                 'train_or_test',
+                                 None,
+                                 '            results = self.trainer.train()'),
+                                (u'/Users/benweinstein/opt/miniconda3/envs/DeepForest_pytorch/lib/python3.8/site-packages/pytorch_lightning/trainer/trainer.py',
+                                 '/Users/benweinstein/opt/miniconda3/envs/De'\
+                                 'epForest_pytorch/lib/python3.8/site-packag'\
+                                 'es/pytorch_lightning/trainer/trainer.py',
+                                 521,
+                                 'train',
+                                 None,
+                                 '                    self.train_loop.run_tr'\
+                                 'aining_epoch()'),
+                                (u'/Users/benweinstein/opt/miniconda3/envs/DeepForest_pytorch/lib/python3.8/site-packages/pytorch_lightning/trainer/training_loop.py',
+                                 '/Users/benweinstein/opt/miniconda3/envs/De'\
+                                 'epForest_pytorch/lib/python3.8/site-packag'\
+                                 'es/pytorch_lightning/trainer/training_loop'\
+                                 '.py',
+                                 625,
+                                 'run_training_epoch',
+                                 None,
+                                 '        self.run_on_epoch_end_hook(epoch_o'\
+                                 'utput)'),
+                                (u'/Users/benweinstein/opt/miniconda3/envs/DeepForest_pytorch/lib/python3.8/site-packages/pytorch_lightning/trainer/training_loop.py',
+                                 '/Users/benweinstein/opt/miniconda3/envs/De'\
+                                 'epForest_pytorch/lib/python3.8/site-packag'\
+                                 'es/pytorch_lightning/trainer/training_loop'\
+                                 '.py',
+                                 856,
+                                 'run_on_epoch_end_hook',
+                                 None,
+                                 "        self.trainer.call_hook('on_epoch_e"\
+                                 "nd')"),
+                                (u'/Users/benweinstein/opt/miniconda3/envs/DeepForest_pytorch/lib/python3.8/site-packages/pytorch_lightning/trainer/trainer.py',
+                                 '/Users/benweinstein/opt/miniconda3/envs/De'\
+                                 'epForest_pytorch/lib/python3.8/site-packag'\
+                                 'es/pytorch_lightning/trainer/trainer.py',
+                                 887,
+                                 'call_hook',
+                                 None,
+                                 '                trainer_hook(*args, **kwar'\
+                                 'gs)'),
+                                (u'/Users/benweinstein/opt/miniconda3/envs/DeepForest_pytorch/lib/python3.8/site-packages/pytorch_lightning/trainer/callback_hook.py',
+                                 '/Users/benweinstein/opt/miniconda3/envs/De'\
+                                 'epForest_pytorch/lib/python3.8/site-packag'\
+                                 'es/pytorch_lightning/trainer/callback_hook'\
+                                 '.py',
+                                 107,
+                                 'on_epoch_end',
+                                 None,
+                                 '            callback.on_epoch_end(self, se'\
+                                 'lf.get_model())'),
+                                (u'/Users/benweinstein/Documents/DeepForest-pytorch/deepforest/callbacks.py',
+                                 '/Users/benweinstein/Documents/DeepForest-p'\
+                                 'ytorch/deepforest/callbacks.py',
+                                 79,
+                                 'on_epoch_end',
+                                 None,
+                                 '        self.log_images(pl_module)'),
+                                (u'/Users/benweinstein/Documents/DeepForest-pytorch/deepforest/callbacks.py',
+                                 '/Users/benweinstein/Documents/DeepForest-p'\
+                                 'ytorch/deepforest/callbacks.py',
+                                 54,
+                                 'log_images',
+                                 None,
+                                 '            print("model device is:{}".for'\
+                                 'mat(pl_module.model.device))'),
+                                (u'/Users/benweinstein/opt/miniconda3/envs/DeepForest_pytorch/lib/python3.8/site-packages/torch/nn/modules/module.py',
+                                 '/Users/benweinstein/opt/miniconda3/envs/De'\
+                                 'epForest_pytorch/lib/python3.8/site-packag'\
+                                 'es/torch/nn/modules/module.py',
+                                 778,
+                                 '__getattr__',
+                                 None,
+                                 "        raise ModuleAttributeError(\"'{}' "\
+                                 "object has no attribute '{}'\".format(")],
+                               0,
+                               None,
+                               None,
+                               None,
+                               None),
+                              1614721179,
                               25)]),
                            (u'/Users/benweinstein/Documents/DeepForest-pytorch/tests/test_main.py',
                             [('test_predict_return_plot',
