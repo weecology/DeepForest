@@ -56,8 +56,9 @@ class deepforest(pl.LightningModule):
             model (object): A trained keras model
         """
         # Download latest model from github release
-        release_tag, self.weights = utilities.use_release()
-
+        release_tag, self.release_state_dict = utilities.use_release()
+        self.create_model(self.release_state_dict)
+        
         # load saved model and tag release
         self.__release_version__ = release_tag
         print("Loading pre-built model: {}".format(release_tag))

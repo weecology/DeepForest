@@ -25,11 +25,10 @@ def test_xml_to_annotations():
     # bounding box extents should be int
     assert annotations["xmin"].dtype == np.int64
 
-
-#def test_use_release():
-    ## Download latest model from github release
-    #release_tag, weights = utilities.use_release()
-    #assert os.path.exists(get_data("NEON.h5"))
+def test_use_release():
+    # Download latest model from github release
+    release_tag, state_dict = utilities.use_release()
+    assert os.path.exists(get_data("NEON.pt"))
 
 def test_float_warning(config):
     """Users should get a rounding warning when adding annotations with floats"""

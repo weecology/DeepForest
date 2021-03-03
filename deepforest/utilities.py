@@ -54,14 +54,14 @@ def use_release(save_dir=os.path.join(_ROOT, "data/"), prebuilt_model="NEON"):
     _json = json.loads(
         urllib.request.urlopen(
             urllib.request.Request(
-                'https://api.github.com/repos/Weecology/DeepForest/releases/latest',
+                'https://api.github.com/repos/Weecology/DeepForest-pytorch/releases/latest',
                 headers={'Accept': 'application/vnd.github.v3+json'},
             )).read())
     asset = _json['assets'][0]
     url = asset['browser_download_url']
 
     # Naming based on pre-built model
-    output_path = os.path.join(save_dir, prebuilt_model + ".h5")
+    output_path = os.path.join(save_dir, prebuilt_model + ".pt")
 
     # Check the release tagged locally
     try:
