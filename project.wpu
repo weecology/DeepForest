@@ -148,13 +148,6 @@ guimgr.overall-gui-state = {'windowing-policy': 'combined-window',
                        'tree-state': {'expanded-nodes': [(0,),
         (4,),
         (4,
-         8),
-        (4,
-         9),
-        (4,
-         9,
-         1),
-        (4,
          10),
         (4,
          10,
@@ -163,11 +156,8 @@ guimgr.overall-gui-state = {'windowing-policy': 'combined-window',
         (7,),
         (8,)],
                                       'selected-nodes': [(4,
-        9),
-        (4,
-         8)],
-                                      'top-node': (4,
-        3)}}),
+        10)],
+                                      'top-node': (4,)}}),
                      ('debug-io',
                       'wide',
                       1,
@@ -3039,179 +3029,11 @@ testing.stored-results = (1,
                               5)]),
                            (u'/Users/benweinstein/Documents/DeepForest-pytorch/tests/test_main.py',
                             [('test_train_callbacks',
-                              1,
+                              0,
                               None,
                               None,
-                              ('',
-                               "<ExceptionInfo TypeError(\"'str' object is n"\
-                               "ot callable\") tblen=17>",
-                               "TypeError: 'str' object is not callable",
-                               [(u'/Users/benweinstein/Documents/DeepForest-pytorch/tests/test_main.py',
-                                 '/Users/benweinstein/Documents/DeepForest-p'\
-                                 'ytorch/tests/test_main.py',
-                                 141,
-                                 'test_train_callbacks',
-                                 None,
-                                 '    trainer.fit(m, train_ds)'),
-                                (u'/Users/benweinstein/opt/miniconda3/envs/DeepForest_pytorch/lib/python3.8/site-packages/pytorch_lightning/trainer/trainer.py',
-                                 '/Users/benweinstein/opt/miniconda3/envs/De'\
-                                 'epForest_pytorch/lib/python3.8/site-packag'\
-                                 'es/pytorch_lightning/trainer/trainer.py',
-                                 470,
-                                 'fit',
-                                 None,
-                                 '        results = self.accelerator_backend'\
-                                 '.train()'),
-                                (u'/Users/benweinstein/opt/miniconda3/envs/DeepForest_pytorch/lib/python3.8/site-packages/pytorch_lightning/accelerators/cpu_accelerator.py',
-                                 '/Users/benweinstein/opt/miniconda3/envs/De'\
-                                 'epForest_pytorch/lib/python3.8/site-packag'\
-                                 'es/pytorch_lightning/accelerators/cpu_acce'\
-                                 'lerator.py',
-                                 62,
-                                 'train',
-                                 None,
-                                 '        results = self.train_or_test()'),
-                                (u'/Users/benweinstein/opt/miniconda3/envs/DeepForest_pytorch/lib/python3.8/site-packages/pytorch_lightning/accelerators/accelerator.py',
-                                 '/Users/benweinstein/opt/miniconda3/envs/De'\
-                                 'epForest_pytorch/lib/python3.8/site-packag'\
-                                 'es/pytorch_lightning/accelerators/accelera'\
-                                 'tor.py',
-                                 69,
-                                 'train_or_test',
-                                 None,
-                                 '            results = self.trainer.train()'),
-                                (u'/Users/benweinstein/opt/miniconda3/envs/DeepForest_pytorch/lib/python3.8/site-packages/pytorch_lightning/trainer/trainer.py',
-                                 '/Users/benweinstein/opt/miniconda3/envs/De'\
-                                 'epForest_pytorch/lib/python3.8/site-packag'\
-                                 'es/pytorch_lightning/trainer/trainer.py',
-                                 521,
-                                 'train',
-                                 None,
-                                 '                    self.train_loop.run_tr'\
-                                 'aining_epoch()'),
-                                (u'/Users/benweinstein/opt/miniconda3/envs/DeepForest_pytorch/lib/python3.8/site-packages/pytorch_lightning/trainer/training_loop.py',
-                                 '/Users/benweinstein/opt/miniconda3/envs/De'\
-                                 'epForest_pytorch/lib/python3.8/site-packag'\
-                                 'es/pytorch_lightning/trainer/training_loop'\
-                                 '.py',
-                                 588,
-                                 'run_training_epoch',
-                                 None,
-                                 '                self.trainer.run_evaluatio'\
-                                 'n(test_mode=False)'),
-                                (u'/Users/benweinstein/opt/miniconda3/envs/DeepForest_pytorch/lib/python3.8/site-packages/pytorch_lightning/trainer/trainer.py',
-                                 '/Users/benweinstein/opt/miniconda3/envs/De'\
-                                 'epForest_pytorch/lib/python3.8/site-packag'\
-                                 'es/pytorch_lightning/trainer/trainer.py',
-                                 628,
-                                 'run_evaluation',
-                                 None,
-                                 '        self.evaluation_loop.on_evaluation'\
-                                 '_end()'),
-                                (u'/Users/benweinstein/opt/miniconda3/envs/DeepForest_pytorch/lib/python3.8/site-packages/pytorch_lightning/trainer/evaluation_loop.py',
-                                 '/Users/benweinstein/opt/miniconda3/envs/De'\
-                                 'epForest_pytorch/lib/python3.8/site-packag'\
-                                 'es/pytorch_lightning/trainer/evaluation_lo'\
-                                 'op.py',
-                                 111,
-                                 'on_evaluation_end',
-                                 None,
-                                 "            self.trainer.call_hook('on_val"\
-                                 "idation_end', *args, **kwargs)"),
-                                (u'/Users/benweinstein/opt/miniconda3/envs/DeepForest_pytorch/lib/python3.8/site-packages/pytorch_lightning/trainer/trainer.py',
-                                 '/Users/benweinstein/opt/miniconda3/envs/De'\
-                                 'epForest_pytorch/lib/python3.8/site-packag'\
-                                 'es/pytorch_lightning/trainer/trainer.py',
-                                 887,
-                                 'call_hook',
-                                 None,
-                                 '                trainer_hook(*args, **kwar'\
-                                 'gs)'),
-                                (u'/Users/benweinstein/opt/miniconda3/envs/DeepForest_pytorch/lib/python3.8/site-packages/pytorch_lightning/trainer/callback_hook.py',
-                                 '/Users/benweinstein/opt/miniconda3/envs/De'\
-                                 'epForest_pytorch/lib/python3.8/site-packag'\
-                                 'es/pytorch_lightning/trainer/callback_hook'\
-                                 '.py',
-                                 177,
-                                 'on_validation_end',
-                                 None,
-                                 '            callback.on_validation_end(sel'\
-                                 'f, self.get_model())'),
-                                (u'/Users/benweinstein/opt/miniconda3/envs/DeepForest_pytorch/lib/python3.8/site-packages/pytorch_lightning/callbacks/model_checkpoint.py',
-                                 '/Users/benweinstein/opt/miniconda3/envs/De'\
-                                 'epForest_pytorch/lib/python3.8/site-packag'\
-                                 'es/pytorch_lightning/callbacks/model_check'\
-                                 'point.py',
-                                 203,
-                                 'on_validation_end',
-                                 None,
-                                 '        self.save_checkpoint(trainer, pl_m'\
-                                 'odule)'),
-                                (u'/Users/benweinstein/opt/miniconda3/envs/DeepForest_pytorch/lib/python3.8/site-packages/pytorch_lightning/callbacks/model_checkpoint.py',
-                                 '/Users/benweinstein/opt/miniconda3/envs/De'\
-                                 'epForest_pytorch/lib/python3.8/site-packag'\
-                                 'es/pytorch_lightning/callbacks/model_check'\
-                                 'point.py',
-                                 251,
-                                 'save_checkpoint',
-                                 None,
-                                 '        self._save_last_checkpoint(trainer'\
-                                 ', pl_module, monitor_candidates)'),
-                                (u'/Users/benweinstein/opt/miniconda3/envs/DeepForest_pytorch/lib/python3.8/site-packages/pytorch_lightning/callbacks/model_checkpoint.py',
-                                 '/Users/benweinstein/opt/miniconda3/envs/De'\
-                                 'epForest_pytorch/lib/python3.8/site-packag'\
-                                 'es/pytorch_lightning/callbacks/model_check'\
-                                 'point.py',
-                                 565,
-                                 '_save_last_checkpoint',
-                                 None,
-                                 '            self._save_model(last_filepath'\
-                                 ', trainer, pl_module)'),
-                                (u'/Users/benweinstein/opt/miniconda3/envs/DeepForest_pytorch/lib/python3.8/site-packages/pytorch_lightning/callbacks/model_checkpoint.py',
-                                 '/Users/benweinstein/opt/miniconda3/envs/De'\
-                                 'epForest_pytorch/lib/python3.8/site-packag'\
-                                 'es/pytorch_lightning/callbacks/model_check'\
-                                 'point.py',
-                                 359,
-                                 '_save_model',
-                                 None,
-                                 '            self.save_function(filepath, s'\
-                                 'elf.save_weights_only)'),
-                                (u'/Users/benweinstein/opt/miniconda3/envs/DeepForest_pytorch/lib/python3.8/site-packages/pytorch_lightning/trainer/properties.py',
-                                 '/Users/benweinstein/opt/miniconda3/envs/De'\
-                                 'epForest_pytorch/lib/python3.8/site-packag'\
-                                 'es/pytorch_lightning/trainer/properties.py',
-                                 236,
-                                 'save_checkpoint',
-                                 None,
-                                 '        self.checkpoint_connector.save_che'\
-                                 'ckpoint(filepath, weights_only)'),
-                                (u'/Users/benweinstein/opt/miniconda3/envs/DeepForest_pytorch/lib/python3.8/site-packages/pytorch_lightning/trainer/connectors/checkpoint_connector.py',
-                                 '/Users/benweinstein/opt/miniconda3/envs/De'\
-                                 'epForest_pytorch/lib/python3.8/site-packag'\
-                                 'es/pytorch_lightning/trainer/connectors/ch'\
-                                 'eckpoint_connector.py',
-                                 382,
-                                 'save_checkpoint',
-                                 None,
-                                 '        checkpoint = self.dump_checkpoint('\
-                                 'weights_only)'),
-                                (u'/Users/benweinstein/opt/miniconda3/envs/DeepForest_pytorch/lib/python3.8/site-packages/pytorch_lightning/trainer/connectors/checkpoint_connector.py',
-                                 '/Users/benweinstein/opt/miniconda3/envs/De'\
-                                 'epForest_pytorch/lib/python3.8/site-packag'\
-                                 'es/pytorch_lightning/trainer/connectors/ch'\
-                                 'eckpoint_connector.py',
-                                 294,
-                                 'dump_checkpoint',
-                                 None,
-                                 "        checkpoint['state_dict'] = model.s"\
-                                 "tate_dict()")],
-                               0,
-                               None,
-                               None,
-                               None,
-                               None),
-                              1614819710,
+                              None,
+                              1614820200,
                               121),
                              ('test_predict_tile',
                               0,
@@ -3315,33 +3137,11 @@ testing.stored-results = (1,
                               1614819710,
                               47),
                              ('test_evaluate',
-                              1,
+                              0,
                               None,
                               None,
-                              ('',
-                               "<ExceptionInfo AssertionError('assert 0.43 ="\
-                               "= 0.66\\n +  where 0.43 = <function round_ a"\
-                               "t 0x7f9fd59f5d30>(0.42857142857142855, 2)\\"\
-                               "n +    where <function round_ at 0x7f9fd59f5"\
-                               "d30> = np.round') tblen=1>",
-                               'AssertionError: assert 0.43 == 0.66\n +  whe'\
-                               're 0.43 = <function round_ at 0x7f9fd59f5d30'\
-                               '>(0.42857142857142855, 2)\n +    where <func'\
-                               'tion round_ at 0x7f9fd59f5d30> = np.round',
-                               [(u'/Users/benweinstein/Documents/DeepForest-pytorch/tests/test_main.py',
-                                 '/Users/benweinstein/Documents/DeepForest-p'\
-                                 'ytorch/tests/test_main.py',
-                                 120,
-                                 'test_evaluate',
-                                 None,
-                                 '    assert np.round(results["precision"],2'\
-                                 ') == 0.66')],
-                               0,
-                               None,
-                               None,
-                               None,
-                               None),
-                              1614819710,
+                              None,
+                              1614820200,
                               112),
                              ('test_predict_image_fromarray',
                               0,
