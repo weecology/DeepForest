@@ -3,7 +3,6 @@ Evaluation module
 """
 import pandas as pd
 import geopandas as gpd
-import rasterio
 from rasterio.plot import show 
 import shapely
 from matplotlib import pyplot

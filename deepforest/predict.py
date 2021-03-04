@@ -77,10 +77,6 @@ def predict_file(model,csv_file,root_dir, savedir, device):
         
         prediction = model(image)        
         
-        #If on gpu, bring back to cpu
-        if not device.type=="cpu":
-            prediction = prediction[0].detach().cpu().numpy()
-        
         prediction = visualize.format_boxes(prediction[0])
         prediction["image_path"] = path
         prediction_list.append(prediction)
