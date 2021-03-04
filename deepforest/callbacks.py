@@ -4,6 +4,7 @@
 """
 
 from deepforest import visualize
+from matplotlib import pyplot as plt
 import pandas as pd
 import numpy as np
 import glob
@@ -62,6 +63,8 @@ class images_callback(Callback):
                     targets=target,
                     image_name=path,
                     savedir=self.savedir)
+                plt.close()
+                
         try:
             saved_plots = glob.glob("{}/*.png".format(self.savedir))
             for x in saved_plots:
@@ -70,6 +73,6 @@ class images_callback(Callback):
             print("Could not find logger in ligthning module, skipping upload, images were saved to {}, error was rasied {}".format(self.savedir, e))
         
     def on_epoch_end(self,trainer, pl_module):
-        if self.every_n_epochs % (pl_module.current_epoch +1) == 0:
+        if self.every_n_epochs % (trainer.current_epoch +1) == 0:
             print("Running image callback")            
             self.log_images(pl_module)

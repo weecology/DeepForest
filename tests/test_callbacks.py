@@ -6,10 +6,10 @@ import os
 import pytest
 
 from deepforest import get_data
-from deepforest import model
+from .conftest import download_release
 
 @pytest.fixture()
-def m():
+def m(download_release):
     m = main.deepforest()
     m.config["train"]["csv_file"] = get_data("example.csv") 
     m.config["train"]["root_dir"] = os.path.dirname(get_data("example.csv"))
@@ -19,7 +19,7 @@ def m():
     m.config["validation"]["csv_file"] = get_data("example.csv") 
     m.config["validation"]["root_dir"] = os.path.dirname(get_data("example.csv"))
     
-    m.model = model.load_backbone()
+    m.use_release()
     
     return m
 
