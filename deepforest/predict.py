@@ -28,7 +28,7 @@ def predict_image(model, image, return_plot, device, iou_threshold=0.1):
     prediction = model(image)
         
     if not device.type=="cpu":
-        prediction = prediction.detach().cpu().numpy()
+        prediction = prediction[0].detach().cpu().numpy()
         
     #return None for no predictions
     if len(prediction[0]["boxes"])==0:
@@ -79,7 +79,7 @@ def predict_file(model,csv_file,root_dir, savedir, device):
         
         #If on gpu, bring back to cpu
         if not device.type=="cpu":
-            prediction = prediction.detach().cpu().numpy()
+            prediction = prediction[0].detach().cpu().numpy()
         
         prediction = visualize.format_boxes(prediction[0])
         prediction["image_path"] = path

@@ -28,7 +28,7 @@ class images_callback(Callback):
         None: either prints validation scores or logs them to a comet experiment
         """
     
-    def __init__(self, csv_file, root_dir, savedir, n=2, every_n_epochs =1):
+    def __init__(self, csv_file, root_dir, savedir, n=2, every_n_epochs =2):
         self.csv_file = csv_file
         self.savedir = savedir
         self.root_dir = root_dir
