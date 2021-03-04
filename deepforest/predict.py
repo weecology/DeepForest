@@ -65,13 +65,17 @@ def predict_file(model,csv_file,root_dir, savedir, device):
     #Just predict each image once. 
     images = input_csv["image_path"].unique()         
     
+    if not device.type=="cpu":
+        images = [x.to(device) for x in images]
+        
     prediction_list = []
     for path in images:
         image = io.imread("{}/{}".format(root_dir,path))
         image = preprocess.preprocess_image(image)
         
         #Just predict the images, even though we have the annotations
-        image = torch.tensor(image, device=device).float()                
+        image = torch.tensor(image, device=device).float()
+        
         prediction = model(image)        
         
         #If on gpu, bring back to cpu

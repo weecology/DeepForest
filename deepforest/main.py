@@ -316,7 +316,7 @@ class deepforest(pl.LightningModule):
                                                            min_lr=0, eps=1e-08)
         return self.optimizer
             
-    def evaluate(self, csv_file, root_dir, iou_threshold=None, show_plot=False):
+    def evaluate(self, csv_file, root_dir, iou_threshold=None, show_plot=False, savedir=None):
         """Compute intersection-over-union and precision/recall for a given iou_threshold
         
         Args:
@@ -324,10 +324,12 @@ class deepforest(pl.LightningModule):
             root_dir: location of files in the dataframe 'name' column.
             iou_threshold: float [0,1] intersection-over-union union between annotation and prediction to be scored true positive
             show_plot: open a blocking matplotlib window to show plot and annotations, useful for debugging.
+            savedir: optional path dir to save evaluation images
         Returns:
             results: dict of ("results", "precision", "recall") for a given threshold
         """
-        predictions = self.predict_file(csv_file, root_dir)
+        self.model.eval()
+        predictions = predict.predict_file(model=self.model, csv_file=csv_file, root_dir=root_dir, savedir=savedir, device=self.device)                
         ground_df = pd.read_csv(csv_file)
         
         #if no arg for iou_threshold, set as config
