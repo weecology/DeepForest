@@ -29,7 +29,7 @@ class images_callback(Callback):
         None: either prints validation scores or logs them to a comet experiment
         """
     
-    def __init__(self, csv_file, root_dir, savedir, n=2, every_n_epochs =2):
+    def __init__(self, csv_file, root_dir, savedir, n=2, every_n_epochs =5):
         self.csv_file = csv_file
         self.savedir = savedir
         self.root_dir = root_dir
@@ -73,6 +73,6 @@ class images_callback(Callback):
             print("Could not find logger in ligthning module, skipping upload, images were saved to {}, error was rasied {}".format(self.savedir, e))
         
     def on_epoch_end(self,trainer, pl_module):
-        if self.every_n_epochs % (trainer.current_epoch +1) == 0:
+        if trainer.current_epoch % self.every_n_epochs  == 0:
             print("Running image callback")            
             self.log_images(pl_module)
