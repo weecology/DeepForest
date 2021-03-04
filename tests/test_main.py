@@ -14,9 +14,11 @@ from deepforest import model
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import Callback
 
+#Import release model from global script to avoid thrasing github during testing. Just download once.
+from .conftest import download_release
 
 @pytest.fixture()
-def m():
+def m(download_release):
     m = main.deepforest()
     m.config["train"]["csv_file"] = get_data("example.csv") 
     m.config["train"]["root_dir"] = os.path.dirname(get_data("example.csv"))
@@ -27,7 +29,7 @@ def m():
     m.config["validation"]["root_dir"] = os.path.dirname(get_data("example.csv"))
 
     m.create_trainer()
-    m.create_model()
+    m.use_release()
     
     return m
 
@@ -109,10 +111,14 @@ def test_predict_tile(m):
     assert not prediction.empty
     
 def test_evaluate(m):
-    csv_file = get_data("example.csv")
+    csv_file = get_data("OSBS_029.csv")
     root_dir = os.path.dirname(csv_file)
-    precision, recall = m.evaluate(csv_file, root_dir, iou_threshold = 0.5)
-
+    
+    results = m.evaluate(csv_file, root_dir, iou_threshold = 0.4, show_plot=True)
+    
+    #Does this make reasonable predictions, we know the model works.
+    assert np.round(results["precision"],2) == 0.66
+    
 def test_train_callbacks(m):
     csv_file = get_data("example.csv") 
     root_dir = os.path.dirname(csv_file)
@@ -136,15 +142,16 @@ def test_train_callbacks(m):
     
 def test_save_and_reload(m, tmpdir):
     img_path = get_data(path="2019_YELL_2_528000_4978000_image_crop2.png")
-
     m.trainer.fit(m)
+    
     #save the prediction dataframe after training and compare with prediction after reload checkpoint 
     pred_after_train = m.predict_image(path = img_path)
     m.save_model("{}/checkpoint.pl".format(tmpdir))
+    
     #reload the checkpoint to model object
-    m.model = m.load_from_checkpoint("{}/checkpoint.pl".format(tmpdir))
-    pred_after_reload = m.predict_image(path = img_path)
+    after = main.deepforest.load_from_checkpoint("{}/checkpoint.pl".format(tmpdir))
+    pred_after_reload = after.predict_image(path = img_path)
 
     assert not pred_after_train.empty
     assert not pred_after_reload.empty
-    assert pred_after_train == pred_after_reload
+    pd.testing.assert_frame_equal(pred_after_train,pred_after_reload)

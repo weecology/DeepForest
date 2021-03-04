@@ -11,14 +11,13 @@ from deepforest import preprocess
 from deepforest import visualize
 from skimage import io
 
-def predict_image(model, image, score_threshold, return_plot, device, iou_threshold=0.1):
+def predict_image(model, image, return_plot, device, iou_threshold=0.1):
     """Predict an image with a deepforest model
     
     Args:
         image: a numpy array of a RGB image ranged from 0-255
         path: optional path to read image from disk instead of passing image arg
         return_plot: Return image with plotted detections
-        score_threshold: float [0,1] minimum probability score to return/plot.
         device: pytorch device of 'cuda' or 'cpu' for gpu prediction. Set internally.
     Returns:
         boxes: A pandas dataframe of predictions (Default)
@@ -37,7 +36,6 @@ def predict_image(model, image, score_threshold, return_plot, device, iou_thresh
     
     #This function on takes in a single image.
     df = visualize.format_boxes(prediction[0])
-    df = df[df.scores > score_threshold]
     
     if return_plot:
         #Matplotlib likes no batch dim and channels first
@@ -102,7 +100,6 @@ def predict_tile(model,
                  patch_size=400,
                  patch_overlap=0.05,
                  iou_threshold=0.15,
-                 score_threshold=0,
                  return_plot=False,
                  use_soft_nms = False,
                  sigma = 0.5,
@@ -118,7 +115,6 @@ def predict_tile(model,
             following openCV convention
         patch_size: patch size default400,
         patch_overlap: patch overlap default 0.15,
-        score_threshold (float): minimum score to include in predictions
         iou_threshold: Minimum iou overlap among predictions between
             windows to be suppressed. Defaults to 0.5.
             Lower values suppress more boxes at edges.
@@ -152,7 +148,6 @@ def predict_tile(model,
         boxes = predict_image(model=model,
                               image=crop,
                               return_plot=False,
-                              score_threshold=score_threshold,
                               device=device)
         if not boxes is None:
             #transform the coordinates to original system

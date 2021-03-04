@@ -56,8 +56,8 @@ class deepforest(pl.LightningModule):
             model (object): A trained keras model
         """
         # Download latest model from github release
-        release_tag, self.release_state_dict = utilities.use_release()
-        self.create_model(self.release_state_dict)
+        release_tag, self.state_dict = utilities.use_release()
+        self.model.load_state_dict(torch.load(self.state_dict,map_location=self.device))
         
         # load saved model and tag release
         self.__release_version__ = release_tag
@@ -89,8 +89,7 @@ class deepforest(pl.LightningModule):
         Arg:
             Path: the path located the model checkpoint
         """
-        self.trainer.save_checkpoint("{}/hand_annotated.pl".format(path))
-        
+        self.trainer.save_checkpoint(path)
         
     def load_dataset(self, csv_file, root_dir=None, augment=False, shuffle=True, batch_size=1):
         """Create a tree dataset for inference
@@ -132,14 +131,13 @@ class deepforest(pl.LightningModule):
         
         return loader    
     
-    def predict_image(self, image=None, path=None, return_plot=False,score_threshold=0.01):
+    def predict_image(self, image=None, path=None, return_plot=False):
         """Predict an image with a deepforest model
         
         Args:
             image: a numpy array of a RGB image ranged from 0-255
             path: optional path to read image from disk instead of passing image arg
             return_plot: Return image with plotted detections
-            score_threshold: float [0,1] minimum probability score to return/plot.
         Returns:
             boxes: A pandas dataframe of predictions (Default)
             img: The input with predictions overlaid (Optional)
@@ -159,7 +157,7 @@ class deepforest(pl.LightningModule):
         self.model.eval()   
         
         #Check if GPU is available and pass image to gpu
-        result = predict.predict_image(model =  self.model, image = image, return_plot = return_plot, score_threshold = score_threshold, device=self.device)
+        result = predict.predict_image(model = self.model, image = image, return_plot = return_plot, device=self.device)
         
         return result
                                                  
@@ -176,15 +174,8 @@ class deepforest(pl.LightningModule):
         Returns:
             df: pandas dataframe with bounding boxes, label and scores for each image in the csv file
         """
-        
-        loader = self.load_dataset(csv_file=csv_file, root_dir=root_dir, batch_size=self.config["batch_size"])
-        df = self.trainer.test(self, loader)
-        result = df[0]["gathered_results"]
-        
-        if savedir:
-            ground_truth = pd.read_csv(csv_file)
-            utilities.check_file(ground_truth)
-            visualize.plot_prediction_dataframe(result, ground_truth=ground_truth, root_dir=root_dir, savedir=savedir)
+        self.model.eval()
+        result = predict.predict_file(model=self.model, csv_file=csv_file, root_dir=root_dir, savedir=savedir, device=self.device)
             
         return result
     
@@ -194,7 +185,6 @@ class deepforest(pl.LightningModule):
                      patch_size=400,
                      patch_overlap=0.05,
                      iou_threshold=0.15,
-                     score_threshold=0,
                      return_plot=False,
                      use_soft_nms = False,
                      sigma = 0.5,
@@ -231,7 +221,6 @@ class deepforest(pl.LightningModule):
             patch_size=patch_size,
             patch_overlap=patch_overlap,
             iou_threshold=iou_threshold,
-            score_threshold=score_threshold,
             return_plot=return_plot,
             use_soft_nms = use_soft_nms,
             sigma = sigma,
@@ -293,21 +282,20 @@ class deepforest(pl.LightningModule):
         
         ground_df = pd.read_csv(self.config["validation"]["csv_file"])
         
-        precision, recall = evaluate_iou.evaluate(
+        result_dict = evaluate_iou.evaluate(
             predictions=gathered,
             ground_df=ground_df,
             root_dir=self.config["validation"]["root_dir"],
-            project=self.config["validation"]["project"],
             iou_threshold=self.config["validation"]["iou_threshold"],
-            score_threshold=self.config["score_thresh"],
             show_plot=False)
         
-        self.log("test_precision", precision)
-        self.log("test_recall",recall)
+        self.log("test_precision", result_dict["precision"])
+        self.log("test_recall",result_dict["recall"])
         
         try:
-            self.logger.experiment.log_metric("test_precision",precision)
-            self.logger.experiment.log_metric("test_recall",recall)
+            self.logger.experiment.log_metric("test_precision",result_dict["precision"])
+            self.logger.experiment.log_metric("test_recall",result_dict["recall"])
+            self.logger.experiment.log_table("test_IoU_dataframe",result_dict["results"])
         except Exception as e:
             print("test epoch could not find logger {}".format(e))
 
@@ -328,29 +316,29 @@ class deepforest(pl.LightningModule):
                                                            min_lr=0, eps=1e-08)
         return self.optimizer
             
-    def evaluate(self, csv_file, root_dir, iou_threshold=0.5, score_threshold=0, show_plot=False, project=False):
+    def evaluate(self, csv_file, root_dir, iou_threshold=None, show_plot=False):
         """Compute intersection-over-union and precision/recall for a given iou_threshold
         
         Args:
             df: a pandas-type dataframe (geopandas is fine) with columns "name","xmin","ymin","xmax","ymax","label", each box in a row
             root_dir: location of files in the dataframe 'name' column.
             iou_threshold: float [0,1] intersection-over-union union between annotation and prediction to be scored true positive
-            score_threshold: float [0,1] minimum probability score to be included in evaluation
-            project: Logical. Whether to project predictions that are in image coordinates (0,0 origin) into the geographic coordinates of the ground truth image. The CRS is take from the image file using rasterio.crs
             show_plot: open a blocking matplotlib window to show plot and annotations, useful for debugging.
         Returns:
-            results: tuple of (precision, recall) for a given threshold
+            results: dict of ("results", "precision", "recall") for a given threshold
         """
         predictions = self.predict_file(csv_file, root_dir)
         ground_df = pd.read_csv(csv_file)
+        
+        #if no arg for iou_threshold, set as config
+        if iou_threshold is None:
+            iou_threshold = self.config["validation"]["iou_threshold"]
         
         results = evaluate_iou.evaluate(
             predictions=predictions,
             ground_df=ground_df,
             root_dir=root_dir,
-            project=project,
             iou_threshold=iou_threshold,
-            score_threshold=score_threshold,
             show_plot=show_plot)
         
         return results

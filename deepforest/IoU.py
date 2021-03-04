@@ -78,7 +78,7 @@ def compute_IoU(ground_truth, submission):
         else:
             score = 0
             matched_id = None
-        iou_df.append(pd.DataFrame({"prediction_id":[matched_id],"truth_id":[index],"score":score}))
+        iou_df.append(pd.DataFrame({"prediction_id":[matched_id],"truth_id":[index],"IoU":score}))
     
     iou_df = pd.concat(iou_df)
     

@@ -9,7 +9,7 @@ batch_size: 1
 
 #Non-max supression of overlapping predictions
 nms_thresh: 0.05
-score_thresh: 0.2
+score_thresh: 0.1
 
 train:
 
@@ -29,6 +29,5 @@ validation:
     #callback args
     csv_file: 
     root_dir:
-    project: False
     #Intersection over union evaluation
     iou_threshold: 0.4

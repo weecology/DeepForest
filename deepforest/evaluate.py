@@ -10,47 +10,41 @@ from matplotlib import pyplot
 
 from deepforest import IoU
 from deepforest.utilities import check_file
-from deepforest.utilities import project_boxes
+from deepforest import visualize
 
-def evaluate_image(predictions, ground_df, project, score_threshold, show_plot, root_dir):
+def evaluate_image(predictions, ground_df, show_plot, root_dir, savedir):
     """
     df: a pandas dataframe with columns name, xmin, xmax, ymin, ymax, label. The 'name' column should be the path relative to the location of the file.
     show: Whether to show boxes as they are plotted
     summarize: Whether to group statistics by plot and overall score
-    score_threshold: minimum probability to be included in predictions
     image_coordinates: Whether the current boxes are in coordinate system of the image, e.g. origin (0,0) upper left.
-    project: Logical. Whether to project predictions that are in image coordinates (0,0 origin) into the geographic coordinates of the ground truth image. The CRS is take from the image file using rasterio.crs
     root_dir: Where to search for image names in df
     """
+        
     plot_names = predictions["image_path"].unique()
     if len(plot_names) > 1:
         raise ValueError("More than one plot passed to image crown: {}".format(plot_name))
     else:
         plot_name = plot_names[0]
     
-    if project:
-        predictions = project_boxes(predictions, root_dir, transform = project)
-    else:
-        predictions['geometry'] = predictions.apply(lambda x: shapely.geometry.box(x.xmin,x.ymin,x.xmax,x.ymax), axis=1)
-        predictions = gpd.GeoDataFrame(predictions, geometry='geometry')
-        
-        ground_df['geometry'] = ground_df.apply(lambda x: shapely.geometry.box(x.xmin,x.ymin,x.xmax,x.ymax), axis=1)
-        ground_df = gpd.GeoDataFrame(ground_df, geometry='geometry')        
+    predictions['geometry'] = predictions.apply(lambda x: shapely.geometry.box(x.xmin,x.ymin,x.xmax,x.ymax), axis=1)
+    predictions = gpd.GeoDataFrame(predictions, geometry='geometry')
+    
+    ground_df['geometry'] = ground_df.apply(lambda x: shapely.geometry.box(x.xmin,x.ymin,x.xmax,x.ymax), axis=1)
+    ground_df = gpd.GeoDataFrame(ground_df, geometry='geometry')        
                 
-    if show_plot:
-        rgb_path = "{}/{}".format(root_dir,plot_name)
-        rgb_src = rasterio.open(rgb_path)        
-        fig, ax = pyplot.subplots(figsize=(6, 6))
-        show(rgb_src, ax = ax)
-        ground_df.geometry.boundary.plot(color="red", ax = ax)
-        predictions.geometry.boundary.plot(ax=ax,color="blue")
+    if savedir:
+        visualize.plot_prediction_dataframe(df=predictions, ground_truth=ground_df, root_dir=root_dir, savedir=savedir)        
+    else:
+        if show_plot:
+            visualize.plot_prediction_dataframe(df=predictions, ground_truth=ground_df, root_dir=root_dir, savedir=savedir)        
         
     #match  
     result = IoU.compute_IoU(ground_df, predictions)
     
     return result    
 
-def evaluate(predictions, ground_df, root_dir, project=False, show_plot=True, iou_threshold=0.4, score_threshold=0.05):
+def evaluate(predictions, ground_df, root_dir, show_plot=True, iou_threshold=0.4, savedir=None):
     """Image annotated crown evaluation routine
     submission can be submitted as a .shp, existing pandas dataframe or .csv path
     
@@ -58,10 +52,9 @@ def evaluate(predictions, ground_df, root_dir, project=False, show_plot=True, io
         predictions: a pandas dataframe, if supplied a root dir is needed to give the relative path of files in df.name
         ground_df: a pandas dataframe, if supplied a root dir is needed to give the relative path of files in df.name
         root_dir: location of files in the dataframe 'name' column.
-        score_threshold: minimum probability to be included in predictions
         show_plot: Whether to show boxes as they are plotted
-        project: Logical. Whether to project predictions that are in image coordinates (0,0 origin) into the geographic coordinates of the ground truth image. The CRS is take from the image file using rasterio.crs
     Returns:
+        results: a dataframe of match bounding boxes
         recall: proportion of true positives
         precision: proportion of predictions that are true positive
     """
@@ -73,7 +66,8 @@ def evaluate(predictions, ground_df, root_dir, project=False, show_plot=True, io
     results = [ ]
     for image_path, group in predictions.groupby("image_path"):
         plot_ground_truth = ground_df[ground_df["image_path"] == image_path]
-        result = evaluate_image(predictions=group, ground_df=plot_ground_truth, project=project, show_plot=show_plot, score_threshold=score_threshold, root_dir=root_dir)
+        result = evaluate_image(predictions=group, ground_df=plot_ground_truth, show_plot=show_plot, root_dir=root_dir, savedir=savedir)
+        result["image_path"] = image_path        
         results.append(result)
     
     if len(results)==0:
@@ -82,10 +76,9 @@ def evaluate(predictions, ground_df, root_dir, project=False, show_plot=True, io
         precision = 0
     else:
         results = pd.concat(results)
-        
-        results["match"] = results.score > iou_threshold
+        results["match"] = results.IoU > iou_threshold
         true_positive = sum(results["match"] == True)
         recall = true_positive / results.shape[0]
         precision = true_positive / predictions.shape[0]
     
-    return recall, precision
+    return {"results":results,"precision":precision, "recall":recall}

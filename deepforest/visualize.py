@@ -24,7 +24,7 @@ def format_boxes(prediction, scores = True):
     
     return df 
 
-def plot_prediction_and_targets(image, predictions, targets, image_name, savedir, score_threshold=0):
+def plot_prediction_and_targets(image, predictions, targets, image_name, savedir):
     """Plot an image, its predictions, and its ground truth targets for debugging"""
     prediction_df = format_boxes(predictions)
     plot, ax = plot_predictions(image, prediction_df)
@@ -34,14 +34,15 @@ def plot_prediction_and_targets(image, predictions, targets, image_name, savedir
     
     return "{}/{}.png".format(savedir,image_name)
 
-def plot_prediction_dataframe(df, ground_truth, root_dir, savedir):
+def plot_prediction_dataframe(df, ground_truth, root_dir, savedir=None):
     """For each row in dataframe, call plot predictions"""
     for name, group in df.groupby("image_path"):
         image = io.imread("{}/{}".format(root_dir,name))
         plot, ax = plot_predictions(image, group)
         annotations = ground_truth[ground_truth.image_path==name]
         plot = add_annotations(plot, ax, annotations)
-        plot.savefig("{}/{}.png".format(savedir,os.path.splitext(name)[0]))    
+        if savedir:
+            plot.savefig("{}/{}.png".format(savedir,os.path.splitext(name)[0]))    
         
 def plot_predictions(image, df):
     """channel order is channels first for pytorch"""

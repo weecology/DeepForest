@@ -1,6 +1,5 @@
 """
  A deepforest callback 
- 
  Callbacks must have the following methods on_epoch_begin, on_epoch_end, on_fit_end, on_fit_begin methods and inject model and epoch kwargs.
 """
 
@@ -8,7 +7,6 @@ from deepforest import visualize
 import pandas as pd
 import numpy as np
 import glob
-import torch
 
 from pytorch_lightning import Callback
 
@@ -30,13 +28,13 @@ class images_callback(Callback):
         None: either prints validation scores or logs them to a comet experiment
         """
     
-    def __init__(self, csv_file, root_dir, savedir, score_threshold=0, n=2):
+    def __init__(self, csv_file, root_dir, savedir, n=2, every_n_epochs =1):
         self.csv_file = csv_file
         self.savedir = savedir
         self.root_dir = root_dir
-        self.score_threshold = score_threshold
         self.n = n
         self.ground_truth = pd.read_csv(self.csv_file)
+        self.every_n_epochs = every_n_epochs
         
     def log_images(self, pl_module):
         ds = pl_module.load_dataset(self.csv_file, self.root_dir, batch_size=1)
@@ -55,7 +53,6 @@ class images_callback(Callback):
                 
             predictions = pl_module.model(images)
             
-            
             for path, image, prediction, target in zip(paths, images, predictions,targets):
                 image = image.permute(1,2,0)
                 image = image.cpu()
@@ -64,8 +61,7 @@ class images_callback(Callback):
                     predictions=prediction,
                     targets=target,
                     image_name=path,
-                    savedir=self.savedir,
-                    score_threshold=self.score_threshold)
+                    savedir=self.savedir)
         try:
             saved_plots = glob.glob("{}/*.png".format(self.savedir))
             for x in saved_plots:
@@ -74,10 +70,6 @@ class images_callback(Callback):
             print("Could not find logger in ligthning module, skipping upload, images were saved to {}, error was rasied {}".format(self.savedir, e))
         
     def on_epoch_end(self,trainer, pl_module):
-        print("Running image callback")
-        self.log_images(pl_module)
-
-        
-        
-        
-    
+        if self.every_n_epochs % pl_module.current_epoch == 0:
+            print("Running image callback")            
+            self.log_images(pl_module)
