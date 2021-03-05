@@ -39,10 +39,7 @@ class images_callback(Callback):
         
     def log_images(self, pl_module):
         ds = pl_module.load_dataset(self.csv_file, self.root_dir, batch_size=1)
-                
-        #Make sure the n images is not larger than the dataset
-        if self.n > len(ds):
-            self.n = len(ds)
+
         
         counter = 0
         while True:
@@ -69,7 +66,9 @@ class images_callback(Callback):
                     savedir=self.savedir)
                 plt.close()
                 counter=+1
-            
+                
+            if counter > self.n:
+                break            
         try:
             saved_plots = glob.glob("{}/*.png".format(self.savedir))
             for x in saved_plots:
