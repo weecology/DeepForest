@@ -29,7 +29,7 @@ class images_callback(Callback):
         None: either prints validation scores or logs them to a comet experiment
         """
     
-    def __init__(self, csv_file, root_dir, savedir, n=2, every_n_epochs =5):
+    def __init__(self, csv_file, root_dir, savedir, n=2, every_n_epochs=5):
         self.csv_file = csv_file
         self.savedir = savedir
         self.root_dir = root_dir
@@ -43,8 +43,9 @@ class images_callback(Callback):
         #Make sure the n images is not larger than the dataset
         if self.n > len(ds):
             self.n = len(ds)
-            
-        for x in np.arange(self.n):
+        
+        counter = 0
+        while counter < self.n:
             batch = next(iter(ds))
             paths, images, targets = batch
             pl_module.model.eval()
@@ -55,6 +56,7 @@ class images_callback(Callback):
             predictions = pl_module.model(images)
             
             for path, image, prediction, target in zip(paths, images, predictions,targets):
+                counter+=1
                 image = image.permute(1,2,0)
                 image = image.cpu()
                 visualize.plot_prediction_and_targets(
@@ -64,7 +66,7 @@ class images_callback(Callback):
                     image_name=path,
                     savedir=self.savedir)
                 plt.close()
-                
+            
         try:
             saved_plots = glob.glob("{}/*.png".format(self.savedir))
             for x in saved_plots:
