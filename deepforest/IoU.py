@@ -34,7 +34,7 @@ def _overlap_all(test_polys, truth_polys, rtree_index):
     """Find area of overlap among all sets of ground truth and prediction"""
     results = []
     for index, row in test_polys.iterrows():
-        result = _overlap_(row, truth_polys, rtree_index)
+        result = _overlap_(test_poly=row, truth_polys=truth_polys, rtree_index=rtree_index)
         results.append(result)
     results = pd.concat(results, ignore_index=True)
     
@@ -63,7 +63,7 @@ def compute_IoU(ground_truth, submission):
     rtree_index = create_rtree_from_poly(ground_truth.geometry)
     
     #find overlap among all sets
-    overlap_df = _overlap_all(submission, ground_truth, rtree_index)
+    overlap_df = _overlap_all(test_polys=submission, truth_polys=ground_truth, rtree_index=rtree_index)
     
     #Create cost matrix for assignment
     matrix = overlap_df.pivot("truth_id","prediction_id","area").values

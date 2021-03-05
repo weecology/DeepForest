@@ -64,7 +64,7 @@ def evaluate(predictions, ground_df, root_dir, show_plot=True, iou_threshold=0.4
     #Run evaluation on all plots
     results = [ ]
     for image_path, group in predictions.groupby("image_path"):
-        plot_ground_truth = ground_df[ground_df["image_path"] == image_path]
+        plot_ground_truth = ground_df[ground_df["image_path"] == image_path].reset_index()
         result = evaluate_image(predictions=group, ground_df=plot_ground_truth, show_plot=show_plot, root_dir=root_dir, savedir=savedir)
         result["image_path"] = image_path        
         results.append(result)
