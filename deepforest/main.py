@@ -295,7 +295,7 @@ class deepforest(pl.LightningModule):
         try:
             self.logger.experiment.log_metric("test_precision",result_dict["precision"])
             self.logger.experiment.log_metric("test_recall",result_dict["recall"])
-            self.logger.experiment.log_table("test_IoU_dataframe",result_dict["results"])
+            self.logger.experiment.log_table("test_IoU_dataframe.html",tabular_data = result_dict["results"])
         except Exception as e:
             print("test epoch could not find logger {}".format(e))
 
