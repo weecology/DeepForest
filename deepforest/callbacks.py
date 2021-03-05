@@ -45,7 +45,7 @@ class images_callback(Callback):
             self.n = len(ds)
         
         counter = 0
-        while counter < self.n:
+        while True:
             batch = next(iter(ds))
             paths, images, targets = batch
             pl_module.model.eval()
@@ -56,6 +56,8 @@ class images_callback(Callback):
             predictions = pl_module.model(images)
             
             for path, image, prediction, target in zip(paths, images, predictions,targets):
+                if counter > self.n:
+                    break
                 counter+=1
                 image = image.permute(1,2,0)
                 image = image.cpu()
@@ -66,6 +68,7 @@ class images_callback(Callback):
                     image_name=path,
                     savedir=self.savedir)
                 plt.close()
+                counter=+1
             
         try:
             saved_plots = glob.glob("{}/*.png".format(self.savedir))
