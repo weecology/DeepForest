@@ -112,7 +112,8 @@ class deepforest(pl.LightningModule):
                                                   batch_size=batch_size,
                                                   shuffle=shuffle,
                                                   collate_fn=utilities.collate_fn,
-                                                  num_workers=self.config["workers"])
+                                                  num_workers=self.config["workers"],
+                                                  )
         
         return data_loader
     

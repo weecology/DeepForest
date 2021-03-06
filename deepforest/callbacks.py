@@ -10,7 +10,10 @@ import numpy as np
 import glob
 
 from pytorch_lightning import Callback
+from deepforest import dataset
+from deepforest import utilities
 
+import torch
 class images_callback(Callback):
     """Run evaluation on a file of annotations during training
     Args:
@@ -38,14 +41,25 @@ class images_callback(Callback):
         self.every_n_epochs = every_n_epochs
         
     def log_images(self, pl_module):
-        ds = pl_module.load_dataset(self.csv_file, self.root_dir, batch_size=1)
-
         
-        counter = 0
-        while True:
-            batch = next(iter(ds))
+        ds = dataset.TreeDataset(csv_file=self.csv_file,
+                              root_dir=self.root_dir, transforms=dataset.get_transform(augment=False))
+        
+        if self.n > len(ds):
+            self.n = len(ds)
+            
+        ds = torch.utils.data.Subset(ds, np.arange(0,self.n,1))
+        
+        data_loader = torch.utils.data.DataLoader(
+            ds,
+            batch_size=1,
+            shuffle=False,
+            collate_fn=utilities.collate_fn)
+        
+        pl_module.model.eval()
+
+        for batch in data_loader:
             paths, images, targets = batch
-            pl_module.model.eval()
             
             if not pl_module.device.type=="cpu":
                 images = [x.to(pl_module.device) for x in images]
@@ -53,9 +67,6 @@ class images_callback(Callback):
             predictions = pl_module.model(images)
             
             for path, image, prediction, target in zip(paths, images, predictions,targets):
-                if counter > self.n:
-                    break
-                counter+=1
                 image = image.permute(1,2,0)
                 image = image.cpu()
                 visualize.plot_prediction_and_targets(
@@ -64,11 +75,7 @@ class images_callback(Callback):
                     targets=target,
                     image_name=path,
                     savedir=self.savedir)
-                plt.close()
-                counter=+1
-                
-            if counter > self.n:
-                break            
+                plt.close()        
         try:
             saved_plots = glob.glob("{}/*.png".format(self.savedir))
             for x in saved_plots:
