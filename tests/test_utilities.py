@@ -12,7 +12,7 @@ from .conftest import download_release
 
 @pytest.fixture()
 def config():
-    config = utilities.read_config(get_data("deepforest_config.yml"))
+    config = utilities.read_config("deepforest_config.yml")
     return config
 
 

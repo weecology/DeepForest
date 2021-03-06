@@ -4,6 +4,7 @@ from deepforest import main
 from deepforest import get_data
 from deepforest import model
 import os
+import torch
 import pytest
 
 from matplotlib import pyplot as plt
@@ -41,7 +42,7 @@ def test_plot_predictions_and_targets(m, tmpdir):
     m.model.eval()    
     predictions = m.model(images)    
     for path, image, target, prediction in zip(paths, images, targets, predictions):
-        image = image.numpy()
+        image = image.permute(1,2,0)
         save_figure_path = visualize.plot_prediction_and_targets(image, prediction, target, image_name=os.path.basename(path), savedir=tmpdir)
         plt.show()
         assert os.path.exists(save_figure_path)
