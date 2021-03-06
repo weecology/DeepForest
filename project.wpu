@@ -86,7 +86,7 @@ guimgr.overall-gui-state = {'windowing-policy': 'combined-window',
                  'primary_view_state': {'area': 'wide',
         'constraint': None,
         'current_pages': [4,
-                          1],
+                          2],
         'notebook_display': 'normal',
         'notebook_percent': 0.48918640576725025,
         'override_title': None,
@@ -171,14 +171,14 @@ guimgr.overall-gui-state = {'windowing-policy': 'combined-window',
         (1,),
         (1,
          0),
-        (1,
-         0,
-         1),
         (5,),
-        (6,)],
-                                      'selected-nodes': [(1,
-        0)],
-                                      'top-node': (0,)}}),
+        (6,),
+        (8,),
+        (8,
+         4)],
+                                      'selected-nodes': [(8,)],
+                                      'top-node': (6,
+        5)}}),
                      ('debug-io',
                       'wide',
                       1,
@@ -194,8 +194,8 @@ guimgr.overall-gui-state = {'windowing-policy': 'combined-window',
         -1,
         -1),
                        'attrib-starts': [],
-                       'code-line': 'images[0]',
-                       'first-line': 1809L,
+                       'code-line': '',
+                       'first-line': 1820L,
                        'folded-linenos': [],
                        'history': {u'file:/Applications/WingPro.app/Contents/Resources/src/debug/tserver/_sandbox.py': ['p'\
         'ath\n'],
@@ -291,7 +291,10 @@ guimgr.overall-gui-state = {'windowing-policy': 'combined-window',
         'len(ds)\n',
         'images\n',
         'images.shape\n',
-        'len(images)\n'],
+        'len(images)\n',
+        'images[0]\n',
+        'config_path\n',
+        'config = utilities.read_config("deepforest_config.yml")\n'],
                                    u'file:/Users/benweinstein/Documents/DeepForest-pytorch/sandbox.py': ['r'\
         'esults.IoU == 0\n',
         'results.IoU != 0\n',
@@ -492,10 +495,10 @@ guimgr.overall-gui-state = {'windowing-policy': 'combined-window',
         '/Sheng/test_32617.shp")\n',
         'test\n']},
                        'launch-id': None,
-                       'sel-line': 1828L,
-                       'sel-line-start': 80797L,
-                       'selection_end': 80805L,
-                       'selection_start': 80805L,
+                       'sel-line': 1839L,
+                       'sel-line-start': 81208L,
+                       'selection_end': 81208L,
+                       'selection_start': 81208L,
                        'zoom': 0L}),
                      ('debug-watch',
                       'wide',
@@ -556,91 +559,21 @@ guimgr.overall-gui-state = {'windowing-policy': 'combined-window',
                       'wide',
                       1,
                       {})],
-        'primary_view_state': {'editor_states': ({'bookmarks': ([[loc('deepforest/callbacks.py'),
-        {'attrib-starts': [('images_callback|0|',
-                            16),
-                           ('images_callback|0|.log_images|0|',
-                            42)],
-         'code-line': '            predictions = pl_module.model(images)\n',
-         'first-line': 47L,
+        'primary_view_state': {'editor_states': ({'bookmarks': ([[loc('../../opt/miniconda3/envs/DeepForest_pytorch/lib/python3.8/site-packages/torchvision/models/detection/retinanet.py'),
+        {'attrib-starts': [('RetinaNet|0|',
+                            243),
+                           ('RetinaNet|0|.forward|0|',
+                            483)],
+         'code-line': '        images, targets = self.transform(images, targ'\
+                      'ets)\n',
+         'first-line': 501L,
          'folded-linenos': [],
-         'sel-line': 66L,
-         'sel-line-start': 2406L,
-         'selection_end': 2455L,
-         'selection_start': 2406L,
+         'sel-line': 521L,
+         'sel-line-start': 22788L,
+         'selection_end': 22788L,
+         'selection_start': 22788L,
          'zoom': 0L},
-        1614989684.934929],
-        [loc('tests/test_callbacks.py'),
-         {'attrib-starts': [('test_log_images|0|',
-                             25)],
-          'code-line': 'def test_log_images(m, tmpdir):\n',
-          'first-line': 11L,
-          'folded-linenos': [],
-          'sel-line': 25L,
-          'sel-line-start': 670L,
-          'selection_end': 701L,
-          'selection_start': 670L,
-          'zoom': 0L},
-         1614989687.384025],
-        [loc('deepforest/main.py'),
-         {'attrib-starts': [('deepforest|0|',
-                             18),
-                            ('deepforest|0|.load_dataset|0|',
-                             93)],
-          'code-line': '            root_dir: directory of images. If none, '\
-                       'uses "image_dir" in config\n',
-          'first-line': 100L,
-          'folded-linenos': [],
-          'sel-line': 100L,
-          'sel-line-start': 3827L,
-          'selection_end': 3868L,
-          'selection_start': 3868L,
-          'zoom': 0L},
-         1614989699.103055],
-        [loc('deepforest/callbacks.py'),
-         {'attrib-starts': [('images_callback|0|',
-                             16),
-                            ('images_callback|0|.log_images|0|',
-                             42)],
-          'code-line': '        ds = torch.utils.data.Subset(ds, np.arange(0'\
-                       ',self.n,1))\n',
-          'first-line': 43L,
-          'folded-linenos': [],
-          'sel-line': 50L,
-          'sel-line-start': 1905L,
-          'selection_end': 1937L,
-          'selection_start': 1937L,
-          'zoom': 0L},
-         1614989732.67458],
-        [loc('../../opt/miniconda3/envs/DeepForest_pytorch/lib/python3.8/site-packages/torchvision/models/detection/transform.py'),
-         {'attrib-starts': [('GeneralizedRCNNTransform|0|',
-                             57),
-                            ('GeneralizedRCNNTransform|0|.forward|0|',
-                             78)],
-          'code-line': '            if image.dim() != 3:\n',
-          'first-line': 80L,
-          'folded-linenos': [],
-          'sel-line': 100L,
-          'sel-line-start': 3826L,
-          'selection_end': 3826L,
-          'selection_start': 3826L,
-          'zoom': 0L},
-         1614989735.128599],
-        [loc('../../opt/miniconda3/envs/DeepForest_pytorch/lib/python3.8/site-packages/torchvision/models/detection/retinanet.py'),
-         {'attrib-starts': [('RetinaNet|0|',
-                             243),
-                            ('RetinaNet|0|.forward|0|',
-                             483)],
-          'code-line': '        images, targets = self.transform(images, tar'\
-                       'gets)\n',
-          'first-line': 501L,
-          'folded-linenos': [],
-          'sel-line': 521L,
-          'sel-line-start': 22788L,
-          'selection_end': 22788L,
-          'selection_start': 22788L,
-          'zoom': 0L},
-         1614989741.485989],
+        1614989741.485989],
         [loc('../../opt/miniconda3/envs/DeepForest_pytorch/lib/python3.8/site-packages/torch/nn/modules/module.py'),
          {'attrib-starts': [('Module|0|',
                              177),
@@ -843,9 +776,74 @@ guimgr.overall-gui-state = {'windowing-policy': 'combined-window',
           'selection_end': 4251L,
           'selection_start': 4213L,
           'zoom': 0L},
-         1614989842.404045]],
+         1614989842.404045],
+        [loc('deepforest/callbacks.py'),
+         {'attrib-starts': [('images_callback|0|',
+                             16),
+                            ('images_callback|0|.log_images|0|',
+                             42)],
+          'code-line': '                              root_dir=self.root_dir'\
+                       ', transforms=dataset.get_transform(augment=False))\n',
+          'first-line': 41L,
+          'folded-linenos': [],
+          'sel-line': 45L,
+          'sel-line-start': 1754L,
+          'selection_end': 1854L,
+          'selection_start': 1854L,
+          'zoom': 0L},
+         1614993044.654399],
+        [loc('tests/test_preprocess.py'),
+         {'attrib-starts': [('test_split_size_error|0|',
+                             127)],
+          'code-line': '                                                   c'\
+                       'onfig["patch_overlap"])',
+          'first-line': 130L,
+          'folded-linenos': [],
+          'sel-line': 132L,
+          'sel-line-start': 4614L,
+          'selection_end': 4643L,
+          'selection_start': 4643L,
+          'zoom': 0L},
+         1614993044.694983],
+        [loc('tests/test_preprocess.py'),
+         {'attrib-starts': [('test_split_raster_empty|0|',
+                             87)],
+          'code-line': 'def test_split_raster_empty(config):\n',
+          'first-line': 74L,
+          'folded-linenos': [],
+          'sel-line': 87L,
+          'sel-line-start': 3062L,
+          'selection_end': 3098L,
+          'selection_start': 3062L,
+          'zoom': 0L},
+         1614993045.261148],
+        [loc('deepforest/utilities.py'),
+         {'attrib-starts': [('read_config|0|',
+                             19)],
+          'code-line': '        raise FileNotFoundError("There is no config '\
+                       'at {}, yields {}".format(\n',
+          'first-line': 13L,
+          'folded-linenos': [],
+          'sel-line': 25L,
+          'sel-line-start': 432L,
+          'selection_end': 432L,
+          'selection_start': 432L,
+          'zoom': 0L},
+         1614993061.326566],
+        [loc('tests/test_preprocess.py'),
+         {'attrib-starts': [('test_split_raster_empty|0|',
+                             87)],
+          'code-line': 'def test_split_raster_empty(config):\n',
+          'first-line': 74L,
+          'folded-linenos': [],
+          'sel-line': 87L,
+          'sel-line-start': 3062L,
+          'selection_end': 3098L,
+          'selection_start': 3062L,
+          'zoom': 0L},
+         1614993061.343996]],
         20),
-        'current-loc': loc('deepforest/callbacks.py'),
+        'current-loc': loc('tests/test_preprocess.py'),
         'editor-state-list': [(loc('deepforest/callbacks.py'),
                                {'attrib-starts': [('images_callback|0|',
         16),
@@ -952,6 +950,18 @@ guimgr.overall-gui-state = {'windowing-policy': 'combined-window',
                                 'selection_end': 4410L,
                                 'selection_start': 4382L,
                                 'zoom': 0L}),
+                              (loc('tests/test_preprocess.py'),
+                               {'attrib-starts': [('config|0|',
+        16)],
+                                'code-line': '    config = utilities.read_co'\
+        'nfig("deepforest_config.yml")\n',
+                                'first-line': 3L,
+                                'folded-linenos': [],
+                                'sel-line': 17L,
+                                'sel-line-start': 269L,
+                                'selection_end': 329L,
+                                'selection_start': 269L,
+                                'zoom': 0L}),
                               (loc('../DeepForest_Model/train.py'),
                                {'attrib-starts': [],
                                 'code-line': 'im_callback = images_callback('\
@@ -978,6 +988,18 @@ guimgr.overall-gui-state = {'windowing-policy': 'combined-window',
                                 'sel-line-start': 3826L,
                                 'selection_end': 3826L,
                                 'selection_start': 3826L,
+                                'zoom': 0L}),
+                              (loc('deepforest/utilities.py'),
+                               {'attrib-starts': [('read_config|0|',
+        19)],
+                                'code-line': '        raise FileNotFoundErro'\
+        'r("There is no config at {}, yields {}".format(\n',
+                                'first-line': 13L,
+                                'folded-linenos': [],
+                                'sel-line': 25L,
+                                'sel-line-start': 432L,
+                                'selection_end': 432L,
+                                'selection_start': 432L,
                                 'zoom': 0L})],
         'has-focus': False,
         'locked': False},
@@ -989,22 +1011,25 @@ guimgr.overall-gui-state = {'windowing-policy': 'combined-window',
          loc('../../opt/miniconda3/envs/DeepForest_pytorch/lib/python3.8/site-packages/torchvision/models/detection/retinanet.py'),
          loc('tests/test_callbacks.py'),
          loc('tests/test_main.py'),
+         loc('tests/test_preprocess.py'),
          loc('../DeepForest_Model/train.py'),
-         loc('../../opt/miniconda3/envs/DeepForest_pytorch/lib/python3.8/site-packages/torchvision/models/detection/transform.py')]),
+         loc('../../opt/miniconda3/envs/DeepForest_pytorch/lib/python3.8/site-packages/torchvision/models/detection/transform.py'),
+         loc('deepforest/utilities.py')]),
                                'open_files': [u'../NeonTreeEvaluation_python/src/eval.py',
         u'tests/test_main.py',
         u'../DeepForest_Model/train.py',
         u'tests/test_callbacks.py',
         u'deepforest/dataset.py',
         u'deepforest/main.py',
-        u'deepforest/callbacks.py']},
+        u'deepforest/callbacks.py',
+        u'tests/test_preprocess.py']},
         'saved_notebook_display': None,
         'split_percents': {0: 0.3005219985085757},
         'splits': 2,
         'tab_location': 'top',
-        'traversal_pos': ((0,
-                           4),
-                          1614989868.655595),
+        'traversal_pos': ((1,
+                           2),
+                          1614993048.838953),
         'user_data': {}},
                  'saved_notebook_display': None,
                  'split_percents': {0: 0.5},
@@ -1018,7 +1043,9 @@ guimgr.overall-gui-state = {'windowing-policy': 'combined-window',
                          23,
                          1792,
                          1082)}]}
-guimgr.recent-documents = [loc('deepforest/callbacks.py'),
+guimgr.recent-documents = [loc('tests/test_preprocess.py'),
+                           loc('deepforest/utilities.py'),
+                           loc('deepforest/callbacks.py'),
                            loc('deepforest/main.py'),
                            loc('deepforest/dataset.py'),
                            loc('../../opt/miniconda3/envs/DeepForest_pytorch/lib/python3.8/site-packages/torch/nn/modules/module.py'),
@@ -3239,46 +3266,250 @@ testing.stored-results = (1,
                               27)]),
                            (u'/Users/benweinstein/Documents/DeepForest-pytorch/tests/test_preprocess.py',
                             [('test_split_raster_empty',
-                              0,
+                              2,
                               None,
                               None,
-                              None,
-                              1614717355,
+                              ('',
+                               "<ExceptionInfo FileNotFoundError(\"There is "\
+                               "no config at /Users/benweinstein/Documents/D"\
+                               "eepForest-pytorch/deepforest/data/deepforest"\
+                               "_c...] No such file or directory: '/Users/be"\
+                               "nweinstein/Documents/DeepForest-pytorch/deep"\
+                               "forest/data/deepforest_config.yml'\") tblen="\
+                               "2>",
+                               "FileNotFoundError: There is no config at /Us"\
+                               "ers/benweinstein/Documents/DeepForest-pytorc"\
+                               "h/deepforest/data/deepforest_config.yml, yie"\
+                               "lds [Errno 2] No such file or directory: '/U"\
+                               "sers/benweinstein/Documents/DeepForest-pytor"\
+                               "ch/deepforest/data/deepforest_config.yml'",
+                               [(u'/Users/benweinstein/Documents/DeepForest-pytorch/tests/test_preprocess.py',
+                                 '/Users/benweinstein/Documents/DeepForest-p'\
+                                 'ytorch/tests/test_preprocess.py',
+                                 18,
+                                 'config',
+                                 None,
+                                 '    config = utilities.read_config(get_dat'\
+                                 'a("deepforest_config.yml"))'),
+                                (u'/Users/benweinstein/Documents/DeepForest-pytorch/deepforest/utilities.py',
+                                 '/Users/benweinstein/Documents/DeepForest-p'\
+                                 'ytorch/deepforest/utilities.py',
+                                 26,
+                                 'read_config',
+                                 None,
+                                 '        raise FileNotFoundError("There is '\
+                                 'no config at {}, yields {}".format(')],
+                               0,
+                               None,
+                               None,
+                               None,
+                               None),
+                              1614993031,
                               87),
                              ('test_select_annotations',
-                              0,
+                              2,
                               None,
                               None,
-                              None,
-                              1614717355,
+                              ('',
+                               "<ExceptionInfo FileNotFoundError(\"There is "\
+                               "no config at /Users/benweinstein/Documents/D"\
+                               "eepForest-pytorch/deepforest/data/deepforest"\
+                               "_c...] No such file or directory: '/Users/be"\
+                               "nweinstein/Documents/DeepForest-pytorch/deep"\
+                               "forest/data/deepforest_config.yml'\") tblen="\
+                               "2>",
+                               "FileNotFoundError: There is no config at /Us"\
+                               "ers/benweinstein/Documents/DeepForest-pytorc"\
+                               "h/deepforest/data/deepforest_config.yml, yie"\
+                               "lds [Errno 2] No such file or directory: '/U"\
+                               "sers/benweinstein/Documents/DeepForest-pytor"\
+                               "ch/deepforest/data/deepforest_config.yml'",
+                               [(u'/Users/benweinstein/Documents/DeepForest-pytorch/tests/test_preprocess.py',
+                                 '/Users/benweinstein/Documents/DeepForest-p'\
+                                 'ytorch/tests/test_preprocess.py',
+                                 18,
+                                 'config',
+                                 None,
+                                 '    config = utilities.read_config(get_dat'\
+                                 'a("deepforest_config.yml"))'),
+                                (u'/Users/benweinstein/Documents/DeepForest-pytorch/deepforest/utilities.py',
+                                 '/Users/benweinstein/Documents/DeepForest-p'\
+                                 'ytorch/deepforest/utilities.py',
+                                 26,
+                                 'read_config',
+                                 None,
+                                 '        raise FileNotFoundError("There is '\
+                                 'no config at {}, yields {}".format(')],
+                               0,
+                               None,
+                               None,
+                               None,
+                               None),
+                              1614993031,
                               45),
                              ('test_compute_windows',
-                              0,
+                              2,
                               None,
                               None,
-                              None,
-                              1614717355,
+                              ('',
+                               "<ExceptionInfo FileNotFoundError(\"There is "\
+                               "no config at /Users/benweinstein/Documents/D"\
+                               "eepForest-pytorch/deepforest/data/deepforest"\
+                               "_c...] No such file or directory: '/Users/be"\
+                               "nweinstein/Documents/DeepForest-pytorch/deep"\
+                               "forest/data/deepforest_config.yml'\") tblen="\
+                               "2>",
+                               "FileNotFoundError: There is no config at /Us"\
+                               "ers/benweinstein/Documents/DeepForest-pytorc"\
+                               "h/deepforest/data/deepforest_config.yml, yie"\
+                               "lds [Errno 2] No such file or directory: '/U"\
+                               "sers/benweinstein/Documents/DeepForest-pytor"\
+                               "ch/deepforest/data/deepforest_config.yml'",
+                               [(u'/Users/benweinstein/Documents/DeepForest-pytorch/tests/test_preprocess.py',
+                                 '/Users/benweinstein/Documents/DeepForest-p'\
+                                 'ytorch/tests/test_preprocess.py',
+                                 18,
+                                 'config',
+                                 None,
+                                 '    config = utilities.read_config(get_dat'\
+                                 'a("deepforest_config.yml"))'),
+                                (u'/Users/benweinstein/Documents/DeepForest-pytorch/deepforest/utilities.py',
+                                 '/Users/benweinstein/Documents/DeepForest-p'\
+                                 'ytorch/deepforest/utilities.py',
+                                 26,
+                                 'read_config',
+                                 None,
+                                 '        raise FileNotFoundError("There is '\
+                                 'no config at {}, yields {}".format(')],
+                               0,
+                               None,
+                               None,
+                               None,
+                               None),
+                              1614993031,
                               39),
                              ('test_split_size_error',
-                              0,
+                              2,
                               None,
                               None,
-                              None,
-                              1614717355,
+                              ('',
+                               "<ExceptionInfo FileNotFoundError(\"There is "\
+                               "no config at /Users/benweinstein/Documents/D"\
+                               "eepForest-pytorch/deepforest/data/deepforest"\
+                               "_c...] No such file or directory: '/Users/be"\
+                               "nweinstein/Documents/DeepForest-pytorch/deep"\
+                               "forest/data/deepforest_config.yml'\") tblen="\
+                               "2>",
+                               "FileNotFoundError: There is no config at /Us"\
+                               "ers/benweinstein/Documents/DeepForest-pytorc"\
+                               "h/deepforest/data/deepforest_config.yml, yie"\
+                               "lds [Errno 2] No such file or directory: '/U"\
+                               "sers/benweinstein/Documents/DeepForest-pytor"\
+                               "ch/deepforest/data/deepforest_config.yml'",
+                               [(u'/Users/benweinstein/Documents/DeepForest-pytorch/tests/test_preprocess.py',
+                                 '/Users/benweinstein/Documents/DeepForest-p'\
+                                 'ytorch/tests/test_preprocess.py',
+                                 18,
+                                 'config',
+                                 None,
+                                 '    config = utilities.read_config(get_dat'\
+                                 'a("deepforest_config.yml"))'),
+                                (u'/Users/benweinstein/Documents/DeepForest-pytorch/deepforest/utilities.py',
+                                 '/Users/benweinstein/Documents/DeepForest-p'\
+                                 'ytorch/deepforest/utilities.py',
+                                 26,
+                                 'read_config',
+                                 None,
+                                 '        raise FileNotFoundError("There is '\
+                                 'no config at {}, yields {}".format(')],
+                               0,
+                               None,
+                               None,
+                               None,
+                               None),
+                              1614993031,
                               127),
                              ('test_split_raster',
-                              0,
+                              2,
                               None,
                               None,
-                              None,
-                              1614717355,
+                              ('',
+                               "<ExceptionInfo FileNotFoundError(\"There is "\
+                               "no config at /Users/benweinstein/Documents/D"\
+                               "eepForest-pytorch/deepforest/data/deepforest"\
+                               "_c...] No such file or directory: '/Users/be"\
+                               "nweinstein/Documents/DeepForest-pytorch/deep"\
+                               "forest/data/deepforest_config.yml'\") tblen="\
+                               "2>",
+                               "FileNotFoundError: There is no config at /Us"\
+                               "ers/benweinstein/Documents/DeepForest-pytorc"\
+                               "h/deepforest/data/deepforest_config.yml, yie"\
+                               "lds [Errno 2] No such file or directory: '/U"\
+                               "sers/benweinstein/Documents/DeepForest-pytor"\
+                               "ch/deepforest/data/deepforest_config.yml'",
+                               [(u'/Users/benweinstein/Documents/DeepForest-pytorch/tests/test_preprocess.py',
+                                 '/Users/benweinstein/Documents/DeepForest-p'\
+                                 'ytorch/tests/test_preprocess.py',
+                                 18,
+                                 'config',
+                                 None,
+                                 '    config = utilities.read_config(get_dat'\
+                                 'a("deepforest_config.yml"))'),
+                                (u'/Users/benweinstein/Documents/DeepForest-pytorch/deepforest/utilities.py',
+                                 '/Users/benweinstein/Documents/DeepForest-p'\
+                                 'ytorch/deepforest/utilities.py',
+                                 26,
+                                 'read_config',
+                                 None,
+                                 '        raise FileNotFoundError("There is '\
+                                 'no config at {}, yields {}".format(')],
+                               0,
+                               None,
+                               None,
+                               None,
+                               None),
+                              1614993031,
                               76),
                              ('test_select_annotations_tile',
-                              0,
+                              2,
                               None,
                               None,
-                              None,
-                              1614717355,
+                              ('',
+                               "<ExceptionInfo FileNotFoundError(\"There is "\
+                               "no config at /Users/benweinstein/Documents/D"\
+                               "eepForest-pytorch/deepforest/data/deepforest"\
+                               "_c...] No such file or directory: '/Users/be"\
+                               "nweinstein/Documents/DeepForest-pytorch/deep"\
+                               "forest/data/deepforest_config.yml'\") tblen="\
+                               "2>",
+                               "FileNotFoundError: There is no config at /Us"\
+                               "ers/benweinstein/Documents/DeepForest-pytorc"\
+                               "h/deepforest/data/deepforest_config.yml, yie"\
+                               "lds [Errno 2] No such file or directory: '/U"\
+                               "sers/benweinstein/Documents/DeepForest-pytor"\
+                               "ch/deepforest/data/deepforest_config.yml'",
+                               [(u'/Users/benweinstein/Documents/DeepForest-pytorch/tests/test_preprocess.py',
+                                 '/Users/benweinstein/Documents/DeepForest-p'\
+                                 'ytorch/tests/test_preprocess.py',
+                                 18,
+                                 'config',
+                                 None,
+                                 '    config = utilities.read_config(get_dat'\
+                                 'a("deepforest_config.yml"))'),
+                                (u'/Users/benweinstein/Documents/DeepForest-pytorch/deepforest/utilities.py',
+                                 '/Users/benweinstein/Documents/DeepForest-p'\
+                                 'ytorch/deepforest/utilities.py',
+                                 26,
+                                 'read_config',
+                                 None,
+                                 '        raise FileNotFoundError("There is '\
+                                 'no config at {}, yields {}".format(')],
+                               0,
+                               None,
+                               None,
+                               None,
+                               None),
+                              1614993031,
                               60)]),
                            (u'/Users/benweinstein/Documents/DeepForest-pytorch/tests/test_environment.py',
                             [('test_environment',
@@ -3462,155 +3693,11 @@ testing.stored-results = (1,
                               32)]),
                            (u'/Users/benweinstein/Documents/DeepForest-pytorch/tests/test_callbacks.py',
                             [('test_log_images',
-                              1,
+                              0,
                               None,
                               None,
-                              ('',
-                               "<ExceptionInfo AttributeError(\"'numpy.ndarr"\
-                               "ay' object has no attribute 'dim'\") tblen=1"\
-                               "5>",
-                               "AttributeError: 'numpy.ndarray' object has n"\
-                               "o attribute 'dim'",
-                               [(u'/Users/benweinstein/Documents/DeepForest-pytorch/tests/test_callbacks.py',
-                                 '/Users/benweinstein/Documents/DeepForest-p'\
-                                 'ytorch/tests/test_callbacks.py',
-                                 30,
-                                 'test_log_images',
-                                 None,
-                                 '    m.trainer.fit(m)'),
-                                (u'/Users/benweinstein/opt/miniconda3/envs/DeepForest_pytorch/lib/python3.8/site-packages/pytorch_lightning/trainer/trainer.py',
-                                 '/Users/benweinstein/opt/miniconda3/envs/De'\
-                                 'epForest_pytorch/lib/python3.8/site-packag'\
-                                 'es/pytorch_lightning/trainer/trainer.py',
-                                 470,
-                                 'fit',
-                                 None,
-                                 '        results = self.accelerator_backend'\
-                                 '.train()'),
-                                (u'/Users/benweinstein/opt/miniconda3/envs/DeepForest_pytorch/lib/python3.8/site-packages/pytorch_lightning/accelerators/cpu_accelerator.py',
-                                 '/Users/benweinstein/opt/miniconda3/envs/De'\
-                                 'epForest_pytorch/lib/python3.8/site-packag'\
-                                 'es/pytorch_lightning/accelerators/cpu_acce'\
-                                 'lerator.py',
-                                 62,
-                                 'train',
-                                 None,
-                                 '        results = self.train_or_test()'),
-                                (u'/Users/benweinstein/opt/miniconda3/envs/DeepForest_pytorch/lib/python3.8/site-packages/pytorch_lightning/accelerators/accelerator.py',
-                                 '/Users/benweinstein/opt/miniconda3/envs/De'\
-                                 'epForest_pytorch/lib/python3.8/site-packag'\
-                                 'es/pytorch_lightning/accelerators/accelera'\
-                                 'tor.py',
-                                 69,
-                                 'train_or_test',
-                                 None,
-                                 '            results = self.trainer.train()'),
-                                (u'/Users/benweinstein/opt/miniconda3/envs/DeepForest_pytorch/lib/python3.8/site-packages/pytorch_lightning/trainer/trainer.py',
-                                 '/Users/benweinstein/opt/miniconda3/envs/De'\
-                                 'epForest_pytorch/lib/python3.8/site-packag'\
-                                 'es/pytorch_lightning/trainer/trainer.py',
-                                 521,
-                                 'train',
-                                 None,
-                                 '                    self.train_loop.run_tr'\
-                                 'aining_epoch()'),
-                                (u'/Users/benweinstein/opt/miniconda3/envs/DeepForest_pytorch/lib/python3.8/site-packages/pytorch_lightning/trainer/training_loop.py',
-                                 '/Users/benweinstein/opt/miniconda3/envs/De'\
-                                 'epForest_pytorch/lib/python3.8/site-packag'\
-                                 'es/pytorch_lightning/trainer/training_loop'\
-                                 '.py',
-                                 625,
-                                 'run_training_epoch',
-                                 None,
-                                 '        self.run_on_epoch_end_hook(epoch_o'\
-                                 'utput)'),
-                                (u'/Users/benweinstein/opt/miniconda3/envs/DeepForest_pytorch/lib/python3.8/site-packages/pytorch_lightning/trainer/training_loop.py',
-                                 '/Users/benweinstein/opt/miniconda3/envs/De'\
-                                 'epForest_pytorch/lib/python3.8/site-packag'\
-                                 'es/pytorch_lightning/trainer/training_loop'\
-                                 '.py',
-                                 856,
-                                 'run_on_epoch_end_hook',
-                                 None,
-                                 "        self.trainer.call_hook('on_epoch_e"\
-                                 "nd')"),
-                                (u'/Users/benweinstein/opt/miniconda3/envs/DeepForest_pytorch/lib/python3.8/site-packages/pytorch_lightning/trainer/trainer.py',
-                                 '/Users/benweinstein/opt/miniconda3/envs/De'\
-                                 'epForest_pytorch/lib/python3.8/site-packag'\
-                                 'es/pytorch_lightning/trainer/trainer.py',
-                                 887,
-                                 'call_hook',
-                                 None,
-                                 '                trainer_hook(*args, **kwar'\
-                                 'gs)'),
-                                (u'/Users/benweinstein/opt/miniconda3/envs/DeepForest_pytorch/lib/python3.8/site-packages/pytorch_lightning/trainer/callback_hook.py',
-                                 '/Users/benweinstein/opt/miniconda3/envs/De'\
-                                 'epForest_pytorch/lib/python3.8/site-packag'\
-                                 'es/pytorch_lightning/trainer/callback_hook'\
-                                 '.py',
-                                 107,
-                                 'on_epoch_end',
-                                 None,
-                                 '            callback.on_epoch_end(self, se'\
-                                 'lf.get_model())'),
-                                (u'/Users/benweinstein/Documents/DeepForest-pytorch/deepforest/callbacks.py',
-                                 '/Users/benweinstein/Documents/DeepForest-p'\
-                                 'ytorch/deepforest/callbacks.py',
-                                 89,
-                                 'on_epoch_end',
-                                 None,
-                                 '            self.log_images(pl_module)'),
-                                (u'/Users/benweinstein/Documents/DeepForest-pytorch/deepforest/callbacks.py',
-                                 '/Users/benweinstein/Documents/DeepForest-p'\
-                                 'ytorch/deepforest/callbacks.py',
-                                 67,
-                                 'log_images',
-                                 None,
-                                 '            predictions = pl_module.model('\
-                                 'images)'),
-                                (u'/Users/benweinstein/opt/miniconda3/envs/DeepForest_pytorch/lib/python3.8/site-packages/torch/nn/modules/module.py',
-                                 '/Users/benweinstein/opt/miniconda3/envs/De'\
-                                 'epForest_pytorch/lib/python3.8/site-packag'\
-                                 'es/torch/nn/modules/module.py',
-                                 727,
-                                 '_call_impl',
-                                 None,
-                                 '            result = self.forward(*input, '\
-                                 '**kwargs)'),
-                                (u'/Users/benweinstein/opt/miniconda3/envs/DeepForest_pytorch/lib/python3.8/site-packages/torchvision/models/detection/retinanet.py',
-                                 '/Users/benweinstein/opt/miniconda3/envs/De'\
-                                 'epForest_pytorch/lib/python3.8/site-packag'\
-                                 'es/torchvision/models/detection/retinanet.'\
-                                 'py',
-                                 522,
-                                 'forward',
-                                 None,
-                                 '        images, targets = self.transform(i'\
-                                 'mages, targets)'),
-                                (u'/Users/benweinstein/opt/miniconda3/envs/DeepForest_pytorch/lib/python3.8/site-packages/torch/nn/modules/module.py',
-                                 '/Users/benweinstein/opt/miniconda3/envs/De'\
-                                 'epForest_pytorch/lib/python3.8/site-packag'\
-                                 'es/torch/nn/modules/module.py',
-                                 727,
-                                 '_call_impl',
-                                 None,
-                                 '            result = self.forward(*input, '\
-                                 '**kwargs)'),
-                                (u'/Users/benweinstein/opt/miniconda3/envs/DeepForest_pytorch/lib/python3.8/site-packages/torchvision/models/detection/transform.py',
-                                 '/Users/benweinstein/opt/miniconda3/envs/De'\
-                                 'epForest_pytorch/lib/python3.8/site-packag'\
-                                 'es/torchvision/models/detection/transform.'\
-                                 'py',
-                                 101,
-                                 'forward',
-                                 None,
-                                 '            if image.dim() != 3:')],
-                               0,
-                               None,
-                               None,
-                               None,
-                               None),
-                              1614989577,
+                              None,
+                              1614989870,
                               25)])],
                           {u'/Users/benweinstein/Documents/DeepForest/tests/test_deepforest.py': (u'Test process aborted: some tests were not run',
         1607966490)})

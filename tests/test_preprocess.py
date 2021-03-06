@@ -15,7 +15,7 @@ import rasterio
 
 @pytest.fixture()
 def config():
-    config = utilities.read_config(get_data("deepforest_config.yml"))
+    config = utilities.read_config("deepforest_config.yml")
     config["patch_size"] = 200
     config["patch_overlap"] = 0.25
     config["annotations_xml"] = get_data("OSBS_029.xml")
