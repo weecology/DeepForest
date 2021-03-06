@@ -1,12 +1,12 @@
 #entry point for deepforest model
 import os
-import numpy as np
 import pandas as pd
 from skimage import io
 import torch
 
 import pytorch_lightning as pl
 from torch import optim
+import tempfile
 
 from deepforest import utilities
 from deepforest import dataset
@@ -296,7 +296,9 @@ class deepforest(pl.LightningModule):
         try:
             self.logger.experiment.log_metric("test_precision",result_dict["precision"])
             self.logger.experiment.log_metric("test_recall",result_dict["recall"])
-            self.logger.experiment.log_table("test_IoU_dataframe.html",tabular_data = result_dict["results"])
+            with tempfile.TemporaryDirectory() as tmpdirname:
+                result_dict["results"].to_csv("{}/results.csv".format(tmpdirname))
+                self.logger.experiment.log_asset("{}/results.csv".format(tmpdirname))
         except Exception as e:
             print("test epoch could not find logger {}".format(e))
 
