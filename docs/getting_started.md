@@ -1,17 +1,22 @@
 # Getting started
 
+The following is a guide to illustrate the basic uses of this package. This is meant as a walkthrough with import statements and dependencies used in the beginning used throughout for concise code. Please begin from the top.
 Here is a simple example of how to predict a single image.
 
 ```
-from deepforest import deepforest
+from deepforest import main
+from deepforest import get_data
+import os
 import matplotlib.pyplot as plt
-model = deepforest.deepforest()
+model = main.deepforest()
 model.use_release()
-img=model.predict_image("/Users/ben/Documents/NeonTreeEvaluation/evaluation/RGB/JERC_019.tif",return_plot=True)
+img=model.predict_image(path="/Users/benweinstein/Documents/NeonTreeEvaluation/evaluation/RGB/TEAK_049_2019.tif",return_plot=True)
 
 #predict_image returns plot in BlueGreenRed (opencv style), but matplotlib likes RedGreenBlue, switch the channel order.
 plt.imshow(img[:,:,::-1])
 ```
+
+![(../www/getting_started1.png)]
 
 ## Prebuilt models
 
@@ -43,31 +48,26 @@ DeepForest allows convenient prediction of new data based on the prebuilt model 
 For single images, ```predict_image``` can read an image from memory or file and return predicted tree bounding boxes.
 
 ```python
-from deepforest import deepforest
-from deepforest import get_data
-
-test_model = deepforest.deepforest()
-test_model.use_release()
-
 # Predict test image and return boxes
 # Find path to test image. While it lives in deepforest/data,
 # it is best to use the function if installed as a python module.
 # For non-tutorial images, you do not need the get_data function,
 # just provide the full path to the data anywhere on your computer.
 image_path = get_data("OSBS_029.tif")
-boxes = test_model.predict_image(image_path=image_path, show=False, return_plot = False)
+boxes = model.predict_image(path=image_path, return_plot = False)
+```
 
+```
 boxes.head()
+         xmin        ymin        xmax        ymax  label    scores
+0  334.708405  342.333954  375.941376  392.187531      0  0.736650
+1  295.990601  371.456604  331.521240  400.000000      0  0.714327
+2  216.828201  207.996216  245.123276  240.167023      0  0.691064
+3  276.206848  330.758636  303.309631  363.038422      0  0.690987
+4  328.604736   45.947182  361.095276   80.635254      0  0.638212
 ```
 
-```
-xmin        ymin        xmax        ymax     score label
-0  222.136353  211.271133  253.000061  245.222580  0.790797  Tree
-1   52.070221   73.605804   82.522354  111.510605  0.781306  Tree
-2   96.324028  117.811966  123.224060  145.982407  0.778245  Tree
-3  336.983826  347.946747  375.369019  396.250580  0.677282  Tree
-4  247.689362   48.813339  279.102570   88.318176  0.675362  Tree
-```
+For the release model, there is only one category "Tree", which is numeric 0 label.
 
 ### Predict a tile
 
@@ -76,19 +76,9 @@ Large tiles covering wide geographic extents cannot fit into memory during predi
 Let's show an example with a small image. For larger images, patch_size should be increased.
 
 ```python
-from deepforest import deepforest
-from deepforest import get_data
-
-test_model = deepforest.deepforest()
-test_model.use_release()
-
-# Find the tutorial data using the get data function.
-# For non-tutorial images, you do not need the get_data function,
-# provide the full path to the data anywhere on your computer.
-
 raster_path = get_data("OSBS_029.tif")
 # Window size of 300px with an overlap of 25% among windows for this small tile.
-predicted_raster = test_model.predict_tile(raster_path, return_plot = True, patch_size=300,patch_overlap=0.25)
+predicted_raster = model.predict_tile(raster_path, return_plot = True, patch_size=300,patch_overlap=0.25)
 ```
 
 ** Please note the predict tile function is sensitive to patch_size, especially when using the prebuilt model on new data**
@@ -109,34 +99,29 @@ with each bounding box on a seperate row. The image path is relative to the loca
 We can view predictions by supplying a save dir ("." = current directory). Predictions in green, annotations in black.
 
 ```python
-from deepforest import deepforest
-from deepforest import get_data
-
-test_model = deepforest.deepforest()
-test_model.use_release()
-
-# Find the tutorial csv file. For non-tutorial images, you do not need the get_data function, jut provide the full path to the data anywhere on your computer.
 annotations_file = get_data("testfile_deepforest.csv")
 
-test_model.config["save_dir"] = "."
-boxes = test_model.predict_generator(annotations=annotations_file)
+model.config["save_dir"] = "."
+boxes = model.predict_file(annotations=annotations_file)
 ```
 
 For more information on data files, see below.
 
 ## Training
 
-The prebuilt models will always be improved by adding data from the target area. In our work, we have found that even one hour's worth of carefully chosen hand-annotation can yield enormous improvements in accuracy and precision. We envision that for the majority of scientific applications atleast some finetuning of the prebuilt model will be worthwhile. When starting from the prebuilt model for training, we have found that 5-10 epochs is sufficient. We have never seen a retraining task that improved after 10 epochs, but it is possible if there are very large datasets with very diverse classes.
+The prebuilt models will always be improved by adding data from the target area. In our work, we have found that even one hour's worth of carefully chosen hand-annotation can yield enormous improvements in accuracy and precision.
+We envision that for the majority of scientific applications atleast some finetuning of the prebuilt model will be worthwhile. When starting from the prebuilt model for training, we have found that 5-10 epochs is sufficient. 
+We have never seen a retraining task that improved after 10-30 epochs, but it is possible if there are very large datasets with very diverse classes.
 
 Consider an annotations.csv file in the following format
 
 ```
-image_path, xmin, ymin, xmax, ymax, label
 ```
 
 testfile_deepforest.csv
 
 ```
+image_path, xmin, ymin, xmax, ymax, label
 OSBS_029.jpg,256,99,288,140,Tree
 OSBS_029.jpg,166,253,225,304,Tree
 OSBS_029.jpg,365,2,400,27,Tree
@@ -155,73 +140,66 @@ and a classes.csv file in the same directory
 Tree,0
 ```
 
+We tell the config that we want to train on this csv file, and that the images are in the same directory. If images are in a seperate folder, change the root_dir.
+
 ```python
-from deepforest import deepforest
-from deepforest import get_data
-
-test_model = deepforest.deepforest()
-
 # Example run with short training
-test_model.config["epochs"] = 1
-test_model.config["save-snapshot"] = False
-test_model.config["steps"] = 1
-
 annotations_file = get_data("testfile_deepforest.csv")
 
-test_model.train(annotations=annotations_file, input_type="fit_generator")
+model.config["epochs"] = 1
+model.config["save-snapshot"] = False
+model.config["steps"] = 1
+model.config["train"]["csv_file"] = annotations_file
+model.config["train"]["root_dir"] = os.path.dirname(annotations_file)
+
+model.create_trainer()
 ```
 
-```python
-No model initialized, either train or load an existing retinanet model
-There are 1 unique labels: ['Tree']
-Disabling snapshot saving
+To begin training, call trainer.fit on the model object directly on itself. While this might look a touch awkward, it is useful for exposing the pytorch lightning functionality.
 
-Training retinanet with the following args ['--backbone', 'resnet50', '--image-min-side', '800', '--multi-gpu', '1', '--epochs', '1', '--steps', '1', '--batch-size', '1', '--tensorboard-dir', 'None', '--workers', '1', '--max-queue-size', '10', '--freeze-layers', '0', '--score-threshold', '0.05', '--save-path', 'snapshots/', '--snapshot-path', 'snapshots/', '--no-snapshots', 'csv', 'data/testfile_deepforest.csv', 'data/classes.csv']
-
-Creating model, this may take a second...
-
-... [omitting model summary]
-
-Epoch 1/1
-
-1/1 [==============================] - 11s 11s/step - loss: 4.0183 - regression_loss: 2.8889 - classification_loss: 1.1294
+```
+model.trainer.fit(model)
 ```
 
 ## Evaluation
 
-Independent analysis of whether a model can generalize from training data to new areas is critical for creating a robust workflow. We stress that evaluation data must be different from training data, as neural networks have millions of parameters and can easily memorize thousands of samples. Therefore, while it would be rather easy to tune the model to get extremely high scores on the training data, it would fail when exposed to new images.
+Independent analysis of whether a model can generalize from training data to new areas is critical for creating a robust workflow. 
+We stress that evaluation data must be different from training data, as neural networks have millions of parameters and can easily memorize thousands of samples. Therefore, while it would be rather easy to tune the model to get extremely high scores on the training data, it would fail when exposed to new images.
 
-DeepForest uses the keras-retinanet ```evaluate``` method to score images. This consists of an annotations.csv file in the following format
-
+To get an evaluation score, specify an annotations file in the same format as the training example above. The model will 
 ```
-image_path, xmin, ymin, xmax, ymax, label
-```
+csv_file = get_data("OSBS_029.csv")
+root_dir = os.path.dirname(csv_file)
 
-```python
-from deepforest import deepforest
-from deepforest import get_data
-
-test_model = deepforest.deepforest()
-test_model.use_release()
-
-annotations_file = get_data("testfile_deepforest.csv")
-mAP = test_model.evaluate_generator(annotations=annotations_file)
-print("Mean Average Precision is: {:.3f}".format(mAP))
+results = model.evaluate(csv_file, root_dir, iou_threshold = 0.4, show_plot=True)
 ```
 
+The results object is a dictionary with keys, 'results',"recall","precision". Results is the intersection-over-union scores for each ground truth object in the csv_file.
+
 ```
-Running network: 100% (1 of 1) |#########| Elapsed Time: 0:00:02 Time:  0:00:02
-Parsing annotations: N/A% (0 of 1) |     | Elapsed Time: 0:00:00 ETA:  --:--:--
-Parsing annotations: 100% (1 of 1) |#####| Elapsed Time: 0:00:00 Time:  0:00:00
-60 instances of class Tree with average precision: 0.3687
-mAP using the weighted average of precisions among classes: 0.3687
-mAP: 0.3687
+results["results"].head()
+    prediction_id  truth_id      IoU    image_path  match
+39             39         0  0.00000  OSBS_029.tif  False
+19             19         1  0.50524  OSBS_029.tif   True
+44             44         2  0.42246  OSBS_029.tif   True
+67             67         3  0.41404  OSBS_029.tif   True
+28             28         4  0.37461  OSBS_029.tif  False
 ```
 
-The evaluation file can also be run as a callback during training by setting the config file. This will allow the user to see evaluation performance at the end of each epoch.
+This dataframe contains a numeric id for each predicted crown in each image, the matched ground truth crown in each image. The intersection-over-union score between predicted and ground truth (IoU), and whether that score is greater than the IoU threshold ('match').
 
-```python
-test_model.config["validation_annotations"] = "testfile_deepforest.csv"
+The recall is the proportion of ground truth which have a true positive match with a prediction based on the intersection-over-union threshold, this threshold is default 0.4 and can be chaned in model.evaluate(iou_threshold=<>)
+
+```
+results["recall"]
+0.738
+```
+
+The precision is the proportion of predicted boxes which overlap a ground truth box.
+
+```
+results["precision"]
+0.428
 ```
 
 ## Loading saved models for prediction
@@ -229,42 +207,23 @@ test_model.config["validation_annotations"] = "testfile_deepforest.csv"
 DeepForest uses the keras saving workflow, which means users can save the entire model architecture, or just the weights. For more explanation on Keras see [here](https://stackoverflow.com/questions/42621864/difference-between-keras-model-save-and-model-save-weights).
 
 ### Saved Model
-To access the training model for saving, use
-
-```python
-test_model.model.save("example_saved.h5")
-```
-
-which can be reloaded
 
 ```
-reloaded = deepforest.deepforest(saved_model="example_saved.h5")
-Reading config file: deepforest_config.yml
-Loading saved model
+import tempfile
+import pandas as pd
+tmpdir = tempfile.TemporaryDirectory()
+
+model.use_release()
+
+#save the prediction dataframe after training and compare with prediction after reload checkpoint 
+pred_after_train = model.predict_image(path = img_path)
+model.save_model("{}/checkpoint.pl".format(tmpdir))
+
+#reload the checkpoint to model object
+after = main.deepforest.load_from_checkpoint("{}/checkpoint.pl".format(tmpdir))
+pred_after_reload = after.predict_image(path = img_path)
+
+assert not pred_after_train.empty
+assert not pred_after_reload.empty
+pd.testing.assert_frame_equal(pred_after_train,pred_after_reload)
 ```
-
-The actual prediction model can be accessed
-
-```python
-reloaded.prediction_model
-<keras.engine.training.Model object at 0x646ca3b70>
-```
-
-but in most cases it is better to just use the deepforest workflow functions such as predict_image.
-
-### Model Weights
-
-If you just want to weights of the model layer, you can do.
-
-```python
-test_model.model.save_weights("example_save_weights.h5")
-reloaded = deepforest.deepforest(weights="example_save_weights.h5")
-```
-
-Now you can use
-
-```python
-reloaded.predict_image()
-```
-
-as described above.

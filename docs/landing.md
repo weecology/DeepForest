@@ -12,12 +12,12 @@ The rapid development of open machine learning community resources means that te
 ## How does it work?
 DeepForest uses deep learning object detection networks to predict bounding boxes corresponding to individual trees in RGB imagery. DeepForest is built on a fork of the [keras-retinanet](https://github.com/fizyr/keras-retinanet) package and designed to make training models for tree detection simpler.
 
-The simplest use case is to download the prebuilt model and apply it to a single image.
+The simplest use case is to download the prebuilt model and apply it to a single image. This can be either be returned as set of predicted bounding boxes or as an image with overlaid boxes (return_plot=True)
 
 ```python
-from deepforest import deepforest
+from deepforest import main
 import matplotlib.pyplot as plt
-model = deepforest.deepforest()
+model = main.deepforest()
 model.use_release()
 img=model.predict_image(<path_to_image>,return_plot=True)
 ```
@@ -39,7 +39,7 @@ Remote sensing can transform the speed, scale, and cost of biodiversity and fore
 
 
 ## Feedback
-All [issues](https://github.com/weecology/DeepForest/issues/) can be submitted to the github repo. We look forward to hearing about the performance of the prebuilt and custom models. We encourage all users to submit a sample image [issue](https://github.com/weecology/DeepForest/issues/49), regardless of performance, to the [image gallery](https://weecology.github.io/DeepForest/). We want to hear from you!
+All [issues](https://github.com/weecology/DeepForest-pytorch/issues/) can be submitted to the github repo. We look forward to hearing about the performance of the prebuilt and custom models. 
 
 ## Citation
 
