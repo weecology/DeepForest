@@ -12,6 +12,7 @@ labels (Int64Tensor[N]): the class label for each ground-truth box
 https://colab.research.google.com/github/benihime91/pytorch_retinanet/blob/master/demo.ipynb#scrollTo=0zNGhr6D7xGN
 
 """
+import glob
 import os
 import pandas as pd
 from skimage import io
@@ -33,7 +34,7 @@ class TreeDataset(Dataset):
     def __init__(self, csv_file, root_dir, transforms):
         """
         Args:
-            csv_file (string): Path to the csv file with annotations.
+            csv_file (string): Path to a single csv file with annotations.
             root_dir (string): Directory with all the images.
             transform (callable, optional): Optional transform to be applied
                 on a sample.

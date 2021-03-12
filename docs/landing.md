@@ -1,9 +1,13 @@
-# What is DeepForest?
-DeepForest is a python package for training and predicting individual tree crowns from airborne RGB imagery. DeepForest comes with a prebuilt model trained on data from the National Ecological Observation Network. Users can extend this model by annotating and training custom models.
+# What is DeepForest-pytorch?
+DeepForest-pytorch is a python package for training and predicting individual tree crowns from airborne RGB imagery. DeepForest-pytorch comes with a prebuilt model trained on data from the National Ecological Observation Network. Users can extend this model by annotating and training custom models.
 
 ![](../www/image.png)
 
-See more examples in the [image galllery](https://weecology.github.io/DeepForest/)
+# What is the difference between DeepForest-pytorch and the original DeepForest?
+
+The original project https://deepforest.readthedocs.io/ was written in tensorflow based on keras-retinanet. When tensorflow updated to 2.0 there were breaking changes and the authors of keras-retinanet decided to not attempt to recover the project. 
+The rapid development of open machine learning community resources means that tensorflow 1.1.14, which is required for deepforest, will rapidly become out of date. As of writing this, there is no current no breaking changes, 
+
 
 ## How does it work?
 DeepForest uses deep learning object detection networks to predict bounding boxes corresponding to individual trees in RGB imagery. DeepForest is built on a fork of the [keras-retinanet](https://github.com/fizyr/keras-retinanet) package and designed to make training models for tree detection simpler.

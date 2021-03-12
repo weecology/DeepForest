@@ -122,11 +122,6 @@ class deepforest(pl.LightningModule):
         
         return loader
     
-    def test_dataloader(self):
-        loader = self.load_dataset(csv_file=self.config["validation"]["csv_file"], root_dir=self.config["validation"]["root_dir"], augment=False, shuffle=False, batch_size=self.config["batch_size"])
-        
-        return loader
-    
     def val_dataloader(self):
         loader = self.load_dataset(csv_file=self.config["validation"]["csv_file"], root_dir=self.config["validation"]["root_dir"], augment=False, shuffle=False, batch_size=self.config["batch_size"])
         
@@ -260,49 +255,6 @@ class deepforest(pl.LightningModule):
             self.log("val_{}".format(key),value, on_epoch=True)
                 
         return losses
-    
-    def test_step(self, batch, batch_idx):
-        path, images, targets = batch
-        predictions = self.model.forward(images)
-        
-        result = []
-        for index, prediction in enumerate(predictions):
-            formatted_prediction = visualize.format_boxes(prediction)
-            formatted_prediction["image_path"] = path[index]
-            result.append(formatted_prediction)
-        result = pd.concat(result)
-        
-        return {"predictions":result}
-    
-    def test_epoch_end(self, outputs):
-        """At the end of testing loop, gather all outputs into a single dataframe"""
-        gathered = list()
-        for batch in outputs:
-            gathered.append(batch["predictions"])
-        gathered = pd.concat(gathered)
-        
-        ground_df = pd.read_csv(self.config["validation"]["csv_file"])
-        
-        result_dict = evaluate_iou.evaluate(
-            predictions=gathered,
-            ground_df=ground_df,
-            root_dir=self.config["validation"]["root_dir"],
-            iou_threshold=self.config["validation"]["iou_threshold"],
-            show_plot=False)
-        
-        self.log("test_precision", result_dict["precision"])
-        self.log("test_recall",result_dict["recall"])
-        
-        try:
-            self.logger.experiment.log_metric("test_precision",result_dict["precision"])
-            self.logger.experiment.log_metric("test_recall",result_dict["recall"])
-            with tempfile.TemporaryDirectory() as tmpdirname:
-                result_dict["results"].to_csv("{}/results.csv".format(tmpdirname))
-                self.logger.experiment.log_asset("{}/results.csv".format(tmpdirname))
-        except Exception as e:
-            print("test epoch could not find logger {}".format(e))
-
-        return {"gathered_results": gathered}
         
     def validation_end(self, outputs):
         avg_loss = torch.stack([x['val_loss'] for x in outputs]).mean()
@@ -314,7 +266,7 @@ class deepforest(pl.LightningModule):
         self.optimizer = optim.SGD(self.model.parameters(), lr=self.config["train"]["lr"], momentum=0.9)
         self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, mode='min', 
                                                            factor=0.1, patience=10, 
-                                                           verbose=False, threshold=0.0001, 
+                                                           verbose=True, threshold=0.0001, 
                                                            threshold_mode='rel', cooldown=0, 
                                                            min_lr=0, eps=1e-08)
         return self.optimizer
@@ -332,6 +284,10 @@ class deepforest(pl.LightningModule):
             results: dict of ("results", "precision", "recall") for a given threshold
         """
         self.model.eval()
+        
+        if not self.device.type=="cpu":
+            model = model.to(self.device)
+            
         predictions = predict.predict_file(model=self.model, csv_file=csv_file, root_dir=root_dir, savedir=savedir, device=self.device)                
         ground_df = pd.read_csv(csv_file)
         

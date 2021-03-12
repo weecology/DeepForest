@@ -118,6 +118,7 @@ def test_evaluate(m):
     
     #Does this make reasonable predictions, we know the model works.
     assert np.round(results["precision"],2) == 0.43
+    assert np.round(results["recall"],2) == 0.74
     
 def test_train_callbacks(m):
     csv_file = get_data("example.csv") 
