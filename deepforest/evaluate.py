@@ -6,6 +6,7 @@ import geopandas as gpd
 from rasterio.plot import show 
 import shapely
 from matplotlib import pyplot
+import numpy as np
 
 from deepforest import IoU
 from deepforest.utilities import check_file
@@ -63,10 +64,20 @@ def evaluate(predictions, ground_df, root_dir, show_plot=True, iou_threshold=0.4
     
     #Run evaluation on all plots
     results = [ ]
+    recalls = []
+    precisions = []
     for image_path, group in predictions.groupby("image_path"):
         plot_ground_truth = ground_df[ground_df["image_path"] == image_path].reset_index()
         result = evaluate_image(predictions=group, ground_df=plot_ground_truth, show_plot=show_plot, root_dir=root_dir, savedir=savedir)
         result["image_path"] = image_path        
+        result["match"] = result.IoU > iou_threshold
+        true_positive = sum(result["match"] == True)
+        recall = true_positive / result.shape[0]
+        precision = true_positive / predictions.shape[0]
+        
+        recalls.append(recall)
+        precisions.append(precision)
+        
         results.append(result)
     
     if len(results)==0:
@@ -75,9 +86,7 @@ def evaluate(predictions, ground_df, root_dir, show_plot=True, iou_threshold=0.4
         precision = 0
     else:
         results = pd.concat(results)
-        results["match"] = results.IoU > iou_threshold
-        true_positive = sum(results["match"] == True)
-        recall = true_positive / results.shape[0]
-        precision = true_positive / predictions.shape[0]
-    
+        precision = np.mean(precisions)
+        recall = np.mean(recalls)
+
     return {"results":results,"precision":precision, "recall":recall}
