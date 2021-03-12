@@ -73,11 +73,10 @@ def evaluate(predictions, ground_df, root_dir, show_plot=True, iou_threshold=0.4
         result["match"] = result.IoU > iou_threshold
         true_positive = sum(result["match"] == True)
         recall = true_positive / result.shape[0]
-        precision = true_positive / predictions.shape[0]
+        precision = true_positive / group.shape[0]
         
         recalls.append(recall)
         precisions.append(precision)
-        
         results.append(result)
     
     if len(results)==0:
