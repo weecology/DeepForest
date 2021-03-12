@@ -53,8 +53,7 @@ setup(name=NAME,
       packages=find_packages(),
       include_package_data=True,
       install_requires=[
-          "torch", "torchvision", "matplotlib", "Pillow", "pandas",
-          "pyyaml>5.1.0", "progressbar2", "six", "scipy>1.5", "slidingwindow","scikit-image","geopandas",'rasterio','rtree',"pytorch_lightning",
+          "torch", "torchvision", "matplotlib", "Pillow", "pandas", "progressbar2", "six", "scipy>1.5", "slidingwindow","scikit-image","geopandas",'rasterio','rtree',"pytorch_lightning",
           "tqdm", "xmltodict", "numpy"
       ],
       zip_safe=False)
