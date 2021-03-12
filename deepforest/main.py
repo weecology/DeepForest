@@ -286,7 +286,7 @@ class deepforest(pl.LightningModule):
         self.model.eval()
         
         if not self.device.type=="cpu":
-            model = model.to(self.device)
+            self.model = self.model.to(self.device)
             
         predictions = predict.predict_file(model=self.model, csv_file=csv_file, root_dir=root_dir, savedir=savedir, device=self.device)                
         ground_df = pd.read_csv(csv_file)
