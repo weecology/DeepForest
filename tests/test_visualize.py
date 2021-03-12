@@ -44,5 +44,4 @@ def test_plot_predictions_and_targets(m, tmpdir):
     for path, image, target, prediction in zip(paths, images, targets, predictions):
         image = image.permute(1,2,0)
         save_figure_path = visualize.plot_prediction_and_targets(image, prediction, target, image_name=os.path.basename(path), savedir=tmpdir)
-        plt.show()
         assert os.path.exists(save_figure_path)
