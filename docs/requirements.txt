@@ -1,1 +1,2 @@
 chardet < 4.0.0
+deepforest-pytorch
