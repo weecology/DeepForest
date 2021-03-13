@@ -6,21 +6,15 @@ DeepForest-pytorch is a python package for training and predicting individual tr
 # What is the difference between DeepForest-pytorch and the original DeepForest?
 
 The original project https://deepforest.readthedocs.io/ was written in tensorflow based on keras-retinanet. When tensorflow updated to 2.0 there were breaking changes and the authors of keras-retinanet decided to not attempt to recover the project. 
-The rapid development of open machine learning community resources means that tensorflow 1.1.14, which is required for deepforest, will rapidly become out of date. As of writing this, there is no current no breaking changes, 
+The rapid development of open machine learning community resources means that tensorflow 1.1.14, which is required for deepforest, will rapidly become out of date. 
+As of 3/12/2021 there are no current no breaking changes, but the potential for them will increase over time.
 
 
-## How does it work?
-DeepForest uses deep learning object detection networks to predict bounding boxes corresponding to individual trees in RGB imagery. DeepForest is built on a fork of the [keras-retinanet](https://github.com/fizyr/keras-retinanet) package and designed to make training models for tree detection simpler.
+## How does deepforest-pytorch work?
 
-The simplest use case is to download the prebuilt model and apply it to a single image. This can be either be returned as set of predicted bounding boxes or as an image with overlaid boxes (return_plot=True)
+DeepForest uses deep learning object detection networks to predict bounding boxes corresponding to individual trees in RGB imagery. 
+DeepForest is built on the retinanet model from the [torchvision package](http://pytorch.org/vision/stable/index.html) and designed to make training models for tree detection simpler.
 
-```python
-from deepforest import main
-import matplotlib.pyplot as plt
-model = main.deepforest()
-model.use_release()
-img=model.predict_image(<path_to_image>,return_plot=True)
-```
 
 ## Introduction
 
