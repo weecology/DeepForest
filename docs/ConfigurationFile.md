@@ -111,3 +111,12 @@ A useful pytorch lightning flag that will run a debug run to test inputs. See
 ## Validation
 
 Optional validation dataloader to run during training.
+
+### csv_file
+
+Path to csv_file for validation annotations. Annotations are .csv files with headers image_path, xmin, ymin, xmax, ymax, label. image_path are relative to the root_dir. 
+For example this file should have entries like myimage.tif not /path/to/myimage.tif
+
+### root_dir
+
+Directory to search for images in the csv_file image_path column

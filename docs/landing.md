@@ -15,11 +15,6 @@ As of 3/12/2021 there are no current no breaking changes, but the potential for 
 DeepForest uses deep learning object detection networks to predict bounding boxes corresponding to individual trees in RGB imagery. 
 DeepForest is built on the retinanet model from the [torchvision package](http://pytorch.org/vision/stable/index.html) and designed to make training models for tree detection simpler.
 
-
-## Introduction
-
-<div style="position: relative; padding-bottom: 56.25%; height: 0;"><iframe src="https://www.loom.com/embed/61ca0bc9001d4997bd080650dff0cf79" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe></div>
-
 ## Demo
 For a quick example of model performance on sample images, see our demo shiny app. Please note that the model continues to improve and the app model may not reflect results from the current release.
 
@@ -30,7 +25,6 @@ Free software: [MIT license](https://github.com/weecology/DeepForest/blob/master
 
 ## Why DeepForest?
 Remote sensing can transform the speed, scale, and cost of biodiversity and forestry surveys. Data acquisition currently outpaces the ability to identify individual organisms in high resolution imagery. Individual crown delineation has been a long-standing challenge in remote sensing and available algorithms produce mixed results. DeepForest is the first open source implementation of a deep learning model for crown detection. Deep learning has made enormous strides in a range of computer vision tasks but requires significant amounts of training data. By including a trained model, we hope to simplify the process of retraining deep learning models for a range of forests, sensors, and spatial resolutions.
-
 
 ## Feedback
 All [issues](https://github.com/weecology/DeepForest-pytorch/issues/) can be submitted to the github repo. We look forward to hearing about the performance of the prebuilt and custom models. 

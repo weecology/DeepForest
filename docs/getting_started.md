@@ -32,16 +32,15 @@ Setting the correct window size to match the prebuilt model takes a few tries. T
 DeepForest comes with a small set of sample data to help run the docs examples. Since users may install in a variety of manners, and it is impossible to know the relative location of the files, the helper function ```get_data``` is used. This function looks to where DeepForest is installed, and finds the deepforest/data/ directory.
 
 ```python
-import deepforest
-
-YELL_xml = deepforest.get_data("2019_YELL_2_541000_4977000_image_crop.xml")
+sample_image = get_data("OSBS_029.jpeg")
+sample_image
+'/Users/benweinstein/Documents/DeepForest-pytorch/deepforest/data/OSBS_029.jpeg'
 ```
-
-For more complete examples of DeepForest applications, see the DeepForest demo [repo](https://github.com/weecology/DeepForest_demos/).
 
 ## Prediction
 
-DeepForest allows convenient prediction of new data based on the prebuilt model or a [custom trained](getting_started.html#Training) model. There are three ways to format data for prediction.
+DeepForest allows convenient prediction of new data based on the prebuilt model or a [custom trained](getting_started.html#Training) model. 
+There are three ways to format data for prediction.
 
 ### Predict a single image
 
@@ -114,9 +113,6 @@ We envision that for the majority of scientific applications atleast some finetu
 We have never seen a retraining task that improved after 10-30 epochs, but it is possible if there are very large datasets with very diverse classes.
 
 Consider an annotations.csv file in the following format
-
-```
-```
 
 testfile_deepforest.csv
 
