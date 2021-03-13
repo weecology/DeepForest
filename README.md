@@ -25,7 +25,7 @@ pip install deepforest-pytorch
 
 ## Train a model
 
-```
+```Python
 from deepforest import main
 m = main.deepforest()
 m.create_trainer()
@@ -35,7 +35,7 @@ m.evaluate(csv_file=m.config["validation"]["csv_file"], root_dir=m.config["valid
 
 ## Predict a single image
 
-```
+```Python
 from deepforest import main
 csv_file = '/Users/benweinstein/Documents/DeepForest-pytorch/deepforest/data/OSBS_029.tif'
 df = trained_model.predict_file(csv_file, root_dir = os.path.dirname(csv_file))
@@ -43,7 +43,7 @@ df = trained_model.predict_file(csv_file, root_dir = os.path.dirname(csv_file))
 
 ## Predict a large tile
 
-```
+```Python
 prediction = trained_model.predict_tile(raster_path = raster_path,
                                         patch_size = 300,
                                         patch_overlap = 0.5,
@@ -52,7 +52,7 @@ prediction = trained_model.predict_tile(raster_path = raster_path,
 
 ## Evaluate a file of annotations using intersection-over-union
 
-```
+```Python
 csv_file = get_data("example.csv")
 root_dir = os.path.dirname(csv_file)
 precision, recall = m.evaluate(csv_file, root_dir, iou_threshold = 0.5)
@@ -84,7 +84,7 @@ git clone
 
 DeepForest-pytorch will follow the pytorch-lightning (https://www.pytorchlightning.ai/) philosophy for maximum reproducibility. DeepForest objects are now lightning modules that can access any of the excellent functionalities from that framework.
 
-```
+```Python
 from deepforest import main
 from pytorch_lightning.callbacks import Callback
 ls
@@ -112,7 +112,7 @@ trainer = Trainer(fast_dev_run=True)
 trainer.fit(m, train_ds) 
 ```
 
-```
+```Python
 Starting to init trainer!
 GPU available: False, used: False
 TPU available: None, using: 0 TPU cores
