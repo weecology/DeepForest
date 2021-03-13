@@ -1,0 +1,56 @@
+name: Conda package
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  ci:
+    name: "CI setup"
+
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version:
+          #- 3.6
+          - 3.7
+          #- 3.8
+        os:
+          - "ubuntu-latest"
+          - "macos-latest"
+
+    runs-on: "${{ matrix.os }}"
+
+    # use bash everywhere
+    defaults:
+      run:
+        shell: "bash -l {0}"
+
+    steps:
+      - name: "Checkout code"
+        uses: "actions/checkout@v2"
+
+      - name: "Cache conda"
+        uses: "actions/cache@v1"
+        env:
+          # Increase this value to reset cache if env.yml has not changed
+          CACHE_NUMBER: 0
+        with:
+          path: "~/conda_pkgs_dir"
+          key: "${{ matrix.os }}-conda-${{ matrix.python-version }}-${{ env.CACHE_NUMBER }}-${{ hashFiles('enviroment.yml') }}"
+
+      - name: "Setup conda"
+        uses: "conda-incubator/setup-miniconda@v2"
+        with:
+          activate-environment: "DeepForest_pytorch"
+          environment-file: "environment.yml"
+          python-version: "${{ matrix.python-version }}"
+          allow-softlinks: true
+          channel-priority: "strict"
+          show-channel-urls: true
+          #use-only-tar-bz2: true
+
+      - name: "Run tests"
+        run: "pytest -v"
