@@ -14,11 +14,15 @@ from deepforest import visualize
 
 def evaluate_image(predictions, ground_df, show_plot, root_dir, savedir):
     """
-    df: a pandas dataframe with columns name, xmin, xmax, ymin, ymax, label. The 'name' column should be the path relative to the location of the file.
-    show: Whether to show boxes as they are plotted
-    summarize: Whether to group statistics by plot and overall score
-    image_coordinates: Whether the current boxes are in coordinate system of the image, e.g. origin (0,0) upper left.
-    root_dir: Where to search for image names in df
+    Compute intersection-over-union matching among prediction and ground truth boxes for one image
+    Args:
+        df: a pandas dataframe with columns name, xmin, xmax, ymin, ymax, label. The 'name' column should be the path relative to the location of the file.
+        show: Whether to show boxes as they are plotted
+        summarize: Whether to group statistics by plot and overall score
+        image_coordinates: Whether the current boxes are in coordinate system of the image, e.g. origin (0,0) upper left.
+        root_dir: Where to search for image names in df
+    Returns:
+        result: pandas dataframe with crown ids of prediciton and ground truth and the IoU score.
     """
         
     plot_names = predictions["image_path"].unique()
