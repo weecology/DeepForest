@@ -122,8 +122,8 @@ def test_evaluate(m):
     results = m.evaluate(csv_file, root_dir, iou_threshold = 0.4, show_plot=True)
     
     #Does this make reasonable predictions, we know the model works.
-    assert np.round(results["precision"],2) == 0.43
-    assert np.round(results["recall"],2) == 0.74
+    assert np.round(results["precision"],2) > 0.5
+    assert np.round(results["recall"],2) > 0.5
     
 def test_train_callbacks(m):
     csv_file = get_data("example.csv") 
