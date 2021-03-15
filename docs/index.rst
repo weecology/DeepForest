@@ -11,7 +11,7 @@ Source code is available here: (https://github.com/weecology/DeepForest.git).
    landing
    installation
    getting_started
-   ConfigurationFile.md
+   ConfigurationFile
    FAQ
    better
    code_of_conduct.rst
