@@ -12,10 +12,34 @@ Subpackages
 Submodules
 ----------
 
+deepforest.IoU module
+---------------------
+
+.. automodule:: deepforest.IoU
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+deepforest.callbacks module
+---------------------------
+
+.. automodule:: deepforest.callbacks
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 deepforest.dataset module
 -------------------------
 
 .. automodule:: deepforest.dataset
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+deepforest.evaluate module
+--------------------------
+
+.. automodule:: deepforest.evaluate
    :members:
    :undoc-members:
    :show-inheritance:
@@ -36,26 +60,18 @@ deepforest.model module
    :undoc-members:
    :show-inheritance:
 
+deepforest.predict module
+-------------------------
+
+.. automodule:: deepforest.predict
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 deepforest.preprocess module
 ----------------------------
 
 .. automodule:: deepforest.preprocess
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-deepforest.training module
---------------------------
-
-.. automodule:: deepforest.training
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-deepforest.training\_utils module
----------------------------------
-
-.. automodule:: deepforest.training_utils
    :members:
    :undoc-members:
    :show-inheritance:

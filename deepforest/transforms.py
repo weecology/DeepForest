@@ -1,9 +1,12 @@
-#Transforms from https://github.com/pytorch/vision/blob/master/references/detection/transforms.py
+# Transforms from
+# https://github.com/pytorch/vision/blob/master/references/detection/transforms.py
 import random
 import torch
 from torchvision.transforms import functional as F
 
+
 class Compose(object):
+
     def __init__(self, transforms):
         self.transforms = transforms
 
@@ -12,7 +15,9 @@ class Compose(object):
             image, target = t(image, target)
         return image, target
 
+
 class RandomHorizontalFlip(object):
+
     def __init__(self, prob):
         self.prob = prob
 
@@ -23,11 +28,12 @@ class RandomHorizontalFlip(object):
             bbox = target["boxes"]
             bbox[:, [0, 2]] = width - bbox[:, [2, 0]]
             target["boxes"] = bbox
-            
+
         return image, target
 
 
 class ToTensor(object):
+
     def __call__(self, image, target):
         image = F.to_tensor(image).float()
         target["boxes"] = torch.from_numpy(target["boxes"])

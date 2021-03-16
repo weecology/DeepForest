@@ -60,12 +60,13 @@ The documetation is automatically updated for changes with in functions.
 However, the documentation should be updated after addition of new functions or modules.
 
 Change to the docs directory and use sphinx-apidoc to update the doc's ``source``.
+Exclude the tests and setup.py documentation
 
 Run
 
 .. code-block:: bash
 
-  sphinx-apidoc -f  -o ./source ../
+  sphinx-apidoc -f  -o ./source ../ ../tests/* ../setup.py
 
 The ``source`` is the destination folder for the source rst files. ``../`` is the path to where
 the deepforest source code is located relative to the doc directory.
@@ -74,7 +75,8 @@ the deepforest source code is located relative to the doc directory.
 
 .. code-block:: bash
 
-  cd  docs  # go the docs directory
+  cd  docs  # go the docs directory and install the current changes pip install ../ -U
+  make clean # Run
   make html # Run
 
   Note:

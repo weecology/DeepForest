@@ -1,5 +1,5 @@
 Welcome to DeepForest-pytorch's documentation!
-======================================
+==============================================
 
 DeepForest-pytorch is a python package for predicting individual tree crowns from RGB imagery.
 Source code is available here: (https://github.com/weecology/DeepForest.git).
