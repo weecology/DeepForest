@@ -27,9 +27,6 @@ def predict_image(model, image, return_plot, device, iou_threshold=0.1):
     image = image.to(device)
     prediction = model(image)
         
-    if not device.type=="cpu":
-        prediction = prediction[0].detach().cpu().numpy()
-        
     #return None for no predictions
     if len(prediction[0]["boxes"])==0:
         return None
