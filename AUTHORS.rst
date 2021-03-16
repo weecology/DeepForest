@@ -24,4 +24,4 @@ We would like to thank everyone who has contributed to the project in any way.
 
 * `Henry Senyondo <https://github.com/henrykironde>`_
 
-* `Dingyi Fang https://github.com/dingyif`_
+* `Dingyi Fang <https://github.com/dingyif>`_

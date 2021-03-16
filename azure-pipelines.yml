@@ -33,9 +33,10 @@ jobs:
   
   - script: |
       source activate DeepForest_pytorch
-      pip install pytest pytest-azurepipelines
+      pip install pytest pytest-azurepipelines yapf
       pytest
-    displayName: 'pytest'
+      yapf -d --recursive deepforest/ --style=.style.yapf 2>&1
+    displayName: 'Pytests and sytle tests'
     
   - bash: |
       source activate DeepForest_pytorch
@@ -43,7 +44,7 @@ jobs:
       
   - task: PublishBuildArtifacts@1
     inputs: {pathtoPublish: 'dist'}
-  displayName: 'source distribution'
+  displayName: 'Source distribution'
     
 - job: linux
   pool: {vmImage: 'Ubuntu-16.04'}
