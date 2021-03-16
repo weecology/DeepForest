@@ -15,7 +15,7 @@ recommonmark
 sphinx
 sphinx-markdown-tables
 sphinx_rtd_theme
-tensorflow==1.14
+tensorflow==2.4.1
 twine
 tqdm
 xmltodict
