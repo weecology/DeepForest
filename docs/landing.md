@@ -19,8 +19,10 @@ img=model.predict_image(<path_to_image>,return_plot=True)
 ```
 
 ## Introduction
+<p align="center">
+    <a  href="https://www.loom.com/embed/61ca0bc9001d4997bd080650dff0cf79" target="_blank"><img src="https://i.ibb.co/GJbP9B8/Intro.jpg" alt="Intro" border="0"></a>
+</p>
 
-<div style="position: relative; padding-bottom: 56.25%; height: 0;"><iframe src="https://www.loom.com/embed/61ca0bc9001d4997bd080650dff0cf79" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe></div>
 
 ## Demo
 For a quick example of model performance on sample images, see our demo shiny app. Please note that the model continues to improve and the app model may not reflect results from the current release.
