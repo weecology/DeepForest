@@ -12,7 +12,6 @@ labels (Int64Tensor[N]): the class label for each ground-truth box
 https://colab.research.google.com/github/benihime91/pytorch_retinanet/blob/master/demo.ipynb#scrollTo=0zNGhr6D7xGN
 
 """
-import glob
 import os
 import pandas as pd
 from skimage import io
@@ -28,23 +27,23 @@ def get_transform(augment):
     return T.Compose(transforms)
 
 
-idx_to_label = {"Tree": 0}
-
 
 class TreeDataset(Dataset):
 
-    def __init__(self, csv_file, root_dir, transforms):
+    def __init__(self, csv_file, root_dir, transforms, label_dict = {"Tree": 0}):
         """
         Args:
             csv_file (string): Path to a single csv file with annotations.
             root_dir (string): Directory with all the images.
             transform (callable, optional): Optional transform to be applied
                 on a sample.
+            label_dict: a dictionary where keys are labels from the csv column and values are numeric labels "Tree" -> 0
         """
         self.annotations = pd.read_csv(csv_file)
         self.root_dir = root_dir
         self.transform = transforms
         self.image_names = self.annotations.image_path.unique()
+        self.label_dict = label_dict
 
     def __len__(self):
         return len(self.image_names)
@@ -63,7 +62,7 @@ class TreeDataset(Dataset):
 
         # Labels need to be encoded? 0 or 1 indexed?, ALl tree for the moment.
         targets["labels"] = image_annotations.label.apply(
-            lambda x: idx_to_label[x]).values.astype(int)
+            lambda x: self.label_dict[x]).values.astype(int)
 
         if self.transform:
             image, targets = self.transform(image, targets)

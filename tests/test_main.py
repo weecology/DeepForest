@@ -18,6 +18,21 @@ from pytorch_lightning.callbacks import Callback
 from .conftest import download_release
 
 @pytest.fixture()
+def two_class_m():
+    m = main.deepforest(num_classes=2,label_dict={"Alive":0,"Dead":1})
+    m.config["train"]["csv_file"] = get_data("testfile_multi.csv") 
+    m.config["train"]["root_dir"] = os.path.dirname(get_data("testfile_multi.csv"))
+    m.config["train"]["fast_dev_run"] = True
+    m.config["batch_size"] = 2
+        
+    m.config["validation"]["csv_file"] = get_data("testfile_multi.csv") 
+    m.config["validation"]["root_dir"] = os.path.dirname(get_data("testfile_multi.csv"))
+
+    m.create_trainer()
+    
+    return m
+
+@pytest.fixture()
 def m(download_release):
     m = main.deepforest()
     m.config["train"]["csv_file"] = get_data("example.csv") 
@@ -36,9 +51,12 @@ def m(download_release):
 def test_main():
     from deepforest import main
 
-def test_train(m):
+def test_train_single(m):
     m.trainer.fit(m)
 
+def test_train_multi(two_class_m):
+    two_class_m.trainer.fit(two_class_m)
+    
 def test_train_no_validation(m):
     m.config["validation"]["csv_file"] = None
     m.config["validation"]["root_dir"] = None  

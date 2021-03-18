@@ -109,6 +109,8 @@ def predict_tile(model,
 
     Args:
         model: pytorch model
+        device: pytorch device of 'cuda' or 'cpu' for gpu prediction. Set internally.
+        numeric_to_label_dict: dictionary in which keys are numeric integers and values are character labels
         raster_path: Path to image on disk
         image (array): Numpy image array in BGR channel order
             following openCV convention
@@ -121,7 +123,6 @@ def predict_tile(model,
         use_soft_nms: whether to perform Gaussian Soft NMS or not, if false, default perform NMS.
         sigma: variance of Gaussian function used in Gaussian Soft NMS
         thresh: the score thresh used to filter bboxes after soft-nms performed
-        device: pytorch device of 'cuda' or 'cpu' for gpu prediction. Set internally.
 
     Returns:
         boxes (array): if return_plot, an image.
@@ -200,7 +201,7 @@ def predict_tile(model,
             image_detections, columns=["xmin", "ymin", "xmax", "ymax", "label", "score"])
 
         print(f"{mosaic_df.shape[0]} predictions kept after non-max suppression")
-
+        
     if return_plot:
         # Draw predictions
         plot, _ = visualize.plot_predictions(image, mosaic_df)

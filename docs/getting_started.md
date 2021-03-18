@@ -157,6 +157,9 @@ To begin training, call trainer.fit on the model object directly on itself. Whil
 model.trainer.fit(model)
 ```
 
+[For more, see Google colab demo on model training](https://colab.research.google.com/drive/1AJUcw5dEpXeDPHd0sotAz5lpWedFYSIL#offline=true&sandboxMode=true)
+
+
 ## Evaluation
 
 Independent analysis of whether a model can generalize from training data to new areas is critical for creating a robust workflow. 
@@ -222,4 +225,12 @@ pred_after_reload = after.predict_image(path = img_path)
 assert not pred_after_train.empty
 assert not pred_after_reload.empty
 pd.testing.assert_frame_equal(pred_after_train,pred_after_reload)
+```
+## Multi-class models
+
+While the primary design of this package is for "Tree" detection with a single class. Multi-class labels are allowed for those looking to extend core functionality.
+When creating a deepforest model object, pass the designed number of classes and a label dictionary that maps each numeric class to a character label.
+
+```
+m = main.deepforest(num_classes=2,label_dict={"Alive":0,"Dead":1})
 ```

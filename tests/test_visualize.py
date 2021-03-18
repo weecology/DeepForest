@@ -11,7 +11,7 @@ from matplotlib import pyplot as plt
 
 @pytest.fixture()
 def m():
-    m = main.deepforest()
+    m = main.deepforest(num_classes=3)
     m.config["train"]["csv_file"] = get_data("example.csv") 
     m.config["train"]["root_dir"] = os.path.dirname(get_data("example.csv"))
     m.config["train"]["fast_dev_run"] = True
@@ -21,7 +21,6 @@ def m():
     m.config["validation"]["root_dir"] = os.path.dirname(get_data("example.csv"))
        
     m.create_trainer()
-    m.model = model.load_backbone()
     
     return m
 
