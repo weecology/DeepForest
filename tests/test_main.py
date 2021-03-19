@@ -92,7 +92,7 @@ def test_predict_return_plot(m):
 def test_predict_file(m, tmpdir):
     csv_file = get_data("example.csv")
     df = m.predict_file(csv_file, root_dir = os.path.dirname(csv_file), savedir=tmpdir)
-    assert set(df.columns) == {"xmin","ymin","xmax","ymax","label","scores","image_path"}
+    assert set(df.columns) == {"xmin","ymin","xmax","ymax","label","scores","image_path","numeric"}
     
     printed_plots = glob.glob("{}/*.png".format(tmpdir))
     assert len(printed_plots) == 1
@@ -140,8 +140,8 @@ def test_evaluate(m):
     results = m.evaluate(csv_file, root_dir, iou_threshold = 0.4, show_plot=True)
     
     #Does this make reasonable predictions, we know the model works.
-    assert np.round(results["precision"],2) > 0.5
-    assert np.round(results["recall"],2) > 0.5
+    assert np.round(results["box_precision"],2) > 0.5
+    assert np.round(results["box_recall"],2) > 0.5
     
 def test_train_callbacks(m):
     csv_file = get_data("example.csv") 
