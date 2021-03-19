@@ -50,6 +50,10 @@ def plot_prediction_dataframe(df, ground_truth, root_dir, savedir=None):
 
 def plot_predictions(image, df):
     """channel order is channels first for pytorch"""
+    
+    #Create a numeric index for coloring
+    df['numeric'] = df['label'].apply(lambda col:pd.Categorical(col).codes[0])
+    
     fig, ax = plt.subplots()
     ax.imshow(image)
     for index, row in df.iterrows():
@@ -57,7 +61,7 @@ def plot_predictions(image, df):
         ymin = row["ymin"]
         width = row["xmax"] - xmin
         height = row["ymax"] - ymin
-        color = label_to_color(row["label"])
+        color = label_to_color(row["numeric"])
         rect = create_box(xmin=xmin, ymin=ymin, height=height, width=width, color=color)
         ax.add_patch(rect)
     # no axis show up

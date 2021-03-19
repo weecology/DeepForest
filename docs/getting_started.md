@@ -190,16 +190,18 @@ This dataframe contains a numeric id for each predicted crown in each image, the
 The recall is the proportion of ground truth which have a true positive match with a prediction based on the intersection-over-union threshold, this threshold is default 0.4 and can be chaned in model.evaluate(iou_threshold=<>)
 
 ```
-results["recall"]
+results["box_recall"]
 0.738
 ```
 
-The precision is the proportion of predicted boxes which overlap a ground truth box.
+The regression box precision is the proportion of predicted boxes which overlap a ground truth box.
 
 ```
-results["precision"]
+results["box_precision"]
 0.428
 ```
+
+In a multi-class problem, there 
 
 ## Loading saved models for prediction
 

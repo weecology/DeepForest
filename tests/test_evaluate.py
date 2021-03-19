@@ -33,4 +33,15 @@ def test_evaluate(m):
     results = evaluate.evaluate(predictions=predictions, ground_df=ground_truth, show_plot=True, root_dir=os.path.dirname(csv_file), savedir=None)     
         
     assert results["results"].shape[0] == ground_truth.shape[0]
-    assert results["recall"] > 0.5
+    assert results["box_recall"] > 0.5
+    assert results["class_recall"].shape == (1,4)
+
+def test_evaluate_multi(m):
+    csv_file = get_data("testfile_multi.csv")
+    predictions = m.predict_file(csv_file=csv_file, root_dir=os.path.dirname(csv_file))
+    ground_truth = pd.read_csv(csv_file)
+    
+    results = evaluate.evaluate(predictions=predictions, ground_df=ground_truth, show_plot=True, root_dir=os.path.dirname(csv_file), savedir=None)     
+        
+    assert results["results"].shape[0] == ground_truth.shape[0]
+    assert results["class_recall"].shape == (2,4)
