@@ -57,7 +57,7 @@ class TreeDataset(Dataset):
         try:
             check_image(image)
         except Exception as e:
-            raise Exception("dataloader failed with exception for image: {}, {}",format(img_name, e))
+            raise Exception("dataloader failed with exception for image: {}",format(img_name))
 
         # select annotations
         image_annotations = self.annotations[self.annotations.image_path ==
