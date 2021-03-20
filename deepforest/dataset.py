@@ -17,6 +17,7 @@ import pandas as pd
 from skimage import io
 from torch.utils.data import Dataset
 from deepforest import transforms as T
+from deepforest.utilities import check_image
 
 
 def get_transform(augment):
@@ -52,6 +53,11 @@ class TreeDataset(Dataset):
         img_name = os.path.join(self.root_dir, self.image_names[idx])
         image = io.imread(img_name)
         image = image / 255
+        
+        try:
+            check_image(image)
+        except Exception as e:
+            raise Exception("dataloader failed with exception for image: {}, {}",format(img_name, e))
 
         # select annotations
         image_annotations = self.annotations[self.annotations.image_path ==
