@@ -35,6 +35,7 @@ def test_evaluate(m):
     assert results["results"].shape[0] == ground_truth.shape[0]
     assert results["box_recall"] > 0.5
     assert results["class_recall"].shape == (1,4)
+    assert results["results"].true_label.unique() == "Tree"
 
 def test_evaluate_multi(m):
     csv_file = get_data("testfile_multi.csv")

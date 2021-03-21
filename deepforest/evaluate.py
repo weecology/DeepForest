@@ -56,7 +56,7 @@ def evaluate_image(predictions, ground_df, show_plot, root_dir, savedir):
     result = IoU.compute_IoU(ground_df, predictions)
     
     #add the label classes
-    result["predicted_label"] = result.prediction_id.apply(lambda x: predictions.label.loc[x])
+    result["predicted_label"] = result.prediction_id.apply(lambda x: predictions.label.loc[x] if pd.notnull(x) else x)
     result["true_label"] = result.truth_id.apply(lambda x: ground_df.label.loc[x])
 
     return result
