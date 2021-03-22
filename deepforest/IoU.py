@@ -69,8 +69,8 @@ def compute_IoU(ground_truth, submission):
         iou_df: dataframe of IoU scores
         """
     # Create index columns for ease
-    ground_truth["truth_id"] = np.arange(0,ground_truth.shape[0])
-    submission["prediction_id"] =  np.arange(0,submission.shape[0])
+    ground_truth["truth_id"] = ground_truth.index.values
+    submission["prediction_id"] =  submission.index.values
 
     # rtree_index
     rtree_index = create_rtree_from_poly(ground_truth.geometry)

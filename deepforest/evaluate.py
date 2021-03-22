@@ -91,7 +91,10 @@ def evaluate(predictions,
     box_recalls = []
     box_precisions = []
     for image_path, group in predictions.groupby("image_path"):
-        plot_ground_truth = ground_df[ground_df["image_path"] == image_path].reset_index()
+        
+        #clean indices
+        plot_ground_truth = ground_df[ground_df["image_path"] == image_path].reset_index(drop=True)
+        group = group.reset_index(drop=True)
         result = evaluate_image(predictions=group,
                                 ground_df=plot_ground_truth,
                                 show_plot=show_plot,
