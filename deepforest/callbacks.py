@@ -46,7 +46,8 @@ class images_callback(Callback):
 
         ds = dataset.TreeDataset(csv_file=self.csv_file,
                                  root_dir=self.root_dir,
-                                 transforms=dataset.get_transform(augment=False))
+                                 transforms=dataset.get_transform(augment=False),
+                                 label_dict=pl_module.label_dict)
 
         if self.n > len(ds):
             self.n = len(ds)
