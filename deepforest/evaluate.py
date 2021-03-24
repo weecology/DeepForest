@@ -114,21 +114,22 @@ def evaluate(predictions,
         print("No predictions made, setting precision and recall to 0")
         box_recall = 0
         box_precision = 0
+        class_recall = pd.DataFrame()
     else:
         results = pd.concat(results)
         box_precision = np.mean(box_precisions)
         box_recall = np.mean(box_recalls)
-
-    #Per class recall and precision
-    class_recall_dict = {}
-    class_precision_dict = {}
-    class_size = {}
     
-    for name, group in results.groupby("true_label"):
-        class_recall_dict[name] = sum(group.true_label == group.predicted_label)/ground_df.shape[0]
-        class_precision_dict[name] = sum(group.true_label == group.predicted_label)/predictions.shape[0]
-        class_size[name] = group.size
-    
-    class_recall = pd.DataFrame({"label":class_recall_dict.keys(),"recall":pd.Series(class_recall_dict), "precision":pd.Series(class_precision_dict), "size":pd.Series(class_size)}).reset_index(drop=True)
+        #Per class recall and precision
+        class_recall_dict = {}
+        class_precision_dict = {}
+        class_size = {}
+        
+        for name, group in results.groupby("true_label"):
+            class_recall_dict[name] = sum(group.true_label == group.predicted_label)/ground_df.shape[0]
+            class_precision_dict[name] = sum(group.true_label == group.predicted_label)/predictions.shape[0]
+            class_size[name] = group.size
+        
+        class_recall = pd.DataFrame({"label":class_recall_dict.keys(),"recall":pd.Series(class_recall_dict), "precision":pd.Series(class_precision_dict), "size":pd.Series(class_size)}).reset_index(drop=True)
             
     return {"results": results, "box_precision": box_precision, "box_recall": box_recall, "class_recall":class_recall}
