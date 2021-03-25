@@ -34,6 +34,7 @@ def predict_image(model, image, return_plot, device, iou_threshold=0.1):
 
     # This function on takes in a single image.
     df = visualize.format_boxes(prediction[0])
+    df = across_class_nms(df)
 
     if return_plot:
         # Matplotlib likes no batch dim and channels first
@@ -75,8 +76,10 @@ def predict_file(model, csv_file, root_dir, savedir, device):
             image = image.to(device)
 
         prediction = model(image)
-
+        
         prediction = visualize.format_boxes(prediction[0])
+        prediction = across_class_nms(prediction)
+        
         prediction["image_path"] = path
         prediction_list.append(prediction)
 
@@ -171,7 +174,7 @@ def predict_tile(model,
         # move prediciton to tensor
         boxes = torch.tensor(predicted_boxes[["xmin", "ymin", "xmax", "ymax"]].values,
                              dtype=torch.float32)
-        scores = torch.tensor(predicted_boxes.scores.values, dtype=torch.float32)
+        scores = torch.tensor(predicted_boxes.score.values, dtype=torch.float32)
         labels = predicted_boxes.label.values
 
         if not use_soft_nms:
@@ -274,3 +277,30 @@ def soft_nms(boxes, scores, sigma=0.5, thresh=0.001):
     idxs_keep = boxes[:, 4][scores > thresh].int()
 
     return idxs_keep
+
+def across_class_nms(predicted_boxes, iou_threshold=0.2):
+    """perform non-max suppression for a dataframe of results (see visualize.format_boxes) to remove boxes that overlap by iou_threshold"""
+    
+    # move prediciton to tensor
+    boxes = torch.tensor(predicted_boxes[["xmin", "ymin", "xmax", "ymax"]].values,
+                         dtype=torch.float32)
+    scores = torch.tensor(predicted_boxes.score.values, dtype=torch.float32)
+    labels = predicted_boxes.label.values
+
+    bbox_left_idx = nms(boxes=boxes, scores=scores, iou_threshold=iou_threshold)
+    bbox_left_idx = bbox_left_idx.numpy()
+    new_boxes, new_labels, new_scores = boxes[bbox_left_idx].type(
+        torch.int), labels[bbox_left_idx], scores[bbox_left_idx]
+
+    # Recreate box dataframe
+    image_detections = np.concatenate([
+        new_boxes,
+        np.expand_dims(new_labels, axis=1),
+        np.expand_dims(new_scores, axis=1)
+    ],
+                                      axis=1)
+
+    new_df = pd.DataFrame(
+        image_detections, columns=["xmin", "ymin", "xmax", "ymax", "label", "score"])
+    
+    return new_df

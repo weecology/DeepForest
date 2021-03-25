@@ -73,7 +73,7 @@ def test_predict_image_fromfile(m):
     prediction = m.predict_image(path = path)
     
     assert isinstance(prediction, pd.DataFrame)
-    assert set(prediction.columns) == {"xmin","ymin","xmax","ymax","label","scores"}
+    assert set(prediction.columns) == {"xmin","ymin","xmax","ymax","label","score"}
 
 def test_predict_image_fromarray(m):
     image = get_data(path="2019_YELL_2_528000_4978000_image_crop2.png")
@@ -81,7 +81,7 @@ def test_predict_image_fromarray(m):
     prediction = m.predict_image(image = image)
     
     assert isinstance(prediction, pd.DataFrame)
-    assert set(prediction.columns) == {"xmin","ymin","xmax","ymax","label","scores"}
+    assert set(prediction.columns) == {"xmin","ymin","xmax","ymax","label","score"}
 
 def test_predict_return_plot(m):
     image = get_data(path="2019_YELL_2_528000_4978000_image_crop2.png")
@@ -92,7 +92,7 @@ def test_predict_return_plot(m):
 def test_predict_file(m, tmpdir):
     csv_file = get_data("example.csv")
     df = m.predict_file(csv_file, root_dir = os.path.dirname(csv_file), savedir=tmpdir)
-    assert set(df.columns) == {"xmin","ymin","xmax","ymax","label","scores","image_path","numeric"}
+    assert set(df.columns) == {"xmin","ymin","xmax","ymax","label","score","image_path","numeric"}
     
     printed_plots = glob.glob("{}/*.png".format(tmpdir))
     assert len(printed_plots) == 1

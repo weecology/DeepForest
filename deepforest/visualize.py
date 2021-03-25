@@ -22,7 +22,7 @@ def format_boxes(prediction, scores=True):
     df["label"] = prediction["labels"].cpu().detach().numpy()
 
     if scores:
-        df["scores"] = prediction["scores"].cpu().detach().numpy()
+        df["score"] = prediction["scores"].cpu().detach().numpy()
 
     return df
 
