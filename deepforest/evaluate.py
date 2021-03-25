@@ -72,7 +72,7 @@ def evaluate(predictions,
     submission can be submitted as a .shp, existing pandas dataframe or .csv path
 
     Args:
-        predictions: a pandas dataframe, if supplied a root dir is needed to give the relative path of files in df.name
+        predictions: a pandas dataframe, if supplied a root dir is needed to give the relative path of files in df.name. The labels in ground truth and predictions must match. If one is numeric, the other must be numeric.
         ground_df: a pandas dataframe, if supplied a root dir is needed to give the relative path of files in df.name
         root_dir: location of files in the dataframe 'name' column.
         show_plot: Whether to show boxes as they are plotted
@@ -126,6 +126,7 @@ def evaluate(predictions,
         class_size = {}
         
         for name, group in results.groupby("true_label"):
+            
             class_recall_dict[name] = sum(group.true_label == group.predicted_label)/ground_df.shape[0]
             class_precision_dict[name] = sum(group.true_label == group.predicted_label)/predictions.shape[0]
             class_size[name] = group.size

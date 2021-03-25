@@ -356,6 +356,8 @@ class deepforest(pl.LightningModule):
                                            root_dir=root_dir,
                                            savedir=savedir,
                                            device=self.device)
+        
+        predictions["label"] = predictions.label.apply(lambda x: self.numeric_to_label_dict[x])
         ground_df = pd.read_csv(csv_file)
 
         # if no arg for iou_threshold, set as config
