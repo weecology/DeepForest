@@ -115,6 +115,7 @@ def evaluate(predictions,
         box_recall = 0
         box_precision = 0
         class_recall = pd.DataFrame()
+        results = pd.DataFrame()
     else:
         results = pd.concat(results)
         box_precision = np.mean(box_precisions)
@@ -126,9 +127,9 @@ def evaluate(predictions,
         class_size = {}
         
         for name, group in results.groupby("true_label"):
-            
-            class_recall_dict[name] = sum(group.true_label == group.predicted_label)/ground_df.shape[0]
-            class_precision_dict[name] = sum(group.true_label == group.predicted_label)/predictions.shape[0]
+            class_recall_dict[name] = sum(group.true_label == group.predicted_label)/group.shape[0]
+            number_of_predictions = predictions[predictions.label==name].shape[0]
+            class_precision_dict[name] = sum(group.true_label == group.predicted_label)/number_of_predictions
             class_size[name] = group.size
         
         class_recall = pd.DataFrame({"label":class_recall_dict.keys(),"recall":pd.Series(class_recall_dict), "precision":pd.Series(class_precision_dict), "size":pd.Series(class_size)}).reset_index(drop=True)
