@@ -129,7 +129,10 @@ def evaluate(predictions,
         for name, group in results.groupby("true_label"):
             class_recall_dict[name] = sum(group.true_label == group.predicted_label)/group.shape[0]
             number_of_predictions = predictions[predictions.label==name].shape[0]
-            class_precision_dict[name] = sum(group.true_label == group.predicted_label)/number_of_predictions
+            if number_of_predictions == 0:
+                class_precision_dict[name] = 0
+            else:
+                class_precision_dict[name] = sum(group.true_label == group.predicted_label)/number_of_predictions
             class_size[name] = group.size
         
         class_recall = pd.DataFrame({"label":class_recall_dict.keys(),"recall":pd.Series(class_recall_dict), "precision":pd.Series(class_precision_dict), "size":pd.Series(class_size)}).reset_index(drop=True)
