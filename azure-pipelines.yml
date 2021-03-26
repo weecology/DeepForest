@@ -40,41 +40,8 @@ jobs:
     
   - bash: |
       source activate DeepForest_pytorch
-      python3 setup.py sdist
+      python3 setup.py sdist bdist_wheel
       
   - task: PublishBuildArtifacts@1
     inputs: {pathtoPublish: 'dist'}
   displayName: 'Source distribution'
-    
-- job: linux
-  pool: {vmImage: 'Ubuntu-16.04'}
-  steps:
-    - task: UsePythonVersion@0
-    - bash: |
-        python -m pip install --upgrade pip
-        pip install cibuildwheel
-        cibuildwheel --output-dir wheelhouse .
-    - task: PublishBuildArtifacts@1
-      inputs: {pathtoPublish: 'wheelhouse'}
-- job: macos
-  pool: {vmImage: 'macOS-10.14'}
-  steps:
-    - task: UsePythonVersion@0
-    - bash: |
-        python -m pip install --upgrade pip
-        pip install cibuildwheel
-        cibuildwheel --output-dir wheelhouse .
-    - task: PublishBuildArtifacts@1
-      inputs: {pathtoPublish: 'wheelhouse'}
-- job: windows
-  pool: {vmImage: 'vs2017-win2016'}
-  steps:
-    - task: UsePythonVersion@0
-    - script: choco install vcpython27 -f -y
-      displayName: Install Visual C++ for Python 2.7
-    - bash: |
-        python -m pip install --upgrade pip
-        pip install cibuildwheel
-        cibuildwheel --output-dir wheelhouse .
-    - task: PublishBuildArtifacts@1
-      inputs: {pathtoPublish: 'wheelhouse'}
