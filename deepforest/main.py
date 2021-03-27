@@ -190,7 +190,8 @@ class deepforest(pl.LightningModule):
         result = predict.predict_image(model=self.model,
                                        image=image,
                                        return_plot=return_plot,
-                                       device=self.device)
+                                       device=self.device,
+                                       iou_threshold=self.config["nms_thresh"])
         
         #Set labels to character from numeric if returning boxes df
         if not return_plot:
@@ -217,7 +218,8 @@ class deepforest(pl.LightningModule):
                                       csv_file=csv_file,
                                       root_dir=root_dir,
                                       savedir=savedir,
-                                      device=self.device)
+                                      device=self.device,
+                                      iou_threshold=self.config["nms_thresh"])
 
         #Set labels to character from numeric
         result["label"] = result.label.apply(lambda x: self.numeric_to_label_dict[x])
@@ -355,7 +357,8 @@ class deepforest(pl.LightningModule):
                                            csv_file=csv_file,
                                            root_dir=root_dir,
                                            savedir=savedir,
-                                           device=self.device)
+                                           device=self.device,
+                                           iou_threshold=self.config["nms_thresh"])
         
         predictions["label"] = predictions.label.apply(lambda x: self.numeric_to_label_dict[x])
         ground_df = pd.read_csv(csv_file)
