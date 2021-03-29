@@ -33,7 +33,7 @@ def plot_prediction_and_targets(image, predictions, targets, image_name, savedir
     plot, ax = plot_predictions(image, prediction_df)
     target_df = format_boxes(targets, scores=False)
     plot = add_annotations(plot, ax, target_df)
-    plot.savefig("{}/{}.png".format(savedir, image_name))
+    plot.savefig("{}/{}.png".format(savedir, image_name), dpi=300)
     return "{}/{}.png".format(savedir, image_name)
 
 
@@ -54,7 +54,12 @@ def plot_predictions(image, df):
     #Create a numeric index for coloring
     df['numeric'] = df['label'].apply(lambda col:pd.Categorical(col).codes[0])
     
-    fig, ax = plt.subplots()
+    #What size does the figure need to be in inches to fit the image?
+    dpi=300
+    height, width, nbands = image.shape
+    figsize = width / float(dpi), height / float(dpi)
+
+    fig, ax = plt.subplots(figsize=figsize)
     ax.imshow(image)
     for index, row in df.iterrows():
         xmin = row["xmin"]
