@@ -95,7 +95,7 @@ texinfo_documents = [
      'deepforest', 'One line description of project.', 'Miscellaneous'),
 ]
 
-autodoc_mock_imports = ["tensorflow", "keras", "deepforest.keras_retinanet"]
+autodoc_mock_imports = ["deepforest"]
 source_suffix = {
     '.rst': 'restructuredtext',
     '.md': 'markdown',
