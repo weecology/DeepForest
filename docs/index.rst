@@ -12,6 +12,7 @@ Source code is available here: (https://github.com/weecology/DeepForest.git).
    installation
    getting_started
    ConfigurationFile
+   Evaluation
    FAQ
    better
    code_of_conduct.rst
