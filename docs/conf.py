@@ -4,7 +4,6 @@ import os
 import sys
 from typing import Any
 
-import deepforest
 import recommonmark
 from recommonmark.parser import CommonMarkParser
 from recommonmark.parser import CommonMarkParser
