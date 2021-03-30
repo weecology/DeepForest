@@ -231,8 +231,14 @@ pd.testing.assert_frame_equal(pred_after_train,pred_after_reload)
 ## Multi-class models
 
 While the primary design of this package is for "Tree" detection with a single class. Multi-class labels are allowed for those looking to extend core functionality.
-When creating a deepforest model object, pass the designed number of classes and a label dictionary that maps each numeric class to a character label.
+When creating a deepforest model object, pass the designed number of classes and a label dictionary that maps each numeric class to a character label. See FAQ for known challenges of multi-class models on reloading.
 
 ```
 m = main.deepforest(num_classes=2,label_dict={"Alive":0,"Dead":1})
 ```
+
+## Issues
+
+We welcome feedback on both the python package as well as the algorithm performance. Please submit detailed issues to the github repo.
+
+[https://github.com/weecology/DeepForest-pytorch/issues](https://github.com/weecology/DeepForest-pytorch/issues)

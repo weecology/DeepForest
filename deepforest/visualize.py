@@ -37,23 +37,34 @@ def plot_prediction_and_targets(image, predictions, targets, image_name, savedir
     return "{}/{}.png".format(savedir, image_name)
 
 
-def plot_prediction_dataframe(df, ground_truth, root_dir, savedir=None):
-    """For each row in dataframe, call plot predictions"""
+def plot_prediction_dataframe(df, root_dir, ground_truth=None, savedir=None):
+    """For each row in dataframe, call plot predictions. For multi-class labels, boxes will be colored by labels. Ground truth boxes will all be same color, regardless of class.
+    Args:
+        df: a pandas dataframe with image_path, xmin, xmax, ymin, ymax and label columns
+        root_dir: relative dir to look for image names from df.image_path
+        ground_truth: an optional pandas dataframe in same format as df holding ground_truth boxes
+        savedir: save the plot to an optional directory path.
+    Returns:
+        None: side-effect plots are saved or generated and viewed
+        """
     for name, group in df.groupby("image_path"):
         image = io.imread("{}/{}".format(root_dir, name))
         plot, ax = plot_predictions(image, group)
-        annotations = ground_truth[ground_truth.image_path == name]
-        plot = add_annotations(plot, ax, annotations)
+        
+        if ground_truth is not None:
+            annotations = ground_truth[ground_truth.image_path == name]
+            plot = add_annotations(plot, ax, annotations)
+            
         if savedir:
             plot.savefig("{}/{}.png".format(savedir, os.path.splitext(name)[0]))
-
+    
 
 def plot_predictions(image, df):
     """channel order is channels first for pytorch"""
     
     #Create a numeric index for coloring
-    df['numeric'] = df['label'].apply(lambda col:pd.Categorical(col).codes[0])
-    
+    df['numeric'] = df['label'].astype('category').cat.codes
+
     #What size does the figure need to be in inches to fit the image?
     dpi=300
     height, width, nbands = image.shape
@@ -75,7 +86,7 @@ def plot_predictions(image, df):
     return fig, ax
 
 
-def create_box(xmin, ymin, height, width, color="cyan", linewidth=1):
+def create_box(xmin, ymin, height, width, color="cyan", linewidth=0.5):
     rect = patches.Rectangle((xmin, ymin),
                              height,
                              width,

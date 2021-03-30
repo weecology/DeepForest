@@ -34,3 +34,9 @@ Object detection models have no inherent logic about overlapping bounding box pr
 ## Annotate local training data
 
 Ultimately, training a proper model with local data is the best chance at getting good performance. See DeepForest.train()
+
+## Issues
+
+We welcome feedback on both the python package as well as the algorithm performance. Please submit detailed issues to the github repo.
+
+[https://github.com/weecology/DeepForest-pytorch/issues](https://github.com/weecology/DeepForest-pytorch/issues)
