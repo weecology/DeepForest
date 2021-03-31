@@ -491,8 +491,12 @@ class deepforest:
                 mosaic_df = pd.DataFrame(
                     image_detections,
                     columns=["xmin", "ymin", "xmax", "ymax", "score", "label"])
+                
+                if mosaic_df.shape[0] == 0:
+                    print("No predictions made, returning None")
+                    return None
+                    
                 mosaic_df.label = mosaic_df.label.str.decode("utf-8")
-
                 print("{} predictions kept after non-max suppression".format(
                     mosaic_df.shape[0]))
 
