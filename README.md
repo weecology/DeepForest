@@ -97,7 +97,7 @@ image = test_model.predict_image(image_path = image_path)
 plt.imshow(image[...,::-1])
 plt.show()
 ```
-![test image](https://user-images.githubusercontent.com/71775151/113137584-55ce1c80-9242-11eb-8d1b-f623513b82e3.png)
+![sample](https://user-images.githubusercontent.com/71775151/113137584-55ce1c80-9242-11eb-8d1b-f623513b82e3.png)
 
 
 Window size can be important and is worth playing with, especially when predicting data coarser than the 0.1m data used to train the prebuilt model. Users must balance that the trees must be recognizable, so the images cannot be cropped too small, but the trees cannot be so small that they cannot be seen.
