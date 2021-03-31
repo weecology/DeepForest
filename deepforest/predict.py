@@ -84,6 +84,11 @@ def predict_file(model, csv_file, root_dir, savedir, device, iou_threshold=0.1):
         prediction_list.append(prediction)
 
         if savedir:
+            #if on GPU, bring back to cpu for plotting
+            # Just predict the images, even though we have the annotations
+            if not device.type == "cpu":
+                image = image.to("cpu")
+                
             image = image.squeeze(0).permute(1, 2, 0)
             plot, ax = visualize.plot_predictions(image, prediction)
             annotations = input_csv[input_csv.image_path == path]
