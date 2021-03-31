@@ -8,6 +8,7 @@ from matplotlib import pyplot as plt
 import pandas as pd
 import numpy as np
 import glob
+import tempfile
 
 from pytorch_lightning import Callback
 from deepforest import dataset
@@ -35,50 +36,22 @@ class images_callback(Callback):
         """
 
     def __init__(self, csv_file, root_dir, savedir, n=2, every_n_epochs=5):
-        self.csv_file = csv_file
         self.savedir = savedir
         self.root_dir = root_dir
         self.n = n
-        self.ground_truth = pd.read_csv(self.csv_file)
+        
+        #limit to n images
+        df = pd.read_csv(csv_file)
+        selected_images = np.random.choice(df.image_path.unique(), self.n)
+        df = df[df.image_path.isin(selected_images)]        
+        df.to_csv("{}/image_callback.csv".format(savedir))
+        
+        self.csv_file = "{}/image_callback.csv".format(savedir)        
         self.every_n_epochs = every_n_epochs
+         
 
     def log_images(self, pl_module):
-
-        ds = dataset.TreeDataset(csv_file=self.csv_file,
-                                 root_dir=self.root_dir,
-                                 transforms=dataset.get_transform(augment=False),
-                                 label_dict=pl_module.label_dict)
-
-        if self.n > len(ds):
-            self.n = len(ds)
-
-        ds = torch.utils.data.Subset(ds, np.arange(0, self.n, 1))
-
-        data_loader = torch.utils.data.DataLoader(ds,
-                                                  batch_size=1,
-                                                  shuffle=False,
-                                                  collate_fn=utilities.collate_fn)
-
-        pl_module.model.eval()
-
-        for batch in data_loader:
-            paths, images, targets = batch
-
-            if not pl_module.device.type == "cpu":
-                images = [x.to(pl_module.device) for x in images]
-
-            predictions = pl_module.model(images)
-
-            for path, image, prediction, target in zip(paths, images, predictions,
-                                                       targets):
-                image = image.permute(1, 2, 0)
-                image = image.cpu()
-                visualize.plot_prediction_and_targets(image=image,
-                                                      predictions=prediction,
-                                                      targets=target,
-                                                      image_name=path,
-                                                      savedir=self.savedir)
-                plt.close()
+        boxes = pl_module.predict_file(self.csv_file, self.root_dir, savedir=self.savedir)
         try:
             saved_plots = glob.glob("{}/*.png".format(self.savedir))
             for x in saved_plots:
