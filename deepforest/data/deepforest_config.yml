@@ -10,7 +10,7 @@ batch_size: 1
 weights: None
 ### Retinanet backbone. See the keras-retinanet repo for options. Only resnet50 has been well explored.
 backbone: resnet50
-### Resize images to min size. Retinanet anchors may need to be remade if signficantly reducing image size.
+### Resize images to min size. Retinanet anchors may need to be remade if significantly reducing image size.
 image-min-side: 800
 ##Number of GPUs to train
 multi-gpu: 1
