@@ -11,7 +11,7 @@ from matplotlib import pyplot as plt
 
 @pytest.fixture()
 def m():
-    m = main.deepforest(num_classes=3)
+    m = main.deepforest()
     m.config["train"]["csv_file"] = get_data("example.csv") 
     m.config["train"]["root_dir"] = os.path.dirname(get_data("example.csv"))
     m.config["train"]["fast_dev_run"] = True
@@ -34,6 +34,15 @@ def test_format_boxes(m):
         assert not target_df.empty
         
 
+def test_plot_prediction_dataframe(m, tmpdir):
+    ds = m.val_dataloader()
+    batch = next(iter(ds))
+    paths, images, targets = batch
+    for path, image, target in zip(paths, images, targets):
+        target_df = visualize.format_boxes(target, scores=False)
+        target_df["image_path"] = path
+        visualize.plot_prediction_dataframe(df=target_df,savedir=tmpdir, root_dir=m.config["validation"]["root_dir"])
+        
 def test_plot_predictions_and_targets(m, tmpdir):
     ds = m.val_dataloader()
     batch = next(iter(ds))

@@ -93,7 +93,7 @@ def predict_file(model, csv_file, root_dir, savedir, device, iou_threshold=0.1):
             plot, ax = visualize.plot_predictions(image, prediction)
             annotations = input_csv[input_csv.image_path == path]
             plot = visualize.add_annotations(plot, ax, annotations)
-            plot.savefig("{}/{}.png".format(savedir, os.path.splitext(path)[0]))
+            plot.savefig("{}/{}.png".format(savedir, os.path.splitext(path)[0]),dpi=300)
 
     df = pd.concat(prediction_list, ignore_index=True)
 
