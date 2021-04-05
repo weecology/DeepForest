@@ -139,16 +139,19 @@ def save_crop(base_dir, image_name, index, crop):
     return filename
 
 
-def split_raster(path_to_raster,
-                 annotations_file,
+def split_raster(annotations_file,
+                 path_to_raster=None,
+                 numpy_image=None,
                  base_dir=".",
                  patch_size=400,
                  patch_overlap=0.05,
-                 allow_empty=False):
+                 allow_empty=False,
+                 image_name = None):
     """Divide a large tile into smaller arrays. Each crop will be saved to
     file.
 
     Args:
+        numpy_image: a numpy object to be used as a raster, usually opened from rasterio.open.read()
         path_to_raster: (str): Path to a tile that can be read by rasterio on disk
         annotations_file (str): Path to annotations file (with column names)
             data in the format -> image_path, xmin, ymin, xmax, ymax, label
@@ -158,13 +161,23 @@ def split_raster(path_to_raster,
         patch_overlap (float): Percent of overlap among windows 0->1
         allow_empty: If True, include images with no annotations
             to be included in the dataset
+        image_name (str): If numpy_image arg is used, what name to give the raster?
 
     Returns:
         A pandas dataframe with annotations file for training.
     """
+    
     # Load raster as image
-    raster = Image.open(path_to_raster)
-    numpy_image = np.array(raster)
+    # Load raster as image
+    if (numpy_image is None) & (path_to_raster is None):
+        raise IOError("supply a raster either as a path_to_raster or if ready from existing in memory numpy object, as numpy_image=")
+    
+    if path_to_raster:
+        raster = Image.open(path_to_raster)
+        numpy_image = np.array(raster)
+    else:
+        if image_name is None:
+            raise(IOError("If passing an numpy_image, please also specify a image_name to match the column in the annotation.csv file"))
 
     # Check that its 3 band
     bands = numpy_image.shape[2]
