@@ -182,13 +182,9 @@ guimgr.overall-gui-state = {'windowing-policy': 'combined-window',
                        'recent-filters': None,
                        'sort-order': 'source-lineno',
                        'tree-state': {'expanded-nodes': [(6,),
-        (8,),
-        (8,
-         4)],
-                                      'selected-nodes': [(8,
-        4)],
-                                      'top-node': (6,
-        7)}}),
+        (8,)],
+                                      'selected-nodes': [(0,)],
+                                      'top-node': (0,)}}),
                      ('debug-io',
                       'wide',
                       1,
@@ -3252,46 +3248,6 @@ testing.stored-results = (1,
                               None,
                               1617640966,
                               99),
-                             ('test_split_raste_from_image',
-                              1,
-                              None,
-                              None,
-                              ('',
-                               "<ExceptionInfo OSError('Input file None has "\
-                               "400 bands. DeepForest only accepts 3 band RG"\
-                               "B rasters in the order (height, width, chann"\
-                               "els). If the image was cropped and saved as "\
-                               "a .jpg, please ensure that no alpha channel "\
-                               "was used.') tblen=2>",
-                               'OSError: Input file None has 400 bands. Deep'\
-                               'Forest only accepts 3 band RGB rasters in th'\
-                               'e order (height, width, channels). If the im'\
-                               'age was cropped and saved as a .jpg, please '\
-                               'ensure that no alpha channel was used.',
-                               [(u'/Users/benweinstein/Documents/DeepForest-pytorch/tests/test_preprocess.py',
-                                 '/Users/benweinstein/Documents/DeepForest-p'\
-                                 'ytorch/tests/test_preprocess.py',
-                                 91,
-                                 'test_split_raste_from_image',
-                                 None,
-                                 '    annotations_file = preprocess.split_ra'\
-                                 'ster(numpy_image=r,'),
-                                (u'/Users/benweinstein/Documents/DeepForest-pytorch/deepforest/preprocess.py',
-                                 '/Users/benweinstein/Documents/DeepForest-p'\
-                                 'ytorch/deepforest/preprocess.py',
-                                 185,
-                                 'split_raster',
-                                 None,
-                                 '        raise IOError("Input file {} has {'\
-                                 '} bands. DeepForest only accepts 3 band RG'\
-                                 'B "')],
-                               0,
-                               None,
-                               None,
-                               None,
-                               None),
-                              1617640988,
-                              87),
                              ('test_split_size_error',
                               0,
                               None,

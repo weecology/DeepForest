@@ -199,7 +199,8 @@ def split_raster(annotations_file,
     windows = compute_windows(numpy_image, patch_size, patch_overlap)
 
     # Get image name for indexing
-    image_name = os.path.basename(path_to_raster)
+    if image_name is None:
+        image_name = os.path.basename(path_to_raster)    
 
     # Load annotations file and coerce dtype
     annotations = pd.read_csv(annotations_file)
