@@ -17,13 +17,3 @@ def test_create_model(num_classes):
     retinanet_model.eval()
     x = [torch.rand(3, 300, 400), torch.rand(3, 500, 400)]
     predictions = retinanet_model(x)    
-    
-    #assert the size of the softmax layer
-    
-    #retinanet_model = model.create_model(num_classes=3)
-    
-    #retinanet_model.eval()
-    #x = [torch.rand(3, 300, 400), torch.rand(3, 500, 400)]
-    #predictions = retinanet_model(x)    
-    #for prediction in predictions:
-        #assert [x in [1,2] for x in prediction["labels"]]    

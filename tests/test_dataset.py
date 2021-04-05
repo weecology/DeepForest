@@ -52,4 +52,4 @@ def test_TreeDataset_transform(augment):
         assert image.min() >= 0
         assert targets["boxes"].shape == (79, 4)
         assert targets["labels"].shape == (79,)
-        
+    

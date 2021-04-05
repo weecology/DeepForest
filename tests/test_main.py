@@ -10,6 +10,7 @@ import torch
 from deepforest import main
 from deepforest import get_data
 from deepforest import model
+from deepforest import dataset
 
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import Callback
@@ -165,10 +166,9 @@ def test_train_callbacks(m):
     trainer.fit(m, train_ds)
     
 def test_save_and_reload(m, tmpdir):
-    img_path = get_data(path="2019_YELL_2_528000_4978000_image_crop2.png")
-    m.trainer.fit(m)
-    
+    img_path = get_data(path="2019_YELL_2_528000_4978000_image_crop2.png")    
     #save the prediction dataframe after training and compare with prediction after reload checkpoint 
+    m.trainer.fit(m)    
     pred_after_train = m.predict_image(path = img_path)
     m.save_model("{}/checkpoint.pl".format(tmpdir))
     

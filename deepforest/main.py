@@ -277,6 +277,11 @@ class deepforest(pl.LightningModule):
                                       thresh=thresh,
                                       device=self.device)
 
+        #edge case, if no boxes predictioned return None
+        if result is None:
+            print("No predictions made, returning None")
+            return None
+        
         #Set labels to character from numeric if returning boxes df
         if not return_plot:
             result["label"] = result.label.apply(lambda x: self.numeric_to_label_dict[x])

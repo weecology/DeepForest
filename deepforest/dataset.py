@@ -66,7 +66,7 @@ class TreeDataset(Dataset):
         targets["boxes"] = image_annotations[["xmin", "ymin", "xmax",
                                               "ymax"]].values.astype(float)
 
-        # Labels need to be encoded? 0 or 1 indexed?, ALl tree for the moment.
+        # Labels need to be encoded
         targets["labels"] = image_annotations.label.apply(
             lambda x: self.label_dict[x]).values.astype(int)
 
