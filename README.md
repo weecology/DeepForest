@@ -99,6 +99,8 @@ plt.show()
 ```
 ![test image](www/image.png)
 
+![test image 2](www/sample.png)
+
 Window size can be important and is worth playing with, especially when predicting data coarser than the 0.1m data used to train the prebuilt model. Users must balance that the trees must be recognizable, so the images cannot be cropped too small, but the trees cannot be so small that they cannot be seen.
 
 ## Training
