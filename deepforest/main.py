@@ -6,6 +6,7 @@ import torch
 
 import pytorch_lightning as pl
 from torch import optim
+import matplotlib
 
 from deepforest import utilities
 from deepforest import dataset
@@ -27,7 +28,7 @@ class deepforest(pl.LightningModule):
             self: a deepforest pytorch ligthning module
         """
         super().__init__()
-
+        
         # Read config file - if a config file exists in local dir use it,
         # if not use installed.
         if os.path.exists("deepforest_config.yml"):

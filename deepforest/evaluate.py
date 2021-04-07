@@ -50,7 +50,8 @@ def evaluate_image(predictions, ground_df, show_plot, root_dir, savedir):
             visualize.plot_prediction_dataframe(df=predictions,
                                                 ground_truth=ground_df,
                                                 root_dir=root_dir,
-                                                savedir=savedir)
+                                                savedir=savedir,
+                                                show=True)
 
     # match
     result = IoU.compute_IoU(ground_df, predictions)

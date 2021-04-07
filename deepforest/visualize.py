@@ -7,7 +7,6 @@ import matplotlib.patches as patches
 from skimage import io
 import numpy as np
 
-
 def format_boxes(prediction, scores=True):
     """Format a retinanet prediction into a pandas dataframe for a single image
        Args:
@@ -37,19 +36,20 @@ def plot_prediction_and_targets(image, predictions, targets, image_name, savedir
     return "{}/{}.png".format(savedir, image_name)
 
 
-def plot_prediction_dataframe(df, root_dir, ground_truth=None, savedir=None):
+def plot_prediction_dataframe(df, root_dir, ground_truth=None, savedir=None, show=False):
     """For each row in dataframe, call plot predictions. For multi-class labels, boxes will be colored by labels. Ground truth boxes will all be same color, regardless of class.
     Args:
         df: a pandas dataframe with image_path, xmin, xmax, ymin, ymax and label columns
         root_dir: relative dir to look for image names from df.image_path
         ground_truth: an optional pandas dataframe in same format as df holding ground_truth boxes
         savedir: save the plot to an optional directory path.
+        show (logical): Render the plot in the matplotlib GUI
     Returns:
         None: side-effect plots are saved or generated and viewed
         """
     for name, group in df.groupby("image_path"):
         image = io.imread("{}/{}".format(root_dir, name))
-        plot, ax = plot_predictions(image, group)
+        plot, ax = plot_predictions(image, group, show=show)
         
         if ground_truth is not None:
             annotations = ground_truth[ground_truth.image_path == name]
@@ -59,9 +59,14 @@ def plot_prediction_dataframe(df, root_dir, ground_truth=None, savedir=None):
             plot.savefig("{}/{}.png".format(savedir, os.path.splitext(name)[0]))
     
 
-def plot_predictions(image, df):
-    """channel order is channels first for pytorch"""
-    
+def plot_predictions(image, df, show=False):
+    """channel order is channels first for pytorch
+    By default this function does not show, but only plots an axis
+    """
+    if not show:
+        original_backend = matplotlib.get_backend()
+        matplotlib.use("Agg")
+        
     #Create a numeric index for coloring
     df['numeric'] = df['label'].astype('category').cat.codes
 
@@ -82,7 +87,11 @@ def plot_predictions(image, df):
         ax.add_patch(rect)
     # no axis show up
     plt.axis('off')
-
+    
+    #reload matplotlib to get use back their favorite backend.
+    if not show:
+        matplotlib.use(original_backend)
+    
     return fig, ax
 
 
