@@ -1,6 +1,8 @@
 # DeepForest-pytorch
 
 [![Conda package](https://github.com/weecology/DeepForest-pytorch/actions/workflows/Conda-app.yml/badge.svg)](https://github.com/weecology/DeepForest-pytorch/actions/workflows/Conda-app.yml)
+[![Documentation Status](https://readthedocs.org/projects/deepforest-pytorch/badge/?version=latest)](https://deepforest-pytorch.readthedocs.io/?badge=latest)
+
 
 A pytorch implementation of the DeepForest model for individual tree crown detection in RGB images. DeepForest is a python package for training and predicting individual tree crowns from airborne RGB imagery. DeepForest comes with a prebuilt model trained on data from the National Ecological Observatory Network. Users can extend this model by annotating and training custom models starting from the prebuilt model.
 
