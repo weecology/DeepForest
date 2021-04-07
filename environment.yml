@@ -29,4 +29,5 @@ dependencies:
   - slidingwindow
   - bumpversion
   - scikit-image
-  
+  - pip:
+    - sphinx-markdown-tables
