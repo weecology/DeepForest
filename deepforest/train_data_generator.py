@@ -1,15 +1,15 @@
-"""This module is used to generate a .csv file called "combined_csv.csv" which will store annotations of all training images. Later on "combined_csv.csv" will be used for re-training
+"""This module generates a .csv file called "combined_csv.csv", which will store annotations of all training images. Later on, "combined_csv.csv" will be used for re-training
 the existing NEON.h5 model. 
 
-To generate "combined_csv.csv" using this module firstly create a directory "dataset" at any location of local system. Then place all training images inside "images" folder and all 
-corresponding annotations present in form of xml format (created by LabelImg or RectLabel) inside "annotations" folder located inside directory "dataset" present at local system.
+To generate "combined_csv.csv" using this module, firstly create a directory "dataset" at any local system location. Then place all training images inside the "images" folder and all 
+corresponding annotations present in the form of XML format (created by LabelImg or RectLabel) inside the "annotations" folder located inside directory "dataset" present at local system.
 
-Then create a new python file "get_data.py" and pass location of "dataset" directory with reference to user's local system inside function "train_data_generator.prepare_traindata". 
-Here "utilities" is imported through "from deepforest import deepforest" following with "from deepforest import utilities" command in python file.
+Then create a new python file, "get_data.py", and pass the location of the "dataset" directory with reference to the user's local system inside function "train_data_generator.prepare_traindata". 
+Here "utilities" is imported through "from deepforest import deepforest", following with the "from deepforest import utilities" command in the python file.
 
-On execution of "get_data.py" python file, module will return two folders namely "train_annotations" and "training_images" inside "dataset" directory.
-"train_annotations" folder contains "combined_csv.csv" and "training_images" folder contains images which are referenced inside "combined_csv.csv" file. 
-These two files will be used to re-train the existingmodel weights."""
+On execution of the "get_data.py" python file, the module will return two folders, namely "train_annotations" and "training_images" inside the "dataset" directory.
+The "train_annotations" folder contains "combined_csv.csv", and the "training_images" folder contains images referenced inside the "combined_csv.csv" file. 
+These two files will help to re-train the existing model weights."""
  
 import os,glob
 import utilities
