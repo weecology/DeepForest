@@ -409,7 +409,8 @@ class deepforest:
                      patch_size=400,
                      patch_overlap=0.05,
                      iou_threshold=0.15,
-                     return_plot=False):
+                     return_plot=False,
+                     show=False):
         """For images too large to input into the model, predict_tile cuts the
         image into overlapping windows, predicts trees on each window and
         reassambles into a single array.
@@ -424,6 +425,8 @@ class deepforest:
                 windows to be suppressed. Defaults to 0.5.
                 Lower values suppress more boxes at edges.
             return_plot: Should the image be returned with the predictions drawn?
+            show (bool): Plot the predicted image with bounding boxes.
+                Ignored if return_plot=False
 
         Returns:
             boxes (array): if return_plot, an image.
@@ -504,6 +507,10 @@ class deepforest:
             # Draw predictions
             for box in mosaic_df[["xmin", "ymin", "xmax", "ymax"]].values:
                 draw_box(numpy_image, box, [0, 0, 255])
+
+            if show:
+                plt.imshow(numpy_image[:, :, ::-1])
+                plt.show()
 
             # Mantain consistancy with predict_image
             return numpy_image
