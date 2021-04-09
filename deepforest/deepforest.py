@@ -388,7 +388,7 @@ class deepforest:
                 raise ValueError("No input specified. deepforest.predict_image() requires either a numpy_image array or a path to a file to read.")
 
         #Predict
-        prediction = predict.predict_image(self.prediction_model,
+        prediction, marked_image = predict.predict_image(self.prediction_model,
                                            image_path=image_path,
                                            raw_image=numpy_image,
                                            return_plot=return_plot,
@@ -397,9 +397,15 @@ class deepforest:
                                            classes=self.labels)
 
         # cv2 channel order to matplotlib order
-        if return_plot & show:
-            plt.imshow(prediction[:, :, ::-1])
-            plt.show()
+        if return_plot:
+            if show:
+                num_pred_objects = len(prediction.index)
+                # Display number of predictions in plot title
+                plt.title("{} Objects Predicted".format(num_pred_objects))
+                plt.imshow(marked_image[:, :, ::-1])
+                plt.show()
+
+            return marked_image
 
         return prediction
 
@@ -509,6 +515,9 @@ class deepforest:
                 draw_box(numpy_image, box, [0, 0, 255])
 
             if show:
+                num_pred_objects = len(mosaic_df.index)
+                # Display number of predictions in plot title
+                plt.title("{} Objects Predicted".format(num_pred_objects))
                 plt.imshow(numpy_image[:, :, ::-1])
                 plt.show()
 

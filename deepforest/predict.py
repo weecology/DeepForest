@@ -41,10 +41,10 @@ def predict_image(model,
         thickness: thickness of boundingbox default 1
 
     Returns:
+        image_detections: np.array of image_boxes,
+            image_scores, image_labels
         raw_image (array): If return_plot is TRUE, the image with the overlaid
             boxes is returned
-        image_detections: If return_plot is FALSE, a np.array of image_boxes,
-            image_scores, image_labels
     """
     # Check for raw_image
     if raw_image is not None:
@@ -116,9 +116,9 @@ def predict_image(model,
                         score_threshold=score_threshold,
                         color=color,
                         thickness=thickness)
-        return numpy_image
+        return df, numpy_image
     else:
-        return df
+        return df, None
 
 
 def non_max_suppression(sess,
