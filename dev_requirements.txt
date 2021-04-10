@@ -25,3 +25,4 @@ twine
 torchvision
 xmltodict
 comet_ml
+imagecodecs
