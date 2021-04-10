@@ -10,7 +10,7 @@ Primary Authors
     @bw4sz is the current maintainer and developer of DeepForest software
     and the lead scientist behind the software design of DeepForest.
 
-* `Henry Senyondo <https://github.com/ethanwhite>`_
+* `Henry Senyondo <https://github.com/henrykironde>`_
 
     @henrykironde is a support maintainer of DeepForest.
 
