@@ -31,3 +31,4 @@ dependencies:
   - scikit-image
   - pip:
     - sphinx-markdown-tables
+    - imagecodecs
