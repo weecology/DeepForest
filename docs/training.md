@@ -44,6 +44,8 @@ Please note that for functions which are fed into keras-retinanet, such as ```ev
 
 As with the [evaluation example](#Example.html), collect training labels from a crop of the training tile and split into smaller windows.
 
+Now let us understand how to convert hand annotations of a single training image from xml into retinanet format using ```utilities.xml_to_annotations``` and then further to csv file. Once you are done with the conversion next step comes is to use ```preprocess.split_raster``` and to split training image into smaller tile of png format (if it has dimension greater than 400px) and save the file name alongwith other details to a csv file without a header row to same location as the "base_dir" above. 
+
 ![](../www/YELL_train.png)
 
 ```python
@@ -78,6 +80,81 @@ annotations_file= os.path.join(crop_dir, "train_example.csv")
 train_annotations.to_csv(annotations_file,index=False, header=None)
 ```
 
+Now as you have undertood how to raster a single training image (if greater than 400px) and convert its corresponding xml annotation to final csv file without header row, therefore we move forward to understand script to iteratively do this same task as done above but this time for a large number of training images and their corresponding xml annotations. This will save time as the process is iterative and autonmous thus saving time and efforts to generate dataset for training. 
+
+So your first step will be to identify your current working directory using following code. 
+
+```python
+import os
+print(os.getcwd)
+```
+After this place all your training images and their corresponding annotations(in xml format) inside your current working directory.
+Once you are done with it execute the following code.
+The output of this script will be:
+1)```with_header_train_annotations.csv``` file located inside ```xml_to_csv``` folder at present at current working drectory
+2)```headerless_train_annotations.csv``` file located inside ```training_annotations``` folder present at current working drectory
+3)training images converted to png format and their corresponding headerless csv files at current working directory
+
+```python
+import os
+import glob 
+import pandas as pd
+from deepforest import deepforest
+from deepforest import utilities
+from deepforest import preprocess
+
+location = os.getcwd()
+print(location)
+
+# This part will convert hand annotations from xml format into retinanet format and then write converted dataframe to a csv file named 
+# "header_train_annotations.csv"(with column names) saved inside a folder named "xml_to_csv" present inside the current working directory.
+files_list = os.listdir(location+"/annotations")
+saving_location = location+"/xml_to_csv/"
+if not os.path.exists(saving_location):
+    os.makedirs(saving_location)
+results = []    
+for file in files_list:
+    name = file.split(".")
+    name = name[0]
+    annotation = utilities.xml_to_annotations(location+"/annotations/"+str(file))
+    results.append(annotation)
+results = pd.concat(results)    
+results.to_csv(saving_location+"with_header_train_annotations.csv",index=False)
+
+# While you place your training images and corresponding annotations (in xml format) at your current working directory there is possibility that some training images or some annotations file get misplace or deleted. 
+# To keep in check this issue we use following script which will ensure that traning images are properly mapped too their annotation files (in xml format). 
+for file in files_list:
+    name = file.split(".")
+    name = name[0]
+    annotation_file = location+"/xml_to_csv/with_header_train_annotations.csv"
+    image_name = os.path.basename(file)
+    annotations = pd.read_csv(annotation_file)
+    image_annotations = annotations[annotations.image_path == image_name].copy()
+
+    # Sanity checks
+    if image_annotations.empty:
+        print(file)
+        os.remove(file)
+
+# This part will split training images larger than 400px and once after that it will rename all training images (which were already of size<=400px or those which are splits of larger images) to png format. 
+# Then this function will add /rename new image paths to "with_header_train_annotations.csv" file and will create a new csv file named "headerless_train_annotations.csv" (which do not has name coloumn) inside "training_annotations" folder present at current working directory. 
+files_list = glob.glob("*.jpg")
+if not os.path.exists(location+"/training_annotations"):
+    os.makedirs(location+"/training_annotations")
+annotations_files = []
+for file in files_list:
+    name = file.split(".")
+    name = name[0]
+    annotation_file = location+"/xml_to_csv/with_header_train_annotations.csv"
+    train_annotations= preprocess.split_raster(path_to_raster = file,
+                                     annotations_file = annotation_file,
+                                     base_dir = location,
+                                     patch_size=400,
+                                     patch_overlap=0.05)
+    annotations_files.append(train_annotations)
+df = pd.concat(annotations_files)
+df.to_csv(location+"/training_annotations/headerless_train_annotations.csv",index=False, header=None)
+```
 ### Config file
 
 Training parameters are saved in a "deepforest_config.yml" file. By default DeepForest will look for this file in the current working directory. If none is found, a default file will be used.
