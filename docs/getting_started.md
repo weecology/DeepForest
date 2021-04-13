@@ -16,7 +16,7 @@ img=model.predict_image(path="/Users/benweinstein/Documents/NeonTreeEvaluation/e
 plt.imshow(img[:,:,::-1])
 ```
 
-![(../www/getting_started1.png)]
+![](../www/getting_started1.png)
 
 ## Prebuilt models
 

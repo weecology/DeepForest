@@ -65,7 +65,7 @@ precision, recall = m.evaluate(csv_file, root_dir, iou_threshold = 0.5)
 
 DeepForest comes with a default config file (deepforest_config.yml) to control the location of training and evaluation data, the number of gpus, batch size and other hyperparameters. This file can be edited directly, or using the config dictionary after loading a deepforest object.
 
-```
+```Python
 from deepforest import main
 m = main.deepforest()
 m.config["train"]["batch_size"] = 10
@@ -79,6 +79,8 @@ Tree detection is a central task in forest ecology and remote sensing. The Weeco
 ```
 git clone https://github.com/weecology/NeonTreeEvaluation.git
 cd NeonTreeEvaluation
+```
+```Python
 results = m.evaluate(csv_file = "evaluation/RGB/benchmark_annotations.csv", root_dir = "evaluation/RGB/")
 results["recall"]
 results["precision"]
