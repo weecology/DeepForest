@@ -11,6 +11,8 @@ import pandas as pd
 import slidingwindow
 from PIL import Image
 import torch
+import warnings
+import rasterio
 
 
 def preprocess_image(image):
@@ -173,8 +175,8 @@ def split_raster(annotations_file,
         raise IOError("supply a raster either as a path_to_raster or if ready from existing in memory numpy object, as numpy_image=")
     
     if path_to_raster:
-        raster = Image.open(path_to_raster)
-        numpy_image = np.array(raster)
+        numpy_image = rasterio.open(path_to_raster).read()
+        numpy_image = np.moveaxis(numpy_image,0,2)
     else:
         if image_name is None:
             raise(IOError("If passing an numpy_image, please also specify a image_name to match the column in the annotation.csv file"))
@@ -182,11 +184,15 @@ def split_raster(annotations_file,
     # Check that its 3 band
     bands = numpy_image.shape[2]
     if not bands == 3:
-        raise IOError("Input file {} has {} bands. DeepForest only accepts 3 band RGB "
-                      "rasters in the order (height, width, channels). "
-                      "If the image was cropped and saved as a .jpg, "
-                      "please ensure that no alpha channel was used.".format(
-                          path_to_raster, bands))
+        warnings.warn("Input rasterio had non-3 band shape of {}, ignoring alpha channel".format(numpy_image.shape))
+        try:
+            numpy_image = numpy_image[:,:,:3].astype("uint8") 
+        except:
+            raise IOError("Input file {} has {} bands. DeepForest only accepts 3 band RGB "
+                          "rasters in the order (height, width, channels). Selecting the first three bands failed, please reshape manually."
+                          "If the image was cropped and saved as a .jpg, "
+                          "please ensure that no alpha channel was used.".format(
+                              path_to_raster, bands))
 
     # Check that patch size is greater than image size
     height = numpy_image.shape[0]
