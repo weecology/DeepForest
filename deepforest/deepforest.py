@@ -36,17 +36,27 @@ from deepforest.keras_retinanet.utils.visualization import draw_box
 
 
 class deepforest:
-    """Class for training and predicting tree crowns in RGB images.
+    """
+    Class for training and predicting tree crowns in RGB images.
 
-    Args:
+    Constructor Args:
         weights (str): Path to model saved on disk from keras.model.save_weights().
             A new model is created and weights are copied. Default is None.
         saved_model: Path to a saved model from disk using keras.model.save().
             No new model is created.
 
-    Attributes:
-        model: A keras training model from keras-retinanet
+    Class Variables:
+        weights: String path to saved weights given as initializing argument
+        saved_model: String path to saved keras model given as initialing argument
+        model: A keras training model from keras-retinanet, initaized using `weight`
+                or `saved_model` if given
+        prediction_model: `model` converted for inference by wrapping with utility functions
+                to perform object detection
+        training_model: The model for training the weights
+        __release_version__: release version id to flag if release is being used
     """
+
+    CONFIG_FILE_PATH = "deepforest_config.yml"
 
     def __init__(self, weights=None, saved_model=None):
         self.weights = weights
@@ -54,15 +64,16 @@ class deepforest:
 
         # Read config file - if a config file exists in local dir use it,
         # if not use installed.
-        if os.path.exists("deepforest_config.yml"):
-            config_path = "deepforest_config.yml"
+        if os.path.exists(self.CONFIG_FILE_PATH):
+            config_path = self.CONFIG_FILE_PATH
         else:
             try:
-                config_path = get_data("deepforest_config.yml")
+                config_path = get_data(self.CONFIG_FILE_PATH)
             except Exception as e:
                 raise ValueError(
-                    "No deepforest_config.yml found either in local "
-                    "directory or in installed package location. {}".format(e))
+                    "No {} found either in local "
+                    "directory or in installed package location."
+                    "{}".format(self.CONFIG_FILE_PATH,e))
 
         print("Reading config file: {}".format(config_path))
         self.config = utilities.read_config(config_path)
@@ -93,7 +104,8 @@ class deepforest:
             self.model = None
 
     def read_classes(self):
-        """Read class file in case of multi-class training.
+        """
+        Read class file in case of multi-class training.
 
         If no file has been created, DeepForest assume there is 1 class,
         Tree
@@ -114,7 +126,8 @@ class deepforest:
               list_of_tfrecords=None,
               comet_experiment=None,
               images_per_epoch=None):
-        """Train a deep learning tree detection model using keras-retinanet.
+        """
+        Train a deep learning tree detection model using keras-retinanet.
         This is the main entry point for training a new model based on either
         existing weights or scratch.
 
@@ -128,10 +141,10 @@ class deepforest:
             images_per_epoch: number of images to override default config
                 of images in annotations file / batch size. Useful for debug
 
-        Returns:
+        Updated Class Variables:
             model (object): A trained keras model
             prediction model: with bbox nms
-                trained model: without nms
+            trained model: without nms
         """
         # Test if there is a new classes file in case # of classes has changed.
         self.classes_file = utilities.create_classes(annotations)
@@ -150,12 +163,15 @@ class deepforest:
             comet_experiment=comet_experiment)
 
     def use_release(self, gpus=1):
-        """Use the latest DeepForest model release from github and load model.
+        """
+        Use the latest DeepForest model release from github and load model.
         Optionally download if release doesn't exist.
 
-        Returns:
-            model (object): A trained keras model
+        Args:
             gpus: number of gpus to parallelize, default to 1
+
+        Updated Class Variables:
+            model (object): A trained keras model
         """
         # Download latest model from github release
         release_tag, self.weights = utilities.use_release()
@@ -191,7 +207,8 @@ class deepforest:
                           max_detections=200,
                           return_plot=False,
                           color=None):
-        """Predict bounding boxes for a model using a csv fit_generator
+        """
+        Predict bounding boxes for a model using a csv fit_generator
 
         Args:
             annotations (str): Path to csv label file, labels are in the
@@ -276,7 +293,8 @@ class deepforest:
                            color_detection=None,
                            thickness_annotate=1,
                            thickness_detect=1):
-        """Evaluate prediction model using a csv fit_generator.
+        """
+        Evaluate prediction model using a csv fit_generator.
         To save the predictions to file, provide a valid save_path to the deepforest config. 
         Args:
             annotations (str): Path to csv label file, labels are in the
@@ -388,7 +406,7 @@ class deepforest:
                 raise ValueError("No input specified. deepforest.predict_image() requires either a numpy_image array or a path to a file to read.")
 
         #Predict
-        prediction = predict.predict_image(self.prediction_model,
+        prediction, marked_image = predict.predict_image(self.prediction_model,
                                            image_path=image_path,
                                            raw_image=numpy_image,
                                            return_plot=return_plot,
@@ -397,9 +415,15 @@ class deepforest:
                                            classes=self.labels)
 
         # cv2 channel order to matplotlib order
-        if return_plot & show:
-            plt.imshow(prediction[:, :, ::-1])
-            plt.show()
+        if return_plot:
+            if show:
+                num_pred_objects = len(prediction.index)
+                # Display number of predictions in plot title
+                plt.title("{} Objects Predicted".format(num_pred_objects))
+                plt.imshow(marked_image[:, :, ::-1])
+                plt.show()
+
+            return marked_image
 
         return prediction
 
@@ -411,7 +435,8 @@ class deepforest:
                      iou_threshold=0.15,
                      return_plot=False,
                      show=False):
-        """For images too large to input into the model, predict_tile cuts the
+        """
+        For images too large to input into the model, predict_tile cuts the
         image into overlapping windows, predicts trees on each window and
         reassambles into a single array.
 
@@ -509,6 +534,9 @@ class deepforest:
                 draw_box(numpy_image, box, [0, 0, 255])
 
             if show:
+                num_pred_objects = len(mosaic_df.index)
+                # Display number of predictions in plot title
+                plt.title("{} Objects Predicted".format(num_pred_objects))
                 plt.imshow(numpy_image[:, :, ::-1])
                 plt.show()
 
@@ -545,4 +573,3 @@ class deepforest:
             plt.show()
         else:
             print("No training history found.")
-            return None
