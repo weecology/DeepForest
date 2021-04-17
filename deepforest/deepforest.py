@@ -64,16 +64,16 @@ class deepforest:
 
         # Read config file - if a config file exists in local dir use it,
         # if not use installed.
-        if os.path.exists(CONFIG_FILE_PATH):
-            config_path = CONFIG_FILE_PATH
+        if os.path.exists(self.CONFIG_FILE_PATH):
+            config_path = self.CONFIG_FILE_PATH
         else:
             try:
-                config_path = get_data(CONFIG_FILE_PATH)
+                config_path = get_data(self.CONFIG_FILE_PATH)
             except Exception as e:
                 raise ValueError(
                     "No {} found either in local "
                     "directory or in installed package location."
-                    "{}".format(CONFIG_FILE_PATH,e))
+                    "{}".format(self.CONFIG_FILE_PATH,e))
 
         print("Reading config file: {}".format(config_path))
         self.config = utilities.read_config(config_path)
