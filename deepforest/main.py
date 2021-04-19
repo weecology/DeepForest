@@ -83,8 +83,11 @@ class deepforest(pl.LightningModule):
             callbacks (list): a list of pytorch-lightning callback classes
         """
         
-        lr_monitor = LearningRateMonitor(logging_interval='epoch')
-        callbacks=callbacks.append(lr_monitor)
+        #If val data is passed, monitor learning rate
+        if not self.config["validation"]["csv_file"] is None:
+            if logger is not None:
+                lr_monitor = LearningRateMonitor(logging_interval='epoch')
+                callbacks=callbacks.append(lr_monitor)
         
         self.trainer = pl.Trainer(logger=logger,
                                   max_epochs=self.config["train"]["epochs"],
@@ -336,7 +339,12 @@ class deepforest(pl.LightningModule):
                                                                     cooldown=0,
                                                                     min_lr=0,
                                                                     eps=1e-08)
-        return {'optimizer':optimizer, 'lr_scheduler': scheduler,"monitor":'val_classification'}
+        
+        #Monitor rate is val data is used
+        if self.config["validation"]["csv_file"] is not None:
+            return {'optimizer':optimizer, 'lr_scheduler': scheduler,"monitor":'val_classification'}
+        else:
+            return optimizer
 
     def evaluate(self,
                  csv_file,

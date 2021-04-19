@@ -61,6 +61,7 @@ def test_train_multi(two_class_m):
 def test_train_no_validation(m):
     m.config["validation"]["csv_file"] = None
     m.config["validation"]["root_dir"] = None  
+    m.create_trainer()
     m.trainer.fit(m)
     
 def test_predict_image_empty(m):

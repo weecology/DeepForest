@@ -2,5 +2,6 @@
 DeepForest-pytorch Change Log
 =============================
 
-# v0.2.0
-First stable release with built tests, docs and a release model.
+
+#0.1.30
+Bug fixes to allow learning rate monitoring and decay on val_classification_loss
