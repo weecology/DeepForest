@@ -14,7 +14,7 @@ from deepforest import get_data
 from deepforest import model
 from deepforest import predict
 from deepforest import evaluate as evaluate_iou
-
+from pytorch_lightning.callbacks import LearningRateMonitor
 
 class deepforest(pl.LightningModule):
     """Class for training and predicting tree crowns in RGB images
@@ -77,12 +77,15 @@ class deepforest(pl.LightningModule):
         self.model = model.create_model(self.num_classes, self.config["nms_thresh"],
                                         self.config["score_thresh"])
 
-    def create_trainer(self, logger=None, callbacks=None, **kwargs):
+    def create_trainer(self, logger=None, callbacks=[], **kwargs):
         """Create a pytorch ligthning training by reading config files
         Args:
             callbacks (list): a list of pytorch-lightning callback classes
         """
-
+        
+        lr_monitor = LearningRateMonitor(logging_interval='epoch')
+        callbacks=callbacks.append(lr_monitor)
+        
         self.trainer = pl.Trainer(logger=logger,
                                   max_epochs=self.config["train"]["epochs"],
                                   gpus=self.config["gpus"],
@@ -318,18 +321,12 @@ class deepforest(pl.LightningModule):
             self.log("val_{}".format(key), value, on_epoch=True)
 
         return losses
-
-    def validation_end(self, outputs):
-        avg_loss = torch.stack([x['val_loss'] for x in outputs]).mean()
-        comet_logs = {'val_loss': avg_loss}
-
-        return {'avg_val_loss': avg_loss, 'log': comet_logs}
-
+        
     def configure_optimizers(self):
-        self.optimizer = optim.SGD(self.model.parameters(),
+        optimizer = optim.SGD(self.model.parameters(),
                                    lr=self.config["train"]["lr"],
                                    momentum=0.9)
-        self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer,
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer,
                                                                     mode='min',
                                                                     factor=0.1,
                                                                     patience=10,
@@ -339,7 +336,7 @@ class deepforest(pl.LightningModule):
                                                                     cooldown=0,
                                                                     min_lr=0,
                                                                     eps=1e-08)
-        return self.optimizer
+        return {'optimizer':optimizer, 'lr_scheduler': scheduler,"monitor":'val_classification'}
 
     def evaluate(self,
                  csv_file,
