@@ -52,7 +52,9 @@ class deepforest(pl.LightningModule):
         
         #Label encoder and decoder
         if not len(label_dict) == num_classes:
-            raise ValueError("label_dict {} does not match requested number of classes {}, please supply a label_dict argument {'label1':0, 'label2':1, 'label3':2 ... etc} for each label in the dataset".format(label_dict, num_classes))
+            raise ValueError(
+                'label_dict {} does not match requested number of classes {}, please supply a label_dict argument {{"label1":0, "label2":1, "label3":2 ... etc}} for each label in the dataset'.format(label_dict, num_classes)
+            )
         
         self.label_dict = label_dict
         self.numeric_to_label_dict = {v: k for k, v in label_dict.items()}

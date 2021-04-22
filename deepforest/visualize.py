@@ -39,7 +39,7 @@ def plot_prediction_and_targets(image, predictions, targets, image_name, savedir
 def plot_prediction_dataframe(df, root_dir, ground_truth=None, savedir=None, show=False):
     """For each row in dataframe, call plot predictions. For multi-class labels, boxes will be colored by labels. Ground truth boxes will all be same color, regardless of class.
     Args:
-        df: a pandas dataframe with image_path, xmin, xmax, ymin, ymax and label columns
+        df: a pandas dataframe with image_path, xmin, xmax, ymin, ymax and label columns. The image_path column should be the relative path from root_dir, not the full path.
         root_dir: relative dir to look for image names from df.image_path
         ground_truth: an optional pandas dataframe in same format as df holding ground_truth boxes
         savedir: save the plot to an optional directory path.
@@ -95,7 +95,7 @@ def plot_predictions(image, df, show=False):
     return fig, ax
 
 
-def create_box(xmin, ymin, height, width, color="cyan", linewidth=0.5):
+def create_box(xmin, ymin, height, width, color="cyan", linewidth=0.75):
     rect = patches.Rectangle((xmin, ymin),
                              height,
                              width,

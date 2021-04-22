@@ -15,6 +15,7 @@ Source code is available here: (https://github.com/weecology/DeepForest-pytorch.
    Evaluation
    FAQ
    better
+   ExtendingModule
    code_of_conduct.rst
    history.rst
    source/deepforest
