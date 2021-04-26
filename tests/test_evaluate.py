@@ -19,7 +19,7 @@ def test_evaluate_image(m):
     csv_file = get_data("OSBS_029.csv")
     predictions = m.predict_file(csv_file=csv_file, root_dir=os.path.dirname(csv_file))
     ground_truth = pd.read_csv(csv_file)
-    
+    predictions.label = 0
     result = evaluate.evaluate_image(predictions=predictions, ground_df=ground_truth, show_plot=True, root_dir=os.path.dirname(csv_file), savedir=None)     
         
     assert result.shape[0] == ground_truth.shape[0]
@@ -29,7 +29,8 @@ def test_evaluate(m):
     csv_file = get_data("OSBS_029.csv")
     predictions = m.predict_file(csv_file=csv_file, root_dir=os.path.dirname(csv_file))
     ground_truth = pd.read_csv(csv_file)
-    
+    #Enforce dtype
+    predictions.label = 0
     results = evaluate.evaluate(predictions=predictions, ground_df=ground_truth, show_plot=True, root_dir=os.path.dirname(csv_file), savedir=None)     
         
     assert results["results"].shape[0] == ground_truth.shape[0]
@@ -41,7 +42,7 @@ def test_evaluate_multi(m):
     csv_file = get_data("testfile_multi.csv")
     m = main.deepforest(num_classes=2,label_dict={"Alive":0,"Dead":1})
     ground_truth = pd.read_csv(csv_file)
-    
+    ground_truth["label"]  = ground_truth.label.astype("category").cat.codes
     results = evaluate.evaluate(predictions=ground_truth, ground_df=ground_truth, show_plot=True, root_dir=os.path.dirname(csv_file), savedir=None)     
         
     assert results["results"].shape[0] == ground_truth.shape[0]

@@ -377,7 +377,6 @@ class deepforest(pl.LightningModule):
                                            device=self.device,
                                            iou_threshold=self.config["nms_thresh"])
         
-        predictions["label"] = predictions.label.apply(lambda x: self.numeric_to_label_dict[x])
         ground_df = pd.read_csv(csv_file)
 
         # if no arg for iou_threshold, set as config
@@ -389,5 +388,9 @@ class deepforest(pl.LightningModule):
                                         root_dir=root_dir,
                                         iou_threshold=iou_threshold,
                                         show_plot=show_plot)
+
+        #Set label orders
+        results["results"]["label"] = results["results"]["label"].apply(lambda x: self.numeric_to_label_dict[x])
+        results["class-recall"]["label"] = results["class-recall"].label.apply(lambda x: self.numeric_to_label_dict[x])
 
         return results

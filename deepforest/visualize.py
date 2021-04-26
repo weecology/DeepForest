@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from skimage import io
 import numpy as np
+import pandas.api.types as ptypes
+
 
 def format_boxes(prediction, scores=True):
     """Format a retinanet prediction into a pandas dataframe for a single image
@@ -62,13 +64,14 @@ def plot_prediction_dataframe(df, root_dir, ground_truth=None, savedir=None, sho
 def plot_predictions(image, df, show=False):
     """channel order is channels first for pytorch
     By default this function does not show, but only plots an axis
+    Label column must be numeric!
     """
     if not show:
         original_backend = matplotlib.get_backend()
         matplotlib.use("Agg")
-        
-    #Create a numeric index for coloring
-    df['numeric'] = df['label'].astype('category').cat.codes
+
+    if not ptypes.is_numeric_dtype(df.label):
+        raise ValueError("Label column is not numeric, please convert to numeric to correctly color image {}".format(df.label.head()))
 
     #What size does the figure need to be in inches to fit the image?
     dpi=300
@@ -82,7 +85,7 @@ def plot_predictions(image, df, show=False):
         ymin = row["ymin"]
         width = row["xmax"] - xmin
         height = row["ymax"] - ymin
-        color = label_to_color(row["numeric"])
+        color = label_to_color(row["label"])
         rect = create_box(xmin=xmin, ymin=ymin, height=height, width=width, color=color)
         ax.add_patch(rect)
     # no axis show up
