@@ -94,7 +94,7 @@ def test_predict_return_plot(m):
 def test_predict_file(m, tmpdir):
     csv_file = get_data("example.csv")
     df = m.predict_file(csv_file, root_dir = os.path.dirname(csv_file), savedir=tmpdir)
-    assert set(df.columns) == {"xmin","ymin","xmax","ymax","label","score","image_path","numeric"}
+    assert set(df.columns) == {"xmin","ymin","xmax","ymax","label","score","image_path"}
     
     printed_plots = glob.glob("{}/*.png".format(tmpdir))
     assert len(printed_plots) == 1

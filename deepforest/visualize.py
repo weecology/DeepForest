@@ -8,7 +8,23 @@ from skimage import io
 import numpy as np
 import pandas.api.types as ptypes
 
-
+def view_dataset(ds, savedir=None):
+    """Plot annotations on images for debugging purposes
+    Args:
+        ds: a deepforest-pytorch dataset, see deepforest.dataset or deepforest.load_dataset() to start from a csv file
+        savedir: optional path to save figures. If none (default) images will be interactively plotted
+    """
+    for i in iter(ds):
+        image_path, image, targets = i
+        df = format_boxes(targets[0], scores=False)
+        image = np.moveaxis(image[0].numpy(),0,2)
+        plot, ax = plot_predictions(image, df)
+    
+    if savedir:
+        plot.savefig("{}/{}".format(savedir, image_path[0]), dpi=300)
+    else:
+        plt.show()
+            
 def format_boxes(prediction, scores=True):
     """Format a retinanet prediction into a pandas dataframe for a single image
        Args:
