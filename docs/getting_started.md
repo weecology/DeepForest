@@ -228,6 +228,16 @@ assert not pred_after_train.empty
 assert not pred_after_reload.empty
 pd.testing.assert_frame_equal(pred_after_train,pred_after_reload)
 ```
+
+---
+Note that when reloading models, you should carefully inspect the model parameters, such as the score_thresh and nms_thresh. These parameters are updated during model creation and the config file is not read when loading from checkpoint!
+It is best to be direct to specify after loading checkpoint.
+---
+
+```
+after.model.score_thresh = 0.3
+```
+
 ## Multi-class models
 
 While the primary design of this package is for "Tree" detection with a single class. Multi-class labels are allowed for those looking to extend core functionality.

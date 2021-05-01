@@ -14,10 +14,9 @@ import torch
 import warnings
 import rasterio
 
-
 def preprocess_image(image):
     """Preprocess a single RGB numpy array as a prediction from channels last, to channels first"""
-    image = torch.tensor(image.copy()).permute(2, 0, 1).unsqueeze(0).float()
+    image = torch.tensor(image).permute(2, 0, 1).unsqueeze(0).float()
     image = image / 255
 
     return image
@@ -86,7 +85,7 @@ def select_annotations(annotations, windows, index, allow_empty=False):
                                                                    (window_ymax)) &
                                        (annotations.ymax >
                                         (window_ymin)) & (annotations.ymax <
-                                                          (window_ymax + offset))].copy()
+                                                          (window_ymax + offset))]
 
     # change the image name
     image_name = os.path.splitext("{}".format(annotations.image_path.unique()[0]))[0]
@@ -212,7 +211,7 @@ def split_raster(annotations_file,
     annotations = pd.read_csv(annotations_file)
 
     # open annotations file
-    image_annotations = annotations[annotations.image_path == image_name].copy()
+    image_annotations = annotations[annotations.image_path == image_name]
 
     # Sanity checks
     if image_annotations.empty:

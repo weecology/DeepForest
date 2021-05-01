@@ -51,6 +51,10 @@ class deepforest(pl.LightningModule):
         self.num_classes = num_classes
         self.create_model()
         
+        #Set model to gpu is available
+        if torch.cuda.is_available:
+            self.device = "cuda"
+        
         #Label encoder and decoder
         if not len(label_dict) == num_classes:
             raise ValueError(
