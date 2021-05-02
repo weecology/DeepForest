@@ -51,10 +51,6 @@ class deepforest(pl.LightningModule):
         self.num_classes = num_classes
         self.create_model()
         
-        #Set model to gpu is available
-        if torch.cuda.is_available:
-            self.device = "cuda"
-        
         #Label encoder and decoder
         if not len(label_dict) == num_classes:
             raise ValueError(
@@ -200,7 +196,7 @@ class deepforest(pl.LightningModule):
 
             # Load on GPU is available
         if torch.cuda.is_available:
-            self.model.to(self.device)
+            self.model.to("cuda")
 
         self.model.eval()
 
@@ -372,8 +368,8 @@ class deepforest(pl.LightningModule):
         """
         self.model.eval()
 
-        if not self.device.type == "cpu":
-            self.model = self.model.to(self.device)
+        if torch.cuda.is_available:
+            self.model.to("cuda")
 
         predictions = predict.predict_file(model=self.model,
                                            csv_file=csv_file,
