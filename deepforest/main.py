@@ -30,6 +30,12 @@ class deepforest(pl.LightningModule):
         """
         super().__init__()
         
+        #Pytorch lightning handles the device, but we need one for adhoc methods like predict_image.
+        if torch.cuda.is_available:
+            self.current_device = "cuda"
+        else:
+            self.current_device = "cpu"
+            
         # Read config file - if a config file exists in local dir use it,
         # if not use installed.
         if os.path.exists("deepforest_config.yml"):
@@ -204,7 +210,7 @@ class deepforest(pl.LightningModule):
         result = predict.predict_image(model=self.model,
                                        image=image,
                                        return_plot=return_plot,
-                                       device=self.device,
+                                       device=self.current_device,
                                        iou_threshold=self.config["nms_thresh"])
         
         #Set labels to character from numeric if returning boxes df
@@ -232,7 +238,7 @@ class deepforest(pl.LightningModule):
                                       csv_file=csv_file,
                                       root_dir=root_dir,
                                       savedir=savedir,
-                                      device=self.device,
+                                      device=self.current_device,
                                       iou_threshold=self.config["nms_thresh"])
 
         #Set labels to character from numeric
@@ -285,7 +291,7 @@ class deepforest(pl.LightningModule):
                                       use_soft_nms=use_soft_nms,
                                       sigma=sigma,
                                       thresh=thresh,
-                                      device=self.device)
+                                      device=self.current_device)
 
         #edge case, if no boxes predictioned return None
         if result is None:
@@ -375,7 +381,7 @@ class deepforest(pl.LightningModule):
                                            csv_file=csv_file,
                                            root_dir=root_dir,
                                            savedir=savedir,
-                                           device=self.device,
+                                           device=self.current_device,
                                            iou_threshold=self.config["nms_thresh"])
         
         ground_df = pd.read_csv(csv_file)
