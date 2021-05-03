@@ -32,9 +32,9 @@ class deepforest(pl.LightningModule):
         
         #Pytorch lightning handles the device, but we need one for adhoc methods like predict_image.
         if torch.cuda.is_available:
-            self.current_device = "cuda"
+            self.current_device = torch.device("cuda")
         else:
-            self.current_device = "cpu"
+            self.current_device = torch.device("cpu")
             
         # Read config file - if a config file exists in local dir use it,
         # if not use installed.
