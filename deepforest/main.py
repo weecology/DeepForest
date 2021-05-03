@@ -31,7 +31,7 @@ class deepforest(pl.LightningModule):
         super().__init__()
         
         #Pytorch lightning handles the device, but we need one for adhoc methods like predict_image.
-        if torch.cuda.is_available:
+        if torch.cuda.is_available():
             self.current_device = torch.device("cuda")
         else:
             self.current_device = torch.device("cpu")
@@ -201,7 +201,7 @@ class deepforest(pl.LightningModule):
             image = io.imread(path)
 
             # Load on GPU is available
-        if torch.cuda.is_available:
+        if torch.cuda.is_available():
             self.model.to("cuda")
 
         self.model.eval()
@@ -374,7 +374,7 @@ class deepforest(pl.LightningModule):
         """
         self.model.eval()
 
-        if torch.cuda.is_available:
+        if torch.cuda.is_available():
             self.model.to("cuda")
 
         predictions = predict.predict_file(model=self.model,
