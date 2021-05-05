@@ -24,6 +24,8 @@ def test_compute_IoU(download_release):
     ground_truth['geometry'] = ground_truth.apply(lambda x: shapely.geometry.box(x.xmin,x.ymin,x.xmax,x.ymax), axis=1)
     ground_truth = gpd.GeoDataFrame(ground_truth, geometry='geometry')        
     
+    ground_truth.label = 0
+    predictions.label = 0
     visualize.plot_prediction_dataframe(df=predictions, ground_truth=ground_truth, root_dir=os.path.dirname(csv_file))        
     
     result = IoU.compute_IoU(ground_truth, predictions)
