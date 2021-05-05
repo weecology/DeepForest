@@ -2,6 +2,7 @@
 import numpy as np
 import os
 import pytest
+import pandas as pd
 
 from deepforest import get_data
 from deepforest import utilities
@@ -35,3 +36,10 @@ def test_float_warning(config):
     float_annotations = "tests/data/float_annotations.txt"
     annotations = utilities.xml_to_annotations(float_annotations)
     assert annotations.xmin.dtype is np.dtype('int64')
+
+def test_project_boxes():
+    csv_file = get_data("OSBS_029.csv")
+    df = pd.read_csv(csv_file)
+    gdf = utilities.project_boxes(df, root_dir=os.path.dirname(csv_file))
+    
+    assert df.shape[0] == gdf.shape[0]

@@ -105,9 +105,10 @@ def evaluate(predictions,
         class_precision_dict = {}
         class_size = {}
         
-        for name, group in results.groupby("true_label"):
+        box_results =  results[results.predicted_label.notna()]
+        for name, group in box_results.groupby("true_label"):
             class_recall_dict[name] = sum(group.true_label == group.predicted_label)/group.shape[0]
-            number_of_predictions = predictions[predictions.label==name].shape[0]
+            number_of_predictions = group[group.predicted_label==name].shape[0]
             if number_of_predictions == 0:
                 class_precision_dict[name] = 0
             else:
