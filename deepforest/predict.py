@@ -11,6 +11,7 @@ from deepforest import preprocess
 from deepforest import visualize
 from skimage import io
 
+import matplotlib.pyplot as plt
 
 def predict_image(model, image, return_plot, device, iou_threshold=0.1):
     """Predict an image with a deepforest model
@@ -94,6 +95,9 @@ def predict_file(model, csv_file, root_dir, savedir, device, iou_threshold=0.1):
             annotations = input_csv[input_csv.image_path == path]
             plot = visualize.add_annotations(plot, ax, annotations)
             plot.savefig("{}/{}.png".format(savedir, os.path.splitext(path)[0]),dpi=300)
+            
+            #close figure in loop.
+            plt.close()
 
     df = pd.concat(prediction_list, ignore_index=True)
 

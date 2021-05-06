@@ -54,13 +54,3 @@ def test_evaluate_multi(m):
         
     assert results["results"].shape[0] == ground_truth.shape[0]
     assert results["class_recall"].shape == (2,4)
-
-#def test_evaluate_benchmark(m):
-    #csv_file = "/Users/benweinstein/Documents/NeonTreeEvaluation/evaluation/RGB/benchmark_annotations.csv"
-    #predictions = m.predict_file(csv_file=csv_file, root_dir=os.path.dirname(csv_file))
-    #ground_truth = pd.read_csv(csv_file)
-    
-    #results = evaluate.evaluate(predictions=predictions, ground_df=ground_truth, root_dir=os.path.dirname(csv_file), savedir=None)     
-        
-    #assert results["results"].shape[0] == ground_truth.shape[0]
-    #assert results["class_recall"].shape == (2,4)
