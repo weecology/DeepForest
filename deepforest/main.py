@@ -202,7 +202,7 @@ class deepforest(pl.LightningModule):
 
             # Load on GPU is available
         if torch.cuda.is_available():
-            self.model.to("cuda")
+            self.model = self.model.to("cuda")
 
         self.model.eval()
 
@@ -279,6 +279,10 @@ class deepforest(pl.LightningModule):
             Otherwise a numpy array of predicted bounding boxes, scores and labels
         """
 
+        # Load on GPU is available
+        if torch.cuda.is_available():
+            self.model = self.model.to("cuda")
+            
         self.model.eval()
 
         result = predict.predict_tile(model=self.model,
@@ -372,10 +376,11 @@ class deepforest(pl.LightningModule):
         Returns:
             results: dict of ("results", "precision", "recall") for a given threshold
         """
-        self.model.eval()
-
+        # Load on GPU is available
         if torch.cuda.is_available():
-            self.model.to("cuda")
+            self.model = self.model.to("cuda")
+            
+        self.model.eval()
 
         predictions = predict.predict_file(model=self.model,
                                            csv_file=csv_file,
