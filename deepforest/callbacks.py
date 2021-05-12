@@ -58,7 +58,7 @@ class images_callback(Callback):
                 pl_module.logger.experiment.log_image(x)
         except Exception as e:
             print(
-                "Could not find logger in ligthning module, skipping upload, images were saved to {}, error was rasied {}"
+                "Could not find logger in lightning module, skipping upload, images were saved to {}, error was rasied {}"
                 .format(self.savedir, e))
 
     def on_epoch_end(self, trainer, pl_module):
