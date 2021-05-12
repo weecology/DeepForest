@@ -21,7 +21,7 @@ class deepforest(pl.LightningModule):
     """Class for training and predicting tree crowns in RGB images
     """
 
-    def __init__(self, num_classes=1, label_dict = {"Tree":0}):
+    def __init__(self, num_classes=1, label_dict = {"Tree":0}, transforms=None):
         """
         Args:
             num_classes (int): number of classes in the model
@@ -65,7 +65,10 @@ class deepforest(pl.LightningModule):
         
         self.label_dict = label_dict
         self.numeric_to_label_dict = {v: k for k, v in label_dict.items()}
-
+        
+        #Add user supplied transforms
+        self.transforms = dataset.get_transform
+        
     def use_release(self):
         """Use the latest DeepForest model release from github and load model.
         Optionally download if release doesn't exist.
@@ -136,7 +139,7 @@ class deepforest(pl.LightningModule):
 
         ds = dataset.TreeDataset(csv_file=csv_file,
                                  root_dir=root_dir,
-                                 transforms=dataset.get_transform(augment=augment),
+                                 transforms=self.transforms(augment=augment),
                                  label_dict=self.label_dict)
 
         data_loader = torch.utils.data.DataLoader(

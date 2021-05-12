@@ -11,6 +11,7 @@ from deepforest import main
 from deepforest import get_data
 from deepforest import model
 from deepforest import dataset
+from deepforest import transforms as T
 
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import Callback
@@ -180,3 +181,21 @@ def test_save_and_reload(m, tmpdir):
     assert not pred_after_train.empty
     assert not pred_after_reload.empty
     pd.testing.assert_frame_equal(pred_after_train,pred_after_reload)
+
+def test_override_transforms():
+    def get_transform(augment):
+        transforms = []
+        transforms.append(T.ToTensor())
+        if augment:
+            transforms.append(T.RandomHorizontalFlip(1))
+        return T.Compose(transforms)    
+    
+    m = main.deepforest(transforms=get_transform)
+    
+    csv_file = get_data("example.csv") 
+    root_dir = os.path.dirname(csv_file)
+    train_ds = m.load_dataset(csv_file, root_dir=root_dir)
+    
+    path, image, target = next(iter(train_ds))
+
+    
