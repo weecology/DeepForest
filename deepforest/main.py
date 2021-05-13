@@ -26,7 +26,7 @@ class deepforest(pl.LightningModule):
         Args:
             num_classes (int): number of classes in the model
         Returns:
-            self: a deepforest pytorch ligthning module
+            self: a deepforest pytorch lightning module
         """
         super().__init__()
         
@@ -93,7 +93,7 @@ class deepforest(pl.LightningModule):
                                         self.config["score_thresh"])
 
     def create_trainer(self, logger=None, callbacks=[], **kwargs):
-        """Create a pytorch ligthning training by reading config files
+        """Create a pytorch lightning training by reading config files
         Args:
             callbacks (list): a list of pytorch-lightning callback classes
         """
