@@ -67,7 +67,10 @@ class deepforest(pl.LightningModule):
         self.numeric_to_label_dict = {v: k for k, v in label_dict.items()}
         
         #Add user supplied transforms
-        self.transforms = dataset.get_transform
+        if transforms is None:
+            self.transforms = dataset.get_transform
+        else:
+            self.transforms = transforms
         
     def use_release(self):
         """Use the latest DeepForest model release from github and load model.

@@ -15,19 +15,26 @@ https://colab.research.google.com/github/benihime91/pytorch_retinanet/blob/maste
 import os
 import pandas as pd
 from skimage import io
+import numpy as np
 from torch.utils.data import Dataset
 from deepforest import transforms as T
 from deepforest.utilities import check_image
-
+import albumentations as A
+from albumentations.pytorch import ToTensorV2
+import torch
 
 def get_transform(augment):
-    transforms = []
-    transforms.append(T.ToTensor())
+    """Albumentations transformation of bounding boxs"""
     if augment:
-        transforms.append(T.RandomHorizontalFlip(0.5))
-    return T.Compose(transforms)
-
-
+        transform = A.Compose([
+            A.HorizontalFlip(p=0.5),
+            ToTensorV2()
+        ], bbox_params=A.BboxParams(format='pascal_voc',label_fields=["category_ids"]))
+        
+    else:
+        transform = ToTensorV2()
+        
+    return transform
 
 class TreeDataset(Dataset):
 
@@ -71,6 +78,8 @@ class TreeDataset(Dataset):
             lambda x: self.label_dict[x]).values.astype(int)
 
         if self.transform:
-            image, targets = self.transform(image, targets)
+            augmented = self.transform(image=image, bboxes=targets["boxes"], category_ids=targets["labels"])
+            image = augmented["image"]
+            targets = {"boxes":torch.from_numpy(np.array(augmented["bboxes"])),"labels":torch.from_numpy(np.array(augmented["category_ids"]))}
 
         return self.image_names[idx], image, targets

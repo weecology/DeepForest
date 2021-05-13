@@ -10,6 +10,7 @@ from PIL import Image
 from deepforest import get_data
 from deepforest import preprocess
 from deepforest import utilities
+from deepforest import visualize
 
 import rasterio
 
@@ -73,17 +74,26 @@ def test_select_annotations_tile(config, image):
     assert selected_annotations.xmax.max() <= config["patch_size"]
     assert selected_annotations.ymax.max() <= config["patch_size"]
 
-
-def test_split_raster(config):
-    annotations_file = preprocess.split_raster(path_to_raster=config["path_to_raster"],
-                                               annotations_file=config["annotations_file"],
-                                               base_dir="tests/data/",
-                                               patch_size=config["patch_size"],
-                                               patch_overlap=config["patch_overlap"])
+def test_split_raster(config, tmpdir):
+    """Split raster into crops with overlaps to maintain all annotations"""
+    raster = get_data("2019_YELL_2_528000_4978000_image_crop2.png")
+    annotations = utilities.xml_to_annotations(get_data("2019_YELL_2_528000_4978000_image_crop2.xml"))
+    annotations.to_csv("{}/example.csv".format(tmpdir), index=False)
+    #annotations.label = 0
+    #visualize.plot_prediction_dataframe(df=annotations, root_dir=os.path.dirname(get_data(".")), show=True)
+    
+    annotations_file = preprocess.split_raster(path_to_raster=raster,
+                                               annotations_file="{}/example.csv".format(tmpdir),
+                                               base_dir=tmpdir,
+                                               patch_size=500,
+                                               patch_overlap=0)
 
     # Returns a 6 column pandas array
     assert annotations_file.shape[1] == 6
-
+    
+    #Assert that all boxes that exists are the same as original size
+    #annotations_file["label"] = 0 
+    #visualize.plot_prediction_dataframe(df=annotations_file, root_dir=tmpdir, show=True)
 
 def test_split_raster_from_image(config):
     r = rasterio.open(config["path_to_raster"]).read()
@@ -145,3 +155,4 @@ def test_split_size_error(config):
                                                    base_dir="tests/data/",
                                                    patch_size=2000,
                                                    patch_overlap=config["patch_overlap"])
+    

@@ -32,3 +32,4 @@ dependencies:
   - pip:
     - sphinx-markdown-tables
     - imagecodecs
+    - albumentations

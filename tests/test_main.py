@@ -184,6 +184,7 @@ def test_save_and_reload(m, tmpdir):
 
 def test_override_transforms():
     def get_transform(augment):
+        """This is the new transform"""
         transforms = []
         transforms.append(T.ToTensor())
         if augment:
@@ -197,5 +198,6 @@ def test_override_transforms():
     train_ds = m.load_dataset(csv_file, root_dir=root_dir)
     
     path, image, target = next(iter(train_ds))
+    assert m.transforms.__doc__ == "This is the new transform"
 
     
