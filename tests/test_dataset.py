@@ -57,4 +57,3 @@ def test_TreeDataset_transform(augment):
         assert torch.is_tensor(targets["boxes"])
         assert torch.is_tensor(targets["labels"])
         assert torch.is_tensor(image)
-    

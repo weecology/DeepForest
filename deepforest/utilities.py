@@ -304,4 +304,5 @@ def project_boxes(df, root_dir, transform=True):
 
 
 def collate_fn(batch):
+    batch = list(filter(lambda x : x is not None, batch))
     return tuple(zip(*batch))

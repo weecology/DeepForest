@@ -80,7 +80,7 @@ class TreeDataset(Dataset):
             augmented = self.transform(image=image, bboxes=targets["boxes"], category_ids=targets["labels"])
             image = augmented["image"]
             
-            #convert to tensors
+            #Check for blank tensors
             boxes = np.array(augmented["bboxes"])
             boxes = torch.from_numpy(boxes)
             labels = np.array(augmented["category_ids"]) 
