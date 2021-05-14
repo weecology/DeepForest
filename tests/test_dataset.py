@@ -3,6 +3,7 @@ from deepforest import get_data
 from deepforest import dataset
 import os
 import pytest
+import torch
 import pandas as pd
 import numpy as np
 
@@ -52,4 +53,8 @@ def test_TreeDataset_transform(augment):
         assert image.min() >= 0
         assert targets["boxes"].shape == (79, 4)
         assert targets["labels"].shape == (79,)
+        
+        assert torch.is_tensor(targets["boxes"])
+        assert torch.is_tensor(targets["labels"])
+        assert torch.is_tensor(image)
     

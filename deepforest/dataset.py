@@ -14,14 +14,13 @@ https://colab.research.google.com/github/benihime91/pytorch_retinanet/blob/maste
 """
 import os
 import pandas as pd
-from skimage import io
 import numpy as np
 from torch.utils.data import Dataset
-from deepforest import transforms as T
 from deepforest.utilities import check_image
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 import torch
+from PIL import Image
 
 def get_transform(augment):
     """Albumentations transformation of bounding boxs"""
@@ -32,7 +31,7 @@ def get_transform(augment):
         ], bbox_params=A.BboxParams(format='pascal_voc',label_fields=["category_ids"]))
         
     else:
-        transform = ToTensorV2()
+        transform = A.Compose([ToTensorV2()])
         
     return transform
 
@@ -58,7 +57,7 @@ class TreeDataset(Dataset):
 
     def __getitem__(self, idx):
         img_name = os.path.join(self.root_dir, self.image_names[idx])
-        image = io.imread(img_name)
+        image = np.array(Image.open((img_name))).astype('float32')
         image = image / 255
         
         try:
@@ -72,7 +71,7 @@ class TreeDataset(Dataset):
         targets = {}
         targets["boxes"] = image_annotations[["xmin", "ymin", "xmax",
                                               "ymax"]].values.astype(float)
-
+        
         # Labels need to be encoded
         targets["labels"] = image_annotations.label.apply(
             lambda x: self.label_dict[x]).values.astype(int)
@@ -80,6 +79,15 @@ class TreeDataset(Dataset):
         if self.transform:
             augmented = self.transform(image=image, bboxes=targets["boxes"], category_ids=targets["labels"])
             image = augmented["image"]
-            targets = {"boxes":torch.from_numpy(np.array(augmented["bboxes"])),"labels":torch.from_numpy(np.array(augmented["category_ids"]))}
-
+            
+            #convert to tensors
+            boxes = np.array(augmented["bboxes"])
+            boxes = torch.from_numpy(boxes)
+            labels = np.array(augmented["category_ids"]) 
+            labels = torch.from_numpy(labels)
+            targets = {"boxes":boxes,"labels":labels}   
+        else:
+            targets["boxes"] = torch.from_numpy(targets["boxes"])
+            targets["labels"] = torch.from_numpy(targets["labels"])
+            
         return self.image_names[idx], image, targets

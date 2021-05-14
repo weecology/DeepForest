@@ -1,12 +1,13 @@
 # entry point for deepforest model
 import os
 import pandas as pd
-from skimage import io
+from PIL import Image
 import torch
 
 import pytorch_lightning as pl
 from torch import optim
 import matplotlib
+import numpy as np
 
 from deepforest import utilities
 from deepforest import dataset
@@ -204,7 +205,7 @@ class deepforest(pl.LightningModule):
         if path:
             if not isinstance(path, str):
                 raise ValueError("Path expects a string path to image on disk")
-            image = io.imread(path)
+            image = np.array(Image.open(path))
 
             # Load on GPU is available
         if torch.cuda.is_available():

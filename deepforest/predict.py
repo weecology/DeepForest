@@ -1,15 +1,16 @@
 # Prediction utilities
 import pandas as pd
+from PIL import Image
 import numpy as np
 import os
 from tqdm import tqdm
 
 import torch
+import rasterio as rio
 from torchvision.ops import nms
 
 from deepforest import preprocess
 from deepforest import visualize
-from skimage import io
 
 import matplotlib.pyplot as plt
 
@@ -68,7 +69,7 @@ def predict_file(model, csv_file, root_dir, savedir, device, iou_threshold=0.1):
 
     prediction_list = []
     for path in images:
-        image = io.imread("{}/{}".format(root_dir, path))
+        image = np.array(Image.open("{}/{}".format(root_dir, path)))
 
         image = preprocess.preprocess_image(image)
 
@@ -145,7 +146,8 @@ def predict_tile(model,
         pass
     else:
         # load raster as image
-        image = io.imread(raster_path)
+        image = rio.open(raster_path).read()
+        image = np.moveaxis(image,0,2)        
 
     # Compute sliding window index
     windows = preprocess.compute_windows(image, patch_size, patch_overlap)

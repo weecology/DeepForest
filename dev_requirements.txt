@@ -15,7 +15,6 @@ numpy
 recommonmark
 rasterio
 rtree
-scikit-image
 sphinx
 slidingwindow
 sphinx_rtd_theme

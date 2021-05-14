@@ -7,11 +7,13 @@ import numpy as np
 from skimage import io
 import torch
 
+import albumentations as A
+from albumentations.pytorch import ToTensorV2
+
 from deepforest import main
 from deepforest import get_data
 from deepforest import model
 from deepforest import dataset
-from deepforest import transforms as T
 
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import Callback
@@ -185,11 +187,16 @@ def test_save_and_reload(m, tmpdir):
 def test_override_transforms():
     def get_transform(augment):
         """This is the new transform"""
-        transforms = []
-        transforms.append(T.ToTensor())
         if augment:
-            transforms.append(T.RandomHorizontalFlip(1))
-        return T.Compose(transforms)    
+            transform = A.Compose([
+                A.HorizontalFlip(p=0.5),
+                ToTensorV2()
+            ], bbox_params=A.BboxParams(format='pascal_voc',label_fields=["category_ids"]))
+            
+        else:
+            transform = ToTensorV2()
+            
+        return transform
     
     m = main.deepforest(transforms=get_transform)
     

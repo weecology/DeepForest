@@ -28,7 +28,6 @@ dependencies:
   - torchvision
   - slidingwindow
   - bumpversion
-  - scikit-image
   - pip:
     - sphinx-markdown-tables
     - imagecodecs

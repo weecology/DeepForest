@@ -4,7 +4,7 @@ import pandas as pd
 import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
-from skimage import io
+from PIL import Image
 import numpy as np
 import pandas.api.types as ptypes
 
@@ -66,7 +66,7 @@ def plot_prediction_dataframe(df, root_dir, ground_truth=None, savedir=None, sho
         None: side-effect plots are saved or generated and viewed
         """
     for name, group in df.groupby("image_path"):
-        image = io.imread("{}/{}".format(root_dir, name))
+        image = Image.open("{}/{}".format(root_dir, name))
         plot, ax = plot_predictions(image, group, show=show)
         
         if ground_truth is not None:
