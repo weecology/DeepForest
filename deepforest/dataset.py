@@ -80,12 +80,17 @@ class TreeDataset(Dataset):
             augmented = self.transform(image=image, bboxes=targets["boxes"], category_ids=targets["labels"])
             image = augmented["image"]
             
-            #Check for blank tensors
             boxes = np.array(augmented["bboxes"])
             boxes = torch.from_numpy(boxes)
             labels = np.array(augmented["category_ids"]) 
             labels = torch.from_numpy(labels)
             targets = {"boxes":boxes,"labels":labels}   
+            
+            #Check for blank tensors
+            all_empty = all([len(x) == 0 for x in boxes])
+            if all_empty:
+                return None
+            
         else:
             targets["boxes"] = torch.from_numpy(targets["boxes"])
             targets["labels"] = torch.from_numpy(targets["labels"])
