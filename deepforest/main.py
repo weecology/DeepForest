@@ -318,7 +318,12 @@ class deepforest(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         """Train on a loaded dataset
         """
-        path, images, targets = batch
+        #allow for empty data if data augmentation is generated
+        try:
+            path, images, targets = batch
+        except:
+            print("Empty batch encountered, skipping")
+            return None
 
         loss_dict = self.model.forward(images, targets)
 
@@ -331,7 +336,11 @@ class deepforest(pl.LightningModule):
         """Train on a loaded dataset
 
         """
-        path, images, targets = batch
+        try:
+            path, images, targets = batch
+        except:
+            print("Empty batch encountered, skipping")
+            return None
 
         self.model.train()
         loss_dict = self.model.forward(images, targets)

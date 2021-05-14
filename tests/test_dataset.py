@@ -1,6 +1,7 @@
 #test dataset model
 from deepforest import get_data
 from deepforest import dataset
+from deepforest import utilities
 import os
 import pytest
 import torch
@@ -57,3 +58,31 @@ def test_TreeDataset_transform(augment):
         assert torch.is_tensor(targets["boxes"])
         assert torch.is_tensor(targets["labels"])
         assert torch.is_tensor(image)
+
+def test_collate():
+    """Due to data augmentations the dataset class may yield empty bounding box annotations"""
+    csv_file = get_data("example.csv")
+    root_dir = os.path.dirname(csv_file)
+    ds = dataset.TreeDataset(csv_file=csv_file,
+                             root_dir=root_dir,
+                             transforms=dataset.get_transform(augment=False))
+
+    for i in range(len(ds)):
+        #Between 0 and 1
+        batch = ds[i]
+        collated_batch = utilities.collate_fn(batch)
+        assert len(collated_batch) == 2
+        
+def test_empty_collate():
+    """Due to data augmentations the dataset class may yield empty bounding box annotations"""
+    csv_file = get_data("example.csv")
+    root_dir = os.path.dirname(csv_file)
+    ds = dataset.TreeDataset(csv_file=csv_file,
+                             root_dir=root_dir,
+                             transforms=dataset.get_transform(augment=False))
+
+    for i in range(len(ds)):
+        #Between 0 and 1
+        batch = ds[i]
+        collated_batch = utilities.collate_fn([None, batch, batch])
+        len(collated_batch[0]) == 2
