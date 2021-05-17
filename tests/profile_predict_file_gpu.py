@@ -16,6 +16,8 @@ if __name__ == "__main__":
     m = main.deepforest()
     m.use_release()
     
+    m = m.to("cuda")
+    
     csv_file = get_data("OSBS_029.csv")
     image_path = get_data("OSBS_029.png")
     tmpdir = tempfile.gettempdir()    
