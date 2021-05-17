@@ -49,7 +49,6 @@ class images_callback(Callback):
         self.csv_file = "{}/image_callback.csv".format(savedir)        
         self.every_n_epochs = every_n_epochs
          
-
     def log_images(self, pl_module):
         boxes = pl_module.predict_file(self.csv_file, self.root_dir, savedir=self.savedir)
         try:

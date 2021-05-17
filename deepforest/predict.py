@@ -69,9 +69,7 @@ def predict_file(model, csv_file, root_dir, savedir, device, iou_threshold=0.1):
     """
     
     model.eval()
-    
     df = pd.read_csv(csv_file)
-    
     #Dataloader (when not shuffled) returns a tensor for each image in order
     paths = df.image_path.unique()
     ds = dataset.TreeDataset(csv_file=csv_file,
@@ -96,7 +94,6 @@ def predict_file(model, csv_file, root_dir, savedir, device, iou_threshold=0.1):
             prediction = across_class_nms(prediction, iou_threshold = iou_threshold)
     
         if savedir:
-            
             # Just predict the images, even though we have the annotations
             image = np.array(Image.open("{}/{}".format(root_dir,paths[index])))
             plot, ax = visualize.plot_predictions(image, prediction)

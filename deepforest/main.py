@@ -250,6 +250,7 @@ class deepforest(pl.LightningModule):
         """
         if torch.cuda.is_available():
             self.model = self.model.to("cuda")
+            self.current_device = torch.device("cuda")
             
         self.model.eval()
         result = predict.predict_file(model=self.model,
