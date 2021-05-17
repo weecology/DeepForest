@@ -82,7 +82,7 @@ class deepforest(pl.LightningModule):
         # Download latest model from github release
         release_tag, self.release_state_dict = utilities.use_release()
         self.model.load_state_dict(
-            torch.load(self.release_state_dict, map_location=self.device))
+            torch.load(self.release_state_dict, map_location=self.current_device))
 
         # load saved model and tag release
         self.__release_version__ = release_tag
