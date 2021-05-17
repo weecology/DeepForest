@@ -79,19 +79,11 @@ def predict_file(model, csv_file, root_dir, savedir, device, iou_threshold=0.1):
                              transforms=None,
                              train=False)
 
-    data_loader = torch.utils.data.DataLoader(
-        ds,
-        batch_size=1,
-        shuffle=False,
-        num_workers=0,
-    )
-
     prediction_list = []
-    for batch in data_loader:
-        if not device.type == "cpu":
-            batch = batch.to(device)
-            
-        prediction = model(batch)
+    for i in ds:
+        if device.type == "cuda":
+            i = i.cuda()
+        prediction = model(torch.unsqueeze(i,0))
         prediction_list.append(prediction)
     
     prediction_list = [item for sublist in prediction_list for item in sublist]
