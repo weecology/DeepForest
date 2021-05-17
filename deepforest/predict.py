@@ -76,7 +76,6 @@ def predict_file(model, csv_file, root_dir, savedir, device, iou_threshold=0.1):
                              root_dir=root_dir,
                              transforms=None,
                              train=False)
-
     prediction_list = []
     for i in ds:
         if device.type == "cuda":

@@ -248,10 +248,7 @@ class deepforest(pl.LightningModule):
         Returns:
             df: pandas dataframe with bounding boxes, label and scores for each image in the csv file
         """
-        if torch.cuda.is_available():
-            self.model = self.model.to("cuda")
-            self.current_device = torch.device("cuda")
-            
+        self.model = self.model.to(self.current_device)
         self.model.eval()
         result = predict.predict_file(model=self.model,
                                       csv_file=csv_file,
