@@ -77,7 +77,7 @@ def predict_file(model, csv_file, root_dir, savedir, device, iou_threshold=0.1):
 
     data_loader = torch.utils.data.DataLoader(
         ds,
-        batch_size=4,
+        batch_size=1,
         shuffle=False,
         num_workers=0,
     )
@@ -101,9 +101,10 @@ def predict_file(model, csv_file, root_dir, savedir, device, iou_threshold=0.1):
     
         if savedir:
             #if on GPU, bring back to cpu for plotting
+            if not device.type=="cpu":
+                prediction = prediction.cpu()
+            
             # Just predict the images, even though we have the annotations
-
-                
             image = np.array(Image.open("{}/{}".format(root_dir,paths[index])))
             plot, ax = visualize.plot_predictions(image, prediction)
             
