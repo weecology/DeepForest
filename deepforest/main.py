@@ -15,6 +15,7 @@ from deepforest import get_data
 from deepforest import model
 from deepforest import predict
 from deepforest import visualize
+from deepforest import preprocess
 from deepforest import evaluate as evaluate_iou
 from pytorch_lightning.callbacks import LearningRateMonitor
 
@@ -187,10 +188,10 @@ class deepforest(pl.LightningModule):
         return loader
 
     def predict_image(self, image=None, path=None, return_plot=False):
-        """Predict an image with a deepforest model
-
+        """Predict a single image with a deepforest model
+                
         Args:
-            image: a numpy array of a RGB image ranged from 0-255
+            image: a float32 numpy array of a RGB with channels last format
             path: optional path to read image from disk instead of passing image arg
             return_plot: Return image with plotted detections
         Returns:
@@ -201,14 +202,21 @@ class deepforest(pl.LightningModule):
             raise ValueError(
                 "Path provided instead of image. If you want to predict an image from disk, is path ="
             )
+        
 
         if path:
             if not isinstance(path, str):
                 raise ValueError("Path expects a string path to image on disk")
-            image = np.array(Image.open(path))
-
+            image = np.array(Image.open(path).convert("RGB")).astype("float32")
+        
+        #sanity checks on input images
+        if not type(image) == np.ndarray:
+            raise TypeError("Input image is of type {}, expected numpy, if reading from PIL, wrap in np.array(image).astype(float32)".format(type(image)))
+        if not image.dtype =="float32":
+            raise ValueError("image must be float32 dtype, found {}, use image.astype('float32')".format(image.dtype))
+                        
             # Load on GPU is available
-        if torch.cuda.is_available():
+        if self.current_device.type == "cuda":
             self.model = self.model.to("cuda")
 
         self.model.eval()

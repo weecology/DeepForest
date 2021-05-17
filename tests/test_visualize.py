@@ -2,9 +2,7 @@
 from deepforest import visualize
 from deepforest import main
 from deepforest import get_data
-from deepforest import model
 import os
-import torch
 import pytest
 import matplotlib
 from matplotlib import pyplot as plt

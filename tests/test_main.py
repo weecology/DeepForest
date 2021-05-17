@@ -4,9 +4,10 @@ import glob
 import pytest
 import pandas as pd
 import numpy as np
-from skimage import io
+import cv2
 import torch
 from torch.utils.data import Dataset
+import tempfile
 
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
@@ -17,12 +18,13 @@ from deepforest import model
 from deepforest import dataset
 from deepforest import utilities
 
-
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import Callback
+from PIL import Image
 
 #Import release model from global script to avoid thrasing github during testing. Just download once.
 from .conftest import download_release
+
 
 @pytest.fixture()
 def two_class_m():
@@ -55,6 +57,25 @@ def m(download_release):
     
     return m
 
+def big_file():
+    tmpdir = tempfile.gettempdir()
+    csv_file = get_data("OSBS_029.csv")
+    image_path = get_data("OSBS_029.png")
+    df = pd.read_csv(csv_file)    
+    
+    big_frame = []
+    for x in range(3):
+        img = Image.open("{}/{}".format(os.path.dirname(csv_file), df.image_path.unique()[0]))
+        cv2.imwrite("{}/{}.png".format(tmpdir, x), np.array(img))
+        new_df = df.copy()
+        new_df.image_path = "{}.png".format(x)
+        big_frame.append(new_df)
+    
+    big_frame = pd.concat(big_frame)
+    big_frame.to_csv("{}/annotations.csv".format(tmpdir))    
+    
+    return "{}/annotations.csv".format(tmpdir)
+    
 def test_main():
     from deepforest import main
 
@@ -71,7 +92,7 @@ def test_train_no_validation(m):
     m.trainer.fit(m)
     
 def test_predict_image_empty(m):
-    image = np.random.random((400,400,3))
+    image = np.random.random((400,400,3)).astype("float32")
     prediction = m.predict_image(image = image)
     
     assert prediction is None
@@ -84,27 +105,46 @@ def test_predict_image_fromfile(m):
     assert set(prediction.columns) == {"xmin","ymin","xmax","ymax","label","score"}
 
 def test_predict_image_fromarray(m):
-    image = get_data(path="2019_YELL_2_528000_4978000_image_crop2.png")
-    image = io.imread(image)
-    prediction = m.predict_image(image = image)
+    image_path = get_data(path="2019_YELL_2_528000_4978000_image_crop2.png")
     
+    #assert error of dtype
+    with pytest.raises(TypeError):
+        image = Image.open(image_path)
+        prediction = m.predict_image(image = image)
+    
+    with pytest.raises(ValueError):
+        image = np.array(Image.open(image_path))
+        prediction = m.predict_image(image = image)
+            
+    image = np.array(Image.open(image_path).convert("RGB")).astype("float32")
+    prediction = m.predict_image(image = image)    
     assert isinstance(prediction, pd.DataFrame)
     assert set(prediction.columns) == {"xmin","ymin","xmax","ymax","label","score"}
 
 def test_predict_return_plot(m):
     image = get_data(path="2019_YELL_2_528000_4978000_image_crop2.png")
-    image = io.imread(image)
+    image = np.array(Image.open(image)).astype("float32")
     plot = m.predict_image(image = image, return_plot=True)
     assert not isinstance(plot, pd.DataFrame)
-            
-def test_predict_file(m, tmpdir):
-    csv_file = get_data("example.csv")
+
+def test_predict_big_file(m, tmpdir):
+    csv_file = big_file()
+    original_file = pd.read_csv(csv_file)
+    df = m.predict_file(csv_file=csv_file, root_dir = os.path.dirname(csv_file), savedir=tmpdir)
+    assert set(df.columns) == {"xmin","ymin","xmax","ymax","label","score","image_path"}
+    
+    printed_plots = glob.glob("{}/*.png".format(tmpdir))
+    assert len(printed_plots) == len(original_file.image_path.unique())
+    
+def test_predict_small_file(m, tmpdir):
+    csv_file = get_data("OSBS_029.csv")
+    original_file = pd.read_csv(csv_file)
     df = m.predict_file(csv_file, root_dir = os.path.dirname(csv_file), savedir=tmpdir)
     assert set(df.columns) == {"xmin","ymin","xmax","ymax","label","score","image_path"}
     
     printed_plots = glob.glob("{}/*.png".format(tmpdir))
-    assert len(printed_plots) == 1
-
+    assert len(printed_plots) == len(original_file.image_path.unique())
+    
 def test_predict_tile(m):
     #test raster prediction 
     raster_path = get_data(path= 'OSBS_029.tif')
@@ -127,7 +167,7 @@ def test_predict_tile(m):
     assert not soft_nms_pred.empty
 
     #test predict numpy image
-    image = io.imread(raster_path)
+    image = np.array(Image.open(raster_path))
     prediction = m.predict_tile(image = image,
                                 patch_size = 300,
                                 patch_overlap = 0.5,
@@ -174,7 +214,8 @@ def test_train_callbacks(m):
     
 def test_save_and_reload(m, tmpdir):
     img_path = get_data(path="2019_YELL_2_528000_4978000_image_crop2.png")    
-    m.create_trainer(fast_dev_run=True)
+    m.config["train"]["fast_dev_run"] = True
+    m.create_trainer()
     #save the prediction dataframe after training and compare with prediction after reload checkpoint 
     m.trainer.fit(m)    
     pred_after_train = m.predict_image(path = img_path)

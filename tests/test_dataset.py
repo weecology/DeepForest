@@ -23,7 +23,6 @@ def test_TreeDataset(csv_file, label_dict):
     root_dir = os.path.dirname(csv_file)
     ds = dataset.TreeDataset(csv_file=csv_file,
                              root_dir=root_dir,
-                             transforms=None,
                              label_dict=label_dict)
     raw_data = pd.read_csv(csv_file)
     
@@ -86,3 +85,14 @@ def test_empty_collate():
         batch = ds[i]
         collated_batch = utilities.collate_fn([None, batch, batch])
         len(collated_batch[0]) == 2
+
+def test_predict_dataloader():
+    csv_file = get_data("example.csv")
+    root_dir = os.path.dirname(csv_file)
+    ds = dataset.TreeDataset(csv_file=csv_file,
+                             root_dir=root_dir,
+                             train=False)
+    image = next(iter(ds))
+    #Assert image is channels first format
+    assert image.shape[0] == 3
+    

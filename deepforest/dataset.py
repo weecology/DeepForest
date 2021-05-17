@@ -16,7 +16,6 @@ import os
 import pandas as pd
 import numpy as np
 from torch.utils.data import Dataset
-from deepforest.utilities import check_image
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 import torch
@@ -37,7 +36,7 @@ def get_transform(augment):
 
 class TreeDataset(Dataset):
 
-    def __init__(self, csv_file, root_dir, transforms, label_dict = {"Tree": 0}):
+    def __init__(self, csv_file, root_dir, transforms=None, label_dict = {"Tree": 0}, train=True):
         """
         Args:
             csv_file (string): Path to a single csv file with annotations.
@@ -45,38 +44,43 @@ class TreeDataset(Dataset):
             transform (callable, optional): Optional transform to be applied
                 on a sample.
             label_dict: a dictionary where keys are labels from the csv column and values are numeric labels "Tree" -> 0
+        Returns:
+            If train:
+                path, image, targets
+            else:
+                image
         """
         self.annotations = pd.read_csv(csv_file)
         self.root_dir = root_dir
-        self.transform = transforms
+        if transforms is None:
+            self.transform = get_transform(augment=train)
+        else:
+            self.transform = transforms
         self.image_names = self.annotations.image_path.unique()
         self.label_dict = label_dict
+        self.train = train
 
     def __len__(self):
         return len(self.image_names)
 
     def __getitem__(self, idx):
         img_name = os.path.join(self.root_dir, self.image_names[idx])
-        image = np.array(Image.open((img_name))).astype('float32')
-        image = image / 255
-        
-        try:
-            check_image(image)
-        except Exception as e:
-            raise Exception("dataloader failed with exception for image: {}",format(img_name))
+        #read, scale and set to float
+        image = np.array(Image.open(img_name).convert("RGB"))/255
+        image = image.astype("float32")
 
-        # select annotations
-        image_annotations = self.annotations[self.annotations.image_path ==
-                                             self.image_names[idx]]
-        targets = {}
-        targets["boxes"] = image_annotations[["xmin", "ymin", "xmax",
-                                              "ymax"]].values.astype(float)
-        
-        # Labels need to be encoded
-        targets["labels"] = image_annotations.label.apply(
-            lambda x: self.label_dict[x]).values.astype(int)
-
-        if self.transform:
+        if self.train:
+            # select annotations
+            image_annotations = self.annotations[self.annotations.image_path ==
+                                                 self.image_names[idx]]
+            targets = {}
+            targets["boxes"] = image_annotations[["xmin", "ymin", "xmax",
+                                                  "ymax"]].values.astype(float)
+            
+            # Labels need to be encoded
+            targets["labels"] = image_annotations.label.apply(
+                lambda x: self.label_dict[x]).values.astype(int)
+    
             augmented = self.transform(image=image, bboxes=targets["boxes"], category_ids=targets["labels"])
             image = augmented["image"]
             
@@ -90,9 +94,10 @@ class TreeDataset(Dataset):
             all_empty = all([len(x) == 0 for x in boxes])
             if all_empty:
                 return None
+
+            return self.image_names[idx], image, targets
             
         else:
-            targets["boxes"] = torch.from_numpy(targets["boxes"])
-            targets["labels"] = torch.from_numpy(targets["labels"])
+            augmented = self.transform(image=image)
+            return augmented["image"]
             
-        return self.image_names[idx], image, targets
