@@ -29,7 +29,9 @@ def predict_image(model, image, return_plot, device, iou_threshold=0.1):
     """
     
     image = preprocess.preprocess_image(image, device=device)
-    prediction = model(image)
+    
+    with torch.no_grad():
+        prediction = model(image)
 
     # return None for no predictions
     if len(prediction[0]["boxes"]) == 0:
