@@ -57,7 +57,7 @@ class deepforest(pl.LightningModule):
 
         self.num_classes = num_classes
         self.create_model()
-        
+                
         #Label encoder and decoder
         if not len(label_dict) == num_classes:
             raise ValueError(
@@ -82,7 +82,7 @@ class deepforest(pl.LightningModule):
         # Download latest model from github release
         release_tag, self.release_state_dict = utilities.use_release()
         self.model.load_state_dict(
-            torch.load(self.release_state_dict, map_location=self.current_device))
+            torch.load(self.release_state_dict, map_location=self.device))
 
         # load saved model and tag release
         self.__release_version__ = release_tag
@@ -240,6 +240,9 @@ class deepforest(pl.LightningModule):
         Returns:
             df: pandas dataframe with bounding boxes, label and scores for each image in the csv file
         """
+        if torch.cuda.is_available():
+            self.model = self.model.to("cuda")
+            
         self.model.eval()
         result = predict.predict_file(model=self.model,
                                       csv_file=csv_file,
