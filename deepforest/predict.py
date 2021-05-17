@@ -78,8 +78,7 @@ def predict_file(model, csv_file, root_dir, savedir, device, iou_threshold=0.1):
                              train=False)
     prediction_list = []
     for i in ds:
-        if device.type == "cuda":
-            i = i.cuda()
+        i = i.to(device)
         prediction = model(torch.unsqueeze(i,0))
         prediction_list.append(prediction)
     
