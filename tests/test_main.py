@@ -174,8 +174,9 @@ def test_train_callbacks(m):
     
 def test_save_and_reload(m, tmpdir):
     img_path = get_data(path="2019_YELL_2_528000_4978000_image_crop2.png")    
+    m.create_trainer(fast_dev_run=True)
     #save the prediction dataframe after training and compare with prediction after reload checkpoint 
-    m.trainer.fit(m, fast_dev_run=True)    
+    m.trainer.fit(m)    
     pred_after_train = m.predict_image(path = img_path)
     m.save_model("{}/checkpoint.pl".format(tmpdir))
     

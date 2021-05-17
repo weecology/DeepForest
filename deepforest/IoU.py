@@ -18,7 +18,9 @@ def create_rtree_from_poly(poly_list):
 
 def _overlap_(test_poly, truth_polys, rtree_index):
     """Calculate overlap between one polygon and all ground truth by area"""
-    results = []
+    prediction_id = []
+    truth_id = []
+    area = []
     matched_list = list(rtree_index.intersection(test_poly.geometry.bounds))
     for index in truth_polys.index:
         if index in matched_list:
@@ -28,14 +30,16 @@ def _overlap_(test_poly, truth_polys, rtree_index):
             intersection_area = intersection_result.area
         else:
             intersection_area = 0
-        results.append(
-            pd.DataFrame({
-                "prediction_id": [test_poly.prediction_id],
-                "truth_id": [truth_polys.loc[index].truth_id],
-                "area": intersection_area
-            }))
-    results = pd.concat(results)
+        
+        prediction_id.append(test_poly.prediction_id)
+        truth_id.append(truth_polys.loc[index].truth_id) 
+        area.append(intersection_area)
 
+    results = pd.DataFrame({
+        "prediction_id": prediction_id,
+        "truth_id": truth_id,
+        "area": area
+    })
     return results
 
 
