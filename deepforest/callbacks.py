@@ -13,6 +13,7 @@ import tempfile
 from pytorch_lightning import Callback
 from deepforest import dataset
 from deepforest import utilities
+from deepforest import predict
 
 import torch
 
@@ -50,7 +51,7 @@ class images_callback(Callback):
         self.every_n_epochs = every_n_epochs
          
     def log_images(self, pl_module):
-        boxes = pl_module.predict_file(self.csv_file, self.root_dir, savedir=self.savedir)
+        boxes = predict.predict_file(model = pl_module.model, csv_file=self.csv_file, root_dir=self.root_dir, savedir=self.savedir, device=pl_module.device)
         try:
             saved_plots = glob.glob("{}/*.png".format(self.savedir))
             for x in saved_plots:
