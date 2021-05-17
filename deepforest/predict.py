@@ -40,6 +40,10 @@ def predict_image(model, image, return_plot, device, iou_threshold=0.1):
     df = across_class_nms(df, iou_threshold=iou_threshold)
 
     if return_plot:
+        #Bring to gpu
+        if not device.type=="cpu":
+            image = image.cpu()
+            
         # Matplotlib likes no batch dim and channels first
         image = image.squeeze(0).permute(1, 2, 0)
         plot, ax = visualize.plot_predictions(image, df)
@@ -100,9 +104,6 @@ def predict_file(model, csv_file, root_dir, savedir, device, iou_threshold=0.1):
             prediction = across_class_nms(prediction, iou_threshold = iou_threshold)
     
         if savedir:
-            #if on GPU, bring back to cpu for plotting
-            if not device.type=="cpu":
-                prediction = prediction.cpu()
             
             # Just predict the images, even though we have the annotations
             image = np.array(Image.open("{}/{}".format(root_dir,paths[index])))
