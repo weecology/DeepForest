@@ -23,9 +23,6 @@ if __name__ == "__main__":
     tmpdir = tempfile.gettempdir()    
     df = pd.read_csv(csv_file)    
     
-    m = main.deepforest()
-    m.use_release()
-    
     big_frame = []
     for x in range(10):
         img = Image.open("{}/{}".format(os.path.dirname(csv_file), df.image_path.unique()[0]))
