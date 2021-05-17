@@ -66,7 +66,7 @@ def plot_prediction_dataframe(df, root_dir, ground_truth=None, savedir=None, sho
         None: side-effect plots are saved or generated and viewed
         """
     for name, group in df.groupby("image_path"):
-        image = Image.open("{}/{}".format(root_dir, name))
+        image = np.array(Image.open("{}/{}".format(root_dir, name)))
         plot, ax = plot_predictions(image, group, show=show)
         
         if ground_truth is not None:

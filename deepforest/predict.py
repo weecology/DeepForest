@@ -11,6 +11,7 @@ from torchvision.ops import nms
 
 from deepforest import preprocess
 from deepforest import visualize
+from deepforest import dataset
 
 import matplotlib.pyplot as plt
 
@@ -26,8 +27,8 @@ def predict_image(model, image, return_plot, device, iou_threshold=0.1):
         boxes: A pandas dataframe of predictions (Default)
         img: The input with predictions overlaid (Optional)
     """
-    image = preprocess.preprocess_image(image)
-    image = image.to(device)
+    
+    image = preprocess.preprocess_image(image, device=device)
     prediction = model(image)
 
     # return None for no predictions
@@ -52,6 +53,7 @@ def predict_file(model, csv_file, root_dir, savedir, device, iou_threshold=0.1):
 
     Csv file format is .csv file with the columns "image_path", "xmin","ymin","xmax","ymax" for the image name and bounding box position.
     Image_path is the relative filename, not absolute path, which is in the root_dir directory. One bounding box per line.
+    If "label" column is present, these are assumed to be annotations and will be plotted in a different color than predictions
 
     Args:
         csv_file: path to csv file
@@ -61,48 +63,64 @@ def predict_file(model, csv_file, root_dir, savedir, device, iou_threshold=0.1):
     Returns:
         df: pandas dataframe with bounding boxes, label and scores for each image in the csv file
     """
+    
+    model.eval()
+    
+    df = pd.read_csv(csv_file)
+    
+    #Dataloader (when not shuffled) returns a tensor for each image in order
+    paths = df.image_path.unique()
+    ds = dataset.TreeDataset(csv_file=csv_file,
+                             root_dir=root_dir,
+                             transforms=None,
+                             train=False)
 
-    input_csv = pd.read_csv(csv_file)
-
-    # Just predict each image once.
-    images = input_csv["image_path"].unique()
+    data_loader = torch.utils.data.DataLoader(
+        ds,
+        batch_size=128,
+        shuffle=False,
+        num_workers=0,
+    )
 
     prediction_list = []
-    for path in images:
-        image = np.array(Image.open("{}/{}".format(root_dir, path)))
-
-        image = preprocess.preprocess_image(image)
-
-        # Just predict the images, even though we have the annotations
+    for batch in data_loader:
         if not device.type == "cpu":
-            image = image.to(device)
-
-        prediction = model(image)
-        
-        prediction = visualize.format_boxes(prediction[0])
-        prediction = across_class_nms(prediction, iou_threshold = iou_threshold)
-        
-        prediction["image_path"] = path
+            batch = batch.to(device)
+            
+        prediction = model(batch)
         prediction_list.append(prediction)
-
+    
+    prediction_list = [item for sublist in prediction_list for item in sublist]
+    
+    results = []
+    for index, prediction in enumerate(prediction_list):
+        #If there is more than one class, apply NMS Loop through images and apply cross
+        prediction = visualize.format_boxes(prediction)
+        if len(prediction.label.unique()) > 1:
+            prediction = across_class_nms(prediction, iou_threshold = iou_threshold)
+    
         if savedir:
             #if on GPU, bring back to cpu for plotting
             # Just predict the images, even though we have the annotations
-            if not device.type == "cpu":
-                image = image.to("cpu")
+
                 
-            image = image.squeeze(0).permute(1, 2, 0)
+            image = np.array(Image.open("{}/{}".format(root_dir,paths[index])))
             plot, ax = visualize.plot_predictions(image, prediction)
-            annotations = input_csv[input_csv.image_path == path]
+            
+            #Plot annotations if they exist
+            annotations = df[df.image_path == paths[index]]
             plot = visualize.add_annotations(plot, ax, annotations)
-            plot.savefig("{}/{}.png".format(savedir, os.path.splitext(path)[0]),dpi=300)
+            plot.savefig("{}/{}.png".format(savedir, os.path.splitext(paths[index])[0]),dpi=300)
             
             #close figure in loop.
             plt.close()
+                
+        prediction["image_path"] = paths[index]
+        results.append(prediction)
 
-    df = pd.concat(prediction_list, ignore_index=True)
+    results = pd.concat(results, ignore_index=True)
 
-    return df
+    return results
 
 
 def predict_tile(model,
