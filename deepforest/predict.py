@@ -77,10 +77,11 @@ def predict_file(model, csv_file, root_dir, savedir, device, iou_threshold=0.1):
                              transforms=None,
                              train=False)
     prediction_list = []
-    for i in ds:
-        i = i.to(device)
-        prediction = model(torch.unsqueeze(i,0))
-        prediction_list.append(prediction)
+    with torch.no_grad():
+        for i in ds:
+            i = i.to(device)
+            prediction = model(torch.unsqueeze(i,0))
+            prediction_list.append(prediction)
     
     prediction_list = [item for sublist in prediction_list for item in sublist]
     
