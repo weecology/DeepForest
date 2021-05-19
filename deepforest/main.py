@@ -387,7 +387,6 @@ class deepforest(pl.LightningModule):
                  csv_file,
                  root_dir,
                  iou_threshold=None,
-                 show_plot=False,
                  savedir=None):
         """Compute intersection-over-union and precision/recall for a given iou_threshold
 
@@ -395,7 +394,6 @@ class deepforest(pl.LightningModule):
             df: a pandas-type dataframe (geopandas is fine) with columns "name","xmin","ymin","xmax","ymax","label", each box in a row
             root_dir: location of files in the dataframe 'name' column.
             iou_threshold: float [0,1] intersection-over-union union between annotation and prediction to be scored true positive
-            show_plot: open a blocking matplotlib window to show plot and annotations, useful for debugging.
             savedir: optional path dir to save evaluation images
         Returns:
             results: dict of ("results", "precision", "recall") for a given threshold
@@ -414,8 +412,7 @@ class deepforest(pl.LightningModule):
                                            iou_threshold=self.config["nms_thresh"])
         
         ground_df = pd.read_csv(csv_file)
-        
-        predictions["label"] = predictions["label"].apply(lambda x: self.numeric_to_label_dict[x])
+        ground_df["label"] = ground_df.label.apply(lambda x: self.label_dict[x])
         
         # if no arg for iou_threshold, set as config
         if iou_threshold is None:
@@ -426,5 +423,8 @@ class deepforest(pl.LightningModule):
                                         root_dir=root_dir,
                                         iou_threshold=iou_threshold,
                                         savedir=savedir)
+
+        results["results"]["predicted_label"] = results["results"]["predicted_label"].apply(lambda x: self.numeric_to_label_dict[x])
+        results["results"]["true_label"] = results["results"]["true_label"].apply(lambda x: self.numeric_to_label_dict[x])
 
         return results

@@ -180,16 +180,18 @@ def test_predict_tile(m):
                                        patch_overlap=0,
                                        return_plot=False)
     assert not prediction.empty
-    
-def test_evaluate(m):
+
+
+def test_evaluate(m, tmpdir):
     csv_file = get_data("OSBS_029.csv")
     root_dir = os.path.dirname(csv_file)
     
-    results = m.evaluate(csv_file, root_dir, iou_threshold = 0.4, show_plot=True)
+    results = m.evaluate(csv_file, root_dir, iou_threshold = 0.4, savedir=tmpdir)
     
     #Does this make reasonable predictions, we know the model works.
     assert np.round(results["box_precision"],2) > 0.5
     assert np.round(results["box_recall"],2) > 0.5
+    assert results["results"].predicted_label.unique() == ["Tree"]
     
 def test_train_callbacks(m):
     csv_file = get_data("example.csv") 
