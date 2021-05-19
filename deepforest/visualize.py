@@ -103,7 +103,10 @@ def plot_predictions(image, df, color=None):
     Returns:
         image: a numpy array with drawn annotations
     """    
-    image = image.astype("uint8").copy()
+    if image.dtype == "float32":
+        image = image * 255
+        image = image.astype("uint8")
+    image = image.copy()
     if not color:
         if not ptypes.is_numeric_dtype(df.label):
             raise ValueError("Label column is not numeric, please convert to numeric to correctly color image {}".format(df.label.head()))
