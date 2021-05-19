@@ -424,8 +424,9 @@ class deepforest(pl.LightningModule):
                                         iou_threshold=iou_threshold,
                                         savedir=savedir)
 
-        #replace classes if not NUll
-        results["results"]["predicted_label"] = results["results"]["predicted_label"].apply(lambda x: self.numeric_to_label_dict[x] if x !=None else x)
-        results["results"]["true_label"] = results["results"]["true_label"].apply(lambda x: self.numeric_to_label_dict[x])
+        #replace classes if not NUll, wrap in try catch if no predictions 
+        if not results["results"].empty: 
+            results["results"]["predicted_label"] = results["results"]["predicted_label"].apply(lambda x: self.numeric_to_label_dict[x] if x !=None else x)
+            results["results"]["true_label"] = results["results"]["true_label"].apply(lambda x: self.numeric_to_label_dict[x])
 
         return results
