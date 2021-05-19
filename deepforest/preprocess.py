@@ -234,6 +234,10 @@ def split_raster(annotations_file,
 
         # Crop image
         crop = numpy_image[windows[index].indices()]
+        
+        #skip if empty crop
+        if crop.size == 0:
+            continue
 
         # Find annotations, image_name is the basename of the path
         crop_annotations = select_annotations(image_annotations, windows, index,
