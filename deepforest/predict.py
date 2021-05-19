@@ -46,7 +46,7 @@ def predict_image(model, image, return_plot, device, iou_threshold=0.1):
             image = image.cpu()
             
         # Matplotlib likes no batch dim and channels first
-        image = np.array(image.squeeze(0))[:,:,::-1].copy()
+        image = np.array(image.squeeze(0))[:,:,::-1]
         image = visualize.plot_predictions(image, df)
         return image
     else:
@@ -95,7 +95,7 @@ def predict_file(model, csv_file, root_dir, savedir, device, iou_threshold=0.1):
     
         if savedir:
             # Just predict the images, even though we have the annotations
-            image = np.array(Image.open("{}/{}".format(root_dir,paths[index])))[:,:,::-1].copy()
+            image = np.array(Image.open("{}/{}".format(root_dir,paths[index])))[:,:,::-1]
             image = visualize.plot_predictions(image, prediction)
             
             #Plot annotations if they exist
@@ -226,7 +226,7 @@ def predict_tile(model,
         
     if return_plot:
         # Draw predictions on BGR 
-        image = image[:,:,::-1].copy()
+        image = image[:,:,::-1]
         image, _ = visualize.plot_predictions(image, mosaic_df)
         # Mantain consistancy with predict_image
         return image

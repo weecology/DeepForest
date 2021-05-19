@@ -46,7 +46,7 @@ def evaluate_image(predictions, ground_df, root_dir, savedir=None):
     result["true_label"] = result.truth_id.apply(lambda x: ground_df.label.loc[x])
     
     if savedir:
-        image = np.array(Image.open("{}/{}".format(root_dir, plot_name)))[:,:,::-1].copy()
+        image = np.array(Image.open("{}/{}".format(root_dir, plot_name)))[:,:,::-1]
         image = visualize.plot_predictions(image, df=predictions)
         image = visualize.plot_predictions(image, df=ground_df, color=(0,165,255))
         cv2.imwrite("{}/{}".format(savedir, plot_name), image)
