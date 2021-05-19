@@ -7,6 +7,7 @@ import matplotlib.patches as patches
 from PIL import Image
 import numpy as np
 import pandas.api.types as ptypes
+import cv2
 
 def view_dataset(ds, savedir=None):
     """Plot annotations on images for debugging purposes
@@ -18,12 +19,13 @@ def view_dataset(ds, savedir=None):
         image_path, image, targets = i
         df = format_boxes(targets[0], scores=False)
         image = np.moveaxis(image[0].numpy(),0,2)
-        plot, ax = plot_predictions(image, df)
+        image = plot_predictions(image, df)
     
     if savedir:
-        plot.savefig("{}/{}".format(savedir, image_path[0]), dpi=300)
+        cv2.imwrite("{}/{}".format(savedir, image_path[0]), image)
     else:
-        plt.show()
+        cv2.imshow(image)
+        cv2.waitKey(0)
             
 def format_boxes(prediction, scores=True):
     """Format a retinanet prediction into a pandas dataframe for a single image
@@ -45,16 +47,24 @@ def format_boxes(prediction, scores=True):
 
 
 def plot_prediction_and_targets(image, predictions, targets, image_name, savedir):
-    """Plot an image, its predictions, and its ground truth targets for debugging"""
+    """Plot an image, its predictions, and its ground truth targets for debugging
+    Args:
+        image: torch tensor, RGB color order
+        targets: torch tensor
+    Returns:
+        figure_path: path on disk with saved figure
+    """
+    image = np.array(image)[:,:,::-1].copy()
     prediction_df = format_boxes(predictions)
-    plot, ax = plot_predictions(image, prediction_df)
+    image = plot_predictions(image, prediction_df)
     target_df = format_boxes(targets, scores=False)
-    plot = add_annotations(plot, ax, target_df)
-    plot.savefig("{}/{}.png".format(savedir, image_name), dpi=300)
-    return "{}/{}.png".format(savedir, image_name)
+    image = plot_predictions(image, target_df)
+    figure_path = "{}/{}.png".format(savedir, image_name)
+    cv2.imwrite(figure_path, image)
+    
+    return figure_path
 
-
-def plot_prediction_dataframe(df, root_dir, ground_truth=None, savedir=None, show=False):
+def plot_prediction_dataframe(df, root_dir, ground_truth=None, savedir=None):
     """For each row in dataframe, call plot predictions. For multi-class labels, boxes will be colored by labels. Ground truth boxes will all be same color, regardless of class.
     Args:
         df: a pandas dataframe with image_path, xmin, xmax, ymin, ymax and label columns. The image_path column should be the relative path from root_dir, not the full path.
@@ -63,89 +73,46 @@ def plot_prediction_dataframe(df, root_dir, ground_truth=None, savedir=None, sho
         savedir: save the plot to an optional directory path.
         show (logical): Render the plot in the matplotlib GUI
     Returns:
-        None: side-effect plots are saved or generated and viewed
+        written_figures: list of filenames written
         """
+    written_figures = []
     for name, group in df.groupby("image_path"):
-        image = np.array(Image.open("{}/{}".format(root_dir, name)))
-        plot, ax = plot_predictions(image, group, show=show)
+        image = np.array(Image.open("{}/{}".format(root_dir, name)))[:,:,::-1].copy()
+        image = plot_predictions(image, group)
         
         if ground_truth is not None:
             annotations = ground_truth[ground_truth.image_path == name]
-            plot = add_annotations(plot, ax, annotations)
+            image = plot_predictions(image, annotations)
             
         if savedir:
-            plot.savefig("{}/{}.png".format(savedir, os.path.splitext(name)[0]))
+            figure_name = "{}/{}.png".format(savedir, os.path.splitext(name)[0])
+            written_figures.append(figure_name)
+            cv2.imwrite(figure_name, image)
     
+    return written_figures
 
-def plot_predictions(image, df, show=False):
+def plot_predictions(image, df, color=None):
     """channel order is channels first for pytorch
     By default this function does not show, but only plots an axis
     Label column must be numeric!
-    """
-    if not show:
-        original_backend = matplotlib.get_backend()
-        matplotlib.use("Agg")
-
-    if not ptypes.is_numeric_dtype(df.label):
-        raise ValueError("Label column is not numeric, please convert to numeric to correctly color image {}".format(df.label.head()))
-
-    #What size does the figure need to be in inches to fit the image?
-    dpi=300
-    height, width, nbands = image.shape
-    figsize = width / float(dpi), height / float(dpi)
-
-    fig, ax = plt.subplots(figsize=figsize)
-    ax.imshow(image)
-    for index, row in df.iterrows():
-        xmin = row["xmin"]
-        ymin = row["ymin"]
-        width = row["xmax"] - xmin
-        height = row["ymax"] - ymin
-        color = label_to_color(row["label"])
-        rect = create_box(xmin=xmin, ymin=ymin, height=height, width=width, color=color)
-        ax.add_patch(rect)
-    # no axis show up
-    plt.axis('off')
-    
-    #reload matplotlib to get use back their favorite backend.
-    if not show:
-        matplotlib.use(original_backend)
-    
-    return fig, ax
-
-
-def create_box(xmin, ymin, height, width, color="cyan", linewidth=0.75):
-    rect = patches.Rectangle((xmin, ymin),
-                             height,
-                             width,
-                             linewidth=linewidth,
-                             edgecolor=color,
-                             fill=False)
-    return rect
-
-
-def add_annotations(plot, ax, annotations):
-    """Add annotations to an already created visuale.plot_predictions
+    Image must be BGR color order!
     Args:
-        plot: matplotlib figure object
-        ax: maplotlib axes object
-        annotations: pandas dataframe of bounding box annotations
+        image: a numpy array in *BGR* color order!
+        df: a pandas dataframe with xmin, xmax, ymin, ymax and label column
+        color: a tuple of BGR color, e.g. orange annotations is (0, 165, 255)
     Returns:
-        plot: matplotlib figure object
-    """
-    for index, row in annotations.iterrows():
-        xmin = row["xmin"]
-        ymin = row["ymin"]
-        width = row["xmax"] - xmin
-        height = row["ymax"] - ymin
-        rect = create_box(xmin=xmin,
-                          ymin=ymin,
-                          height=height,
-                          width=width,
-                          color="orange")
-        ax.add_patch(rect)
+        image: a numpy array with drawn annotations
+    """    
+    if not color:
+        if not ptypes.is_numeric_dtype(df.label):
+            raise ValueError("Label column is not numeric, please convert to numeric to correctly color image {}".format(df.label.head()))
 
-    return plot
+    for index, row in df.iterrows():
+        if not color:
+            color = label_to_color(row["label"])
+        cv2.rectangle(image, (int(row["xmin"]), int(row["ymin"])), (int(row["xmax"]), int(row["ymax"])), color=color, thickness=1, lineType=cv2.LINE_AA)
+    
+    return image
 
 
 def label_to_color(label):
@@ -158,15 +125,14 @@ def label_to_color(label):
         color_dict[index] = color
 
     # hand pick the first few colors
-    color_dict[0] = "cyan"
-    color_dict[1] = "tomato"
-    color_dict[2] = "blue"
-    color_dict[3] = "limegreen"
-    color_dict[4] = "orchid"
-    color_dict[5] = "crimson"
-    color_dict[6] = "peru"
-    color_dict[7] = "dodgerblue"
-    color_dict[8] = "gold"
-    color_dict[9] = "blueviolet"
+    color_dict[0] = (255,255,0)
+    color_dict[1] = (71, 99,255)
+    color_dict[2] = (255,0,0)
+    color_dict[3] = (50,205,50)
+    color_dict[4] = (214,112,214)
+    color_dict[5] = (60, 20, 220)
+    color_dict[6] = (63, 133, 205)
+    color_dict[7] = (255, 144, 30)
+    color_dict[8] = (0, 215 ,255)
 
     return color_dict[label]

@@ -5,11 +5,14 @@ import pandas as pd
 import geopandas as gpd
 import shapely
 import numpy as np
+import cv2
+from PIL import Image
 
 from deepforest import IoU
 from deepforest.utilities import check_file
+from deepforest import visualize
 
-def evaluate_image(predictions, ground_df, root_dir, savedir):
+def evaluate_image(predictions, ground_df, root_dir, savedir=None):
     """
     Compute intersection-over-union matching among prediction and ground truth boxes for one image
     Args:
@@ -17,6 +20,7 @@ def evaluate_image(predictions, ground_df, root_dir, savedir):
         summarize: Whether to group statistics by plot and overall score
         image_coordinates: Whether the current boxes are in coordinate system of the image, e.g. origin (0,0) upper left.
         root_dir: Where to search for image names in df
+        savedir: optional directory to save image with overlaid predictions and annotations
     Returns:
         result: pandas dataframe with crown ids of prediciton and ground truth and the IoU score.
     """
@@ -40,7 +44,13 @@ def evaluate_image(predictions, ground_df, root_dir, savedir):
     #add the label classes
     result["predicted_label"] = result.prediction_id.apply(lambda x: predictions.label.loc[x] if pd.notnull(x) else x)
     result["true_label"] = result.truth_id.apply(lambda x: ground_df.label.loc[x])
-
+    
+    if savedir:
+        image = np.array(Image.open("{}/{}".format(root_dir, plot_name)))[:,:,::-1].copy()
+        image = visualize.plot_predictions(image, df=predictions)
+        image = visualize.plot_predictions(image, df=ground_df, color=(0,165,255))
+        cv2.imwrite("{}/{}".format(savedir, plot_name), image)
+        
     return result
 
 

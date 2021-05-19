@@ -14,7 +14,6 @@ from deepforest import dataset
 from deepforest import get_data
 from deepforest import model
 from deepforest import predict
-from deepforest import visualize
 from deepforest import preprocess
 from deepforest import evaluate as evaluate_iou
 from pytorch_lightning.callbacks import LearningRateMonitor
@@ -416,15 +415,6 @@ class deepforest(pl.LightningModule):
         
         ground_df = pd.read_csv(csv_file)
         
-        if savedir:
-            for image_path, group in predictions.groupby("image_path"):
-                plot_ground_truth = ground_df[ground_df["image_path"] == image_path].reset_index(drop=True)
-                group = group.reset_index(drop=True)
-                visualize.plot_prediction_dataframe(df=predictions,
-                                                    ground_truth=plot_ground_truth,
-                                                    root_dir=root_dir,
-                                                    savedir=savedir)
-            
         predictions["label"] = predictions["label"].apply(lambda x: self.numeric_to_label_dict[x])
         
         # if no arg for iou_threshold, set as config
@@ -434,6 +424,7 @@ class deepforest(pl.LightningModule):
         results = evaluate_iou.evaluate(predictions=predictions,
                                         ground_df=ground_df,
                                         root_dir=root_dir,
-                                        iou_threshold=iou_threshold)
+                                        iou_threshold=iou_threshold,
+                                        savedir=savedir)
 
         return results

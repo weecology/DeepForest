@@ -1,4 +1,5 @@
 # Prediction utilities
+import cv2
 import pandas as pd
 from PIL import Image
 import numpy as np
@@ -12,8 +13,6 @@ from torchvision.ops import nms
 from deepforest import preprocess
 from deepforest import visualize
 from deepforest import dataset
-
-import matplotlib.pyplot as plt
 
 def predict_image(model, image, return_plot, device, iou_threshold=0.1):
     """Predict an image with a deepforest model
@@ -47,9 +46,9 @@ def predict_image(model, image, return_plot, device, iou_threshold=0.1):
             image = image.cpu()
             
         # Matplotlib likes no batch dim and channels first
-        image = image.squeeze(0).permute(1, 2, 0)
-        plot, ax = visualize.plot_predictions(image, df)
-        return plot
+        image = np.array(image.squeeze(0))[:,:,::-1].copy()
+        image = visualize.plot_predictions(image, df)
+        return image
     else:
         return df
 
@@ -96,16 +95,15 @@ def predict_file(model, csv_file, root_dir, savedir, device, iou_threshold=0.1):
     
         if savedir:
             # Just predict the images, even though we have the annotations
-            image = np.array(Image.open("{}/{}".format(root_dir,paths[index])))
-            plot, ax = visualize.plot_predictions(image, prediction)
+            image = np.array(Image.open("{}/{}".format(root_dir,paths[index])))[:,:,::-1].copy()
+            image = visualize.plot_predictions(image, prediction)
             
             #Plot annotations if they exist
             annotations = df[df.image_path == paths[index]]
-            plot = visualize.add_annotations(plot, ax, annotations)
-            plot.savefig("{}/{}.png".format(savedir, os.path.splitext(paths[index])[0]),dpi=300)
             
-            #close figure in loop.
-            plt.close()
+            image = visualize.plot_predictions(image, annotations, color=(0,165,255))
+            cv2.imwrite("{}/{}.png".format(savedir, os.path.splitext(paths[index])[0]), image)
+    
                 
         prediction["image_path"] = paths[index]
         results.append(prediction)
@@ -227,10 +225,11 @@ def predict_tile(model,
         print(f"{mosaic_df.shape[0]} predictions kept after non-max suppression")
         
     if return_plot:
-        # Draw predictions
-        plot, _ = visualize.plot_predictions(image, mosaic_df)
+        # Draw predictions on BGR 
+        image = image[:,:,::-1].copy()
+        image, _ = visualize.plot_predictions(image, mosaic_df)
         # Mantain consistancy with predict_image
-        return plot
+        return image
     else:
         return mosaic_df
 

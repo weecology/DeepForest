@@ -4,8 +4,7 @@ from deepforest import main
 from deepforest import get_data
 import os
 import pytest
-import matplotlib
-from matplotlib import pyplot as plt
+import cv2
 
 @pytest.fixture()
 def m():
@@ -39,7 +38,9 @@ def test_plot_prediction_dataframe(m, tmpdir):
     for path, image, target in zip(paths, images, targets):
         target_df = visualize.format_boxes(target, scores=False)
         target_df["image_path"] = path
-        visualize.plot_prediction_dataframe(df=target_df,savedir=tmpdir, root_dir=m.config["validation"]["root_dir"])
+        filenames = visualize.plot_prediction_dataframe(df=target_df,savedir=tmpdir, root_dir=m.config["validation"]["root_dir"])
+        
+    assert all([os.path.exists(x) for x in filenames])
         
 def test_plot_predictions_and_targets(m, tmpdir):
     ds = m.val_dataloader()
@@ -51,23 +52,4 @@ def test_plot_predictions_and_targets(m, tmpdir):
         image = image.permute(1,2,0)
         save_figure_path = visualize.plot_prediction_and_targets(image, prediction, target, image_name=os.path.basename(path), savedir=tmpdir)
         assert os.path.exists(save_figure_path)
-
-@pytest.mark.parametrize("show",[True,False])
-def test_confirm_backend(m, tmpdir, show):
-    """When a use call a visualize function we are using matplotlib to save figures, this should not interfere with plotting in global scope"""    
-    ds = m.val_dataloader()
-    batch = next(iter(ds))
-    paths, images, targets = batch
-    
-    original_backend = matplotlib.get_backend()
-    
-    for path, image, target in zip(paths, images, targets):
-        target_df = visualize.format_boxes(target, scores=False)
-        target_df["image_path"] = path
-        visualize.plot_prediction_dataframe(df=target_df,savedir=tmpdir, root_dir=m.config["validation"]["root_dir"], show=show)    
-    
-    post_backend = matplotlib.get_backend()
-    
-    assert original_backend == post_backend
-    
     

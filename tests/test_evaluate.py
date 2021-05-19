@@ -20,7 +20,7 @@ def test_evaluate_image(m):
     predictions = m.predict_file(csv_file=csv_file, root_dir=os.path.dirname(csv_file))
     ground_truth = pd.read_csv(csv_file)
     predictions.label = 0
-    result = evaluate.evaluate_image(predictions=predictions, ground_df=ground_truth, root_dir=os.path.dirname(csv_file), savedir=None)     
+    result = evaluate.evaluate_image(predictions=predictions, ground_df=ground_truth, root_dir=os.path.dirname(csv_file))     
         
     assert result.shape[0] == ground_truth.shape[0]
     assert sum(result.IoU) > 10 
@@ -31,7 +31,7 @@ def test_evaluate(m):
     predictions.label = "Tree"
     ground_truth = pd.read_csv(csv_file)
     predictions = predictions.loc[range(10)]
-    results = evaluate.evaluate(predictions=predictions, ground_df=ground_truth, root_dir=os.path.dirname(csv_file), savedir=None)     
+    results = evaluate.evaluate(predictions=predictions, ground_df=ground_truth, root_dir=os.path.dirname(csv_file))     
         
     assert results["results"].shape[0] == ground_truth.shape[0]
     assert results["box_recall"] > 0.1
@@ -50,7 +50,19 @@ def test_evaluate_multi(m):
     #Manipulate the data to create some false positives
     predictions = ground_truth.copy()
     predictions.label.loc[[36,35,34]] = 0
-    results = evaluate.evaluate(predictions=predictions, ground_df=ground_truth, root_dir=os.path.dirname(csv_file), savedir=None)     
+    results = evaluate.evaluate(predictions=predictions, ground_df=ground_truth, root_dir=os.path.dirname(csv_file))     
         
     assert results["results"].shape[0] == ground_truth.shape[0]
     assert results["class_recall"].shape == (2,4)
+    
+def test_evaluate_save_images(m, tmpdir):
+    csv_file = get_data("testfile_multi.csv")
+    m = main.deepforest(num_classes=2,label_dict={"Alive":0,"Dead":1})
+    ground_truth = pd.read_csv(csv_file)
+    ground_truth["label"] = ground_truth.label.astype("category").cat.codes
+    
+    #Manipulate the data to create some false positives
+    predictions = ground_truth.copy()
+    predictions.label.loc[[36,35,34]] = 0
+    results = evaluate.evaluate(predictions=predictions, ground_df=ground_truth, root_dir=os.path.dirname(csv_file), savedir=tmpdir)     
+    assert all([os.path.exists("{}/{}".format(tmpdir,x)) for x in ground_truth.image_path])
