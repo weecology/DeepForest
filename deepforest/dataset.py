@@ -93,7 +93,7 @@ class TreeDataset(Dataset):
             #Check for blank tensors
             all_empty = all([len(x) == 0 for x in boxes])
             if all_empty:
-                return None
+                raise ValueError("Blank annotations are not allowed in retinanets. Check data augmentation for image {} with shape {}, no overlapping boxes found".format(self.image_names[idx], image.shape))
 
             return self.image_names[idx], image, targets
             
