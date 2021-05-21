@@ -111,21 +111,17 @@ def test_predict_image_fromarray(m):
     with pytest.raises(TypeError):
         image = Image.open(image_path)
         prediction = m.predict_image(image = image)
-    
-    with pytest.raises(ValueError):
-        image = np.array(Image.open(image_path))
-        prediction = m.predict_image(image = image)
             
-    image = np.array(Image.open(image_path).convert("RGB")).astype("float32")
+    image = np.array(Image.open(image_path).convert("RGB"))
     prediction = m.predict_image(image = image)    
     assert isinstance(prediction, pd.DataFrame)
     assert set(prediction.columns) == {"xmin","ymin","xmax","ymax","label","score"}
 
 def test_predict_return_plot(m):
     image = get_data(path="2019_YELL_2_528000_4978000_image_crop2.png")
-    image = np.array(Image.open(image)).astype("float32")
+    image = np.array(Image.open(image))
     plot = m.predict_image(image = image, return_plot=True)
-    assert not isinstance(plot, pd.DataFrame)
+    assert isinstance(plot, np.ndarray)
 
 def test_predict_big_file(m, tmpdir):
     csv_file = big_file()

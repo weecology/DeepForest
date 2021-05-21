@@ -211,9 +211,7 @@ class deepforest(pl.LightningModule):
         #sanity checks on input images
         if not type(image) == np.ndarray:
             raise TypeError("Input image is of type {}, expected numpy, if reading from PIL, wrap in np.array(image).astype(float32)".format(type(image)))
-        if not image.dtype =="float32":
-            raise ValueError("image must be float32 dtype, found {}, use image.astype('float32')".format(image.dtype))
-                        
+
             # Load on GPU is available
         if self.current_device.type == "cuda":
             self.model = self.model.to("cuda")
@@ -327,11 +325,7 @@ class deepforest(pl.LightningModule):
         """Train on a loaded dataset
         """
         #allow for empty data if data augmentation is generated
-        try:
-            path, images, targets = batch
-        except:
-            print("Empty batch encountered, skipping")
-            return None
+        path, images, targets = batch
 
         loss_dict = self.model.forward(images, targets)
 

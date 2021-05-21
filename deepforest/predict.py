@@ -5,6 +5,7 @@ from PIL import Image
 import numpy as np
 import os
 from tqdm import tqdm
+import warnings
 
 import torch
 import rasterio as rio
@@ -27,6 +28,9 @@ def predict_image(model, image, return_plot, device, iou_threshold=0.1):
         img: The input with predictions overlaid (Optional)
     """
     
+    if image.dtype !="float32":
+        warnings.warn("Image type is {}, transforming to float32. This assumes that the range of pixel values is 0-255, as opposed to 0-1.To suppress this warning, transform image (image.astype('float32')")
+        image = image.astype("float32")
     image = preprocess.preprocess_image(image, device=device)
     
     with torch.no_grad():
@@ -45,9 +49,13 @@ def predict_image(model, image, return_plot, device, iou_threshold=0.1):
         if not device.type=="cpu":
             image = image.cpu()
             
-        # Matplotlib likes no batch dim and channels first
-        image = np.array(image.squeeze(0))[:,:,::-1]
+        # Cv2 likes no batch dim, BGR image and channels last, 0-255
+        image = np.array(image.squeeze(0))
+        image = np.rollaxis(image, 0, 3)        
+        image = image[:,:,::-1] * 255
+        image = image.astype("uint8")
         image = visualize.plot_predictions(image, df)
+        
         return image
     else:
         return df

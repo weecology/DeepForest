@@ -92,19 +92,20 @@ def plot_prediction_dataframe(df, root_dir, ground_truth=None, savedir=None):
     return written_figures
 
 def plot_predictions(image, df, color=None):
-    """channel order is channels first for pytorch
+    """Plot a set of boxes on an image
     By default this function does not show, but only plots an axis
     Label column must be numeric!
     Image must be BGR color order!
     Args:
-        image: a numpy array in *BGR* color order!
+        image: a numpy array in *BGR* color order! Channel order is channels first 
         df: a pandas dataframe with xmin, xmax, ymin, ymax and label column
         color: a tuple of BGR color, e.g. orange annotations is (0, 165, 255)
     Returns:
         image: a numpy array with drawn annotations
     """    
+    if image.shape[0] == 3:
+        raise ValueError("Input images must be channels last format [h, w, 3] not channels first [3, h, w], use np.rollaxis(image, 0, 3) to invert")
     if image.dtype == "float32":
-        image = image * 255
         image = image.astype("uint8")
     image = image.copy()
     if not color:
