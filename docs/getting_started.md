@@ -32,9 +32,9 @@ Setting the correct window size to match the prebuilt model takes a few tries. T
 DeepForest comes with a small set of sample data to help run the docs examples. Since users may install in a variety of manners, and it is impossible to know the relative location of the files, the helper function ```get_data``` is used. This function looks to where DeepForest is installed, and finds the deepforest/data/ directory.
 
 ```python
-sample_image = get_data("OSBS_029.jpeg")
+sample_image = get_data("OSBS_029.png")
 sample_image
-'/Users/benweinstein/Documents/DeepForest-pytorch/deepforest/data/OSBS_029.jpeg'
+'/Users/benweinstein/Documents/DeepForest-pytorch/deepforest/data/OSBS_029.png'
 ```
 
 ## Prediction
