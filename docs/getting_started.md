@@ -52,7 +52,7 @@ For single images, ```predict_image``` can read an image from memory or file and
 # it is best to use the function if installed as a python module.
 # For non-tutorial images, you do not need the get_data function,
 # just provide the full path to the data anywhere on your computer.
-image_path = get_data("OSBS_029.tif")
+image_path = get_data("OSBS_029.png")
 boxes = model.predict_image(path=image_path, return_plot = False)
 ```
 
