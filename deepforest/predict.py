@@ -235,7 +235,7 @@ def predict_tile(model,
     if return_plot:
         # Draw predictions on BGR 
         image = image[:,:,::-1]
-        image, _ = visualize.plot_predictions(image, mosaic_df)
+        image = visualize.plot_predictions(image, mosaic_df)
         # Mantain consistancy with predict_image
         return image
     else:

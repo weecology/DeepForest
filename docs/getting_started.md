@@ -10,7 +10,8 @@ import os
 import matplotlib.pyplot as plt
 model = main.deepforest()
 model.use_release()
-img=model.predict_image(path="/Users/benweinstein/Documents/NeonTreeEvaluation/evaluation/RGB/TEAK_049_2019.tif",return_plot=True)
+
+img = model.predict_image(path="/Users/benweinstein/Documents/NeonTreeEvaluation/evaluation/RGB/TEAK_049_2019.tif",return_plot=True)
 
 #predict_image returns plot in BlueGreenRed (opencv style), but matplotlib likes RedGreenBlue, switch the channel order.
 plt.imshow(img[:,:,::-1])
@@ -45,13 +46,9 @@ There are three ways to format data for prediction.
 ### Predict a single image
 
 For single images, ```predict_image``` can read an image from memory or file and return predicted tree bounding boxes.
+For non-tutorial images, you do not need the get_data function, just provide the full path to the data anywhere on your computer.
 
 ```python
-# Predict test image and return boxes
-# Find path to test image. While it lives in deepforest/data,
-# it is best to use the function if installed as a python module.
-# For non-tutorial images, you do not need the get_data function,
-# just provide the full path to the data anywhere on your computer.
 image_path = get_data("OSBS_029.png")
 boxes = model.predict_image(path=image_path, return_plot = False)
 ```
@@ -93,18 +90,14 @@ Consider a headerless annotations.csv file in the following format
 ```
 image_path, xmin, ymin, xmax, ymax, label
 ```
-with each bounding box on a seperate row. The image path is relative to the local of the annotations file.
+with each bounding box on a seperate row. The image path is relative to the root dir. Its often easiest to just save the .csv file alongside the images.
 
 We can view predictions by supplying a save dir ("." = current directory). Predictions in green, annotations in black.
 
 ```python
-annotations_file = get_data("testfile_deepforest.csv")
-
-model.config["save_dir"] = "."
-boxes = model.predict_file(annotations=annotations_file)
+csv_file = get_data("testfile_deepforest.csv")
+boxes = model.predict_file(csv_file=csv_file, root_dir = os.path.dirname(csv_file),savedir=".")
 ```
-
-For more information on data files, see below.
 
 ## Training
 
@@ -130,12 +123,6 @@ OSBS_029.jpg,115,109,150,152,Tree
 OSBS_029.jpg,161,155,199,191,Tree
 ```
 
-and a classes.csv file in the same directory
-
-```
-Tree,0
-```
-
 We tell the config that we want to train on this csv file, and that the images are in the same directory. If images are in a seperate folder, change the root_dir.
 
 ```python
@@ -144,14 +131,22 @@ annotations_file = get_data("testfile_deepforest.csv")
 
 model.config["epochs"] = 1
 model.config["save-snapshot"] = False
-model.config["steps"] = 1
 model.config["train"]["csv_file"] = annotations_file
 model.config["train"]["root_dir"] = os.path.dirname(annotations_file)
 
 model.create_trainer()
 ```
 
-To begin training, call trainer.fit on the model object directly on itself. While this might look a touch awkward, it is useful for exposing the pytorch lightning functionality.
+For debugging, its often useful to use the [fast_dev_run = True from pytorch lightning](https://pytorch-lightning.readthedocs.io/en/latest/common/trainer.html#fast-dev-run)
+
+```
+model.config["train"]["fast_dev_run"] = True
+```
+
+See [config](https://deepforest-pytorch.readthedocs.io/en/latest/ConfigurationFile.html) for full set of available arguments. You can also pass any [additional](https://pytorch-lightning.readthedocs.io/en/latest/common/trainer.html) pytorch lightning argument to trainer.
+
+To begin training, we create a pytorch-lightning trainer and call trainer.fit on the model object directly on itself. 
+While this might look a touch awkward, it is useful for exposing the pytorch lightning functionality.
 
 ```
 model.trainer.fit(model)
@@ -169,8 +164,7 @@ To get an evaluation score, specify an annotations file in the same format as th
 ```
 csv_file = get_data("OSBS_029.csv")
 root_dir = os.path.dirname(csv_file)
-
-results = model.evaluate(csv_file, root_dir, iou_threshold = 0.4, show_plot=True)
+results = model.evaluate(csv_file, root_dir, iou_threshold = 0.4)
 ```
 
 The results object is a dictionary with keys, 'results',"recall","precision". Results is the intersection-over-union scores for each ground truth object in the csv_file.
@@ -191,17 +185,15 @@ The recall is the proportion of ground truth which have a true positive match wi
 
 ```
 results["box_recall"]
-0.738
+0.705
 ```
 
 The regression box precision is the proportion of predicted boxes which overlap a ground truth box.
 
 ```
 results["box_precision"]
-0.428
+0.781
 ```
-
-In a multi-class problem, there 
 
 ### Loading saved models for prediction
 
@@ -217,8 +209,13 @@ tmpdir = tempfile.TemporaryDirectory()
 model.use_release()
 
 #save the prediction dataframe after training and compare with prediction after reload checkpoint 
+img_path = get_data("OSBS_029.png")
+model.create_trainer()
+model.trainer.fit(model)
 pred_after_train = model.predict_image(path = img_path)
-model.save_model("{}/checkpoint.pl".format(tmpdir))
+
+#Create a trainer to make a checkpoint
+model.trainer.save_checkpoint("{}/checkpoint.pl".format(tmpdir))
 
 #reload the checkpoint to model object
 after = main.deepforest.load_from_checkpoint("{}/checkpoint.pl".format(tmpdir))
