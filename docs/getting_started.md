@@ -203,7 +203,7 @@ results["box_precision"]
 
 In a multi-class problem, there 
 
-## Loading saved models for prediction
+### Loading saved models for prediction
 
 DeepForest uses the keras saving workflow, which means users can save the entire model architecture, or just the weights. For more explanation on Keras see [here](https://stackoverflow.com/questions/42621864/difference-between-keras-model-save-and-model-save-weights).
 
@@ -230,8 +230,10 @@ pd.testing.assert_frame_equal(pred_after_train,pred_after_reload)
 ```
 
 ---
+
 Note that when reloading models, you should carefully inspect the model parameters, such as the score_thresh and nms_thresh. These parameters are updated during model creation and the config file is not read when loading from checkpoint!
 It is best to be direct to specify after loading checkpoint.
+
 ---
 
 ```
