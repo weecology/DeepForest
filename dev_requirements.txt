@@ -3,7 +3,7 @@ numpydoc
 h5py
 geopandas
 pandas
-pillow=6.2.0
+pillow
 pip
 psutil
 pytorch_lightning
