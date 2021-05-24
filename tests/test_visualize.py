@@ -39,6 +39,7 @@ def test_plot_predictions(m, tmpdir):
         target_df = visualize.format_boxes(target, scores=False)
         target_df["image_path"] = path
         image = np.array(image)[:,:,::-1]
+        image = np.rollaxis(image,0,3)
         image = visualize.plot_predictions(image, target_df)
 
         assert image.dtype == "uint8"

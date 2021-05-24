@@ -250,28 +250,28 @@ def test_override_transforms():
     path, image, target = next(iter(train_ds))
     assert m.transforms.__doc__ == "This is the new transform"
 
-def test_train_empty_batch(m):
-    """If module encounters an invalid batch, print and skip"""
-    class EmptyDataset(Dataset):
-        def __init__(self):
-            pass
-        def __len__(self):
-            return 10
-        def __getitem__(self, idx):
-            return None, None
-    ds = EmptyDataset()
+#def test_train_empty_batch(m):
+    #"""If module encounters an invalid batch, print and skip"""
+    #class EmptyDataset(Dataset):
+        #def __init__(self):
+            #pass
+        #def __len__(self):
+            #return 10
+        #def __getitem__(self, idx):
+            #return None, None
+    #ds = EmptyDataset()
     
-    data_loader = torch.utils.data.DataLoader(
-        ds,
-        batch_size=1,
-        shuffle=False,
-        collate_fn=utilities.collate_fn,
-        num_workers=0
-    )
+    #data_loader = torch.utils.data.DataLoader(
+        #ds,
+        #batch_size=1,
+        #shuffle=False,
+        #collate_fn=utilities.collate_fn,
+        #num_workers=0
+    #)
     
-    for batch in data_loader:
-        image, target = batch
-        assert image[0] is None
-        assert target[0] is None
+    #for batch in data_loader:
+        #image, target = batch
+        #assert image[0] is None
+        #assert target[0] is None
         
-    m.trainer.fit(m, data_loader)
+    #m.trainer.fit(m, data_loader)
