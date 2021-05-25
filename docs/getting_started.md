@@ -21,7 +21,7 @@ plt.imshow(img[:,:,::-1])
 
 ## Prebuilt models
 
-DeepForest has a prebuilt model trained on data from 24 sites from the [National Ecological Observation Network](https://www.neonscience.org/field-sites/field-sites-map). The prebuilt model uses a semi-supervised approach in which millions of moderate quality annotations are generated using a LiDAR unsupervised tree detection algorithm, followed by hand-annotations of RGB imagery from select sites.
+DeepForest has a prebuilt model trained on data from 24 sites from the [National Ecological Observatory Network](https://www.neonscience.org/field-sites/field-sites-map). The prebuilt model uses a semi-supervised approach in which millions of moderate quality annotations are generated using a LiDAR unsupervised tree detection algorithm, followed by hand-annotations of RGB imagery from select sites.
 
 ![](../www/semi-supervised.png)
 For more details on the modeling approach see [citations](landing.html#citation).
@@ -67,7 +67,7 @@ For the release model, there is only one category "Tree", which is numeric 0 lab
 
 ### Predict a tile
 
-Large tiles covering wide geographic extents cannot fit into memory during prediction and would yield poor results due to the density of bounding boxes. Often provided as geospatial .tif files, remote sensing data is best suited for the ```predict_tile``` function, which splits the tile into overlapping windows, perform prediction on each of the windows, and then reassembles the resulting annotations.
+Large tiles covering wide geographic extents cannot fit into memory during prediction and would yield poor results due to the density of bounding boxes. Often provided as geospatial .tif files, remote sensing data is best suited for the ```predict_tile``` function, which splits the tile into overlapping windows, performs prediction on each of the windows, and then reassembles the resulting annotations.
 
 Let's show an example with a small image. For larger images, patch_size should be increased.
 
@@ -102,7 +102,7 @@ boxes = model.predict_file(csv_file=csv_file, root_dir = os.path.dirname(csv_fil
 ## Training
 
 The prebuilt models will always be improved by adding data from the target area. In our work, we have found that even one hour's worth of carefully chosen hand-annotation can yield enormous improvements in accuracy and precision.
-We envision that for the majority of scientific applications atleast some finetuning of the prebuilt model will be worthwhile. When starting from the prebuilt model for training, we have found that 5-10 epochs is sufficient. 
+We envision that for the majority of scientific applications at least some fine-tuning of the prebuilt model will be worthwhile. When starting from the prebuilt model for training, we have found that 5-10 epochs is sufficient. 
 We have never seen a retraining task that improved after 10-30 epochs, but it is possible if there are very large datasets with very diverse classes.
 
 Consider an annotations.csv file in the following format
@@ -195,11 +195,7 @@ results["box_precision"]
 0.781
 ```
 
-### Loading saved models for prediction
-
-DeepForest uses the keras saving workflow, which means users can save the entire model architecture, or just the weights. For more explanation on Keras see [here](https://stackoverflow.com/questions/42621864/difference-between-keras-model-save-and-model-save-weights).
-
-### Saved Model
+### Saving and loading models
 
 ```
 import tempfile
