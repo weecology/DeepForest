@@ -67,7 +67,7 @@ For the release model, there is only one category "Tree", which is numeric 0 lab
 
 ### Predict a tile
 
-Large tiles covering wide geographic extents cannot fit into memory during prediction and would yield poor results due to the density of bounding boxes. Often provided as geospatial .tif files, remote sensing data is best suited for the ```predict_tile``` function, which splits the tile into overlapping windows, perform prediction on each of the windows, and then reassembles the resulting annotations.
+Large tiles covering wide geographic extents cannot fit into memory during prediction and would yield poor results due to the density of bounding boxes. Often provided as geospatial .tif files, remote sensing data is best suited for the ```predict_tile``` function, which splits the tile into overlapping windows, performs prediction on each of the windows, and then reassembles the resulting annotations.
 
 Let's show an example with a small image. For larger images, patch_size should be increased.
 
@@ -102,7 +102,7 @@ boxes = model.predict_file(csv_file=csv_file, root_dir = os.path.dirname(csv_fil
 ## Training
 
 The prebuilt models will always be improved by adding data from the target area. In our work, we have found that even one hour's worth of carefully chosen hand-annotation can yield enormous improvements in accuracy and precision.
-We envision that for the majority of scientific applications atleast some finetuning of the prebuilt model will be worthwhile. When starting from the prebuilt model for training, we have found that 5-10 epochs is sufficient. 
+We envision that for the majority of scientific applications at least some fine-tuning of the prebuilt model will be worthwhile. When starting from the prebuilt model for training, we have found that 5-10 epochs is sufficient. 
 We have never seen a retraining task that improved after 10-30 epochs, but it is possible if there are very large datasets with very diverse classes.
 
 Consider an annotations.csv file in the following format
