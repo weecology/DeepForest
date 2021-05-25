@@ -195,11 +195,7 @@ results["box_precision"]
 0.781
 ```
 
-### Loading saved models for prediction
-
-DeepForest uses the keras saving workflow, which means users can save the entire model architecture, or just the weights. For more explanation on Keras see [here](https://stackoverflow.com/questions/42621864/difference-between-keras-model-save-and-model-save-weights).
-
-### Saved Model
+### Saving and loading models
 
 ```
 import tempfile
