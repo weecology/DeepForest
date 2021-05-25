@@ -12,7 +12,7 @@
 | --- | --- | --- | --- |
 | [![Conda Recipe](https://img.shields.io/badge/recipe-deepforest-green.svg)](https://anaconda.org/conda-forge/deepforest) | [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/deepforest.svg)](https://anaconda.org/conda-forge/deepforest) | [![Conda Version](https://img.shields.io/conda/vn/conda-forge/deepforest.svg)](https://anaconda.org/conda-forge/deepforest) | [![Conda Platforms](https://img.shields.io/conda/pn/conda-forge/deepforest.svg)](https://anaconda.org/conda-forge/deepforest) |
 
-DeepForest is a python package for training and predicting individual tree crowns from airborne RGB imagery. DeepForest comes with a prebuilt model trained on data from the National Ecological Observation Network. Users can extend this model by annotating and training custom models starting from the prebuilt model.
+DeepForest is a python package for training and predicting individual tree crowns from airborne RGB imagery. DeepForest comes with a prebuilt model trained on data from the National Ecological Observatory Network. Users can extend this model by annotating and training custom models starting from the prebuilt model.
 
 DeepForest es un paquete de python para la predicción de coronas de árboles individuales basada en modelos entrenados con imágenes remotas RVA ( RGB, por sus siglas en inglés). DeepForest viene con un modelo entrenado con datos proveídos por la Red Nacional de Observatorios Ecológicos (NEON, por sus siglas en inglés). Los usuarios pueden ampliar este modelo pre-construido por anotación de etiquetas y entrenamiento con datos locales. La documentación de DeepForest está escrita en inglés, sin embargo, agradeceríamos contribuciones con fin de hacerla accesible en otros idiomas.
 
@@ -78,7 +78,7 @@ All [issues](https://github.com/weecology/DeepForest/issues/) can be submitted t
 
 Using DeepForest, users can predict individual tree crowns by loading prebuilt models and applying them to RGB images.
 
-Currently there is 1 prebuilt model, "NEON", which was trained using a semi-supervised process from imagery from the National Ecological Observation Network.
+Currently there is 1 prebuilt model, "NEON", which was trained using a semi-supervised process from imagery from the National Ecological Observatory Network.
 For more information on the prebuilt models see [citations](https://github.com/weecology/DeepForest#citation).
 
 ```{python}
@@ -153,4 +153,4 @@ bioRxiv 790071; doi: https://doi.org/10.1101/790071](https://www.biorxiv.org/con
 
 ### Where can I get sample data?
 
-We are organizing a benchmark dataset for individual tree crown prediction in RGB imagery from the National Ecological Observation Network: https://github.com/weecology/NeonTreeEvaluation
+We are organizing a benchmark dataset for individual tree crown prediction in RGB imagery from the National Ecological Observatory Network: https://github.com/weecology/NeonTreeEvaluation
