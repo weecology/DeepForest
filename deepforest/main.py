@@ -385,7 +385,7 @@ class deepforest(pl.LightningModule):
         """Compute intersection-over-union and precision/recall for a given iou_threshold
 
         Args:
-            df: a pandas-type dataframe (geopandas is fine) with columns "name","xmin","ymin","xmax","ymax","label", each box in a row
+            csv_file: location of a csv file with columns "name","xmin","ymin","xmax","ymax","label", each box in a row
             root_dir: location of files in the dataframe 'name' column.
             iou_threshold: float [0,1] intersection-over-union union between annotation and prediction to be scored true positive
             savedir: optional path dir to save evaluation images
