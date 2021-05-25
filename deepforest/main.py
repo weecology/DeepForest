@@ -77,7 +77,7 @@ class deepforest(pl.LightningModule):
         """Use the latest DeepForest model release from github and load model.
         Optionally download if release doesn't exist.
         Returns:
-            model (object): A trained keras model
+            model (object): A trained PyTorch model
         """
         # Download latest model from github release
         release_tag, self.release_state_dict = utilities.use_release()

@@ -55,7 +55,7 @@ test:
     - requirements.txt
 
   commands:
-    - {{ PYTHON }} -m pip install -r requirements.txt && pytest -v --ignore=keras-retinanet/    # [unix]
+    - {{ PYTHON }} -m pip install -r requirements.txt && pytest -v    # [unix]
     - {{ PYTHON }} -c 'import deepforest; print(deepforest.__version__)'    # [win]
 
 about:
