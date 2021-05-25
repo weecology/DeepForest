@@ -77,7 +77,7 @@ class deepforest(pl.LightningModule):
         """Use the latest DeepForest model release from github and load model.
         Optionally download if release doesn't exist.
         Returns:
-            model (object): A trained keras model
+            model (object): A trained pytorch model
         """
         # Download latest model from github release
         release_tag, self.release_state_dict = utilities.use_release()
@@ -88,6 +88,20 @@ class deepforest(pl.LightningModule):
         self.__release_version__ = release_tag
         print("Loading pre-built model: {}".format(release_tag))
 
+    def use_bird_release(self):
+        """Use the latest DeepForest bird model release from github and load model.
+        Optionally download if release doesn't exist.
+        Returns:
+            model (object): A trained pytorch model
+        """
+        # Download latest model from github release
+        release_tag, self.release_state_dict = utilities.use_bird_release()
+        self = self.load_from_checkpoint(self.release_state_dict)
+   
+        # load saved model and tag release
+        self.__release_version__ = release_tag
+        print("Loading pre-built model: {}".format(release_tag))
+        
     def create_model(self):
         """Define a deepforest retinanet architecture"""
         self.model = model.create_model(self.num_classes, self.config["nms_thresh"],

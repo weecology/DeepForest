@@ -31,6 +31,11 @@ def test_use_release(download_release):
     release_tag, state_dict = utilities.use_release()
     assert os.path.exists(get_data("NEON.pt"))
 
+def test_use_bird_release(download_release):
+    # Download latest model from github release
+    release_tag, state_dict = utilities.use_bird_release()
+    assert os.path.exists(get_data("species_model.pl"))
+    
 def test_float_warning(config):
     """Users should get a rounding warning when adding annotations with floats"""
     float_annotations = "tests/data/float_annotations.txt"

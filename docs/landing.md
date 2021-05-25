@@ -7,7 +7,7 @@ DeepForest-pytorch is a python package for training and predicting individual tr
 
 The original project https://deepforest.readthedocs.io/ was written in tensorflow based on keras-retinanet. When tensorflow updated to 2.0 there were breaking changes and the authors of keras-retinanet decided to not attempt to recover the project. 
 The rapid development of open machine learning community resources means that tensorflow 1.1.14, which is required for deepforest, will rapidly become out of date. 
-As of 3/12/2021 there are no current no breaking changes, but the potential for them will increase over time.
+As of 3/12/2021 there are no current no breaking changes, but the potential for them will increase over time. Unless there is a compelling interest, this project should be used and the release model will be updated here and not in the original tensorflow version.
 
 
 ## How does deepforest-pytorch work?

@@ -79,6 +79,9 @@ def big_file():
 def test_main():
     from deepforest import main
 
+def test_use_bird_release(m):
+    m.use_bird_release()
+    
 def test_train_single(m):
     m.trainer.fit(m)
 
