@@ -47,7 +47,7 @@ class DownloadProgressBar(tqdm):
             self.total = tsize
         self.update(b * bsize - self.n)
 
-def use_bird_release(save_dir=os.path.join(_ROOT, "data/"), prebuilt_model="species_model"):
+def use_bird_release(save_dir=os.path.join(_ROOT, "data/"), prebuilt_model="bird"):
     """
     Check the existence of, or download the latest model release from github
     Args:
