@@ -17,6 +17,7 @@ Source code is available here: (https://github.com/weecology/DeepForest-pytorch.
    better
    ExtendingModule
    code_of_conduct.rst
+   bird_detector
    history.rst
    source/deepforest
    authors.rst
