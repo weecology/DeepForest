@@ -25,13 +25,19 @@ pip install deepforest-pytorch
 
 # Usage
 
-## Train a model
+# Use Benchmark release
 
 ```Python
 from deepforest import main
 m = main.deepforest()
+m.use_release()
+```
+
+## Train a new model
+
+```Python
 m.create_trainer()
-m.run_train()
+m.trainer.fit(m)
 m.evaluate(csv_file=m.config["validation"]["csv_file"], root_dir=m.config["validation"]["root_dir"])
 ```
 [Google colab demo on model training](https://colab.research.google.com/drive/1AJUcw5dEpXeDPHd0sotAz5lpWedFYSIL#offline=true&sandboxMode=true)
@@ -47,7 +53,7 @@ df = trained_model.predict_file(csv_file, root_dir = os.path.dirname(csv_file))
 ## Predict a large tile
 
 ```Python
-prediction = trained_model.predict_tile(raster_path = raster_path,
+predicted_boxes = trained_model.predict_tile(raster_path = raster_path,
                                         patch_size = 300,
                                         patch_overlap = 0.5,
                                         return_plot = False)
@@ -58,7 +64,7 @@ prediction = trained_model.predict_tile(raster_path = raster_path,
 ```Python
 csv_file = get_data("example.csv")
 root_dir = os.path.dirname(csv_file)
-precision, recall = m.evaluate(csv_file, root_dir, iou_threshold = 0.5)
+results = m.evaluate(csv_file, root_dir, iou_threshold = 0.5)
 ```
 
 # Config
@@ -68,7 +74,7 @@ DeepForest comes with a default config file (deepforest_config.yml) to control t
 ```Python
 from deepforest import main
 m = main.deepforest()
-m.config["train"]["batch_size"] = 10
+m.config["batch_size"] = 10
 ```
 Config parameters are documented [here](https://deepforest-pytorch.readthedocs.io/en/latest/ConfigurationFile.html).
 
@@ -82,6 +88,6 @@ cd NeonTreeEvaluation
 ```
 ```Python
 results = m.evaluate(csv_file = "evaluation/RGB/benchmark_annotations.csv", root_dir = "evaluation/RGB/")
-results["recall"]
-results["precision"]
+results["box_recall"]
+results["box_precision"]
 ```
