@@ -8,6 +8,7 @@ from PIL import Image
 import numpy as np
 import pandas.api.types as ptypes
 import cv2
+import random
 
 def view_dataset(ds, savedir=None):
     """Plot annotations on images for debugging purposes
@@ -122,10 +123,12 @@ def plot_predictions(image, df, color=None):
 
 def label_to_color(label):
     color_dict = {}
-    colors = [
-        list((matplotlib.colors.hsv_to_rgb([x, 1.0, 1.0])).astype(int))
-        for x in np.arange(0, 1, 1.0 / 80)
-    ]
+    
+    random.seed(1)
+    colors = [list((matplotlib.colors.hsv_to_rgb([x, 1.0, 1.0]) * 255).astype(int)) for x in np.arange(0, 1, 1/80)]
+    colors = [tuple([int(y) for y in x]) for x in colors]
+    random.shuffle(colors)
+    
     for index, color in enumerate(colors):
         color_dict[index] = color
 

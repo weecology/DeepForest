@@ -31,7 +31,9 @@ def test_format_boxes(m):
         assert not target_df.empty
         
 
-def test_plot_predictions(m, tmpdir):
+#Test different color labels
+@pytest.mark.parametrize("label",[0,1,20])
+def test_plot_predictions(m, tmpdir,label):
     ds = m.val_dataloader()
     batch = next(iter(ds))
     paths, images, targets = batch
@@ -40,6 +42,7 @@ def test_plot_predictions(m, tmpdir):
         target_df["image_path"] = path
         image = np.array(image)[:,:,::-1]
         image = np.rollaxis(image,0,3)
+        target_df.label = label
         image = visualize.plot_predictions(image, target_df)
 
         assert image.dtype == "uint8"
