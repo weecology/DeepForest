@@ -96,7 +96,8 @@ class deepforest(pl.LightningModule):
         """
         # Download latest model from github release
         release_tag, self.release_state_dict = utilities.use_bird_release()
-        self = self.load_from_checkpoint(self.release_state_dict)
+        bird_model = self.load_from_checkpoint(self.release_state_dict)
+        self.model = bird_model.model
    
         # load saved model and tag release
         self.__release_version__ = release_tag

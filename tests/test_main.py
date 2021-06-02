@@ -80,7 +80,10 @@ def test_main():
     from deepforest import main
 
 def test_use_bird_release(m):
+    imgpath = get_data("AWPE Pigeon Lake 2020 DJI_0005.JPG")    
     m.use_bird_release()
+    boxes = m.predict_image(path=imgpath)
+    assert not boxes.empty
     
 def test_train_single(m):
     m.trainer.fit(m)
@@ -230,6 +233,15 @@ def test_save_and_reload(m, tmpdir):
     assert not pred_after_reload.empty
     pd.testing.assert_frame_equal(pred_after_train,pred_after_reload)
 
+def test_reload_multi_class(two_class_m, tmpdir):
+    two_class_m.config["train"]["fast_dev_run"] = True
+    two_class_m.create_trainer()
+    two_class_m.trainer.fit(two_class_m)
+    two_class_m.save_model("{}/checkpoint.pl".format(tmpdir))
+    loaded = main.deepforest(num_classes=2, label_dict={"Alive":0,"Dead":0})
+    old_model = torch.load("{}/checkpoint.pl".format(tmpdir))
+    loaded.load_state_dict(old_model["state_dict"])
+    
 def test_override_transforms():
     def get_transform(augment):
         """This is the new transform"""

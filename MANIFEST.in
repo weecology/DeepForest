@@ -11,6 +11,7 @@ include deepforest/data/2019_YELL_2_541000_4977000_image_crop.png
 include deepforest/data/2019_YELL_2_528000_4978000_image_crop2.tiff
 include deepforest/data/2019_YELL_2_528000_4978000_image_crop2.xml
 include deepforest/data/2019_YELL_2_528000_4978000_image_crop2.png
+include deepforest/data/AWPE Pigeon Lake 2020 DJI_0005.JPG
 include deepforest/data/example.csv
 
 include LICENSE
