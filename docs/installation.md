@@ -3,7 +3,7 @@
 DeepForest has Windows, Linux and OSX prebuilt wheels on pypi. We *strongly* recommend using a conda or virtualenv to create a clean installation container.
 
 ```
-pip install DeepForest-pytorch
+pip install DeepForest
 ```
 
 For questions on conda-forge installation, please submit issues to the feedstock repo: https://github.com/conda-forge/deepforest-feedstock

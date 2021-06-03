@@ -193,7 +193,8 @@ def test_evaluate(m, tmpdir):
     #Does this make reasonable predictions, we know the model works.
     assert np.round(results["box_precision"],2) > 0.5
     assert np.round(results["box_recall"],2) > 0.5
-    assert results["results"].predicted_label.unique() == ["Tree"]
+    assert len(results["results"].predicted_label.dropna().unique()) == 1
+    assert results["results"].predicted_label.dropna().unique()[0] == "Tree"
     
 def test_train_callbacks(m):
     csv_file = get_data("example.csv") 
