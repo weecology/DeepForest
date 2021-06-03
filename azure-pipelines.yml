@@ -26,9 +26,7 @@ jobs:
   
   - script: |
       python -m pip install --upgrade pip
-      conda env create --file=environment.yml
-      conda init bash
-      source activate DeepForest_pytorch
+      pip install .
     displayName: 'Create Conda environment for DeepForest'
   
   - script: |
