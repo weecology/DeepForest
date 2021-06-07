@@ -4,6 +4,8 @@
 [![Documentation Status](https://readthedocs.org/projects/deepforest/badge/?version=latest)](https://deepforest.readthedocs.io/?badge=latest)
 
 
+![](www/example_image.png)
+
 A pytorch implementation of the DeepForest model for individual tree crown detection in RGB images. DeepForest is a python package for training and predicting individual tree crowns from airborne RGB imagery. DeepForest comes with a prebuilt model trained on data from the National Ecological Observatory Network. Users can extend this model by annotating and training custom models starting from the prebuilt model.
 
 <sub> DeepForest es un paquete de python para la predicción de coronas de árboles individuales basada en modelos entrenados con imágenes remotas RVA ( RGB, por sus siglas en inglés). DeepForest viene con un modelo entrenado con datos proveídos por la Red Nacional de Observatorios Ecológicos (NEON, por sus siglas en inglés). Los usuarios pueden ampliar este modelo pre-construido por anotación de etiquetas y entrenamiento con datos locales. La documentación de DeepForest está escrita en inglés, sin embargo, agradeceríamos contribuciones con fin de hacerla accesible en otros idiomas.  <sub>
@@ -19,7 +21,7 @@ The original DeepForest repo is written in tensorflow and can be found on pypi, 
 Compiled wheels have been made for linux, osx and windows
 
 ```
-#Install DeepForest-pytorch
+#Install DeepForest
 pip install deepforest
 ```
 
