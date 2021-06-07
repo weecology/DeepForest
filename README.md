@@ -1,4 +1,4 @@
-# DeepForest-pytorch
+# DeepForest
 
 [![Conda package](https://github.com/weecology/DeepForest-pytorch/actions/workflows/Conda-app.yml/badge.svg)](https://github.com/weecology/DeepForest-pytorch/actions/workflows/Conda-app.yml)
 [![Documentation Status](https://readthedocs.org/projects/deepforest-pytorch/badge/?version=latest)](https://deepforest-pytorch.readthedocs.io/?badge=latest)
