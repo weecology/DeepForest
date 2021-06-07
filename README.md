@@ -20,7 +20,7 @@ Compiled wheels have been made for linux, osx and windows
 
 ```
 #Install DeepForest-pytorch
-pip install deepforest-pytorch
+pip install deepforest
 ```
 
 # Usage
