@@ -3,9 +3,9 @@
 # Add steps that analyze code, save the dist with the build record, publish to a PyPI-compatible index, and more:
 # https://docs.microsoft.com/azure/devops/pipelines/languages/python
 
-#Trigger on pull requests from master
+#Trigger on pull requests from main
 pr:
-- master
+- main
 
 trigger:
   branches:
@@ -30,14 +30,12 @@ jobs:
     displayName: 'Create Conda environment for DeepForest'
   
   - script: |
-      source activate DeepForest_pytorch
       pip install pytest pytest-azurepipelines yapf
       pytest
       #yapf -d --recursive deepforest/ --style=.style.yapf 2>&1
     displayName: 'Pytests and sytle tests'
     
   - bash: |
-      source activate DeepForest_pytorch
       python3 setup.py sdist bdist_wheel
       
   - task: PublishBuildArtifacts@1
