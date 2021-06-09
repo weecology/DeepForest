@@ -3,9 +3,9 @@ import setuptools
 from distutils.command.build_ext import build_ext as DistUtilsBuildExt
 
 NAME = 'deepforest'
-VERSION = '0.2.5'
+VERSION = '1.0.0'
 DESCRIPTION = 'Tree crown prediction using deep learning retinanets'
-URL = 'https://github.com/Weecology/DeepForest-pytorch'
+URL = 'https://github.com/Weecology/DeepForest'
 AUTHOR = 'Ben Weinstein'
 LICENCE = 'MIT'
 LONG_DESCRIPTION = """
@@ -19,8 +19,8 @@ LONG_DESCRIPTION = """
 Compiled wheels have been made for linux, osx and windows
 
 ```
-#Install DeepForest-pytorch
-pip install deepforest-pytorch
+#Install DeepForest
+pip install deepforest
 ```
 
 ## Get in touch
