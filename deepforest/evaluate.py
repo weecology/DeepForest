@@ -80,15 +80,20 @@ def evaluate(predictions,
     results = []
     box_recalls = []
     box_precisions = []
-    for image_path, group in predictions.groupby("image_path"):
-        
+    for image_path, group in ground_df.groupby("image_path"):
         #clean indices
-        plot_ground_truth = ground_df[ground_df["image_path"] == image_path].reset_index(drop=True)
-        group = group.reset_index(drop=True)
-        result = evaluate_image(predictions=group,
-                                ground_df=plot_ground_truth,
-                                root_dir=root_dir,
-                                savedir=savedir)
+        image_predictions = predictions[predictions["image_path"] == image_path].reset_index(drop=True)
+        
+        #If empty, add to list without computing IoU
+        if image_predictions.empty: 
+            result = pd.DataFrame({"truth_id":group.index.values,"prediction_id": None, "IoU":0, "predicted_label": None, "true_label":group.label})
+        else:
+            group = group.reset_index(drop=True)
+            result = evaluate_image(predictions=image_predictions,
+                                    ground_df=group,
+                                    root_dir=root_dir,
+                                    savedir=savedir) 
+            
         result["image_path"] = image_path
         result["match"] = result.IoU > iou_threshold
         true_positive = sum(result["match"])
@@ -98,33 +103,33 @@ def evaluate(predictions,
         box_recalls.append(recall)
         box_precisions.append(precision)
         results.append(result)
+        
+    results = pd.concat(results)
+    box_precision = np.mean(box_precisions)
+    box_recall = np.mean(box_recalls)
 
-    if len(results) == 0:
-        print("No predictions made, setting precision and recall to 0")
+    #Per class recall and precision
+    class_recall_dict = {}
+    class_precision_dict = {}
+    class_size = {}
+    
+    box_results =  results[results.predicted_label.notna()]
+    if box_results.empty:
+        print("No predictions made for image: {}".format(results.image_path.unique()[0]))
         box_recall = 0
         box_precision = 0
         class_recall = pd.DataFrame()
-        results = pd.DataFrame()
-    else:
-        results = pd.concat(results)
-        box_precision = np.mean(box_precisions)
-        box_recall = np.mean(box_recalls)
+        return {"results": results, "box_precision": box_precision, "box_recall": box_recall, "class_recall":class_recall}
+        
+    for name, group in box_results.groupby("true_label"):
+        class_recall_dict[name] = sum(group.true_label == group.predicted_label)/group.shape[0]
+        number_of_predictions = group[group.predicted_label==name].shape[0]
+        if number_of_predictions == 0:
+            class_precision_dict[name] = 0
+        else:
+            class_precision_dict[name] = sum(group.true_label == group.predicted_label)/number_of_predictions
+        class_size[name] = group.shape[0]
     
-        #Per class recall and precision
-        class_recall_dict = {}
-        class_precision_dict = {}
-        class_size = {}
+    class_recall = pd.DataFrame({"label":class_recall_dict.keys(),"recall":pd.Series(class_recall_dict), "precision":pd.Series(class_precision_dict), "size":pd.Series(class_size)}).reset_index(drop=True)
         
-        box_results =  results[results.predicted_label.notna()]
-        for name, group in box_results.groupby("true_label"):
-            class_recall_dict[name] = sum(group.true_label == group.predicted_label)/group.shape[0]
-            number_of_predictions = group[group.predicted_label==name].shape[0]
-            if number_of_predictions == 0:
-                class_precision_dict[name] = 0
-            else:
-                class_precision_dict[name] = sum(group.true_label == group.predicted_label)/number_of_predictions
-            class_size[name] = group.shape[0]
-        
-        class_recall = pd.DataFrame({"label":class_recall_dict.keys(),"recall":pd.Series(class_recall_dict), "precision":pd.Series(class_precision_dict), "size":pd.Series(class_size)}).reset_index(drop=True)
-            
     return {"results": results, "box_precision": box_precision, "box_recall": box_recall, "class_recall":class_recall}

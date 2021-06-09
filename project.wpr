@@ -4,22 +4,6 @@
 # Wing project file                                              #
 ##################################################################
 [project attributes]
-debug.launch-configs = (2,
-                        {'launch-csXdSw9d1tIxroc9': ({},
-        {'buildcmd': ('project',
-                      None),
-         'env': ('project',
-                 [u'']),
-         'name': 'pip',
-         'pyexec': ('custom',
-                    u'/Users/benweinstein/opt/miniconda3/envs/test/bin/python'),
-         'pypath': ('project',
-                    []),
-         'pyrunargs': ('project',
-                       '-u'),
-         'runargs': u'',
-         'rundir': ('project',
-                    u'')})})
 proj.directory-list = [{'dirloc': loc('.'),
                         'excludes': (),
                         'filter': u'*',
@@ -27,9 +11,6 @@ proj.directory-list = [{'dirloc': loc('.'),
                         'recursive': True,
                         'watch_for_changes': True}]
 proj.file-type = 'shared'
-proj.launch-config = {loc('tests/test_main.py'): ('custom',
-        (u'',
-         'launch-csXdSw9d1tIxroc9'))}
 testing.auto-test-file-specs = (('glob',
                                  'test_*'),)
 testing.test-framework = {None: ':internal pytest'}

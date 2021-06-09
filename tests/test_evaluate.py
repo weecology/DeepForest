@@ -14,7 +14,7 @@ def m(download_release):
     m.use_release()
     
     return m
-    
+
 def test_evaluate_image(m):
     csv_file = get_data("OSBS_029.csv")
     predictions = m.predict_file(csv_file=csv_file, root_dir=os.path.dirname(csv_file))
@@ -66,3 +66,17 @@ def test_evaluate_save_images(m, tmpdir):
     predictions.label.loc[[36,35,34]] = 0
     results = evaluate.evaluate(predictions=predictions, ground_df=ground_truth, root_dir=os.path.dirname(csv_file), savedir=tmpdir)     
     assert all([os.path.exists("{}/{}".format(tmpdir,x)) for x in ground_truth.image_path])
+
+def test_evaluate_empty():
+    m = main.deepforest()
+    m.config["score_thresh"] = 0.8
+    csv_file = get_data("OSBS_029.csv")
+    root_dir = os.path.dirname(csv_file)
+    results = m.evaluate(csv_file, root_dir, iou_threshold = 0.4)
+    
+    #Does this make reasonable predictions, we know the model works.
+    assert results["box_precision"] == 0
+    assert results["box_recall"] == 0
+    
+    df = pd.read_csv(csv_file)
+    assert results["results"].shape[0] == df.shape[0]

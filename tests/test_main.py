@@ -182,8 +182,7 @@ def test_predict_tile(m):
                                        patch_overlap=0,
                                        return_plot=False)
     assert not prediction.empty
-
-
+    
 def test_evaluate(m, tmpdir):
     csv_file = get_data("OSBS_029.csv")
     root_dir = os.path.dirname(csv_file)
@@ -195,6 +194,9 @@ def test_evaluate(m, tmpdir):
     assert np.round(results["box_recall"],2) > 0.5
     assert len(results["results"].predicted_label.dropna().unique()) == 1
     assert results["results"].predicted_label.dropna().unique()[0] == "Tree"
+    
+    df = pd.read_csv(csv_file)
+    assert results["results"].shape[0] == df.shape[0]
     
 def test_train_callbacks(m):
     csv_file = get_data("example.csv") 
@@ -266,28 +268,13 @@ def test_override_transforms():
     path, image, target = next(iter(train_ds))
     assert m.transforms.__doc__ == "This is the new transform"
 
-#def test_train_empty_batch(m):
-    #"""If module encounters an invalid batch, print and skip"""
-    #class EmptyDataset(Dataset):
-        #def __init__(self):
-            #pass
-        #def __len__(self):
-            #return 10
-        #def __getitem__(self, idx):
-            #return None, None
-    #ds = EmptyDataset()
+def test_over_score_thresh(m):
+    """A user might want to change the config after model training and update the score thresh"""
+    img = get_data("OSBS_029.png")
+    original_score_thresh = m.model.score_thresh
+    m.config["score_thresh"] = 0.8
     
-    #data_loader = torch.utils.data.DataLoader(
-        #ds,
-        #batch_size=1,
-        #shuffle=False,
-        #collate_fn=utilities.collate_fn,
-        #num_workers=0
-    #)
-    
-    #for batch in data_loader:
-        #image, target = batch
-        #assert image[0] is None
-        #assert target[0] is None
-        
-    #m.trainer.fit(m, data_loader)
+    #trigger update
+    boxes = m.predict_image(path = img)
+    assert m.model.score_thresh == 0.8
+    assert not n.model.score_thresh == original_score_thresh

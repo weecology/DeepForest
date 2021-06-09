@@ -64,6 +64,13 @@ https://pytorch.org/vision/stable/ops.html#torchvision.ops.nms
 ### score_thresh
 
 Score threshold of predictions to keep. Predictions with less than this threshold are removed from output.
+The score threshold can be updated anytime by modifying the config. For example, if you want predictions with boxes greater than 0.3, update the config
+
+```
+m.config["score_thresh"] = 0.3
+```
+
+This will be updated when you can predict_tile, predict_image, predict_file, or evaluate
 
 ## Train
 

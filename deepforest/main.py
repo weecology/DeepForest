@@ -232,6 +232,7 @@ class deepforest(pl.LightningModule):
             self.model = self.model.to("cuda")
 
         self.model.eval()
+        self.model.score_thresh = self.config["score_thresh"]
 
         # Check if GPU is available and pass image to gpu
         result = predict.predict_image(model=self.model,
@@ -262,6 +263,8 @@ class deepforest(pl.LightningModule):
         """
         self.model = self.model.to(self.current_device)
         self.model.eval()
+        self.model.score_thresh = self.config["score_thresh"]
+
         result = predict.predict_file(model=self.model,
                                       csv_file=csv_file,
                                       root_dir=root_dir,
@@ -312,6 +315,8 @@ class deepforest(pl.LightningModule):
             self.model = self.model.to("cuda")
             
         self.model.eval()
+        self.model.score_thresh = self.config["score_thresh"]
+        self.model.nms_thresh = self.config["nms_thresh"]
 
         result = predict.predict_tile(model=self.model,
                                       raster_path=raster_path,
@@ -412,6 +417,7 @@ class deepforest(pl.LightningModule):
             self.model = self.model.to("cuda")
             
         self.model.eval()
+        self.model.score_thresh = self.config["score_thresh"]
 
         predictions = predict.predict_file(model=self.model,
                                            csv_file=csv_file,
