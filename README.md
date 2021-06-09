@@ -1,3 +1,19 @@
+# Deprecation Notice
+
+This repo is becoming out of date and has been moved to this branch in favor of the pytorch implementation as of version 1.0.0. Users are still welcome to use this branch, but our sense is that we want to transition to latest version when possible. The main breakage is that use_release() is now pointing at the new pytorch model. To download the 0.3.0 tensorflow model. Following this issue
+https://github.com/weecology/DeepForest/issues/198
+
+go to
+
+https://github.com/weecology/DeepForest/releases/tag/v0.3.0
+
+download the model and then load the weights directly.
+
+```
+reloaded = deepforest.deepforest(weights="example_save_weights.h5")
+```
+
+
 # DeepForest
 
 [![Build Status](https://travis-ci.org/weecology/DeepForest.svg?branch=master)](https://travis-ci.org/weecology/DeepForest)
