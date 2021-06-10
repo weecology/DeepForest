@@ -87,6 +87,8 @@ def evaluate(predictions,
         #If empty, add to list without computing IoU
         if image_predictions.empty: 
             result = pd.DataFrame({"truth_id":group.index.values,"prediction_id": None, "IoU":0, "predicted_label": None, "true_label":group.label})
+            results.append(result)
+            continue
         else:
             group = group.reset_index(drop=True)
             result = evaluate_image(predictions=image_predictions,
@@ -115,7 +117,7 @@ def evaluate(predictions,
     
     box_results =  results[results.predicted_label.notna()]
     if box_results.empty:
-        print("No predictions made for image: {}".format(results.image_path.unique()[0]))
+        print("No predictions made")
         box_recall = 0
         box_precision = 0
         class_recall = pd.DataFrame()
