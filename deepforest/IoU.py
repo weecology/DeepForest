@@ -94,16 +94,19 @@ def compute_IoU(ground_truth, submission):
     for index, row in ground_truth.iterrows():
         if index in row_ind:
             matched_id = col_ind[np.where(index == row_ind)[0][0]]
-            score = _iou_(submission[submission.prediction_id == matched_id],
+            iou = _iou_(submission[submission.prediction_id == matched_id],
                           ground_truth.loc[index])
+            score = submission[submission.prediction_id == matched_id].score.values[0]
         else:
-            score = 0
+            iou = 0
             matched_id = None
+            score = None
         iou_df.append(
             pd.DataFrame({
                 "prediction_id": [matched_id],
                 "truth_id": [index],
-                "IoU": score
+                "IoU": iou,
+                "score": score
             }))
 
     iou_df = pd.concat(iou_df)

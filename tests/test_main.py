@@ -277,4 +277,4 @@ def test_over_score_thresh(m):
     #trigger update
     boxes = m.predict_image(path = img)
     assert m.model.score_thresh == 0.8
-    assert not n.model.score_thresh == original_score_thresh
+    assert not m.model.score_thresh == original_score_thresh
