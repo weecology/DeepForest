@@ -98,7 +98,7 @@ def evaluate(predictions,
         result["match"] = result.IoU > iou_threshold
         true_positive = sum(result["match"])
         recall = true_positive / result.shape[0]
-        precision = true_positive / group.shape[0]
+        precision = true_positive / image_predictions.shape[0]
 
         box_recalls.append(recall)
         box_precisions.append(precision)
