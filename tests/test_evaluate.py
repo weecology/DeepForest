@@ -38,7 +38,7 @@ def test_evaluate(m):
     assert results["class_recall"].shape == (1,4)
     assert results["class_recall"].recall.values == 1
     assert results["class_recall"].precision.values == 1
-    
+    assert "score" in results["results"].columns
     assert results["results"].true_label.unique() == "Tree"
 
 def test_evaluate_multi(m):
