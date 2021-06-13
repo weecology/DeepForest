@@ -86,7 +86,9 @@ def evaluate(predictions,
         
         #If empty, add to list without computing IoU
         if image_predictions.empty: 
-            result = pd.DataFrame({"truth_id":group.index.values,"prediction_id": None, "IoU":0, "predicted_label": None, "score":None, "true_label":group.label})
+            result = pd.DataFrame({"truth_id":group.index.values,"prediction_id": None, "IoU":0, "predicted_label": None, "score":None, "match":None,"true_label":group.label})
+            #An empty prediction set has recall of 0, precision of NA.
+            box_recalls.append(0)
             results.append(result)
             continue
         else:
