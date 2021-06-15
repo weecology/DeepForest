@@ -7,7 +7,7 @@ m = main.deepforest()
 m.use_bird_release()
 ```
 
-![](../www/bird_panel.png)
+![](../www/bird_panel.jpg)
 
 We have created a [GPU colab tutorial](https://colab.research.google.com/drive/1e9_pZM0n_v3MkZpSjVRjm55-LuCE2IYE?usp=sharing
 ) to demonstrate the workflow for using the bird model.
