@@ -155,7 +155,7 @@ While this might look a touch awkward, it is useful for exposing the pytorch lig
 model.trainer.fit(model)
 ```
 
-[For more, see Google colab demo on model training](https://colab.research.google.com/drive/1AJUcw5dEpXeDPHd0sotAz5lpWedFYSIL#offline=true&sandboxMode=true)
+[For more, see Google colab demo on model training](https://colab.research.google.com/drive/1gKUiocwfCvcvVfiKzAaf6voiUVL2KK_r?usp=sharing)
 
 
 ## Evaluation

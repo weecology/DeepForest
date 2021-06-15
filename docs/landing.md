@@ -1,16 +1,14 @@
-# What is DeepForest-pytorch?
-DeepForest-pytorch is a python package for training and predicting individual tree crowns from airborne RGB imagery. DeepForest-pytorch comes with a prebuilt model trained on data from the National Ecological Observatory Network. Users can extend this model by annotating and training custom models.
+# What is DeepForest?
+DeepForest is a python package for training and predicting individual tree crowns from airborne RGB imagery. DeepForest-pytorch comes with a prebuilt model trained on data from the National Ecological Observatory Network. Users can extend this model by annotating and training custom models.
 
 ![](../www/image.png)
 
-# What is the difference between DeepForest-pytorch and the original DeepForest?
+# What's new in DeepForest 1.0.0?
 
-The original project https://deepforest.readthedocs.io/ was written in tensorflow based on keras-retinanet. When tensorflow updated to 2.0 there were breaking changes and the authors of keras-retinanet decided to not attempt to recover the project. 
+The original project was written in tensorflow based on keras-retinanet. When tensorflow updated to 2.0 there were breaking changes and the authors of keras-retinanet decided to not attempt to recover the project. 
 The rapid development of open machine learning community resources means that tensorflow 1.1.14, which is required for deepforest, will rapidly become out of date. 
-As of 3/12/2021 there are no current no breaking changes, but the potential for them will increase over time. Unless there is a compelling interest, this project should be used and the release model will be updated here and not in the original tensorflow version.
 
-
-## How does deepforest-pytorch work?
+## How does deepforest work?
 
 DeepForest uses deep learning object detection networks to predict bounding boxes corresponding to individual trees in RGB imagery. 
 DeepForest is built on the retinanet model from the [torchvision package](http://pytorch.org/vision/stable/index.html) and designed to make training models for tree detection simpler.
