@@ -158,6 +158,10 @@ model.trainer.fit(model)
 [For more, see Google colab demo on model training](https://colab.research.google.com/drive/1gKUiocwfCvcvVfiKzAaf6voiUVL2KK_r?usp=sharing)
 
 
+### Video walkthrough of colab
+
+<div style="position: relative; padding-bottom: 56.25%; height: 0;"><iframe src="https://www.loom.com/embed/99c55129d5a34f3dbf7053dde9c7d97e" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe></div>
+
 ## Evaluation
 
 Independent analysis of whether a model can generalize from training data to new areas is critical for creating a robust workflow. 
