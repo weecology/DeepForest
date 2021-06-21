@@ -7,6 +7,7 @@ import pytest
 import torch
 import pandas as pd
 import numpy as np
+import tempfile
 
 def single_class():
     csv_file = get_data("example.csv")
@@ -18,6 +19,7 @@ def multi_class():
     
     return csv_file
 
+    
 @pytest.mark.parametrize("csv_file,label_dict",[(single_class(), {"Tree":0}),(multi_class(),{"Alive":0,"Dead":1})])
 def test_TreeDataset(csv_file, label_dict):
     root_dir = os.path.dirname(csv_file)
@@ -96,3 +98,24 @@ def test_predict_dataloader():
     #Assert image is channels first format
     assert image.shape[0] == 3
     
+def test_multi_image_warning():
+    tmpdir = tempfile.gettempdir()
+    csv_file1 = get_data("example.csv")
+    csv_file2 = get_data("OSBS_029.csv")
+    df1 = pd.read_csv(csv_file1)
+    df2 = pd.read_csv(csv_file2)
+    df = pd.concat([df1, df2])
+    csv_file = "{}/multiple.csv".format(tmpdir)
+    df.to_csv(csv_file)
+    
+    root_dir = os.path.dirname(csv_file1)
+    ds = dataset.TreeDataset(csv_file=csv_file,
+                             root_dir=root_dir,
+                             transforms=dataset.get_transform(augment=False))
+
+    for i in range(len(ds)):
+        #Between 0 and 1
+        batch = ds[i]
+        collated_batch = utilities.collate_fn([None, batch, batch])
+        len(collated_batch[0]) == 2
+        

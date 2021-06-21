@@ -6,7 +6,7 @@ DeepForest is a python package for training and predicting individual tree crown
 # What's new in DeepForest 1.0.0?
 
 The original project was written in tensorflow based on keras-retinanet. When tensorflow updated to 2.0 there were breaking changes and the authors of keras-retinanet decided to not attempt to recover the project. 
-The rapid development of open machine learning community resources means that tensorflow 1.1.14, which is required for deepforest, will rapidly become out of date. 
+The rapid development of open machine learning community resources means that tensorflow 1.1.14, which is required for deepforest, will rapidly become out of date. Fear not, starting in 1.0.0, the model now depends on the pytorch and torchvision and will be stable for the forseeable future.
 
 ## How does deepforest work?
 

@@ -113,3 +113,29 @@ result["results"].head()
 50             50         3  0.532902  ...       Tree  OSBS_029.tif   True
 34             34         4  0.595862  ...       Tree  OSBS_029.tif   True
 ```
+
+## Evaluating tiles
+
+The evaluation method uses deepforest.predict_image for each of the paths supplied in the image_path column. This means that the entire image is passed for prediction. This will not work for large images. The deepforest.predict_tile method does a couple things under hood that need to be repeated for evaluation.
+
+psuedo_code:
+
+```
+output_annotations = deepforest.preprocess.split_raster(
+    path_to_raster = <path>,
+    annotations_file = <original_annotation_path>,
+    base_dir = <location to save crops>
+    patch_size = <size of each crop>
+    
+)
+
+output_annotations.to_csv("new_annotations.csv")
+
+results = model.evaluate(
+    csv_file="new_annotations.csv",
+    root_dir=<base_dir from above>
+)
+
+
+```
+

@@ -99,5 +99,6 @@ class TreeDataset(Dataset):
             
         else:
             augmented = self.transform(image=image)
+            
             return augmented["image"]
             

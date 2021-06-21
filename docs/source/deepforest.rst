@@ -76,14 +76,6 @@ deepforest.preprocess module
    :undoc-members:
    :show-inheritance:
 
-deepforest.transforms module
-----------------------------
-
-.. automodule:: deepforest.transforms
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 deepforest.utilities module
 ---------------------------
 
