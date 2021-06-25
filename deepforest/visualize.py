@@ -72,7 +72,6 @@ def plot_prediction_dataframe(df, root_dir, ground_truth=None, savedir=None):
         root_dir: relative dir to look for image names from df.image_path
         ground_truth: an optional pandas dataframe in same format as df holding ground_truth boxes
         savedir: save the plot to an optional directory path.
-        show (logical): Render the plot in the matplotlib GUI
     Returns:
         written_figures: list of filenames written
         """
