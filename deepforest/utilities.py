@@ -68,7 +68,7 @@ def use_bird_release(save_dir=os.path.join(_ROOT, "data/"), prebuilt_model="bird
     url = asset['browser_download_url']
 
     # Naming based on pre-built model
-    output_path = os.path.join(save_dir, prebuilt_model + ".pl")
+    output_path = os.path.join(save_dir, prebuilt_model + ".pt")
 
     # Check the release tagged locally
     try:
