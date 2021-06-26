@@ -18,7 +18,7 @@ debug.exceptions-ignored = {loc('../../opt/miniconda3/envs/DeepForest/lib/python
 guimgr.overall-gui-state = {'windowing-policy': 'combined-window',
                             'windows': [{'name': 'BeCfPquEZeqQ6pfJCERhTaNA7C'\
         'a3fCTw',
-        'size-state': 'maximized',
+        'size-state': 'fullscreen',
         'type': 'dock',
         'view': {'area': 'tall',
                  'constraint': None,
@@ -35,10 +35,9 @@ guimgr.overall-gui-state = {'windowing-policy': 'combined-window',
         'list-files-first': False,
         'tree-states': {'deep': {'expanded-nodes': [(1,),
         (2,)],
-                                 'selected-nodes': [(2,
-        16)],
-                                 'top-node': (2,
-        1)}},
+                                 'selected-nodes': [(1,
+        5)],
+                                 'top-node': (0,)}},
         'tree-style': 'deep'}}),
                               ('browser',
                                'tall',
@@ -62,7 +61,7 @@ guimgr.overall-gui-state = {'windowing-policy': 'combined-window',
                                {})],
                  'primary_view_state': {'area': 'wide',
         'constraint': None,
-        'current_pages': [1,
+        'current_pages': [4,
                           5],
         'notebook_display': 'normal',
         'notebook_percent': 0.40169133192389006,
@@ -113,7 +112,7 @@ guimgr.overall-gui-state = {'windowing-policy': 'combined-window',
                                        'fRegexFlags': 42,
                                        'fReplaceText': u'train',
                                        'fReverse': False,
-                                       'fSearchText': u'allow_',
+                                       'fSearchText': u'load_state_',
                                        'fStartPos': 0,
                                        'fStyle': 'text',
                                        'fWholeWords': False,
@@ -142,10 +141,12 @@ guimgr.overall-gui-state = {'windowing-policy': 'combined-window',
                        'filter': u'',
                        'recent-filters': None,
                        'sort-order': 'source-lineno',
-                       'tree-state': {'expanded-nodes': [(3,)],
-                                      'selected-nodes': [(3,
-        7)],
-                                      'top-node': (0,)}}),
+                       'tree-state': {'expanded-nodes': [(3,),
+        (6,)],
+                                      'selected-nodes': [(6,
+        1)],
+                                      'top-node': (3,
+        2)}}),
                      ('debug-io',
                       'wide',
                       1,
@@ -161,47 +162,347 @@ guimgr.overall-gui-state = {'windowing-policy': 'combined-window',
         -1,
         -1),
                        'attrib-starts': [],
-                       'code-line': '',
+                       'code-line': "{'ID': 'cjzd8q4fg5udq0848o53i1hk7', 'Da"\
+                                    "taRow ID': 'cjzcz3myij6000cwb07fx5kyb',"\
+                                    " 'Labeled Data': 'https://storage.label"\
+                                    "box.com/cjxw1pgi22v080794sa41l63t%2Fda2"\
+                                    "d5a44-ec1d-9e05-cf1e-b9906bc74a76-BDA_1"\
+                                    "2C_20181127_1.JPG?Expires=1625706572078"\
+                                    "&KeyName=labelbox-assets-key-3&Signatur"\
+                                    "e=j9tlyVHFQlSuhFEyt-pnsBXBfew', 'Label'"\
+                                    ": {'Canadian Goose': [{'geometry': [{'x"\
+                                    "': 4463, 'y': 2707}, {'x': 4553, 'y': 2"\
+                                    "766}, {'x': 4519, 'y': 2810}, {'x': 442"\
+                                    "8, 'y': 2744}]}, {'geometry': [{'x': 43"\
+                                    "11, 'y': 2748}, {'x': 4399, 'y': 2731},"\
+                                    " {'x': 4413, 'y': 2786}, {'x': 4308, 'y"\
+                                    "': 2798}]}, {'geometry': [{'x': 3707, '"\
+                                    "y': 1827}, {'x': 3762, 'y': 1862}, {'x'"\
+                                    ": 3817, 'y': 1794}, {'x': 3773, 'y': 17"\
+                                    "61}]}, {'geometry': [{'x': 3634, 'y': 1"\
+                                    "882}, {'x': 3717, 'y': 1889}, {'x': 371"\
+                                    "8, 'y': 1920}, {'x': 3628, 'y': 1915}]}"\
+                                    ", {'geometry': [{'x': 3669, 'y': 1931},"\
+                                    " {'x': 3702, 'y': 1927}, {'x': 3738, 'y"\
+                                    "': 1997}, {'x': 3696, 'y': 2009}]}, {'g"\
+                                    "eometry': [{'x': 3608, 'y': 1914}, {'x'"\
+                                    ": 3655, 'y': 1929}, {'x': 3642, 'y': 19"\
+                                    "94}, {'x': 3595, 'y': 1982}]}, {'geomet"\
+                                    "ry': [{'x': 3839, 'y': 2136}, {'x': 381"\
+                                    "1, 'y': 2177}, {'x': 3729, 'y': 2115}, "\
+                                    "{'x': 3769, 'y': 2083}]}, {'geometry': "\
+                                    "[{'x': 3915, 'y': 2244}, {'x': 3996, 'y"\
+                                    "': 2292}, {'x': 4028, 'y': 2247}, {'x':"\
+                                    " 3948, 'y': 2190}]}, {'geometry': [{'x'"\
+                                    ": 3866, 'y': 2428}, {'x': 3900, 'y': 23"\
+                                    "97}, {'x': 3941, 'y': 2422}, {'x': 3889"\
+                                    ", 'y': 2494}, {'x': 3844, 'y': 2472}]},"\
+                                    " {'geometry': [{'x': 3762, 'y': 2388}, "\
+                                    "{'x': 3868, 'y': 2355}, {'x': 3853, 'y'"\
+                                    ": 2305}, {'x': 3753, 'y': 2331}]}, {'ge"\
+                                    "ometry': [{'x': 3935, 'y': 2398}, {'x':"\
+                                    " 3966, 'y': 2364}, {'x': 3896, 'y': 230"\
+                                    "0}, {'x': 3868, 'y': 2321}]}, {'geometr"\
+                                    "y': [{'x': 3744, 'y': 2606}, {'x': 3816"\
+                                    ", 'y': 2588}, {'x': 3833, 'y': 2635}, {"\
+                                    "'x': 3749, 'y': 2657}]}, {'geometry': ["\
+                                    "{'x': 3956, 'y': 2691}, {'x': 3998, 'y'"\
+                                    ": 2696}, {'x': 3988, 'y': 2790}, {'x': "\
+                                    "3946, 'y': 2785}]}, {'geometry': [{'x':"\
+                                    " 4019, 'y': 2780}, {'x': 4090, 'y': 282"\
+                                    "6}, {'x': 4066, 'y': 2865}, {'x': 3994,"\
+                                    " 'y': 2816}]}, {'geometry': [{'x': 3107"\
+                                    ", 'y': 2235}, {'x': 3191, 'y': 2291}, {"\
+                                    "'x': 3218, 'y': 2247}, {'x': 3120, 'y':"\
+                                    " 2203}]}, {'geometry': [{'x': 3162, 'y'"\
+                                    ": 2353}, {'x': 3212, 'y': 2367}, {'x': "\
+                                    "3186, 'y': 2459}, {'x': 3141, 'y': 2448"\
+                                    "}]}, {'geometry': [{'x': 3351, 'y': 227"\
+                                    "6}, {'x': 3373, 'y': 2321}, {'x': 3473,"\
+                                    " 'y': 2269}, {'x': 3442, 'y': 2232}]}, "\
+                                    "{'geometry': [{'x': 3208, 'y': 2440}, {"\
+                                    "'x': 3220, 'y': 2470}, {'x': 3292, 'y':"\
+                                    " 2449}, {'x': 3275, 'y': 2403}]}, {'geo"\
+                                    "metry': [{'x': 3435, 'y': 2499}, {'x': "\
+                                    "3432, 'y': 2528}, {'x': 3509, 'y': 2545"\
+                                    "}, {'x': 3522, 'y': 2502}]}, {'geometry"\
+                                    "': [{'x': 4212, 'y': 3222}, {'x': 4276,"\
+                                    " 'y': 3224}, {'x': 4270, 'y': 3323}, {'"\
+                                    "x': 4213, 'y': 3325}]}, {'geometry': [{"\
+                                    "'x': 4181, 'y': 3458}, {'x': 4241, 'y':"\
+                                    " 3464}, {'x': 4233, 'y': 3558}, {'x': 4"\
+                                    "174, 'y': 3554}]}, {'geometry': [{'x': "\
+                                    "4344, 'y': 3418}, {'x': 4348, 'y': 3497"\
+                                    "}, {'x': 4442, 'y': 3492}, {'x': 4408, "\
+                                    "'y': 3403}]}, {'geometry': [{'x': 4507,"\
+                                    " 'y': 3443}, {'x': 4568, 'y': 3500}, {'"\
+                                    "x': 4614, 'y': 3464}, {'x': 4551, 'y': "\
+                                    "3407}]}, {'geometry': [{'x': 4664, 'y':"\
+                                    " 3388}, {'x': 4756, 'y': 3463}, {'x': 4"\
+                                    "768, 'y': 3420}, {'x': 4717, 'y': 3356}"\
+                                    "]}, {'geometry': [{'x': 4776, 'y': 3427"\
+                                    "}, {'x': 4829, 'y': 3430}, {'x': 4841, "\
+                                    "'y': 3339}, {'x': 4795, 'y': 3343}]}, {"\
+                                    "'geometry': [{'x': 4928, 'y': 3411}, {'"\
+                                    "x': 4948, 'y': 3459}, {'x': 5042, 'y': "\
+                                    "3418}, {'x': 5020, 'y': 3379}]}, {'geom"\
+                                    "etry': [{'x': 4468, 'y': 3281}, {'x': 4"\
+                                    "504, 'y': 3306}, {'x': 4556, 'y': 3230}"\
+                                    ", {'x': 4527, 'y': 3217}]}, {'geometry'"\
+                                    ": [{'x': 4713, 'y': 3605}, {'x': 4769, "\
+                                    "'y': 3613}, {'x': 4771, 'y': 3647}, {'x"\
+                                    "': 4721, 'y': 3648}]}, {'geometry': [{'"\
+                                    "x': 4918, 'y': 3241}, {'x': 4996, 'y': "\
+                                    "3178}, {'x': 4962, 'y': 3146}, {'x': 48"\
+                                    "98, 'y': 3186}]}, {'geometry': [{'x': 4"\
+                                    "207, 'y': 2987}, {'x': 4241, 'y': 3015}"\
+                                    ", {'x': 4315, 'y': 2939}, {'x': 4280, '"\
+                                    "y': 2921}]}, {'geometry': [{'x': 4064, "\
+                                    "'y': 2989}, {'x': 4137, 'y': 2965}, {'x"\
+                                    "': 4161, 'y': 3075}, {'x': 4089, 'y': 3"\
+                                    "090}]}, {'geometry': [{'x': 4137, 'y': "\
+                                    "2786}, {'x': 4135, 'y': 2835}, {'x': 42"\
+                                    "28, 'y': 2843}, {'x': 4223, 'y': 2790}]"\
+                                    "}, {'geometry': [{'x': 3884, 'y': 2866}"\
+                                    ", {'x': 3921, 'y': 2921}, {'x': 3842, '"\
+                                    "y': 2965}, {'x': 3826, 'y': 2921}]}, {'"\
+                                    "geometry': [{'x': 4136, 'y': 2449}, {'x"\
+                                    "': 4178, 'y': 2518}, {'x': 4244, 'y': 2"\
+                                    "494}, {'x': 4197, 'y': 2420}]}, {'geome"\
+                                    "try': [{'x': 4333, 'y': 2318}, {'x': 43"\
+                                    "61, 'y': 2368}, {'x': 4456, 'y': 2318},"\
+                                    " {'x': 4426, 'y': 2291}]}, {'geometry':"\
+                                    " [{'x': 3518, 'y': 2993}, {'x': 3553, '"\
+                                    "y': 3007}, {'x': 3591, 'y': 2932}, {'x'"\
+                                    ": 3538, 'y': 2927}]}, {'geometry': [{'x"\
+                                    "': 3603, 'y': 2932}, {'x': 3610, 'y': 2"\
+                                    "968}, {'x': 3674, 'y': 2962}, {'x': 366"\
+                                    "5, 'y': 2914}]}, {'geometry': [{'x': 34"\
+                                    "94, 'y': 3141}, {'x': 3567, 'y': 3075},"\
+                                    " {'x': 3530, 'y': 3048}, {'x': 3471, 'y"\
+                                    "': 3108}]}, {'geometry': [{'x': 3725, '"\
+                                    "y': 3084}, {'x': 3696, 'y': 3162}, {'x'"\
+                                    ": 3760, 'y': 3176}, {'x': 3773, 'y': 30"\
+                                    "90}]}, {'geometry': [{'x': 3678, 'y': 3"\
+                                    "005}, {'x': 3722, 'y': 3035}, {'x': 368"\
+                                    "0, 'y': 3095}, {'x': 3638, 'y': 3061}]}"\
+                                    ", {'geometry': [{'x': 4093, 'y': 3311},"\
+                                    " {'x': 4115, 'y': 3382}, {'x': 4066, 'y"\
+                                    "': 3391}, {'x': 4062, 'y': 3314}]}, {'g"\
+                                    "eometry': [{'x': 5330, 'y': 2614}, {'x'"\
+                                    ": 5374, 'y': 2616}, {'x': 5350, 'y': 27"\
+                                    "25}, {'x': 5303, 'y': 2716}]}, {'geomet"\
+                                    "ry': [{'x': 5397, 'y': 2567}, {'x': 544"\
+                                    "2, 'y': 2567}, {'x': 5445, 'y': 2655}, "\
+                                    "{'x': 5392, 'y': 2649}]}], 'Sandhill Cr"\
+                                    "ane': [{'geometry': [{'x': 3288, 'y': 2"\
+                                    "23}, {'x': 3363, 'y': 229}, {'x': 3342,"\
+                                    " 'y': 353}, {'x': 3281, 'y': 343}]}, {'"\
+                                    "geometry': [{'x': 4406, 'y': 1744}, {'x"\
+                                    "': 4523, 'y': 1803}, {'x': 4497, 'y': 1"\
+                                    "881}, {'x': 4328, 'y': 1783}]}, {'geome"\
+                                    "try': [{'x': 4633, 'y': 1610}, {'x': 47"\
+                                    "22, 'y': 1662}, {'x': 4696, 'y': 1717},"\
+                                    " {'x': 4597, 'y': 1671}, {'x': 4627, 'y"\
+                                    "': 1619}]}, {'geometry': [{'x': 4802, '"\
+                                    "y': 1666}, {'x': 4898, 'y': 1681}, {'x'"\
+                                    ": 4909, 'y': 1720}, {'x': 4776, 'y': 17"\
+                                    "20}]}, {'geometry': [{'x': 5088, 'y': 1"\
+                                    "612}, {'x': 5181, 'y': 1604}, {'x': 519"\
+                                    "4, 'y': 1692}, {'x': 5086, 'y': 1682}]}"\
+                                    ", {'geometry': [{'x': 4654, 'y': 2522},"\
+                                    " {'x': 4709, 'y': 2551}, {'x': 4658, 'y"\
+                                    "': 2651}, {'x': 4597, 'y': 2622}]}, {'g"\
+                                    "eometry': [{'x': 4838, 'y': 2708}, {'x'"\
+                                    ": 4896, 'y': 2732}, {'x': 4862, 'y': 28"\
+                                    "48}, {'x': 4799, 'y': 2821}]}, {'geomet"\
+                                    "ry': [{'x': 2848, 'y': 3602}, {'x': 294"\
+                                    "5, 'y': 3624}, {'x': 2938, 'y': 3648}, "\
+                                    "{'x': 2858, 'y': 3647}, {'x': 2785, 'y'"\
+                                    ": 3641}]}, {'geometry': [{'x': 2998, 'y"\
+                                    "': 3620}, {'x': 3036, 'y': 3619}, {'x':"\
+                                    " 3037, 'y': 3648}, {'x': 2989, 'y': 364"\
+                                    "7}]}], 'Mallard': [{'geometry': [{'x': "\
+                                    "3044, 'y': 2737}, {'x': 3065, 'y': 2766"\
+                                    "}, {'x': 3024, 'y': 2789}, {'x': 3001, "\
+                                    "'y': 2773}]}, {'geometry': [{'x': 2820,"\
+                                    " 'y': 2939}, {'x': 2845, 'y': 2938}, {'"\
+                                    "x': 2860, 'y': 2988}, {'x': 2830, 'y': "\
+                                    "2993}]}, {'geometry': [{'x': 2616, 'y':"\
+                                    " 3337}, {'x': 2643, 'y': 3350}, {'x': 2"\
+                                    "607, 'y': 3396}, {'x': 2581, 'y': 3375}"\
+                                    "]}, {'geometry': [{'x': 2623, 'y': 3326"\
+                                    "}, {'x': 2646, 'y': 3339}, {'x': 2668, "\
+                                    "'y': 3294}, {'x': 2642, 'y': 3280}]}, {"\
+                                    "'geometry': [{'x': 2466, 'y': 3581}, {'"\
+                                    "x': 2494, 'y': 3588}, {'x': 2476, 'y': "\
+                                    "3640}, {'x': 2450, 'y': 3638}]}, {'geom"\
+                                    "etry': [{'x': 2779, 'y': 3363}, {'x': 2"\
+                                    "827, 'y': 3362}, {'x': 2826, 'y': 3335}"\
+                                    ", {'x': 2776, 'y': 3337}]}, {'geometry'"\
+                                    ": [{'x': 2920, 'y': 3184}, {'x': 2928, "\
+                                    "'y': 3231}, {'x': 2963, 'y': 3226}, {'x"\
+                                    "': 2946, 'y': 3169}]}, {'geometry': [{'"\
+                                    "x': 2828, 'y': 3147}, {'x': 2849, 'y': "\
+                                    "3176}, {'x': 2888, 'y': 3130}, {'x': 28"\
+                                    "65, 'y': 3110}]}], 'Northern Pintail': "\
+                                    "[{'geometry': [{'x': 3140, 'y': 2749}, "\
+                                    "{'x': 3157, 'y': 2769}, {'x': 3113, 'y'"\
+                                    ": 2796}, {'x': 3098, 'y': 2771}]}, {'ge"\
+                                    "ometry': [{'x': 3462, 'y': 2758}, {'x':"\
+                                    " 3492, 'y': 2791}, {'x': 3522, 'y': 276"\
+                                    "6}, {'x': 3477, 'y': 2735}]}, {'geometr"\
+                                    "y': [{'x': 2519, 'y': 3447}, {'x': 2550"\
+                                    ", 'y': 3454}, {'x': 2532, 'y': 3500}, {"\
+                                    "'x': 2501, 'y': 3489}]}, {'geometry': ["\
+                                    "{'x': 2844, 'y': 3023}, {'x': 2889, 'y'"\
+                                    ": 3049}, {'x': 2905, 'y': 3024}, {'x': "\
+                                    "2852, 'y': 2999}]}, {'geometry': [{'x':"\
+                                    " 2942, 'y': 2960}, {'x': 2968, 'y': 298"\
+                                    "2}, {'x': 3014, 'y': 2928}, {'x': 2979,"\
+                                    " 'y': 2914}]}, {'geometry': [{'x': 3188"\
+                                    ", 'y': 3486}, {'x': 3201, 'y': 3540}, {"\
+                                    "'x': 3232, 'y': 3535}, {'x': 3215, 'y':"\
+                                    " 3478}]}], 'Northern Shoveler': [{'geom"\
+                                    "etry': [{'x': 3549, 'y': 3147}, {'x': 3"\
+                                    "564, 'y': 3165}, {'x': 3604, 'y': 3111}"\
+                                    ", {'x': 3579, 'y': 3101}]}, {'geometry'"\
+                                    ": [{'x': 3375, 'y': 2900}, {'x': 3397, "\
+                                    "'y': 2927}, {'x': 3445, 'y': 2877}, {'x"\
+                                    "': 3418, 'y': 2863}]}]}, 'Created By': "\
+                                    "'steven_sesnie@fws.gov', 'Project Name'"\
+                                    ": 'USFWS Benchmark', 'Created At': '201"\
+                                    "9-08-15T22:13:36.000Z', 'Updated At': '"\
+                                    "2019-09-17T16:40:46.000Z', 'Seconds to "\
+                                    "Label': 51.623, 'External ID': 'BDA_12C"\
+                                    "_20181127_1.JPG', 'Agreement': 0.508, '"\
+                                    "Benchmark Agreement': -1, 'Benchmark ID"\
+                                    "': None, 'Dataset Name': 'USFWS Benchma"\
+                                    "rk', 'Reviews': [], 'View Label': 'http"\
+                                    "s://image-segmentation-v4.labelbox.com?"\
+                                    "project=cjzcz0zq9toh60721go1l3a4y&label"\
+                                    "=cjzd8q4fg5udq0848o53i1hk7', 'Has Open "\
+                                    "Issues': 0, 'Skipped': 0}\n",
                        'first-line': 0L,
                        'folded-linenos': [],
-                       'history': {u'file:/Applications/WingPro.app/Contents/Resources/src/testing/runners/run_pytest_xml.py': ['l'\
-        'en(params["bboxes"])\n',
-        'selected_index = np.random.choice(range(len(params["bboxes"])))\n',
-        'len(n_boxes) /3)\n',
-        'len(n_boxes))\n',
-        'len(n_boxes)\n',
-        'n_boxes = len(params["bboxes"]\n',
-        'n_boxes = len(params["bboxes"])\n',
-        'selected_index = np.random.choice(range(n_boxes), size=int(n_boxes)'\
-        '/3)\n',
-        'selected_index = np.random.choice(range(n_boxes), size=int(n_boxes/'\
-        '3))\n',
-        'selected_index = np.random.choice(range(n_boxes), size=(n_boxes/3)+'\
-        '1)\n',
-        'n_boxes\n',
-        'n_boxes.2\n',
-        'n_boxes/3\n',
-        'n_boxes/3 + 1\n',
-        'int(n_boxes/3)+1\n',
-        'selected_index = np.random.choice(range(n_boxes), size=int(n_boxes/'\
-        '3)+1)\n',
-        'selected_index[0]\n',
-        'list(selected_index)\n',
-        'params["bboxes"] = params["bboxes"][list(selected_index),:]\n',
-        'selected_index\n',
-        'params["bboxes"] = params["bboxes"][selected_index]\n',
-        'params["bboxes"] = params["bboxes"][list(selected_index)]\n',
-        '[params["boxes"] for x in selected_index]\n',
-        'params["bboxes"]\n',
-        'params["bboxes"] for x in selected_index\n',
-        '[params["bboxes"] for x in selected_index]\n',
-        '[params["bboxes"] for x in selected_index][0]\n',
-        '[params["bboxes"] for x in selected_index][1]\n',
-        '[params["bboxes"] for x in selected_index][2]\n',
-        '[params["bboxes"][x] for x in selected_index]\n']},
+                       'history': {u'file:/Users/benweinstein/Documents/BirdDetector/utils/format_newmexico.py': [';'\
+        'en(species_dict[x])\n',
+        'len(species_dict[x])\n',
+        'len(species_dict[x][0])\n',
+        'species_dict[x][0]\n',
+        'species_dict[x][0]["geometry"]\n',
+        "    boxes = [box['geometry'] for box in species_dict[x]]\n",
+        'boxes[0]\n',
+        "allboxes = []\nfor x in species_dict:\n    boxes = [box['geometry']"\
+        " for box in species_dict[x]]\n    allboxes.append(boxes)\n\n",
+        'boxes[1]\n',
+        'x = boxes[1]\n',
+        'x[0]["x"]\n',
+        'x[2]\n',
+        'x[3]\n',
+        'df.Label[0]["Canadian Goose"]\n',
+        'species_dict\n',
+        'species_dict["CanadianGoose"]\n',
+        'species_dict["Canadian Goose"]\n',
+        'species_dict["Canadian Goose"]["geometry"]\n',
+        'species_dict["Canadian Goose"][0]["geometry"]\n',
+        'x = species_dict["Canadian Goose"][0]["geometry"]\n',
+        'from shapely import geometry\n',
+        'pointList = [geometry.Point(node["x"],node["y"] for node in x)]\n',
+        'pointList = [geometry.Point(node["x"],node["y"]) for node in x)]\n',
+        'pointList = [geometry.Point(node["x"],node["y"]) for node in x]\n',
+        'poly = geometry.Polygon([[p.x, p.y] for p in pointList])\n',
+        'poly\n',
+        'poly.bounds\n',
+        'df.Label[0]\n',
+        'df.Label[0][0]\n',
+        'c\n',
+        'x[0][0]\n',
+        'x[0]\n',
+        'x[1]\n',
+        'node = x[1]\n',
+        'node\n',
+        'len(x)\n',
+        'geometries = [create_box(y) for y in x for x in allboxes]\n',
+        'allboxes\n',
+        'allboxes[0]\n',
+        'len(allboxes)\n',
+        'len(allboxes[0])\n',
+        'len(allboxes[1])\n',
+        'pointList\n',
+        'geometry.Polygon([[p.x, p.y] for p in pointList])\n',
+        'minx, miny, maxx, maxy = geometry.Polygon([[p.x, p.y] for p in poin'\
+        'tList]).bounds\n',
+        'boxes\n',
+        'len(boxes)\n',
+        '[len(x) for x in boxes]\n',
+        'x\n',
+        'gdf = gpd.GeoDataFrame(results)\n',
+        'gdf.shape\n',
+        'results.dropDuplicates\n',
+        'results.dropDuplicates()\n',
+        'results.drop_duplicates\n',
+        'results.drop_duplicates()\n',
+        'gdf.image_path.value_counts()\n',
+        'gdf[gdf.image_path == "BDA_18A4_20181107_2.JPG"]\n',
+        'gdf[gdf.image_path == "BDA_18A4_20181107_2.JPG"].geometry.bounds\n',
+        'test_df = gdf[gdf.image_path == "BDA_18A4_20181107_2.JPG"].geometry'\
+        '.bounds\n',
+        'from deepforest import visualize\n',
+        'test_df["label"] = "Bird"\n',
+        'img = visualize.plot_prediction_dataframe(df=test_df, root_dir="/Us'\
+        'ers/benweinstein/Downloads/ExpertAnnotations/Imagery")\n',
+        'help(visualize.plot_prediction_dataframe)\n',
+        'img = visualize.plot_prediction_dataframe(df=test_df, root_dir="/Us'\
+        'ers/benweinstein/Downloads/ExpertAnnotations/Imagery", show=True)\n',
+        'import cv2\n',
+        'img\n',
+        'img.shape\n',
+        'annotated = visualize.plot_predictions(test_df,img)\n',
+        'from matplotlib import pyplot as plt\n',
+        'df.shape\n',
+        'df.head()\n',
+        'df.Agreement\n',
+        'df.Label\n',
+        'gdf.head()\n',
+        'gdf.columns\n',
+        'test_df = gdf[gdf.image_path_1 == "BDA_18A4_20181107_2.JPG"].geomet'\
+        'ry.bounds\n',
+        'test_df = test_df.rename(columns={"minx":"xmin","miny":"ymin","maxx'\
+        '":"xmax","maxy":"ymax"})    \ntest_df["image_path"] = "BDA_18A4_201'\
+        '81107_2.JPG"\ntest_df["label"] = 0\nimg = cv2.imread("/Users/benwei'\
+        'nstein/Downloads/ExpertAnnotations/Imagery/BDA_18A4_20181107_2.JPG"'\
+        ')\nannotated = visualize.plot_predictions(img,test_df)\n\n',
+        'gdf\n',
+        'test_df = gdf[gdf.image_path_2 == "BDA_18A4_20181107_2.JPG"].geomet'\
+        'ry.bounds\n',
+        'test_df = test_df.rename(columns={"minx":"xmin","miny":"ymin","maxx'\
+        '":"xmax","maxy":"ymax"})\n',
+        'test_df["image_path"] = "BDA_18A4_20181107_2.JPG"\n',
+        'test_df["label"] = 0\n',
+        'img = cv2.imread("/Users/benweinstein/Downloads/ExpertAnnotations/I'\
+        'magery/BDA_18A4_20181107_2.JPG")\n',
+        'annotated = visualize.plot_predictions(img,test_df)\n',
+        'annotated\n',
+        'plt.imshow(annotated)\n',
+        'test_df.df\n',
+        'results\n',
+        'results[results.image_path=="BDA_18A4_20181107_2.JPG"]\n',
+        'results[results.image_path=="BDA_18A4_20181107_2.JPG"]["created_by"'\
+        ']\n',
+        'results.columns\n',
+        'df.columns\n',
+        'df["Created By"]\n',
+        'df["Created By"].value_counts\n',
+        'df["Created By"].value_counts()\n',
+        'df["Created By"].value_counts()[0]\n',
+        'df["Created By"].value_counts().index\n',
+        'df["Created By"].value_counts().index[0]\n',
+        'test_df.shape\n',
+        'plt.imshow(annotated[:,:,::-1])\n']},
                        'launch-id': None,
-                       'sel-line': 3L,
-                       'sel-line-start': 59L,
+                       'sel-line': 1L,
+                       'sel-line-start': 2L,
                        'selection_end': 59L,
                        'selection_start': 59L,
                        'zoom': 0L}),
@@ -223,54 +524,7 @@ guimgr.overall-gui-state = {'windowing-policy': 'combined-window',
                        'code-line': '',
                        'first-line': 0L,
                        'folded-linenos': [],
-                       'history': {None: ['from albumentations import functi'\
-        'onal as F\nbbox = (0.129, 0.7846, 0.1626, 0.818)\ncropped_bbox = F.'\
-        'bbox_random_crop(bbox=bbox, crop_height=100, crop_width=100, h_star'\
-        't=0.7846, w_start=0.12933, rows=1500, cols=1500)\ncropped_bbox\n\n'\
-        'assert bbox[3] < (100/1500) + 0.7846\nassert all([(y >= 0) & (y<=1)'\
-        ' for y in list(cropped_bbox)])\n\n',
-        'from albumentations import functional as F\nbbox = (0.129, 0.7846, '\
-        '0.1626, 0.818)\ncropped_bbox = F.bbox_random_crop(bbox=bbox, crop_h'\
-        'eight=100, crop_width=100, h_start=0.7846, w_start=0.12933, rows=15'\
-        '00-100, cols=1500-100)\ncropped_bbox\n\nassert bbox[3] < (100/1500)'\
-        ' + 0.7846\nassert all([(y >= 0) & (y<=1) for y in list(cropped_bbox'\
-        ')])\n\n',
-        'bbox = (0.129, 0.7846, 0.1626, 0.818)\n',
-        'cropped_bbox = F.bbox_random_crop(bbox=bbox, crop_height=100, crop_'\
-        'width=100, h_start=0.7846, w_start=0.12933, rows=1500-100, cols=150'\
-        '0-100)\n',
-        'cropped_bbox = F.bbox_random_crop(bbox=bbox, crop_height=100, crop_'\
-        'width=100, h_start=0.7846, w_start=0.12933, rows=1500-1000, cols=15'\
-        '00-1000)\n',
-        'cropped_bbox = F.bbox_random_crop(bbox=bbox, crop_height=100, crop_'\
-        'width=100, h_start=0.7846 - 100/1500, w_start=0.12933 - 100/1500, r'\
-        'ows=1500, cols=1500)\n',
-        '(100/1500)\n',
-        'cropped_bbox = F.bbox_random_crop(bbox=bbox, crop_height=100, crop_'\
-        'width=100, h_start=0.7846 - (100/1500), w_start=0.12933 - (100/1500'\
-        '), rows=1500, cols=1500)\n',
-        'cropped_bbox\n',
-        'from deepforest import main\nfrom deepforest import get_data\nimpor'\
-        't os\nimport matplotlib.pyplot as plt\nmodel = main.deepforest()\n'\
-        'model.use_release()\nimg=model.predict_image(path="/Users/benweinst'\
-        'ein/Documents/NeonTreeEvaluation/evaluation/RGB/TEAK_049_2019.tif",'\
-        'return_plot=True)\n\n#predict_image returns plot in BlueGreenRed (o'\
-        'pencv style), but matplotlib likes RedGreenBlue, switch the channel'\
-        ' order.\nplt.imshow(img[:,:,::-1])\n\n',
-        'm.use_bird_detector()\n',
-        'import numpy as np\n',
-        'np.arange(0.25,1.25,0.25)\n',
-        'a = "Transect_B_2020_BLUE_Karina.shp"\n',
-        'x= a\n',
-        'x\n',
-        'x.split("_")\n',
-        'from deepforest import main\n',
-        'm = main.deepforest()\n',
-        'm.use_bird_release()\n',
-        'from deepforest import preprocc\n',
-        'from deepforest import preprocess\n',
-        'preprocess.split_raster\n',
-        'help(preprocess.split_raster)\n']},
+                       'history': {},
                        'launch-id': None,
                        'sel-line': 3L,
                        'sel-line-start': 162L,
@@ -289,152 +543,18 @@ guimgr.overall-gui-state = {'windowing-policy': 'combined-window',
                       'wide',
                       1,
                       {})],
-        'primary_view_state': {'editor_states': ({'bookmarks': ([[loc('deepforest/dataset.py'),
-        {'attrib-starts': [('TreeDataset|0|',
-                            36),
-                           ('TreeDataset|0|.__getitem__|0|',
-                            65)],
-         'code-line': '            targets["boxes"] = image_annotations[["xm'\
-                      'in", "ymin", "xmax",\n',
-         'first-line': 57L,
+        'primary_view_state': {'editor_states': ({'bookmarks': ([[loc('tests/test_dataset.py'),
+        {'attrib-starts': [('test_multi_image_warning|0|',
+                            100)],
+         'code-line': '    root_dir = os.path.dirname(csv_file1)\n',
+         'first-line': 94L,
          'folded-linenos': [],
-         'sel-line': 76L,
-         'sel-line-start': 2682L,
-         'selection_end': 2730L,
-         'selection_start': 2713L,
+         'sel-line': 110L,
+         'sel-line-start': 3742L,
+         'selection_end': 3782L,
+         'selection_start': 3782L,
          'zoom': 0L},
-        1623944778.733329],
-        [loc('tests/test_dataset.py'),
-         {'attrib-starts': [('test_TreeDataset_transform|0|',
-                             41)],
-          'code-line': '    csv_file = get_data("example.csv")\n',
-          'first-line': 30L,
-          'folded-linenos': [],
-          'sel-line': 42L,
-          'sel-line-start': 1283L,
-          'selection_end': 1314L,
-          'selection_start': 1314L,
-          'zoom': 0L},
-         1623944778.740761],
-        [loc('docs/installation.md'),
-         {'attrib-starts': [],
-          'code-line': '# Installation\n',
-          'first-line': 0L,
-          'folded-linenos': [],
-          'sel-line': 0L,
-          'sel-line-start': 0L,
-          'selection_end': 0L,
-          'selection_start': 0L,
-          'zoom': 0L},
-         1623944923.617352],
-        [loc('deepforest/dataset.py'),
-         {'attrib-starts': [('TreeDataset|0|',
-                             36),
-                            ('TreeDataset|0|.__getitem__|0|',
-                             65)],
-          'code-line': '            targets["boxes"] = image_annotations[["x'\
-                       'min", "ymin", "xmax",\n',
-          'first-line': 57L,
-          'folded-linenos': [],
-          'sel-line': 76L,
-          'sel-line-start': 2682L,
-          'selection_end': 2730L,
-          'selection_start': 2713L,
-          'zoom': 0L},
-         1623944923.621724],
-        [loc('tests/test_dataset.py'),
-         {'attrib-starts': [('test_TreeDataset_transform|0|',
-                             41)],
-          'code-line': '                             transforms=dataset.get_'\
-                       'transform(augment=augment))\n',
-          'first-line': 35L,
-          'folded-linenos': [],
-          'sel-line': 46L,
-          'sel-line-start': 1459L,
-          'selection_end': 1474L,
-          'selection_start': 1474L,
-          'zoom': 0L},
-         1623944923.62403],
-        [loc('../DeepForest_Model/sweden_data.py'),
-         {'attrib-starts': [('xml_to_annotations|0|',
-                             6)],
-          'code-line': '        ymax = [int(np.round(float(x))) for x in yma'\
-                       'x]\n',
-          'first-line': 77L,
-          'folded-linenos': [],
-          'sel-line': 56L,
-          'sel-line-start': 1824L,
-          'selection_end': 1874L,
-          'selection_start': 1874L,
-          'zoom': 0L},
-         1623944923.626652],
-        [loc('tests/test_dataset.py'),
-         {'attrib-starts': [('test_TreeDataset_transform|0|',
-                             41)],
-          'code-line': '                             transforms=dataset.get_'\
-                       'transform(augment=augment))\n',
-          'first-line': 35L,
-          'folded-linenos': [],
-          'sel-line': 46L,
-          'sel-line-start': 1459L,
-          'selection_end': 1474L,
-          'selection_start': 1474L,
-          'zoom': 0L},
-         1623945033.594309],
-        [loc('tests/test_dataset.py'),
-         {'attrib-starts': [('multiple_images|0|',
-                             21)],
-          'code-line': '    return "{}/multiple.csv".format(tmpdir)\n',
-          'first-line': 12L,
-          'folded-linenos': [],
-          'sel-line': 30L,
-          'sel-line-start': 674L,
-          'selection_end': 716L,
-          'selection_start': 710L,
-          'zoom': 0L},
-         1623945283.957143],
-        [loc('deepforest/dataset.py'),
-         {'attrib-starts': [('TreeDataset|0|',
-                             36),
-                            ('TreeDataset|0|.__getitem__|0|',
-                             65)],
-          'code-line': '            targets["boxes"] = image_annotations[["x'\
-                       'min", "ymin", "xmax",\n',
-          'first-line': 57L,
-          'folded-linenos': [],
-          'sel-line': 76L,
-          'sel-line-start': 2682L,
-          'selection_end': 2730L,
-          'selection_start': 2713L,
-          'zoom': 0L},
-         1623945283.978775],
-        [loc('deepforest/dataset.py'),
-         {'attrib-starts': [('TreeDataset|0|',
-                             36),
-                            ('TreeDataset|0|.__getitem__|0|',
-                             65)],
-          'code-line': '        image = np.array(Image.open(img_name).conver'\
-                       't("RGB"))/255\n',
-          'first-line': 53L,
-          'folded-linenos': [],
-          'sel-line': 68L,
-          'sel-line-start': 2342L,
-          'selection_end': 2407L,
-          'selection_start': 2342L,
-          'zoom': 0L},
-         1623945287.776618],
-        [loc('tests/test_dataset.py'),
-         {'attrib-starts': [('test_multi_image_warning|0|',
-                             100)],
-          'code-line': '    root_dir = os.path.dirname(csv_file1)\n',
-          'first-line': 94L,
-          'folded-linenos': [],
-          'sel-line': 110L,
-          'sel-line-start': 3742L,
-          'selection_end': 3782L,
-          'selection_start': 3782L,
-          'zoom': 0L},
-         1623945506.217386],
+        1623945506.217386],
         [loc('tests/test_dataset.py'),
          {'attrib-starts': [('test_multi_image_warning|0|',
                              100)],
@@ -541,9 +661,142 @@ guimgr.overall-gui-state = {'windowing-policy': 'combined-window',
           'selection_end': 0L,
           'selection_start': 0L,
           'zoom': 0L},
-         1624299743.641456]],
+         1624299743.641456],
+        [loc('docs/landing.md'),
+         {'attrib-starts': [],
+          'code-line': 'The rapid development of open machine learning commu'\
+                       'nity resources means that tensorflow 1.1.14, which i'\
+                       's required for deepforest, will rapidly become out o'\
+                       'f date. Fear not, starting in 1.0.0, the model now d'\
+                       'epends on the pytorch and torchvision and will be st'\
+                       'able for the forseeable future.\n',
+          'first-line': 0L,
+          'folded-linenos': [],
+          'sel-line': 8L,
+          'sel-line-start': 588L,
+          'selection_end': 879L,
+          'selection_start': 879L,
+          'zoom': 0L},
+         1624642024.87456],
+        [loc('deepforest/dataset.py'),
+         {'attrib-starts': [('TreeDataset|0|',
+                             36),
+                            ('TreeDataset|0|.__getitem__|0|',
+                             65)],
+          'code-line': '        image = np.array(Image.open(img_name).conver'\
+                       't("RGB"))/255\n',
+          'first-line': 85L,
+          'folded-linenos': [],
+          'sel-line': 68L,
+          'sel-line-start': 2342L,
+          'selection_end': 2407L,
+          'selection_start': 2342L,
+          'zoom': 0L},
+         1624642037.366792],
+        [loc('deepforest/utilities.py'),
+         {'attrib-starts': [],
+          'code-line': '"""Utilities model"""\n',
+          'first-line': 75L,
+          'folded-linenos': [],
+          'sel-line': 0L,
+          'sel-line-start': 0L,
+          'selection_end': 0L,
+          'selection_start': 0L,
+          'zoom': 0L},
+         1624642045.32323],
+        [loc('deepforest/main.py'),
+         {'attrib-starts': [('deepforest|0|',
+                             20),
+                            ('deepforest|0|.use_bird_release|0|',
+                             90)],
+          'code-line': '        self.model.load_state_dict(state_dict) = tor'\
+                       'ch.load(f)\n',
+          'first-line': 78L,
+          'folded-linenos': [],
+          'sel-line': 98L,
+          'sel-line-start': 3677L,
+          'selection_end': 3722L,
+          'selection_start': 3712L,
+          'zoom': 0L},
+         1624642087.731186],
+        [loc('../BirdDetector/single_run.py'),
+         {'attrib-starts': [],
+          'code-line': 'train_list = ["newmexico","seabirdwatch","neill","US'\
+                       'GS","hayes","terns","penguins","pfeifer","palmyra","'\
+                       'mckellar","monash","everglades"]\n',
+          'first-line': 19L,
+          'folded-linenos': [],
+          'sel-line': 25L,
+          'sel-line-start': 866L,
+          'selection_end': 898L,
+          'selection_start': 898L,
+          'zoom': 0L},
+         1624642094.199187],
+        [loc('../BirdDetector/generalization.py'),
+         {'attrib-starts': [('zero_shot|0|',
+                             93)],
+          'code-line': '        model.model.load_state_dict(torch.load(model'\
+                       '_path))\n',
+          'first-line': 124L,
+          'folded-linenos': [],
+          'sel-line': 139L,
+          'sel-line-start': 6098L,
+          'selection_end': 6129L,
+          'selection_start': 6118L,
+          'zoom': 0L},
+         1624642096.938521],
+        [loc('../BirdDetector/generalization.py'),
+         {'attrib-starts': [('fine_tune|0|',
+                             164)],
+          'code-line': '    model.model.load_state_dict(torch.load(weights))'\
+                       '\n',
+          'first-line': 145L,
+          'folded-linenos': [],
+          'sel-line': 170L,
+          'sel-line-start': 7752L,
+          'selection_end': 7779L,
+          'selection_start': 7768L,
+          'zoom': 0L},
+         1624642103.98524],
+        [loc('deepforest/main.py'),
+         {'attrib-starts': [('deepforest|0|',
+                             20),
+                            ('deepforest|0|.use_bird_release|0|',
+                             90)],
+          'code-line': '        Returns:\n',
+          'first-line': 51L,
+          'folded-linenos': [],
+          'sel-line': 93L,
+          'sel-line-start': 3468L,
+          'selection_end': 3484L,
+          'selection_start': 3484L,
+          'zoom': 0L},
+         1624643585.662339],
+        [loc('deepforest/utilities.py'),
+         {'attrib-starts': [('use_bird_release|0|',
+                             49)],
+          'code-line': '\n',
+          'first-line': 45L,
+          'folded-linenos': [],
+          'sel-line': 71L,
+          'sel-line-start': 1966L,
+          'selection_end': 1966L,
+          'selection_start': 1966L,
+          'zoom': 0L},
+         1624744026.563913],
+        [loc('tests/test_main.py'),
+         {'attrib-starts': [],
+          'code-line': '#test main\n',
+          'first-line': 0L,
+          'folded-linenos': [],
+          'sel-line': 0L,
+          'sel-line-start': 0L,
+          'selection_end': 0L,
+          'selection_start': 0L,
+          'zoom': 0L},
+         1624744026.576909]],
         20),
-        'current-loc': loc('docs/landing.md'),
+        'current-loc': loc('tests/test_main.py'),
         'editor-state-list': [(loc('docs/conf.py'),
                                {'attrib-starts': [],
                                 'code-line': '#!/usr/bin/env python\n',
@@ -561,7 +814,7 @@ guimgr.overall-gui-state = {'windowing-policy': 'combined-window',
          65)],
                                 'code-line': '        image = np.array(Image'\
         '.open(img_name).convert("RGB"))/255\n',
-                                'first-line': 53L,
+                                'first-line': 85L,
                                 'folded-linenos': [],
                                 'sel-line': 68L,
                                 'sel-line-start': 2342L,
@@ -579,6 +832,18 @@ guimgr.overall-gui-state = {'windowing-policy': 'combined-window',
                                 'selection_end': 6044L,
                                 'selection_start': 6044L,
                                 'zoom': 0L}),
+                              (loc('../BirdDetector/generalization.py'),
+                               {'attrib-starts': [('fine_tune|0|',
+        164)],
+                                'code-line': '    model.model.load_state_dic'\
+        't(torch.load(weights))\n',
+                                'first-line': 145L,
+                                'folded-linenos': [],
+                                'sel-line': 170L,
+                                'sel-line-start': 7752L,
+                                'selection_end': 7779L,
+                                'selection_start': 7768L,
+                                'zoom': 0L}),
                               (loc('docs/landing.md'),
                                {'attrib-starts': [],
                                 'code-line': 'The rapid development of open '\
@@ -586,12 +851,25 @@ guimgr.overall-gui-state = {'windowing-policy': 'combined-window',
         'which is required for deepforest, will rapidly become out of date. '\
         'Fear not, starting in 1.0.0, the model now depends on the pytorch a'\
         'nd torchvision and will be stable for the forseeable future.\n',
-                                'first-line': 2L,
+                                'first-line': 0L,
                                 'folded-linenos': [],
                                 'sel-line': 8L,
                                 'sel-line-start': 588L,
                                 'selection_end': 879L,
                                 'selection_start': 879L,
+                                'zoom': 0L}),
+                              (loc('deepforest/main.py'),
+                               {'attrib-starts': [('deepforest|0|',
+        20),
+        ('deepforest|0|.use_bird_release|0|',
+         90)],
+                                'code-line': '        Returns:\n',
+                                'first-line': 51L,
+                                'folded-linenos': [],
+                                'sel-line': 93L,
+                                'sel-line-start': 3468L,
+                                'selection_end': 3484L,
+                                'selection_start': 3484L,
                                 'zoom': 0L}),
                               (loc('docs/Makefile'),
                                {'attrib-starts': [],
@@ -616,6 +894,18 @@ guimgr.overall-gui-state = {'windowing-policy': 'combined-window',
                                 'selection_end': 1518L,
                                 'selection_start': 1512L,
                                 'zoom': 0L}),
+                              (loc('../BirdDetector/single_run.py'),
+                               {'attrib-starts': [],
+                                'code-line': 'train_list = ["newmexico","sea'\
+        'birdwatch","neill","USGS","hayes","terns","penguins","pfeifer","pal'\
+        'myra","mckellar","monash","everglades"]\n',
+                                'first-line': 19L,
+                                'folded-linenos': [],
+                                'sel-line': 25L,
+                                'sel-line-start': 866L,
+                                'selection_end': 898L,
+                                'selection_start': 898L,
+                                'zoom': 0L}),
                               (loc('tests/test_dataset.py'),
                                {'attrib-starts': [('test_predict_dataloader|'\
         '0|',
@@ -628,30 +918,61 @@ guimgr.overall-gui-state = {'windowing-policy': 'combined-window',
                                 'sel-line-start': 3272L,
                                 'selection_end': 3291L,
                                 'selection_start': 3291L,
+                                'zoom': 0L}),
+                              (loc('tests/test_main.py'),
+                               {'attrib-starts': [],
+                                'code-line': '#test main\n',
+                                'first-line': 0L,
+                                'folded-linenos': [],
+                                'sel-line': 0L,
+                                'sel-line-start': 0L,
+                                'selection_end': 10L,
+                                'selection_start': 0L,
+                                'zoom': 0L}),
+                              (loc('deepforest/utilities.py'),
+                               {'attrib-starts': [('use_bird_release|0|',
+        49)],
+                                'code-line': '\n',
+                                'first-line': 45L,
+                                'folded-linenos': [],
+                                'sel-line': 71L,
+                                'sel-line-start': 1966L,
+                                'selection_end': 1966L,
+                                'selection_start': 1966L,
                                 'zoom': 0L})],
-        'has-focus': True,
+        'has-focus': False,
         'locked': False},
         [loc('docs/conf.py'),
          loc('deepforest/dataset.py'),
          loc('docs/Evaluation.md'),
+         loc('../BirdDetector/generalization.py'),
          loc('docs/landing.md'),
+         loc('deepforest/main.py'),
          loc('docs/Makefile'),
          loc('deepforest/preprocess.py'),
-         loc('tests/test_dataset.py')]),
-                               'open_files': [u'deepforest/dataset.py',
+         loc('../BirdDetector/single_run.py'),
+         loc('tests/test_dataset.py'),
+         loc('tests/test_main.py'),
+         loc('deepforest/utilities.py')]),
+                               'open_files': [u'../BirdDetector/generalization.py',
+        u'../BirdDetector/single_run.py',
+        u'deepforest/dataset.py',
+        u'deepforest/main.py',
         u'deepforest/preprocess.py',
         u'docs/Evaluation.md',
-        u'docs/conf.py',
-        u'tests/test_dataset.py',
         u'docs/Makefile',
-        u'docs/landing.md']},
+        u'docs/conf.py',
+        u'docs/landing.md',
+        u'tests/test_dataset.py',
+        u'deepforest/utilities.py',
+        u'tests/test_main.py']},
         'saved_notebook_display': None,
         'split_percents': {0: 0.44329896907216493},
         'splits': 2,
         'tab_location': 'top',
         'traversal_pos': ((0,
-                           1),
-                          1624297846.487999),
+                           4),
+                          1624744017.562212),
         'user_data': {}},
                  'saved_notebook_display': None,
                  'split_percents': {0: 0.5},
@@ -662,12 +983,14 @@ guimgr.overall-gui-state = {'windowing-policy': 'combined-window',
                                    1607965912.374172),
                  'user_data': {}},
         'window-alloc': (0,
-                         23,
+                         0,
                          1792,
-                         1097)}]}
-guimgr.recent-documents = [loc('docs/landing.md'),
-                           loc('docs/Makefile'),
-                           loc('tests/test_dataset.py')]
+                         1120)}]}
+guimgr.recent-documents = [loc('tests/test_main.py'),
+                           loc('deepforest/utilities.py'),
+                           loc('tests/test_dataset.py'),
+                           loc('../BirdDetector/generalization.py'),
+                           loc('../BirdDetector/single_run.py')]
 guimgr.visual-state = {loc('deepforest/data/classes.csv'): {'attrib-starts': [],
         'code-line': 'Alive,0\r\n',
         'first-line': 0L,
@@ -817,7 +1140,8 @@ proj.vcs-system-config = ('prefs',
                                    'versioncontrol.svn.executable': u'svn',
                                    'versioncontrol.svn.extra-global-args': '',
                                    'versioncontrol.svn.svnadmin-executable': u'svnadmin'}})
-search.search-history = [u'print',
+search.search-history = [u'load_state_',
+                         u'print',
                          u'evaluate',
                          u'score_thresh',
                          u'split_raster',
@@ -841,7 +1165,14 @@ testing.stored-results = (1,
                               1609884255,
                               7)]),
                            (u'/Users/benweinstein/Documents/DeepForest/tests/test_model.py',
-                            [('test_create_model[1]',
+                            [('test_load_backbone',
+                              0,
+                              None,
+                              None,
+                              None,
+                              1623255987,
+                              6),
+                             ('test_create_model[2]',
                               0,
                               None,
                               None,
@@ -855,31 +1186,17 @@ testing.stored-results = (1,
                               None,
                               1623255987,
                               12),
-                             ('test_create_model[2]',
+                             ('test_create_model[1]',
                               0,
                               None,
                               None,
                               None,
                               1623255987,
-                              12),
-                             ('test_load_backbone',
-                              0,
-                              None,
-                              None,
-                              None,
-                              1623255987,
-                              6)]),
+                              12)]),
                            (u'/Users/benweinstein/Documents/DeepForest/tests/test_dataset.py',
-                            [('test_predict_dataloader',
-                              0,
-                              None,
-                              None,
-                              None,
-                              1623945461,
-                              90),
-                             ('test_TreeDataset[/Users/benweinstein/Document'\
-                              's/DeepForest/deepforest/data/example.csv-labe'\
-                              'l_dict0]',
+                            [('test_TreeDataset[/Users/benweinstein/Document'\
+                              's/DeepForest/deepforest/data/testfile_multi.c'\
+                              'sv-label_dict1]',
                               0,
                               None,
                               None,
@@ -900,13 +1217,6 @@ testing.stored-results = (1,
                               None,
                               1623945461,
                               42),
-                             ('test_empty_collate',
-                              0,
-                              None,
-                              None,
-                              None,
-                              1623945461,
-                              76),
                              ('test_collate',
                               0,
                               None,
@@ -914,6 +1224,22 @@ testing.stored-results = (1,
                               None,
                               1623945461,
                               62),
+                             ('test_TreeDataset[/Users/benweinstein/Document'\
+                              's/DeepForest/deepforest/data/example.csv-labe'\
+                              'l_dict0]',
+                              0,
+                              None,
+                              None,
+                              None,
+                              1623945461,
+                              22),
+                             ('test_predict_dataloader',
+                              0,
+                              None,
+                              None,
+                              None,
+                              1623945461,
+                              90),
                              ('test_multi_image_warning',
                               0,
                               None,
@@ -921,17 +1247,50 @@ testing.stored-results = (1,
                               None,
                               1623945501,
                               100),
-                             ('test_TreeDataset[/Users/benweinstein/Document'\
-                              's/DeepForest/deepforest/data/testfile_multi.c'\
-                              'sv-label_dict1]',
+                             ('test_empty_collate',
                               0,
                               None,
                               None,
                               None,
                               1623945461,
-                              22)]),
+                              76)]),
                            (u'/Users/benweinstein/Documents/DeepForest/tests/test_preprocess.py',
-                            [('test_split_raster_from_numpy',
+                            [('test_split_size_error',
+                              0,
+                              None,
+                              None,
+                              None,
+                              1614291339,
+                              138),
+                             ('test_compute_windows',
+                              0,
+                              None,
+                              None,
+                              None,
+                              1614291339,
+                              37),
+                             ('test_split_raster_empty',
+                              0,
+                              None,
+                              None,
+                              None,
+                              1614291339,
+                              100),
+                             ('test_select_annotations_tile',
+                              0,
+                              None,
+                              None,
+                              None,
+                              1614291339,
+                              58),
+                             ('test_select_annotations',
+                              0,
+                              None,
+                              None,
+                              None,
+                              1614291339,
+                              43),
+                             ('test_split_raster_from_numpy',
                               0,
                               None,
                               None,
@@ -944,58 +1303,9 @@ testing.stored-results = (1,
                               None,
                               None,
                               1623177561,
-                              76),
-                             ('test_compute_windows',
-                              0,
-                              None,
-                              None,
-                              None,
-                              1614291339,
-                              37),
-                             ('test_select_annotations',
-                              0,
-                              None,
-                              None,
-                              None,
-                              1614291339,
-                              43),
-                             ('test_split_size_error',
-                              0,
-                              None,
-                              None,
-                              None,
-                              1614291339,
-                              138),
-                             ('test_select_annotations_tile',
-                              0,
-                              None,
-                              None,
-                              None,
-                              1614291339,
-                              58),
-                             ('test_split_raster_empty',
-                              0,
-                              None,
-                              None,
-                              None,
-                              1614291339,
-                              100)]),
+                              76)]),
                            (u'/Users/benweinstein/Documents/DeepForest/tests/test_utilities.py',
-                            [('test_format_args',
-                              0,
-                              None,
-                              None,
-                              None,
-                              1614282366,
-                              45),
-                             ('test_number_of_images',
-                              0,
-                              None,
-                              None,
-                              None,
-                              1614282366,
-                              40),
-                             ('test_use_release',
+                            [('test_use_release',
                               0,
                               None,
                               None,
@@ -1009,13 +1319,20 @@ testing.stored-results = (1,
                               None,
                               1614282366,
                               51),
-                             ('test_float_warning',
+                             ('test_format_args',
                               0,
                               None,
                               None,
                               None,
                               1614282366,
-                              70),
+                              45),
+                             ('test_number_of_images',
+                              0,
+                              None,
+                              None,
+                              None,
+                              1614282366,
+                              40),
                              ('test_xml_to_annotations',
                               0,
                               None,
@@ -1023,6 +1340,13 @@ testing.stored-results = (1,
                               None,
                               1614282366,
                               26),
+                             ('test_float_warning',
+                              0,
+                              None,
+                              None,
+                              None,
+                              1614282366,
+                              70),
                              ('test_create_classes',
                               0,
                               None,
@@ -1031,48 +1355,20 @@ testing.stored-results = (1,
                               1614282366,
                               35)]),
                            (u'/Users/benweinstein/Documents/DeepForest/tests/test_main.py',
-                            [('test_predict_image_fromfile',
-                              0,
-                              None,
-                              None,
-                              None,
-                              1623347677,
-                              105),
-                             ('test_train_callbacks',
-                              0,
-                              None,
-                              None,
-                              None,
-                              1623347677,
-                              200),
-                             ('test_predict_tile',
-                              0,
-                              None,
-                              None,
-                              None,
-                              1623347677,
-                              149),
-                             ('test_train_multi',
-                              0,
-                              None,
-                              None,
-                              None,
-                              1623347677,
-                              90),
-                             ('test_over_score_thresh',
-                              0,
-                              None,
-                              None,
-                              None,
-                              1623347677,
-                              270),
-                             ('test_override_transforms',
+                            [('test_override_transforms',
                               0,
                               None,
                               None,
                               None,
                               1623347677,
                               247),
+                             ('test_predict_return_plot',
+                              0,
+                              None,
+                              None,
+                              None,
+                              1623347677,
+                              125),
                              ('test_reload_multi_class',
                               0,
                               None,
@@ -1080,6 +1376,13 @@ testing.stored-results = (1,
                               None,
                               1623347677,
                               238),
+                             ('test_predict_image_empty',
+                              0,
+                              None,
+                              None,
+                              None,
+                              1623347677,
+                              99),
                              ('test_predict_big_file',
                               0,
                               None,
@@ -1087,13 +1390,13 @@ testing.stored-results = (1,
                               None,
                               1623347677,
                               131),
-                             ('test_save_and_reload',
+                             ('test_train_no_validation',
                               0,
                               None,
                               None,
                               None,
                               1623347677,
-                              221),
+                              93),
                              ('test_train_single',
                               0,
                               None,
@@ -1101,13 +1404,13 @@ testing.stored-results = (1,
                               None,
                               1623347677,
                               87),
-                             ('test_evaluate',
+                             ('test_predict_tile',
                               0,
                               None,
                               None,
                               None,
                               1623347677,
-                              185),
+                              149),
                              ('test_main',
                               0,
                               None,
@@ -1122,6 +1425,13 @@ testing.stored-results = (1,
                               None,
                               1623347677,
                               140),
+                             ('test_over_score_thresh',
+                              0,
+                              None,
+                              None,
+                              None,
+                              1623347677,
+                              270),
                              ('test_use_bird_release',
                               0,
                               None,
@@ -1129,50 +1439,50 @@ testing.stored-results = (1,
                               None,
                               1623347677,
                               81),
-                             ('test_predict_return_plot',
+                             ('test_predict_image_fromfile',
                               0,
                               None,
                               None,
                               None,
                               1623347677,
-                              125),
-                             ('test_predict_image_empty',
+                              105),
+                             ('test_train_multi',
                               0,
                               None,
                               None,
                               None,
                               1623347677,
-                              99),
+                              90),
+                             ('test_train_callbacks',
+                              0,
+                              None,
+                              None,
+                              None,
+                              1623347677,
+                              200),
+                             ('test_evaluate',
+                              0,
+                              None,
+                              None,
+                              None,
+                              1623347677,
+                              185),
+                             ('test_save_and_reload',
+                              0,
+                              None,
+                              None,
+                              None,
+                              1623347677,
+                              221),
                              ('test_predict_image_fromarray',
                               0,
                               None,
                               None,
                               None,
                               1623347677,
-                              112),
-                             ('test_train_no_validation',
-                              0,
-                              None,
-                              None,
-                              None,
-                              1623347677,
-                              93)]),
+                              112)]),
                            (u'/Users/benweinstein/Documents/DeepForest/tests/test_evaluate.py',
-                            [('test_evaluate_image',
-                              0,
-                              None,
-                              None,
-                              None,
-                              1623552527,
-                              17),
-                             ('test_evaluate_save_images',
-                              0,
-                              None,
-                              None,
-                              None,
-                              1623552527,
-                              58),
-                             ('test_evaluate_multi',
+                            [('test_evaluate_multi',
                               0,
                               None,
                               None,
@@ -1186,6 +1496,20 @@ testing.stored-results = (1,
                               None,
                               1623552527,
                               27),
+                             ('test_evaluate_image',
+                              0,
+                              None,
+                              None,
+                              None,
+                              1623552527,
+                              17),
+                             ('test_evaluate_save_images',
+                              0,
+                              None,
+                              None,
+                              None,
+                              1623552527,
+                              58),
                              ('test_evaluate_empty',
                               0,
                               None,
