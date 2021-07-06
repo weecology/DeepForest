@@ -1,4 +1,4 @@
-name: DeepForest_pytorch
+name: DeepForest
 channels:
   - pytorch
   - conda-forge
