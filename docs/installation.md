@@ -8,6 +8,11 @@ pip install DeepForest
 
 For questions on conda-forge installation, please submit issues to the feedstock repo: https://github.com/conda-forge/deepforest-feedstock
 
+### Windows Installation
+
+DeepForest itself is pure python and will work on all major operating systems. It can be difficult to install some of the geospatial dependencies on windows using pip.
+If you have trouble installing gdal, rasterio or fiona on windows see rasterio [docs](https://rasterio.readthedocs.io/en/latest/installation.html)
+
 ## Source Installation
 
 DeepForest can alternatively be installed from source using the github repository. The python package dependencies are managed by conda.
