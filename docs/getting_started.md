@@ -26,7 +26,7 @@ DeepForest has a prebuilt model trained on data from 24 sites from the [National
 ![](../www/semi-supervised.png)
 For more details on the modeling approach see [citations](landing.html#citation).
 
-Setting the correct window size to match the prebuilt model takes a few tries. The model was trained on 0.1m data with 400m crops. For data of the same resolution, that window size is appropriate. For coarser data, we have experimentally found that larger windows are actually more useful in providing the model context (e.g 1500px windows). At some point windows become too large and the trees are too tiny to classify. Striking a balance is important.
+Setting the correct window size to match the prebuilt model takes a few tries. The model was trained on 0.1m data with 400px crops. For data of the same resolution, that window size is appropriate. For coarser data, we have experimentally found that larger windows are actually more useful in providing the model context (e.g 1500px windows). At some point windows become too large and the trees are too tiny to classify. Striking a balance is important.
 
 ## Sample data
 
