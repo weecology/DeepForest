@@ -18,15 +18,15 @@ If you have trouble installing gdal, rasterio or fiona on windows see rasterio [
 DeepForest can alternatively be installed from source using the github repository. The python package dependencies are managed by conda.
 
 ```
-git clone https://github.com/weecology/DeepForest-pytorch.git
-cd DeepForest-pytorch
+git clone https://github.com/weecology/DeepForest.git
+cd DeepForest
 conda env create --file=environment.yml
-conda activate deepforest_pytorch
+conda activate deepforest
 ```
 
 ## GPU support
 
-Pytorch can be run on GPUs to allow faster model training and prediction. Deepforest-pytorch is a pytorch lightning module, as automatically distributes data to available GPUs.
+Pytorch can be run on GPUs to allow faster model training and prediction. Deepforest is a pytorch lightning module, as automatically distributes data to available GPUs.
 If using a release model with training, the module can be moved from CPU to GPU for prediction is the pytorch.to() method.
 
 ```

@@ -24,7 +24,7 @@ pip install deepforest
 ```
 
 ## Get in touch
-See the [GitHub Repo](https://github.com/Weecology/DeepForest-pytorch) to see the
+See the [GitHub Repo](https://github.com/Weecology/DeepForest) to see the
 source code or submit issues and feature requests.
 
 ## Citation

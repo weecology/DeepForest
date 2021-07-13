@@ -39,4 +39,4 @@ Ultimately, training a proper model with local data is the best chance at gettin
 
 We welcome feedback on both the python package as well as the algorithm performance. Please submit detailed issues to the github repo.
 
-[https://github.com/weecology/DeepForest-pytorch/issues](https://github.com/weecology/DeepForest-pytorch/issues)
+[https://github.com/weecology/DeepForest/issues](https://github.com/weecology/DeepForest/issues)
