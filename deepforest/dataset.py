@@ -70,9 +70,10 @@ class TreeDataset(Dataset):
         image = image.astype("float32")
 
         if self.train:
-            # select annotations
-            image_annotations = self.annotations[self.annotations.image_path ==
-                                                 self.image_names[idx]]
+            # select annotations (ignoring annotations with empty labels - they are used for images with no annotations support)
+            image_annotations = self.annotations[(self.annotations.image_path == self.image_names[idx])
+                                                 & (~self.annotations.label.isna())]
+
             targets = {}
             targets["boxes"] = image_annotations[["xmin", "ymin", "xmax",
                                                   "ymax"]].values.astype(float)
@@ -89,11 +90,6 @@ class TreeDataset(Dataset):
             labels = np.array(augmented["category_ids"]) 
             labels = torch.from_numpy(labels)
             targets = {"boxes":boxes,"labels":labels}   
-            
-            #Check for blank tensors
-            all_empty = all([len(x) == 0 for x in boxes])
-            if all_empty:
-                raise ValueError("Blank annotations are not allowed in retinanets. Check data augmentation for image {} with shape {}, no overlapping boxes found".format(self.image_names[idx], image.shape))
 
             return self.image_names[idx], image, targets
             
