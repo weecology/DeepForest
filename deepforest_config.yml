@@ -1,4 +1,4 @@
-# Config file for DeepForest-pytorch module
+# Config file for DeepForest pytorch module
 
 #cpu workers for data loaders
 #Dataloaders

@@ -48,7 +48,7 @@ m.evaluate(csv_file=m.config["validation"]["csv_file"], root_dir=m.config["valid
 
 ```Python
 from deepforest import main
-csv_file = '/Users/benweinstein/Documents/DeepForest-pytorch/deepforest/data/OSBS_029.tif'
+csv_file = '/Users/benweinstein/Documents/DeepForest/deepforest/data/OSBS_029.tif'
 df = trained_model.predict_file(csv_file, root_dir = os.path.dirname(csv_file))
 ```
 
@@ -78,7 +78,7 @@ from deepforest import main
 m = main.deepforest()
 m.config["batch_size"] = 10
 ```
-Config parameters are documented [here](https://deepforest-pytorch.readthedocs.io/en/latest/ConfigurationFile.html).
+Config parameters are documented [here](https://deepforest.readthedocs.io/en/latest/ConfigurationFile.html).
 
 # Tree Detection Benchmark score
 

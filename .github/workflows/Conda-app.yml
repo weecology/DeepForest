@@ -44,7 +44,7 @@ jobs:
       - name: "Setup conda"
         uses: "conda-incubator/setup-miniconda@v2"
         with:
-          activate-environment: "DeepForest_pytorch"
+          activate-environment: "DeepForest"
           environment-file: "environment.yml"
           python-version: "${{ matrix.python-version }}"
           channels: conda-forge,spyder-ide
