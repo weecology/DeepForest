@@ -70,6 +70,7 @@ class TreeDataset(Dataset):
         image = image.astype("float32")
 
         if self.train:
+            
             # select annotations
             image_annotations = self.annotations[self.annotations.image_path ==
                                                  self.image_names[idx]]

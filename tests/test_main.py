@@ -85,9 +85,15 @@ def test_use_bird_release(m):
     boxes = m.predict_image(path=imgpath)
     assert not boxes.empty
     
-def test_train_single(m):
+def test_train_empty(m, tmpdir):
+    empty_csv = pd.DataFrame({"image_path":"OSBS_029.png","xmin":[0],"xmax":[0],"ymin":[0],"ymax":[0],"label":["Tree"]})
+    empty_csv.to_csv("{}/empty.csv".format(tmpdir))
+    m.config["train"]["csv_file"] = "{}/empty.csv".format(tmpdir)
     m.trainer.fit(m)
 
+def test_train_single(m):
+    m.trainer.fit(m)
+    
 def test_train_multi(two_class_m):
     two_class_m.trainer.fit(two_class_m)
     
