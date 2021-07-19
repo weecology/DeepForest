@@ -16,6 +16,8 @@ A pytorch implementation of the DeepForest model for individual tree crown detec
 
  The goal of deepforest is to provide an easy to access deep learning model for tree crown prediction in RGB images. The baseline model was primarily designed for *forest* images in 3cm imagery. Applications to urban images and lower resolution data can be successful, but need additional effort. For basic use see
   
+ https://deepforest.readthedocs.io/en/latest/getting_started.html#
+  
 Incorportating local data will always help prediction accuracy to customize the release model see see [Google colab demo on model training](https://colab.research.google.com/drive/1gKUiocwfCvcvVfiKzAaf6voiUVL2KK_r?usp=sharing)
 
 # Installation
