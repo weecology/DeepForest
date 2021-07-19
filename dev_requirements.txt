@@ -17,6 +17,7 @@ rasterio
 rtree
 sphinx >= 1.8
 slidingwindow
+opencv-python
 sphinx_rtd_theme
 sphinx_markdown_tables
 tqdm
