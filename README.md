@@ -1,8 +1,14 @@
 # DeepForest
+[![Documentation Status](https://readthedocs.org/projects/deepforest/badge/?version=latest)](http://deepforest.readthedocs.io/en/latest/?badge=latest)
+[![Version](https://img.shields.io/pypi/v/DeepForest.svg)](https://pypi.python.org/pypi/DeepForest)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.2538143.svg)](https://doi.org/10.5281/zenodo.2538143)
+![Github Actions](https://github.com/Weecology/DeepForest/actions/workflows/Conda-app.yml/badge.svg)
 
-[![Conda package](https://github.com/weecology/DeepForest/actions/workflows/Conda-app.yml/badge.svg)](https://github.com/weecology/DeepForest/actions/workflows/Conda-app.yml)
-[![Documentation Status](https://readthedocs.org/projects/deepforest/badge/?version=latest)](https://deepforest.readthedocs.io/?badge=latest)
+### Conda-forge build status
 
+| Name | Downloads | Version | Platforms |
+| --- | --- | --- | --- |
+| [![Conda Recipe](https://img.shields.io/badge/recipe-deepforest-green.svg)](https://anaconda.org/conda-forge/deepforest) | [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/deepforest.svg)](https://anaconda.org/conda-forge/deepforest) | [![Conda Version](https://img.shields.io/conda/vn/conda-forge/deepforest.svg)](https://anaconda.org/conda-forge/deepforest) | [![Conda Platforms](https://img.shields.io/conda/pn/conda-forge/deepforest.svg)](https://anaconda.org/conda-forge/deepforest) |
 
 ![](www/example_image.png)
 
