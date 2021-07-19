@@ -35,7 +35,7 @@ DeepForest comes with a small set of sample data to help run the docs examples. 
 ```python
 sample_image = get_data("OSBS_029.png")
 sample_image
-'/Users/benweinstein/Documents/DeepForest-pytorch/deepforest/data/OSBS_029.png'
+'/Users/benweinstein/Documents/DeepForest/deepforest/data/OSBS_029.png'
 ```
 
 ## Prediction
@@ -149,7 +149,7 @@ For debugging, its often useful to use the [fast_dev_run = True from pytorch lig
 model.config["train"]["fast_dev_run"] = True
 ```
 
-See [config](https://deepforest-pytorch.readthedocs.io/en/latest/ConfigurationFile.html) for full set of available arguments. You can also pass any [additional](https://pytorch-lightning.readthedocs.io/en/latest/common/trainer.html) pytorch lightning argument to trainer.
+See [config](https://deepforest.readthedocs.io/en/latest/ConfigurationFile.html) for full set of available arguments. You can also pass any [additional](https://pytorch-lightning.readthedocs.io/en/latest/common/trainer.html) pytorch lightning argument to trainer.
 
 To begin training, we create a pytorch-lightning trainer and call trainer.fit on the model object directly on itself. 
 While this might look a touch awkward, it is useful for exposing the pytorch lightning functionality.
@@ -256,4 +256,4 @@ m = main.deepforest(num_classes=2,label_dict={"Alive":0,"Dead":1})
 
 We welcome feedback on both the python package as well as the algorithm performance. Please submit detailed issues to the github repo.
 
-[https://github.com/weecology/DeepForest-pytorch/issues](https://github.com/weecology/DeepForest-pytorch/issues)
+[https://github.com/weecology/DeepForest/issues](https://github.com/weecology/DeepForest/issues)

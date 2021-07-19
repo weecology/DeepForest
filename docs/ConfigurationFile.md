@@ -1,11 +1,11 @@
 # Config
 
-Deepforest-pytorch uses a config.yml to control hyperparameters related to model training and evaluation. This allows all the relevant parameters to live in one location and be easily changed when exploring new models.
+Deepforest uses a config.yml to control hyperparameters related to model training and evaluation. This allows all the relevant parameters to live in one location and be easily changed when exploring new models.
 
-Deepforest-pytorch comes with a sample config file, deepforest_config.yml. Edit this file to change settings while developing models.
+Deepforest comes with a sample config file, deepforest_config.yml. Edit this file to change settings while developing models.
 
 ```
-# Config file for DeepForest-pytorch module
+# Config file for DeepForest module
 
 #cpu workers for data loaders
 #Dataloaders
@@ -46,7 +46,7 @@ Number of workers to perform asynchronous data generation during model training.
 class https://pytorch.org/docs/stable/data.html. To turn off asynchronous data generation set workers = 0.
 
 ### gpus
-The number of gpus to use during model training. To run on cpu leave blank. Deepforest-pytorch has been tested on up to 8 gpu and follows a pytorch lightning module, which means it can inherent any of the scaling functionality from this library, including TPU support.
+The number of gpus to use during model training. To run on cpu leave blank. Deepforest has been tested on up to 8 gpu and follows a pytorch lightning module, which means it can inherent any of the scaling functionality from this library, including TPU support.
 https://pytorch-lightning.readthedocs.io/en/stable/advanced/multi_gpu.html?highlight=multi%20gpu
 
 ### distributed_backend
