@@ -243,6 +243,22 @@ It is best to be direct to specify after loading checkpoint.
 after.model.score_thresh = 0.3
 ```
 
+Some users have reported a pytorch lightning module error on save
+
+In this case, just saving the torch model is an easy fix.
+
+```
+torch.save(model.model.state_dict(),model_path)
+```
+
+and restore
+
+```
+model = main.deepforest()
+model.model.load_state_dict(torch.load(model_path))
+```
+
+
 ## Multi-class models
 
 While the primary design of this package is for "Tree" detection with a single class. Multi-class labels are allowed for those looking to extend core functionality.
