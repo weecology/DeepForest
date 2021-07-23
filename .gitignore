@@ -6,4 +6,4 @@ current_release.csv
 *.pl
 *.pt
 tests/__pycache__
-*.wp
+*.wp*
