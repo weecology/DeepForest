@@ -81,7 +81,17 @@ class TreeDataset(Dataset):
             # Labels need to be encoded
             targets["labels"] = image_annotations.label.apply(
                 lambda x: self.label_dict[x]).values.astype(np.int64)
-    
+            
+            #If image has no annotations, don't augment
+            if np.sum(targets["boxes"]) == 0:
+                boxes = boxes = torch.zeros((0, 4), dtype=torch.float32)
+                labels = torch.from_numpy(targets["labels"])
+                #channels last
+                image = np.rollaxis(image,2,0)
+                image = torch.from_numpy(image)                
+                targets = {"boxes":boxes,"labels":labels}                   
+                return self.image_names[idx], image, targets
+                
             augmented = self.transform(image=image, bboxes=targets["boxes"], category_ids=targets["labels"])
             image = augmented["image"]
             
@@ -91,11 +101,6 @@ class TreeDataset(Dataset):
             labels = torch.from_numpy(labels)
             targets = {"boxes":boxes,"labels":labels}   
             
-            #Check for blank tensors
-            all_empty = all([len(x) == 0 for x in boxes])
-            if all_empty:
-                raise ValueError("Blank annotations are not allowed in retinanets. Check data augmentation for image {} with shape {}, no overlapping boxes found".format(self.image_names[idx], image.shape))
-
             return self.image_names[idx], image, targets
             
         else:

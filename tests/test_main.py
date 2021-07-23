@@ -86,9 +86,10 @@ def test_use_bird_release(m):
     assert not boxes.empty
     
 def test_train_empty(m, tmpdir):
-    empty_csv = pd.DataFrame({"image_path":"OSBS_029.png","xmin":[0],"xmax":[0],"ymin":[0],"ymax":[0],"label":["Tree"]})
+    empty_csv = pd.DataFrame({"image_path":["OSBS_029.png","OSBS_029.tif"],"xmin":[0,10],"xmax":[0,20],"ymin":[0,20],"ymax":[0,30],"label":["Tree","Tree"]})
     empty_csv.to_csv("{}/empty.csv".format(tmpdir))
     m.config["train"]["csv_file"] = "{}/empty.csv".format(tmpdir)
+    m.config["batch_size"] = 2
     m.trainer.fit(m)
 
 def test_train_single(m):
@@ -284,3 +285,5 @@ def test_over_score_thresh(m):
     boxes = m.predict_image(path = img)
     assert m.model.score_thresh == 0.8
     assert not m.model.score_thresh == original_score_thresh
+    
+    
