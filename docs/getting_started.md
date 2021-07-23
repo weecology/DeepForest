@@ -165,6 +165,17 @@ model.trainer.fit(model)
 
 <div style="position: relative; padding-bottom: 56.25%; height: 0;"><iframe src="https://www.loom.com/embed/99c55129d5a34f3dbf7053dde9c7d97e" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe></div>
 
+### Negative samples
+
+To include images with no annotations from the target classes create a dummy row specifying the image_path, but set all bounding boxes to 0
+
+```
+image_path, xmin, ymin, xmax, ymax, label
+myimage.png, 0,0,0,0,"Tree"
+```
+
+Excessive use of negative samples may have negative impact on model performance, but used sparingly it can increase precision. These samples are removed from evaluation and do not count in precision/recall. 
+
 ## Evaluation
 
 Independent analysis of whether a model can generalize from training data to new areas is critical for creating a robust workflow. 
@@ -204,6 +215,9 @@ The regression box precision is the proportion of predicted boxes which overlap 
 results["box_precision"]
 0.781
 ```
+
+### Negative Samples
+Negative samples used for training are not included in evaluation scores.
 
 ### Saving and loading models
 

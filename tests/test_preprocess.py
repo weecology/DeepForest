@@ -95,6 +95,24 @@ def test_split_raster(config, tmpdir):
     #annotations_file["label"] = 0 
     #visualize.plot_prediction_dataframe(df=annotations_file, root_dir=tmpdir, show=True)
 
+def test_split_raster_empty_crops(config, tmpdir):
+    """Split raster into crops with overlaps to maintain all annotations, allow empty crops"""
+    raster = get_data("2019_YELL_2_528000_4978000_image_crop2.png")
+    annotations = utilities.xml_to_annotations(get_data("2019_YELL_2_528000_4978000_image_crop2.xml"))
+    annotations.to_csv("{}/example.csv".format(tmpdir), index=False)
+    #annotations.label = 0
+    #visualize.plot_prediction_dataframe(df=annotations, root_dir=os.path.dirname(get_data(".")), show=True)
+    
+    annotations_file = preprocess.split_raster(path_to_raster=raster,
+                                               annotations_file="{}/example.csv".format(tmpdir),
+                                               base_dir=tmpdir,
+                                               patch_size=100,
+                                               patch_overlap=0,
+                                               allow_empty=True)
+
+    # Returns a 6 column pandas array
+    assert not annotations_file[(annotations_file.xmin == 0) & (annotations_file.xmax == 0)].empty
+    
 def test_split_raster_from_image(config):
     r = rasterio.open(config["path_to_raster"]).read()
     r = np.rollaxis(r,0,3)
@@ -116,11 +134,11 @@ def test_split_raster_empty(config):
     # Blank annotations file
     blank_annotations = pd.DataFrame({
         "image_path": "OSBS_029.tif",
-        "xmin": [""],
-        "ymin": [""],
-        "xmax": [""],
-        "ymax": [""],
-        "label": [""]
+        "xmin": [0],
+        "ymin": [0],
+        "xmax": [0],
+        "ymax": [0],
+        "label": ["Tree"]
     })
     blank_annotations.to_csv("tests/data/blank_annotations.csv", index=False)
 

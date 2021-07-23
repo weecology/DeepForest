@@ -428,6 +428,9 @@ class deepforest(pl.LightningModule):
         ground_df = pd.read_csv(csv_file)
         ground_df["label"] = ground_df.label.apply(lambda x: self.label_dict[x])
         
+        #remove empty samples from ground truth 
+        ground_df = ground_df[~((ground_df.xmin==0) &(ground_df.xmax==0))]
+        
         # if no arg for iou_threshold, set as config
         if iou_threshold is None:
             iou_threshold = self.config["validation"]["iou_threshold"]

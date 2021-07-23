@@ -98,11 +98,12 @@ def select_annotations(annotations, windows, index, allow_empty=False):
         if allow_empty:
             selected_annotations = pd.DataFrame(
                 ["{}_{}.png".format(image_basename, index)], columns=["image_path"])
-            selected_annotations["xmin"] = ""
-            selected_annotations["ymin"] = ""
-            selected_annotations["xmax"] = ""
-            selected_annotations["ymax"] = ""
-            selected_annotations["label"] = ""
+            selected_annotations["xmin"] = 0
+            selected_annotations["ymin"] = 0
+            selected_annotations["xmax"] = 0
+            selected_annotations["ymax"] = 0
+            #Dummy label
+            selected_annotations["label"] = annotations.label.unique()[0]
         else:
             return None
     else:
