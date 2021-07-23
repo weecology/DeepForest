@@ -13,7 +13,7 @@ import random
 def view_dataset(ds, savedir=None):
     """Plot annotations on images for debugging purposes
     Args:
-        ds: a deepforest-pytorch dataset, see deepforest.dataset or deepforest.load_dataset() to start from a csv file
+        ds: a deepforest pytorch dataset, see deepforest.dataset or deepforest.load_dataset() to start from a csv file
         savedir: optional path to save figures. If none (default) images will be interactively plotted
     """
     for i in iter(ds):

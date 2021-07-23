@@ -35,7 +35,7 @@ DeepForest comes with a small set of sample data to help run the docs examples. 
 ```python
 sample_image = get_data("OSBS_029.png")
 sample_image
-'/Users/benweinstein/Documents/DeepForest-pytorch/deepforest/data/OSBS_029.png'
+'/Users/benweinstein/Documents/DeepForest/deepforest/data/OSBS_029.png'
 ```
 
 ## Prediction
@@ -44,6 +44,9 @@ DeepForest allows convenient prediction of new data based on the prebuilt model 
 There are three ways to format data for prediction.
 
 ### Predict a single image
+
+
+** please note that this video was made before the deepforest-pytorch -> deepforest name change. **
 
 <div style="position: relative; padding-bottom: 62.5%; height: 0;"><iframe src="https://www.loom.com/embed/f80ed6e3c7bd48d4a20ae32167af3d8c" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe></div>
 
@@ -146,7 +149,7 @@ For debugging, its often useful to use the [fast_dev_run = True from pytorch lig
 model.config["train"]["fast_dev_run"] = True
 ```
 
-See [config](https://deepforest-pytorch.readthedocs.io/en/latest/ConfigurationFile.html) for full set of available arguments. You can also pass any [additional](https://pytorch-lightning.readthedocs.io/en/latest/common/trainer.html) pytorch lightning argument to trainer.
+See [config](https://deepforest.readthedocs.io/en/latest/ConfigurationFile.html) for full set of available arguments. You can also pass any [additional](https://pytorch-lightning.readthedocs.io/en/latest/common/trainer.html) pytorch lightning argument to trainer.
 
 To begin training, we create a pytorch-lightning trainer and call trainer.fit on the model object directly on itself. 
 While this might look a touch awkward, it is useful for exposing the pytorch lightning functionality.
@@ -240,6 +243,22 @@ It is best to be direct to specify after loading checkpoint.
 after.model.score_thresh = 0.3
 ```
 
+Some users have reported a pytorch lightning module error on save
+
+In this case, just saving the torch model is an easy fix.
+
+```
+torch.save(model.model.state_dict(),model_path)
+```
+
+and restore
+
+```
+model = main.deepforest()
+model.model.load_state_dict(torch.load(model_path))
+```
+
+
 ## Multi-class models
 
 While the primary design of this package is for "Tree" detection with a single class. Multi-class labels are allowed for those looking to extend core functionality.
@@ -253,4 +272,4 @@ m = main.deepforest(num_classes=2,label_dict={"Alive":0,"Dead":1})
 
 We welcome feedback on both the python package as well as the algorithm performance. Please submit detailed issues to the github repo.
 
-[https://github.com/weecology/DeepForest-pytorch/issues](https://github.com/weecology/DeepForest-pytorch/issues)
+[https://github.com/weecology/DeepForest/issues](https://github.com/weecology/DeepForest/issues)

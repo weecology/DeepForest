@@ -80,7 +80,7 @@ class TreeDataset(Dataset):
             
             # Labels need to be encoded
             targets["labels"] = image_annotations.label.apply(
-                lambda x: self.label_dict[x]).values.astype(int)
+                lambda x: self.label_dict[x]).values.astype(np.int64)
     
             augmented = self.transform(image=image, bboxes=targets["boxes"], category_ids=targets["labels"])
             image = augmented["image"]

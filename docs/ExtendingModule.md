@@ -1,10 +1,10 @@
 # Extending the deepforest module
 
-DeepForest-pytorch is a pytorch lightning module. This means that any of the class methods can be extended or overwritten. See pytorch lightning's [extensive documentation](https://pytorch-lightning.readthedocs.io/en/latest/starter/introduction_guide.html).
+DeepForest is a pytorch lightning module. This means that any of the class methods can be extended or overwritten. See pytorch lightning's [extensive documentation](https://pytorch-lightning.readthedocs.io/en/latest/starter/introduction_guide.html).
 
 Here is a quick example. Suppose you want to log the training metrics, which is not done by default. We could overwrite the [training_step](https://pytorch-lightning.readthedocs.io/en/latest/common/lightning_module.html?highlight=training_step#training-loop). See an example of pytorch lightning logging [here](https://pytorch-lightning.readthedocs.io/en/latest/common/loggers.html).
 
-We can subclass the main deepforest-pytorch module, use super() to init all the normal class methods, and then just overwrite the method we would like to change.
+We can subclass the main deepforest module, use super() to init all the normal class methods, and then just overwrite the method we would like to change.
 
 ```
 #Overwrite default training logs and lr
@@ -35,4 +35,4 @@ m = mymodule()
 m.use_release() 
 
 ```
-In this way we can make additions and changes without needing to edit the deepforest-pytorch source.
+In this way we can make additions and changes without needing to edit the deepforest source.

@@ -21,7 +21,7 @@ image.save(name)
 
 ## I cannot reload a saved multi-class model using a checkpoint.
 
-DeepForest-pytorch is a pytorch lightning module. There seems to be ongoing debate on how to best to initialize a new module with new hyperparameters. 
+DeepForest is a pytorch lightning module. There seems to be ongoing debate on how to best to initialize a new module with new hyperparameters.
 
 [https://github.com/PyTorchLightning/pytorch-lightning/issues/924](https://github.com/PyTorchLightning/pytorch-lightning/issues/924)
 
@@ -38,11 +38,33 @@ m = main.deepforest(num_classes = 6, label_dict = {"a":0,"b":1,"c":2,"d":3,"e":4
 m.load_state_dict(ckpt["state_dict"])
 ```
 
+## Weakly referenced object on save
 
+On some devices and systems we have found an error
+
+```
+model.save_model("mymodel.pl")
+Weakly-reference object no longer exists
+```
+
+In this case, just saving the torch model state dict is an easy fix.
+
+```
+torch.save(model.model.state_dict(),model_path)
+```
+
+and restore
+
+```
+model = main.deepforest()
+model.model.load_state_dict(torch.load(model_path))
+```
+
+We welcome a reproducible issue to address this error.
 
 
 ## Issues
 
 We welcome feedback on both the python package as well as the algorithm performance. Please submit detailed issues to the github repo.
 
-[https://github.com/weecology/DeepForest-pytorch/issues](https://github.com/weecology/DeepForest-pytorch/issues)
+[https://github.com/weecology/DeepForest/issues](https://github.com/weecology/DeepForest/issues)
