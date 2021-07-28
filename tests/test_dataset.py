@@ -39,9 +39,8 @@ def test_TreeDataset(csv_file, label_dict):
         assert targets["labels"].shape == (raw_data.shape[0],)
         assert len(np.unique(targets["labels"])) == len(raw_data.label.unique())
         
-def test_single_class_with_empty():
+def test_single_class_with_empty(tmpdir):
     """Add fake empty annotations to test parsing """
-    tmpdir = tempfile.gettempdir()
     csv_file1 = get_data("example.csv")
     csv_file2 = get_data("OSBS_029.csv")
     
