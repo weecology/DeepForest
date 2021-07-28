@@ -2,6 +2,8 @@
 # download latest release
 import pytest
 from deepforest import utilities
+from deepforest import get_data
+import os
 
 @pytest.fixture(scope="session")
 def download_release():

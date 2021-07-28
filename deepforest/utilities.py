@@ -57,6 +57,10 @@ def use_bird_release(save_dir=os.path.join(_ROOT, "data/"), prebuilt_model="bird
     Returns: release_tag, output_path (str): path to downloaded model
 
     """
+
+    # Naming based on pre-built model
+    output_path = os.path.join(save_dir, prebuilt_model + ".pt")
+    
     if check_release:
         # Find latest github tag release from the DeepLidar repo
         _json = json.loads(
@@ -67,9 +71,6 @@ def use_bird_release(save_dir=os.path.join(_ROOT, "data/"), prebuilt_model="bird
                 )).read())
         asset = _json['assets'][0]
         url = asset['browser_download_url']
-    
-        # Naming based on pre-built model
-        output_path = os.path.join(save_dir, prebuilt_model + ".pt")
     
         # Check the release tagged locally
         try:
@@ -117,6 +118,10 @@ def use_release(save_dir=os.path.join(_ROOT, "data/"), prebuilt_model="NEON", ch
     Returns: release_tag, output_path (str): path to downloaded model
 
     """
+    
+    # Naming based on pre-built model
+    output_path = os.path.join(save_dir, prebuilt_model + ".pt")
+    
     if check_release:
         # Find latest github tag release from the DeepLidar repo
         _json = json.loads(
@@ -127,9 +132,6 @@ def use_release(save_dir=os.path.join(_ROOT, "data/"), prebuilt_model="NEON", ch
                 )).read())
         asset = _json['assets'][0]
         url = asset['browser_download_url']
-        
-        # Naming based on pre-built model
-        output_path = os.path.join(save_dir, prebuilt_model + ".pt")
         
         # Check the release tagged locally
         try:
