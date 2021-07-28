@@ -2,6 +2,15 @@
 DeepForest Change Log
 =============================
 
+# 1.1.0
+
+1.
+Empty frames are now allowed by passing annotations with 0's for all coords. A single row for each blank image.
+
+image_path, 0,0,0,0, "Tree"
+
+2.
+A check_release function was implemented to reduce github rate limit issues. on use_release(), the local model will be used if check_release = False
 
 # 1.0.9
 
