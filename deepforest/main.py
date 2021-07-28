@@ -73,14 +73,14 @@ class deepforest(pl.LightningModule):
         else:
             self.transforms = transforms
         
-    def use_release(self):
+    def use_release(self, check_release=True):
         """Use the latest DeepForest model release from github and load model.
         Optionally download if release doesn't exist.
         Returns:
             model (object): A trained PyTorch model
         """
         # Download latest model from github release
-        release_tag, self.release_state_dict = utilities.use_release()
+        release_tag, self.release_state_dict = utilities.use_release(check_release=check_release)
         self.model.load_state_dict(
             torch.load(self.release_state_dict, map_location=self.device))
 
@@ -88,14 +88,14 @@ class deepforest(pl.LightningModule):
         self.__release_version__ = release_tag
         print("Loading pre-built model: {}".format(release_tag))
 
-    def use_bird_release(self):
+    def use_bird_release(self, check_release=True):
         """Use the latest DeepForest bird model release from github and load model.
         Optionally download if release doesn't exist.
         Returns:
             model (object): A trained pytorch model
         """
         # Download latest model from github release
-        release_tag, self.release_state_dict = utilities.use_bird_release()
+        release_tag, self.release_state_dict = utilities.use_bird_release(check_release=check_release)
         self.model.load_state_dict(torch.load(self.release_state_dict))
    
         # load saved model and tag release

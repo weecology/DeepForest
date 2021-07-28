@@ -53,7 +53,7 @@ def m(download_release):
     m.config["validation"]["root_dir"] = os.path.dirname(get_data("example.csv"))
 
     m.create_trainer()
-    m.use_release()
+    m.use_release(check_release=False)
     
     return m
 

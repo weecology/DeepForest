@@ -28,8 +28,7 @@ def test_xml_to_annotations():
 
 def test_use_release(download_release):
     # Download latest model from github release
-    release_tag, state_dict = utilities.use_release()
-    assert os.path.exists(get_data("NEON.pt"))
+    release_tag, state_dict = utilities.use_release(check_release=False)
 
 def test_use_bird_release(download_release):
     # Download latest model from github release

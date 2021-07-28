@@ -13,7 +13,7 @@ import pandas as pd
 
 def test_compute_IoU(download_release):
     m = main.deepforest()
-    m.use_release()
+    m.use_release(check_release=False)
     csv_file = get_data("OSBS_029.csv")
     predictions = m.predict_file(csv_file=csv_file, root_dir=os.path.dirname(csv_file))
     ground_truth = pd.read_csv(csv_file)

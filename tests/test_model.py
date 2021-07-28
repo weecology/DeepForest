@@ -39,7 +39,8 @@ def test_forward_empty():
     retinanet_model = model.create_model(num_classes=2,nms_thresh=0.1, score_thresh=0.2)
     image, targets = _make_empty_sample()
     loss = retinanet_model(image, targets)
-
+    assert torch.equal(loss["bbox_regression"], torch.tensor(0.))
+    
 def test_forward_negative_sample_retinanet():
     model = torchvision.models.detection.retinanet_resnet50_fpn(
         num_classes=2, min_size=100, max_size=100)

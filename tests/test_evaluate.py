@@ -11,7 +11,7 @@ import pandas as pd
 @pytest.fixture()
 def m(download_release):
     m = main.deepforest()
-    m.use_release()
+    m.use_release(check_release=False)
     
     return m
 
