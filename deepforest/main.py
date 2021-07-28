@@ -76,6 +76,8 @@ class deepforest(pl.LightningModule):
     def use_release(self, check_release=True):
         """Use the latest DeepForest model release from github and load model.
         Optionally download if release doesn't exist.
+        Args:
+            check_release (logical): whether to check github for a model recent release. In cases where you are hitting the github API rate limit, set to False and any local model will be downloaded. If no model has been downloaded an error will raise.
         Returns:
             model (object): A trained PyTorch model
         """
@@ -91,6 +93,8 @@ class deepforest(pl.LightningModule):
     def use_bird_release(self, check_release=True):
         """Use the latest DeepForest bird model release from github and load model.
         Optionally download if release doesn't exist.
+        Args:
+            check_release (logical): whether to check github for a model recent release. In cases where you are hitting the github API rate limit, set to False and any local model will be downloaded. If no model has been downloaded an error will raise.
         Returns:
             model (object): A trained pytorch model
         """

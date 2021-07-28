@@ -53,7 +53,7 @@ def use_bird_release(save_dir=os.path.join(_ROOT, "data/"), prebuilt_model="bird
     Args:
         save_dir: Directory to save filepath, default to "data" in deepforest repo
         prebuilt_model: Currently only accepts "NEON", but could be expanded to include other prebuilt models. The local model will be called prebuilt_model.h5 on disk.
-
+        check_release (logical): whether to check github for a model recent release. In cases where you are hitting the github API rate limit, set to False and any local model will be downloaded. If no model has been downloaded an error will raise.
     Returns: release_tag, output_path (str): path to downloaded model
 
     """
@@ -114,7 +114,8 @@ def use_release(save_dir=os.path.join(_ROOT, "data/"), prebuilt_model="NEON", ch
     Args:
         save_dir: Directory to save filepath, default to "data" in deepforest repo
         prebuilt_model: Currently only accepts "NEON", but could be expanded to include other prebuilt models. The local model will be called prebuilt_model.h5 on disk.
-
+        check_release (logical): whether to check github for a model recent release. In cases where you are hitting the github API rate limit, set to False and any local model will be downloaded. If no model has been downloaded an error will raise.
+        
     Returns: release_tag, output_path (str): path to downloaded model
 
     """
