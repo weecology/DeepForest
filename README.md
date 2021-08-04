@@ -52,8 +52,7 @@ m.create_trainer()
 m.trainer.fit(m)
 m.evaluate(csv_file=m.config["validation"]["csv_file"], root_dir=m.config["validation"]["root_dir"])
 ```
-[Google colab demo on model training](https://colab.research.google.com/drive/1AJUcw5dEpXeDPHd0sotAz5lpWedFYSIL#offline=true&sandboxMode=true)
-
+ 
 ## Predict a single image
 
 ```Python
