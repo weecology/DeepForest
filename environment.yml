@@ -1,6 +1,5 @@
 name: DeepForest
 channels:
-  - pytorch
   - conda-forge
 dependencies:
   - sphinx
