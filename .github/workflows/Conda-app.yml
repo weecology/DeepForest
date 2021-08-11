@@ -53,5 +53,8 @@ jobs:
           show-channel-urls: true
           use-only-tar-bz2: true
 
+      - name: "Package status"
+        run: "conda list"
+
       - name: "Run tests"
         run: "pytest -v"
