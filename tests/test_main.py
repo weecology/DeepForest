@@ -226,7 +226,7 @@ def test_train_callbacks(m):
     trainer = Trainer(fast_dev_run=True)
     trainer.fit(m, train_ds)
     
-def test_save_and_reload(m, tmpdir):
+def test_save_and_reload_checkpoint(m, tmpdir):
     img_path = get_data(path="2019_YELL_2_528000_4978000_image_crop2.png")    
     m.config["train"]["fast_dev_run"] = True
     m.create_trainer()
@@ -243,6 +243,24 @@ def test_save_and_reload(m, tmpdir):
     assert not pred_after_reload.empty
     pd.testing.assert_frame_equal(pred_after_train,pred_after_reload)
 
+def test_save_and_reload_weights(m, tmpdir):
+    img_path = get_data(path="2019_YELL_2_528000_4978000_image_crop2.png")    
+    m.config["train"]["fast_dev_run"] = True
+    m.create_trainer()
+    #save the prediction dataframe after training and compare with prediction after reload checkpoint 
+    m.trainer.fit(m)    
+    pred_after_train = m.predict_image(path = img_path)
+    torch.save(m.model.state_dict(),"{}/checkpoint.pt".format(tmpdir))
+    
+    #reload the checkpoint to model object
+    after = main.deepforest()
+    after.model.load_state_dict(torch.load("{}/checkpoint.pt".format(tmpdir)))
+    pred_after_reload = after.predict_image(path = img_path)
+
+    assert not pred_after_train.empty
+    assert not pred_after_reload.empty
+    pd.testing.assert_frame_equal(pred_after_train,pred_after_reload)
+    
 def test_reload_multi_class(two_class_m, tmpdir):
     two_class_m.config["train"]["fast_dev_run"] = True
     two_class_m.create_trainer()
