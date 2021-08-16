@@ -23,6 +23,8 @@ def predict_image(model, image, return_plot, device, iou_threshold=0.1, color=No
         path: optional path to read image from disk instead of passing image arg
         return_plot: Return image with plotted detections
         device: pytorch device of 'cuda' or 'cpu' for gpu prediction. Set internally.
+        color: color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255)
+        thickness: thickness of the rectangle border line in px
     Returns:
         boxes: A pandas dataframe of predictions (Default)
         img: The input with predictions overlaid (Optional)
@@ -73,6 +75,8 @@ def predict_file(model, csv_file, root_dir, savedir, device, iou_threshold=0.1, 
         root_dir: directory of images. If none, uses "image_dir" in config
         savedir: Optional. Directory to save image plots.
         device: pytorch device of 'cuda' or 'cpu' for gpu prediction. Set internally.
+        color: color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255)
+        thickness: thickness of the rectangle border line in px
     Returns:
         df: pandas dataframe with bounding boxes, label and scores for each image in the csv file
     """

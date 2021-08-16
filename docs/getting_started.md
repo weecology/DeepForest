@@ -105,6 +105,18 @@ csv_file = get_data("testfile_deepforest.csv")
 boxes = model.predict_file(csv_file=csv_file, root_dir = os.path.dirname(csv_file),savedir=".")
 ```
 
+### Customizing boxe appearance for predictions
+
+The color and line thickness of boxes can be customized using the `color` and `thickness` arguments.
+`color` is the color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255).
+`thickness` is the thickness of the rectangle border line in px.
+
+```python
+image_path = get_data("OSBS_029.png")
+boxes = model.predict_image(path=image_path, return_plot = True, color=(0, 165, 255), thickness=3)
+```
+
+
 ## Training
 
 The prebuilt models will always be improved by adding data from the target area. In our work, we have found that even one hour's worth of carefully chosen hand-annotation can yield enormous improvements in accuracy and precision.

@@ -16,6 +16,8 @@ def view_dataset(ds, savedir=None, color=None, thickness=1):
     Args:
         ds: a deepforest pytorch dataset, see deepforest.dataset or deepforest.load_dataset() to start from a csv file
         savedir: optional path to save figures. If none (default) images will be interactively plotted
+        color: color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255)
+        thickness: thickness of the rectangle border line in px
     """
     for i in iter(ds):
         image_path, image, targets = i
@@ -100,7 +102,8 @@ def plot_predictions(image, df, color=None, thickness=1):
     Args:
         image: a numpy array in *BGR* color order! Channel order is channels first 
         df: a pandas dataframe with xmin, xmax, ymin, ymax and label column
-        color: a tuple of BGR color, e.g. orange annotations is (0, 165, 255)
+        color: color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255)
+        thickness: thickness of the rectangle border line in px
     Returns:
         image: a numpy array with drawn annotations
     """    

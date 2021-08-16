@@ -211,6 +211,8 @@ class deepforest(pl.LightningModule):
             image: a float32 numpy array of a RGB with channels last format
             path: optional path to read image from disk instead of passing image arg
             return_plot: Return image with plotted detections
+            color: color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255)
+            thickness: thickness of the rectangle border line in px
         Returns:
             boxes: A pandas dataframe of predictions (Default)
             img: The input with predictions overlaid (Optional)
@@ -263,6 +265,8 @@ class deepforest(pl.LightningModule):
             csv_file: path to csv file
             root_dir: directory of images. If none, uses "image_dir" in config
             savedir: Optional. Directory to save image plots.
+            color: color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255)
+            thickness: thickness of the rectangle border line in px
         Returns:
             df: pandas dataframe with bounding boxes, label and scores for each image in the csv file
         """
@@ -313,6 +317,8 @@ class deepforest(pl.LightningModule):
             use_soft_nms: whether to perform Gaussian Soft NMS or not, if false, default perform NMS.
             sigma: variance of Gaussian function used in Gaussian Soft NMS
             thresh: the score thresh used to filter bboxes after soft-nms performed
+            color: color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255)
+            thickness: thickness of the rectangle border line in px
 
         Returns:
             boxes (array): if return_plot, an image.
