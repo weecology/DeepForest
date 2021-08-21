@@ -96,7 +96,7 @@ Consider a headerless annotations.csv file in the following format
 ```
 image_path, xmin, ymin, xmax, ymax, label
 ```
-with each bounding box on a seperate row. The image path is relative to the root dir. Its often easiest to just save the .csv file alongside the images.
+with each bounding box on a separate row. The image path is relative to the root dir. Its often easiest to just save the .csv file alongside the images.
 
 We can view predictions by supplying a save dir ("." = current directory). Predictions in green, annotations in black.
 
@@ -129,7 +129,7 @@ OSBS_029.jpg,115,109,150,152,Tree
 OSBS_029.jpg,161,155,199,191,Tree
 ```
 
-We tell the config that we want to train on this csv file, and that the images are in the same directory. If images are in a seperate folder, change the root_dir.
+We tell the config that we want to train on this csv file, and that the images are in the same directory. If images are in a separate folder, change the root_dir.
 
 ```python
 # Example run with short training
