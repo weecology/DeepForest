@@ -9,18 +9,21 @@ import numpy as np
 import pandas.api.types as ptypes
 import cv2
 import random
+import warnings
 
-def view_dataset(ds, savedir=None):
+def view_dataset(ds, savedir=None, color=None, thickness=1):
     """Plot annotations on images for debugging purposes
     Args:
         ds: a deepforest pytorch dataset, see deepforest.dataset or deepforest.load_dataset() to start from a csv file
         savedir: optional path to save figures. If none (default) images will be interactively plotted
+        color: color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255)
+        thickness: thickness of the rectangle border line in px
     """
     for i in iter(ds):
         image_path, image, targets = i
         df = format_boxes(targets[0], scores=False)
         image = np.moveaxis(image[0].numpy(),0,2)
-        image = plot_predictions(image, df)
+        image = plot_predictions(image, df, color=color, thickness=thickness)
     
     if savedir:
         cv2.imwrite("{}/{}".format(savedir, image_path[0]), image)
@@ -91,7 +94,7 @@ def plot_prediction_dataframe(df, root_dir, ground_truth=None, savedir=None):
     
     return written_figures
 
-def plot_predictions(image, df, color=None):
+def plot_predictions(image, df, color=None, thickness=1):
     """Plot a set of boxes on an image
     By default this function does not show, but only plots an axis
     Label column must be numeric!
@@ -99,7 +102,8 @@ def plot_predictions(image, df, color=None):
     Args:
         image: a numpy array in *BGR* color order! Channel order is channels first 
         df: a pandas dataframe with xmin, xmax, ymin, ymax and label column
-        color: a tuple of BGR color, e.g. orange annotations is (0, 165, 255)
+        color: color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255)
+        thickness: thickness of the rectangle border line in px
     Returns:
         image: a numpy array with drawn annotations
     """    
@@ -110,12 +114,13 @@ def plot_predictions(image, df, color=None):
     image = image.copy()
     if not color:
         if not ptypes.is_numeric_dtype(df.label):
-            raise ValueError("Label column is not numeric, please convert to numeric to correctly color image {}".format(df.label.head()))
+            warnings.warn("No color was provided and the label column is not numeric. Using a single default color.")
+            color=(0,165,255)
 
     for index, row in df.iterrows():
         if not color:
             color = label_to_color(row["label"])
-        cv2.rectangle(image, (int(row["xmin"]), int(row["ymin"])), (int(row["xmax"]), int(row["ymax"])), color=color, thickness=1, lineType=cv2.LINE_AA)
+        cv2.rectangle(image, (int(row["xmin"]), int(row["ymin"])), (int(row["xmax"]), int(row["ymax"])), color=color, thickness=thickness, lineType=cv2.LINE_AA)
     
     return image
 
