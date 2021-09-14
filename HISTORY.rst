@@ -2,6 +2,10 @@
 DeepForest Change Log
 =============================
 
+# 1.1.1
+
+Update to project_boxes to include an output for predict_tile and predict_image, the function was split into two. annotations_to_shapefile reverses shapefile_to_annotations. Thanks to @sdtaylor for this contribution.
+
 # 1.1.0
 
 1.

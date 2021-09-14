@@ -105,6 +105,53 @@ csv_file = get_data("testfile_deepforest.csv")
 boxes = model.predict_file(csv_file=csv_file, root_dir = os.path.dirname(csv_file),savedir=".")
 ```
 
+### Projecting predictions
+
+DeepForest operates on image data without any concept of geopgraphic projection. 
+Annotations and predictions are made in reference to the image coordinate system (0,0). It is often useful to transform this to geographic coordinates. [Rasterio](https://rasterio.readthedocs.io/en/latest/quickstart.html#dataset-georeferencing) provides us with helpful utilities to do this based on a projected image.
+
+For example, consider some sample data that comes with package. We can read in the image, get the transform and coordinate reference system (crs).
+
+```
+    img = get_data("OSBS_029.tif")
+    r = rasterio.open(img)
+    transform = r.transform 
+    crs = r.crs
+    print(crs)
+```
+
+```
+    CRS.from_epsg(32617)
+```
+
+We can predict tree crowns in the image and then convert them back into projected space
+
+```
+    m = main.deepforest()
+    m.use_release(check_release=False)
+    df = m.predict_image(path=img)
+    gdf = utilities.annotations_to_shapefile(df, transform=transform, crs=crs)
+```
+
+```
+    gdf.total_bounds
+    array([ 404211.95, 3285102.85,  404251.95, 3285142.85])
+    gdf.crs
+    <Projected CRS: EPSG:32617>
+    Name: WGS 84 / UTM zone 17N
+    Axis Info [cartesian]:
+    - [east]: Easting (metre)
+    - [north]: Northing (metre)
+    Area of Use:
+    - undefined
+    Coordinate Operation:
+    - name: UTM zone 17N
+    - method: Transverse Mercator
+    Datum: World Geodetic System 1984
+    - Ellipsoid: WGS 84
+    - Prime Meridian: Greenwich
+```
+
 ## Training
 
 The prebuilt models will always be improved by adding data from the target area. In our work, we have found that even one hour's worth of carefully chosen hand-annotation can yield enormous improvements in accuracy and precision.

@@ -371,6 +371,67 @@ def project_boxes(df, root_dir, transform=True):
 
     return df
 
+def annotations_to_shapefile(df, transform, crs):
+    """
+    Convert output from predict_image and  predict_tile to a geopandas data.frame
+
+    Args:
+        df: prediction data.frame with columns  ['xmin','ymin','xmax','ymax','label','score']
+        transform: A rasterio affine transform object
+        crs: A rasterio crs object
+    Returns:
+        results: a geopandas dataframe where every entry is the bounding box for a detected tree.
+    """
+    # Convert image pixel locations to geographic coordinates
+    xmin_coords, ymin_coords = rasterio.transform.xy(
+        transform=transform,
+        rows = df.ymin,
+        cols = df.xmin,
+        offset = 'center'
+        )
+    
+    xmax_coords, ymax_coords = rasterio.transform.xy(
+        transform=transform,
+        rows = df.ymax,
+        cols = df.xmax,
+        offset = 'center'
+        )
+    
+    # One box polygon for each tree bounding box
+    box_coords = zip(xmin_coords, ymin_coords, xmax_coords, ymax_coords)
+    box_geoms = [shapely.geometry.box(xmin,ymin,xmax,ymax) for xmin,ymin,xmax,ymax in box_coords]
+    
+    geodf = gpd.GeoDataFrame(df, geometry=box_geoms)
+    geodf.crs = crs
+    
+    return geodf
+
+def project_boxes(df, root_dir):
+    """
+    Convert output from predict_file into a geopandas data.frame 
+    Note that this assumes df is just a single plot being passed to this function
+    Args:
+        df: a pandas type dataframe with columns: image_path, xmin, ymin, xmax, ymax. image_path is the relative within the root_dir arg.
+        root_dir: directory of images
+    Returns:
+        geodf: a geodataframe with transformed boxes as geometry
+    """
+    plot_names = df.image_path.unique()
+    if len(plot_names) > 1:
+        raise ValueError(
+            "This function projects a single plots worth of data. Multiple plot names found {}"
+            .format(plot_names))
+    else:
+        plot_name = plot_names[0]
+        
+    rgb_path = "{}/{}".format(root_dir, plot_name)
+    with rasterio.open(rgb_path) as dataset:
+        transform = dataset.transform
+        crs = dataset.crs
+        
+    geodf =  annotations_to_shapefile(df = df, transform = transform, crs=crs)
+    geodf['image_path'] = plot_name
+    return geodf
 
 def collate_fn(batch):
     batch = list(filter(lambda x : x is not None, batch))

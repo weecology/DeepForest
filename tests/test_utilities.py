@@ -3,13 +3,14 @@ import numpy as np
 import os
 import pytest
 import pandas as pd
+import rasterio as rio
 
 from deepforest import get_data
 from deepforest import utilities
+from deepforest import main
 
 #import general model fixture
 from .conftest import download_release
-
 
 @pytest.fixture()
 def config():
@@ -46,4 +47,16 @@ def test_project_boxes():
     df = pd.read_csv(csv_file)
     gdf = utilities.project_boxes(df, root_dir=os.path.dirname(csv_file))
     
+    assert df.shape[0] == gdf.shape[0]
+    
+
+def test_annotations_to_shapefile(download_release):
+    img = get_data("OSBS_029.tif")
+    r = rio.open(img)
+    transform = r.transform 
+    crs = r.crs
+    m = main.deepforest()
+    m.use_release(check_release=False)
+    df = m.predict_image(path=img)
+    gdf = utilities.annotations_to_shapefile(df, transform=transform, crs=crs)
     assert df.shape[0] == gdf.shape[0]

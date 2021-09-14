@@ -4,6 +4,22 @@
 # Wing project file                                              #
 ##################################################################
 [project attributes]
+debug.launch-configs = (2,
+                        {'launch-YBDFEZYTlvpDwvfv': ({'shared': True},
+        {'buildcmd': ('project',
+                      None),
+         'env': ('project',
+                 [u'']),
+         'name': u'deepforest',
+         'pyexec': ('project',
+                    u''),
+         'pypath': ('project',
+                    []),
+         'pyrunargs': ('project',
+                       '-u'),
+         'runargs': u'',
+         'rundir': ('custom',
+                    u'/Users/benweinstein/Documents/DeepForest')})})
 proj.directory-list = [{'dirloc': loc('.'),
                         'excludes': (),
                         'filter': u'*',
@@ -11,6 +27,10 @@ proj.directory-list = [{'dirloc': loc('.'),
                         'recursive': True,
                         'watch_for_changes': True}]
 proj.file-type = 'shared'
+proj.launch-config = {loc('../../Downloads/empty_frames_nan_repro/detect_cars_nan_repro.py'): ('c'\
+        'ustom',
+        (u'',
+         'launch-YBDFEZYTlvpDwvfv'))}
 testing.auto-test-file-specs = (('glob',
                                  'test_*'),)
 testing.test-framework = {None: ':internal pytest'}
