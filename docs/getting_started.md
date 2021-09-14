@@ -96,7 +96,7 @@ Consider a headerless annotations.csv file in the following format
 ```
 image_path, xmin, ymin, xmax, ymax, label
 ```
-with each bounding box on a seperate row. The image path is relative to the root dir. Its often easiest to just save the .csv file alongside the images.
+with each bounding box on a separate row. The image path is relative to the root dir. Its often easiest to just save the .csv file alongside the images.
 
 We can view predictions by supplying a save dir ("." = current directory). Predictions in green, annotations in black.
 
@@ -151,6 +151,16 @@ We can predict tree crowns in the image and then convert them back into projecte
     - Ellipsoid: WGS 84
     - Prime Meridian: Greenwich
 ```
+### Customizing boxe appearance for predictions
+
+The color and line thickness of boxes can be customized using the `color` and `thickness` arguments.
+`color` is the color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255).
+`thickness` is the thickness of the rectangle border line in px.
+
+```python
+image_path = get_data("OSBS_029.png")
+boxes = model.predict_image(path=image_path, return_plot = True, color=(0, 165, 255), thickness=3)
+```
 
 ## Training
 
@@ -176,7 +186,7 @@ OSBS_029.jpg,115,109,150,152,Tree
 OSBS_029.jpg,161,155,199,191,Tree
 ```
 
-We tell the config that we want to train on this csv file, and that the images are in the same directory. If images are in a seperate folder, change the root_dir.
+We tell the config that we want to train on this csv file, and that the images are in the same directory. If images are in a separate folder, change the root_dir.
 
 ```python
 # Example run with short training

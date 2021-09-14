@@ -15,7 +15,7 @@ from deepforest import preprocess
 from deepforest import visualize
 from deepforest import dataset
 
-def predict_image(model, image, return_plot, device, iou_threshold=0.1):
+def predict_image(model, image, return_plot, device, iou_threshold=0.1, color=None, thickness=1):
     """Predict an image with a deepforest model
 
     Args:
@@ -23,6 +23,8 @@ def predict_image(model, image, return_plot, device, iou_threshold=0.1):
         path: optional path to read image from disk instead of passing image arg
         return_plot: Return image with plotted detections
         device: pytorch device of 'cuda' or 'cpu' for gpu prediction. Set internally.
+        color: color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255)
+        thickness: thickness of the rectangle border line in px
     Returns:
         boxes: A pandas dataframe of predictions (Default)
         img: The input with predictions overlaid (Optional)
@@ -54,14 +56,14 @@ def predict_image(model, image, return_plot, device, iou_threshold=0.1):
         image = np.rollaxis(image, 0, 3)        
         image = image[:,:,::-1] * 255
         image = image.astype("uint8")
-        image = visualize.plot_predictions(image, df)
+        image = visualize.plot_predictions(image, df, color=color, thickness=thickness)
         
         return image
     else:
         return df
 
 
-def predict_file(model, csv_file, root_dir, savedir, device, iou_threshold=0.1):
+def predict_file(model, csv_file, root_dir, savedir, device, iou_threshold=0.1, color=(0,165,255), thickness=1):
     """Create a dataset and predict entire annotation file
 
     Csv file format is .csv file with the columns "image_path", "xmin","ymin","xmax","ymax" for the image name and bounding box position.
@@ -73,6 +75,8 @@ def predict_file(model, csv_file, root_dir, savedir, device, iou_threshold=0.1):
         root_dir: directory of images. If none, uses "image_dir" in config
         savedir: Optional. Directory to save image plots.
         device: pytorch device of 'cuda' or 'cpu' for gpu prediction. Set internally.
+        color: color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255)
+        thickness: thickness of the rectangle border line in px
     Returns:
         df: pandas dataframe with bounding boxes, label and scores for each image in the csv file
     """
@@ -109,7 +113,7 @@ def predict_file(model, csv_file, root_dir, savedir, device, iou_threshold=0.1):
             #Plot annotations if they exist
             annotations = df[df.image_path == paths[index]]
             
-            image = visualize.plot_predictions(image, annotations, color=(0,165,255))
+            image = visualize.plot_predictions(image, annotations, color=color, thickness=thickness)
             cv2.imwrite("{}/{}.png".format(savedir, os.path.splitext(paths[index])[0]), image)
     
                 
@@ -131,7 +135,9 @@ def predict_tile(model,
                  return_plot=False,
                  use_soft_nms=False,
                  sigma=0.5,
-                 thresh=0.001):
+                 thresh=0.001,
+                 color=None,
+                 thickness=1):
     """For images too large to input into the model, predict_tile cuts the
     image into overlapping windows, predicts trees on each window and
     reassambles into a single array.
@@ -235,7 +241,7 @@ def predict_tile(model,
     if return_plot:
         # Draw predictions on BGR 
         image = image[:,:,::-1]
-        image = visualize.plot_predictions(image, mosaic_df)
+        image = visualize.plot_predictions(image, mosaic_df, color=color, thickness=thickness)
         # Mantain consistancy with predict_image
         return image
     else:

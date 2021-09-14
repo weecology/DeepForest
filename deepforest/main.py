@@ -204,13 +204,15 @@ class deepforest(pl.LightningModule):
 
         return loader
 
-    def predict_image(self, image=None, path=None, return_plot=False):
+    def predict_image(self, image=None, path=None, return_plot=False, color=None, thickness=1):
         """Predict a single image with a deepforest model
                 
         Args:
             image: a float32 numpy array of a RGB with channels last format
             path: optional path to read image from disk instead of passing image arg
             return_plot: Return image with plotted detections
+            color: color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255)
+            thickness: thickness of the rectangle border line in px
         Returns:
             boxes: A pandas dataframe of predictions (Default)
             img: The input with predictions overlaid (Optional)
@@ -242,7 +244,9 @@ class deepforest(pl.LightningModule):
                                        image=image,
                                        return_plot=return_plot,
                                        device=self.current_device,
-                                       iou_threshold=self.config["nms_thresh"])
+                                       iou_threshold=self.config["nms_thresh"],
+                                       color=color,
+                                       thickness=thickness)
         
         #Set labels to character from numeric if returning boxes df
         if not return_plot:
@@ -251,7 +255,7 @@ class deepforest(pl.LightningModule):
         
         return result
 
-    def predict_file(self, csv_file, root_dir, savedir=None):
+    def predict_file(self, csv_file, root_dir, savedir=None, color=None, thickness=1):
         """Create a dataset and predict entire annotation file
 
         Csv file format is .csv file with the columns "image_path", "xmin","ymin","xmax","ymax" for the image name and bounding box position.
@@ -261,6 +265,8 @@ class deepforest(pl.LightningModule):
             csv_file: path to csv file
             root_dir: directory of images. If none, uses "image_dir" in config
             savedir: Optional. Directory to save image plots.
+            color: color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255)
+            thickness: thickness of the rectangle border line in px
         Returns:
             df: pandas dataframe with bounding boxes, label and scores for each image in the csv file
         """
@@ -273,7 +279,9 @@ class deepforest(pl.LightningModule):
                                       root_dir=root_dir,
                                       savedir=savedir,
                                       device=self.current_device,
-                                      iou_threshold=self.config["nms_thresh"])
+                                      iou_threshold=self.config["nms_thresh"],
+                                      color=color,
+                                      thickness=thickness)
 
         #Set labels to character from numeric
         result["label"] = result.label.apply(lambda x: self.numeric_to_label_dict[x])
@@ -289,7 +297,9 @@ class deepforest(pl.LightningModule):
                      return_plot=False,
                      use_soft_nms=False,
                      sigma=0.5,
-                     thresh=0.001):
+                     thresh=0.001,
+                     color=None,
+                     thickness=1):
         """For images too large to input into the model, predict_tile cuts the
         image into overlapping windows, predicts trees on each window and
         reassambles into a single array.
@@ -307,6 +317,8 @@ class deepforest(pl.LightningModule):
             use_soft_nms: whether to perform Gaussian Soft NMS or not, if false, default perform NMS.
             sigma: variance of Gaussian function used in Gaussian Soft NMS
             thresh: the score thresh used to filter bboxes after soft-nms performed
+            color: color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255)
+            thickness: thickness of the rectangle border line in px
 
         Returns:
             boxes (array): if return_plot, an image.
@@ -331,7 +343,9 @@ class deepforest(pl.LightningModule):
                                       use_soft_nms=use_soft_nms,
                                       sigma=sigma,
                                       thresh=thresh,
-                                      device=self.current_device)
+                                      device=self.current_device,
+                                      color=color,
+                                      thickness=thickness)
 
         #edge case, if no boxes predictioned return None
         if result is None:

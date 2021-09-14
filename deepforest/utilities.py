@@ -334,9 +334,9 @@ def check_image(image):
     
 def project_boxes(df, root_dir, transform=True):
     """
-    Convert from image coordinates to geopgraphic cooridinates
+    Convert from image coordinates to geographic coordinates
     Note that this assumes df is just a single plot being passed to this function
-    df: a pandas type dataframe with columns name, xmin, ymin, xmax, ymax, name. Name is the relative path to the root_dir arg.
+    df: a pandas type dataframe with columns: name, xmin, ymin, xmax, ymax. Name is the relative path to the root_dir arg.
     root_dir: directory of images
     transform: If true, convert from image to geographic coordinates
     """
