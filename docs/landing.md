@@ -22,7 +22,7 @@ For more about the motivation behind DeepForest, see a recent talk I gave at the
 
 For a quick example of model performance on sample images, see our demo shiny app. Please note that the model continues to improve and the app model may not reflect results from the current release.
 
-[http://tree.westus.cloudapp.azure.com/trees/](http://tree.westus.cloudapp.azure.com/trees/)
+[http://weecology.westus.cloudapp.azure.com/neon/](http://weecology.westus.cloudapp.azure.com/neon/)
 
 ## License
 Free software: [MIT license](https://github.com/weecology/DeepForest/blob/master/LICENSE)
