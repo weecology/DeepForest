@@ -54,4 +54,6 @@ jobs:
           use-only-tar-bz2: true
 
       - name: "Run tests"
-        run: "pytest -v"
+        run: |
+          python -m pip install torchvision -U
+          pytest -v
