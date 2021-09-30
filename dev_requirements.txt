@@ -23,7 +23,7 @@ sphinx_rtd_theme
 sphinx_markdown_tables
 tqdm
 twine
-torchvision >= 0.9.0
+torchvision
 xmltodict
 comet_ml
 imagecodecs
