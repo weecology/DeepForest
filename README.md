@@ -95,7 +95,6 @@ Config parameters are documented [here](https://deepforest.readthedocs.io/en/lat
 
 Tree detection is a central task in forest ecology and remote sensing. The Weecology Lab at the University of Florida has built a tree detection benchmark for evaluation. After building a model, you can compare it to the benchmark using the evaluate method.
 
-
 ```
 git clone https://github.com/weecology/NeonTreeEvaluation.git
 cd NeonTreeEvaluation
