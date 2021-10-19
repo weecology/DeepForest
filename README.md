@@ -104,3 +104,7 @@ results = m.evaluate(csv_file = "evaluation/RGB/benchmark_annotations.csv", root
 results["box_recall"]
 results["box_precision"]
 ```
+
+# Using DeepForest in R
+
+R wrapper is available for DeepForest in the [deepforestr package](https://github.com/weecology/deepforestr).
