@@ -461,7 +461,11 @@ class deepforest(pl.LightningModule):
         
         #Get box positions
         boxes = ground_df[["image_path","xmin","xmax","ymin","ymax"]]
-        boxes["truth_id"] = boxes.index 
+        truth_ids = []
+        for name, group in boxes.groupby("image_path"):
+            truth_ids.append(group.index.values)
+            
+        boxes["truth_id"] = np.concatenate(truth_ids)
         results["results"] = results["results"].merge(boxes, on=["image_path","truth_id"])
 
         #replace classes if not NUll, wrap in try catch if no predictions 
