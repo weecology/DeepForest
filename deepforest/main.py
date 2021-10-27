@@ -458,6 +458,11 @@ class deepforest(pl.LightningModule):
                                         root_dir=root_dir,
                                         iou_threshold=iou_threshold,
                                         savedir=savedir)
+        
+        #Get box positions
+        boxes = ground_df[["image_path","xmin","xmax","ymin","ymax"]]
+        boxes["truth_id"] = boxes.index 
+        results["results"] = results["results"].merge(boxes, on=["image_path","truth_id"])
 
         #replace classes if not NUll, wrap in try catch if no predictions 
         if not results["results"].empty: 

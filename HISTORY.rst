@@ -2,6 +2,9 @@
 DeepForest Change Log
 =============================
 
+# 1.1.3
+Add box coordinates to evaluate results frame.
+
 # 1.1.2
 
 If there was more than one class, the precision in the class_recall.csv was computed incorrectly.
