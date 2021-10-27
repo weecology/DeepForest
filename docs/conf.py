@@ -3,6 +3,7 @@
 import os
 import sys
 from typing import Any
+import urllib.request
 
 import recommonmark
 from recommonmark.parser import CommonMarkParser
@@ -13,6 +14,29 @@ from recommonmark.transform import AutoStructify
 curr_path = os.path.dirname(os.path.abspath(os.path.expanduser(__file__)))
 sys.path.insert(0, os.path.join(curr_path, '..'))
 sys.path.insert(0, os.path.abspath('..'))
+
+# Create content for deepforestr.md, skip the badge section
+deepforestr_title = """# Using DeepForest from R
+
+An R wrapper for DeepForest is available in the [deepforestr package](https://github.com/weecology/deepforestr).
+Commands are very similar with some minor differences due to how the wrapping process
+using [reticulate](https://rstudio.github.io/reticulate/) works.
+
+"""
+file_obj = open('deepforestr.md','w')
+readme_url = 'https://raw.githubusercontent.com/weecology/deepforestr/main/README.md'
+file_obj.write(deepforestr_title)
+
+with urllib.request.urlopen(readme_url) as response:
+    lines = response.readlines()
+    badge_section =  True
+    for line in lines:
+        line = line.decode("utf8")
+        if "## Installation" in line and badge_section:
+            badge_section = False
+        if not badge_section:
+            file_obj.write(line)
+file_obj.close()
 
 needs_sphinx = "1.8"
 

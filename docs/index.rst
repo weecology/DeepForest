@@ -13,6 +13,7 @@ Source code is available here: (https://github.com/weecology/DeepForest.git).
    getting_started
    ConfigurationFile
    Evaluation
+   deepforestr
    FAQ
    better
    ExtendingModule
