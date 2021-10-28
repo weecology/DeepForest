@@ -216,7 +216,8 @@ def test_evaluate_multiple_images(m, tmpdir):
     df2["image_path"] = "OSBS_029_1.tif"
     df3 = df.copy()
     df3["image_path"] = "OSBS_029_2.tif"
-    multiple_images = pd.concat([df, df2, df3])
+    multiple_images = multiple_images = pd.concat([df, df2, df3])
+    multiple_images = multiple_images.reset_index(drop=True)
     csv_file = "{}/example.csv".format(tmpdir)
     root_dir = os.path.dirname(csv_file)
     multiple_images.to_csv(csv_file)
@@ -230,7 +231,7 @@ def test_evaluate_multiple_images(m, tmpdir):
     
     results = m.evaluate(csv_file, root_dir, iou_threshold = 0.4, savedir=tmpdir)
   
-    assert results["results"].shape[0] == df.shape[0]
+    assert results["results"].shape[0] == multiple_images.shape[0]
     
 def test_train_callbacks(m):
     csv_file = get_data("example.csv") 

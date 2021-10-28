@@ -463,6 +463,7 @@ class deepforest(pl.LightningModule):
         boxes = ground_df[["image_path","xmin","xmax","ymin","ymax"]]
         truth_ids = []
         for name, group in boxes.groupby("image_path"):
+            group = group.reset_index()
             truth_ids.append(group.index.values)
             
         boxes["truth_id"] = np.concatenate(truth_ids)
