@@ -38,7 +38,8 @@ with urllib.request.urlopen(readme_url) as response:
             file_obj.write(line)
 file_obj.close()
 
-needs_sphinx = "1.8"
+# if minimal version required
+needs_sphinx = "4.2"
 
 autodoc_default_options = {
     'members': None,
