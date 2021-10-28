@@ -5,6 +5,7 @@ import pytest
 import pandas as pd
 import numpy as np
 import cv2
+import shutil
 import torch
 from torch.utils.data import Dataset
 import tempfile
@@ -203,6 +204,32 @@ def test_evaluate(m, tmpdir):
     assert results["results"].predicted_label.dropna().unique()[0] == "Tree"
     
     df = pd.read_csv(csv_file)
+    assert results["results"].shape[0] == df.shape[0]
+
+def test_evaluate_multiple_images(m, tmpdir):
+    orignal_csv_file = get_data("OSBS_029.csv")
+    original_root_dir = os.path.dirname(orignal_csv_file)
+    
+    df = pd.read_csv(orignal_csv_file)
+    
+    df2 = df.copy()
+    df2["image_path"] = "OSBS_029_1.tif"
+    df3 = df.copy()
+    df3["image_path"] = "OSBS_029_2.tif"
+    multiple_images = pd.concat([df, df2, df3])
+    csv_file = "{}/example.csv".format(tmpdir)
+    root_dir = os.path.dirname(csv_file)
+    multiple_images.to_csv(csv_file)
+    
+    #Create multiple files
+    shutil.copyfile("{}/OSBS_029.tif".format(original_root_dir), "{}/OSBS_029.tif".format(root_dir))    
+    shutil.copyfile("{}/OSBS_029.tif".format(original_root_dir), "{}/OSBS_029_1.tif".format(root_dir))
+    shutil.copyfile("{}/OSBS_029.tif".format(original_root_dir), "{}/OSBS_029_2.tif".format(root_dir))
+    
+    root_dir = os.path.dirname(csv_file)
+    
+    results = m.evaluate(csv_file, root_dir, iou_threshold = 0.4, savedir=tmpdir)
+  
     assert results["results"].shape[0] == df.shape[0]
     
 def test_train_callbacks(m):
