@@ -459,16 +459,6 @@ class deepforest(pl.LightningModule):
                                         iou_threshold=iou_threshold,
                                         savedir=savedir)
         
-        #Get box positions
-        boxes = ground_df[["image_path","xmin","xmax","ymin","ymax"]]
-        truth_ids = []
-        for name, group in boxes.groupby("image_path"):
-            group = group.reset_index()
-            truth_ids.append(group.index.values)
-            
-        boxes["truth_id"] = np.concatenate(truth_ids)
-        results["results"] = results["results"].merge(boxes, on=["image_path","truth_id"])
-
         #replace classes if not NUll, wrap in try catch if no predictions 
         if not results["results"].empty: 
             results["results"]["predicted_label"] = results["results"]["predicted_label"].apply(lambda x: self.numeric_to_label_dict[x] if not pd.isnull(x) else x)

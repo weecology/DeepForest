@@ -233,6 +233,8 @@ def test_evaluate_multiple_images(m, tmpdir):
   
     assert results["results"].shape[0] == multiple_images.shape[0]
     
+    assert all([x in results["results"] for x in ["xmin","xmax","ymin","ymax"]])
+    
 def test_train_callbacks(m):
     csv_file = get_data("example.csv") 
     root_dir = os.path.dirname(csv_file)
