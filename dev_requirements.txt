@@ -16,7 +16,8 @@ numpy
 recommonmark
 rasterio
 rtree
-sphinx >= 1.8
+sphinx
+docutils<0.18
 slidingwindow
 opencv-python
 sphinx_rtd_theme
