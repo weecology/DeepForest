@@ -30,7 +30,9 @@ def get_transform(augment):
         ], bbox_params=A.BboxParams(format='pascal_voc',label_fields=["category_ids"]))
         
     else:
-        transform = A.Compose([ToTensorV2()])
+        transform = A.Compose([
+            ToTensorV2()
+        ], bbox_params=A.BboxParams(format='pascal_voc',label_fields=["category_ids"]))
         
     return transform
 
