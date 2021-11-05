@@ -17,6 +17,7 @@ import pandas as pd
 import numpy as np
 from torch.utils.data import Dataset
 import albumentations as A
+from albumentations import functional as F
 from albumentations.pytorch import ToTensorV2
 import torch
 from PIL import Image
@@ -33,7 +34,7 @@ def get_transform(augment):
         transform = A.Compose([
             ToTensorV2()
         ], bbox_params=A.BboxParams(format='pascal_voc',label_fields=["category_ids"]))
-        
+
     return transform
 
 class TreeDataset(Dataset):
@@ -61,7 +62,8 @@ class TreeDataset(Dataset):
         self.image_names = self.annotations.image_path.unique()
         self.label_dict = label_dict
         self.train = train
-
+        self.image_converter = A.Compose([ToTensorV2()])
+        
     def __len__(self):
         return len(self.image_names)
 
@@ -105,7 +107,7 @@ class TreeDataset(Dataset):
             return self.image_names[idx], image, targets
             
         else:
-            augmented = self.transform(image=image)
-            
-            return augmented["image"]
+            #Mimic the train augmentation
+            converted = self.image_converter(image=image)   
+            return converted["image"]
             

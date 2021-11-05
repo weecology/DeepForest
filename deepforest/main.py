@@ -146,7 +146,8 @@ class deepforest(pl.LightningModule):
                      root_dir=None,
                      augment=False,
                      shuffle=True,
-                     batch_size=1):
+                     batch_size=1,
+                     train=False):
         """Create a tree dataset for inference
         Csv file format is .csv file with the columns "image_path", "xmin","ymin","xmax","ymax" for the image name and bounding box position.
         Image_path is the relative filename, not absolute path, which is in the root_dir directory. One bounding box per line.
@@ -155,6 +156,7 @@ class deepforest(pl.LightningModule):
             csv_file: path to csv file
             root_dir: directory of images. If none, uses "image_dir" in config
             augment: Whether to create a training dataset, this activates data augmentations
+            
         Returns:
             ds: a pytorch dataset
         """
