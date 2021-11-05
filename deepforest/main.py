@@ -463,5 +463,6 @@ class deepforest(pl.LightningModule):
         if not results["results"].empty: 
             results["results"]["predicted_label"] = results["results"]["predicted_label"].apply(lambda x: self.numeric_to_label_dict[x] if not pd.isnull(x) else x)
             results["results"]["true_label"] = results["results"]["true_label"].apply(lambda x: self.numeric_to_label_dict[x])
+            results["predictions"] = predictions
 
         return results
