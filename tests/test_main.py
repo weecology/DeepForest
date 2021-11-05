@@ -202,6 +202,7 @@ def test_evaluate(m, tmpdir):
     assert np.round(results["box_recall"],2) > 0.5
     assert len(results["results"].predicted_label.dropna().unique()) == 1
     assert results["results"].predicted_label.dropna().unique()[0] == "Tree"
+    assert results["predictions"].shape[0] > 0
     
     df = pd.read_csv(csv_file)
     assert results["results"].shape[0] == df.shape[0]
