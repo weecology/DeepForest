@@ -4,6 +4,7 @@ channels:
   - conda-forge
 dependencies:
   - sphinx
+  - docutils<0.18
   - recommonmark
   - pyyaml>=5.1.0
   - pytest
