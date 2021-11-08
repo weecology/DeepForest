@@ -31,7 +31,7 @@ def predict_image(model, image, return_plot, device, iou_threshold=0.1, color=No
     """
     
     if image.dtype !="float32":
-        warnings.warn("Image type is {}, transforming to float32. This assumes that the range of pixel values is 0-255, as opposed to 0-1.To suppress this warning, transform image (image.astype('float32')")
+        warnings.warn(f"Image type is {image.dtype}, transforming to float32. This assumes that the range of pixel values is 0-255, as opposed to 0-1.To suppress this warning, transform image (image.astype('float32')")
         image = image.astype("float32")
     image = preprocess.preprocess_image(image, device=device)
     
@@ -179,6 +179,7 @@ def predict_tile(model,
     for index, window in enumerate(tqdm(windows)):
         # crop window and predict
         crop = image[windows[index].indices()]
+        crop = crop.astype('float32')
 
         # crop is RGB channel order, change to BGR?
         boxes = predict_image(model=model, image=crop, return_plot=False, device=device)

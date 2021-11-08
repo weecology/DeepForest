@@ -135,6 +135,7 @@ def test_predict_image_fromarray(m):
 def test_predict_return_plot(m):
     image = get_data(path="2019_YELL_2_528000_4978000_image_crop2.png")
     image = np.array(Image.open(image))
+    image = image.astype('float32')
     plot = m.predict_image(image = image, return_plot=True)
     assert isinstance(plot, np.ndarray)
 
