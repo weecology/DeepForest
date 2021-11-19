@@ -151,11 +151,11 @@ We can predict tree crowns in the image and then convert them back into projecte
     - Ellipsoid: WGS 84
     - Prime Meridian: Greenwich
 ```
-### Customizing boxe appearance for predictions
+### Customizing box appearance for predictions
 
 The color and line thickness of boxes can be customized using the `color` and `thickness` arguments.
 `color` is the color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255).
-`thickness` is the thickness of the rectangle border line in px.
+`thickness` is the thickness of the rectangle border line in pixels.
 
 ```python
 image_path = get_data("OSBS_029.png")
@@ -259,7 +259,7 @@ results["results"].head()
 
 This dataframe contains a numeric id for each predicted crown in each image, the matched ground truth crown in each image. The intersection-over-union score between predicted and ground truth (IoU), and whether that score is greater than the IoU threshold ('match').
 
-The recall is the proportion of ground truth which have a true positive match with a prediction based on the intersection-over-union threshold, this threshold is default 0.4 and can be chaned in model.evaluate(iou_threshold=<>)
+The recall is the proportion of ground truth which have a true positive match with a prediction based on the intersection-over-union threshold, this threshold is default 0.4 and can be changed in model.evaluate(iou_threshold=<>)
 
 ```
 results["box_recall"]
