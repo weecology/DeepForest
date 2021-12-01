@@ -115,6 +115,11 @@ A useful pytorch lightning flag that will run a debug run to test inputs. See
 
 [pytorch lightning docs](https://pytorch-lightning.readthedocs.io/en/latest/common/trainer.html?highlight=fast_dev_run#fast-dev-run)
 
+### preload_images
+
+For large training runs, the time spent reading each image and passing it to the GPU can be a significant performance bottleneck. 
+If the training dataset is small enough to fit into GPU memory, pinning the entire dataset to memory before training will increase training speed. Warning, if the pinned memory is too large, the GPU will overflow/core dump and training will crash.
+
 ## Validation
 
 Optional validation dataloader to run during training.

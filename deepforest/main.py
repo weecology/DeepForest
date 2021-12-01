@@ -164,7 +164,8 @@ class deepforest(pl.LightningModule):
         ds = dataset.TreeDataset(csv_file=csv_file,
                                  root_dir=root_dir,
                                  transforms=self.transforms(augment=augment),
-                                 label_dict=self.label_dict)
+                                 label_dict=self.label_dict,
+                                 preload_images=self.config["train"]["preload_images"])
 
         data_loader = torch.utils.data.DataLoader(
             ds,
