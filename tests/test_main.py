@@ -97,6 +97,10 @@ def test_train_empty(m, tmpdir):
 def test_train_single(m):
     m.trainer.fit(m)
     
+def test_train_preload_images(m):
+    m.config["train"]["preload_images"] = True
+    m.trainer.fit(m)
+    
 def test_train_multi(two_class_m):
     two_class_m.trainer.fit(two_class_m)
     

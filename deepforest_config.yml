@@ -23,6 +23,8 @@ train:
     epochs: 1
     #Useful debugging flag in pytorch lightning, set to True to get a single batch of training to test settings.
     fast_dev_run: False
+    #pin images to GPU memory for fast training. This depends on GPU size and number of images.
+    preload_images: False
     
 validation:
     #callback args

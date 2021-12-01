@@ -39,7 +39,7 @@ def get_transform(augment):
 
 class TreeDataset(Dataset):
 
-    def __init__(self, csv_file, root_dir, transforms=None, label_dict = {"Tree": 0}, train=True):
+    def __init__(self, csv_file, root_dir, transforms=None, label_dict = {"Tree": 0}, train=True, preload_images=False):
         """
         Args:
             csv_file (string): Path to a single csv file with annotations.
@@ -63,15 +63,29 @@ class TreeDataset(Dataset):
         self.label_dict = label_dict
         self.train = train
         self.image_converter = A.Compose([ToTensorV2()])
+        self.preload_images = preload_images
         
+        #Pin data to memory if desired
+        if self.preload_images:
+            print("Pinning dataset to GPU memory")
+            self.image_dict = {}
+            for idx, x in enumerate(self.image_names):
+                img_name = os.path.join(self.root_dir, x)                
+                image = np.array(Image.open(img_name).convert("RGB"))/255
+                self.image_dict[idx] = image.astype("float32")  
+                
     def __len__(self):
         return len(self.image_names)
 
     def __getitem__(self, idx):
-        img_name = os.path.join(self.root_dir, self.image_names[idx])
-        #read, scale and set to float
-        image = np.array(Image.open(img_name).convert("RGB"))/255
-        image = image.astype("float32")
+        
+        #Read image if not in memory
+        if self.preload_images:
+            image = self.image_dict[idx]
+        else:
+            img_name = os.path.join(self.root_dir, self.image_names[idx])
+            image = np.array(Image.open(img_name).convert("RGB"))/255
+            image = image.astype("float32")
 
         if self.train:
             # select annotations
