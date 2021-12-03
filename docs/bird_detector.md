@@ -46,4 +46,6 @@ annotations = preprocess.split_raster(
 
 ## Citation
 
-The detector is currently in prep, please check back for a published citation. Cite the github release until a preprint is available.
+A general deep learning model for bird detection in high resolution airborne imagery
+
+https://www.biorxiv.org/content/10.1101/2021.08.05.455311v1.abstract
