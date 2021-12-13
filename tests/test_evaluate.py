@@ -7,6 +7,7 @@ from deepforest import get_data
 import os
 import pytest
 import pandas as pd
+import numpy as np
 
 @pytest.fixture()
 def m(download_release):
@@ -77,7 +78,7 @@ def test_evaluate_empty():
     results = m.evaluate(csv_file, root_dir, iou_threshold = 0.4)
     
     #Does this make reasonable predictions, we know the model works.
-    assert results["box_precision"] == 0
+    assert np.isnan(results["box_precision"])
     assert results["box_recall"] == 0
     
     df = pd.read_csv(csv_file)

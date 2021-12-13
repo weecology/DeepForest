@@ -6,7 +6,6 @@ import torch
 
 import pytorch_lightning as pl
 from torch import optim
-import matplotlib
 import numpy as np
 
 from deepforest import utilities
@@ -14,7 +13,6 @@ from deepforest import dataset
 from deepforest import get_data
 from deepforest import model
 from deepforest import predict
-from deepforest import preprocess
 from deepforest import evaluate as evaluate_iou
 from pytorch_lightning.callbacks import LearningRateMonitor
 
@@ -117,8 +115,12 @@ class deepforest(pl.LightningModule):
             callbacks (list): a list of pytorch-lightning callback classes
         """
         
-        #If val data is passed, monitor learning rate
+        #If val data is passed, monitor learning rate and setup classification metrics
         if not self.config["validation"]["csv_file"] is None:
+            micro_recall = torchmetrics.Accuracy(average="micro")
+            macro_recall = torchmetrics.Accuracy(average="macro", num_classes=self.num_classes)
+            self.metrics = torchmetrics.MetricCollection({"Micro Accuracy":micro_recall,"Macro Accuracy":macro_recall})
+                        
             if logger is not None:
                 lr_monitor = LearningRateMonitor(logging_interval='epoch')
                 callbacks=callbacks.append(lr_monitor)
@@ -392,10 +394,17 @@ class deepforest(pl.LightningModule):
 
         # Log loss
         for key, value in loss_dict.items():
-            self.log("val_{}".format(key), value, on_epoch=True)
-
+            self.log("val_{}".format(key), value, on_epoch=True)     
+    
         return losses
-        
+    
+    def on_epoch_end(self):
+        if self.current_epoch + 1 % self.config["validation"]["val_accuracy_interval"]:
+            results = self.evaluate(csv_file=self.config["validation"]["csv_file"],root_dir=self.config["validation"]["root_dir"])
+            for index, row in results["class_recall"].iterrows():
+                self.log("{}_Recall".format(row["label"]),row["recall"])
+                self.log("{}_Precision".format(row["label"]),row["precision"])
+            
     def configure_optimizers(self):
         optimizer = optim.SGD(self.model.parameters(),
                                    lr=self.config["train"]["lr"],
