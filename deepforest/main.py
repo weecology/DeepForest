@@ -117,10 +117,6 @@ class deepforest(pl.LightningModule):
         
         #If val data is passed, monitor learning rate and setup classification metrics
         if not self.config["validation"]["csv_file"] is None:
-            micro_recall = torchmetrics.Accuracy(average="micro")
-            macro_recall = torchmetrics.Accuracy(average="macro", num_classes=self.num_classes)
-            self.metrics = torchmetrics.MetricCollection({"Micro Accuracy":micro_recall,"Macro Accuracy":macro_recall})
-                        
             if logger is not None:
                 lr_monitor = LearningRateMonitor(logging_interval='epoch')
                 callbacks=callbacks.append(lr_monitor)
