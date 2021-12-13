@@ -397,9 +397,10 @@ class deepforest(pl.LightningModule):
     def on_epoch_end(self):
         if self.current_epoch + 1 % self.config["validation"]["val_accuracy_interval"]:
             results = self.evaluate(csv_file=self.config["validation"]["csv_file"],root_dir=self.config["validation"]["root_dir"])
-            for index, row in results["class_recall"].iterrows():
-                self.log("{}_Recall".format(row["label"]),row["recall"])
-                self.log("{}_Precision".format(row["label"]),row["precision"])
+            if not type(results["class_recall"]) == type(None):
+                for index, row in results["class_recall"].iterrows():
+                    self.log("{}_Recall".format(row["label"]),row["recall"])
+                    self.log("{}_Precision".format(row["label"]),row["precision"])
             
     def configure_optimizers(self):
         optimizer = optim.SGD(self.model.parameters(),

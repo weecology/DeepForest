@@ -64,11 +64,9 @@ def compute_class_recall(results):
     box_results =  results[results.predicted_label.notna()]
     if box_results.empty:
         print("No predictions made")
-        box_recall = 0
-        box_precision = 0
-        class_recall = pd.DataFrame()
-        return {"results": results, "box_precision": box_precision, "box_recall": box_recall, "class_recall":class_recall}
-        
+        class_recall = None
+        return class_recall
+    
     for name, group in box_results.groupby("true_label"):
         class_recall_dict[name] = sum(group.true_label == group.predicted_label)/group.shape[0]
         number_of_predictions = box_results[box_results.predicted_label==name].shape[0]
