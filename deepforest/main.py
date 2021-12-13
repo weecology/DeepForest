@@ -399,8 +399,8 @@ class deepforest(pl.LightningModule):
             results = self.evaluate(csv_file=self.config["validation"]["csv_file"],root_dir=self.config["validation"]["root_dir"])
             if not type(results["class_recall"]) == type(None):
                 for index, row in results["class_recall"].iterrows():
-                    self.log("{}_Recall".format(row["label"]),row["recall"])
-                    self.log("{}_Precision".format(row["label"]),row["precision"])
+                    self.log("{}_Recall".format(self.numeric_to_label_dict[row["label"]]),row["recall"])
+                    self.log("{}_Precision".format(self.numeric_to_label_dict[row["label"]]),row["precision"])
             
     def configure_optimizers(self):
         optimizer = optim.SGD(self.model.parameters(),
