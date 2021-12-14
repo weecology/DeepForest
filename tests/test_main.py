@@ -7,7 +7,6 @@ import numpy as np
 import cv2
 import shutil
 import torch
-from torch.utils.data import Dataset
 import tempfile
 
 import albumentations as A
@@ -15,17 +14,12 @@ from albumentations.pytorch import ToTensorV2
 
 from deepforest import main
 from deepforest import get_data
-from deepforest import model
-from deepforest import dataset
-from deepforest import utilities
-
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import Callback
 from PIL import Image
 
 #Import release model from global script to avoid thrasing github during testing. Just download once.
 from .conftest import download_release
-
 
 @pytest.fixture()
 def two_class_m():
@@ -53,6 +47,7 @@ def m(download_release):
     m.config["validation"]["csv_file"] = get_data("example.csv") 
     m.config["validation"]["root_dir"] = os.path.dirname(get_data("example.csv"))
     m.config["workers"] = 0 
+    m.config["validation"]["val_accuracy_interval"] = 1
     
     m.create_trainer()
     m.use_release(check_release=False)
@@ -96,7 +91,7 @@ def test_train_empty(m, tmpdir):
 
 def test_train_single(m):
     m.trainer.fit(m)
-    
+
 def test_train_preload_images(m):
     m.config["train"]["preload_images"] = True
     m.trainer.fit(m)

@@ -37,6 +37,7 @@ validation:
     root_dir:
     #Intersection over union evaluation
     iou_threshold: 0.4
+    val_accuracy_interval: 5
 ```
 
 ## Dataloaders
@@ -132,3 +133,7 @@ For example this file should have entries like myimage.tif not /path/to/myimage.
 ### root_dir
 
 Directory to search for images in the csv_file image_path column
+
+### val_accuracy_interval
+
+Compute and log the classification accuracy of the predicted results computed every X epochs. This incurs some reductions in speed of training and is most useful for multi-class models.

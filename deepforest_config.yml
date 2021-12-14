@@ -32,3 +32,4 @@ validation:
     root_dir:
     #Intersection over union evaluation
     iou_threshold: 0.4
+    val_accuracy_interval: 5

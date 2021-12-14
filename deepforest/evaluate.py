@@ -54,6 +54,31 @@ def evaluate_image(predictions, ground_df, root_dir, savedir=None):
         
     return result
 
+def compute_class_recall(results):
+    """Given a set of evaluations, what proportion of predicted boxes match. True boxes which are not matched to predictions do not count against accuracy."""
+    #Per class recall and precision
+    class_recall_dict = {}
+    class_precision_dict = {}
+    class_size = {}
+    
+    box_results =  results[results.predicted_label.notna()]
+    if box_results.empty:
+        print("No predictions made")
+        class_recall = None
+        return class_recall
+    
+    for name, group in box_results.groupby("true_label"):
+        class_recall_dict[name] = sum(group.true_label == group.predicted_label)/group.shape[0]
+        number_of_predictions = box_results[box_results.predicted_label==name].shape[0]
+        if number_of_predictions == 0:
+            class_precision_dict[name] = 0
+        else:
+            class_precision_dict[name] = sum(group.true_label == group.predicted_label)/number_of_predictions
+        class_size[name] = group.shape[0]
+    
+    class_recall = pd.DataFrame({"label":class_recall_dict.keys(),"recall":pd.Series(class_recall_dict), "precision":pd.Series(class_precision_dict), "size":pd.Series(class_size)}).reset_index(drop=True)
+    
+    return class_recall
 
 def evaluate(predictions,
              ground_df,
@@ -113,28 +138,6 @@ def evaluate(predictions,
     box_precision = np.mean(box_precisions)
     box_recall = np.mean(box_recalls)
 
-    #Per class recall and precision
-    class_recall_dict = {}
-    class_precision_dict = {}
-    class_size = {}
+    class_recall = compute_class_recall(results)
     
-    box_results =  results[results.predicted_label.notna()]
-    if box_results.empty:
-        print("No predictions made")
-        box_recall = 0
-        box_precision = 0
-        class_recall = pd.DataFrame()
-        return {"results": results, "box_precision": box_precision, "box_recall": box_recall, "class_recall":class_recall}
-        
-    for name, group in box_results.groupby("true_label"):
-        class_recall_dict[name] = sum(group.true_label == group.predicted_label)/group.shape[0]
-        number_of_predictions = box_results[box_results.predicted_label==name].shape[0]
-        if number_of_predictions == 0:
-            class_precision_dict[name] = 0
-        else:
-            class_precision_dict[name] = sum(group.true_label == group.predicted_label)/number_of_predictions
-        class_size[name] = group.shape[0]
-    
-    class_recall = pd.DataFrame({"label":class_recall_dict.keys(),"recall":pd.Series(class_recall_dict), "precision":pd.Series(class_precision_dict), "size":pd.Series(class_size)}).reset_index(drop=True)
-        
     return {"results": results, "box_precision": box_precision, "box_recall": box_recall, "class_recall":class_recall}
