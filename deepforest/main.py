@@ -383,7 +383,8 @@ class deepforest(pl.LightningModule):
             return None
 
         self.model.train()
-        loss_dict = self.model.forward(images, targets)
+        with torch.no_grad():
+            loss_dict = self.model.forward(images, targets)
 
         # sum of regression and classification loss
         losses = sum([loss for loss in loss_dict.values()])
