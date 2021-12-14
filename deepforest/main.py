@@ -362,6 +362,9 @@ class deepforest(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         """Train on a loaded dataset
         """
+        #Confirm model is in train mode
+        self.model.train()
+        
         #allow for empty data if data augmentation is generated
         path, images, targets = batch
 

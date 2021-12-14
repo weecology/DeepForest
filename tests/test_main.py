@@ -32,6 +32,7 @@ def two_class_m():
         
     m.config["validation"]["csv_file"] = get_data("testfile_multi.csv") 
     m.config["validation"]["root_dir"] = os.path.dirname(get_data("testfile_multi.csv"))
+    m.config["validation"]["val_accuracy_interval"] = 1
 
     m.create_trainer()
     
@@ -49,6 +50,7 @@ def m(download_release):
     m.config["validation"]["root_dir"] = os.path.dirname(get_data("example.csv"))
     m.config["workers"] = 0 
     m.config["validation"]["val_accuracy_interval"] = 1
+    m.config["train"]["epochs"] = 2
     
     m.create_trainer()
     m.use_release(check_release=False)
