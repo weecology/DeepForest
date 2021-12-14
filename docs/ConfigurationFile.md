@@ -136,4 +136,5 @@ Directory to search for images in the csv_file image_path column
 
 ### val_accuracy_interval
 
-Compute and log the classification accuracy of the predicted results computed every X epochs. This incurs some reductions in speed of training and is most useful for multi-class models.
+Compute and log the classification accuracy of the predicted results computed every X epochs. 
+This incurs some reductions in speed of training and is most useful for multi-class models. To deactivate, set to an number larger than epochs.
