@@ -395,16 +395,17 @@ class deepforest(pl.LightningModule):
         return losses
     
     def on_epoch_end(self):
-        if (self.current_epoch + 1) % self.config["validation"]["val_accuracy_interval"] == 0 :
-            results = self.evaluate(csv_file=self.config["validation"]["csv_file"],root_dir=self.config["validation"]["root_dir"])
-            self.log("box_recall",results["box_recall"])
-            self.log("box_precision", results["box_precision"])
-            
-            if not type(results["class_recall"]) == type(None):
-                for index, row in results["class_recall"].iterrows():
-                    self.log("{}_Recall".format(self.numeric_to_label_dict[row["label"]]),row["recall"])
-                    self.log("{}_Precision".format(self.numeric_to_label_dict[row["label"]]),row["precision"])
-            
+        if not self.config["validation"]["csv_file"] == None:
+            if (self.current_epoch + 1) % self.config["validation"]["val_accuracy_interval"] == 0 :
+                results = self.evaluate(csv_file=self.config["validation"]["csv_file"],root_dir=self.config["validation"]["root_dir"])
+                self.log("box_recall",results["box_recall"])
+                self.log("box_precision", results["box_precision"])
+                
+                if not type(results["class_recall"]) == type(None):
+                    for index, row in results["class_recall"].iterrows():
+                        self.log("{}_Recall".format(self.numeric_to_label_dict[row["label"]]),row["recall"])
+                        self.log("{}_Precision".format(self.numeric_to_label_dict[row["label"]]),row["precision"])
+                
     def configure_optimizers(self):
         optimizer = optim.SGD(self.model.parameters(),
                                    lr=self.config["train"]["lr"],
