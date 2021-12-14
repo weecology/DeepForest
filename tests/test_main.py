@@ -8,6 +8,7 @@ import cv2
 import shutil
 import torch
 import tempfile
+import copy
 
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
@@ -88,6 +89,13 @@ def test_train_empty(m, tmpdir):
     m.config["train"]["csv_file"] = "{}/empty.csv".format(tmpdir)
     m.config["batch_size"] = 2
     m.trainer.fit(m)
+
+def test_validation_step(m):
+    before = copy.deepcopy(m)
+    m.trainer.validate(m)
+    #assert no weights have changed
+    for p1, p2 in zip(before.named_parameters(), m.named_parameters()):     
+        assert p1[1].ne(p2[1]).sum() == 0
 
 def test_train_single(m):
     m.trainer.fit(m)
