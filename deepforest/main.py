@@ -20,10 +20,11 @@ class deepforest(pl.LightningModule):
     """Class for training and predicting tree crowns in RGB images
     """
 
-    def __init__(self, num_classes=1, label_dict = {"Tree":0}, transforms=None):
+    def __init__(self, num_classes=1, label_dict = {"Tree":0}, transforms=None, config_file='deepforest_config.yml'):
         """
         Args:
             num_classes (int): number of classes in the model
+            config_file (str): path to deepforest config file
         Returns:
             self: a deepforest pytorch lightning module
         """
@@ -35,16 +36,16 @@ class deepforest(pl.LightningModule):
         else:
             self.current_device = torch.device("cpu")
             
-        # Read config file - if a config file exists in local dir use it,
-        # if not use installed.
-        if os.path.exists("deepforest_config.yml"):
-            config_path = "deepforest_config.yml"
+        # Read config file. Defaults to deepforest_config.yml in working directory.
+        # Falls back to default installed version
+        if os.path.exists(config_file):
+            config_path = config_file
         else:
             try:
                 config_path = get_data("deepforest_config.yml")
             except Exception as e:
                 raise ValueError(
-                    "No deepforest_config.yml found either in local "
+                    "No config file provided and deepforest_config.yml not found either in local "
                     "directory or in installed package location. {}".format(e))
 
         print("Reading config file: {}".format(config_path))
