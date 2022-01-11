@@ -267,7 +267,14 @@ def test_train_callbacks(m):
     
     trainer = Trainer(fast_dev_run=True)
     trainer.fit(m, train_ds)
-    
+
+def test_custom_config_file_path(tmpdir):
+    print(os.getcwd())
+    m = main.deepforest(config_file='tests/deepforest_config_test.yml')
+    assert m.config["batch_size"] == 9999
+    assert m.config["nms_thresh"] == 0.9
+    assert m.config["score_thresh"] == 0.9
+
 def test_save_and_reload_checkpoint(m, tmpdir):
     img_path = get_data(path="2019_YELL_2_528000_4978000_image_crop2.png")    
     m.config["train"]["fast_dev_run"] = True
