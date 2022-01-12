@@ -296,6 +296,7 @@ class deepforest(pl.LightningModule):
                      patch_overlap=0.05,
                      iou_threshold=0.15,
                      return_plot=False,
+                     mosaic=True,
                      use_soft_nms=False,
                      sigma=0.5,
                      thresh=0.001,
@@ -315,6 +316,7 @@ class deepforest(pl.LightningModule):
                 windows to be suppressed. Defaults to 0.5.
                 Lower values suppress more boxes at edges.
             return_plot: Should the image be returned with the predictions drawn?
+            mosaic: Return a single prediction dataframe (True) or a tuple of image crops and predictions (False)
             use_soft_nms: whether to perform Gaussian Soft NMS or not, if false, default perform NMS.
             sigma: variance of Gaussian function used in Gaussian Soft NMS
             thresh: the score thresh used to filter bboxes after soft-nms performed
@@ -341,6 +343,7 @@ class deepforest(pl.LightningModule):
                                       patch_overlap=patch_overlap,
                                       iou_threshold=iou_threshold,
                                       return_plot=return_plot,
+                                      mosaic=mosaic,
                                       use_soft_nms=use_soft_nms,
                                       sigma=sigma,
                                       thresh=thresh,
@@ -355,8 +358,12 @@ class deepforest(pl.LightningModule):
         
         #Set labels to character from numeric if returning boxes df
         if not return_plot:
-            result["label"] = result.label.apply(lambda x: self.numeric_to_label_dict[x])
-            
+            if mosaic:
+                result["label"] = result.label.apply(lambda x: self.numeric_to_label_dict[x])
+            else:
+                for df,image in result:
+                    df["label"] = df.label.apply(lambda x: self.numeric_to_label_dict[x])
+                    
         return result
 
     def training_step(self, batch, batch_idx):

@@ -133,6 +133,7 @@ def predict_tile(model,
                  patch_overlap=0.05,
                  iou_threshold=0.15,
                  return_plot=False,
+                 mosaic=True,
                  use_soft_nms=False,
                  sigma=0.5,
                  thresh=0.001,
@@ -155,12 +156,14 @@ def predict_tile(model,
             windows to be suppressed. Defaults to 0.14.
             Lower values suppress more boxes at edges.
         return_plot: Should the image be returned with the predictions drawn?
+        mosaic: If true, return a single annotations dataframe. If false, return a list of windows and predictions
         use_soft_nms: whether to perform Gaussian Soft NMS or not, if false, default perform NMS.
         sigma: variance of Gaussian function used in Gaussian Soft NMS
         thresh: the score thresh used to filter bboxes after soft-nms performed
 
     Returns:
         boxes (array): if return_plot, an image.
+        windows (list): if mosaic = False, a two item tuple for each window of patch_size with predictions
         Otherwise a numpy array of predicted bounding boxes, scores and labels
     """
 
@@ -196,57 +199,67 @@ def predict_tile(model,
     if len(predicted_boxes) == 0:
         print("No predictions made, returning None")
         return None
-
-    predicted_boxes = pd.concat(predicted_boxes)
-    # Non-max supression for overlapping boxes among window
-    if patch_overlap == 0:
-        mosaic_df = predicted_boxes
-    else:
-        print(
-            f"{predicted_boxes.shape[0]} predictions in overlapping windows, applying non-max supression"
-        )
-        # move prediciton to tensor
-        boxes = torch.tensor(predicted_boxes[["xmin", "ymin", "xmax", "ymax"]].values,
-                             dtype=torch.float32)
-        scores = torch.tensor(predicted_boxes.score.values, dtype=torch.float32)
-        labels = predicted_boxes.label.values
-
-        if not use_soft_nms:
-            # Performs non-maximum suppression (NMS) on the boxes according to
-            # their intersection-over-union (IoU).
-            bbox_left_idx = nms(boxes=boxes, scores=scores, iou_threshold=iou_threshold)
+    if mosaic:
+        predicted_boxes = pd.concat(predicted_boxes)
+        # Non-max supression for overlapping boxes among window
+        if patch_overlap == 0:
+            mosaic_df = predicted_boxes
         else:
-            # Performs soft non-maximum suppression (soft-NMS) on the boxes.
-            bbox_left_idx = soft_nms(boxes=boxes,
-                                     scores=scores,
-                                     sigma=sigma,
-                                     thresh=thresh)
-
-        bbox_left_idx = bbox_left_idx.numpy()
-        new_boxes, new_labels, new_scores = boxes[bbox_left_idx].type(
-            torch.int), labels[bbox_left_idx], scores[bbox_left_idx]
-
-        # Recreate box dataframe
-        image_detections = np.concatenate([
-            new_boxes,
-            np.expand_dims(new_labels, axis=1),
-            np.expand_dims(new_scores, axis=1)
-        ],
-                                          axis=1)
-
-        mosaic_df = pd.DataFrame(
-            image_detections, columns=["xmin", "ymin", "xmax", "ymax", "label", "score"])
-
-        print(f"{mosaic_df.shape[0]} predictions kept after non-max suppression")
-        
-    if return_plot:
-        # Draw predictions on BGR 
-        image = image[:,:,::-1]
-        image = visualize.plot_predictions(image, mosaic_df, color=color, thickness=thickness)
-        # Mantain consistancy with predict_image
-        return image
+            print(
+                f"{predicted_boxes.shape[0]} predictions in overlapping windows, applying non-max supression"
+            )
+            # move prediciton to tensor
+            boxes = torch.tensor(predicted_boxes[["xmin", "ymin", "xmax", "ymax"]].values,
+                                 dtype=torch.float32)
+            scores = torch.tensor(predicted_boxes.score.values, dtype=torch.float32)
+            labels = predicted_boxes.label.values
+    
+            if not use_soft_nms:
+                # Performs non-maximum suppression (NMS) on the boxes according to
+                # their intersection-over-union (IoU).
+                bbox_left_idx = nms(boxes=boxes, scores=scores, iou_threshold=iou_threshold)
+            else:
+                # Performs soft non-maximum suppression (soft-NMS) on the boxes.
+                bbox_left_idx = soft_nms(boxes=boxes,
+                                         scores=scores,
+                                         sigma=sigma,
+                                         thresh=thresh)
+    
+            bbox_left_idx = bbox_left_idx.numpy()
+            new_boxes, new_labels, new_scores = boxes[bbox_left_idx].type(
+                torch.int), labels[bbox_left_idx], scores[bbox_left_idx]
+    
+            # Recreate box dataframe
+            image_detections = np.concatenate([
+                new_boxes,
+                np.expand_dims(new_labels, axis=1),
+                np.expand_dims(new_scores, axis=1)
+            ],
+                                              axis=1)
+    
+            mosaic_df = pd.DataFrame(
+                image_detections, columns=["xmin", "ymin", "xmax", "ymax", "label", "score"])
+    
+            print(f"{mosaic_df.shape[0]} predictions kept after non-max suppression")
+            
+        if return_plot:
+            # Draw predictions on BGR 
+            image = image[:,:,::-1]
+            image = visualize.plot_predictions(image, mosaic_df, color=color, thickness=thickness)
+            # Mantain consistancy with predict_image
+            return image
+        else:
+            return mosaic_df
     else:
-        return mosaic_df
+        #Return windows of crops and corresponding predictions
+        crops = []
+        for index, window in enumerate(windows):
+            # crop window and predict
+            crop = image[windows[index].indices()]
+            crop = crop.astype('float32')
+            crops.append(crop)
+            
+        return list(zip(predicted_boxes, crops))
 
 
 def soft_nms(boxes, scores, sigma=0.5, thresh=0.001):
