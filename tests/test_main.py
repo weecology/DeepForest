@@ -202,6 +202,16 @@ def test_predict_tile(m):
                                        return_plot=False)
     assert not prediction.empty
     
+    #test no mosaic, return a tuple of crop and prediction
+    prediction = m.predict_tile(raster_path = raster_path,
+                                       patch_size=300,
+                                       patch_overlap=0,
+                                       return_plot=False,
+                                       mosaic=False) 
+    assert len(prediction) == 4
+    assert len(prediction[0]) == 2
+    assert prediction[0][1].shape == (300,300, 3)
+    
 def test_evaluate(m, tmpdir):
     csv_file = get_data("OSBS_029.csv")
     root_dir = os.path.dirname(csv_file)
