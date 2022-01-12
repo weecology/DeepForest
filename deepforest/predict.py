@@ -187,12 +187,13 @@ def predict_tile(model,
         # crop is RGB channel order, change to BGR?
         boxes = predict_image(model=model, image=crop, return_plot=False, device=device)
         if boxes is not None:
-            # transform the coordinates to original system
-            xmin, ymin, xmax, ymax = windows[index].getRect()
-            boxes.xmin = boxes.xmin + xmin
-            boxes.xmax = boxes.xmax + xmin
-            boxes.ymin = boxes.ymin + ymin
-            boxes.ymax = boxes.ymax + ymin
+            if mosaic:
+                # transform the coordinates to original system
+                xmin, ymin, xmax, ymax = windows[index].getRect()
+                boxes.xmin = boxes.xmin + xmin
+                boxes.xmax = boxes.xmax + xmin
+                boxes.ymin = boxes.ymin + ymin
+                boxes.ymax = boxes.ymax + ymin
 
             predicted_boxes.append(boxes)
 
