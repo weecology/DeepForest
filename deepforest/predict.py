@@ -176,8 +176,8 @@ def predict_tile(model,
 
     # Compute sliding window index
     windows = preprocess.compute_windows(image, patch_size, patch_overlap)
-    # Save images to tempdir
     predicted_boxes = []
+    crops = []
 
     for index, window in enumerate(tqdm(windows)):
         # crop window and predict
@@ -194,7 +194,8 @@ def predict_tile(model,
                 boxes.xmax = boxes.xmax + xmin
                 boxes.ymin = boxes.ymin + ymin
                 boxes.ymax = boxes.ymax + ymin
-
+            else:
+                crops.append(crop)
             predicted_boxes.append(boxes)
 
     if len(predicted_boxes) == 0:
@@ -252,14 +253,6 @@ def predict_tile(model,
         else:
             return mosaic_df
     else:
-        #Return windows of crops and corresponding predictions
-        crops = []
-        for index, window in enumerate(windows):
-            # crop window and predict
-            crop = image[windows[index].indices()]
-            crop = crop.astype('float32')
-            crops.append(crop)
-            
         return list(zip(predicted_boxes, crops))
 
 
