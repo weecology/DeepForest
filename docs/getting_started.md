@@ -248,19 +248,19 @@ annotations.shape
 
 ```
 #Write csv to file and crop
-tmpdir = tempfile.TemporaryDirectory()
+tmpdir = tempfile.gettempdir()
+annotations.to_csv("{}/example.csv".format(tmpdir), index=False)
 annotations_file = preprocess.split_raster(path_to_raster=raster,
                                            annotations_file="{}/example.csv".format(tmpdir),
-                                           base_dir=tmpdir.name,
+                                           base_dir=tmpdir,
                                            patch_size=500,
-                                           patch_overlap=0)
+                                           patch_overlap=0.25)
 
 # Returns a 6 column pandas array
 assert annotations_file.shape[1] == 6
 ```
 
-tempfile.Tem
-
+Now we have crops and annotations in 500 px patches for training.
 
 ### Negative samples
 
