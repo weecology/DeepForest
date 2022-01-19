@@ -120,7 +120,7 @@ class deepforest(pl.LightningModule):
         if not self.config["validation"]["csv_file"] is None:
             if logger is not None:
                 lr_monitor = LearningRateMonitor(logging_interval='epoch')
-                callbacks=callbacks.append(lr_monitor)
+                callbacks.append(lr_monitor)
         
         self.trainer = pl.Trainer(logger=logger,
                                   max_epochs=self.config["train"]["epochs"],
