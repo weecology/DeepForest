@@ -222,6 +222,46 @@ model.trainer.fit(model)
 
 <div style="position: relative; padding-bottom: 56.25%; height: 0;"><iframe src="https://www.loom.com/embed/99c55129d5a34f3dbf7053dde9c7d97e" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe></div>
 
+## Reducing tile size
+
+High resolution tiles may exceed GPU or CPU memory during training, especially in dense forests. To reduce the size of each tile, use preprocess.split_raster to divide the original tile into smaller pieces and create a corresponing annotations file.
+
+For example, this sample data raster has size 2472, 2299 pixels. 
+```
+"""Split raster into crops with overlaps to maintain all annotations"""
+raster = get_data("2019_YELL_2_528000_4978000_image_crop2.png")
+import rasterio
+src = rasterio.open(raster)
+/Users/benweinstein/.conda/envs/DeepForest/lib/python3.9/site-packages/rasterio/__init__.py:220: NotGeoreferencedWarning: Dataset has no geotransform, gcps, or rpcs. The identity matrix be returned.
+  s = DatasetReader(path, driver=driver, sharing=sharing, **kwargs)
+src.read().shape
+(3, 2472, 2299)
+```
+
+With 574 trees annotations
+
+```
+annotations = utilities.xml_to_annotations(get_data("2019_YELL_2_528000_4978000_image_crop2.xml"))
+annotations.shape
+(574, 6)
+```
+
+```
+#Write csv to file and crop
+tmpdir = tempfile.TemporaryDirectory()
+annotations_file = preprocess.split_raster(path_to_raster=raster,
+                                           annotations_file="{}/example.csv".format(tmpdir),
+                                           base_dir=tmpdir.name,
+                                           patch_size=500,
+                                           patch_overlap=0)
+
+# Returns a 6 column pandas array
+assert annotations_file.shape[1] == 6
+```
+
+tempfile.Tem
+
+
 ### Negative samples
 
 To include images with no annotations from the target classes create a dummy row specifying the image_path, but set all bounding boxes to 0
