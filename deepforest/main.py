@@ -72,6 +72,8 @@ class deepforest(pl.LightningModule):
         else:
             self.transforms = transforms
         
+        self.save_hyperparameters()
+        
     def use_release(self, check_release=True):
         """Use the latest DeepForest model release from github and load model.
         Optionally download if release doesn't exist.

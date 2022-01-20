@@ -325,9 +325,16 @@ def test_reload_multi_class(two_class_m, tmpdir):
     two_class_m.create_trainer()
     two_class_m.trainer.fit(two_class_m)
     two_class_m.save_model("{}/checkpoint.pl".format(tmpdir))
-    loaded = main.deepforest(num_classes=2, label_dict={"Alive":0,"Dead":0})
-    old_model = torch.load("{}/checkpoint.pl".format(tmpdir))
-    loaded.load_state_dict(old_model["state_dict"])
+    before = two_class_m.trainer.validate(two_class_m)
+    
+    #reload
+    old_model = main.deepforest.load_from_checkpoint("{}/checkpoint.pl".format(tmpdir))
+    old_model.config = two_class_m.config
+    assert old_model.num_classes == 2
+    old_model.create_trainer()    
+    after = old_model.trainer.validate(old_model)
+    
+    assert after[0]["val_classification"] == before[0]["val_classification"]
     
 def test_override_transforms():
     def get_transform(augment):
