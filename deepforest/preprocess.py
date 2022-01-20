@@ -88,8 +88,7 @@ def select_annotations(annotations, windows, index, allow_empty=False):
                                                           (window_ymax + offset))]
 
     # change the image name
-    image_name = os.path.splitext("{}".format(annotations.image_path.unique()[0]))[0]
-    image_basename = os.path.splitext(image_name)[0]
+    image_basename = os.path.splitext("{}".format(annotations.image_path.unique()[0]))[0]
     selected_annotations.image_path = "{}_{}.png".format(image_basename, index)
 
     # If no matching annotations, return a line with the image name, but no
@@ -168,12 +167,12 @@ def split_raster(annotations_file,
     Returns:
         A pandas dataframe with annotations file for training.
     """
-    
+
     # Load raster as image
     # Load raster as image
     if (numpy_image is None) & (path_to_raster is None):
         raise IOError("supply a raster either as a path_to_raster or if ready from existing in memory numpy object, as numpy_image=")
-    
+
     if path_to_raster:
         numpy_image = rasterio.open(path_to_raster).read()
         numpy_image = np.moveaxis(numpy_image,0,2)
@@ -186,7 +185,7 @@ def split_raster(annotations_file,
     if not bands == 3:
         warnings.warn("Input rasterio had non-3 band shape of {}, ignoring alpha channel".format(numpy_image.shape))
         try:
-            numpy_image = numpy_image[:,:,:3].astype("uint8") 
+            numpy_image = numpy_image[:,:,:3].astype("uint8")
         except:
             raise IOError("Input file {} has {} bands. DeepForest only accepts 3 band RGB "
                           "rasters in the order (height, width, channels). Selecting the first three bands failed, please reshape manually."
@@ -206,7 +205,7 @@ def split_raster(annotations_file,
 
     # Get image name for indexing
     if image_name is None:
-        image_name = os.path.basename(path_to_raster)    
+        image_name = os.path.basename(path_to_raster)
 
     # Load annotations file and coerce dtype
     annotations = pd.read_csv(annotations_file)
@@ -235,7 +234,7 @@ def split_raster(annotations_file,
 
         # Crop image
         crop = numpy_image[windows[index].indices()]
-        
+
         #skip if empty crop
         if crop.size == 0:
             continue
