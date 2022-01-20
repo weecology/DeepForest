@@ -380,19 +380,6 @@ When creating a deepforest model object, pass the designed number of classes and
 m = main.deepforest(num_classes=2,label_dict={"Alive":0,"Dead":1})
 ```
 
-Loading a multi_class model which was saved using main.save_model is currently somewhat cumbersome (see https://github.com/weecology/DeepForest/issues/287). 
-The easiest way is to create a new deepforest object and preset the number of classes and label dict, just as you did during training.
-
-```
-import pandas as pd
-
-TRAINED_MODEL = "/blue/ewhite/everglades/Zooniverse/20211215_112228/species_model.pl"
-train = pd.read_csv("/blue/ewhite/everglades/Zooniverse/parsed_images/species_train.csv")
-label_dict = {key:value for value, key in enumerate(train.label.unique())}
-m = main.deepforest(num_classes=len(label_dict), label_dict=label_dict)
-m.load_state_dict(torch.load(TRAINED_MODEL, map_location="cpu")["state_dict"])
-```
-
 ## Issues
 
 We welcome feedback on both the python package as well as the algorithm performance. Please submit detailed issues to the github repo.
