@@ -88,8 +88,7 @@ def select_annotations(annotations, windows, index, allow_empty=False):
                                                           (window_ymax + offset))]
 
     # change the image name
-    image_name = os.path.splitext("{}".format(annotations.image_path.unique()[0]))[0]
-    image_basename = os.path.splitext(image_name)[0]
+    image_basename = os.path.splitext("{}".format(annotations.image_path.unique()[0]))[0]
     selected_annotations.image_path = "{}_{}.png".format(image_basename, index)
 
     # If no matching annotations, return a line with the image name, but no
