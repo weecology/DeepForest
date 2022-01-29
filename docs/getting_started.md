@@ -380,6 +380,30 @@ When creating a deepforest model object, pass the designed number of classes and
 m = main.deepforest(num_classes=2,label_dict={"Alive":0,"Dead":1})
 ```
 
+It is often, but not always, useful to start from the general tree detector when trying to identify multiple species. This helps the model focus on learning the multiple classes and not wasting data and time re-learning tree bounding boxes.
+To load the backboard and box prediction portions of the release model, but create a classification model for more than one species.
+
+```
+m = main.deepforest(num_classes=2, label_dict={"Alive":0,"Dead":0})
+deepforest_release_model = main.deepforest()
+deepforest_release_model.use_release()
+m.model.backbone.load_state_dict(deepforest_release_model.model.backbone.state_dict())
+m.model.head.regression_head.load_state_dict(deepforest_release_model.model.head.regression_head.state_dict())
+
+m.config["train"]["csv_file"] = get_data("testfile_multi.csv") 
+m.config["train"]["root_dir"] = os.path.dirname(get_data("testfile_multi.csv"))
+m.config["train"]["fast_dev_run"] = True
+m.config["batch_size"] = 2
+    
+m.config["validation"]["csv_file"] = get_data("testfile_multi.csv") 
+m.config["validation"]["root_dir"] = os.path.dirname(get_data("testfile_multi.csv"))
+m.config["validation"]["val_accuracy_interval"] = 1
+
+m.create_trainer()
+m.trainer.fit(m)
+assert m.num_classes == 2
+```
+
 ## Issues
 
 We welcome feedback on both the python package as well as the algorithm performance. Please submit detailed issues to the github repo.
