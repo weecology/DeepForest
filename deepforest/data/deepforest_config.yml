@@ -24,9 +24,13 @@ train:
     #Useful debugging flag in pytorch lightning, set to True to get a single batch of training to test settings.
     fast_dev_run: False
     
+    preload_images: False
+
 validation:
     #callback args
     csv_file: 
     root_dir:
     #Intersection over union evaluation
     iou_threshold: 0.4
+    
+    val_accuracy_interval: 1
