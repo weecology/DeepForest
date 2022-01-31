@@ -107,10 +107,9 @@ def test_predict_return_plot(m):
     plot = m.predict_image(image = image, return_plot=True)
     assert isinstance(plot, np.ndarray)
 
-def test_predict_big_file(m, tmpdir):
-    csv_file = big_file()
-    original_file = pd.read_csv(csv_file)
-    df = m.predict_file(csv_file=csv_file, root_dir = os.path.dirname(csv_file), savedir=tmpdir)
+def test_predict_big_file(m, tmpdir, big_file):
+    original_file = pd.read_csv(big_file)
+    df = m.predict_file(csv_file=big_file, root_dir = os.path.dirname(big_file), savedir=tmpdir)
     assert set(df.columns) == {"xmin","ymin","xmax","ymax","label","score","image_path"}
     
     printed_plots = glob.glob("{}/*.png".format(tmpdir))
@@ -263,8 +262,6 @@ def test_save_and_reload_checkpoint(m, tmpdir):
 
 def test_save_and_reload_weights(m, tmpdir):
     img_path = get_data(path="2019_YELL_2_528000_4978000_image_crop2.png")    
-    m.config["train"]["fast_dev_run"] = True
-    m.create_trainer()
     #save the prediction dataframe after training and compare with prediction after reload checkpoint 
     m.trainer.fit(m)    
     pred_after_train = m.predict_image(path = img_path)
@@ -280,8 +277,6 @@ def test_save_and_reload_weights(m, tmpdir):
     pd.testing.assert_frame_equal(pred_after_train,pred_after_reload)
     
 def test_reload_multi_class(two_class_m, tmpdir):
-    two_class_m.config["train"]["fast_dev_run"] = True
-    two_class_m.create_trainer()
     two_class_m.trainer.fit(two_class_m)
     two_class_m.save_model("{}/checkpoint.pl".format(tmpdir))
     before = two_class_m.trainer.validate(two_class_m)
