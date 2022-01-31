@@ -16,7 +16,7 @@ dependencies:
   - numpy
   - pillow
   - pip
-  - pytorch-lightning
+  - pytorch-lightning>1.5.0
   - matplotlib
   - sphinx_rtd_theme
   - opencv
