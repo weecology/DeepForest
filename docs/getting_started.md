@@ -273,6 +273,21 @@ myimage.png, 0,0,0,0,"Tree"
 
 Excessive use of negative samples may have negative impact on model performance, but used sparingly it can increase precision. These samples are removed from evaluation and do not count in precision/recall. 
 
+### Model checkpoints
+
+Pytorch lightning allows you to [save a model](https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#checkpoint-callback) at the end of each epoch. By default this behevaior is turned off. To restore model checkpointing
+
+```
+callback = ModelCheckpoint(dirpath='temp/dir',
+                                 monitor='box_recall', 
+                                 mode="max",
+                                 save_top_k=3,
+                                 filename="box_recall-{epoch:02d}-{box_recall:.2f}")
+model.create_trainer(logger=TensorBoardLogger(save_dir='logdir/'), 
+                                  callbacks=[callback])
+model.trainer.fit(model)
+```
+
 ## Evaluation
 
 Independent analysis of whether a model can generalize from training data to new areas is critical for creating a robust workflow. 
@@ -370,6 +385,7 @@ model.model.load_state_dict(torch.load(model_path))
 ```
 
 Note that if you trained on GPU and restore on cpu, you will need the map_location argument in torch.load.
+
 
 ## Multi-class models
 
