@@ -1,20 +1,11 @@
 #Test evaluate
 #Test IoU
-from .conftest import download_release
 from deepforest import evaluate
 from deepforest import main
 from deepforest import get_data
 import os
-import pytest
 import pandas as pd
 import numpy as np
-
-@pytest.fixture()
-def m(download_release):
-    m = main.deepforest()
-    m.use_release(check_release=False)
-    
-    return m
 
 def test_evaluate_image(m):
     csv_file = get_data("OSBS_029.csv")

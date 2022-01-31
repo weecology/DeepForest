@@ -9,14 +9,10 @@ from deepforest import get_data
 from deepforest import utilities
 from deepforest import main
 
-#import general model fixture
-from .conftest import download_release
-
 @pytest.fixture()
 def config():
     config = utilities.read_config("deepforest_config.yml")
     return config
-
 
 def test_xml_to_annotations():
     annotations = utilities.xml_to_annotations(
@@ -49,7 +45,6 @@ def test_project_boxes():
     
     assert df.shape[0] == gdf.shape[0]
     
-
 def test_annotations_to_shapefile(download_release):
     img = get_data("OSBS_029.tif")
     r = rio.open(img)

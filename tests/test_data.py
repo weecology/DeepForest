@@ -1,8 +1,6 @@
 # test data locations and existance
 import os
-
 import deepforest
-
 
 # Make sure package data is present
 def test_get_data():

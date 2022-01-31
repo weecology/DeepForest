@@ -1,12 +1,8 @@
 #test model
 from deepforest import model
 import pytest
-import numpy as np
 import torch
 import torchvision
-import os
-
-os.environ['KMP_DUPLICATE_LIB_OK']='True'
 
 #Empty tester from https://github.com/datumbox/vision/blob/06ebee1a9f10c76d8ac5768fd578362dd5ace6e9/test/test_models_detection_negative_samples.py#L14
 def _make_empty_sample():
