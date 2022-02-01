@@ -2,13 +2,17 @@
 from deepforest import IoU
 from deepforest import get_data
 from deepforest import visualize
+from deepforest import main
 
 import os
 import shapely
 import geopandas as gpd
 import pandas as pd
 
-def test_compute_IoU(m):
+def test_compute_IoU(config):
+    m = main.deepforest()
+    m.config = config
+    m.use_release(check_release=False)   
     csv_file = get_data("OSBS_029.csv")
     predictions = m.predict_file(csv_file=csv_file, root_dir=os.path.dirname(csv_file))
     ground_truth = pd.read_csv(csv_file)

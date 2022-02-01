@@ -2,43 +2,25 @@
 # download latest release
 import pytest
 from deepforest import get_data
-from deepforest import main
+from deepforest import utilities
 import os
 
 os.environ['KMP_DUPLICATE_LIB_OK']='True'
     
-@pytest.fixture(scope="session")
-def m():
-    print("Creating conftest deepforest object")
-    m = main.deepforest()
-    m.use_release()    
-    m.config["train"]["csv_file"] = get_data("example.csv") 
-    m.config["train"]["root_dir"] = os.path.dirname(get_data("example.csv"))
-    m.config["train"]["fast_dev_run"] = False
-    m.config["batch_size"] = 2
-    m.config["workers"] = 0
+def pytest_sessionstart(session):
+    release_tag, state_dict = utilities.use_bird_release()
+    release_tag, state_dict = utilities.use_release()
     
-    m.config["validation"]["csv_file"] = get_data("example.csv") 
-    m.config["validation"]["root_dir"] = os.path.dirname(get_data("example.csv"))
+@pytest.fixture(scope="session",autouse=True)
+def config():
+    config = utilities.read_config("deepforest_config.yml")
+    config["train"]["csv_file"] = get_data("example.csv") 
+    config["train"]["root_dir"] = os.path.dirname(get_data("example.csv"))
+    config["train"]["fast_dev_run"] = True
+    config["batch_size"] = 2
+    config["workers"] = 0
     
-    m.create_trainer()
-    #save the prediction dataframe after training and compare with prediction after reload checkpoint 
-    
-    return m
-
-@pytest.fixture(scope="session")
-def two_class_m():
-    m = main.deepforest(num_classes=2,label_dict={"Alive":0,"Dead":1})
-    m.config["train"]["csv_file"] = get_data("testfile_multi.csv") 
-    m.config["train"]["root_dir"] = os.path.dirname(get_data("testfile_multi.csv"))
-    m.config["train"]["fast_dev_run"] = True
-    m.config["batch_size"] = 2
-    m.config["workers"] = 0
+    config["validation"]["csv_file"] = get_data("example.csv") 
+    config["validation"]["root_dir"] = os.path.dirname(get_data("example.csv"))
         
-    m.config["validation"]["csv_file"] = get_data("testfile_multi.csv") 
-    m.config["validation"]["root_dir"] = os.path.dirname(get_data("testfile_multi.csv"))
-    m.config["validation"]["val_accuracy_interval"] = 1
-
-    m.create_trainer()
-    
-    return m
+    return config

@@ -10,11 +10,10 @@ from PIL import Image
 from deepforest import get_data
 from deepforest import preprocess
 from deepforest import utilities
-from deepforest import visualize
 
 import rasterio
 
-@pytest.fixture()
+@pytest.fixture(scope="module", autouse=True)
 def config():
     config = utilities.read_config("deepforest_config.yml")
     config["patch_size"] = 200
@@ -30,7 +29,6 @@ def config():
     annotations.to_csv("tests/data/OSBS_029.csv", index=False)
 
     return config
-
 
 @pytest.fixture()
 def image(config):

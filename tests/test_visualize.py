@@ -1,10 +1,14 @@
 #Test visualize
 from deepforest import visualize
+from deepforest import main
 import os
 import pytest
 import numpy as np
 
-def test_format_boxes(m):
+def test_format_boxes(config):
+    m = main.deepforest()
+    m.config = config
+    m.use_release(check_release=False) 
     ds = m.val_dataloader()
     batch = next(iter(ds))
     paths, images, targets = batch
@@ -15,7 +19,10 @@ def test_format_boxes(m):
         
 #Test different color labels
 @pytest.mark.parametrize("label",[0,1,20])
-def test_plot_predictions(m, tmpdir,label):
+def test_plot_predictions(tmpdir,label, config):
+    m = main.deepforest()
+    m.config = config
+    m.use_release(check_release=False) 
     ds = m.val_dataloader()
     batch = next(iter(ds))
     paths, images, targets = batch
@@ -29,7 +36,10 @@ def test_plot_predictions(m, tmpdir,label):
 
         assert image.dtype == "uint8"
         
-def test_plot_prediction_dataframe(m, tmpdir):
+def test_plot_prediction_dataframe(tmpdir, config):
+    m = main.deepforest()
+    m.config = config
+    m.use_release(check_release=False) 
     ds = m.val_dataloader()
     batch = next(iter(ds))
     paths, images, targets = batch
@@ -40,7 +50,10 @@ def test_plot_prediction_dataframe(m, tmpdir):
         
     assert all([os.path.exists(x) for x in filenames])
         
-def test_plot_predictions_and_targets(m, tmpdir):
+def test_plot_predictions_and_targets(tmpdir, config):
+    m = main.deepforest()
+    m.config = config
+    m.use_release(check_release=False)
     ds = m.val_dataloader()
     batch = next(iter(ds))
     paths, images, targets = batch

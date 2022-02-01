@@ -7,7 +7,10 @@ import os
 import pandas as pd
 import numpy as np
 
-def test_evaluate_image(m):
+def test_evaluate_image(config):
+    m = main.deepforest()
+    m.config = config
+    m.use_release(check_release=False)   
     csv_file = get_data("OSBS_029.csv")
     predictions = m.predict_file(csv_file=csv_file, root_dir=os.path.dirname(csv_file))
     ground_truth = pd.read_csv(csv_file)
@@ -17,7 +20,10 @@ def test_evaluate_image(m):
     assert result.shape[0] == ground_truth.shape[0]
     assert sum(result.IoU) > 10 
 
-def test_evaluate(m):
+def test_evaluate(config):
+    m = main.deepforest()
+    m.config = config
+    m.use_release(check_release=False)  
     csv_file = get_data("OSBS_029.csv")
     predictions = m.predict_file(csv_file=csv_file, root_dir=os.path.dirname(csv_file))
     predictions.label = "Tree"
@@ -33,7 +39,7 @@ def test_evaluate(m):
     assert "score" in results["results"].columns
     assert results["results"].true_label.unique() == "Tree"
 
-def test_evaluate_multi(m):
+def test_evaluate_multi():
     csv_file = get_data("testfile_multi.csv")
     m = main.deepforest(num_classes=2,label_dict={"Alive":0,"Dead":1})
     ground_truth = pd.read_csv(csv_file)
@@ -48,7 +54,7 @@ def test_evaluate_multi(m):
     assert results["results"].shape[0] == ground_truth.shape[0]
     assert results["class_recall"].shape == (2,4)
     
-def test_evaluate_save_images(m, tmpdir):
+def test_evaluate_save_images(tmpdir):
     csv_file = get_data("testfile_multi.csv")
     m = main.deepforest(num_classes=2,label_dict={"Alive":0,"Dead":1})
     ground_truth = pd.read_csv(csv_file)

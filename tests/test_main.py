@@ -5,10 +5,10 @@ import pytest
 import pandas as pd
 import numpy as np
 import cv2
+import copy
 import shutil
 import torch
 import tempfile
-import copy
 
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
@@ -26,7 +26,7 @@ def big_file():
     df = pd.read_csv(csv_file)    
     
     big_frame = []
-    for x in range(3):
+    for x in range(2):
         img = Image.open("{}/{}".format(os.path.dirname(csv_file), df.image_path.unique()[0]))
         cv2.imwrite("{}/{}.png".format(tmpdir, x), np.array(img))
         new_df = df.copy()
@@ -38,55 +38,76 @@ def big_file():
     
     return "{}/annotations.csv".format(tmpdir)
 
-def test_use_bird_release(m):
-    m = copy.deepcopy(m)
-    imgpath = get_data("AWPE Pigeon Lake 2020 DJI_0005.JPG")    
-    m.use_bird_release()
+def test_use_bird_release():
+    m = main.deepforest()
+    m.use_bird_release(check_release=False)
+    imgpath = get_data("AWPE Pigeon Lake 2020 DJI_0005.JPG")        
     boxes = m.predict_image(path=imgpath)
     assert not boxes.empty
     
-def test_train_empty(m):
-    m = copy.deepcopy(m)        
+def test_train_empty(config):
+    m = main.deepforest()
+    m.config = config
+    m.use_release(check_release=False)
     tmpdir = tempfile.gettempdir()
     empty_csv = pd.DataFrame({"image_path":["OSBS_029.png","OSBS_029.tif"],"xmin":[0,10],"xmax":[0,20],"ymin":[0,20],"ymax":[0,30],"label":["Tree","Tree"]})
     empty_csv.to_csv("{}/empty.csv".format(tmpdir))
     m.config["train"]["csv_file"] = "{}/empty.csv".format(tmpdir)
     m.config["batch_size"] = 2
+    m.create_trainer()
     m.trainer.fit(m)
 
-def test_validation_step(m):
+def test_validation_step(config):
+    m = main.deepforest()
+    m.config = config    
+    m.use_release(check_release=False)
     before = copy.deepcopy(m)
+    m.create_trainer()
     m.trainer.validate(m)
     #assert no weights have changed
     for p1, p2 in zip(before.named_parameters(), m.named_parameters()):     
         assert p1[1].ne(p2[1]).sum() == 0
 
-def test_train_preload_images(m):
-    m = copy.deepcopy(m)        
+def test_train_preload_images(config):
+    m = main.deepforest()
+    m.config = config
+    m.use_release(check_release=False)
     m.config["train"]["preload_images"] = True
+    m.create_trainer()
     m.trainer.fit(m)
     
-def test_train_no_validation(m):
-    m = copy.deepcopy(m)        
+def test_train_no_validation(config):
+    m = main.deepforest()
+    m.config = config
+    m.use_release(check_release=False)
     m.config["validation"]["csv_file"] = None
     m.config["validation"]["root_dir"] = None  
     m.create_trainer()
     m.trainer.fit(m)
     
-def test_predict_image_empty(m):
+def test_predict_image_empty(config):
+    m = main.deepforest()
+    m.config = config
+    m.use_release(check_release=False)    
     image = np.random.random((400,400,3)).astype("float32")
     prediction = m.predict_image(image = image)
     
     assert prediction is None
     
-def test_predict_image_fromfile(m):
+def test_predict_image_fromfile(config):
+    m = main.deepforest()
+    m.config = config
+    m.use_release(check_release=False)      
     path = get_data(path="2019_YELL_2_528000_4978000_image_crop2.png")
     prediction = m.predict_image(path = path)
     
     assert isinstance(prediction, pd.DataFrame)
     assert set(prediction.columns) == {"xmin","ymin","xmax","ymax","label","score"}
 
-def test_predict_image_fromarray(m):
+def test_predict_image_fromarray(config):
+    m = main.deepforest()
+    m.config = config
+    m.use_release(check_release=False)       
     image_path = get_data(path="2019_YELL_2_528000_4978000_image_crop2.png")
     
     #assert error of dtype
@@ -99,15 +120,20 @@ def test_predict_image_fromarray(m):
     assert isinstance(prediction, pd.DataFrame)
     assert set(prediction.columns) == {"xmin","ymin","xmax","ymax","label","score"}
 
-def test_predict_return_plot(m):
+def test_predict_return_plot(config):
+    m = main.deepforest()
+    m.config = config
+    m.use_release(check_release=False)       
     image = get_data(path="2019_YELL_2_528000_4978000_image_crop2.png")
     image = np.array(Image.open(image))
     image = image.astype('float32')
     plot = m.predict_image(image = image, return_plot=True)
     assert isinstance(plot, np.ndarray)
 
-def test_predict_big_file(m, big_file):
-    tmpdir = tempfile.gettempdir()
+def test_predict_big_file(big_file, tmpdir, config):
+    m = main.deepforest()
+    m.config = config
+    m.use_release(check_release=False)       
     original_file = pd.read_csv(big_file)
     df = m.predict_file(csv_file=big_file, root_dir = os.path.dirname(big_file), savedir=tmpdir)
     assert set(df.columns) == {"xmin","ymin","xmax","ymax","label","score","image_path"}
@@ -115,8 +141,11 @@ def test_predict_big_file(m, big_file):
     printed_plots = glob.glob("{}/*.png".format(tmpdir))
     assert len(printed_plots) == len(original_file.image_path.unique())
     
-def test_predict_small_file(m):
-    tmpdir = tempfile.gettempdir()
+def test_predict_small_file(config):
+    m = main.deepforest()
+    m.config = config
+    m.use_release(check_release=False)      
+    tmpdir = tempfile.mkdtemp()
     csv_file = get_data("OSBS_029.csv")
     original_file = pd.read_csv(csv_file)
     df = m.predict_file(csv_file, root_dir = os.path.dirname(csv_file), savedir=tmpdir)
@@ -124,13 +153,17 @@ def test_predict_small_file(m):
     
     printed_plots = glob.glob("{}/*.png".format(tmpdir))
     assert len(printed_plots) == len(original_file.image_path.unique())
+    shutil.rmtree(tmpdir)
     
-def test_predict_tile(m):
-    #test raster prediction 
+def test_predict_tile(config):
+    m = main.deepforest()
+    m.config = config
+    m.use_release(check_release=False)   
+    #test raster prediction, intentionally large windows
     raster_path = get_data(path= 'OSBS_029.tif')
     prediction = m.predict_tile(raster_path = raster_path,
-                                            patch_size = 300,
-                                            patch_overlap = 0.5,
+                                            patch_size = 800,
+                                            patch_overlap = 0.1,
                                             return_plot = False)
     assert isinstance(prediction, pd.DataFrame)
     assert set(prediction.columns) == {"xmin","ymin","xmax","ymax","label","score"}
@@ -139,7 +172,7 @@ def test_predict_tile(m):
     #test soft-nms method
     soft_nms_pred = m.predict_tile(raster_path = raster_path,
                                             patch_size = 300,
-                                            patch_overlap = 0.5,
+                                            patch_overlap = 0.1,
                                             return_plot = False,
                                             use_soft_nms =True)
     assert isinstance(soft_nms_pred, pd.DataFrame)
@@ -150,7 +183,7 @@ def test_predict_tile(m):
     image = np.array(Image.open(raster_path))
     prediction = m.predict_tile(image = image,
                                 patch_size = 300,
-                                patch_overlap = 0.5,
+                                patch_overlap = 0.1,
                                 return_plot = False)
     assert not prediction.empty
 
@@ -171,7 +204,10 @@ def test_predict_tile(m):
     assert len(prediction[0]) == 2
     assert prediction[0][1].shape == (300,300, 3)
     
-def test_evaluate(m):
+def test_evaluate(config):
+    m = main.deepforest()
+    m.config = config
+    m.use_release(check_release=False)    
     csv_file = get_data("OSBS_029.csv")
     root_dir = os.path.dirname(csv_file)
     tmpdir = tempfile.gettempdir()
@@ -187,7 +223,10 @@ def test_evaluate(m):
     df = pd.read_csv(csv_file)
     assert results["results"].shape[0] == df.shape[0]
 
-def test_evaluate_multiple_images(m):
+def test_evaluate_multiple_images(config):
+    m = main.deepforest()
+    m.config = config
+    m.use_release(check_release=False)     
     tmpdir = tempfile.gettempdir()
     orignal_csv_file = get_data("OSBS_029.csv")
     original_root_dir = os.path.dirname(orignal_csv_file)
@@ -217,9 +256,10 @@ def test_evaluate_multiple_images(m):
 
     assert all([x in results["results"] for x in ["xmin","xmax","ymin","ymax"]])
     
-def test_train_callbacks(m):
-    m = copy.deepcopy(m)    
-    m.create_trainer()    
+def test_train_callbacks(config):
+    m = main.deepforest()
+    m.config = config
+    m.use_release(check_release=False)      
     csv_file = get_data("example.csv") 
     root_dir = os.path.dirname(csv_file)
     train_ds = m.load_dataset(csv_file, root_dir=root_dir)
@@ -239,15 +279,22 @@ def test_train_callbacks(m):
     trainer = Trainer(fast_dev_run=True)
     trainer.fit(m, train_ds)
 
-def test_custom_config_file_path(m):
+def test_custom_config_file_path():
     print(os.getcwd())
     m = main.deepforest(config_file='tests/deepforest_config_test.yml')
     assert m.config["batch_size"] == 9999
     assert m.config["nms_thresh"] == 0.9
     assert m.config["score_thresh"] == 0.9
 
-def test_save_and_reload_checkpoint(m):
-    m.trainer.fit(m)        
+def test_save_and_reload_checkpoint(config):
+    m = main.deepforest()
+    m.config = config
+    #No real learning to throw off the model predictions
+    m.config["train"]["fast_dev_run"] = False
+    m.config["train"]["lr"] = 0.000000000001
+    m.use_release(check_release=False)   
+    m.create_trainer() 
+    m.trainer.fit(m)
     #save the prediction dataframe after training and compare with prediction after reload checkpoint     
     tmpdir = tempfile.gettempdir()
     img_path = get_data(path="2019_YELL_2_528000_4978000_image_crop2.png")    
@@ -262,31 +309,29 @@ def test_save_and_reload_checkpoint(m):
     assert not pred_after_train.empty
     assert not pred_after_reload.empty
     pd.testing.assert_frame_equal(pred_after_train,pred_after_reload)
-
-def test_save_and_reload_weights(m):
-    m.trainer.fit(m)        
-    tmpdir = tempfile.gettempdir()
-    img_path = get_data(path="2019_YELL_2_528000_4978000_image_crop2.png")    
-    pred_after_train = m.predict_image(path = img_path)
-    torch.save(m.model.state_dict(),"{}/checkpoint.pt".format(tmpdir))
     
-    #reload the checkpoint to model object
-    after = main.deepforest()
-    after.model.load_state_dict(torch.load("{}/checkpoint.pt".format(tmpdir)))
-    pred_after_reload = after.predict_image(path = img_path)
+def test_reload_multi_class():
+    m = main.deepforest(num_classes=2,label_dict={"Alive":0,"Dead":1})
+    m.config["train"]["csv_file"] = get_data("testfile_multi.csv") 
+    m.config["train"]["root_dir"] = os.path.dirname(get_data("testfile_multi.csv"))
+    m.config["train"]["fast_dev_run"] = True
+    m.config["batch_size"] = 2
+    m.config["workers"] = 0
+        
+    m.config["validation"]["csv_file"] = get_data("testfile_multi.csv") 
+    m.config["validation"]["root_dir"] = os.path.dirname(get_data("testfile_multi.csv"))
+    m.config["validation"]["val_accuracy_interval"] = 1
 
-    assert not pred_after_train.empty
-    assert not pred_after_reload.empty
-    pd.testing.assert_frame_equal(pred_after_train,pred_after_reload)
+    m.create_trainer()
+    m.trainer.fit(m)
     
-def test_reload_multi_class(two_class_m):
     tmpdir = tempfile.gettempdir()
-    two_class_m.save_model("{}/checkpoint.pl".format(tmpdir))
-    before = two_class_m.trainer.validate(two_class_m)
+    m.save_model("{}/checkpoint.pl".format(tmpdir))
+    before = m.trainer.validate(m)
     
     #reload
     old_model = main.deepforest.load_from_checkpoint("{}/checkpoint.pl".format(tmpdir))
-    old_model.config = two_class_m.config
+    old_model.config = m.config
     assert old_model.num_classes == 2
     old_model.create_trainer()    
     after = old_model.trainer.validate(old_model)
@@ -316,9 +361,12 @@ def test_override_transforms():
     path, image, target = next(iter(train_ds))
     assert m.transforms.__doc__ == "This is the new transform"
 
-def test_over_score_thresh(m):
+def test_over_score_thresh(config):
     """A user might want to change the config after model training and update the score thresh"""
     img = get_data("OSBS_029.png")
+    m = main.deepforest()
+    m.config = config
+    m.use_release(check_release=False)       
     original_score_thresh = m.model.score_thresh
     m.config["score_thresh"] = 0.8
     
