@@ -1,23 +1,17 @@
 #Fixtures model to only download model once
 # download latest release
 import pytest
-from deepforest import utilities
 from deepforest import get_data
 from deepforest import main
 import os
 
 os.environ['KMP_DUPLICATE_LIB_OK']='True'
-
-@pytest.fixture(scope="session")
-def download_release():
-    print("Downloading release model once for fixtures")
-    utilities.use_release()
-    assert os.path.exists(get_data("NEON.pt"))
     
 @pytest.fixture(scope="session")
-def m(download_release):
+def m():
     print("Creating conftest deepforest object")
     m = main.deepforest()
+    m.use_release()    
     m.config["train"]["csv_file"] = get_data("example.csv") 
     m.config["train"]["root_dir"] = os.path.dirname(get_data("example.csv"))
     m.config["train"]["fast_dev_run"] = False
@@ -26,10 +20,9 @@ def m(download_release):
     
     m.config["validation"]["csv_file"] = get_data("example.csv") 
     m.config["validation"]["root_dir"] = os.path.dirname(get_data("example.csv"))
-        
-    m.use_release(check_release=False)
     
     m.create_trainer()
+    #save the prediction dataframe after training and compare with prediction after reload checkpoint 
     
     return m
 

@@ -39,12 +39,15 @@ def big_file():
     return "{}/annotations.csv".format(tmpdir)
 
 def test_use_bird_release(m):
+    m = copy.deepcopy(m)
     imgpath = get_data("AWPE Pigeon Lake 2020 DJI_0005.JPG")    
     m.use_bird_release()
     boxes = m.predict_image(path=imgpath)
     assert not boxes.empty
     
-def test_train_empty(m, tmpdir):
+def test_train_empty(m):
+    m = copy.deepcopy(m)        
+    tmpdir = tempfile.gettempdir()
     empty_csv = pd.DataFrame({"image_path":["OSBS_029.png","OSBS_029.tif"],"xmin":[0,10],"xmax":[0,20],"ymin":[0,20],"ymax":[0,30],"label":["Tree","Tree"]})
     empty_csv.to_csv("{}/empty.csv".format(tmpdir))
     m.config["train"]["csv_file"] = "{}/empty.csv".format(tmpdir)
@@ -58,17 +61,13 @@ def test_validation_step(m):
     for p1, p2 in zip(before.named_parameters(), m.named_parameters()):     
         assert p1[1].ne(p2[1]).sum() == 0
 
-def test_train_single(m):
-    m.trainer.fit(m)
-
 def test_train_preload_images(m):
+    m = copy.deepcopy(m)        
     m.config["train"]["preload_images"] = True
     m.trainer.fit(m)
     
-def test_train_multi(two_class_m):
-    two_class_m.trainer.fit(two_class_m)
-    
 def test_train_no_validation(m):
+    m = copy.deepcopy(m)        
     m.config["validation"]["csv_file"] = None
     m.config["validation"]["root_dir"] = None  
     m.create_trainer()
@@ -107,7 +106,8 @@ def test_predict_return_plot(m):
     plot = m.predict_image(image = image, return_plot=True)
     assert isinstance(plot, np.ndarray)
 
-def test_predict_big_file(m, tmpdir, big_file):
+def test_predict_big_file(m, big_file):
+    tmpdir = tempfile.gettempdir()
     original_file = pd.read_csv(big_file)
     df = m.predict_file(csv_file=big_file, root_dir = os.path.dirname(big_file), savedir=tmpdir)
     assert set(df.columns) == {"xmin","ymin","xmax","ymax","label","score","image_path"}
@@ -115,7 +115,8 @@ def test_predict_big_file(m, tmpdir, big_file):
     printed_plots = glob.glob("{}/*.png".format(tmpdir))
     assert len(printed_plots) == len(original_file.image_path.unique())
     
-def test_predict_small_file(m, tmpdir):
+def test_predict_small_file(m):
+    tmpdir = tempfile.gettempdir()
     csv_file = get_data("OSBS_029.csv")
     original_file = pd.read_csv(csv_file)
     df = m.predict_file(csv_file, root_dir = os.path.dirname(csv_file), savedir=tmpdir)
@@ -170,10 +171,10 @@ def test_predict_tile(m):
     assert len(prediction[0]) == 2
     assert prediction[0][1].shape == (300,300, 3)
     
-def test_evaluate(m, tmpdir):
+def test_evaluate(m):
     csv_file = get_data("OSBS_029.csv")
     root_dir = os.path.dirname(csv_file)
-    
+    tmpdir = tempfile.gettempdir()
     results = m.evaluate(csv_file, root_dir, iou_threshold = 0.4, savedir=tmpdir)
     
     #Does this make reasonable predictions, we know the model works.
@@ -186,7 +187,8 @@ def test_evaluate(m, tmpdir):
     df = pd.read_csv(csv_file)
     assert results["results"].shape[0] == df.shape[0]
 
-def test_evaluate_multiple_images(m, tmpdir):
+def test_evaluate_multiple_images(m):
+    tmpdir = tempfile.gettempdir()
     orignal_csv_file = get_data("OSBS_029.csv")
     original_root_dir = os.path.dirname(orignal_csv_file)
     
@@ -212,10 +214,12 @@ def test_evaluate_multiple_images(m, tmpdir):
     results = m.evaluate(csv_file, root_dir, iou_threshold = 0.4, savedir=tmpdir)
   
     assert results["results"].shape[0] == multiple_images.shape[0]
-    
+
     assert all([x in results["results"] for x in ["xmin","xmax","ymin","ymax"]])
     
 def test_train_callbacks(m):
+    m = copy.deepcopy(m)    
+    m.create_trainer()    
     csv_file = get_data("example.csv") 
     root_dir = os.path.dirname(csv_file)
     train_ds = m.load_dataset(csv_file, root_dir=root_dir)
@@ -232,24 +236,23 @@ def test_train_callbacks(m):
             print('do something when training ends')
     
     trainer = Trainer(callbacks=[MyPrintingCallback()])
-    
     trainer = Trainer(fast_dev_run=True)
     trainer.fit(m, train_ds)
 
-def test_custom_config_file_path(tmpdir):
+def test_custom_config_file_path(m):
     print(os.getcwd())
     m = main.deepforest(config_file='tests/deepforest_config_test.yml')
     assert m.config["batch_size"] == 9999
     assert m.config["nms_thresh"] == 0.9
     assert m.config["score_thresh"] == 0.9
 
-def test_save_and_reload_checkpoint(m, tmpdir):
+def test_save_and_reload_checkpoint(m):
+    m.trainer.fit(m)        
+    #save the prediction dataframe after training and compare with prediction after reload checkpoint     
+    tmpdir = tempfile.gettempdir()
     img_path = get_data(path="2019_YELL_2_528000_4978000_image_crop2.png")    
-    m.config["train"]["fast_dev_run"] = True
-    m.create_trainer()
-    #save the prediction dataframe after training and compare with prediction after reload checkpoint 
-    m.trainer.fit(m)    
     pred_after_train = m.predict_image(path = img_path)
+    
     m.save_model("{}/checkpoint.pl".format(tmpdir))
     
     #reload the checkpoint to model object
@@ -260,10 +263,10 @@ def test_save_and_reload_checkpoint(m, tmpdir):
     assert not pred_after_reload.empty
     pd.testing.assert_frame_equal(pred_after_train,pred_after_reload)
 
-def test_save_and_reload_weights(m, tmpdir):
+def test_save_and_reload_weights(m):
+    m.trainer.fit(m)        
+    tmpdir = tempfile.gettempdir()
     img_path = get_data(path="2019_YELL_2_528000_4978000_image_crop2.png")    
-    #save the prediction dataframe after training and compare with prediction after reload checkpoint 
-    m.trainer.fit(m)    
     pred_after_train = m.predict_image(path = img_path)
     torch.save(m.model.state_dict(),"{}/checkpoint.pt".format(tmpdir))
     
@@ -276,8 +279,8 @@ def test_save_and_reload_weights(m, tmpdir):
     assert not pred_after_reload.empty
     pd.testing.assert_frame_equal(pred_after_train,pred_after_reload)
     
-def test_reload_multi_class(two_class_m, tmpdir):
-    two_class_m.trainer.fit(two_class_m)
+def test_reload_multi_class(two_class_m):
+    tmpdir = tempfile.gettempdir()
     two_class_m.save_model("{}/checkpoint.pl".format(tmpdir))
     before = two_class_m.trainer.validate(two_class_m)
     
