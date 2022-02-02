@@ -285,20 +285,18 @@ def test_custom_config_file_path():
     assert m.config["nms_thresh"] == 0.9
     assert m.config["score_thresh"] == 0.9
 
-def test_save_and_reload_checkpoint(config):
+def test_save_and_reload_checkpoint(config, tmpdir):
     m = main.deepforest()
     m.config = config
     #No real learning to throw off the model predictions
     m.config["train"]["fast_dev_run"] = False
     m.config["train"]["lr"] = 0.000000000001
-    m.use_release(check_release=False)   
     m.create_trainer() 
+    m.use_release(check_release=False)       
     m.trainer.fit(m)
     #save the prediction dataframe after training and compare with prediction after reload checkpoint     
-    tmpdir = tempfile.gettempdir()
     img_path = get_data(path="2019_YELL_2_528000_4978000_image_crop2.png")    
     pred_after_train = m.predict_image(path = img_path)
-    
     m.save_model("{}/checkpoint.pl".format(tmpdir))
     
     #reload the checkpoint to model object
