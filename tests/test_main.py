@@ -7,7 +7,6 @@ import numpy as np
 import cv2
 import copy
 import shutil
-import torch
 import tempfile
 
 import albumentations as A

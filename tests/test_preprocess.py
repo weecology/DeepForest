@@ -13,38 +13,38 @@ from deepforest import utilities
 
 import rasterio
 
-@pytest.fixture(scope="module", autouse=True)
-def config():
-    config = utilities.read_config("deepforest_config.yml")
-    config["patch_size"] = 200
-    config["patch_overlap"] = 0.25
-    config["annotations_xml"] = get_data("OSBS_029.xml")
-    config["rgb_dir"] = "data"
-    config["annotations_file"] = "tests/data/OSBS_029.csv"
-    config["path_to_raster"] = get_data("OSBS_029.tif")
+@pytest.fixture()
+def preprocess_config():
+    preprocess_config = utilities.read_config("deepforest_config.yml")
+    preprocess_config["patch_size"] = 200
+    preprocess_config["patch_overlap"] = 0.25
+    preprocess_config["annotations_xml"] = get_data("OSBS_029.xml")
+    preprocess_config["rgb_dir"] = "data"
+    preprocess_config["annotations_file"] = "tests/data/OSBS_029.csv"
+    preprocess_config["path_to_raster"] = get_data("OSBS_029.tif")
 
-    # Create a clean config test data
+    # Create a clean preprocess_config test data
     annotations = utilities.xml_to_annotations(
-        xml_path=config["annotations_xml"])
+        xml_path=preprocess_config["annotations_xml"])
     annotations.to_csv("tests/data/OSBS_029.csv", index=False)
 
-    return config
+    return preprocess_config
 
 @pytest.fixture()
-def image(config):
-    raster = Image.open(config["path_to_raster"])
+def image(preprocess_config):
+    raster = Image.open(preprocess_config["path_to_raster"])
     return np.array(raster)
 
 
-def test_compute_windows(config, image):
-    windows = preprocess.compute_windows(image, config["patch_size"],
-                                         config["patch_overlap"])
+def test_compute_windows(preprocess_config, image):
+    windows = preprocess.compute_windows(image, preprocess_config["patch_size"],
+                                         preprocess_config["patch_overlap"])
     assert len(windows) == 9
 
 
-def test_select_annotations(config, image):
-    windows = preprocess.compute_windows(image, config["patch_size"],
-                                         config["patch_overlap"])
+def test_select_annotations(preprocess_config, image):
+    windows = preprocess.compute_windows(image, preprocess_config["patch_size"],
+                                         preprocess_config["patch_overlap"])
     image_annotations = pd.read_csv("tests/data/OSBS_029.csv")
     selected_annotations = preprocess.select_annotations(image_annotations,
                                                          windows,
@@ -57,10 +57,10 @@ def test_select_annotations(config, image):
     assert selected_annotations.image_path.unique()[0] == "OSBS_029_7.png"
 
 
-def test_select_annotations_tile(config, image):
-    config["patch_size"] = 50
-    windows = preprocess.compute_windows(image, config["patch_size"],
-                                         config["patch_overlap"])
+def test_select_annotations_tile(preprocess_config, image):
+    preprocess_config["patch_size"] = 50
+    windows = preprocess.compute_windows(image, preprocess_config["patch_size"],
+                                         preprocess_config["patch_overlap"])
     image_annotations = pd.read_csv("tests/data/OSBS_029.csv")
     selected_annotations = preprocess.select_annotations(image_annotations,
                                                          windows,
@@ -69,10 +69,10 @@ def test_select_annotations_tile(config, image):
     # The largest box cannot be off the edge of the window
     assert selected_annotations.xmin.min() >= 0
     assert selected_annotations.ymin.min() >= 0
-    assert selected_annotations.xmax.max() <= config["patch_size"]
-    assert selected_annotations.ymax.max() <= config["patch_size"]
+    assert selected_annotations.xmax.max() <= preprocess_config["patch_size"]
+    assert selected_annotations.ymax.max() <= preprocess_config["patch_size"]
 
-def test_split_raster(config, tmpdir):
+def test_split_raster(preprocess_config, tmpdir):
     """Split raster into crops with overlaps to maintain all annotations"""
     raster = get_data("2019_YELL_2_528000_4978000_image_crop2.png")
     annotations = utilities.xml_to_annotations(get_data("2019_YELL_2_528000_4978000_image_crop2.xml"))
@@ -93,7 +93,7 @@ def test_split_raster(config, tmpdir):
     #annotations_file["label"] = 0 
     #visualize.plot_prediction_dataframe(df=annotations_file, root_dir=tmpdir, show=True)
 
-def test_split_raster_empty_crops(config, tmpdir):
+def test_split_raster_empty_crops(preprocess_config, tmpdir):
     """Split raster into crops with overlaps to maintain all annotations, allow empty crops"""
     raster = get_data("2019_YELL_2_528000_4978000_image_crop2.png")
     annotations = utilities.xml_to_annotations(get_data("2019_YELL_2_528000_4978000_image_crop2.xml"))
@@ -111,20 +111,20 @@ def test_split_raster_empty_crops(config, tmpdir):
     # Returns a 6 column pandas array
     assert not annotations_file[(annotations_file.xmin == 0) & (annotations_file.xmax == 0)].empty
     
-def test_split_raster_from_image(config):
-    r = rasterio.open(config["path_to_raster"]).read()
+def test_split_raster_from_image(preprocess_config):
+    r = rasterio.open(preprocess_config["path_to_raster"]).read()
     r = np.rollaxis(r,0,3)
     annotations_file = preprocess.split_raster(numpy_image=r,
-                                               annotations_file=config["annotations_file"],
+                                               annotations_file=preprocess_config["annotations_file"],
                                                base_dir="tests/data/",
-                                               patch_size=config["patch_size"],
-                                               patch_overlap=config["patch_overlap"],
+                                               patch_size=preprocess_config["patch_size"],
+                                               patch_overlap=preprocess_config["patch_overlap"],
                                                image_name="OSBS_029.tif")
 
     # Returns a 6 column pandas array
     assert annotations_file.shape[1] == 6
 
-def test_split_raster_empty(config):
+def test_split_raster_empty(preprocess_config):
     # Clean output folder
     for f in glob.glob("tests/output/empty/*"):
         os.remove(f)
@@ -143,32 +143,32 @@ def test_split_raster_empty(config):
     # Ignore blanks
     with pytest.raises(ValueError):
         annotations_file = preprocess.split_raster(
-            path_to_raster=config["path_to_raster"],
+            path_to_raster=preprocess_config["path_to_raster"],
             annotations_file="tests/data/blank_annotations.csv",
             base_dir="tests/output/empty/",
-            patch_size=config["patch_size"],
-            patch_overlap=config["patch_overlap"],
+            patch_size=preprocess_config["patch_size"],
+            patch_overlap=preprocess_config["patch_overlap"],
             allow_empty=False)
         assert annotations_file.shape[0] == 0
     assert not os.path.exists("tests/output/empty/OSBS_029_1.png")
 
     # Include blanks
     annotations_file = preprocess.split_raster(
-        path_to_raster=config["path_to_raster"],
+        path_to_raster=preprocess_config["path_to_raster"],
         annotations_file="tests/data/blank_annotations.csv",
         base_dir="tests/output/empty/",
-        patch_size=config["patch_size"],
-        patch_overlap=config["patch_overlap"],
+        patch_size=preprocess_config["patch_size"],
+        patch_overlap=preprocess_config["patch_overlap"],
         allow_empty=True)
     assert annotations_file.shape[0] > 0
     assert os.path.exists("tests/output/empty/OSBS_029_1.png")
 
 
-def test_split_size_error(config):
+def test_split_size_error(preprocess_config):
     with pytest.raises(ValueError):
-        annotations_file = preprocess.split_raster(path_to_raster=config["path_to_raster"],
-                                                   annotations_file=config["annotations_file"],
+        annotations_file = preprocess.split_raster(path_to_raster=preprocess_config["path_to_raster"],
+                                                   annotations_file=preprocess_config["annotations_file"],
                                                    base_dir="tests/data/",
                                                    patch_size=2000,
-                                                   patch_overlap=config["patch_overlap"])
+                                                   patch_overlap=preprocess_config["patch_overlap"])
     

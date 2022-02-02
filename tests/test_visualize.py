@@ -1,14 +1,30 @@
 #Test visualize
 from deepforest import visualize
 from deepforest import main
+from deepforest import get_data
+from deepforest import utilities
 import os
 import pytest
 import numpy as np
 
-def test_format_boxes(config):
+@pytest.fixture()
+def visualize_config():
+    visualize_config = utilities.read_config("deepforest_config.yml")
+    visualize_config["train"]["csv_file"] = get_data("example.csv") 
+    visualize_config["train"]["root_dir"] = os.path.dirname(get_data("example.csv"))
+    visualize_config["train"]["fast_dev_run"] = True
+    visualize_config["batch_size"] = 2
+    visualize_config["workers"] = 0
+    
+    visualize_config["validation"]["csv_file"] = get_data("example.csv") 
+    visualize_config["validation"]["root_dir"] = os.path.dirname(get_data("example.csv"))
+        
+    return visualize_config
+
+def test_format_boxes(visualize_config):
     m = main.deepforest()
-    m.config = config
-    m.use_release(check_release=False) 
+    m.use_release(check_release=False)     
+    m.config = visualize_config
     ds = m.val_dataloader()
     batch = next(iter(ds))
     paths, images, targets = batch
@@ -19,9 +35,9 @@ def test_format_boxes(config):
         
 #Test different color labels
 @pytest.mark.parametrize("label",[0,1,20])
-def test_plot_predictions(tmpdir,label, config):
+def test_plot_predictions(tmpdir,label, visualize_config):
     m = main.deepforest()
-    m.config = config
+    m.config = visualize_config
     m.use_release(check_release=False) 
     ds = m.val_dataloader()
     batch = next(iter(ds))
@@ -36,9 +52,9 @@ def test_plot_predictions(tmpdir,label, config):
 
         assert image.dtype == "uint8"
         
-def test_plot_prediction_dataframe(tmpdir, config):
+def test_plot_prediction_dataframe(tmpdir, visualize_config):
     m = main.deepforest()
-    m.config = config
+    m.config = visualize_config
     m.use_release(check_release=False) 
     ds = m.val_dataloader()
     batch = next(iter(ds))
@@ -50,9 +66,9 @@ def test_plot_prediction_dataframe(tmpdir, config):
         
     assert all([os.path.exists(x) for x in filenames])
         
-def test_plot_predictions_and_targets(tmpdir, config):
+def test_plot_predictions_and_targets(tmpdir, visualize_config):
     m = main.deepforest()
-    m.config = config
+    m.config = visualize_config
     m.use_release(check_release=False)
     ds = m.val_dataloader()
     batch = next(iter(ds))
