@@ -32,11 +32,32 @@ Incorportating local data will always help prediction accuracy to customize the 
 
 # Installation
 
-Compiled wheels have been made for linux, osx and windows
+Deepforest can be install using either pip or conda.
+
+## pip
 
 ```
-#Install DeepForest
 pip install deepforest
+```
+
+## conda CPU
+
+Conda-based installs can be slow. We recommend using [mamba](https://mamba.readthedocs.io/en/latest/user_guide/mamba.html) to speed them up.
+
+```
+conda create -n deepforest python=3 pytorch torchvision -c pytorch
+conda activate deepforest
+conda install deepforest albumentations -c conda-forge
+```
+
+## conda GPU
+
+Depending on the GPU you will need with `cudatoolkit=10.2` or `cudatoolkit=11.3`:
+
+```
+conda create -n deepforest python=3 pytorch torchvision cudatoolkit=10.2 -c pytorch
+conda activate deepforest
+conda install deepforest albumentations -c conda-forge
 ```
 
 # Usage

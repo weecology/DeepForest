@@ -6,12 +6,31 @@ DeepForest has Windows, Linux and OSX prebuilt wheels on pypi. We *strongly* rec
 pip install DeepForest
 ```
 
-For questions on conda-forge installation, please submit issues to the feedstock repo: https://github.com/conda-forge/deepforest-feedstock
+DeepForest itself is pure Python and will work on all major operating systems, but has spatial and deep learning dependencies that can be harder to install, particularly on Windows. To make this easier DeepForest can also be installed using conda and mamba.
 
-### Windows Installation
+## conda/mamba CPU
 
-DeepForest itself is pure python and will work on all major operating systems. It can be difficult to install some of the geospatial dependencies on windows using pip.
-If you have trouble installing gdal, rasterio or fiona on windows see rasterio [docs](https://rasterio.readthedocs.io/en/latest/installation.html)
+Simple installs from conda-forge have been fragile due to issues with pytorch and torch vision in that repository.
+Therefore we recommend first installing those dependencies from the official pytorch repo and then install DeepForest. 
+
+```
+conda create -n deepforest python=3 pytorch torchvision -c pytorch
+conda activate deepforest
+conda install deepforest -c conda-forge
+```
+
+Due to the complex dependency tree conda-based installs can be slow.
+We recommend using [mamba](https://mamba.readthedocs.io/en/latest/user_guide/mamba.html) to speed them up.
+
+## conda/mamba GPU
+
+Depending on the GPU you will need with `cudatoolkit=10.2` or `cudatoolkit=11.3`:
+
+```
+conda create -n deepforest python=3 pytorch torchvision cudatoolkit=10.2 -c pytorch
+conda activate deepforest
+conda install deepforest -c conda-forge
+```
 
 ## Source Installation
 
