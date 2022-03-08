@@ -361,7 +361,7 @@ pd.testing.assert_frame_equal(pred_after_train,pred_after_reload)
 ---
 
 Note that when reloading models, you should carefully inspect the model parameters, such as the score_thresh and nms_thresh. These parameters are updated during model creation and the config file is not read when loading from checkpoint!
-It is best to be direct to specify after loading checkpoint.
+It is best to be direct to specify after loading checkpoint. If you want to save hyperparameters, edit the deepforest_config.yml directly. This will allow the hyperparameters to be reloaded on deepforest.save_model().
 
 ---
 
