@@ -7,6 +7,11 @@ gpus:
 distributed_backend:
 batch_size: 1
 
+#freeze regression head for user not having GPU support
+freeze_regression_head:
+    tree: 0
+    bird: 0
+
 #Non-max supression of overlapping predictions
 nms_thresh: 0.05
 score_thresh: 0.1
