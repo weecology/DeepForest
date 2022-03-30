@@ -224,6 +224,7 @@ def test_evaluate(m, tmpdir):
     assert len(results["results"].predicted_label.dropna().unique()) == 1
     assert results["results"].predicted_label.dropna().unique()[0] == "Tree"
     assert results["predictions"].shape[0] > 0
+    assert results["predictions"].label.dropna().unique()[0] == "Tree"
     
     df = pd.read_csv(csv_file)
     assert results["results"].shape[0] == df.shape[0]
