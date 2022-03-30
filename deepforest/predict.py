@@ -148,8 +148,7 @@ def predict_tile(model,
         device: pytorch device of 'cuda' or 'cpu' for gpu prediction. Set internally.
         numeric_to_label_dict: dictionary in which keys are numeric integers and values are character labels
         raster_path: Path to image on disk
-        image (array): Numpy image array in BGR channel order
-            following openCV convention
+        image (array): Numpy image array in RGB channel order ranged from 0-255
         patch_size: patch size default400,
         patch_overlap: patch overlap default 0.15,
         iou_threshold: Minimum iou overlap among predictions between
@@ -183,8 +182,6 @@ def predict_tile(model,
         # crop window and predict
         crop = image[windows[index].indices()]
         crop = crop.astype('float32')
-
-        # crop is RGB channel order, change to BGR?
         boxes = predict_image(model=model, image=crop, return_plot=False, device=device)
         if boxes is not None:
             if mosaic:
