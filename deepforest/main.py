@@ -246,6 +246,7 @@ class deepforest(pl.LightningModule):
         # Check if GPU is available and pass image to gpu
         result = predict.predict_image(model=self.model,
                                        image=image,
+                                       path=path,
                                        return_plot=return_plot,
                                        device=self.current_device,
                                        iou_threshold=self.config["nms_thresh"],
