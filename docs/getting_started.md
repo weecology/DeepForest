@@ -288,6 +288,30 @@ model.create_trainer(logger=TensorBoardLogger(save_dir='logdir/'),
 model.trainer.fit(model)
 ```
 
+### New Augmentations
+
+DeepForest uses the same transform for train/test, so you need to encode a switch for turning the 'augment' off. 
+Wrap any new augmentations like so:
+
+```
+def get_transform(augment):
+    """This is the new transform"""
+    if augment:
+        transform = A.Compose([
+            A.HorizontalFlip(p=0.5),
+            ToTensorV2()
+        ], bbox_params=A.BboxParams(format='pascal_voc',label_fields=["category_ids"]))
+        
+    else:
+        transform = ToTensorV2()
+        
+    return transform
+        
+m = main.deepforest(transforms=get_transform)
+```
+
+see https://albumentations.ai/docs/getting_started/bounding_boxes_augmentation/ for more options of augmentations.
+
 ## Evaluation
 
 Independent analysis of whether a model can generalize from training data to new areas is critical for creating a robust workflow. 
