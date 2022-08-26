@@ -74,8 +74,5 @@ assert m.num_classes == 2
 
 ## Citation
 
-A general deep learning model for bird detection in high resolution airborne imagery
-Ben G. Weinstein, Lindsey Garner, Vienna R. Saccomanno, Ashley Steinkraus, Andrew Ortega, Kristen Brush, Glenda Yenni, Ann E. McKellar, Rowan Converse, Christopher D. Lippitt, Alex Wegmann, Nick D. Holmes, Alice J. Edney, Tom Hart, Mark J. Jessopp, Rohan H Clarke, Dominik Marchowski, Henry Senyondo, Ryan Dotson, Ethan P. White, Peter Frederick, S.K. Morgan Ernest
-bioRxiv 2021.08.05.455311; doi: https://doi.org/10.1101/2021.08.05.455311
+Weinstein, B.G., Garner, L., Saccomanno, V.R., Steinkraus, A., Ortega, A., Brush, K., Yenni, G., McKellar, A.E., Converse, R., Lippitt, C.D., Wegmann, A., Holmes, N.D., Edney, A.J., Hart, T., Jessopp, M.J., Clarke, R.H., Marchowski, D., Senyondo, H., Dotson, R., White, E.P., Frederick, P. and Ernest, S.K.M. (2022), A general deep learning model for bird detection in high resolution airborne imagery. Ecological Applications. Accepted Author Manuscript e2694. https://doi-org.lp.hscl.ufl.edu/10.1002/eap.2694
 
-https://www.biorxiv.org/content/10.1101/2021.08.05.455311v1.abstract
