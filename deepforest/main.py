@@ -128,7 +128,7 @@ class deepforest(pl.LightningModule):
                                   max_epochs=self.config["train"]["epochs"],
                                   gpus=self.config["gpus"],
                                   enable_checkpointing=False,
-                                  accelerator=self.config["distributed_backend"],
+                                  accelerator=self.config["accelerator"],
                                   fast_dev_run=self.config["train"]["fast_dev_run"],
                                   callbacks=callbacks,
                                   **kwargs)
