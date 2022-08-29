@@ -51,17 +51,22 @@ def test_log_images_multiclass(m, tmpdir):
     assert len(saved_images) == 1
 
 
-def test_create_checkpoint(tmpdir):    
+def test_create_checkpoint(m, tmpdir):    
     checkpoint_callback = ModelCheckpoint(
             dirpath=tmpdir,
             save_top_k=1,
-            monitor="box_recall",
+            monitor="val_classification",
             mode="max",
             every_n_epochs=1,
         )
-    m = main.deepforest()
     m.use_release()
     m.create_trainer(callbacks = [checkpoint_callback])
     m.trainer.fit(m)
 
+def test_create_no_checkpoint(m, tmpdir):    
+    m.use_release()
+    m.create_trainer()
+    m.trainer.fit(m)  
+    
+    assert True
     

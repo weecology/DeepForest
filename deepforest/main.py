@@ -124,10 +124,17 @@ class deepforest(pl.LightningModule):
                 lr_monitor = LearningRateMonitor(logging_interval='epoch')
                 callbacks.append(lr_monitor)
         
+        #Check for model checkpoint object
+        checkpoint_types = [type(x).__qualname__ for x in callbacks]
+        if 'ModelCheckpoint'in checkpoint_types:
+            enable_checkpointing = True
+        else:
+            enable_checkpointing = False
+        
         self.trainer = pl.Trainer(logger=logger,
                                   max_epochs=self.config["train"]["epochs"],
+                                  enable_checkpointing=enable_checkpointing,
                                   gpus=self.config["gpus"],
-                                  enable_checkpointing=False,
                                   accelerator=self.config["distributed_backend"],
                                   fast_dev_run=self.config["train"]["fast_dev_run"],
                                   callbacks=callbacks,
