@@ -4,6 +4,7 @@ from deepforest import callbacks
 import glob
 import os
 import pytest
+from pytorch_lightning.callbacks import ModelCheckpoint
 
 from deepforest import get_data
 from .conftest import download_release
@@ -48,6 +49,24 @@ def test_log_images_multiclass(m, tmpdir):
     m.trainer.fit(m)
     saved_images = glob.glob("{}/*.png".format(tmpdir))
     assert len(saved_images) == 1
+
+
+def test_create_checkpoint(m, tmpdir):    
+    checkpoint_callback = ModelCheckpoint(
+            dirpath=tmpdir,
+            save_top_k=1,
+            monitor="val_classification",
+            mode="max",
+            every_n_epochs=1,
+        )
+    m.use_release()
+    m.create_trainer(callbacks = [checkpoint_callback])
+    m.trainer.fit(m)
+
+def test_create_no_checkpoint(m, tmpdir):    
+    m.use_release()
+    m.create_trainer()
+    m.trainer.fit(m)  
     
-    
+    assert True
     
