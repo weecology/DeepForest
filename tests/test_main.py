@@ -344,6 +344,7 @@ def test_override_transforms():
     def get_transform(augment):
         """This is the new transform"""
         if augment:
+            print("I'm a new augmentation!")
             transform = A.Compose([
                 A.HorizontalFlip(p=0.5),
                 ToTensorV2()
@@ -358,7 +359,7 @@ def test_override_transforms():
     
     csv_file = get_data("example.csv") 
     root_dir = os.path.dirname(csv_file)
-    train_ds = m.load_dataset(csv_file, root_dir=root_dir)
+    train_ds = m.load_dataset(csv_file, root_dir=root_dir, augment=True)
     
     path, image, target = next(iter(train_ds))
     assert m.transforms.__doc__ == "This is the new transform"
