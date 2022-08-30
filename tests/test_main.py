@@ -93,7 +93,10 @@ def test_train_empty(m, tmpdir):
     m.trainer.fit(m)
 
 def test_validation_step(m):
+    m.trainer = None
+    #Turn off trainer to test copying on some linux devices.
     before = copy.deepcopy(m)
+    m.create_trainer()
     m.trainer.validate(m)
     #assert no weights have changed
     for p1, p2 in zip(before.named_parameters(), m.named_parameters()):     
