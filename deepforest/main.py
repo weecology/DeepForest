@@ -408,7 +408,7 @@ class deepforest(pl.LightningModule):
     
         return losses
     
-    def on_epoch_end(self):
+    def on_train_epoch_end(self):
         if not self.config["validation"]["csv_file"] == None:
             if (self.current_epoch + 1) % self.config["validation"]["val_accuracy_interval"] == 0 :
                 results = self.evaluate(csv_file=self.config["validation"]["csv_file"],root_dir=self.config["validation"]["root_dir"])
