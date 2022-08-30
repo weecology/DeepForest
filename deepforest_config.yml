@@ -4,7 +4,7 @@
 #Dataloaders
 workers: 1
 gpus: 
-distributed_backend:
+accelerator:
 batch_size: 1
 
 #Non-max supression of overlapping predictions

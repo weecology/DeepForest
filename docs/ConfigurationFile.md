@@ -51,9 +51,18 @@ class https://pytorch.org/docs/stable/data.html. To turn off asynchronous data g
 The number of gpus to use during model training. To run on cpu leave blank. Deepforest has been tested on up to 8 gpu and follows a pytorch lightning module, which means it can inherent any of the scaling functionality from this library, including TPU support.
 https://pytorch-lightning.readthedocs.io/en/stable/advanced/multi_gpu.html?highlight=multi%20gpu
 
-### distributed_backend
-Data parallelization strategy from https://pytorch-lightning.readthedocs.io/en/stable/advanced/multi_gpu.html?highlight=multi%20gpu. Default is 'ddp' distributed data parallel, which splits data into pieces and each GPU gets a mutaully exclusive piece. Weights are updated after each forward training pass.
-This is most appropriate for SLURM clusters where the GPUs may be on different nodes.
+### accelerator
+Most commonly, 'cpu', 'gpu' or 'tpu' as well as other options listed:
+
+https://pytorch-lightning.readthedocs.io/en/1.4.0/advanced/multi_gpu.html.
+
+If 'gpu', it can be helpful to specify the data parallelization strategy. This can be done using the 'strategy' arg in main.create_trainer()
+
+```
+model.create_trainer(logger=comet_logger, strategy="ddp")
+```
+
+This is passed to the pytorch-lightning trainer, documented in the link above for multi-gpu training.
 
 ### batch_size
 Number of images per batch during training. GPU memory limits this usually between 5-10
