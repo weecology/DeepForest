@@ -18,8 +18,8 @@ For more information, or specific questions about the bird detection, please cre
 
 ```
 from deepforest import main
-from deepforest.utilities import project_boxes
 from deepforest.visualize import plot_predictions
+from deepforest.utilities import boxes_to_shapefile
 
 import rasterio as rio
 import geopandas as gpd
@@ -28,7 +28,6 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 from shapely import geometry
-
 
 PATH_TO_DIR = "/Users/benweinstein/Dropbox/Weecology/everglades_species/easyidp/HiddenLittle_03_24_2022"
 files = glob("{}/*.JPG".format(PATH_TO_DIR))
@@ -50,9 +49,8 @@ for path in files:
     fig = plot_predictions(df=boxes, image=image)   
     plt.imshow(fig)
     
-    boxes['geometry'] = boxes.apply(
-           lambda x: geometry.box(x.xmin, -x.ymin, x.xmax, -x.ymax), axis=1)    
-    shp = gpd.GeoDataFrame(boxes, geometry="geometry")
+    #Create a shapefile, in this case img data was unprojected
+    shp = boxes_to_shapefile(boxes, root_dir=PATH_TO_DIR, projected=False)
     
     #Get name of image and save a .shp in the same folder
     basename = os.path.splitext(os.path.basename(path))[0]

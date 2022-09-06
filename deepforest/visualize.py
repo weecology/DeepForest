@@ -108,7 +108,8 @@ def plot_predictions(image, df, color=None, thickness=1):
         image: a numpy array with drawn annotations
     """    
     if image.shape[0] == 3:
-        raise ValueError("Input images must be channels last format [h, w, 3] not channels first [3, h, w], use np.rollaxis(image, 0, 3) to invert")
+        warnings.warn("Input images must be channels last format [h, w, 3] not channels first [3, h, w], using np.rollaxis(image, 0, 3) to invert!")
+        image = np.rollaxis(image, 0, 3)
     if image.dtype == "float32":
         image = image.astype("uint8")
     image = image.copy()

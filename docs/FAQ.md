@@ -38,10 +38,17 @@ m = main.deepforest(num_classes = 6, label_dict = {"a":0,"b":1,"c":2,"d":3,"e":4
 m.load_state_dict(ckpt["state_dict"])
 ```
 
-## Weakly referenced object on save
+## Weakly referenced objects
 
-On some devices and systems we have found an error
+On some devices and systems we have found an error referencing the model.trainer object that was created in m.create_trainer(). 
+We welcome a reproducible issue to address this error as it appears highly variable and relates to upstream issues. It appears more common on google colab and github actions.
 
+https://github.com/Lightning-AI/lightning/issues/12233
+https://github.com/weecology/DeepForest/issues/338
+
+### Saving
+
+We have rarely heard that this appears on save:
 ```
 model.save_model("mymodel.pl")
 Weakly-reference object no longer exists
@@ -60,7 +67,39 @@ model = main.deepforest()
 model.model.load_state_dict(torch.load(model_path))
 ```
 
-We welcome a reproducible issue to address this error.
+### Training
+
+We have heard that this error can appear when trying to deep copy the pytorch lighnting module. The trainer object is not pickleable.
+For example, on multi-gpu enviroments when trying to scale the deepforest model the entire module is copied leading to this error.
+Setting the trainer object to None and directly using the pytorch object is a reasonable workaround. 
+
+Replace
+
+```
+m = main.deepforest()
+m.create_trainer()
+m.trainer.fit(m)
+```
+
+with
+
+```
+m.trainer = None
+from pytorch_lightning import Trainer
+
+    trainer = Trainer(
+        accelerator="gpu",
+        strategy="ddp",
+        devices=model.config["gpus"],
+        enable_checkpointing=False,
+        max_epochs=model.config["train"]["epochs"],
+        logger=comet_logger
+    )
+trainer.fit(m)
+```
+The added benefits of this is more control over the trainer object. 
+The downside is that it doesn't align with the .config pattern where a user now has to look into the config to create the trainer. 
+We are open to changing this to be the default pattern in the future and welcome input from users.
 
 
 ## Issues
