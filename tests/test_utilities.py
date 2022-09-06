@@ -76,4 +76,3 @@ def test_boxes_to_shapefile_unprojected(download_release, flip_y_axis):
     #Confirm that each boxes within image bounds
     geom = geometry.box(*r.bounds)
     assert all(gdf.geometry.apply(lambda x: geom.intersects(geom)).values)
-    gdf.to_file("/Users/benweinstein/Downloads/test_{}.shp".format(flip_y_axis))
