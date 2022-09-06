@@ -259,6 +259,9 @@ class deepforest(pl.LightningModule):
                                        color=color,
                                        thickness=thickness)
         
+        if path:
+            result["image_path"] = os.path.basename(path)
+            
         #Set labels to character from numeric if returning boxes df
         if not return_plot:
             if not result is None:

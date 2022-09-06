@@ -14,6 +14,51 @@ We have created a [GPU colab tutorial](https://colab.research.google.com/drive/1
 
 For more information, or specific questions about the bird detection, please create issues on the [BirdDetector repo](https://github.com/weecology/BirdDetector)
 
+## Predict a folder of images and create a shapefile of annotations for each image
+
+```
+from deepforest import main
+from deepforest.utilities import project_boxes
+from deepforest.visualize import plot_predictions
+
+import rasterio as rio
+import geopandas as gpd
+from glob import glob
+import os
+import matplotlib.pyplot as plt
+import numpy as np
+from shapely import geometry
+
+
+PATH_TO_DIR = "/Users/benweinstein/Dropbox/Weecology/everglades_species/easyidp/HiddenLittle_03_24_2022"
+files = glob("{}/*.JPG".format(PATH_TO_DIR))
+m = main.deepforest(label_dict={"Bird":0})
+m.use_bird_release()
+for path in files:
+    #use predict_tile if each object is a orthomosaic
+    boxes = m.predict_image(path=path)
+    #Open each file and get the geospatial information to convert output into a shapefile
+    rio_src = rio.open(path)
+    image = rio_src.read()
+    
+    #Skip empty images
+    if boxes is None:
+        continue
+    
+    #View result
+    image = np.rollaxis(image, 0, 3)
+    fig = plot_predictions(df=boxes, image=image)   
+    plt.imshow(fig)
+    
+    boxes['geometry'] = boxes.apply(
+           lambda x: geometry.box(x.xmin, -x.ymin, x.xmax, -x.ymax), axis=1)    
+    shp = gpd.GeoDataFrame(boxes, geometry="geometry")
+    
+    #Get name of image and save a .shp in the same folder
+    basename = os.path.splitext(os.path.basename(path))[0]
+    shp.to_file("{}/{}.shp".format(PATH_TO_DIR,basename))
+```
+
 ## Annotating new images
 
 If you would like to train a model, here is a quick video on a simple way to annotate images.

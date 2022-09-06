@@ -38,7 +38,6 @@ def get_transform(augment):
     return transform
 
 class TreeDataset(Dataset):
-
     def __init__(self, csv_file, root_dir, transforms=None, label_dict = {"Tree": 0}, train=True, preload_images=False):
         """
         Args:
