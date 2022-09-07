@@ -129,7 +129,7 @@ def test_predict_image_fromfile(m):
     prediction = m.predict_image(path = path)
     
     assert isinstance(prediction, pd.DataFrame)
-    assert set(prediction.columns) == {"xmin","ymin","xmax","ymax","label","score"}
+    assert set(prediction.columns) == {"xmin","ymin","xmax","ymax","label","score","image_path"}
 
 def test_predict_image_fromarray(m):
     image_path = get_data(path="2019_YELL_2_528000_4978000_image_crop2.png")

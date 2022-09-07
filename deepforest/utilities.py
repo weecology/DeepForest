@@ -3,6 +3,7 @@ import json
 import os
 import urllib
 import warnings
+import functools
 
 import geopandas as gpd
 import numpy as np
@@ -14,7 +15,6 @@ import yaml
 from tqdm import tqdm
 
 from deepforest import _ROOT
-
 
 def read_config(config_path):
     """Read config yaml file"""
@@ -119,7 +119,6 @@ def use_release(save_dir=os.path.join(_ROOT, "data/"), prebuilt_model="NEON", ch
     Returns: release_tag, output_path (str): path to downloaded model
 
     """
-    
     # Naming based on pre-built model
     output_path = os.path.join(save_dir, prebuilt_model + ".pt")
     
@@ -332,6 +331,115 @@ def check_image(image):
     if not image.shape[2] == 3:
         raise ValueError("image is expected have three channels, channel last format, found image with shape {}".format(image.shape))
     
+def boxes_to_shapefile(df, root_dir, projected=True, flip_y_axis=False):
+    """
+    Convert from image coordinates to geographic coordinates
+    Note that this assumes df is just a single plot being passed to this function
+    Args:
+       df: a pandas type dataframe with columns: name, xmin, ymin, xmax, ymax. Name is the relative path to the root_dir arg.
+       root_dir: directory of images to lookup image_path column
+       projected: If true, convert from image to geographic coordinates, if False, keep in image coordinate system
+       flip_y_axis: If True, reflect predictions over y axis to align with raster data in QGIS, which uses a negative y origin compared to numpy. See https://gis.stackexchange.com/questions/306684/why-does-qgis-use-negative-y-spacing-in-the-default-raster-geotransform
+    Returns:
+       df: a geospatial dataframe with the boxes optionally transformed to the target crs
+    """
+    plot_names = df.image_path.unique()
+    if len(plot_names) > 1:
+        raise ValueError(
+            "This function projects a single plots worth of data. Multiple plot names found {}"
+            .format(plot_names))
+    else:
+        plot_name = plot_names[0]
+
+    rgb_path = "{}/{}".format(root_dir, plot_name)
+    with rasterio.open(rgb_path) as dataset:
+        bounds = dataset.bounds
+        pixelSizeX, pixelSizeY = dataset.res
+        crs = dataset.crs
+        transform = dataset.transform
+
+    if projected:
+        # Convert image pixel locations to geographic coordinates
+        xmin_coords, ymin_coords = rasterio.transform.xy(
+            transform=transform,
+            rows = df.ymin,
+            cols = df.xmin,
+            offset = 'center'
+            )
+        
+        xmax_coords, ymax_coords = rasterio.transform.xy(
+            transform=transform,
+            rows = df.ymax,
+            cols = df.xmax,
+            offset = 'center'
+            )
+        
+        # One box polygon for each tree bounding box
+        box_coords = zip(xmin_coords, ymin_coords, xmax_coords, ymax_coords)
+        box_geoms = [shapely.geometry.box(xmin,ymin,xmax,ymax) for xmin,ymin,xmax,ymax in box_coords]
+
+        
+        geodf = gpd.GeoDataFrame(df, geometry=box_geoms)
+        geodf.crs = crs
+        
+        return geodf
+    
+    else:   
+        if flip_y_axis:
+            #See https://gis.stackexchange.com/questions/306684/why-does-qgis-use-negative-y-spacing-in-the-default-raster-geotransform 
+            # Numpy uses top left 0,0 origin, flip along y axis.
+            df['geometry'] = df.apply(
+                   lambda x: shapely.geometry.box(x.xmin, -x.ymin, x.xmax, -x.ymax), axis=1)  
+        else:
+            df['geometry'] = df.apply(
+                   lambda x: shapely.geometry.box(x.xmin, x.ymin, x.xmax, x.ymax), axis=1)              
+        df = gpd.GeoDataFrame(df, geometry="geometry")
+
+        return df
+
+def collate_fn(batch):
+    batch = list(filter(lambda x : x is not None, batch))
+        
+    return tuple(zip(*batch))
+
+
+def annotations_to_shapefile(df, transform, crs):
+    """
+    Convert output from predict_image and  predict_tile to a geopandas data.frame
+
+    Args:
+        df: prediction data.frame with columns  ['xmin','ymin','xmax','ymax','label','score']
+        transform: A rasterio affine transform object
+        crs: A rasterio crs object
+    Returns:
+        results: a geopandas dataframe where every entry is the bounding box for a detected tree.
+    """
+    warnings.warn("This method is deprecated and will be removed in version DeepForest 2.0.0, please use boxes_to_shapefile which unifies project_boxes and annotations_to_shapefile functionalities")
+    
+    # Convert image pixel locations to geographic coordinates
+    xmin_coords, ymin_coords = rasterio.transform.xy(
+        transform=transform,
+        rows = df.ymin,
+        cols = df.xmin,
+        offset = 'center'
+        )
+    
+    xmax_coords, ymax_coords = rasterio.transform.xy(
+        transform=transform,
+        rows = df.ymax,
+        cols = df.xmax,
+        offset = 'center'
+        )
+    
+    # One box polygon for each tree bounding box
+    box_coords = zip(xmin_coords, ymin_coords, xmax_coords, ymax_coords)
+    box_geoms = [shapely.geometry.box(xmin,ymin,xmax,ymax) for xmin,ymin,xmax,ymax in box_coords]
+    
+    geodf = gpd.GeoDataFrame(df, geometry=box_geoms)
+    geodf.crs = crs
+    
+    return geodf
+
 def project_boxes(df, root_dir, transform=True):
     """
     Convert from image coordinates to geographic coordinates
@@ -340,6 +448,7 @@ def project_boxes(df, root_dir, transform=True):
     root_dir: directory of images to lookup image_path column
     transform: If true, convert from image to geographic coordinates
     """
+    warnings.warn("This method is deprecated and will be removed in version DeepForest 2.0.0, please use boxes_to_shapefile which unifies project_boxes and annotations_to_shapefile functionalities")    
     plot_names = df.image_path.unique()
     if len(plot_names) > 1:
         raise ValueError(
@@ -370,70 +479,3 @@ def project_boxes(df, root_dir, transform=True):
     df.crs = crs
 
     return df
-
-def annotations_to_shapefile(df, transform, crs):
-    """
-    Convert output from predict_image and  predict_tile to a geopandas data.frame
-
-    Args:
-        df: prediction data.frame with columns  ['xmin','ymin','xmax','ymax','label','score']
-        transform: A rasterio affine transform object
-        crs: A rasterio crs object
-    Returns:
-        results: a geopandas dataframe where every entry is the bounding box for a detected tree.
-    """
-    # Convert image pixel locations to geographic coordinates
-    xmin_coords, ymin_coords = rasterio.transform.xy(
-        transform=transform,
-        rows = df.ymin,
-        cols = df.xmin,
-        offset = 'center'
-        )
-    
-    xmax_coords, ymax_coords = rasterio.transform.xy(
-        transform=transform,
-        rows = df.ymax,
-        cols = df.xmax,
-        offset = 'center'
-        )
-    
-    # One box polygon for each tree bounding box
-    box_coords = zip(xmin_coords, ymin_coords, xmax_coords, ymax_coords)
-    box_geoms = [shapely.geometry.box(xmin,ymin,xmax,ymax) for xmin,ymin,xmax,ymax in box_coords]
-    
-    geodf = gpd.GeoDataFrame(df, geometry=box_geoms)
-    geodf.crs = crs
-    
-    return geodf
-
-def project_boxes(df, root_dir):
-    """
-    Convert output from predict_file into a geopandas data.frame 
-    Note that this assumes df is just a single plot being passed to this function
-    Args:
-        df: a pandas type dataframe with columns: image_path, xmin, ymin, xmax, ymax. image_path is the relative within the root_dir arg.
-        root_dir: directory of images
-    Returns:
-        geodf: a geodataframe with transformed boxes as geometry
-    """
-    plot_names = df.image_path.unique()
-    if len(plot_names) > 1:
-        raise ValueError(
-            "This function projects a single plots worth of data. Multiple plot names found {}"
-            .format(plot_names))
-    else:
-        plot_name = plot_names[0]
-        
-    rgb_path = "{}/{}".format(root_dir, plot_name)
-    with rasterio.open(rgb_path) as dataset:
-        transform = dataset.transform
-        crs = dataset.crs
-        
-    geodf =  annotations_to_shapefile(df = df, transform = transform, crs=crs)
-    geodf['image_path'] = plot_name
-    return geodf
-
-def collate_fn(batch):
-    batch = list(filter(lambda x : x is not None, batch))
-        
-    return tuple(zip(*batch))

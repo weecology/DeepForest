@@ -4,6 +4,7 @@ import os
 import pytest
 import pandas as pd
 import rasterio as rio
+from shapely import geometry
 
 from deepforest import get_data
 from deepforest import utilities
@@ -34,7 +35,7 @@ def test_use_release(download_release):
 def test_use_bird_release(download_release):
     # Download latest model from github release
     release_tag, state_dict = utilities.use_bird_release()
-    assert os.path.exists(get_data("bird.pt"))
+    assert os.path.exists(get_data("bird.pt"))    
     
 def test_float_warning(config):
     """Users should get a rounding warning when adding annotations with floats"""
@@ -50,13 +51,28 @@ def test_project_boxes():
     assert df.shape[0] == gdf.shape[0]
     
 
-def test_annotations_to_shapefile(download_release):
+def test_boxes_to_shapefile_projected(download_release):
     img = get_data("OSBS_029.tif")
     r = rio.open(img)
-    transform = r.transform 
-    crs = r.crs
     m = main.deepforest()
     m.use_release(check_release=False)
     df = m.predict_image(path=img)
-    gdf = utilities.annotations_to_shapefile(df, transform=transform, crs=crs)
-    assert df.shape[0] == gdf.shape[0]
+    gdf = utilities.boxes_to_shapefile(df, root_dir=os.path.dirname(img), projected=True)
+    
+    #Confirm that each boxes within image bounds
+    geom = geometry.box(*r.bounds)
+    assert all(gdf.geometry.apply(lambda x: geom.intersects(geom)).values)
+    
+
+@pytest.mark.parametrize("flip_y_axis", [True, False])
+def test_boxes_to_shapefile_unprojected(download_release, flip_y_axis):
+    img = get_data("OSBS_029.png")
+    r = rio.open(img)
+    m = main.deepforest()
+    m.use_release(check_release=False)
+    df = m.predict_image(path=img)
+    gdf = utilities.boxes_to_shapefile(df, root_dir=os.path.dirname(img), projected=False, flip_y_axis=flip_y_axis)
+    
+    #Confirm that each boxes within image bounds
+    geom = geometry.box(*r.bounds)
+    assert all(gdf.geometry.apply(lambda x: geom.intersects(geom)).values)
