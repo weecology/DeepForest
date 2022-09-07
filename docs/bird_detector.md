@@ -3,7 +3,8 @@
 Utilizing the same workflow as the tree detection model, we have trained a bird detection model for airborne imagery.
 
 ```
-m = main.deepforest()
+#Load deepforest model and set bird label
+m = main.deepforest(label_dict={"Bird":0})
 m.use_bird_release()
 ```
 
