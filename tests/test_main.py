@@ -142,7 +142,7 @@ def test_predict_image_fromarray(m):
     image = np.array(Image.open(image_path).convert("RGB"))
     prediction = m.predict_image(image = image)    
     assert isinstance(prediction, pd.DataFrame)
-    assert set(prediction.columns) == {"xmin","ymin","xmax","ymax","label","score","image_path"}
+    assert set(prediction.columns) == {"xmin","ymin","xmax","ymax","label","score"}
 
 def test_predict_return_plot(m):
     image = get_data(path="2019_YELL_2_528000_4978000_image_crop2.png")
