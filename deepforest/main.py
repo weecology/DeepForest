@@ -258,12 +258,12 @@ class deepforest(pl.LightningModule):
                                        iou_threshold=self.config["nms_thresh"],
                                        color=color,
                                        thickness=thickness)
-        
-        if path:
-            result["image_path"] = os.path.basename(path)
             
         #Set labels to character from numeric if returning boxes df
         if not return_plot:
+            if path:
+                result["image_path"] = os.path.basename(path)
+                
             if not result is None:
                 result["label"] = result.label.apply(lambda x: self.numeric_to_label_dict[x])
         
