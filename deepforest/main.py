@@ -260,11 +260,11 @@ class deepforest(pl.LightningModule):
                                        thickness=thickness)
             
         #Set labels to character from numeric if returning boxes df
-        if not return_plot:
-            if path:
-                result["image_path"] = os.path.basename(path)
-                
+        if not return_plot:                 
             if not result is None:
+                if path:
+                    result["image_path"] = os.path.basename(path)
+                    
                 result["label"] = result.label.apply(lambda x: self.numeric_to_label_dict[x])
         
         return result
