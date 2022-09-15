@@ -375,6 +375,13 @@ def boxes_to_shapefile(df, root_dir, projected=True, flip_y_axis=False):
             )
         
         # One box polygon for each tree bounding box
+        # Careful of single row edge case where xmin_coords comes out not as a list, but as a float
+        if type(xmin_coords) == float:
+            xmin_coords = [xmin_coords]
+            ymin_coords = [ymin_coords]
+            xmax_coords = [xmax_coords]
+            ymax_coords = [ymax_coords]
+            
         box_coords = zip(xmin_coords, ymin_coords, xmax_coords, ymax_coords)
         box_geoms = [shapely.geometry.box(xmin,ymin,xmax,ymax) for xmin,ymin,xmax,ymax in box_coords]
 

@@ -50,7 +50,6 @@ def test_project_boxes():
     
     assert df.shape[0] == gdf.shape[0]
     
-
 def test_boxes_to_shapefile_projected(download_release):
     img = get_data("OSBS_029.tif")
     r = rio.open(img)
@@ -63,6 +62,9 @@ def test_boxes_to_shapefile_projected(download_release):
     geom = geometry.box(*r.bounds)
     assert all(gdf.geometry.apply(lambda x: geom.intersects(geom)).values)
     
+    #Edge case, only one row in predictions
+    gdf = utilities.boxes_to_shapefile(df.iloc[:1,], root_dir=os.path.dirname(img), projected=True)
+    assert gdf.shape[0] == 1
 
 @pytest.mark.parametrize("flip_y_axis", [True, False])
 def test_boxes_to_shapefile_unprojected(download_release, flip_y_axis):

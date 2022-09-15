@@ -71,7 +71,7 @@ master_doc = 'index'
 project = u'DeepForest'
 copyright = u"2019, Ben Weinstein"
 author = u"Ben Weinstein"
-version = u"__version__ = '__version__ = '__version__ = '1.2.2'''"
+version = u"__version__ = '__version__ = '__version__ = '1.2.3'''"
 language = None
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', '**.ipynb_checkpoints']
 pygments_style = 'sphinx'
