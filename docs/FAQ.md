@@ -101,6 +101,13 @@ The added benefits of this is more control over the trainer object.
 The downside is that it doesn't align with the .config pattern where a user now has to look into the config to create the trainer. 
 We are open to changing this to be the default pattern in the future and welcome input from users.
 
+## How do I reduce double counting in overlapping images?
+
+If you have geospatial data for each image this is straightforward. 
+Here is a colab link example to project the predictions from image coordinates into geospatial coordinates and then apply non-max suppression.
+
+[https://colab.research.google.com/drive/1T4HC7i5zqe_9AX0pEZSSSzo6BFPFTgFK?usp=sharing](https://colab.research.google.com/drive/1T4HC7i5zqe_9AX0pEZSSSzo6BFPFTgFK?usp=sharing)
+
 
 ## Issues
 
