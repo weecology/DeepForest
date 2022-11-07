@@ -90,6 +90,7 @@ def test_train_empty(m, tmpdir):
     empty_csv.to_csv("{}/empty.csv".format(tmpdir))
     m.config["train"]["csv_file"] = "{}/empty.csv".format(tmpdir)
     m.config["batch_size"] = 2
+    m.create_trainer()    
     m.trainer.fit(m)
 
 def test_validation_step(m):
