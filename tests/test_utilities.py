@@ -5,6 +5,7 @@ import pytest
 import pandas as pd
 import rasterio as rio
 from shapely import geometry
+import geopandas as gpd
 
 from deepforest import get_data
 from deepforest import utilities
@@ -49,6 +50,16 @@ def test_project_boxes():
     gdf = utilities.project_boxes(df, root_dir=os.path.dirname(csv_file))
     
     assert df.shape[0] == gdf.shape[0]
+
+def test_shapefile_to_annotations_convert_to_boxes(tmpdir):
+    sample_geometry = [geometry.Point(404211.9 + 10,3285102 + 20),geometry.Point(404211.9 + 20,3285102 + 20)]
+    labels = ["Tree","Tree"]
+    df = pd.DataFrame({"geometry":sample_geometry,"label":labels})
+    gdf = gpd.GeoDataFrame(df, geometry="geometry")
+    gdf.to_file("{}/annotations.shp".format(tmpdir))
+    image_path = get_data("OSBS_029.tif")
+    shp = utilities.shapefile_to_annotations(shapefile="{}/annotations.shp".format(tmpdir), rgb=image_path, savedir=tmpdir, convert_to_boxes=True)
+    assert shp.shape[0] == 2
     
 def test_boxes_to_shapefile_projected(download_release):
     img = get_data("OSBS_029.tif")
