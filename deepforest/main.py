@@ -380,7 +380,7 @@ class deepforest(pl.LightningModule):
                 for df,image in result:
                     df["label"] = df.label.apply(lambda x: self.numeric_to_label_dict[x])
                 
-                return df
+                return result
                     
         return result
 

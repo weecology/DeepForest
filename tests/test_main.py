@@ -179,7 +179,7 @@ def test_predict_tile(m):
                                             patch_overlap = 0.5,
                                             return_plot = False)
     assert isinstance(prediction, pd.DataFrame)
-    assert set(prediction.columns) == {"xmin","ymin","xmax","ymax","label","score"}
+    assert set(prediction.columns) == {"xmin","ymin","xmax","ymax","label","score","image_path"}
     assert not prediction.empty
 
     #test soft-nms method
@@ -189,7 +189,7 @@ def test_predict_tile(m):
                                             return_plot = False,
                                             use_soft_nms =True)
     assert isinstance(soft_nms_pred, pd.DataFrame)
-    assert set(soft_nms_pred.columns) == {"xmin","ymin","xmax","ymax","label","score"}
+    assert set(soft_nms_pred.columns) == {"xmin","ymin","xmax","ymax","label","score","image_path"}
     assert not soft_nms_pred.empty
 
     #test predict numpy image
@@ -207,7 +207,10 @@ def test_predict_tile(m):
                                        return_plot=False)
     assert not prediction.empty
     
+
+def test_predict_tile_no_mosaic(m):
     #test no mosaic, return a tuple of crop and prediction
+    raster_path = get_data(path='OSBS_029.tif')    
     prediction = m.predict_tile(raster_path = raster_path,
                                        patch_size=300,
                                        patch_overlap=0,
@@ -215,7 +218,7 @@ def test_predict_tile(m):
                                        mosaic=False) 
     assert len(prediction) == 4
     assert len(prediction[0]) == 2
-    assert prediction[0][1].shape == (300,300, 3)
+    assert prediction[0][1].shape == (300,300, 3)    
     
 def test_evaluate(m, tmpdir):
     csv_file = get_data("OSBS_029.csv")
