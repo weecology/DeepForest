@@ -108,7 +108,6 @@ Here is a colab link example to project the predictions from image coordinates i
 
 [https://colab.research.google.com/drive/1T4HC7i5zqe_9AX0pEZSSSzo6BFPFTgFK?usp=sharing](https://colab.research.google.com/drive/1T4HC7i5zqe_9AX0pEZSSSzo6BFPFTgFK?usp=sharing)
 
-
 ## Issues
 
 We welcome feedback on both the python package as well as the algorithm performance. Please submit detailed issues to the github repo.

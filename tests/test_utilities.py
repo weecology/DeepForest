@@ -89,6 +89,22 @@ def test_boxes_to_shapefile_projected(download_release):
     gdf = utilities.boxes_to_shapefile(df.iloc[:1,], root_dir=os.path.dirname(img), projected=True)
     assert gdf.shape[0] == 1
 
+def test_boxes_to_shapefile_projected_from_predict_tile(download_release):
+    img = get_data("OSBS_029.tif")
+    r = rio.open(img)
+    m = main.deepforest()
+    m.use_release(check_release=False)
+    df = m.predict_tile(raster_path=img)
+    gdf = utilities.boxes_to_shapefile(df, root_dir=os.path.dirname(img), projected=True)
+    
+    #Confirm that each boxes within image bounds
+    geom = geometry.box(*r.bounds)
+    assert all(gdf.geometry.apply(lambda x: geom.intersects(geom)).values)
+    
+    #Edge case, only one row in predictions
+    gdf = utilities.boxes_to_shapefile(df.iloc[:1,], root_dir=os.path.dirname(img), projected=True)
+    assert gdf.shape[0] == 1
+    
 @pytest.mark.parametrize("flip_y_axis", [True, False])
 def test_boxes_to_shapefile_unprojected(download_release, flip_y_axis):
     img = get_data("OSBS_029.png")

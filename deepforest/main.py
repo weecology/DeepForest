@@ -373,9 +373,14 @@ class deepforest(pl.LightningModule):
         if not return_plot:
             if mosaic:
                 result["label"] = result.label.apply(lambda x: self.numeric_to_label_dict[x])
+                
+                if raster_path:
+                    result["image_path"] = os.path.basename(raster_path)
             else:
                 for df,image in result:
                     df["label"] = df.label.apply(lambda x: self.numeric_to_label_dict[x])
+                
+                return result
                     
         return result
 

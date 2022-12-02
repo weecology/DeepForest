@@ -345,7 +345,7 @@ def boxes_to_shapefile(df, root_dir, projected=True, flip_y_axis=False):
     Args:
        df: a pandas type dataframe with columns: name, xmin, ymin, xmax, ymax. Name is the relative path to the root_dir arg.
        root_dir: directory of images to lookup image_path column
-       projected: If true, convert from image to geographic coordinates, if False, keep in image coordinate system
+       projected: If True, convert from image to geographic coordinates, if False, keep in image coordinate system
        flip_y_axis: If True, reflect predictions over y axis to align with raster data in QGIS, which uses a negative y origin compared to numpy. See https://gis.stackexchange.com/questions/306684/why-does-qgis-use-negative-y-spacing-in-the-default-raster-geotransform
     Returns:
        df: a geospatial dataframe with the boxes optionally transformed to the target crs
