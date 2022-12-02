@@ -61,7 +61,7 @@ class images_callback(Callback):
                 "Could not find logger in lightning module, skipping upload, images were saved to {}, error was rasied {}"
                 .format(self.savedir, e))
 
-    def on_epoch_end(self, trainer, pl_module):
+    def on_validation_epoch_end(self, trainer, pl_module):
         if trainer.current_epoch % self.every_n_epochs == 0:
             print("Running image callback")
             self.log_images(pl_module)

@@ -230,18 +230,25 @@ def xml_to_annotations(xml_path):
     return (annotations)
 
 
-def shapefile_to_annotations(shapefile, rgb, savedir="."):
+def shapefile_to_annotations(shapefile, rgb, buffer_size=0.5, convert_to_boxes = False, savedir="."):
     """
     Convert a shapefile of annotations into annotations csv file for DeepForest training and evaluation
     Args:
         shapefile: Path to a shapefile on disk. If a label column is present, it will be used, else all labels are assumed to be "Tree"
         rgb: Path to the RGB image on disk
         savedir: Directory to save csv files
+        buffer_size: size of point to box expansion in map units of the target object, meters for projected data, pixels for unprojected data. The buffer_size is added to each side of the x,y point to create the box. 
+        convert_to_boxes (False): If True, convert the point objects in the shapefile into bounding boxes with size 'buffer_size'.  
     Returns:
         results: a pandas dataframe
     """
     # Read shapefile
     gdf = gpd.read_file(shapefile)
+
+    #define in image coordinates and buffer to create a box
+    if convert_to_boxes:
+        gdf["geometry"] =[shapely.geometry.Point(x,y) for x,y in zip(gdf.geometry.x.astype(float), gdf.geometry.y.astype(float))]
+        gdf["geometry"] = [shapely.geometry.box(left, bottom, right, top) for left, bottom, right, top in gdf.geometry.buffer(buffer_size).bounds.values]
 
     # get coordinates
     df = gdf.geometry.bounds

@@ -64,13 +64,13 @@ If you would like to train a model, here is a quick video on a simple way to ann
 
 <div style="position: relative; padding-bottom: 62.5%; height: 0;"><iframe src="https://www.loom.com/embed/e1639d36b6ef4118a31b7b892344ba83" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe></div>
 
-Using a shapefile we could turn it into a dataframe of bounding box annotations by converting the points into boxes
+Using a shapefile we could turn it into a dataframe of bounding box annotations by converting the points into boxes. If you already have boxes, you can exclude convert_to_boxes and buffer_size.
 
 
 ```
 df = shapefile_to_annotations(
     shapefile="annotations.shp", 
-    rgb="image_path", box_points=True, buffer_size=0.15
+    rgb="image_path", convert_to_boxes=True, buffer_size=0.15
 )
 ```
 
