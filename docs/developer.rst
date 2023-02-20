@@ -29,19 +29,20 @@ Getting started
 
 6. Install the package from the main directory.
 
-Installing with Conda uses `environment yaml`_.
-Installing with Pip uses `dev_requirements.txt `_.
-
 Deepforest can be install using either pip or conda.
 
-## pip
+**Pip**
+
+Installing with Pip uses `dev_requirements`_.txt.
 
 .. code-block:: bash
 
   $ pip install -r dev_requirements.txt
   $ pip install . -U
 
-## conda
+**conda**
+
+Installing with Conda uses `environment yaml`_.
 
 Conda-based installs can be slow. We recommend using [mamba](https://mamba.readthedocs.io/en/latest/user_guide/mamba.html) to speed them up.
 
@@ -126,7 +127,7 @@ the deepforest source code is located relative to the doc directory.
   Do not commit the build directory after making html.
 
 .. _sample code: https://github.com/weecology/DeepForest#usage
-.. _requirements text: https://raw.githubusercontent.com/weecology/DeepForest/main/dev_requirements.txt
+.. _dev_requirements: https://raw.githubusercontent.com/weecology/DeepForest/main/dev_requirements.txt
 .. _environment yaml: https://raw.githubusercontent.com/weecology/DeepForest/main/environment.yml
 .. _Python download site: http://www.python.org/download/
 .. _PYPI download files: https://pypi.org/project/deepforest/#files
