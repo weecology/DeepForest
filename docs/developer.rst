@@ -10,8 +10,8 @@ Getting started
 1. Quickstart by forking the main repository https://github.com/weecology/DeepForest
 2. Clone your copy of the repository
 
-    - Using ssh ``git clone git@github.com:[henrykironde]/DeepForest.git``
-    - Using https ``git clone https://github.com/[henrykironde]/DeepForest.git``
+    - Using ssh ``git clone git@github.com:[your user name]/DeepForest.git``
+    - Using https ``git clone https://github.com/[your user name]/DeepForest.git``
 
 3. Link or point your cloned copy to the main repository. (I always name it upstream)
 
