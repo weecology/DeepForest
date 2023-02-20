@@ -4,12 +4,55 @@ Developer's guide
 
 Deepends on Python 3.5+
 
-Required Modules
-================
+Getting started
+===============
 
+1. Quickstart by forking the main repository https://github.com/weecology/DeepForest
+2. Clone your copy of the repository
+
+    - Using ssh ``git clone git@github.com:[henrykironde]/DeepForest.git``
+    - Using https ``git clone https://github.com/[henrykironde]/DeepForest.git``
+
+3. Link or point your cloned copy to the main repository. (I always name it upstream)
+
+    - ``git remote add upstream https://github.com/weecology/DeepForest.git``
+
+5. Check/confirm your settings using ``git remote -v``
+
+::
+
+    origin  git@github.com:[your user name]/DeepForest.git (fetch)
+    origin  git@github.com:[your user name]/DeepForest.git (push)
+    upstream  https://github.com/weecology/DeepForest.git (fetch)
+    upstream  https://github.com/weecology/DeepForest.git (push)
+
+
+6. Install the package from the main directory.
 
 Installing with Conda uses `environment yaml`_.
-Installing with Pip uses `requirements text`_.
+Installing with Pip uses `dev_requirements.txt `_.
+
+Deepforest can be install using either pip or conda.
+
+## pip
+
+.. code-block:: bash
+
+  $ pip install -r dev_requirements.txt
+  $ pip install . -U
+
+## conda
+
+Conda-based installs can be slow. We recommend using [mamba](https://mamba.readthedocs.io/en/latest/user_guide/mamba.html) to speed them up.
+
+.. code-block:: bash
+
+  $ conda create -n deepforest python=3
+  $ conda activate deepforest
+  $ pip install . -U
+
+
+7. Check if the package was installed, please test using the `sample code`_.
 
 Testing
 =======
@@ -82,8 +125,9 @@ the deepforest source code is located relative to the doc directory.
   Note:
   Do not commit the build directory after making html.
 
-.. _requirements text: https://raw.githubusercontent.com/weecology/DeepForest/master/requirements.txt
-.. _environment yaml: https://raw.githubusercontent.com/weecology/DeepForest/master/environment.yml
+.. _sample code: https://github.com/weecology/DeepForest#usage
+.. _requirements text: https://raw.githubusercontent.com/weecology/DeepForest/main/dev_requirements.txt
+.. _environment yaml: https://raw.githubusercontent.com/weecology/DeepForest/main/environment.yml
 .. _Python download site: http://www.python.org/download/
 .. _PYPI download files: https://pypi.org/project/deepforest/#files
 .. _Weecology staged recipes: https://github.com/weecology/staged-recipes
