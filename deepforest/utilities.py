@@ -16,6 +16,7 @@ from tqdm import tqdm
 
 from deepforest import _ROOT
 
+
 def read_config(config_path):
     """Read config yaml file"""
     try:
@@ -47,7 +48,9 @@ class DownloadProgressBar(tqdm):
             self.total = tsize
         self.update(b * bsize - self.n)
 
-def use_bird_release(save_dir=os.path.join(_ROOT, "data/"), prebuilt_model="bird", check_release=True):
+
+def use_bird_release(
+        save_dir=os.path.join(_ROOT, "data/"), prebuilt_model="bird", check_release=True):
     """
     Check the existence of, or download the latest model release from github
     Args:
@@ -60,7 +63,7 @@ def use_bird_release(save_dir=os.path.join(_ROOT, "data/"), prebuilt_model="bird
 
     # Naming based on pre-built model
     output_path = os.path.join(save_dir, prebuilt_model + ".pt")
-    
+
     if check_release:
         # Find latest github tag release from the DeepLidar repo
         _json = json.loads(
@@ -71,44 +74,49 @@ def use_bird_release(save_dir=os.path.join(_ROOT, "data/"), prebuilt_model="bird
                 )).read())
         asset = _json['assets'][0]
         url = asset['browser_download_url']
-    
+
         # Check the release tagged locally
         try:
             release_txt = pd.read_csv(save_dir + "current_bird_release.csv")
         except BaseException:
             release_txt = pd.DataFrame({"current_bird_release": [None]})
-    
+
         # Download the current release it doesn't exist
         if not release_txt.current_bird_release[0] == _json["html_url"]:
-    
-            print("Downloading model from BirdDetector release {}, see {} for details".format(
-                _json["tag_name"], _json["html_url"]))
-    
+
+            print("Downloading model from BirdDetector release {}, see {} for details".
+                  format(_json["tag_name"], _json["html_url"]))
+
             with DownloadProgressBar(unit='B',
                                      unit_scale=True,
                                      miniters=1,
                                      desc=url.split('/')[-1]) as t:
-                urllib.request.urlretrieve(url, filename=output_path, reporthook=t.update_to)
-    
+                urllib.request.urlretrieve(url,
+                                           filename=output_path,
+                                           reporthook=t.update_to)
+
             print("Model was downloaded and saved to {}".format(output_path))
-    
+
             # record the release tag locally
             release_txt = pd.DataFrame({"current_bird_release": [_json["html_url"]]})
             release_txt.to_csv(save_dir + "current_bird_release.csv")
         else:
             print("Model from BirdDetector Repo release {} was already downloaded. "
                   "Loading model from file.".format(_json["html_url"]))
-    
+
         return _json["html_url"], output_path
     else:
         try:
             release_txt = pd.read_csv(save_dir + "current_release.csv")
         except BaseException:
-            raise ValueError("Check release argument is {}, but no release has been previously downloaded".format(check_release))
-        
+            raise ValueError("Check release argument is {}, but no release has been "
+                             "previously downloaded".format(check_release))
+
         return release_txt.current_release[0], output_path
 
-def use_release(save_dir=os.path.join(_ROOT, "data/"), prebuilt_model="NEON", check_release=True):
+
+def use_release(
+        save_dir=os.path.join(_ROOT, "data/"), prebuilt_model="NEON", check_release=True):
     """
     Check the existence of, or download the latest model release from github
     Args:
@@ -121,7 +129,7 @@ def use_release(save_dir=os.path.join(_ROOT, "data/"), prebuilt_model="NEON", ch
     """
     # Naming based on pre-built model
     output_path = os.path.join(save_dir, prebuilt_model + ".pt")
-    
+
     if check_release:
         # Find latest github tag release from the DeepLidar repo
         _json = json.loads(
@@ -132,42 +140,46 @@ def use_release(save_dir=os.path.join(_ROOT, "data/"), prebuilt_model="NEON", ch
                 )).read())
         asset = _json['assets'][0]
         url = asset['browser_download_url']
-        
+
         # Check the release tagged locally
         try:
             release_txt = pd.read_csv(save_dir + "current_release.csv")
         except BaseException:
             release_txt = pd.DataFrame({"current_release": [None]})
-        
+
         # Download the current release it doesn't exist
         if not release_txt.current_release[0] == _json["html_url"]:
-        
-            print("Downloading model from DeepForest release {}, see {} for details".format(
-                _json["tag_name"], _json["html_url"]))
-        
+
+            print("Downloading model from DeepForest release {}, see {} "
+                  "for details".format(_json["tag_name"], _json["html_url"]))
+
             with DownloadProgressBar(unit='B',
                                      unit_scale=True,
                                      miniters=1,
                                      desc=url.split('/')[-1]) as t:
-                urllib.request.urlretrieve(url, filename=output_path, reporthook=t.update_to)
-        
+                urllib.request.urlretrieve(url,
+                                           filename=output_path,
+                                           reporthook=t.update_to)
+
             print("Model was downloaded and saved to {}".format(output_path))
-        
+
             # record the release tag locally
             release_txt = pd.DataFrame({"current_release": [_json["html_url"]]})
             release_txt.to_csv(save_dir + "current_release.csv")
         else:
             print("Model from DeepForest release {} was already downloaded. "
                   "Loading model from file.".format(_json["html_url"]))
-        
+
         return _json["html_url"], output_path
     else:
         try:
             release_txt = pd.read_csv(save_dir + "current_release.csv")
         except BaseException:
-            raise ValueError("Check release argument is {}, but no release has been previously downloaded".format(check_release))
-        
+            raise ValueError("Check release argument is {}, but no release "
+                             "has been previously downloaded".format(check_release))
+
         return release_txt.current_release[0], output_path
+
 
 def xml_to_annotations(xml_path):
     """
@@ -230,7 +242,11 @@ def xml_to_annotations(xml_path):
     return (annotations)
 
 
-def shapefile_to_annotations(shapefile, rgb, buffer_size=0.5, convert_to_boxes = False, savedir="."):
+def shapefile_to_annotations(shapefile,
+                             rgb,
+                             buffer_size=0.5,
+                             convert_to_boxes=False,
+                             savedir="."):
     """
     Convert a shapefile of annotations into annotations csv file for DeepForest training and evaluation
     Args:
@@ -245,10 +261,16 @@ def shapefile_to_annotations(shapefile, rgb, buffer_size=0.5, convert_to_boxes =
     # Read shapefile
     gdf = gpd.read_file(shapefile)
 
-    #define in image coordinates and buffer to create a box
+    # define in image coordinates and buffer to create a box
     if convert_to_boxes:
-        gdf["geometry"] =[shapely.geometry.Point(x,y) for x,y in zip(gdf.geometry.x.astype(float), gdf.geometry.y.astype(float))]
-        gdf["geometry"] = [shapely.geometry.box(left, bottom, right, top) for left, bottom, right, top in gdf.geometry.buffer(buffer_size).bounds.values]
+        gdf["geometry"] = [
+            shapely.geometry.Point(x, y)
+            for x, y in zip(gdf.geometry.x.astype(float), gdf.geometry.y.astype(float))
+        ]
+        gdf["geometry"] = [
+            shapely.geometry.box(left, bottom, right, top)
+            for left, bottom, right, top in gdf.geometry.buffer(buffer_size).bounds.values
+        ]
 
     # get coordinates
     df = gdf.geometry.bounds
@@ -322,9 +344,9 @@ def check_file(df):
 
     if not all(x in df.columns
                for x in ["image_path", "xmin", "xmax", "ymin", "ymax", "label"]):
-        raise IOError(
-            "Input file has incorrect column names, the following columns must exist 'image_path','xmin','ymin','xmax','ymax','label'."
-        )
+        raise IOError("Input file has incorrect column names, "
+                      "the following columns must exist "
+                      "'image_path','xmin','ymin','xmax','ymax','label'.")
 
     return df
 
@@ -336,8 +358,10 @@ def check_image(image):
         Returns: None, throws error on assert
     """
     if not image.shape[2] == 3:
-        raise ValueError("image is expected have three channels, channel last format, found image with shape {}".format(image.shape))
-    
+        raise ValueError("image is expected have three channels, channel last format, "
+                         "found image with shape {}".format(image.shape))
+
+
 def boxes_to_shapefile(df, root_dir, projected=True, flip_y_axis=False):
     """
     Convert from image coordinates to geographic coordinates
@@ -352,9 +376,8 @@ def boxes_to_shapefile(df, root_dir, projected=True, flip_y_axis=False):
     """
     plot_names = df.image_path.unique()
     if len(plot_names) > 1:
-        raise ValueError(
-            "This function projects a single plots worth of data. Multiple plot names found {}"
-            .format(plot_names))
+        raise ValueError("This function projects a single plots worth of data. "
+                         "Multiple plot names found {}".format(plot_names))
     else:
         plot_name = plot_names[0]
 
@@ -367,53 +390,53 @@ def boxes_to_shapefile(df, root_dir, projected=True, flip_y_axis=False):
 
     if projected:
         # Convert image pixel locations to geographic coordinates
-        xmin_coords, ymin_coords = rasterio.transform.xy(
-            transform=transform,
-            rows = df.ymin,
-            cols = df.xmin,
-            offset = 'center'
-            )
-        
-        xmax_coords, ymax_coords = rasterio.transform.xy(
-            transform=transform,
-            rows = df.ymax,
-            cols = df.xmax,
-            offset = 'center'
-            )
-        
+        xmin_coords, ymin_coords = rasterio.transform.xy(transform=transform,
+                                                         rows=df.ymin,
+                                                         cols=df.xmin,
+                                                         offset='center')
+
+        xmax_coords, ymax_coords = rasterio.transform.xy(transform=transform,
+                                                         rows=df.ymax,
+                                                         cols=df.xmax,
+                                                         offset='center')
+
         # One box polygon for each tree bounding box
-        # Careful of single row edge case where xmin_coords comes out not as a list, but as a float
+        # Careful of single row edge case where
+        # xmin_coords comes out not as a list, but as a float
         if type(xmin_coords) == float:
             xmin_coords = [xmin_coords]
             ymin_coords = [ymin_coords]
             xmax_coords = [xmax_coords]
             ymax_coords = [ymax_coords]
-            
-        box_coords = zip(xmin_coords, ymin_coords, xmax_coords, ymax_coords)
-        box_geoms = [shapely.geometry.box(xmin,ymin,xmax,ymax) for xmin,ymin,xmax,ymax in box_coords]
 
-        
+        box_coords = zip(xmin_coords, ymin_coords, xmax_coords, ymax_coords)
+        box_geoms = [
+            shapely.geometry.box(xmin, ymin, xmax, ymax)
+            for xmin, ymin, xmax, ymax in box_coords
+        ]
+
         geodf = gpd.GeoDataFrame(df, geometry=box_geoms)
         geodf.crs = crs
-        
+
         return geodf
-    
-    else:   
+
+    else:
         if flip_y_axis:
-            #See https://gis.stackexchange.com/questions/306684/why-does-qgis-use-negative-y-spacing-in-the-default-raster-geotransform 
+            # See https://gis.stackexchange.com/questions/306684/why-does-qgis-use-negative-y-spacing-in-the-default-raster-geotransform
             # Numpy uses top left 0,0 origin, flip along y axis.
             df['geometry'] = df.apply(
-                   lambda x: shapely.geometry.box(x.xmin, -x.ymin, x.xmax, -x.ymax), axis=1)  
+                lambda x: shapely.geometry.box(x.xmin, -x.ymin, x.xmax, -x.ymax), axis=1)
         else:
             df['geometry'] = df.apply(
-                   lambda x: shapely.geometry.box(x.xmin, x.ymin, x.xmax, x.ymax), axis=1)              
+                lambda x: shapely.geometry.box(x.xmin, x.ymin, x.xmax, x.ymax), axis=1)
         df = gpd.GeoDataFrame(df, geometry="geometry")
 
         return df
 
+
 def collate_fn(batch):
-    batch = list(filter(lambda x : x is not None, batch))
-        
+    batch = list(filter(lambda x: x is not None, batch))
+
     return tuple(zip(*batch))
 
 
@@ -428,46 +451,51 @@ def annotations_to_shapefile(df, transform, crs):
     Returns:
         results: a geopandas dataframe where every entry is the bounding box for a detected tree.
     """
-    warnings.warn("This method is deprecated and will be removed in version DeepForest 2.0.0, please use boxes_to_shapefile which unifies project_boxes and annotations_to_shapefile functionalities")
-    
+    warnings.warn("This method is deprecated and will be "
+                  "removed in version DeepForest 2.0.0, "
+                  "please use boxes_to_shapefile which unifies project_boxes and "
+                  "annotations_to_shapefile functionalities")
+
     # Convert image pixel locations to geographic coordinates
-    xmin_coords, ymin_coords = rasterio.transform.xy(
-        transform=transform,
-        rows = df.ymin,
-        cols = df.xmin,
-        offset = 'center'
-        )
-    
-    xmax_coords, ymax_coords = rasterio.transform.xy(
-        transform=transform,
-        rows = df.ymax,
-        cols = df.xmax,
-        offset = 'center'
-        )
-    
+    xmin_coords, ymin_coords = rasterio.transform.xy(transform=transform,
+                                                     rows=df.ymin,
+                                                     cols=df.xmin,
+                                                     offset='center')
+
+    xmax_coords, ymax_coords = rasterio.transform.xy(transform=transform,
+                                                     rows=df.ymax,
+                                                     cols=df.xmax,
+                                                     offset='center')
+
     # One box polygon for each tree bounding box
     box_coords = zip(xmin_coords, ymin_coords, xmax_coords, ymax_coords)
-    box_geoms = [shapely.geometry.box(xmin,ymin,xmax,ymax) for xmin,ymin,xmax,ymax in box_coords]
-    
+    box_geoms = [
+        shapely.geometry.box(xmin, ymin, xmax, ymax)
+        for xmin, ymin, xmax, ymax in box_coords
+    ]
+
     geodf = gpd.GeoDataFrame(df, geometry=box_geoms)
     geodf.crs = crs
-    
+
     return geodf
+
 
 def project_boxes(df, root_dir, transform=True):
     """
     Convert from image coordinates to geographic coordinates
     Note that this assumes df is just a single plot being passed to this function
-    df: a pandas type dataframe with columns: name, xmin, ymin, xmax, ymax. Name is the relative path to the root_dir arg.
+    df: a pandas type dataframe with columns: name, xmin, ymin, xmax, ymax.
+    Name is the relative path to the root_dir arg.
     root_dir: directory of images to lookup image_path column
     transform: If true, convert from image to geographic coordinates
     """
-    warnings.warn("This method is deprecated and will be removed in version DeepForest 2.0.0, please use boxes_to_shapefile which unifies project_boxes and annotations_to_shapefile functionalities")    
+    warnings.warn("This method is deprecated and will be removed in version "
+                  "DeepForest 2.0.0, please use boxes_to_shapefile which "
+                  "unifies project_boxes and annotations_to_shapefile functionalities")
     plot_names = df.image_path.unique()
     if len(plot_names) > 1:
-        raise ValueError(
-            "This function projects a single plots worth of data. Multiple plot names found {}"
-            .format(plot_names))
+        raise ValueError("This function projects a single plots worth of data. "
+                         "Multiple plot names found {}".format(plot_names))
     else:
         plot_name = plot_names[0]
 

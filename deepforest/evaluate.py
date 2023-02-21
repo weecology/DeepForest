@@ -12,6 +12,7 @@ from deepforest import IoU
 from deepforest.utilities import check_file
 from deepforest import visualize
 
+
 def evaluate_image(predictions, ground_df, root_dir, savedir=None):
     """
     Compute intersection-over-union matching among prediction and ground truth boxes for one image
@@ -40,51 +41,56 @@ def evaluate_image(predictions, ground_df, root_dir, savedir=None):
 
     # match
     result = IoU.compute_IoU(ground_df, predictions)
-    
-    
-    #add the label classes
-    result["predicted_label"] = result.prediction_id.apply(lambda x: predictions.label.loc[x] if pd.notnull(x) else x)
+
+    # add the label classes
+    result["predicted_label"] = result.prediction_id.apply(
+        lambda x: predictions.label.loc[x] if pd.notnull(x) else x)
     result["true_label"] = result.truth_id.apply(lambda x: ground_df.label.loc[x])
-    
+
     if savedir:
-        image = np.array(Image.open("{}/{}".format(root_dir, plot_name)))[:,:,::-1]
+        image = np.array(Image.open("{}/{}".format(root_dir, plot_name)))[:, :, ::-1]
         image = visualize.plot_predictions(image, df=predictions)
-        image = visualize.plot_predictions(image, df=ground_df, color=(0,165,255))
+        image = visualize.plot_predictions(image, df=ground_df, color=(0, 165, 255))
         cv2.imwrite("{}/{}".format(savedir, plot_name), image)
-        
+
     return result
+
 
 def compute_class_recall(results):
     """Given a set of evaluations, what proportion of predicted boxes match. True boxes which are not matched to predictions do not count against accuracy."""
-    #Per class recall and precision
+    # Per class recall and precision
     class_recall_dict = {}
     class_precision_dict = {}
     class_size = {}
-    
-    box_results =  results[results.predicted_label.notna()]
+
+    box_results = results[results.predicted_label.notna()]
     if box_results.empty:
         print("No predictions made")
         class_recall = None
         return class_recall
-    
+
     for name, group in box_results.groupby("true_label"):
-        class_recall_dict[name] = sum(group.true_label == group.predicted_label)/group.shape[0]
-        number_of_predictions = box_results[box_results.predicted_label==name].shape[0]
+        class_recall_dict[name] = sum(
+            group.true_label == group.predicted_label) / group.shape[0]
+        number_of_predictions = box_results[box_results.predicted_label == name].shape[0]
         if number_of_predictions == 0:
             class_precision_dict[name] = 0
         else:
-            class_precision_dict[name] = sum(group.true_label == group.predicted_label)/number_of_predictions
+            class_precision_dict[name] = sum(
+                group.true_label == group.predicted_label) / number_of_predictions
         class_size[name] = group.shape[0]
-    
-    class_recall = pd.DataFrame({"label":class_recall_dict.keys(),"recall":pd.Series(class_recall_dict), "precision":pd.Series(class_precision_dict), "size":pd.Series(class_size)}).reset_index(drop=True)
-    
+
+    class_recall = pd.DataFrame({
+        "label": class_recall_dict.keys(),
+        "recall": pd.Series(class_recall_dict),
+        "precision": pd.Series(class_precision_dict),
+        "size": pd.Series(class_size)
+    }).reset_index(drop=True)
+
     return class_recall
 
-def evaluate(predictions,
-             ground_df,
-             root_dir,
-             iou_threshold=0.4,
-             savedir=None):
+
+def evaluate(predictions, ground_df, root_dir, iou_threshold=0.4, savedir=None):
     """Image annotated crown evaluation routine
     submission can be submitted as a .shp, existing pandas dataframe or .csv path
 
@@ -107,13 +113,22 @@ def evaluate(predictions,
     box_recalls = []
     box_precisions = []
     for image_path, group in ground_df.groupby("image_path"):
-        #clean indices
-        image_predictions = predictions[predictions["image_path"] == image_path].reset_index(drop=True)
-        
-        #If empty, add to list without computing IoU
-        if image_predictions.empty: 
-            result = pd.DataFrame({"truth_id":group.index.values,"prediction_id": None, "IoU":0, "predicted_label": None, "score":None, "match":None,"true_label":group.label})
-            #An empty prediction set has recall of 0, precision of NA.
+        # clean indices
+        image_predictions = predictions[predictions["image_path"] ==
+                                        image_path].reset_index(drop=True)
+
+        # If empty, add to list without computing IoU
+        if image_predictions.empty:
+            result = pd.DataFrame({
+                "truth_id": group.index.values,
+                "prediction_id": None,
+                "IoU": 0,
+                "predicted_label": None,
+                "score": None,
+                "match": None,
+                "true_label": group.label
+            })
+            # An empty prediction set has recall of 0, precision of NA.
             box_recalls.append(0)
             results.append(result)
             continue
@@ -122,8 +137,8 @@ def evaluate(predictions,
             result = evaluate_image(predictions=image_predictions,
                                     ground_df=group,
                                     root_dir=root_dir,
-                                    savedir=savedir) 
-            
+                                    savedir=savedir)
+
         result["image_path"] = image_path
         result["match"] = result.IoU > iou_threshold
         true_positive = sum(result["match"])
@@ -133,11 +148,16 @@ def evaluate(predictions,
         box_recalls.append(recall)
         box_precisions.append(precision)
         results.append(result)
-        
+
     results = pd.concat(results)
     box_precision = np.mean(box_precisions)
     box_recall = np.mean(box_recalls)
 
     class_recall = compute_class_recall(results)
-    
-    return {"results": results, "box_precision": box_precision, "box_recall": box_recall, "class_recall":class_recall}
+
+    return {
+        "results": results,
+        "box_precision": box_precision,
+        "box_recall": box_recall,
+        "class_recall": class_recall
+    }

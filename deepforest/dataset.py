@@ -22,23 +22,31 @@ from albumentations.pytorch import ToTensorV2
 import torch
 from PIL import Image
 
+
 def get_transform(augment):
     """Albumentations transformation of bounding boxs"""
     if augment:
-        transform = A.Compose([
-            A.HorizontalFlip(p=0.5),
-            ToTensorV2()
-        ], bbox_params=A.BboxParams(format='pascal_voc',label_fields=["category_ids"]))
-        
+        transform = A.Compose(
+            [A.HorizontalFlip(p=0.5), ToTensorV2()],
+            bbox_params=A.BboxParams(format='pascal_voc', label_fields=["category_ids"]))
+
     else:
-        transform = A.Compose([
-            ToTensorV2()
-        ], bbox_params=A.BboxParams(format='pascal_voc',label_fields=["category_ids"]))
+        transform = A.Compose([ToTensorV2()],
+                              bbox_params=A.BboxParams(format='pascal_voc',
+                                                       label_fields=["category_ids"]))
 
     return transform
 
+
 class TreeDataset(Dataset):
-    def __init__(self, csv_file, root_dir, transforms=None, label_dict = {"Tree": 0}, train=True, preload_images=False):
+
+    def __init__(self,
+                 csv_file,
+                 root_dir,
+                 transforms=None,
+                 label_dict={"Tree": 0},
+                 train=True,
+                 preload_images=False):
         """
         Args:
             csv_file (string): Path to a single csv file with annotations.
@@ -63,27 +71,27 @@ class TreeDataset(Dataset):
         self.train = train
         self.image_converter = A.Compose([ToTensorV2()])
         self.preload_images = preload_images
-        
-        #Pin data to memory if desired
+
+        # Pin data to memory if desired
         if self.preload_images:
             print("Pinning dataset to GPU memory")
             self.image_dict = {}
             for idx, x in enumerate(self.image_names):
-                img_name = os.path.join(self.root_dir, x)                
-                image = np.array(Image.open(img_name).convert("RGB"))/255
-                self.image_dict[idx] = image.astype("float32")  
-                
+                img_name = os.path.join(self.root_dir, x)
+                image = np.array(Image.open(img_name).convert("RGB")) / 255
+                self.image_dict[idx] = image.astype("float32")
+
     def __len__(self):
         return len(self.image_names)
 
     def __getitem__(self, idx):
-        
-        #Read image if not in memory
+
+        # Read image if not in memory
         if self.preload_images:
             image = self.image_dict[idx]
         else:
             img_name = os.path.join(self.root_dir, self.image_names[idx])
-            image = np.array(Image.open(img_name).convert("RGB"))/255
+            image = np.array(Image.open(img_name).convert("RGB")) / 255
             image = image.astype("float32")
 
         if self.train:
@@ -93,34 +101,35 @@ class TreeDataset(Dataset):
             targets = {}
             targets["boxes"] = image_annotations[["xmin", "ymin", "xmax",
                                                   "ymax"]].values.astype(float)
-            
+
             # Labels need to be encoded
             targets["labels"] = image_annotations.label.apply(
                 lambda x: self.label_dict[x]).values.astype(np.int64)
-            
-            #If image has no annotations, don't augment
+
+            # If image has no annotations, don't augment
             if np.sum(targets["boxes"]) == 0:
                 boxes = boxes = torch.zeros((0, 4), dtype=torch.float32)
                 labels = torch.from_numpy(targets["labels"])
-                #channels last
-                image = np.rollaxis(image,2,0)
-                image = torch.from_numpy(image)                
-                targets = {"boxes":boxes,"labels":labels}                   
+                # channels last
+                image = np.rollaxis(image, 2, 0)
+                image = torch.from_numpy(image)
+                targets = {"boxes": boxes, "labels": labels}
                 return self.image_names[idx], image, targets
-                
-            augmented = self.transform(image=image, bboxes=targets["boxes"], category_ids=targets["labels"])
+
+            augmented = self.transform(image=image,
+                                       bboxes=targets["boxes"],
+                                       category_ids=targets["labels"])
             image = augmented["image"]
-            
+
             boxes = np.array(augmented["bboxes"])
             boxes = torch.from_numpy(boxes)
-            labels = np.array(augmented["category_ids"]) 
+            labels = np.array(augmented["category_ids"])
             labels = torch.from_numpy(labels)
-            targets = {"boxes":boxes,"labels":labels}   
-            
+            targets = {"boxes": boxes, "labels": labels}
+
             return self.image_names[idx], image, targets
-            
+
         else:
-            #Mimic the train augmentation
-            converted = self.image_converter(image=image)   
+            # Mimic the train augmentation
+            converted = self.image_converter(image=image)
             return converted["image"]
-            
