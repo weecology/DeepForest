@@ -40,26 +40,30 @@ class images_callback(Callback):
         self.savedir = savedir
         self.root_dir = root_dir
         self.n = n
-        
-        #limit to n images
+
+        # limit to n images
         df = pd.read_csv(csv_file)
         selected_images = np.random.choice(df.image_path.unique(), self.n)
-        df = df[df.image_path.isin(selected_images)]        
+        df = df[df.image_path.isin(selected_images)]
         df.to_csv("{}/image_callback.csv".format(savedir))
-        
-        self.csv_file = "{}/image_callback.csv".format(savedir)        
+
+        self.csv_file = "{}/image_callback.csv".format(savedir)
         self.every_n_epochs = every_n_epochs
-         
+
     def log_images(self, pl_module):
-        boxes = predict.predict_file(model = pl_module.model, csv_file=self.csv_file, root_dir=self.root_dir, savedir=self.savedir, device=pl_module.device)
+        boxes = predict.predict_file(model=pl_module.model,
+                                     csv_file=self.csv_file,
+                                     root_dir=self.root_dir,
+                                     savedir=self.savedir,
+                                     device=pl_module.device)
         try:
             saved_plots = glob.glob("{}/*.png".format(self.savedir))
             for x in saved_plots:
                 pl_module.logger.experiment.log_image(x)
         except Exception as e:
-            print(
-                "Could not find logger in lightning module, skipping upload, images were saved to {}, error was rasied {}"
-                .format(self.savedir, e))
+            print("Could not find logger in lightning module, "
+                  "skipping upload, images were saved to {}, "
+                  "error was rasied {}".format(self.savedir, e))
 
     def on_validation_epoch_end(self, trainer, pl_module):
         if trainer.current_epoch % self.every_n_epochs == 0:

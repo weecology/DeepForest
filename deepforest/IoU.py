@@ -30,9 +30,9 @@ def _overlap_(test_poly, truth_polys, rtree_index):
             intersection_area = intersection_result.area
         else:
             intersection_area = 0
-        
+
         prediction_id.append(test_poly.prediction_id)
-        truth_id.append(truth_polys.loc[index].truth_id) 
+        truth_id.append(truth_polys.loc[index].truth_id)
         area.append(intersection_area)
 
     results = pd.DataFrame({
@@ -74,7 +74,7 @@ def compute_IoU(ground_truth, submission):
         """
     # Create index columns for ease
     ground_truth["truth_id"] = ground_truth.index.values
-    submission["prediction_id"] =  submission.index.values
+    submission["prediction_id"] = submission.index.values
 
     # rtree_index
     rtree_index = create_rtree_from_poly(ground_truth.geometry)
@@ -95,7 +95,7 @@ def compute_IoU(ground_truth, submission):
         if index in row_ind:
             matched_id = col_ind[np.where(index == row_ind)[0][0]]
             iou = _iou_(submission[submission.prediction_id == matched_id],
-                          ground_truth.loc[index])
+                        ground_truth.loc[index])
             score = submission[submission.prediction_id == matched_id].score.values[0]
         else:
             iou = 0
@@ -110,6 +110,6 @@ def compute_IoU(ground_truth, submission):
             }))
 
     iou_df = pd.concat(iou_df)
-    iou_df = iou_df.merge(ground_truth[["truth_id","xmin","xmax","ymin","ymax"]])
-    
+    iou_df = iou_df.merge(ground_truth[["truth_id", "xmin", "xmax", "ymin", "ymax"]])
+
     return iou_df

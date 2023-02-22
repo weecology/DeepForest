@@ -32,7 +32,7 @@ jobs:
   - script: |
       pip install pytest pytest-azurepipelines yapf
       pytest
-      #yapf -d --recursive deepforest/ --style=.style.yapf 2>&1
+      yapf -d --recursive deepforest/ --style=.style.yapf 2>&1
     displayName: 'Pytests and sytle tests'
     
   - bash: |

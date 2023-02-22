@@ -34,7 +34,7 @@ def create_anchor_generator(sizes=((8, 16, 32, 64, 128, 256, 400),),
     return anchor_generator
 
 
-def create_model(num_classes, nms_thresh, score_thresh, backbone = None):
+def create_model(num_classes, nms_thresh, score_thresh, backbone=None):
     """Create a retinanet model
     Args:
         num_classes (int): number of classes in the model
@@ -46,7 +46,7 @@ def create_model(num_classes, nms_thresh, score_thresh, backbone = None):
     if not backbone:
         resnet = load_backbone()
         backbone = resnet.backbone
-        
+
     model = RetinaNet(backbone=backbone, num_classes=num_classes)
     model.nms_thresh = nms_thresh
     model.score_thresh = score_thresh
