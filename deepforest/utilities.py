@@ -85,43 +85,46 @@ def use_bird_release(
         prebuilt_model: Currently only accepts "NEON", but could be expanded to include other prebuilt models. The local model will be called prebuilt_model.h5 on disk.
         check_release (logical): whether to check github for a model recent release. In cases where you are hitting the github API rate limit, set to False and any local model will be downloaded. If no model has been downloaded an error will raise.
     Returns: release_tag, output_path (str): path to downloaded model
-
     """
 
     # Naming based on pre-built model
     output_path = os.path.join(save_dir, prebuilt_model + ".pt")
-    
+
     if check_release:
         # Find latest github tag release from the DeepLidar repo
         release_txt = check_new_release(save_dir)
-    if release_txt.current_bird_release[0] and update:
-    # Download the current release it doesn't exist
-        if not release_txt.current_bird_release[0] == _json["html_url"]:
-    
-            print("Downloading model from BirdDetector release {}, see {} for details"
-                  .format(_json["tag_name"], _json["html_url"]))
-    
-            with DownloadProgressBar(unit='B',
-                                    unit_scale=True,
-                                    miniters=1,
-                                    desc=url.split('/')[-1]) as t:
-                urllib.request.urlretrieve(url, filename=output_path, reporthook=t.update_to)
-    
-            print("Model was downloaded and saved to {}".format(output_path))
-    
-            # record the release tag locally
-            release_txt = pd.DataFrame({"current_bird_release": [_json["html_url"]]})
-            release_txt.to_csv(save_dir + "current_bird_release.csv")
-        else:
-             print("Model from BirdDetector Repo release {} was already downloaded."
-                   "Loading model from file.".format(_json["html_url"]))
-    
-        return _json["html_url"], output_path
+        if release_txt.current_bird_release[0] and update:
+            # Download the current release it doesn't exist
+            if not release_txt.current_bird_release[0] == _json["html_url"]:
+
+                print("Downloading model from BirdDetector release {}, see {} for details".
+                    format(_json["tag_name"], _json["html_url"]))
+
+                with DownloadProgressBar(unit='B',
+                                        unit_scale=True,
+                                        miniters=1,
+                                        desc=url.split('/')[-1]) as t:
+                    urllib.request.urlretrieve(url,
+                                            filename=output_path,
+                                            reporthook=t.update_to)
+
+                print("Model was downloaded and saved to {}".format(output_path))
+
+                # record the release tag locally
+                release_txt = pd.DataFrame({"current_bird_release": [_json["html_url"]]})
+                release_txt.to_csv(save_dir + "current_bird_release.csv")
+            else:
+                print("Model from BirdDetector Repo release {} was already downloaded. "
+                    "Loading model from file.".format(_json["html_url"]))
+
+            return _json["html_url"], output_path
     else:
         try:
             release_txt = pd.read_csv(save_dir + "current_release.csv")
         except BaseException:
-            raise ValueError("Check release argument is {}, but no release has been previously downloaded".format(check_release))
+            raise ValueError("Check release argument is {}, but no release has been "
+                             "previously downloaded".format(check_release))
+
         return release_txt.current_release[0], output_path
 
 def use_release(
