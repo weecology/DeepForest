@@ -32,6 +32,10 @@ def test_xml_to_annotations():
 def test_use_release(download_release):
     # Download latest model from github release
     release_tag, state_dict = utilities.use_release(check_release=False)
+def test_check_new_release(dowload_release):
+    #check for any lastest release from github release
+    release_txt = utilities.check_new_release(os.path.join(_ROOT, "data/"))
+    assert release_txt.current_bird_release[0] != None    
 
 def test_use_bird_release(download_release):
     # Download latest model from github release
