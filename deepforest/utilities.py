@@ -98,8 +98,8 @@ def use_bird_release(
     # Download the current release it doesn't exist
         if not release_txt.current_bird_release[0] == _json["html_url"]:
     
-            print("Downloading model from BirdDetector release {}, see {} for details".
-                  format(_json["tag_name"], _json["html_url"]))
+            print("Downloading model from BirdDetector release {}, see {} for details"
+                  .format(_json["tag_name"], _json["html_url"]))
     
             with DownloadProgressBar(unit='B',
                                     unit_scale=True,
@@ -113,8 +113,8 @@ def use_bird_release(
             release_txt = pd.DataFrame({"current_bird_release": [_json["html_url"]]})
             release_txt.to_csv(save_dir + "current_bird_release.csv")
         else:
-            print("Model from BirdDetector Repo release {} was already downloaded. \
-                Loading model from file.".format(_json["html_url"]))
+             print("Model from BirdDetector Repo release {} was already downloaded."
+                   "Loading model from file.".format(_json["html_url"]))
     
         return _json["html_url"], output_path
     else:
@@ -122,7 +122,6 @@ def use_bird_release(
             release_txt = pd.read_csv(save_dir + "current_release.csv")
         except BaseException:
             raise ValueError("Check release argument is {}, but no release has been previously downloaded".format(check_release))
-        
         return release_txt.current_release[0], output_path
 
 def use_release(
