@@ -83,13 +83,13 @@ m.evaluate(csv_file=m.config["validation"]["csv_file"], root_dir=m.config["valid
 ```Python
 from deepforest import main
 csv_file = '/Users/benweinstein/Documents/DeepForest/deepforest/data/OSBS_029.tif'
-df = trained_model.predict_file(csv_file, root_dir = os.path.dirname(csv_file))
+df = m.predict_file(csv_file, root_dir = os.path.dirname(csv_file))
 ```
 
 ## Predict a large tile
 
 ```Python
-predicted_boxes = trained_model.predict_tile(raster_path = raster_path,
+predicted_boxes = m.predict_tile(raster_path = raster_path,
                                         patch_size = 300,
                                         patch_overlap = 0.5,
                                         return_plot = False)
