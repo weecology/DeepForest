@@ -81,21 +81,23 @@ m.evaluate(csv_file=m.config["validation"]["csv_file"], root_dir=m.config["valid
 ## Predict a single image
 
 ```Python
-from deepforest import main
-csv_file = '/Users/benweinstein/Documents/DeepForest/deepforest/data/OSBS_029.tif'
-df = trained_model.predict_file(csv_file, root_dir = os.path.dirname(csv_file))
+#Create a sample 3 band image
+image = np.random.random((400,400,3)).astype("float32")
+prediction = m.predict_image(image = image)
 ```
 
 ## Predict a large tile
 
+Split the large tile into small pieces, predict each piece and re-assemble
+
 ```Python
-predicted_boxes = trained_model.predict_tile(raster_path = raster_path,
+predicted_boxes = m.predict_tile(raster_path = raster_path,
                                         patch_size = 300,
                                         patch_overlap = 0.5,
                                         return_plot = False)
 ```
 
-## Evaluate a file of annotations using intersection-over-union
+## Evaluate a file of annotations using intersection-over-union as an metric of accuracy
 
 ```Python
 csv_file = get_data("example.csv")
