@@ -48,17 +48,13 @@ class DownloadProgressBar(tqdm):
             self.total = tsize
         self.update(b * bsize - self.n)
 
-def check_new_release(save_dir):
+def check_new_release():
     """
     Check the existence of, or download the latest model release from github
-    Args:
-        save_dir: Directory to save filepath, default to "data" in deepforest repo
     
-    Returns: New release text.
-
+    Returns: new release dict and url
     """
     # Find latest github tag release from the DeepLidar repo
-    global _json
     _json = json.loads(
         urllib.request.urlopen(
             urllib.request.Request(
@@ -66,16 +62,10 @@ def check_new_release(save_dir):
                 headers={'Accept': 'application/vnd.github.v3+json'},
             )).read())
     asset = _json['assets'][0]
-    global url
     url = asset['browser_download_url']
-
-    # Check the release tagged locally
-    try:
-        release_txt = pd.read_csv(save_dir + "current_bird_release.csv")
-    except BaseException:
-        release_txt = pd.DataFrame({"current_bird_release": [None]})
-    return release_txt
-
+    
+    return _json, url
+    
 def use_bird_release(
         save_dir=os.path.join(_ROOT, "data/"), prebuilt_model="bird", check_release=True, update =True):
     """
@@ -85,6 +75,7 @@ def use_bird_release(
         prebuilt_model: Currently only accepts "NEON", but could be expanded to include other prebuilt models. The local model will be called prebuilt_model.h5 on disk.
         check_release (logical): whether to check github for a model recent release. In cases where you are hitting the github API rate limit, set to False and any local model will be downloaded. If no model has been downloaded an error will raise.
     Returns: release_tag, output_path (str): path to downloaded model
+
     """
 
     # Naming based on pre-built model
@@ -92,8 +83,14 @@ def use_bird_release(
 
     if check_release:
         # Find latest github tag release from the DeepLidar repo
-        release_txt = check_new_release(save_dir)
-        if release_txt.current_bird_release[0] and update:
+        _json, url = check_new_release()
+        
+        try:
+            release_txt = pd.read_csv(save_dir + "current_bird_release.csv")
+        except BaseException:
+            release_txt = pd.DataFrame({"current_bird_release": [None]})
+
+        if _json and url and update:
             # Download the current release it doesn't exist
             if not release_txt.current_bird_release[0] == _json["html_url"]:
 
@@ -126,6 +123,7 @@ def use_bird_release(
                              "previously downloaded".format(check_release))
 
         return release_txt.current_release[0], output_path
+
 
 def use_release(
         save_dir=os.path.join(_ROOT, "data/"), prebuilt_model="NEON", check_release=True):
