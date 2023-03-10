@@ -170,7 +170,6 @@ def split_raster(annotations_file,
     """
 
     # Load raster as image
-    # Load raster as image
     if (numpy_image is None) & (path_to_raster is None):
         raise IOError("supply a raster either as a path_to_raster or if ready "
                       "from existing in memory numpy object, as numpy_image=")
@@ -181,23 +180,23 @@ def split_raster(annotations_file,
     else:
         if image_name is None:
             raise (IOError("If passing an numpy_image, please also specify a image_name"
-                           " to match the column in the annotation.csv file"))
+                            " to match the column in the annotation.csv file"))
 
     # Check that its 3 band
     bands = numpy_image.shape[2]
     if not bands == 3:
-        warnings.warn("Input rasterio had non-3 band shape of {}, ignoring "
-                      "alpha channel".format(numpy_image.shape))
+        warnings.warn(f"Input rasterio had non-3 band shape of {numpy_image.shape}, ignoring "
+                        "alpha channel")
         try:
             numpy_image = numpy_image[:, :, :3].astype("uint8")
         except:
             raise IOError("Input file {} has {} bands. "
-                          "DeepForest only accepts 3 band RGB rasters in the order "
-                          "(height, width, channels). "
-                          "Selecting the first three bands failed, "
-                          "please reshape manually.If the image was cropped and "
-                          "saved as a .jpg, please ensure that no alpha channel "
-                          "was used.".format(path_to_raster, bands))
+                            "DeepForest only accepts 3 band RGB rasters in the order "
+                            "(height, width, channels). "
+                            "Selecting the first three bands failed, "
+                            "please reshape manually.If the image was cropped and "
+                            "saved as a .jpg, please ensure that no alpha channel "
+                            "was used.".format(path_to_raster, bands))
 
     # Check that patch size is greater than image size
     height = numpy_image.shape[0]

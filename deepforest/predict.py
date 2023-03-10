@@ -18,6 +18,7 @@ from deepforest import dataset
 
 def predict_image(model,
                   image,
+                  path,
                   return_plot,
                   device,
                   iou_threshold=0.1,
@@ -37,6 +38,28 @@ def predict_image(model,
         img: The input with predictions overlaid (Optional)
     """
 
+    if image is not None:
+        pass
+    else:
+        # load raster as image
+        image = rio.open(path).read()
+        image = np.moveaxis(image, 0, 2)
+
+    bands = image.shape[2]
+    if not bands == 3:
+        warnings.warn(f"Input rasterio had non-3 band shape of {image.shape}, ignoring "
+                        "alpha channel")
+        try:
+            image = image[:, :, :3].astype("uint8")
+        except:
+            raise IOError("Input file {} has {} bands. "
+                        "DeepForest only accepts 3 band RGB rasters in the order "
+                        "(height, width, channels). "
+                        "Selecting the first three bands failed, "
+                        "please reshape manually.If the image was cropped and "
+                        "saved as a .jpg, please ensure that no alpha channel "
+                        "was used.".format(path, bands))
+        
     if image.dtype != "float32":
         warnings.warn(f"Image type is {image.dtype}, transforming to float32. "
                       f"This assumes that the range of pixel values is 0-255, as "
@@ -44,6 +67,7 @@ def predict_image(model,
                       f"(image.astype('float32')")
         image = image.astype("float32")
     image = preprocess.preprocess_image(image, device=device)
+
 
     with torch.no_grad():
         prediction = model(image)
@@ -193,6 +217,21 @@ def predict_tile(model,
         # load raster as image
         image = rio.open(raster_path).read()
         image = np.moveaxis(image, 0, 2)
+    
+    bands = image.shape[2]
+    if not bands == 3:
+        warnings.warn(f"Input rasterio had non-3 band shape of {image.shape}, ignoring "
+                        "alpha channel")
+        try:
+            image = image[:, :, :3].astype("uint8")
+        except:
+            raise IOError("Input file {} has {} bands. "
+                        "DeepForest only accepts 3 band RGB rasters in the order "
+                        "(height, width, channels). "
+                        "Selecting the first three bands failed, "
+                        "please reshape manually.If the image was cropped and "
+                        "saved as a .jpg, please ensure that no alpha channel "
+                        "was used.".format(raster_path, bands))
 
     # Compute sliding window index
     windows = preprocess.compute_windows(image, patch_size, patch_overlap)

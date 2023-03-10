@@ -166,6 +166,14 @@ def test_split_raster_empty(config):
     assert os.path.exists("tests/output/empty/OSBS_029_1.png")
 
 
+def test_split_raster_alpha_drop(config):
+    # Drop Alpha
+    r=rasterio.open(config["path_to_raster"]).read()
+    
+    
+    assert r.shape[0]==3
+
+
 def test_split_size_error(config):
     with pytest.raises(ValueError):
         annotations_file = preprocess.split_raster(path_to_raster=config["path_to_raster"],
