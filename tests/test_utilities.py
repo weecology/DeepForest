@@ -1,12 +1,15 @@
 # test_utilities
 import numpy as np
+import json
 import os
+import urllib
 import pytest
 import pandas as pd
 import rasterio as rio
 from shapely import geometry
 import geopandas as gpd
 
+from deepforest import _ROOT
 from deepforest import get_data
 from deepforest import utilities
 from deepforest import main
@@ -33,6 +36,17 @@ def test_use_release(download_release):
     # Download latest model from github release
     release_tag, state_dict = utilities.use_release(check_release=False)
 
+def test_check_new_release(dowload_release):
+    _json = json.loads(
+        urllib.request.urlopen(
+            urllib.request.Request(
+                'https://api.github.com/repos/Weecology/BirdDetector/releases/latest',
+                headers={'Accept': 'application/vnd.github.v3+json'},
+            )).read())
+    #check for any lastest release from github release
+    release_txt = utilities.check_new_release(os.path.join(_ROOT, "data/"))
+    assert release_txt.current_bird_release[0] == _json['html_url'] 
+        
 def test_use_bird_release(download_release):
     # Download latest model from github release
     release_tag, state_dict = utilities.use_bird_release()
