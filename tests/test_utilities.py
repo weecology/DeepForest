@@ -32,7 +32,11 @@ def test_xml_to_annotations():
 def test_use_release(download_release):
     # Download latest model from github release
     release_tag, state_dict = utilities.use_release(check_release=False)
-
+    
+def test_new_release():
+    _json , url =utilities.check_new_release()
+    assert _json and url
+    
 def test_use_bird_release(download_release):
     # Download latest model from github release
     release_tag, state_dict = utilities.use_bird_release()
