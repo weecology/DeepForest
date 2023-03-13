@@ -133,6 +133,15 @@ def test_predict_image_fromfile(m):
     assert isinstance(prediction, pd.DataFrame)
     assert set(prediction.columns) == {"xmin","ymin","xmax","ymax","label","score","image_path"}
 
+def test_predict_image_with_alpha_channel(m):
+    # Create an image with 4 bands
+    path=get_data(r"C:\Users\Dell\Desktop\deepforest\tests\data\hd_output_4b.tif")
+
+    with pytest.warns(UserWarning,match="Input rasterio had non-3 band shape"):
+        m.predict_image(path=path)
+        
+
+
 def test_predict_image_fromarray(m):
     image_path = get_data(path="2019_YELL_2_528000_4978000_image_crop2.png")
     

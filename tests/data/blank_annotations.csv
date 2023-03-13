@@ -1,2 +1,3 @@
 image_path,xmin,ymin,xmax,ymax,label
 OSBS_029.tif,0,0,0,0,Tree
+hd_output_4b.tif,0,0,0,0,Tree

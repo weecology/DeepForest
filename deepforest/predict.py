@@ -5,7 +5,7 @@ from PIL import Image
 import numpy as np
 import os
 from tqdm import tqdm
-import warnings
+import warnings 
 
 import torch
 import rasterio as rio
@@ -15,12 +15,38 @@ from deepforest import preprocess
 from deepforest import visualize
 from deepforest import dataset
 
+def drop_alpha_channel(image=None,path=None):
+    """Drop alpha channel if existed else raise IOError
+
+    Args:
+        image: a numpy array of a RGB image ranged from 0-255
+        path: optional path to read image from disk instead of passing image arg
+    """
+    
+    # Check that either an image or a path is provided
+    if image is None and path is None:
+        return None             
+    
+    if image is None:
+        try:
+            with rio.open(path) as src:
+                image = np.transpose(src.read((1,2,3)), (1,2,0)).astype('uint8')
+        except Exception as e:
+            raise IOError(f"Could not read image from path {path}: {e}")
+
+    # Check that the image has 3 channels
+    if image.shape[2] > 3:
+        warnings.warn(f"Input image has {image.shape[2]} channels, ignoring alpha channel")
+        image = image[:,:,:3]
+
+    return image
+        
 
 def predict_image(model,
                   image,
-                  path,
                   return_plot,
                   device,
+                  path=None,
                   iou_threshold=0.1,
                   color=None,
                   thickness=1):
@@ -28,38 +54,17 @@ def predict_image(model,
 
     Args:
         image: a numpy array of a RGB image ranged from 0-255
-        path: optional path to read image from disk instead of passing image arg
         return_plot: Return image with plotted detections
         device: pytorch device of 'cuda' or 'cpu' for gpu prediction. Set internally.
+        path: optional path to read image from disk instead of passing image arg
         color: color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255)
         thickness: thickness of the rectangle border line in px
     Returns:
         boxes: A pandas dataframe of predictions (Default)
         img: The input with predictions overlaid (Optional)
     """
+    image=drop_alpha_channel(image,path)
 
-    if image is not None:
-        pass
-    else:
-        # load raster as image
-        image = rio.open(path).read()
-        image = np.moveaxis(image, 0, 2)
-
-    bands = image.shape[2]
-    if not bands == 3:
-        warnings.warn(f"Input rasterio had non-3 band shape of {image.shape}, ignoring "
-                        "alpha channel")
-        try:
-            image = image[:, :, :3].astype("uint8")
-        except:
-            raise IOError("Input file {} has {} bands. "
-                        "DeepForest only accepts 3 band RGB rasters in the order "
-                        "(height, width, channels). "
-                        "Selecting the first three bands failed, "
-                        "please reshape manually.If the image was cropped and "
-                        "saved as a .jpg, please ensure that no alpha channel "
-                        "was used.".format(path, bands))
-        
     if image.dtype != "float32":
         warnings.warn(f"Image type is {image.dtype}, transforming to float32. "
                       f"This assumes that the range of pixel values is 0-255, as "
@@ -211,27 +216,7 @@ def predict_tile(model,
         Otherwise a numpy array of predicted bounding boxes, scores and labels
     """
 
-    if image is not None:
-        pass
-    else:
-        # load raster as image
-        image = rio.open(raster_path).read()
-        image = np.moveaxis(image, 0, 2)
-    
-    bands = image.shape[2]
-    if not bands == 3:
-        warnings.warn(f"Input rasterio had non-3 band shape of {image.shape}, ignoring "
-                        "alpha channel")
-        try:
-            image = image[:, :, :3].astype("uint8")
-        except:
-            raise IOError("Input file {} has {} bands. "
-                        "DeepForest only accepts 3 band RGB rasters in the order "
-                        "(height, width, channels). "
-                        "Selecting the first three bands failed, "
-                        "please reshape manually.If the image was cropped and "
-                        "saved as a .jpg, please ensure that no alpha channel "
-                        "was used.".format(raster_path, bands))
+    image=drop_alpha_channel(image,raster_path)
 
     # Compute sliding window index
     windows = preprocess.compute_windows(image, patch_size, patch_overlap)

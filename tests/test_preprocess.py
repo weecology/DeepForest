@@ -1,7 +1,6 @@
 # test preprocessing
 import glob
 import os
-
 import numpy as np
 import pandas as pd
 import pytest
@@ -165,14 +164,12 @@ def test_split_raster_empty(config):
     assert annotations_file.shape[0] > 0
     assert os.path.exists("tests/output/empty/OSBS_029_1.png")
 
-
-def test_split_raster_alpha_drop(config):
-    # Drop Alpha
-    r=rasterio.open(config["path_to_raster"]).read()
-    
-    
-    assert r.shape[0]==3
-
+def test_split_raster_with_4_band_image():
+    path=r"tests\data\hd_output_4b.tif"
+    # Call the function and capture the warning
+    with pytest.warns(UserWarning,match="Input rasterio had non-3 band"):
+        preprocess.split_raster(annotations_file=r"tests\data\blank_annotations.csv",path_to_raster=path,allow_empty=True)
+        
 
 def test_split_size_error(config):
     with pytest.raises(ValueError):
