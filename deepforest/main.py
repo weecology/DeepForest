@@ -144,7 +144,7 @@ class deepforest(pl.LightningModule):
         self.trainer = pl.Trainer(logger=logger,
                                   max_epochs=self.config["train"]["epochs"],
                                   enable_checkpointing=enable_checkpointing,
-                                  gpus=self.config["gpus"],
+                                  devices=self.config["devices"],
                                   accelerator=self.config["accelerator"],
                                   fast_dev_run=self.config["train"]["fast_dev_run"],
                                   callbacks=callbacks,

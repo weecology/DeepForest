@@ -11,8 +11,8 @@ the config.yml must be updated instead of updating the dictionary of an already 
 #cpu workers for data loaders
 #Dataloaders
 workers: 1
-gpus: 
-distributed_backend:
+devices: auto
+accelerator: auto
 batch_size: 1
 
 #Non-max supression of overlapping predictions
@@ -47,8 +47,8 @@ validation:
 Number of workers to perform asynchronous data generation during model training. Corresponds to num_workers in pytorch base 
 class https://pytorch.org/docs/stable/data.html. To turn off asynchronous data generation set workers = 0.
 
-### gpus
-The number of gpus to use during model training. To run on cpu leave blank. Deepforest has been tested on up to 8 gpu and follows a pytorch lightning module, which means it can inherent any of the scaling functionality from this library, including TPU support.
+### devices
+The number of cpus/gpus to use during model training. Deepforest has been tested on up to 8 gpu and follows a pytorch lightning module, which means it can inherit any of the scaling functionality from this library, including TPU support.
 https://pytorch-lightning.readthedocs.io/en/stable/advanced/multi_gpu.html?highlight=multi%20gpu
 
 ### accelerator

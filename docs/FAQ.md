@@ -90,7 +90,7 @@ from pytorch_lightning import Trainer
     trainer = Trainer(
         accelerator="gpu",
         strategy="ddp",
-        devices=model.config["gpus"],
+        devices=model.config["devices"],
         enable_checkpointing=False,
         max_epochs=model.config["train"]["epochs"],
         logger=comet_logger
