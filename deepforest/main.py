@@ -133,23 +133,30 @@ class deepforest(pl.LightningModule):
             if logger is not None:
                 lr_monitor = LearningRateMonitor(logging_interval='epoch')
                 callbacks.append(lr_monitor)
-
+            limit_val_batches = 1.0
+            num_sanity_val_steps = 2
+        else:
+            # Disable validation, don't use trainer defaults
+            print("No validation file provided. Turning off validation loop")            
+            limit_val_batches = 0
+            num_sanity_val_steps = 0
         # Check for model checkpoint object
         checkpoint_types = [type(x).__qualname__ for x in callbacks]
         if 'ModelCheckpoint' in checkpoint_types:
             enable_checkpointing = True
         else:
             enable_checkpointing = False
-
+        
         self.trainer = pl.Trainer(logger=logger,
                                   max_epochs=self.config["train"]["epochs"],
                                   enable_checkpointing=enable_checkpointing,
-                                  gpus=self.config["gpus"],
+                                  devices=self.config["devices"],
                                   accelerator=self.config["accelerator"],
                                   fast_dev_run=self.config["train"]["fast_dev_run"],
                                   callbacks=callbacks,
+                                  limit_val_batches=limit_val_batches,
+                                  num_sanity_val_steps=num_sanity_val_steps,
                                   **kwargs)
-
     def save_model(self, path):
         """
         Save the trainer checkpoint in user defined path, in order to access in future
@@ -212,16 +219,18 @@ class deepforest(pl.LightningModule):
     def val_dataloader(self):
         """
         Create a val data loader only if specified in config
-        Returns: loader or None
+        Returns: a dataloader or a empty iterable.
 
         """
-        loader = None
         if self.config["validation"]["csv_file"] is not None:
             loader = self.load_dataset(csv_file=self.config["validation"]["csv_file"],
                                        root_dir=self.config["validation"]["root_dir"],
                                        augment=False,
                                        shuffle=False,
                                        batch_size=self.config["batch_size"])
+        else:
+            # The preferred route for skipping validation is now (pl-2.0) an empty list, see https://github.com/Lightning-AI/lightning/issues/17154
+            loader = []
 
         return loader
 
