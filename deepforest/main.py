@@ -219,16 +219,18 @@ class deepforest(pl.LightningModule):
     def val_dataloader(self):
         """
         Create a val data loader only if specified in config
-        Returns: loader or None
+        Returns: a dataloader or a empty iterable.
 
         """
-        loader = None
         if self.config["validation"]["csv_file"] is not None:
             loader = self.load_dataset(csv_file=self.config["validation"]["csv_file"],
                                        root_dir=self.config["validation"]["root_dir"],
                                        augment=False,
                                        shuffle=False,
                                        batch_size=self.config["batch_size"])
+        else:
+            # The preferred route for skipping validation is now (pl-2.0) an empty list, see https://github.com/Lightning-AI/lightning/issues/17154
+            loader = []
 
         return loader
 
