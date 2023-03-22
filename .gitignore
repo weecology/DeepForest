@@ -7,3 +7,4 @@ current_release.csv
 *.pt
 tests/__pycache__
 *.wp*
+venv

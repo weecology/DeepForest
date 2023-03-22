@@ -5,7 +5,7 @@ from PIL import Image
 import numpy as np
 import os
 from tqdm import tqdm
-import warnings 
+import warnings
 
 import torch
 import rasterio as rio
@@ -15,41 +15,47 @@ from deepforest import preprocess
 from deepforest import visualize
 from deepforest import dataset
 
-def drop_alpha_channel(image=None,path=None):
+
+def drop_alpha_channel(image=None, path=None):
     """Drop alpha channel if existed else raise IOError
 
     Args:
         image: a numpy array of a RGB image ranged from 0-255
         path: optional path to read image from disk instead of passing image arg
     """
-    
+
     # Check that either an image or a path is provided
     if image is None and path is None:
-        return None             
-    
+        return None
+
     if image is None:
         try:
-            with rio.open(path) as src:
-                image = np.transpose(src.read((1,2,3)), (1,2,0)).astype('uint8')
+            image = rio.open(path).read()
+            image = np.moveaxis(image, 0, 2)
         except Exception as e:
             raise IOError(f"Could not read image from path {path}: {e}")
 
     # Check that the image has 3 channels
-    if image.shape[2] > 3:
-        warnings.warn(f"Input image has {image.shape[2]} channels, ignoring alpha channel")
-        image = image[:,:,:3]
+    if not image.shape[2] == 3:
+        warnings.warn(
+            f"Input image has {image.shape[2]} channels, ignoring alpha channel"
+        )
+        image = image[:, :, :3].astype("uint8")
+
 
     return image
-        
 
-def predict_image(model,
-                  image,
-                  return_plot,
-                  device,
-                  path=None,
-                  iou_threshold=0.1,
-                  color=None,
-                  thickness=1):
+
+def predict_image(
+    model,
+    image,
+    return_plot,
+    device,
+    path=None,
+    iou_threshold=0.1,
+    color=None,
+    thickness=1,
+):
     """Predict an image with a deepforest model
 
     Args:
@@ -63,16 +69,20 @@ def predict_image(model,
         boxes: A pandas dataframe of predictions (Default)
         img: The input with predictions overlaid (Optional)
     """
-    image=drop_alpha_channel(image,path)
 
+    image = drop_alpha_channel(image, path)
+    
+    
+    
     if image.dtype != "float32":
-        warnings.warn(f"Image type is {image.dtype}, transforming to float32. "
-                      f"This assumes that the range of pixel values is 0-255, as "
-                      f"opposed to 0-1.To suppress this warning, transform image "
-                      f"(image.astype('float32')")
+        warnings.warn(
+            f"Image type is {image.dtype}, transforming to float32. "
+            f"This assumes that the range of pixel values is 0-255, as "
+            f"opposed to 0-1.To suppress this warning, transform image "
+            f"(image.astype('float32')"
+        )
         image = image.astype("float32")
     image = preprocess.preprocess_image(image, device=device)
-
 
     with torch.no_grad():
         prediction = model(image)
@@ -100,16 +110,18 @@ def predict_image(model,
         return image
     else:
         return df
+    
 
-
-def predict_file(model,
-                 csv_file,
-                 root_dir,
-                 savedir,
-                 device,
-                 iou_threshold=0.1,
-                 color=(0, 165, 255),
-                 thickness=1):
+def predict_file(
+    model,
+    csv_file,
+    root_dir,
+    savedir,
+    device,
+    iou_threshold=0.1,
+    color=(0, 165, 255),
+    thickness=1,
+):
     """Create a dataset and predict entire annotation file
 
     Csv file format is .csv file with the columns "image_path", "xmin","ymin","xmax","ymax" for the image name and bounding box position.
@@ -131,10 +143,9 @@ def predict_file(model,
     df = pd.read_csv(csv_file)
     # Dataloader (when not shuffled) returns a tensor for each image in order
     paths = df.image_path.unique()
-    ds = dataset.TreeDataset(csv_file=csv_file,
-                             root_dir=root_dir,
-                             transforms=None,
-                             train=False)
+    ds = dataset.TreeDataset(
+        csv_file=csv_file, root_dir=root_dir, transforms=None, train=False
+    )
     prediction_list = []
     with torch.no_grad():
         for i in ds:
@@ -153,19 +164,20 @@ def predict_file(model,
 
         if savedir:
             # Just predict the images, even though we have the annotations
-            image = np.array(Image.open("{}/{}".format(root_dir,
-                                                       paths[index])))[:, :, ::-1]
+            image = np.array(Image.open("{}/{}".format(root_dir, paths[index])))[
+                :, :, ::-1
+            ]
             image = visualize.plot_predictions(image, prediction)
 
             # Plot annotations if they exist
             annotations = df[df.image_path == paths[index]]
 
-            image = visualize.plot_predictions(image,
-                                               annotations,
-                                               color=color,
-                                               thickness=thickness)
-            cv2.imwrite("{}/{}.png".format(savedir,
-                                           os.path.splitext(paths[index])[0]), image)
+            image = visualize.plot_predictions(
+                image, annotations, color=color, thickness=thickness
+            )
+            cv2.imwrite(
+                "{}/{}.png".format(savedir, os.path.splitext(paths[index])[0]), image
+            )
 
         prediction["image_path"] = paths[index]
         results.append(prediction)
@@ -175,20 +187,22 @@ def predict_file(model,
     return results
 
 
-def predict_tile(model,
-                 device,
-                 raster_path=None,
-                 image=None,
-                 patch_size=400,
-                 patch_overlap=0.05,
-                 iou_threshold=0.15,
-                 return_plot=False,
-                 mosaic=True,
-                 use_soft_nms=False,
-                 sigma=0.5,
-                 thresh=0.001,
-                 color=None,
-                 thickness=1):
+def predict_tile(
+    model,
+    device,
+    raster_path=None,
+    image=None,
+    patch_size=400,
+    patch_overlap=0.05,
+    iou_threshold=0.15,
+    return_plot=False,
+    mosaic=True,
+    use_soft_nms=False,
+    sigma=0.5,
+    thresh=0.001,
+    color=None,
+    thickness=1,
+):
     """For images too large to input into the model, predict_tile cuts the
     image into overlapping windows, predicts trees on each window and
     reassambles into a single array.
@@ -216,7 +230,7 @@ def predict_tile(model,
         Otherwise a numpy array of predicted bounding boxes, scores and labels
     """
 
-    image=drop_alpha_channel(image,raster_path)
+    image = drop_alpha_channel(image, raster_path)
 
     # Compute sliding window index
     windows = preprocess.compute_windows(image, patch_size, patch_overlap)
@@ -226,7 +240,7 @@ def predict_tile(model,
     for index, window in enumerate(tqdm(windows)):
         # crop window and predict
         crop = image[windows[index].indices()]
-        crop = crop.astype('float32')
+        crop = crop.astype("float32")
         boxes = predict_image(model=model, image=crop, return_plot=False, device=device)
         if boxes is not None:
             if mosaic:
@@ -253,49 +267,55 @@ def predict_tile(model,
                 f"{predicted_boxes.shape[0]} predictions in overlapping windows, applying non-max supression"
             )
             # move prediciton to tensor
-            boxes = torch.tensor(predicted_boxes[["xmin", "ymin", "xmax", "ymax"]].values,
-                                 dtype=torch.float32)
+            boxes = torch.tensor(
+                predicted_boxes[["xmin", "ymin", "xmax", "ymax"]].values,
+                dtype=torch.float32,
+            )
             scores = torch.tensor(predicted_boxes.score.values, dtype=torch.float32)
             labels = predicted_boxes.label.values
 
             if not use_soft_nms:
                 # Performs non-maximum suppression (NMS) on the boxes according to
                 # their intersection-over-union (IoU).
-                bbox_left_idx = nms(boxes=boxes,
-                                    scores=scores,
-                                    iou_threshold=iou_threshold)
+                bbox_left_idx = nms(
+                    boxes=boxes, scores=scores, iou_threshold=iou_threshold
+                )
             else:
                 # Performs soft non-maximum suppression (soft-NMS) on the boxes.
-                bbox_left_idx = soft_nms(boxes=boxes,
-                                         scores=scores,
-                                         sigma=sigma,
-                                         thresh=thresh)
+                bbox_left_idx = soft_nms(
+                    boxes=boxes, scores=scores, sigma=sigma, thresh=thresh
+                )
 
             bbox_left_idx = bbox_left_idx.numpy()
-            new_boxes, new_labels, new_scores = boxes[bbox_left_idx].type(
-                torch.int), labels[bbox_left_idx], scores[bbox_left_idx]
+            new_boxes, new_labels, new_scores = (
+                boxes[bbox_left_idx].type(torch.int),
+                labels[bbox_left_idx],
+                scores[bbox_left_idx],
+            )
 
             # Recreate box dataframe
-            image_detections = np.concatenate([
-                new_boxes,
-                np.expand_dims(new_labels, axis=1),
-                np.expand_dims(new_scores, axis=1)
-            ],
-                                              axis=1)
+            image_detections = np.concatenate(
+                [
+                    new_boxes,
+                    np.expand_dims(new_labels, axis=1),
+                    np.expand_dims(new_scores, axis=1),
+                ],
+                axis=1,
+            )
 
             mosaic_df = pd.DataFrame(
                 image_detections,
-                columns=["xmin", "ymin", "xmax", "ymax", "label", "score"])
+                columns=["xmin", "ymin", "xmax", "ymax", "label", "score"],
+            )
 
             print(f"{mosaic_df.shape[0]} predictions kept after non-max suppression")
 
         if return_plot:
             # Draw predictions on BGR
             image = image[:, :, ::-1]
-            image = visualize.plot_predictions(image,
-                                               mosaic_df,
-                                               color=color,
-                                               thickness=thickness)
+            image = visualize.plot_predictions(
+                image, mosaic_df, color=color, thickness=thickness
+            )
             # Mantain consistancy with predict_image
             return image
         else:
@@ -339,14 +359,18 @@ def soft_nms(boxes, scores, sigma=0.5, thresh=0.001):
         if i != N - 1:
             maxscore, maxpos = torch.max(scores[pos:], dim=0)
             if tscore < maxscore:
-                boxes[i], boxes[maxpos.item() + i +
-                                1] = boxes[maxpos.item() + i +
-                                           1].clone(), boxes[i].clone()
-                scores[i], scores[maxpos.item() + i +
-                                  1] = scores[maxpos.item() + i +
-                                              1].clone(), scores[i].clone()
-                areas[i], areas[maxpos + i + 1] = areas[maxpos + \
-                                                        i + 1].clone(), areas[i].clone()
+                boxes[i], boxes[maxpos.item() + i + 1] = (
+                    boxes[maxpos.item() + i + 1].clone(),
+                    boxes[i].clone(),
+                )
+                scores[i], scores[maxpos.item() + i + 1] = (
+                    scores[maxpos.item() + i + 1].clone(),
+                    scores[i].clone(),
+                )
+                areas[i], areas[maxpos + i + 1] = (
+                    areas[maxpos + i + 1].clone(),
+                    areas[i].clone(),
+                )
 
         # IoU calculate
         xx1 = np.maximum(boxes[i, 0].numpy(), boxes[pos:, 0].numpy())
@@ -373,25 +397,32 @@ def across_class_nms(predicted_boxes, iou_threshold=0.15):
     """perform non-max suppression for a dataframe of results (see visualize.format_boxes) to remove boxes that overlap by iou_thresholdold of IoU"""
 
     # move prediciton to tensor
-    boxes = torch.tensor(predicted_boxes[["xmin", "ymin", "xmax", "ymax"]].values,
-                         dtype=torch.float32)
+    boxes = torch.tensor(
+        predicted_boxes[["xmin", "ymin", "xmax", "ymax"]].values, dtype=torch.float32
+    )
     scores = torch.tensor(predicted_boxes.score.values, dtype=torch.float32)
     labels = predicted_boxes.label.values
 
     bbox_left_idx = nms(boxes=boxes, scores=scores, iou_threshold=iou_threshold)
     bbox_left_idx = bbox_left_idx.numpy()
-    new_boxes, new_labels, new_scores = boxes[bbox_left_idx].type(
-        torch.int), labels[bbox_left_idx], scores[bbox_left_idx]
+    new_boxes, new_labels, new_scores = (
+        boxes[bbox_left_idx].type(torch.int),
+        labels[bbox_left_idx],
+        scores[bbox_left_idx],
+    )
 
     # Recreate box dataframe
-    image_detections = np.concatenate([
-        new_boxes,
-        np.expand_dims(new_labels, axis=1),
-        np.expand_dims(new_scores, axis=1)
-    ],
-                                      axis=1)
+    image_detections = np.concatenate(
+        [
+            new_boxes,
+            np.expand_dims(new_labels, axis=1),
+            np.expand_dims(new_scores, axis=1),
+        ],
+        axis=1,
+    )
 
-    new_df = pd.DataFrame(image_detections,
-                          columns=["xmin", "ymin", "xmax", "ymax", "label", "score"])
+    new_df = pd.DataFrame(
+        image_detections, columns=["xmin", "ymin", "xmax", "ymax", "label", "score"]
+    )
 
     return new_df

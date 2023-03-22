@@ -45,11 +45,14 @@ def compute_windows(numpy_image, patch_size, patch_overlap):
         raise ValueError("Patch overlap {} must be between 0 - 1".format(patch_overlap))
 
     # Generate overlapping sliding windows
-    windows = slidingwindow.generate(numpy_image,
-                                     slidingwindow.DimOrder.HeightWidthChannel,
-                                     patch_size, patch_overlap)
+    windows = slidingwindow.generate(
+        numpy_image,
+        slidingwindow.DimOrder.HeightWidthChannel,
+        patch_size,
+        patch_overlap,
+    )
 
-    return (windows)
+    return windows
 
 
 def select_annotations(annotations, windows, index, allow_empty=False):
@@ -76,20 +79,21 @@ def select_annotations(annotations, windows, index, allow_empty=False):
     # buffer coordinates a bit to grab boxes that might start just against
     # the image edge. Don't allow boxes that start and end after the offset
     offset = 40
-    selected_annotations = annotations[(annotations.xmin > (window_xmin - offset)) &
-                                       (annotations.xmin < (window_xmax)) &
-                                       (annotations.xmax >
-                                        (window_xmin)) & (annotations.ymin >
-                                                          (window_ymin - offset)) &
-                                       (annotations.xmax <
-                                        (window_xmax + offset)) & (annotations.ymin <
-                                                                   (window_ymax)) &
-                                       (annotations.ymax >
-                                        (window_ymin)) & (annotations.ymax <
-                                                          (window_ymax + offset))]
+    selected_annotations = annotations[
+        (annotations.xmin > (window_xmin - offset))
+        & (annotations.xmin < (window_xmax))
+        & (annotations.xmax > (window_xmin))
+        & (annotations.ymin > (window_ymin - offset))
+        & (annotations.xmax < (window_xmax + offset))
+        & (annotations.ymin < (window_ymax))
+        & (annotations.ymax > (window_ymin))
+        & (annotations.ymax < (window_ymax + offset))
+    ]
 
     # change the image name
-    image_basename = os.path.splitext("{}".format(annotations.image_path.unique()[0]))[0]
+    image_basename = os.path.splitext("{}".format(annotations.image_path.unique()[0]))[
+        0
+    ]
     selected_annotations.image_path = "{}_{}.png".format(image_basename, index)
 
     # If no matching annotations, return a line with the image name, but no
@@ -97,7 +101,8 @@ def select_annotations(annotations, windows, index, allow_empty=False):
     if selected_annotations.empty:
         if allow_empty:
             selected_annotations = pd.DataFrame(
-                ["{}_{}.png".format(image_basename, index)], columns=["image_path"])
+                ["{}_{}.png".format(image_basename, index)], columns=["image_path"]
+            )
             selected_annotations["xmin"] = 0
             selected_annotations["ymin"] = 0
             selected_annotations["xmax"] = 0
@@ -109,11 +114,13 @@ def select_annotations(annotations, windows, index, allow_empty=False):
     else:
         # update coordinates with respect to origin
         selected_annotations.xmax = (selected_annotations.xmin - window_xmin) + (
-            selected_annotations.xmax - selected_annotations.xmin)
-        selected_annotations.xmin = (selected_annotations.xmin - window_xmin)
+            selected_annotations.xmax - selected_annotations.xmin
+        )
+        selected_annotations.xmin = selected_annotations.xmin - window_xmin
         selected_annotations.ymax = (selected_annotations.ymin - window_ymin) + (
-            selected_annotations.ymax - selected_annotations.ymin)
-        selected_annotations.ymin = (selected_annotations.ymin - window_ymin)
+            selected_annotations.ymax - selected_annotations.ymin
+        )
+        selected_annotations.ymin = selected_annotations.ymin - window_ymin
 
         # cut off any annotations over the border.
         selected_annotations.loc[selected_annotations.xmin < 0, "xmin"] = 0
@@ -141,14 +148,16 @@ def save_crop(base_dir, image_name, index, crop):
     return filename
 
 
-def split_raster(annotations_file,
-                 path_to_raster=None,
-                 numpy_image=None,
-                 base_dir=".",
-                 patch_size=400,
-                 patch_overlap=0.05,
-                 allow_empty=False,
-                 image_name=None):
+def split_raster(
+    annotations_file,
+    path_to_raster=None,
+    numpy_image=None,
+    base_dir=".",
+    patch_size=400,
+    patch_overlap=0.05,
+    allow_empty=False,
+    image_name=None,
+):
     """Divide a large tile into smaller arrays. Each crop will be saved to
     file.
 
@@ -171,28 +180,39 @@ def split_raster(annotations_file,
 
     # Load raster as image
     if (numpy_image is None) & (path_to_raster is None):
-        raise IOError("supply a raster either as a path_to_raster or if ready "
-                      "from existing in memory numpy object, as numpy_image=")
+        raise IOError(
+            "supply a raster either as a path_to_raster or if ready "
+            "from existing in memory numpy object, as numpy_image="
+        )
 
     if path_to_raster:
         numpy_image = rasterio.open(path_to_raster).read()
         numpy_image = np.moveaxis(numpy_image, 0, 2)
     else:
         if image_name is None:
-            raise (IOError("If passing an numpy_image, please also specify a image_name"
-                            " to match the column in the annotation.csv file"))
+            raise (
+                IOError(
+                    "If passing an numpy_image, please also specify a image_name"
+                    " to match the column in the annotation.csv file"
+                )
+            )
 
     # Check that the image has 3 channels
-    if  numpy_image.shape[2] > 3:
-        warnings.warn(f"Input image has {numpy_image.shape[2]} channels, ignoring alpha channel")
-        numpy_image = numpy_image[:,:,:3]
+    if numpy_image.shape[2] > 3:
+        warnings.warn(
+            f"Input image has {numpy_image.shape[2]} channels, ignoring alpha channel"
+        )
+        numpy_image = numpy_image[:, :, :3]
 
     # Check that patch size is greater than image size
     height = numpy_image.shape[0]
     width = numpy_image.shape[1]
     if any(np.array([height, width]) < patch_size):
-        raise ValueError("Patch size of {} is larger than the image dimensions {}".format(
-            patch_size, [height, width]))
+        raise ValueError(
+            "Patch size of {} is larger than the image dimensions {}".format(
+                patch_size, [height, width]
+            )
+        )
 
     # Compute sliding window index
     windows = compute_windows(numpy_image, patch_size, patch_overlap)
@@ -213,19 +233,24 @@ def split_raster(annotations_file,
             "No image names match between the file:{} and the image_path: {}. "
             "Reminder that image paths should be the relative "
             "path (e.g. 'image_name.tif'), not the full path "
-            "(e.g. path/to/dir/image_name.tif)".format(annotations_file, image_name))
+            "(e.g. path/to/dir/image_name.tif)".format(annotations_file, image_name)
+        )
 
-    if not all([
+    if not all(
+        [
             x in annotations.columns
             for x in ["image_path", "xmin", "ymin", "xmax", "ymax", "label"]
-    ]):
-        raise ValueError("Annotations file has {} columns, should have "
-                         "format image_path, xmin, ymin, xmax, ymax, label".format(
-                             annotations.shape[1]))
+        ]
+    ):
+        raise ValueError(
+            "Annotations file has {} columns, should have "
+            "format image_path, xmin, ymin, xmax, ymax, label".format(
+                annotations.shape[1]
+            )
+        )
 
     annotations_files = []
     for index, window in enumerate(windows):
-
         # Crop image
         crop = numpy_image[windows[index].indices()]
 
@@ -234,8 +259,9 @@ def split_raster(annotations_file,
             continue
 
         # Find annotations, image_name is the basename of the path
-        crop_annotations = select_annotations(image_annotations, windows, index,
-                                              allow_empty)
+        crop_annotations = select_annotations(
+            image_annotations, windows, index, allow_empty
+        )
 
         # If empty images not allowed, select annotations returns None
         if crop_annotations is not None:
@@ -247,7 +273,9 @@ def split_raster(annotations_file,
     if len(annotations_files) == 0:
         raise ValueError(
             "Input file has no overlapping annotations and allow_empty is {}".format(
-                allow_empty))
+                allow_empty
+            )
+        )
 
     annotations_files = pd.concat(annotations_files)
 
