@@ -185,7 +185,6 @@ class deepforest(pl.LightningModule):
         Returns:
             ds: a pytorch dataset
         """
-
         ds = dataset.TreeDataset(csv_file=csv_file,
                                  root_dir=root_dir,
                                  transforms=self.transforms(augment=augment),
@@ -268,10 +267,6 @@ class deepforest(pl.LightningModule):
                             "from PIL, wrap in "
                             "np.array(image).astype(float32)".format(type(image)))
 
-            # Load on GPU is available
-        if self.current_device.type == "cuda":
-            self.model = self.model.to("cuda")
-
         self.model.eval()
         self.model.score_thresh = self.config["score_thresh"]
 
@@ -310,7 +305,6 @@ class deepforest(pl.LightningModule):
         Returns:
             df: pandas dataframe with bounding boxes, label and scores for each image in the csv file
         """
-        self.model = self.model.to(self.current_device)
         self.model.eval()
         self.model.score_thresh = self.config["score_thresh"]
 
@@ -366,10 +360,6 @@ class deepforest(pl.LightningModule):
             boxes (array): if return_plot, an image.
             Otherwise a numpy array of predicted bounding boxes, scores and labels
         """
-
-        # Load on GPU is available
-        if torch.cuda.is_available():
-            self.model = self.model.to("cuda")
 
         self.model.eval()
         self.model.score_thresh = self.config["score_thresh"]
@@ -505,10 +495,6 @@ class deepforest(pl.LightningModule):
         Returns:
             results: dict of ("results", "precision", "recall") for a given threshold
         """
-        # Load on GPU is available
-        if torch.cuda.is_available():
-            self.model = self.model.to("cuda")
-
         self.model.eval()
         self.model.score_thresh = self.config["score_thresh"]
 
