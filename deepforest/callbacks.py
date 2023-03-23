@@ -51,11 +51,7 @@ class images_callback(Callback):
         self.every_n_epochs = every_n_epochs
 
     def log_images(self, pl_module):
-        boxes = predict.predict_file(model=pl_module.model,
-                                     csv_file=self.csv_file,
-                                     root_dir=self.root_dir,
-                                     savedir=self.savedir,
-                                     device=pl_module.device)
+        boxes = pl_module.predict_file(csv_file=self.csv_file, root_dir=self.root_dir, savedir=self.savedir)
         try:
             saved_plots = glob.glob("{}/*.png".format(self.savedir))
             for x in saved_plots:
@@ -66,6 +62,49 @@ class images_callback(Callback):
                   "error was rasied {}".format(self.savedir, e))
 
     def on_validation_epoch_end(self, trainer, pl_module):
+        if trainer.sanity_checking:  # optional skip
+            return
+        
         if trainer.current_epoch % self.every_n_epochs == 0:
             print("Running image callback")
             self.log_images(pl_module)
+
+class iou_callback(Callback):
+    """Run evaluation on a file of annotations during training
+    Args:
+        model: pytorch model
+        csv_file: path to csv with columns, image_path, xmin, ymin, xmax, ymax, label
+        epoch: integer. current epoch
+        experiment: optional comet_ml experiment
+        savedir: optional, directory to save predicted images
+        project: whether to project image coordinates into geographic coordinations, see deepforest.evaluate
+        root_dir: root directory of images to search for 'image path' values from the csv file
+        iou_threshold: intersection-over-union threshold, see deepforest.evaluate
+        probability_threshold: minimum probablity for inclusion, see deepforest.evaluate
+        n: number of images to upload
+        every_n_epochs: run epoch interval
+    Returns:
+        None: either prints validation scores or logs them to a comet experiment
+        """
+
+    def __init__(self, config, every_n_epochs=5):
+        self.config=config
+        self.every_n_epochs = every_n_epochs
+
+    def on_validation_epoch_end(self, trainer, pl_module):
+        if trainer.current_epoch % self.every_n_epochs == 0:
+            results = pl_module.evaluate(csv_file=self.config["validation"]["csv_file"],
+                                    root_dir=self.config["validation"]["root_dir"])
+            self.log("box_recall", results["box_recall"])
+            self.log("box_precision", results["box_precision"])
+
+            if not type(results["class_recall"]) == type(None):
+                for index, row in results["class_recall"].iterrows():
+                    self.log(
+                        "{}_Recall".format(pl_module.numeric_to_label_dict[row["label"]]),
+                        row["recall"])
+                    self.log(
+                        "{}_Precision".format(
+                            pl_module.numeric_to_label_dict[row["label"]]),
+                        row["precision"])
+                    
