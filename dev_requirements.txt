@@ -11,6 +11,7 @@ pytorch_lightning
 torch
 pyyaml>=5.1.0
 pytest
+pytest-profiling
 matplotlib
 numpy
 recommonmark

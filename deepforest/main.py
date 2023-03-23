@@ -55,6 +55,9 @@ class deepforest(pl.LightningModule):
 
         self.num_classes = num_classes
         self.create_model()
+        
+        #Create a default trainer.
+        self.create_trainer()
 
         # Label encoder and decoder
         if not len(label_dict) == num_classes:

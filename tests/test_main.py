@@ -193,6 +193,7 @@ def test_predict_tile(m, raster_path):
     
 def test_predict_tile_softnms(m, raster_path):
     #test soft-nms method
+    m.create_trainer()
     soft_nms_pred = m.predict_tile(raster_path = raster_path,
                                             patch_size = 300,
                                             patch_overlap = 0.1,
