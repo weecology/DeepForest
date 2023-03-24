@@ -45,6 +45,42 @@ def drop_alpha_channel(image=None, path=None):
 
     return image
 
+def predict_image(model,
+                  image,
+                  return_plot,
+                  device,
+                  path=None,
+                  iou_threshold=0.1,
+                  color=None,
+                  thickness=1):
+    """Predict an image with a deepforest model
+
+    Args:
+        image: a numpy array of a RGB image ranged from 0-255
+        path: optional path to read image from disk instead of passing image arg
+    """
+
+    # Check that either an image or a path is provided
+    if image is None and path is None:
+        return None
+
+    if image is None:
+        try:
+            image = rio.open(path).read()
+            image = np.moveaxis(image, 0, 2)
+        except Exception as e:
+            raise IOError(f"Could not read image from path {path}: {e}")
+
+    # Check that the image has 3 channels
+    if not image.shape[2] == 3:
+        warnings.warn(
+            f"Input image has {image.shape[2]} channels, ignoring alpha channel"
+        )
+        image = image[:, :, :3].astype("uint8")
+
+
+    return image
+
 
 def predict_image(
     model,
@@ -69,6 +105,8 @@ def predict_image(
         boxes: A pandas dataframe of predictions (Default)
         img: The input with predictions overlaid (Optional)
     """
+    
+    image = drop_alpha_channel(image, path)
 
     image = drop_alpha_channel(image, path)
     
