@@ -167,7 +167,7 @@ def test_split_raster_empty(config):
 
 
 def test_split_raster_with_4_band_image():
-    path =r"tests/data/hd_output_4b.tif"
+    path=os.path.join("tests","data","hd_output_4b.tif")
     for f in glob.glob("tests/output/four_bands_image/*"):
         os.remove(f)
     four_bands_annotations = pd.DataFrame(
