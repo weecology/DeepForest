@@ -15,6 +15,7 @@ from albumentations.pytorch import ToTensorV2
 
 from deepforest import main
 from deepforest import get_data
+from deepforest import dataset
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import Callback
 from PIL import Image
@@ -113,6 +114,7 @@ def test_train_single(m):
     m.trainer.fit(m)
 
 def test_train_preload_images(m):
+    m.create_trainer()
     m.config["train"]["preload_images"] = True
     m.trainer.fit(m)
     
@@ -178,6 +180,15 @@ def test_predict_small_file(m, tmpdir):
     
     printed_plots = glob.glob("{}/*.png".format(tmpdir))
     assert len(printed_plots) == len(original_file.image_path.unique())
+
+@pytest.mark.parametrize("batch_size",[1, 2])
+def test_predict_dataloader(m, batch_size, raster_path):
+    m.config["batch_size"] = batch_size
+    tile = np.array(Image.open(raster_path))    
+    ds = dataset.TileDataset(tile=tile, patch_overlap=0.1, patch_size=100)  
+    dl = m.predict_dataloader(ds)
+    batch = next(iter(dl))
+    batch.shape[0] == batch_size
     
 def test_predict_tile(m, raster_path):
     m.config["train"]["fast_dev_run"] = False
