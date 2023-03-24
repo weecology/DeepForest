@@ -16,10 +16,40 @@ from deepforest import visualize
 from deepforest import dataset
 
 
+def drop_alpha_channel(image=None, path=None):
+    """Drop alpha channel if existed else raise IOError
+
+    Args:
+        image: a numpy array of a RGB image ranged from 0-255
+        path: optional path to read image from disk instead of passing image arg
+    """
+
+    # Check that either an image or a path is provided
+    if image is None and path is None:
+        return None
+
+    if image is None:
+        try:
+            image = rio.open(path).read()
+            image = np.moveaxis(image, 0, 2)
+        except Exception as e:
+            raise IOError(f"Could not read image from path {path}: {e}")
+
+    # Check that the image has 3 channels
+    if not image.shape[2] == 3:
+        warnings.warn(
+            f"Input image has {image.shape[2]} channels, ignoring alpha channel"
+        )
+        image = image[:, :, :3].astype("uint8")
+
+
+    return image
+
 def predict_image(model,
                   image,
                   return_plot,
                   device,
+                  path=None,
                   iou_threshold=0.1,
                   color=None,
                   thickness=1):
@@ -36,6 +66,8 @@ def predict_image(model,
         boxes: A pandas dataframe of predictions (Default)
         img: The input with predictions overlaid (Optional)
     """
+    
+    image = drop_alpha_channel(image, path)
 
     if image.dtype != "float32":
         warnings.warn(f"Image type is {image.dtype}, transforming to float32. "
@@ -187,12 +219,8 @@ def predict_tile(model,
         Otherwise a numpy array of predicted bounding boxes, scores and labels
     """
 
-    if image is not None:
-        pass
-    else:
-        # load raster as image
-        image = rio.open(raster_path).read()
-        image = np.moveaxis(image, 0, 2)
+    image = drop_alpha_channel(image, raster_path)
+
 
     # Compute sliding window index
     windows = preprocess.compute_windows(image, patch_size, patch_overlap)

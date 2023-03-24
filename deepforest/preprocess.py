@@ -183,21 +183,12 @@ def split_raster(annotations_file,
             raise (IOError("If passing an numpy_image, please also specify a image_name"
                            " to match the column in the annotation.csv file"))
 
-    # Check that its 3 band
-    bands = numpy_image.shape[2]
-    if not bands == 3:
-        warnings.warn("Input rasterio had non-3 band shape of {}, ignoring "
-                      "alpha channel".format(numpy_image.shape))
-        try:
-            numpy_image = numpy_image[:, :, :3].astype("uint8")
-        except:
-            raise IOError("Input file {} has {} bands. "
-                          "DeepForest only accepts 3 band RGB rasters in the order "
-                          "(height, width, channels). "
-                          "Selecting the first three bands failed, "
-                          "please reshape manually.If the image was cropped and "
-                          "saved as a .jpg, please ensure that no alpha channel "
-                          "was used.".format(path_to_raster, bands))
+    # Check that the image has 3 channels
+    if numpy_image.shape[2] > 3:
+        warnings.warn(
+            f"Input image has {numpy_image.shape[2]} channels, ignoring alpha channel"
+        )
+        numpy_image = numpy_image[:, :, :3]
 
     # Check that patch size is greater than image size
     height = numpy_image.shape[0]

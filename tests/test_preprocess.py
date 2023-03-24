@@ -166,6 +166,31 @@ def test_split_raster_empty(config):
     assert os.path.exists("tests/output/empty/OSBS_029_1.png")
 
 
+def test_split_raster_with_4_band_image():
+    path =r"tests\data\hd_output_4b.tif"
+    for f in glob.glob("tests/output/four_bands_image/*"):
+        os.remove(f)
+    four_bands_annotations = pd.DataFrame(
+        {
+            "image_path": "hd_output_4b.tif",
+            "xmin": [0],
+            "ymin": [0],
+            "xmax": [0],
+            "ymax": [0],
+            "label": ["Tree"],
+        }
+    )
+    four_bands_annotations.to_csv("tests/data/four_bands_annotations.csv", index=False)
+    # Call the function and capture the warning
+    with pytest.warns(UserWarning, match="Input rasterio had non-3 band"):
+        preprocess.split_raster(
+            annotations_file=r"tests/data/four_bands_annotations.csv",
+            path_to_raster=path,
+            base_dir="tests/output/four_bands_image/",
+            allow_empty=True,
+        )
+
+
 def test_split_size_error(config):
     with pytest.raises(ValueError):
         annotations_file = preprocess.split_raster(path_to_raster=config["path_to_raster"],
