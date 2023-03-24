@@ -182,7 +182,7 @@ def test_split_raster_with_4_band_image():
     )
     four_bands_annotations.to_csv("tests/data/four_bands_annotations.csv", index=False)
     # Call the function and capture the warning
-    with pytest.warns(UserWarning, match="Input rasterio had non-3 band"):
+    with pytest.warns(UserWarning, match="Input image has "):
         preprocess.split_raster(
             annotations_file=r"tests/data/four_bands_annotations.csv",
             path_to_raster=path,
