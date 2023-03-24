@@ -136,7 +136,7 @@ def test_predict_image_fromfile(m):
 
 def test_predict_image_with_alpha_channel(m):
     # load an image with 4 bands
-    path = get_data(r"tests\data\hd_output_4b.tif")
+    path = r"tests/data/hd_output_4b.tif"
     image = np.array(Image.open(path))
     with pytest.warns(UserWarning, match="Input image has"):
         m.predict_image(image=image)
