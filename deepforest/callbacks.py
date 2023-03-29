@@ -98,7 +98,7 @@ class iou_callback(Callback):
             self.log("box_recall", results["box_recall"])
             self.log("box_precision", results["box_precision"])
 
-            if not type(results["class_recall"]) == type(None):
+            if isinstance(a, pd.DataFrame):
                 for index, row in results["class_recall"].iterrows():
                     self.log(
                         "{}_Recall".format(pl_module.numeric_to_label_dict[row["label"]]),

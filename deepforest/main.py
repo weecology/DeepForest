@@ -128,8 +128,8 @@ class deepforest(pl.LightningModule):
         if not self.config["validation"]["csv_file"] is None:
             if logger is not None:
                 lr_monitor = LearningRateMonitor(logging_interval='epoch')
-                iou_callback = iou_callback(self.config, every_n_epochs=self.config["validation"]["val_accuracy_interval"])
-                callbacks.append(iou_callback)
+                eval_callback = iou_callback(self.config, every_n_epochs=self.config["validation"]["val_accuracy_interval"])
+                callbacks.append(eval_callback)
                 callbacks.append(lr_monitor)
             limit_val_batches = 1.0
             num_sanity_val_steps = 2
@@ -581,7 +581,7 @@ class deepforest(pl.LightningModule):
                                         savedir=savedir)
 
         # replace classes if not NUll, wrap in try catch if no predictions
-        if not results["results"].empty:
+        if not results is None:
             results["results"]["predicted_label"] = results["results"][
                 "predicted_label"].apply(lambda x: self.numeric_to_label_dict[x]
                                          if not pd.isnull(x) else x)

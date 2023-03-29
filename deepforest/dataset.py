@@ -138,7 +138,7 @@ class TreeDataset(Dataset):
 
 class TileDataset(Dataset):
     def __init__(self, 
-                 tile: typing.Optional[np.ndarray]=None, 
+                 tile: typing.Optional[np.ndarray], 
                  preload_images: bool=False,
                  patch_size: int=400,
                  patch_overlap: float=0.05
