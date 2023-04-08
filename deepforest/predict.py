@@ -86,18 +86,18 @@ def mosiac(boxes, windows, use_soft_nms=False, sigma=0.5, thresh=0.001, iou_thre
     scores = torch.tensor(predicted_boxes.score.values, dtype=torch.float32)
     labels = predicted_boxes.label.values
 
-    if not use_soft_nms:
-        # Performs non-maximum suppression (NMS) on the boxes according to
-        # their intersection-over-union (IoU).
-        bbox_left_idx = nms(boxes=boxes,
-                            scores=scores,
-                            iou_threshold=iou_threshold)
-    else:
+    if use_soft_nms:
         # Performs soft non-maximum suppression (soft-NMS) on the boxes.
         bbox_left_idx = soft_nms(boxes=boxes,
                                  scores=scores,
                                  sigma=sigma,
                                  thresh=thresh)
+    else:
+        # Performs non-maximum suppression (NMS) on the boxes according to
+        # their intersection-over-union (IoU).
+        bbox_left_idx = nms(boxes=boxes,
+                            scores=scores,
+                            iou_threshold=iou_threshold)
 
     bbox_left_idx = bbox_left_idx.numpy()
     new_boxes, new_labels, new_scores = boxes[bbox_left_idx].type(
