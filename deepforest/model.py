@@ -7,7 +7,8 @@ from torchvision.models.detection.retinanet import RetinaNet_ResNet50_FPN_Weight
 
 def load_backbone():
     """A torch vision retinanet model"""
-    backbone = torchvision.models.detection.retinanet_resnet50_fpn(weights=RetinaNet_ResNet50_FPN_Weights.COCO_V1)
+    backbone = torchvision.models.detection.retinanet_resnet50_fpn(
+        weights=RetinaNet_ResNet50_FPN_Weights.COCO_V1)
 
     # load the model onto the computation device
     return backbone

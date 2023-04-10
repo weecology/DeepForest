@@ -51,7 +51,9 @@ class images_callback(Callback):
         self.every_n_epochs = every_n_epochs
 
     def log_images(self, pl_module):
-        boxes = pl_module.predict_file(csv_file=self.csv_file, root_dir=self.root_dir, savedir=self.savedir)
+        boxes = pl_module.predict_file(csv_file=self.csv_file,
+                                       root_dir=self.root_dir,
+                                       savedir=self.savedir)
         try:
             saved_plots = glob.glob("{}/*.png".format(self.savedir))
             for x in saved_plots:
@@ -64,10 +66,11 @@ class images_callback(Callback):
     def on_validation_epoch_end(self, trainer, pl_module):
         if trainer.sanity_checking:  # optional skip
             return
-        
+
         if trainer.current_epoch % self.every_n_epochs == 0:
             print("Running image callback")
             self.log_images(pl_module)
+
 
 class iou_callback(Callback):
     """Run evaluation on a file of annotations during training
@@ -88,13 +91,13 @@ class iou_callback(Callback):
         """
 
     def __init__(self, config, every_n_epochs=5):
-        self.config=config
+        self.config = config
         self.every_n_epochs = every_n_epochs
 
     def on_validation_epoch_end(self, trainer, pl_module):
         if trainer.current_epoch % self.every_n_epochs == 0:
             results = pl_module.evaluate(csv_file=self.config["validation"]["csv_file"],
-                                    root_dir=self.config["validation"]["root_dir"])
+                                         root_dir=self.config["validation"]["root_dir"])
             self.log("box_recall", results["box_recall"])
             self.log("box_precision", results["box_precision"])
 
@@ -107,4 +110,3 @@ class iou_callback(Callback):
                         "{}_Precision".format(
                             pl_module.numeric_to_label_dict[row["label"]]),
                         row["precision"])
-                    

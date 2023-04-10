@@ -42,6 +42,7 @@ def get_transform(augment):
 
 
 class TreeDataset(Dataset):
+
     def __init__(self,
                  csv_file,
                  root_dir,
@@ -136,13 +137,14 @@ class TreeDataset(Dataset):
             converted = self.image_converter(image=image)
             return converted["image"]
 
+
 class TileDataset(Dataset):
-    def __init__(self, 
-                 tile: typing.Optional[np.ndarray], 
-                 preload_images: bool=False,
-                 patch_size: int=400,
-                 patch_overlap: float=0.05
-                 ):
+
+    def __init__(self,
+                 tile: typing.Optional[np.ndarray],
+                 preload_images: bool = False,
+                 patch_size: int = 400,
+                 patch_overlap: float = 0.05):
         """
         Args:
             tile: an in memory numpy array.
@@ -152,28 +154,30 @@ class TileDataset(Dataset):
             ds: a pytorch dataset
         """
         if not tile.shape[2] == 3:
-            raise ValueError("Only three band raster are accepted. Channels should be the final dimension. Input tile has shape {}. Check for transparent alpha channel and remove if present".format(tile.shape))
-        
+            raise ValueError(
+                "Only three band raster are accepted. Channels should be the final dimension. Input tile has shape {}. Check for transparent alpha channel and remove if present"
+                .format(tile.shape))
+
         self.image = tile
         self.preload_images = preload_images
         self.windows = preprocess.compute_windows(self.image, patch_size, patch_overlap)
-        
+
         if self.preload_images:
             self.crops = []
             for window in self.windows:
                 crop = self.image[window.indices()]
-                crop = preprocess.preprocess_image(crop)                
+                crop = preprocess.preprocess_image(crop)
                 self.crops.append(crop)
-            
+
     def __len__(self):
         return len(self.windows)
-                
+
     def __getitem__(self, idx):
         # Read image if not in memory
         if self.preload_images:
             crop = self.crops[idx]
         else:
             crop = self.image[self.windows[idx].indices()]
-            crop = preprocess.preprocess_image(crop)                            
-            
-        return crop    
+            crop = preprocess.preprocess_image(crop)
+
+        return crop
