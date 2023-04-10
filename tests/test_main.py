@@ -15,6 +15,7 @@ from albumentations.pytorch import ToTensorV2
 
 from deepforest import main
 from deepforest import get_data
+from deepforest import dataset
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import Callback
 from PIL import Image
@@ -57,6 +58,10 @@ def m(download_release):
     
     return m
 
+@pytest.fixture()
+def raster_path():
+    return get_data(path='OSBS_029.tif')    
+    
 def big_file():
     tmpdir = tempfile.gettempdir()
     csv_file = get_data("OSBS_029.csv")
@@ -104,10 +109,12 @@ def test_validation_step(m):
         assert p1[1].ne(p2[1]).sum() == 0
 
 def test_train_single(m):
+    m.config["train"]["fast_dev_run"] = False
     m.create_trainer()
     m.trainer.fit(m)
 
 def test_train_preload_images(m):
+    m.create_trainer()
     m.config["train"]["preload_images"] = True
     m.trainer.fit(m)
     
@@ -155,6 +162,8 @@ def test_predict_return_plot(m):
     assert isinstance(plot, np.ndarray)
 
 def test_predict_big_file(m, tmpdir):
+    m.config["train"]["fast_dev_run"] = False
+    m.create_trainer()    
     csv_file = big_file()
     original_file = pd.read_csv(csv_file)
     df = m.predict_file(csv_file=csv_file, root_dir = os.path.dirname(csv_file), savedir=tmpdir)
@@ -171,47 +180,56 @@ def test_predict_small_file(m, tmpdir):
     
     printed_plots = glob.glob("{}/*.png".format(tmpdir))
     assert len(printed_plots) == len(original_file.image_path.unique())
+
+@pytest.mark.parametrize("batch_size",[1, 2])
+def test_predict_dataloader(m, batch_size, raster_path):
+    m.config["batch_size"] = batch_size
+    tile = np.array(Image.open(raster_path))    
+    ds = dataset.TileDataset(tile=tile, patch_overlap=0.1, patch_size=100)  
+    dl = m.predict_dataloader(ds)
+    batch = next(iter(dl))
+    batch.shape[0] == batch_size
     
-def test_predict_tile(m):
-    #test raster prediction 
-    raster_path = get_data(path= 'OSBS_029.tif')
+def test_predict_tile(m, raster_path):
+    m.config["train"]["fast_dev_run"] = False
+    m.create_trainer()
     prediction = m.predict_tile(raster_path = raster_path,
                                             patch_size = 300,
-                                            patch_overlap = 0.5,
+                                            patch_overlap = 0.1,
                                             return_plot = False)
+    
     assert isinstance(prediction, pd.DataFrame)
     assert set(prediction.columns) == {"xmin","ymin","xmax","ymax","label","score","image_path"}
     assert not prediction.empty
-
+    
+def test_predict_tile_softnms(m, raster_path):
     #test soft-nms method
+    m.create_trainer()
     soft_nms_pred = m.predict_tile(raster_path = raster_path,
                                             patch_size = 300,
-                                            patch_overlap = 0.5,
+                                            patch_overlap = 0.1,
                                             return_plot = False,
-                                            use_soft_nms =True)
+                                            use_soft_nms = True)
     assert isinstance(soft_nms_pred, pd.DataFrame)
     assert set(soft_nms_pred.columns) == {"xmin","ymin","xmax","ymax","label","score","image_path"}
     assert not soft_nms_pred.empty
 
+@pytest.mark.parametrize("patch_overlap",[0.1, 0])
+def test_predict_tile_from_array(m, patch_overlap, raster_path):
     #test predict numpy image
     image = np.array(Image.open(raster_path))
+    m.config["train"]["fast_dev_run"] = False
+    m.create_trainer()      
     prediction = m.predict_tile(image = image,
                                 patch_size = 300,
-                                patch_overlap = 0.5,
+                                patch_overlap = patch_overlap,
                                 return_plot = False)
     assert not prediction.empty
 
-    # Test no non-max suppression
-    prediction = m.predict_tile(raster_path = raster_path,
-                                       patch_size=300,
-                                       patch_overlap=0,
-                                       return_plot=False)
-    assert not prediction.empty
-    
-
-def test_predict_tile_no_mosaic(m):
+def test_predict_tile_no_mosaic(m, raster_path):
     #test no mosaic, return a tuple of crop and prediction
-    raster_path = get_data(path='OSBS_029.tif')    
+    m.config["train"]["fast_dev_run"] = False
+    m.create_trainer()      
     prediction = m.predict_tile(raster_path = raster_path,
                                        patch_size=300,
                                        patch_overlap=0,

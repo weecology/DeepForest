@@ -20,7 +20,10 @@ import albumentations as A
 from albumentations import functional as F
 from albumentations.pytorch import ToTensorV2
 import torch
+import typing
 from PIL import Image
+import rasterio as rio
+from deepforest import preprocess
 
 
 def get_transform(augment):
@@ -39,7 +42,6 @@ def get_transform(augment):
 
 
 class TreeDataset(Dataset):
-
     def __init__(self,
                  csv_file,
                  root_dir,
@@ -133,3 +135,45 @@ class TreeDataset(Dataset):
             # Mimic the train augmentation
             converted = self.image_converter(image=image)
             return converted["image"]
+
+class TileDataset(Dataset):
+    def __init__(self, 
+                 tile: typing.Optional[np.ndarray], 
+                 preload_images: bool=False,
+                 patch_size: int=400,
+                 patch_overlap: float=0.05
+                 ):
+        """
+        Args:
+            tile: an in memory numpy array.
+            patch_size (int): The size for the crops used to cut the input raster into smaller pieces. This is given in pixels, not any geographic unit.
+            patch_overlap (float): The horizontal and vertical overlap among patches
+        Returns:
+            ds: a pytorch dataset
+        """
+        if not tile.shape[2] == 3:
+            raise ValueError("Only three band raster are accepted. Channels should be the final dimension. Input tile has shape {}. Check for transparent alpha channel and remove if present".format(tile.shape))
+        
+        self.image = tile
+        self.preload_images = preload_images
+        self.windows = preprocess.compute_windows(self.image, patch_size, patch_overlap)
+        
+        if self.preload_images:
+            self.crops = []
+            for window in self.windows:
+                crop = self.image[window.indices()]
+                crop = preprocess.preprocess_image(crop)                
+                self.crops.append(crop)
+            
+    def __len__(self):
+        return len(self.windows)
+                
+    def __getitem__(self, idx):
+        # Read image if not in memory
+        if self.preload_images:
+            crop = self.crops[idx]
+        else:
+            crop = self.image[self.windows[idx].indices()]
+            crop = preprocess.preprocess_image(crop)                            
+            
+        return crop    
