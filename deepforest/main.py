@@ -112,6 +112,9 @@ class deepforest(pl.LightningModule):
         # load saved model and tag release
         self.__release_version__ = release_tag
         print("Loading pre-built model: {}".format(release_tag))
+        
+        print("Setting default score threshold to 0.3")
+        self.config["score_thresh"] = 0.3
 
     def create_model(self):
         """Define a deepforest retinanet architecture"""
