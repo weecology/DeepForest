@@ -11,7 +11,7 @@ from PIL import Image
 from deepforest import IoU
 from deepforest.utilities import check_file
 from deepforest import visualize
-
+import warnings
 
 def evaluate_image(predictions, ground_df, root_dir, savedir=None):
     """
@@ -107,7 +107,7 @@ def evaluate(predictions, ground_df, root_dir, iou_threshold=0.4, savedir=None):
 
     check_file(ground_df)
     check_file(predictions)
-
+    
     # Run evaluation on all plots
     results = []
     box_recalls = []

@@ -8,6 +8,7 @@ dependencies:
   - recommonmark
   - pyyaml>=5.1.0
   - pytest
+  - pytest-profiling
   - numpydoc
   - geopandas
   - h5py
