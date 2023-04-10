@@ -68,13 +68,12 @@ def predict_image(model,
 
 def mosiac(boxes, windows, use_soft_nms=False, sigma=0.5, thresh=0.001, iou_threshold=0.1):
     # transform the coordinates to original system
-    
-    for index, window_boxes in enumerate(boxes):
+    for index, _ in enumerate(boxes):
         xmin, ymin, xmax, ymax = windows[index].getRect()
-        window_boxes.xmin = window_boxes.xmin + xmin
-        window_boxes.xmax = window_boxes.xmax + xmin
-        window_boxes.ymin = window_boxes.ymin + ymin
-        window_boxes.ymax = window_boxes.ymax + ymin
+        boxes[index].xmin += xmin
+        boxes[index].xmax +=  xmin
+        boxes[index].ymin +=  ymin
+        boxes[index].ymax +=  ymin
     
     predicted_boxes = pd.concat(boxes)
     print(
