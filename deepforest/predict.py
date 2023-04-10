@@ -10,6 +10,7 @@ from torchvision.ops import nms
 from deepforest import preprocess
 from deepforest import visualize
 
+
 def predict_image(model,
                   image,
                   return_plot,
@@ -66,15 +67,20 @@ def predict_image(model,
         return df
 
 
-def mosiac(boxes, windows, use_soft_nms=False, sigma=0.5, thresh=0.001, iou_threshold=0.1):
+def mosiac(boxes,
+           windows,
+           use_soft_nms=False,
+           sigma=0.5,
+           thresh=0.001,
+           iou_threshold=0.1):
     # transform the coordinates to original system
     for index, _ in enumerate(boxes):
         xmin, ymin, xmax, ymax = windows[index].getRect()
         boxes[index].xmin += xmin
-        boxes[index].xmax +=  xmin
-        boxes[index].ymin +=  ymin
-        boxes[index].ymax +=  ymin
-    
+        boxes[index].xmax += xmin
+        boxes[index].ymin += ymin
+        boxes[index].ymax += ymin
+
     predicted_boxes = pd.concat(boxes)
     print(
         f"{predicted_boxes.shape[0]} predictions in overlapping windows, applying non-max supression"
@@ -87,16 +93,11 @@ def mosiac(boxes, windows, use_soft_nms=False, sigma=0.5, thresh=0.001, iou_thre
 
     if use_soft_nms:
         # Performs soft non-maximum suppression (soft-NMS) on the boxes.
-        bbox_left_idx = soft_nms(boxes=boxes,
-                                 scores=scores,
-                                 sigma=sigma,
-                                 thresh=thresh)
+        bbox_left_idx = soft_nms(boxes=boxes, scores=scores, sigma=sigma, thresh=thresh)
     else:
         # Performs non-maximum suppression (NMS) on the boxes according to
         # their intersection-over-union (IoU).
-        bbox_left_idx = nms(boxes=boxes,
-                            scores=scores,
-                            iou_threshold=iou_threshold)
+        bbox_left_idx = nms(boxes=boxes, scores=scores, iou_threshold=iou_threshold)
 
     bbox_left_idx = bbox_left_idx.numpy()
     new_boxes, new_labels, new_scores = boxes[bbox_left_idx].type(
@@ -110,13 +111,13 @@ def mosiac(boxes, windows, use_soft_nms=False, sigma=0.5, thresh=0.001, iou_thre
     ],
                                       axis=1)
 
-    mosaic_df = pd.DataFrame(
-        image_detections,
-        columns=["xmin", "ymin", "xmax", "ymax", "label", "score"])
+    mosaic_df = pd.DataFrame(image_detections,
+                             columns=["xmin", "ymin", "xmax", "ymax", "label", "score"])
 
     print(f"{mosaic_df.shape[0]} predictions kept after non-max suppression")
 
     return mosaic_df
+
 
 def soft_nms(boxes, scores, sigma=0.5, thresh=0.001):
     """
