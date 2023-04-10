@@ -27,7 +27,7 @@ dependencies:
   - rasterio
   - psutil
   - pytorch
-  - torchvision>=0.9.0
+  - torchvision>=0.13
   - slidingwindow
   - bumpversion
   - pip:

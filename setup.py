@@ -54,7 +54,7 @@ setup(name=NAME,
       include_package_data=True,
       install_requires=[
           "torch",
-          "torchvision>0.9.0",
+          "torchvision>=0.13",
           "matplotlib",
           "Pillow>6.2.0",
           "pandas",
