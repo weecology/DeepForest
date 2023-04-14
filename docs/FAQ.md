@@ -19,6 +19,30 @@ image = Image.fromarray(numpy_image)
 image.save(name)
 ```
 
+## How do I make training faster?
+
+While it is impossible to anticipate the setup for all users, there are a few guidelines. First, a gpu-enabled processor is key. Training on CPU can be done, but it will take much longer (100x) and probably is only done if needed. Using google colab can be helpful, but somewhat annoying to use. Once on gpu, the config has a 'workers' argument. This connects to pytorch's dataloader. As the number of workers increase, data is fed to the GPU in parallel. Increase the worker argument slowly, we have found that the optimal number of workers vary by system. 
+
+```
+m.config["workers"] = 5
+```
+
+It is not foolproof, and occasionally 0 workers, in which data loading is run on the main thread is optimal: https://stackoverflow.com/questions/73331758/can-ideal-num-workers-for-a-large-dataset-in-pytorch-be-0.
+
+For large training runs, setting preload_images to True can be helpful. 
+
+```
+m.config["preload_images"] = True
+```
+
+This will load all data into GPU memory once at the beginning of the run. This is great, but requires you have enough memory space to do so.
+
+Similiarly, increasing the batch size can speed up training. Like both the options above, we have seen examples where performance (and accuracy) improves and decreases depending on batch size. Track experiment results carefully when altering batch size, since it directly [effects the speed of learning](https://www.baeldung.com/cs/learning-rate-batch-size).
+
+```
+m.config["batch_size"] = 10
+```
+
 ## I cannot reload a saved multi-class model using a checkpoint.
 
 DeepForest is a pytorch lightning module. There seems to be ongoing debate on how to best to initialize a new module with new hyperparameters.
