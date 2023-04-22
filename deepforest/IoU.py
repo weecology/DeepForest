@@ -85,7 +85,8 @@ def compute_IoU(ground_truth, submission):
                               rtree_index=rtree_index)
 
     # Create cost matrix for assignment
-    matrix = overlap_df.pivot("truth_id", "prediction_id", "area").values
+    matrix = overlap_df.pivot(index="truth_id", columns="prediction_id",
+                              values="area").values
     row_ind, col_ind = linear_sum_assignment(matrix, maximize=True)
 
     # Create IoU dataframe, match those predictions and ground truth, IoU = 0

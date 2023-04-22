@@ -23,6 +23,7 @@ Source code is available here: (https://github.com/weecology/DeepForest.git).
    source/deepforest
    authors.rst
    source/modules.rst
+   use
    developer
 
 Indices and tables

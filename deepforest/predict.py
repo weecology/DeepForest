@@ -5,7 +5,6 @@ import numpy as np
 import warnings
 
 import torch
-import rasterio as rio
 from torchvision.ops import nms
 
 from deepforest import preprocess
