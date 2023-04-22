@@ -17,13 +17,6 @@ For more about the motivation behind DeepForest, see a recent talk I gave at the
 
 <iframe width="560" height="315" src="https://www.youtube.com/embed/r7zqn4AZmb0?start=1080" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
-## Demo
-
-
-For a quick example of model performance on sample images, see our demo shiny app. Please note that the model continues to improve and the app model may not reflect results from the current release.
-
-[http://weecology.westus.cloudapp.azure.com/neon/](http://weecology.westus.cloudapp.azure.com/neon/)
-
 ## License
 Free software: [MIT license](https://github.com/weecology/DeepForest/blob/master/LICENSE)
 
