@@ -3,7 +3,7 @@ import cv2
 import pandas as pd
 import numpy as np
 import warnings
-
+import rasterio as rio
 import torch
 from torchvision.ops import nms
 
@@ -29,7 +29,7 @@ def drop_alpha_channel(image=None, path=None):
 
     if image is None:
         try:
-            image = np.load(path)
+            image = rio.open(path).read()
             image = np.moveaxis(image, 0, 2)
         except Exception as e:
             raise IOError(f"Could not read image from path {path}: {e}")
@@ -40,7 +40,7 @@ def drop_alpha_channel(image=None, path=None):
             f"Input image has {image.shape[2]} channels, ignoring alpha channel"
         )
         image = image[:, :, :3].astype("uint8")
-    print(image.shape,2)
+
     return image
 
 def predict_image(model,

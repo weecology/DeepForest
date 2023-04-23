@@ -147,7 +147,7 @@ def test_predict_image_with_alpha_channel(m):
     path = r"tests/data/hd_output_4b.tif"
     image = np.array(Image.open(path))
     with pytest.warns(UserWarning, match="Input image has"):
-        print(image.shape,1)
+
         m.predict_image(image=image)
 
 
