@@ -40,7 +40,7 @@ def drop_alpha_channel(image=None, path=None):
             f"Input image has {image.shape[2]} channels, ignoring alpha channel"
         )
         image = image[:, :, :3].astype("uint8")
-
+    print(image.shape,2)
     return image
 
 def predict_image(model,
@@ -65,7 +65,6 @@ def predict_image(model,
     """
     
     image = drop_alpha_channel(image, path)
-    
     if image.dtype != "float32":
         warnings.warn(f"Image type is {image.dtype}, transforming to float32. "
                       f"This assumes that the range of pixel values is 0-255, as "
@@ -75,7 +74,7 @@ def predict_image(model,
     image = preprocess.preprocess_image(image)
 
     with torch.no_grad():
-        prediction = model(image) 
+        prediction = model(image.unsqeeze(0))
 
     # return None for no predictions
     if len(prediction[0]["boxes"]) == 0:

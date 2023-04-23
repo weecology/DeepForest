@@ -267,6 +267,7 @@ class deepforest(pl.LightningModule):
             boxes: A pandas dataframe of predictions (Default)
             img: The input with predictions overlaid (Optional)
         """
+        image=predict.drop_alpha_channel(image,path)
         if path:
             image = np.array(Image.open(path).convert("RGB")).astype("float32")
 
@@ -442,6 +443,8 @@ class deepforest(pl.LightningModule):
             self.image = rio.open(raster_path).read()
             self.image = np.moveaxis(self.image, 0, 2)
 
+
+        image=predict.drop_alpha_channel(image,raster_path)
         ds = dataset.TileDataset(tile=self.image,
                                  patch_overlap=patch_overlap,
                                  patch_size=patch_size)
