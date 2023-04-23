@@ -3,7 +3,7 @@ import setuptools
 from distutils.command.build_ext import build_ext as DistUtilsBuildExt
 
 NAME = 'deepforest'
-VERSION = '1.2.3'
+VERSION = '1.2.7'
 DESCRIPTION = 'Tree crown prediction using deep learning retinanets'
 URL = 'https://github.com/Weecology/DeepForest'
 AUTHOR = 'Ben Weinstein'
@@ -54,7 +54,7 @@ setup(name=NAME,
       include_package_data=True,
       install_requires=[
           "torch",
-          "torchvision>0.9.0",
+          "torchvision>=0.13",
           "matplotlib",
           "Pillow>6.2.0",
           "pandas",

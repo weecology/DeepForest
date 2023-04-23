@@ -3,8 +3,8 @@
 #cpu workers for data loaders
 #Dataloaders
 workers: 1
-gpus: 
-accelerator:
+devices: auto
+accelerator: auto
 batch_size: 1
 
 #Non-max supression of overlapping predictions

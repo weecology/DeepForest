@@ -14,7 +14,7 @@ jobs:
       fail-fast: false
       matrix:
         python-version:
-          - 3.9
+          - "3.10"
         os:
           - "ubuntu-latest"
 
@@ -34,7 +34,7 @@ jobs:
         with:
           environment-name: DeepForest
           environment-file: environment.yml
-          python-version: "${{ matrix.python-version }}"
+          extra-specs: "python=${{ matrix.python-version }}"
           cache-env: true
           cache-downloads: true
 

@@ -15,9 +15,9 @@ import warnings
 import rasterio
 
 
-def preprocess_image(image, device):
+def preprocess_image(image):
     """Preprocess a single RGB numpy array as a prediction from channels last, to channels first"""
-    image = torch.tensor(image, device=device).permute(2, 0, 1).unsqueeze(0)
+    image = torch.tensor(image).permute(2, 0, 1)
     image = image / 255
 
     return image

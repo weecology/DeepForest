@@ -11,6 +11,7 @@ from PIL import Image
 from deepforest import IoU
 from deepforest.utilities import check_file
 from deepforest import visualize
+import warnings
 
 
 def evaluate_image(predictions, ground_df, root_dir, savedir=None):
