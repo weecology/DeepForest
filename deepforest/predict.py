@@ -75,7 +75,7 @@ def predict_image(model,
     image = preprocess.preprocess_image(image)
 
     with torch.no_grad():
-        prediction = model(image.unsqueeze(0)) 
+        prediction = model(image) 
 
     # return None for no predictions
     if len(prediction[0]["boxes"]) == 0:
