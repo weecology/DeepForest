@@ -35,7 +35,7 @@ def drop_alpha_channel(image=None, path=None):
             raise IOError(f"Could not read image from path {path}: {e}")
 
     # Check that the image has 3 channels
-    if not image.shape[2] == 3:
+    if not np.array(image).shape[2] == 3:
         warnings.warn(
             f"Input image has {image.shape[2]} channels, ignoring alpha channel"
         )

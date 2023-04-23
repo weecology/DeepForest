@@ -267,11 +267,11 @@ class deepforest(pl.LightningModule):
             boxes: A pandas dataframe of predictions (Default)
             img: The input with predictions overlaid (Optional)
         """
-        if np.array(image).shape[2]!=3:
-            image=predict.drop_alpha_channel(image,path)
+
         if path:
             image = np.array(Image.open(path).convert("RGB")).astype("float32")
-
+        
+        image=predict.drop_alpha_channel(image,path)
         # sanity checks on input images
         if not type(image) == np.ndarray:
             raise TypeError("Input image is of type {}, expected numpy, if reading "
