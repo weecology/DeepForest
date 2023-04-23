@@ -5,7 +5,6 @@ import numpy as np
 import warnings
 
 import torch
-import rasterio as rio
 from torchvision.ops import nms
 
 from deepforest import preprocess
@@ -18,6 +17,10 @@ def drop_alpha_channel(image=None, path=None):
     Args:
         image: a numpy array of a RGB image ranged from 0-255
         path: optional path to read image from disk instead of passing image arg
+
+    Returns:
+        A numpy array of shape (H, W, 3) and dtype uint8, with the alpha channel removed.
+
     """
 
     # Check that either an image or a path is provided
@@ -26,7 +29,7 @@ def drop_alpha_channel(image=None, path=None):
 
     if image is None:
         try:
-            image = rio.open(path).read()
+            image = np.load(path)
             image = np.moveaxis(image, 0, 2)
         except Exception as e:
             raise IOError(f"Could not read image from path {path}: {e}")
@@ -37,7 +40,6 @@ def drop_alpha_channel(image=None, path=None):
             f"Input image has {image.shape[2]} channels, ignoring alpha channel"
         )
         image = image[:, :, :3].astype("uint8")
-
 
     return image
 
@@ -73,7 +75,7 @@ def predict_image(model,
     image = preprocess.preprocess_image(image)
 
     with torch.no_grad():
-        prediction = model(image.unsqueeze(0))
+        prediction = model(image.unsqueeze(0)) 
 
     # return None for no predictions
     if len(prediction[0]["boxes"]) == 0:
