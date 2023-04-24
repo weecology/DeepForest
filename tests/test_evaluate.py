@@ -51,7 +51,7 @@ def test_evaluate_multi(m):
     #Manipulate the data to create some false positives
     predictions = ground_truth.copy()
     predictions["score"] = 1
-    predictions.label.loc[[36,35,34]] = 0
+    predictions.iloc[[36, 35, 34], predictions.columns.get_indexer(['label'])]
     results = evaluate.evaluate(predictions=predictions, ground_df=ground_truth, root_dir=os.path.dirname(csv_file))     
         
     assert results["results"].shape[0] == ground_truth.shape[0]
@@ -66,7 +66,7 @@ def test_evaluate_save_images(m, tmpdir):
     #Manipulate the data to create some false positives
     predictions = ground_truth.copy()
     predictions["score"] = 1
-    predictions.label.loc[[36,35,34]] = 0
+    predictions.iloc[[36, 35, 34], predictions.columns.get_indexer(['label'])]
     results = evaluate.evaluate(predictions=predictions, ground_df=ground_truth, root_dir=os.path.dirname(csv_file), savedir=tmpdir)     
     assert all([os.path.exists("{}/{}".format(tmpdir,x)) for x in ground_truth.image_path])
 
