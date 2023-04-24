@@ -19,13 +19,28 @@ image = Image.fromarray(numpy_image)
 image.save(name)
 ```
 
-## I cannot reload a saved multi-class model using a checkpoint.
+## How do I make training faster?
 
-DeepForest is a pytorch lightning module. There seems to be ongoing debate on how to best to initialize a new module with new hyperparameters.
+While it is impossible to anticipate the setup for all users, there are a few guidelines. First, a GPU-enabled processor is key. Training on a CPU can be done, but it will take much longer (100x) and is probably only done if needed. Using Google Colab can be beneficial but prone to errors. Once on the GPU, the configuration includes a "workers" argument. This connects to PyTorch's dataloader. As the number of workers increases, data is fed to the GPU in parallel. Increase the worker argument slowly, we have found that the optimal number of workers varies by system.
 
-[https://github.com/PyTorchLightning/pytorch-lightning/issues/924](https://github.com/PyTorchLightning/pytorch-lightning/issues/924)
+```
+m.config["workers"] = 5
+```
 
-One easy work around is to create an object of the same specifications and load the model weights. Careful to use map_location argument if loading on a different device (gpu v cpu).
+It is not foolproof, and occasionally 0 workers, in which data loading is run on the main thread, is optimal : https://stackoverflow.com/questions/73331758/can-ideal-num-workers-for-a-large-dataset-in-pytorch-be-0.
+
+For large training runs, setting preload_images to True can be helpful. 
+
+```
+m.config["preload_images"] = True
+```
+
+This will load all data into GPU memory once, at the beginning of the run. This is great, but it requires you to have enough memory space to do so.
+Similarly, increasing the batch size can speed up training. Like both of the options above, we have seen examples where performance (and accuracy) improves and decreases depending on batch size. Track experiment results carefully when altering batch size, since it directly [effects the speed of learning](https://www.baeldung.com/cs/learning-rate-batch-size).
+
+```
+m.config["batch_size"] = 10
+```
 
 ```
 import torch
