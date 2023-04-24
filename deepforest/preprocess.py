@@ -78,15 +78,12 @@ def select_annotations(annotations, windows, index, allow_empty=False):
     offset = 40
     selected_annotations = annotations[(annotations.xmin > (window_xmin - offset)) &
                                        (annotations.xmin < (window_xmax)) &
-                                       (annotations.xmax >
-                                        (window_xmin)) & (annotations.ymin >
-                                                          (window_ymin - offset)) &
-                                       (annotations.xmax <
-                                        (window_xmax + offset)) & (annotations.ymin <
-                                                                   (window_ymax)) &
-                                       (annotations.ymax >
-                                        (window_ymin)) & (annotations.ymax <
-                                                          (window_ymax + offset))]
+                                       (annotations.xmax > (window_xmin)) &
+                                       (annotations.ymin > (window_ymin - offset)) &
+                                       (annotations.xmax < (window_xmax + offset)) &
+                                       (annotations.ymin < (window_ymax)) &
+                                       (annotations.ymax > (window_ymin)) &
+                                       (annotations.ymax < (window_ymax + offset))]
 
     # change the image name
     image_basename = os.path.splitext("{}".format(annotations.image_path.unique()[0]))[0]
