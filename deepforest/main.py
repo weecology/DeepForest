@@ -57,7 +57,7 @@ class deepforest(pl.LightningModule):
         self.num_classes = num_classes
         self.create_model()
 
-        #Create a default trainer.
+        # Create a default trainer.
         self.create_trainer()
 
         # Label encoder and decoder
@@ -185,7 +185,7 @@ class deepforest(pl.LightningModule):
             csv_file: path to csv file
             root_dir: directory of images. If none, uses "image_dir" in config
             augment: Whether to create a training dataset, this activates data augmentations
-            
+
         Returns:
             ds: a pytorch dataset
         """
@@ -256,7 +256,7 @@ class deepforest(pl.LightningModule):
                       thickness: int = 1,
                       color: typing.Optional[tuple] = (0, 165, 255)):
         """Predict a single image with a deepforest model
-                
+
         Args:
             image: a float32 numpy array of a RGB with channels last format
             path: optional path to read image from disk instead of passing image arg
@@ -297,7 +297,8 @@ class deepforest(pl.LightningModule):
             return None
 
         df = visualize.format_boxes(prediction[0])
-        df = predict.across_class_nms(df, iou_threshold=self.config["nms_thresh"])
+        df = predict.across_class_nms(
+            df, iou_threshold=self.config["nms_thresh"])
 
         if return_plot:
             # Bring to gpu
@@ -318,7 +319,8 @@ class deepforest(pl.LightningModule):
             if path:
                 df["image_path"] = os.path.basename(path)
 
-            df["label"] = df.label.apply(lambda x: self.numeric_to_label_dict[x])
+            df["label"] = df.label.apply(
+                lambda x: self.numeric_to_label_dict[x])
 
         return df
 
@@ -341,9 +343,13 @@ class deepforest(pl.LightningModule):
         self.model.score_thresh = self.config["score_thresh"]
         df = pd.read_csv(csv_file)
         paths = df.image_path.unique()
-        image = Image.open(root_dir)
-        resized_image = image.resize((400, 400))
-        resized_image.save(root_dir)
+        
+        for path in paths:
+            image_path = os.path.join(root_dir, path)
+            image = Image.open(image_path)
+            resized_image = image.resize((400, 400))
+            resized_image.save(image_path)
+
         ds = dataset.TreeDataset(csv_file=csv_file,
                                  root_dir=root_dir,
                                  transforms=None,
@@ -351,11 +357,12 @@ class deepforest(pl.LightningModule):
 
         batched_results = []
         for i, batch in enumerate(self.predict_dataloader(ds)):
-            batch = self.transfer_batch_to_device(batch, self.device, dataloader_idx=0)
+            batch = self.transfer_batch_to_device(
+                batch, self.device, dataloader_idx=0)
             out = self.predict_step(batch, i)
             batched_results.append(out)
 
-        #Flatten list from batched prediction
+        # Flatten list from batched prediction
         prediction_list = []
         for batch in batched_results:
             for boxes in batch:
@@ -448,9 +455,10 @@ class deepforest(pl.LightningModule):
         ds = dataset.TileDataset(tile=self.image,
                                  patch_overlap=patch_overlap,
                                  patch_size=patch_size)
-        batched_results = self.trainer.predict(self, self.predict_dataloader(ds))
+        batched_results = self.trainer.predict(
+            self, self.predict_dataloader(ds))
 
-        #Flatten list from batched prediction
+        # Flatten list from batched prediction
         results = []
         for batch in batched_results:
             for boxes in batch:
@@ -479,7 +487,8 @@ class deepforest(pl.LightningModule):
                 return drawn_plot
         else:
             for df in results:
-                df["label"] = df.label.apply(lambda x: self.numeric_to_label_dict[x])
+                df["label"] = df.label.apply(
+                    lambda x: self.numeric_to_label_dict[x])
 
             # TODO this is the 2nd time the crops are generated? Could be more efficient.
             self.crops = []
@@ -517,7 +526,7 @@ class deepforest(pl.LightningModule):
             print("Empty batch encountered, skipping")
             return None
 
-        #Get loss from "train" mode, but don't allow optimization
+        # Get loss from "train" mode, but don't allow optimization
         self.model.train()
         with torch.no_grad():
             loss_dict = self.model.forward(images, targets)
@@ -585,7 +594,8 @@ class deepforest(pl.LightningModule):
                                         savedir=savedir)
 
         ground_df = pd.read_csv(csv_file)
-        ground_df["label"] = ground_df.label.apply(lambda x: self.label_dict[x])
+        ground_df["label"] = ground_df.label.apply(
+            lambda x: self.label_dict[x])
 
         # remove empty samples from ground truth
         ground_df = ground_df[~((ground_df.xmin == 0) & (ground_df.xmax == 0))]
