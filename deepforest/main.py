@@ -341,6 +341,9 @@ class deepforest(pl.LightningModule):
         self.model.score_thresh = self.config["score_thresh"]
         df = pd.read_csv(csv_file)
         paths = df.image_path.unique()
+        image = Image.open(root_dir)
+        resized_image = image.resize((400, 400))
+        resized_image.save(root_dir)
         ds = dataset.TreeDataset(csv_file=csv_file,
                                  root_dir=root_dir,
                                  transforms=None,
