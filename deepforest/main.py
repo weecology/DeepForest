@@ -343,7 +343,6 @@ class deepforest(pl.LightningModule):
         self.model.score_thresh = self.config["score_thresh"]
         df = pd.read_csv(csv_file)
         paths = df.image_path.unique()
-        
         for path in paths:
             image_path = os.path.join(root_dir, path)
             image = Image.open(image_path)
