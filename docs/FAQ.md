@@ -58,8 +58,18 @@ m.load_state_dict(ckpt["state_dict"])
 On some devices and systems we have found an error referencing the model.trainer object that was created in m.create_trainer(). 
 We welcome a reproducible issue to address this error as it appears highly variable and relates to upstream issues. It appears more common on google colab and github actions.
 
+In most cases, this error appears when running multiple calls to model.predict or model.train. We believe this occurs because garbage collection has deleted the model.trainer object see:
 https://github.com/Lightning-AI/lightning/issues/12233
 https://github.com/weecology/DeepForest/issues/338
+
+If you run into this error, users (e.g https://github.com/weecology/DeepForest/issues/443), have found that creating the trainer object within the loop can resolve this issue.
+
+```
+for tile in tiles_to_predict:
+    m.create_trainer()
+    m.predict_tile(tile)
+```
+Usually creating this object does not cost too much computational time.
 
 ### Saving
 
