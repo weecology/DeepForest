@@ -7,3 +7,5 @@ current_release.csv
 *.pt
 tests/__pycache__
 *.wp*
+lightning_logs/*
+*.prof
