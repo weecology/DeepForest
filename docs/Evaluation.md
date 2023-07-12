@@ -53,7 +53,7 @@ We tested a range of overlap thresholds from 0.3 (less overlap among matching cr
 After computing the IoU for the ground truth data, we get the resulting dataframe.
 
 ```
-result = evaluate.evaluate_image(predictions=predictions, ground_df=ground_truth, show_plot=True, root_dir=os.path.dirname(csv_file), savedir=None)     
+result = evaluate.evaluate_image(predictions=predictions, ground_df=ground_truth, root_dir=os.path.dirname(csv_file), savedir=None)     
 result.head()
     prediction_id  truth_id       IoU predicted_label true_label
 90             90         0  0.059406            Tree       Tree
