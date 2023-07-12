@@ -3,9 +3,12 @@
 .DS_Store
 .RHistory
 current_release.csv
+current_bird_release.csv
 *.pl
 *.pt
 tests/__pycache__
 *.wp*
 lightning_logs/*
 *.prof
+build/
+*.egg-info
