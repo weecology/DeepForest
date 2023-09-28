@@ -4,6 +4,7 @@ import os
 import sys
 from typing import Any
 import urllib.request
+import pydata_sphinx_theme
 
 import recommonmark
 from recommonmark.parser import CommonMarkParser
@@ -59,11 +60,11 @@ extensions = [
     'sphinx.ext.napoleon',
     'sphinx.ext.todo',
     'sphinx.ext.viewcode',
-    'sphinx_markdown_tables',
-]
+    'sphinx_markdown_tables']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
+
 # The master toctree document.
 master_doc = 'index'
 
@@ -78,14 +79,8 @@ pygments_style = 'sphinx'
 todo_include_todos = False
 
 # -- Options for HTML output -------------------------------------------
-
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
-if not on_rtd:  # only import and set the theme if we're building docs locally
-    import sphinx_rtd_theme
-
-    html_theme = 'sphinx_rtd_theme'
-    html_theme_path = [sphinx_rtd_theme.get_html_theme_path()] + ["../.."]
-
+html_theme = 'furo'
 html_static_path = []
 
 # -- Options for HTMLHelp output ---------------------------------------

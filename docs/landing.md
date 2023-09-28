@@ -1,21 +1,19 @@
 # What is DeepForest?
-DeepForest is a python package for training and predicting individual tree crowns from airborne RGB imagery. DeepForest comes with a prebuilt model trained on data from the National Ecological Observatory Network. Users can extend this model by annotating and training custom models.
+DeepForest is a python package for training and predicting ecological objects in airborne imagery. DeepForest currently comes with a tree crown object detection model and a bird detection model. Both are single class modules that can be extended to species classification based on new data. Users can extend these models by annotating and training custom models.
 
 ![](../www/image.png)
-
-# What's new in DeepForest 1.0.0?
-
-The original project was written in tensorflow based on keras-retinanet. When tensorflow updated to 2.0 there were breaking changes and the authors of keras-retinanet decided to not attempt to recover the project. 
-The rapid development of open machine learning community resources means that tensorflow 1.14.0, which is required for deepforest, will rapidly become out of date. Fear not, starting in 1.0.0, the model now depends on the pytorch and torchvision and will be stable for the forseeable future.
 
 ## How does deepforest work?
 
 DeepForest uses deep learning object detection networks to predict bounding boxes corresponding to individual trees in RGB imagery. 
-DeepForest is built on the retinanet model from the [torchvision package](http://pytorch.org/vision/stable/index.html) and designed to make training models for tree detection simpler.
+DeepForest is built on the object detection module from the [torchvision package](http://pytorch.org/vision/stable/index.html) and designed to make training models for tree detection simpler.
 
-For more about the motivation behind DeepForest, see a recent talk I gave at the Florida Musuem on Natural History
+For more about the motivation behind DeepForest, see some recent talks I've done on computer vision for ecology and practical applications to machine learning in environmental monitoring. 
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/ifsl6zwvWw0?si=wLGtZtRa1jZZMa3V" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
 
 <iframe width="560" height="315" src="https://www.youtube.com/embed/r7zqn4AZmb0?start=1080" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+
 
 ## License
 Free software: [MIT license](https://github.com/weecology/DeepForest/blob/master/LICENSE)
