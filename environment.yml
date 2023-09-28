@@ -32,5 +32,6 @@ dependencies:
   - bumpversion
   - pip:
     - sphinx-markdown-tables
+    - pydata_sphinx_theme
     - imagecodecs
     - albumentations>=1.0.0

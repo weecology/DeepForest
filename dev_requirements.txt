@@ -21,6 +21,7 @@ sphinx
 docutils<0.18
 slidingwindow
 opencv-python
+pydata_sphinx_theme
 sphinx_rtd_theme
 sphinx_markdown_tables
 tqdm
