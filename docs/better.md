@@ -1,6 +1,6 @@
 # How do I make the predictions better?
 
-Give the enormous array of forest types and image acquisition environment, it is unlikely that your image will be perfectly predicted by the prebuilt model. Here are some tips to improve predictions
+Give the enormous array of forest types and image acquisition environment, it is unlikely that your image will be perfectly predicted by the prebuilt model. Here are some tips to improve predictions. Below are some general guidelines. The best place to get help in making a model better is to look for a relevant discussion on [github](https://github.com/weecology/DeepForest/discussions). This is different than feature requests or bug reports which belong in the github [issues](https://github.com/weecology/DeepForest/issues).
 
 ## Check patch size
 
