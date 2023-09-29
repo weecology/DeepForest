@@ -4,7 +4,6 @@ import os
 import sys
 from typing import Any
 import urllib.request
-import pydata_sphinx_theme
 
 import recommonmark
 from recommonmark.parser import CommonMarkParser
