@@ -40,3 +40,10 @@ jobs:
 
       - name: "Run tests"
         run: "pytest -v"
+
+      - name: "Style and syntax test"
+        run: "yapf -d --recursive deepforest/ --style=.style.yapf 2>&1"
+
+      - name: "Commit check"
+        run: "git --no-pager log --no-merges --format=%B -n 1"
+
