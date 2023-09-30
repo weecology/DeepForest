@@ -446,6 +446,5 @@ assert m.num_classes == 2
 
 ## Issues
 
-We welcome feedback on both the python package as well as the algorithm performance. Please submit detailed issues to the github repo.
+We welcome feedback on both the python package as well as the algorithm performance. Please submit detailed [issues](https://github.com/weecology/DeepForest/issues) to the github repo.
 
-[https://github.com/weecology/DeepForest/issues](https://github.com/weecology/DeepForest/issues)

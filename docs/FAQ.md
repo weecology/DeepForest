@@ -1,6 +1,6 @@
 # FAQ
 
-## Exception: RuntimeError: The size of tensor a (4) must match the size of tensor b (3) at non-singleton dimension 0
+**Exception: RuntimeError: The size of tensor a (4) must match the size of tensor b (3) at non-singleton dimension 0**
 
 This error is usually caused by the user accidentily adding a 4 channel image to a 3 channel RGB model. Sometimes .png or .jpeg images are saved with a 'alpha' channel controlling their transparency. This needs to be removed.
 
@@ -19,7 +19,7 @@ image = Image.fromarray(numpy_image)
 image.save(name)
 ```
 
-## How do I make training faster?
+**How do I make training faster?**
 
 While it is impossible to anticipate the setup for all users, there are a few guidelines. First, a GPU-enabled processor is key. Training on a CPU can be done, but it will take much longer (100x) and is probably only done if needed. Using Google Colab can be beneficial but prone to errors. Once on the GPU, the configuration includes a "workers" argument. This connects to PyTorch's dataloader. As the number of workers increases, data is fed to the GPU in parallel. Increase the worker argument slowly, we have found that the optimal number of workers varies by system.
 
@@ -53,7 +53,7 @@ m = main.deepforest(num_classes = 6, label_dict = {"a":0,"b":1,"c":2,"d":3,"e":4
 m.load_state_dict(ckpt["state_dict"])
 ```
 
-## Weakly referenced objects
+**Weakly referenced objects**
 
 On some devices and systems we have found an error referencing the model.trainer object that was created in m.create_trainer(). 
 We welcome a reproducible issue to address this error as it appears highly variable and relates to upstream issues. It appears more common on google colab and github actions.
@@ -71,7 +71,7 @@ for tile in tiles_to_predict:
 ```
 Usually creating this object does not cost too much computational time.
 
-### Saving
+**Saving**
 
 We have rarely heard that this appears on save:
 ```
@@ -92,7 +92,7 @@ model = main.deepforest()
 model.model.load_state_dict(torch.load(model_path))
 ```
 
-### Training
+**Training**
 
 We have heard that this error can appear when trying to deep copy the pytorch lighnting module. The trainer object is not pickleable.
 For example, on multi-gpu enviroments when trying to scale the deepforest model the entire module is copied leading to this error.
@@ -126,14 +126,14 @@ The added benefits of this is more control over the trainer object.
 The downside is that it doesn't align with the .config pattern where a user now has to look into the config to create the trainer. 
 We are open to changing this to be the default pattern in the future and welcome input from users.
 
-## How do I reduce double counting in overlapping images?
+**How do I reduce double counting in overlapping images?**
 
 If you have geospatial data for each image this is straightforward. 
 Here is a colab link example to project the predictions from image coordinates into geospatial coordinates and then apply non-max suppression.
 
 [https://colab.research.google.com/drive/1T4HC7i5zqe_9AX0pEZSSSzo6BFPFTgFK?usp=sharing](https://colab.research.google.com/drive/1T4HC7i5zqe_9AX0pEZSSSzo6BFPFTgFK?usp=sharing)
 
-## Issues
+**Issues**
 
 We welcome feedback on both the python package as well as the algorithm performance. Please submit detailed issues to the github repo.
 

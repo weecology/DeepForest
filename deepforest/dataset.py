@@ -58,10 +58,7 @@ class TreeDataset(Dataset):
                 on a sample.
             label_dict: a dictionary where keys are labels from the csv column and values are numeric labels "Tree" -> 0
         Returns:
-            If train:
-                path, image, targets
-            else:
-                image
+            If train, path, image, targets else image
         """
         self.annotations = pd.read_csv(csv_file)
         self.root_dir = root_dir
