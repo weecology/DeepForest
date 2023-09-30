@@ -5,5 +5,3 @@ DeepForest
    :maxdepth: 4
 
    deepforest
-   setup
-   tests
