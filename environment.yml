@@ -31,6 +31,7 @@ dependencies:
   - torchvision>=0.13
   - slidingwindow
   - bumpversion
+  - yapf
   - pip:
     - sphinx-markdown-tables
     - imagecodecs
