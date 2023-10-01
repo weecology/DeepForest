@@ -155,7 +155,7 @@ def evaluate(predictions, ground_df, root_dir, iou_threshold=0.4, savedir=None):
     box_recall = np.mean(box_recalls)
 
     # Only matching boxes are considered in class recall
-    matched_results = results[results.match==True]
+    matched_results = results[results.match == True]
     class_recall = compute_class_recall(matched_results)
 
     return {
