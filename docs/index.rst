@@ -9,7 +9,7 @@ In DeepForest you can use pretrained models for tree crown prediction
 
 For bird detection
 
-.. image:: ../www/Bird_panel.jpg
+.. image:: ../www/bird_panel.jpg
 
 or train your own object detection and classification model. 
 
