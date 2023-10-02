@@ -80,7 +80,6 @@ def test_split_raster(config, tmpdir):
     annotations = utilities.xml_to_annotations(get_data("2019_YELL_2_528000_4978000_image_crop2.xml"))
     annotations.to_csv("{}/example.csv".format(tmpdir), index=False)
     #annotations.label = 0
-    #visualize.plot_prediction_dataframe(df=annotations, root_dir=os.path.dirname(get_data(".")), show=True)
     
     annotations_file = preprocess.split_raster(path_to_raster=raster,
                                                annotations_file="{}/example.csv".format(tmpdir),

@@ -3,18 +3,19 @@ import os
 import pandas as pd
 from PIL import Image
 import torch
+import typing
 
 import pytorch_lightning as pl
 from torch import optim
 import numpy as np
 
-from deepforest import utilities
-from deepforest import dataset
-from deepforest import get_data
-from deepforest import model
-from deepforest import predict
+from deepforest import dataset, visualize, get_data, utilities, model, predict
 from deepforest import evaluate as evaluate_iou
+from deepforest.callbacks import iou_callback
 from pytorch_lightning.callbacks import LearningRateMonitor
+import rasterio as rio
+import cv2
+import warnings
 
 
 class deepforest(pl.LightningModule):
@@ -22,10 +23,10 @@ class deepforest(pl.LightningModule):
     """
 
     def __init__(self,
-                 num_classes=1,
-                 label_dict={"Tree": 0},
+                 num_classes: int = 1,
+                 label_dict: dict = {"Tree": 0},
                  transforms=None,
-                 config_file='deepforest_config.yml'):
+                 config_file: str = 'deepforest_config.yml'):
         """
         Args:
             num_classes (int): number of classes in the model
@@ -34,13 +35,6 @@ class deepforest(pl.LightningModule):
             self: a deepforest pytorch lightning module
         """
         super().__init__()
-
-        # Pytorch lightning handles the device,
-        # but we need one for adhoc methods like predict_image.
-        if torch.cuda.is_available():
-            self.current_device = torch.device("cuda")
-        else:
-            self.current_device = torch.device("cpu")
 
         # Read config file. Defaults to deepforest_config.yml in working directory.
         # Falls back to default installed version
@@ -62,6 +56,9 @@ class deepforest(pl.LightningModule):
 
         self.num_classes = num_classes
         self.create_model()
+
+        #Create a default trainer.
+        self.create_trainer()
 
         # Label encoder and decoder
         if not len(label_dict) == num_classes:
@@ -93,8 +90,7 @@ class deepforest(pl.LightningModule):
         # Download latest model from github release
         release_tag, self.release_state_dict = utilities.use_release(
             check_release=check_release)
-        self.model.load_state_dict(
-            torch.load(self.release_state_dict, map_location=self.device))
+        self.model.load_state_dict(torch.load(self.release_state_dict))
 
         # load saved model and tag release
         self.__release_version__ = release_tag
@@ -117,6 +113,9 @@ class deepforest(pl.LightningModule):
         self.__release_version__ = release_tag
         print("Loading pre-built model: {}".format(release_tag))
 
+        print("Setting default score threshold to 0.3")
+        self.config["score_thresh"] = 0.3
+
     def create_model(self):
         """Define a deepforest retinanet architecture"""
         self.model = model.create_model(self.num_classes, self.config["nms_thresh"],
@@ -132,12 +131,16 @@ class deepforest(pl.LightningModule):
         if not self.config["validation"]["csv_file"] is None:
             if logger is not None:
                 lr_monitor = LearningRateMonitor(logging_interval='epoch')
+                eval_callback = iou_callback(
+                    self.config,
+                    every_n_epochs=self.config["validation"]["val_accuracy_interval"])
+                callbacks.append(eval_callback)
                 callbacks.append(lr_monitor)
             limit_val_batches = 1.0
             num_sanity_val_steps = 2
         else:
             # Disable validation, don't use trainer defaults
-            print("No validation file provided. Turning off validation loop")            
+            print("No validation file provided. Turning off validation loop")
             limit_val_batches = 0
             num_sanity_val_steps = 0
         # Check for model checkpoint object
@@ -146,7 +149,7 @@ class deepforest(pl.LightningModule):
             enable_checkpointing = True
         else:
             enable_checkpointing = False
-        
+
         self.trainer = pl.Trainer(logger=logger,
                                   max_epochs=self.config["train"]["epochs"],
                                   enable_checkpointing=enable_checkpointing,
@@ -157,6 +160,7 @@ class deepforest(pl.LightningModule):
                                   limit_val_batches=limit_val_batches,
                                   num_sanity_val_steps=num_sanity_val_steps,
                                   **kwargs)
+
     def save_model(self, path):
         """
         Save the trainer checkpoint in user defined path, in order to access in future
@@ -185,7 +189,6 @@ class deepforest(pl.LightningModule):
         Returns:
             ds: a pytorch dataset
         """
-
         ds = dataset.TreeDataset(csv_file=csv_file,
                                  root_dir=root_dir,
                                  transforms=self.transforms(augment=augment),
@@ -234,12 +237,24 @@ class deepforest(pl.LightningModule):
 
         return loader
 
+    def predict_dataloader(self, ds):
+        """
+        Create a pytorch dataloader for prediction
+        Returns:
+        """
+        data_loader = torch.utils.data.DataLoader(ds,
+                                                  batch_size=self.config["batch_size"],
+                                                  shuffle=False,
+                                                  num_workers=self.config["workers"])
+
+        return data_loader
+
     def predict_image(self,
-                      image=None,
-                      path=None,
-                      return_plot=False,
-                      color=None,
-                      thickness=1):
+                      image: typing.Optional[np.ndarray] = None,
+                      path: typing.Optional[str] = None,
+                      return_plot: bool = False,
+                      thickness: int = 1,
+                      color: typing.Optional[tuple] = (0, 165, 255)):
         """Predict a single image with a deepforest model
                 
         Args:
@@ -252,14 +267,7 @@ class deepforest(pl.LightningModule):
             boxes: A pandas dataframe of predictions (Default)
             img: The input with predictions overlaid (Optional)
         """
-        if isinstance(image, str):
-            raise ValueError(
-                "Path provided instead of image. If you want to predict an image from disk, is path ="
-            )
-
         if path:
-            if not isinstance(path, str):
-                raise ValueError("Path expects a string path to image on disk")
             image = np.array(Image.open(path).convert("RGB")).astype("float32")
 
         # sanity checks on input images
@@ -268,32 +276,51 @@ class deepforest(pl.LightningModule):
                             "from PIL, wrap in "
                             "np.array(image).astype(float32)".format(type(image)))
 
-            # Load on GPU is available
-        if self.current_device.type == "cuda":
-            self.model = self.model.to("cuda")
-
         self.model.eval()
         self.model.score_thresh = self.config["score_thresh"]
 
-        # Check if GPU is available and pass image to gpu
-        result = predict.predict_image(model=self.model,
-                                       image=image,
-                                       return_plot=return_plot,
-                                       device=self.current_device,
-                                       iou_threshold=self.config["nms_thresh"],
-                                       color=color,
-                                       thickness=thickness)
+        if image.dtype != "float32":
+            warnings.warn(f"Image type is {image.dtype}, transforming to float32. "
+                          f"This assumes that the range of pixel values is 0-255, as "
+                          f"opposed to 0-1.To suppress this warning, transform image "
+                          f"(image.astype('float32')")
+            image = image.astype("float32")
 
-        # Set labels to character from numeric if returning boxes df
-        if not return_plot:
-            if not result is None:
-                if path:
-                    result["image_path"] = os.path.basename(path)
+        image = torch.tensor(image, device=self.device).permute(2, 0, 1)
+        image = image / 255
 
-                result["label"] = result.label.apply(
-                    lambda x: self.numeric_to_label_dict[x])
+        with torch.no_grad():
+            prediction = self.model(image.unsqueeze(0))
 
-        return result
+        # return None for no predictions
+        if len(prediction[0]["boxes"]) == 0:
+            return None
+
+        df = visualize.format_boxes(prediction[0])
+        df = predict.across_class_nms(df, iou_threshold=self.config["nms_thresh"])
+
+        if return_plot:
+            # Bring to gpu
+            image = image.cpu()
+
+            # Cv2 likes no batch dim, BGR image and channels last, 0-255
+            image = np.array(image.squeeze(0))
+            image = np.rollaxis(image, 0, 3)
+            image = image[:, :, ::-1] * 255
+            image = image.astype("uint8")
+            image = visualize.plot_predictions(image,
+                                               df,
+                                               color=color,
+                                               thickness=thickness)
+
+            return image
+        else:
+            if path:
+                df["image_path"] = os.path.basename(path)
+
+            df["label"] = df.label.apply(lambda x: self.numeric_to_label_dict[x])
+
+        return df
 
     def predict_file(self, csv_file, root_dir, savedir=None, color=None, thickness=1):
         """Create a dataset and predict entire annotation file
@@ -310,23 +337,57 @@ class deepforest(pl.LightningModule):
         Returns:
             df: pandas dataframe with bounding boxes, label and scores for each image in the csv file
         """
-        self.model = self.model.to(self.current_device)
         self.model.eval()
         self.model.score_thresh = self.config["score_thresh"]
+        df = pd.read_csv(csv_file)
+        paths = df.image_path.unique()
+        ds = dataset.TreeDataset(csv_file=csv_file,
+                                 root_dir=root_dir,
+                                 transforms=None,
+                                 train=False)
 
-        result = predict.predict_file(model=self.model,
-                                      csv_file=csv_file,
-                                      root_dir=root_dir,
-                                      savedir=savedir,
-                                      device=self.current_device,
-                                      iou_threshold=self.config["nms_thresh"],
-                                      color=color,
-                                      thickness=thickness)
+        batched_results = []
+        for i, batch in enumerate(self.predict_dataloader(ds)):
+            batch = self.transfer_batch_to_device(batch, self.device, dataloader_idx=0)
+            out = self.predict_step(batch, i)
+            batched_results.append(out)
 
-        # Set labels to character from numeric
-        result["label"] = result.label.apply(lambda x: self.numeric_to_label_dict[x])
+        #Flatten list from batched prediction
+        prediction_list = []
+        for batch in batched_results:
+            for boxes in batch:
+                prediction_list.append(boxes)
 
-        return result
+        results = []
+        for index, prediction in enumerate(prediction_list):
+            # If there is more than one class, apply NMS Loop through images and apply cross
+            if len(prediction.label.unique()) > 1:
+                prediction = predict.across_class_nms(
+                    prediction, iou_threshold=self.config["nms_thresh"])
+
+            if savedir:
+                # Just predict the images, even though we have the annotations
+                image = np.array(Image.open("{}/{}".format(root_dir,
+                                                           paths[index])))[:, :, ::-1]
+                image = visualize.plot_predictions(image, prediction)
+
+                # Plot annotations if they exist
+                annotations = df[df.image_path == paths[index]]
+
+                image = visualize.plot_predictions(image,
+                                                   annotations,
+                                                   color=color,
+                                                   thickness=thickness)
+                cv2.imwrite(
+                    "{}/{}.png".format(savedir,
+                                       os.path.splitext(paths[index])[0]), image)
+
+            prediction["image_path"] = paths[index]
+            results.append(prediction)
+
+        results = pd.concat(results, ignore_index=True)
+
+        return results
 
     def predict_tile(self,
                      raster_path=None,
@@ -366,50 +427,66 @@ class deepforest(pl.LightningModule):
             boxes (array): if return_plot, an image.
             Otherwise a numpy array of predicted bounding boxes, scores and labels
         """
-
-        # Load on GPU is available
-        if torch.cuda.is_available():
-            self.model = self.model.to("cuda")
-
         self.model.eval()
         self.model.score_thresh = self.config["score_thresh"]
         self.model.nms_thresh = self.config["nms_thresh"]
 
-        result = predict.predict_tile(model=self.model,
-                                      raster_path=raster_path,
-                                      image=image,
-                                      patch_size=patch_size,
-                                      patch_overlap=patch_overlap,
-                                      iou_threshold=iou_threshold,
-                                      return_plot=return_plot,
-                                      mosaic=mosaic,
-                                      use_soft_nms=use_soft_nms,
-                                      sigma=sigma,
-                                      thresh=thresh,
-                                      device=self.current_device,
-                                      color=color,
-                                      thickness=thickness)
+        if (raster_path is None) and (image is None):
+            raise ValueError(
+                "Both tile and tile_path are None. Either supply a path to a tile on disk, or read one into memory!"
+            )
 
-        # edge case, if no boxes predictioned return None
-        if result is None:
-            print("No predictions made, returning None")
-            return None
+        if raster_path is None:
+            self.image = image
+        else:
+            self.image = rio.open(raster_path).read()
+            self.image = np.moveaxis(self.image, 0, 2)
 
-        # Set labels to character from numeric if returning boxes df
-        if not return_plot:
-            if mosaic:
-                result["label"] = result.label.apply(
-                    lambda x: self.numeric_to_label_dict[x])
+        ds = dataset.TileDataset(tile=self.image,
+                                 patch_overlap=patch_overlap,
+                                 patch_size=patch_size)
+        batched_results = self.trainer.predict(self, self.predict_dataloader(ds))
 
+        #Flatten list from batched prediction
+        results = []
+        for batch in batched_results:
+            for boxes in batch:
+                results.append(boxes)
+
+        if mosaic:
+            results = predict.mosiac(results,
+                                     ds.windows,
+                                     use_soft_nms=use_soft_nms,
+                                     sigma=sigma,
+                                     thresh=thresh,
+                                     iou_threshold=iou_threshold)
+            results["label"] = results.label.apply(
+                lambda x: self.numeric_to_label_dict[x])
+            if raster_path:
+                results["image_path"] = os.path.basename(raster_path)
+            if return_plot:
+                # Draw predictions on BGR
                 if raster_path:
-                    result["image_path"] = os.path.basename(raster_path)
-            else:
-                for df, image in result:
-                    df["label"] = df.label.apply(lambda x: self.numeric_to_label_dict[x])
+                    tile = rio.open(raster_path).read()
+                drawn_plot = tile[:, :, ::-1]
+                drawn_plot = visualize.plot_predictions(tile,
+                                                        results,
+                                                        color=color,
+                                                        thickness=thickness)
+                return drawn_plot
+        else:
+            for df in results:
+                df["label"] = df.label.apply(lambda x: self.numeric_to_label_dict[x])
 
-                return result
+            # TODO this is the 2nd time the crops are generated? Could be more efficient.
+            self.crops = []
+            for window in ds.windows:
+                crop = self.image[window.indices()]
+                self.crops.append(crop)
 
-        return result
+            return list(zip(results, self.crops))
+
+        return results
 
     def training_step(self, batch, batch_idx):
         """Train on a loaded dataset
@@ -437,6 +514,7 @@ class deepforest(pl.LightningModule):
             print("Empty batch encountered, skipping")
             return None
 
+        #Get loss from "train" mode, but don't allow optimization
         self.model.train()
         with torch.no_grad():
             loss_dict = self.model.forward(images, targets)
@@ -450,24 +528,15 @@ class deepforest(pl.LightningModule):
 
         return losses
 
-    def on_train_epoch_end(self):
-        if not self.config["validation"]["csv_file"] == None:
-            if (self.current_epoch +
-                    1) % self.config["validation"]["val_accuracy_interval"] == 0:
-                results = self.evaluate(csv_file=self.config["validation"]["csv_file"],
-                                        root_dir=self.config["validation"]["root_dir"])
-                self.log("box_recall", results["box_recall"])
-                self.log("box_precision", results["box_precision"])
+    def predict_step(self, batch, batch_idx):
+        batch_results = self.model(batch)
 
-                if not type(results["class_recall"]) == type(None):
-                    for index, row in results["class_recall"].iterrows():
-                        self.log(
-                            "{}_Recall".format(self.numeric_to_label_dict[row["label"]]),
-                            row["recall"])
-                        self.log(
-                            "{}_Precision".format(
-                                self.numeric_to_label_dict[row["label"]]),
-                            row["precision"])
+        results = []
+        for result in batch_results:
+            boxes = visualize.format_boxes(result)
+            results.append(boxes)
+
+        return results
 
     def configure_optimizers(self):
         optimizer = optim.SGD(self.model.parameters(),
@@ -505,19 +574,12 @@ class deepforest(pl.LightningModule):
         Returns:
             results: dict of ("results", "precision", "recall") for a given threshold
         """
-        # Load on GPU is available
-        if torch.cuda.is_available():
-            self.model = self.model.to("cuda")
-
         self.model.eval()
         self.model.score_thresh = self.config["score_thresh"]
 
-        predictions = predict.predict_file(model=self.model,
-                                           csv_file=csv_file,
-                                           root_dir=root_dir,
-                                           savedir=savedir,
-                                           device=self.current_device,
-                                           iou_threshold=self.config["nms_thresh"])
+        predictions = self.predict_file(csv_file=csv_file,
+                                        root_dir=root_dir,
+                                        savedir=savedir)
 
         ground_df = pd.read_csv(csv_file)
         ground_df["label"] = ground_df.label.apply(lambda x: self.label_dict[x])
@@ -536,7 +598,7 @@ class deepforest(pl.LightningModule):
                                         savedir=savedir)
 
         # replace classes if not NUll, wrap in try catch if no predictions
-        if not results["results"].empty:
+        if not results is None:
             results["results"]["predicted_label"] = results["results"][
                 "predicted_label"].apply(lambda x: self.numeric_to_label_dict[x]
                                          if not pd.isnull(x) else x)

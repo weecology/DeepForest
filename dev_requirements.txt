@@ -11,6 +11,7 @@ pytorch_lightning
 torch
 pyyaml>=5.1.0
 pytest
+pytest-profiling
 matplotlib
 numpy
 recommonmark
@@ -21,10 +22,11 @@ docutils<0.18
 slidingwindow
 opencv-python
 sphinx_rtd_theme
+furo
 sphinx_markdown_tables
 tqdm
 twine
-torchvision >= 0.9.0
+torchvision>=0.13
 xmltodict
 comet_ml
 imagecodecs

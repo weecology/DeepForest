@@ -93,6 +93,7 @@ def test_boxes_to_shapefile_projected_from_predict_tile(download_release):
     img = get_data("OSBS_029.tif")
     r = rio.open(img)
     m = main.deepforest()
+    m.create_trainer()
     m.use_release(check_release=False)
     df = m.predict_tile(raster_path=img)
     gdf = utilities.boxes_to_shapefile(df, root_dir=os.path.dirname(img), projected=True)

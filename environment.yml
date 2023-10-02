@@ -8,6 +8,8 @@ dependencies:
   - recommonmark
   - pyyaml>=5.1.0
   - pytest
+  - pytest-profiling
+  - furo
   - numpydoc
   - geopandas
   - h5py
@@ -26,7 +28,7 @@ dependencies:
   - rasterio
   - psutil
   - pytorch
-  - torchvision>=0.9.0
+  - torchvision>=0.13
   - slidingwindow
   - bumpversion
   - pip:

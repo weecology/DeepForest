@@ -8,6 +8,7 @@ import torch
 import pandas as pd
 import numpy as np
 import tempfile
+import rasterio as rio
 
 def single_class():
     csv_file = get_data("example.csv")
@@ -115,7 +116,7 @@ def test_empty_collate():
         collated_batch = utilities.collate_fn([None, batch, batch])
         len(collated_batch[0]) == 2
 
-def test_predict_dataloader():
+def test_dataloader():
     csv_file = get_data("example.csv")
     root_dir = os.path.dirname(csv_file)
     ds = dataset.TreeDataset(csv_file=csv_file,
@@ -145,4 +146,16 @@ def test_multi_image_warning():
         batch = ds[i]
         collated_batch = utilities.collate_fn([None, batch, batch])
         len(collated_batch[0]) == 2
+        
+@pytest.mark.parametrize("preload_images",[True, False])
+def test_TileDataset(preload_images):
+    tile_path = get_data("2019_YELL_2_528000_4978000_image_crop2.png")
+    tile = rio.open(tile_path).read()
+    tile = np.moveaxis(tile, 0, 2)           
+    ds = dataset.TileDataset(tile=tile, preload_images=preload_images, patch_size=100, patch_overlap=0)
+    assert len(ds) > 0
+    
+    #assert crop shape
+    assert ds[1].shape == (3, 100, 100)
+    
         
