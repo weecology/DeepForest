@@ -9,7 +9,7 @@ DeepForest is a python package for airborne object detection and classification.
 
 **Bird detection using DeepForest**
 
-.. image:: ../www/Bird_panel.jpg
+.. image:: ../www/bird_panel.jpg
 
 
 **Why DeepForest?**
