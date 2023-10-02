@@ -117,7 +117,7 @@ class deepforest(pl.LightningModule):
         self.config["score_thresh"] = 0.3
 
         # Set label dictionary to Bird
-        self.label_dict = {"Bird":0}
+        self.label_dict = {"Bird": 0}
         self.numeric_to_label_dict = {v: k for k, v in self.label_dict.items()}
 
     def create_model(self):
