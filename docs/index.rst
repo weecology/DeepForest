@@ -38,15 +38,18 @@ The most helpful thing you can do is leave feedback on DeepForest `issue page`_.
 
    landing
    installation
+   prebuilt
    getting_started
-   ConfigurationFile
+   annotation
+   training
    Evaluation
+   multi_species
+   ConfigurationFile
    deepforestr
    FAQ
    better
    ExtendingModule
    code_of_conduct.rst
-   bird_detector
    history.rst
    source/deepforest
    authors.rst

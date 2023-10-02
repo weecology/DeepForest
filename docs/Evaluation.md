@@ -1,5 +1,43 @@
 # Evaluation 
 
+Independent analysis of whether a model can generalize from training data to new areas is critical for creating a robust workflow. 
+We stress that evaluation data must be different from training data, as neural networks have millions of parameters and can easily memorize thousands of samples. Therefore, while it would be rather easy to tune the model to get extremely high scores on the training data, it would fail when exposed to new images.
+
+To get an evaluation score, specify an annotations file in the same format as the training example above. The model will 
+```
+csv_file = get_data("OSBS_029.csv")
+root_dir = os.path.dirname(csv_file)
+results = model.evaluate(csv_file, root_dir, iou_threshold = 0.4)
+```
+
+The results object is a dictionary with keys, 'results',"recall","precision". Results is the intersection-over-union scores for each ground truth object in the csv_file.
+
+```
+results["results"].head()
+    prediction_id  truth_id      IoU    image_path  match
+39             39         0  0.00000  OSBS_029.tif  False
+19             19         1  0.50524  OSBS_029.tif   True
+44             44         2  0.42246  OSBS_029.tif   True
+67             67         3  0.41404  OSBS_029.tif   True
+28             28         4  0.37461  OSBS_029.tif  False
+```
+
+This dataframe contains a numeric id for each predicted crown in each image, the matched ground truth crown in each image. The intersection-over-union score between predicted and ground truth (IoU), and whether that score is greater than the IoU threshold ('match').
+
+The recall is the proportion of ground truth which have a true positive match with a prediction based on the intersection-over-union threshold, this threshold is default 0.4 and can be changed in model.evaluate(iou_threshold=<>)
+
+```
+results["box_recall"]
+0.705
+```
+
+The regression box precision is the proportion of predicted boxes which overlap a ground truth box.
+
+```
+results["box_precision"]
+0.781
+```
+
 To convert overlap among predicted and ground truth bounding boxes into measures of accuracy and precision, the most common approach is to compare the overlap using the intersection-over-union metric (IoU).
 IoU is the ratio between the area of the overlap between the predicted polygon box and the ground truth polygon box divided by and the area of the combined bounding box region.
 
@@ -135,7 +173,5 @@ results = model.evaluate(
     csv_file="new_annotations.csv",
     root_dir=<base_dir from above>
 )
-
-
 ```
 
