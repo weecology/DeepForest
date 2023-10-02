@@ -89,7 +89,8 @@ def test_use_bird_release(m):
     m.use_bird_release()
     boxes = m.predict_image(path=imgpath)
     assert not boxes.empty
-    
+    assert boxes.label.unique() == "Bird"
+
 def test_train_empty(m, tmpdir):
     empty_csv = pd.DataFrame({"image_path":["OSBS_029.png","OSBS_029.tif"],"xmin":[0,10],"xmax":[0,20],"ymin":[0,20],"ymax":[0,30],"label":["Tree","Tree"]})
     empty_csv.to_csv("{}/empty.csv".format(tmpdir))
