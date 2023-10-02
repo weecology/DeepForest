@@ -44,19 +44,18 @@ validation:
 ## Dataloaders
 
 ### workers
-Number of workers to perform asynchronous data generation during model training. Corresponds to num_workers in pytorch base 
-class https://pytorch.org/docs/stable/data.html. To turn off asynchronous data generation set workers = 0.
+
+Number of workers to perform asynchronous data generation during model training. Corresponds to num_workers in pytorch [base class](https://pytorch.org/docs/stable/data.html). To turn off asynchronous data generation set workers = 0.
 
 ### devices
-The number of cpus/gpus to use during model training. Deepforest has been tested on up to 8 gpu and follows a pytorch lightning module, which means it can inherit any of the scaling functionality from this library, including TPU support.
-https://pytorch-lightning.readthedocs.io/en/stable/advanced/multi_gpu.html?highlight=multi%20gpu
+
+The number of cpus/gpus to use during model training. Deepforest has been tested on up to 8 gpu and follows a [pytorch lightning module](https://pytorch-lightning.readthedocs.io/en/stable/advanced/multi_gpu.html?highlight=multi%20gpu), which means it can inherit any of the scaling functionality from this library, including TPU support.
 
 ### accelerator
-Most commonly, 'cpu', 'gpu' or 'tpu' as well as other options listed:
 
-https://pytorch-lightning.readthedocs.io/en/1.4.0/advanced/multi_gpu.html.
+Most commonly, `cpu`, `gpu` or `tpu` as well as other [options](https://pytorch-lightning.readthedocs.io/en/1.4.0/advanced/multi_gpu.html) listed:
 
-If 'gpu', it can be helpful to specify the data parallelization strategy. This can be done using the 'strategy' arg in main.create_trainer()
+If `gpu`, it can be helpful to specify the data parallelization strategy. This can be done using the `strategy` arg in `main.create_trainer()`
 
 ```
 model.create_trainer(logger=comet_logger, strategy="ddp")
@@ -65,12 +64,12 @@ model.create_trainer(logger=comet_logger, strategy="ddp")
 This is passed to the pytorch-lightning trainer, documented in the link above for multi-gpu training.
 
 ### batch_size
+
 Number of images per batch during training. GPU memory limits this usually between 5-10
 
 ### nms_thresh
 
-Non-max suppression threshold. The higher scoring predicted box is kept when predictions overlap by greater than nms_thresh. For details see
-https://pytorch.org/vision/stable/ops.html#torchvision.ops.nms
+Non-max suppression threshold. The higher scoring predicted box is kept when predictions overlap by greater than nms_thresh. For details see [torchvision docs](https://pytorch.org/vision/stable/ops.html#torchvision.ops.nms)
 
 ### score_thresh
 
@@ -87,8 +86,8 @@ This will be updated when you can predict_tile, predict_image, predict_file, or 
 
 ### csv_file
 
-Path to csv_file for training annotations. Annotations are .csv files with headers image_path, xmin, ymin, xmax, ymax, label. image_path are relative to the root_dir. 
-For example this file should have entries like myimage.tif not /path/to/myimage.tif
+Path to csv_file for training annotations. Annotations are `.csv` files with headers `image_path, xmin, ymin, xmax, ymax, label`. image_path are relative to the root_dir. 
+For example this file should have entries like `myimage.tif` not `/path/to/myimage.tif`
 
 ### root_dir
 
@@ -122,13 +121,12 @@ The number of times to run a full pass of the dataloader during model training.
 
 ### fast_dev_run
 
-A useful pytorch lightning flag that will run a debug run to test inputs. See 
-
-[pytorch lightning docs](https://pytorch-lightning.readthedocs.io/en/latest/common/trainer.html?highlight=fast_dev_run#fast-dev-run)
+A useful pytorch lightning flag that will run a debug run to test inputs. See [pytorch lightning docs](https://pytorch-lightning.readthedocs.io/en/latest/common/trainer.html?highlight=fast_dev_run#fast-dev-run)
 
 ### preload_images
 
-For large training runs, the time spent reading each image and passing it to the GPU can be a significant performance bottleneck. 
+For large training runs, the time spent reading each image and passing it to the GPU can be a significant performance bottleneck.
+
 If the training dataset is small enough to fit into GPU memory, pinning the entire dataset to memory before training will increase training speed. Warning, if the pinned memory is too large, the GPU will overflow/core dump and training will crash.
 
 ## Validation
@@ -137,8 +135,8 @@ Optional validation dataloader to run during training.
 
 ### csv_file
 
-Path to csv_file for validation annotations. Annotations are .csv files with headers image_path, xmin, ymin, xmax, ymax, label. image_path are relative to the root_dir. 
-For example this file should have entries like myimage.tif not /path/to/myimage.tif
+Path to csv_file for validation annotations. Annotations are `.csv` files with headers `image_path, xmin, ymin, xmax, ymax, label`. image_path are relative to the root_dir. 
+For example this file should have entries like `myimage.tif` not `/path/to/myimage.tif`
 
 ### root_dir
 

@@ -59,11 +59,11 @@ extensions = [
     'sphinx.ext.napoleon',
     'sphinx.ext.todo',
     'sphinx.ext.viewcode',
-    'sphinx_markdown_tables',
-]
+    'sphinx_markdown_tables']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
+
 # The master toctree document.
 master_doc = 'index'
 
@@ -72,20 +72,12 @@ project = u'DeepForest'
 copyright = u"2019, Ben Weinstein"
 author = u"Ben Weinstein"
 version = u"__version__ = '__version__ = '__version__ = '1.2.7'''"
-language = None
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', '**.ipynb_checkpoints']
 pygments_style = 'sphinx'
 todo_include_todos = False
 
 # -- Options for HTML output -------------------------------------------
-
-on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
-if not on_rtd:  # only import and set the theme if we're building docs locally
-    import sphinx_rtd_theme
-
-    html_theme = 'sphinx_rtd_theme'
-    html_theme_path = [sphinx_rtd_theme.get_html_theme_path()] + ["../.."]
-
+html_theme = 'furo'
 html_static_path = []
 
 # -- Options for HTMLHelp output ---------------------------------------
