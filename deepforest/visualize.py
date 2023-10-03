@@ -2,8 +2,6 @@
 import os
 import pandas as pd
 import matplotlib
-import matplotlib.pyplot as plt
-import matplotlib.patches as patches
 from PIL import Image
 import numpy as np
 import pandas.api.types as ptypes
@@ -71,8 +69,9 @@ def plot_prediction_and_targets(image, predictions, targets, image_name, savedir
     return figure_path
 
 
-def plot_prediction_dataframe(df, root_dir, ground_truth=None, savedir=None):
-    """For each row in dataframe, call plot predictions. For multi-class labels, boxes will be colored by labels. Ground truth boxes will all be same color, regardless of class.
+def plot_prediction_dataframe(df, root_dir, savedir, ground_truth=None):
+    """For each row in dataframe, call plot predictions and save plot files to disk. 
+    For multi-class labels, boxes will be colored by labels. Ground truth boxes will all be same color, regardless of class.
     Args:
         df: a pandas dataframe with image_path, xmin, xmax, ymin, ymax and label columns. The image_path column should be the relative path from root_dir, not the full path.
         root_dir: relative dir to look for image names from df.image_path
@@ -90,10 +89,9 @@ def plot_prediction_dataframe(df, root_dir, ground_truth=None, savedir=None):
             annotations = ground_truth[ground_truth.image_path == name]
             image = plot_predictions(image, annotations)
 
-        if savedir:
-            figure_name = "{}/{}.png".format(savedir, os.path.splitext(name)[0])
-            written_figures.append(figure_name)
-            cv2.imwrite(figure_name, image)
+        figure_name = "{}/{}.png".format(savedir, os.path.splitext(name)[0])
+        written_figures.append(figure_name)
+        cv2.imwrite(figure_name, image)
 
     return written_figures
 
