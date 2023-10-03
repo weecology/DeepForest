@@ -98,6 +98,14 @@ def test_train_empty(m, tmpdir):
     m.create_trainer()    
     m.trainer.fit(m)
 
+# If the user forgets to set csv_file, yield an informative message. 
+def test_no_csv_file_train(m):
+    m.config["train"]["csv_file"] = None
+    m.config["batch_size"] = 1
+    m.create_trainer()    
+    with pytest.raises(AttributeError) as e:
+        m.trainer.fit(m)
+
 def test_validation_step(m):
     m.trainer = None
     #Turn off trainer to test copying on some linux devices.

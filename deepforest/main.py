@@ -161,6 +161,12 @@ class deepforest(pl.LightningModule):
                                   num_sanity_val_steps=num_sanity_val_steps,
                                   **kwargs)
 
+    def on_fit_start(self):
+        if self.config["train"]["csv_file"] is None:
+            raise AttributeError(
+                "Cannot train with a train annotations file, please set 'config['train']['csv_file'] before calling deepforest.create_trainer()'"
+            )
+
     def save_model(self, path):
         """
         Save the trainer checkpoint in user defined path, in order to access in future
