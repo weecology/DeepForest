@@ -6,12 +6,11 @@ from deepforest import get_data
 from deepforest import visualize
 
 import os
-import pytest
 import shapely
 import geopandas as gpd
 import pandas as pd
 
-def test_compute_IoU(download_release):
+def test_compute_IoU(download_release, tmpdir):
     m = main.deepforest()
     m.use_release(check_release=False)
     csv_file = get_data("OSBS_029.csv")
@@ -26,7 +25,7 @@ def test_compute_IoU(download_release):
     
     ground_truth.label = 0
     predictions.label = 0
-    visualize.plot_prediction_dataframe(df=predictions, ground_truth=ground_truth, root_dir=os.path.dirname(csv_file))        
+    visualize.plot_prediction_dataframe(df=predictions, ground_truth=ground_truth, root_dir=os.path.dirname(csv_file), savedir=tmpdir)        
     
     result = IoU.compute_IoU(ground_truth, predictions)
     assert result.shape[0] == ground_truth.shape[0]
