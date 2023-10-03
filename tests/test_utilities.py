@@ -73,11 +73,9 @@ def test_shapefile_to_annotations(tmpdir):
     shp = utilities.shapefile_to_annotations(shapefile="{}/annotations.shp".format(tmpdir), rgb=image_path, savedir=tmpdir, convert_to_boxes=False)
     assert shp.shape[0] == 2
     
-def test_boxes_to_shapefile_projected(download_release):
+def test_boxes_to_shapefile_projected(m):
     img = get_data("OSBS_029.tif")
     r = rio.open(img)
-    m = main.deepforest()
-    m.use_release(check_release=False)
     df = m.predict_image(path=img)
     gdf = utilities.boxes_to_shapefile(df, root_dir=os.path.dirname(img), projected=True)
     
@@ -89,12 +87,9 @@ def test_boxes_to_shapefile_projected(download_release):
     gdf = utilities.boxes_to_shapefile(df.iloc[:1,], root_dir=os.path.dirname(img), projected=True)
     assert gdf.shape[0] == 1
 
-def test_boxes_to_shapefile_projected_from_predict_tile(download_release):
+def test_boxes_to_shapefile_projected_from_predict_tile(m):
     img = get_data("OSBS_029.tif")
     r = rio.open(img)
-    m = main.deepforest()
-    m.create_trainer()
-    m.use_release(check_release=False)
     df = m.predict_tile(raster_path=img)
     gdf = utilities.boxes_to_shapefile(df, root_dir=os.path.dirname(img), projected=True)
     
@@ -107,11 +102,9 @@ def test_boxes_to_shapefile_projected_from_predict_tile(download_release):
     assert gdf.shape[0] == 1
     
 @pytest.mark.parametrize("flip_y_axis", [True, False])
-def test_boxes_to_shapefile_unprojected(download_release, flip_y_axis):
+def test_boxes_to_shapefile_unprojected(m, flip_y_axis):
     img = get_data("OSBS_029.png")
     r = rio.open(img)
-    m = main.deepforest()
-    m.use_release(check_release=False)
     df = m.predict_image(path=img)
     gdf = utilities.boxes_to_shapefile(df, root_dir=os.path.dirname(img), projected=False, flip_y_axis=flip_y_axis)
     

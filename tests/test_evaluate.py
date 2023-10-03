@@ -9,13 +9,6 @@ import pytest
 import pandas as pd
 import numpy as np
 
-@pytest.fixture()
-def m(download_release):
-    m = main.deepforest()
-    m.use_release(check_release=False)
-    
-    return m
-
 def test_evaluate_image(m):
     csv_file = get_data("OSBS_029.csv")
     predictions = m.predict_file(csv_file=csv_file, root_dir=os.path.dirname(csv_file))
@@ -42,9 +35,8 @@ def test_evaluate(m):
     assert "score" in results["results"].columns
     assert results["results"].true_label.unique() == "Tree"
 
-def test_evaluate_multi(m):
+def test_evaluate_multi():
     csv_file = get_data("testfile_multi.csv")
-    m = main.deepforest(num_classes=2,label_dict={"Alive":0,"Dead":1})
     ground_truth = pd.read_csv(csv_file)
     ground_truth["label"] = ground_truth.label.astype("category").cat.codes
     
@@ -57,9 +49,8 @@ def test_evaluate_multi(m):
     assert results["results"].shape[0] == ground_truth.shape[0]
     assert results["class_recall"].shape == (2,4)
     
-def test_evaluate_save_images(m, tmpdir):
+def test_evaluate_save_images(tmpdir):
     csv_file = get_data("testfile_multi.csv")
-    m = main.deepforest(num_classes=2,label_dict={"Alive":0,"Dead":1})
     ground_truth = pd.read_csv(csv_file)
     ground_truth["label"] = ground_truth.label.astype("category").cat.codes
     
@@ -70,7 +61,7 @@ def test_evaluate_save_images(m, tmpdir):
     results = evaluate.evaluate(predictions=predictions, ground_df=ground_truth, root_dir=os.path.dirname(csv_file), savedir=tmpdir)     
     assert all([os.path.exists("{}/{}".format(tmpdir,x)) for x in ground_truth.image_path])
 
-def test_evaluate_empty():
+def test_evaluate_empty(m):
     m = main.deepforest()
     m.config["score_thresh"] = 0.8
     csv_file = get_data("OSBS_029.csv")
