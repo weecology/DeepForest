@@ -10,7 +10,8 @@ root_dir = os.path.dirname(csv_file)
 results = model.evaluate(csv_file, root_dir, iou_threshold = 0.4)
 ```
 
-The results object is a dictionary with keys, 'results',"recall","precision". Results is the intersection-over-union scores for each ground truth object in the csv_file.
+The returned object is a dictionary containing the three keys: results, recall, and precision. The result key in the csv-file represents the intersection-over-union score for each ground truth object.
+
 
 ```
 results["results"].head()
@@ -22,9 +23,10 @@ results["results"].head()
 28             28         4  0.37461  OSBS_029.tif  False
 ```
 
-This dataframe contains a numeric id for each predicted crown in each image, the matched ground truth crown in each image. The intersection-over-union score between predicted and ground truth (IoU), and whether that score is greater than the IoU threshold ('match').
+This dataframe contains a numeric id for each predicted crown in each image and the matched ground truth crown in each image. The intersection-over-union score between predicted and ground truth (IoU), and whether that score is greater than the IoU threshold ('match').
 
-The recall is the proportion of ground truth which have a true positive match with a prediction based on the intersection-over-union threshold, this threshold is default 0.4 and can be changed in model.evaluate(iou_threshold=<>)
+The recall is the proportion of ground truth that has a true positive match with a prediction based on the intersection-over-union threshold. The default threshold is 0.4 and can be changed in the model.evaluate(iou_threshold=<>)
+
 
 ```
 results["box_recall"]
@@ -39,7 +41,7 @@ results["box_precision"]
 ```
 
 To convert overlap among predicted and ground truth bounding boxes into measures of accuracy and precision, the most common approach is to compare the overlap using the intersection-over-union metric (IoU).
-IoU is the ratio between the area of the overlap between the predicted polygon box and the ground truth polygon box divided by and the area of the combined bounding box region.
+IoU is the ratio between the area of the overlap between the predicted polygon box and the ground truth polygon box divided by the area of the combined bounding box region.
 
 Let's start by getting some sample data and predictions
 
