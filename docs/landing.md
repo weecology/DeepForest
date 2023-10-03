@@ -7,10 +7,9 @@ DeepForest is a python package for training and predicting ecological objects in
 ## How does deepforest work?
 
 DeepForest uses deep learning object detection networks to predict bounding boxes corresponding to individual trees in RGB imagery. 
-DeepForest is built on the object detection module from the [torchvision package](http://pytorch.org/vision/stable/index.html) and designed to make training models for tree detection simpler.
+DeepForest is built on the object detection module from the [torchvision package](http://pytorch.org/vision/stable/index.html) and designed to make training models for ecological object detection simpler.
 
 For more about the motivation behind DeepForest, see some recent talks we have given on computer vision for ecology and practical applications to machine learning in environmental monitoring.
-
 
 **Towards a general AI for computer vision for ecology**
 
@@ -23,7 +22,7 @@ For more about the motivation behind DeepForest, see some recent talks we have g
 
 ## Where can I get help, learn from others, and report bugs?
 
-Given the enormous array of forest types and image acquisition environments, it is unlikely that your image will be perfectly predicted by the prebuilt model. Below are some tips and some general guidelines to improve predictions.
+Given the enormous array of forest types and image acquisition environments, it is unlikely that your image will be perfectly predicted by a prebuilt model. Below are some tips and some general guidelines to improve predictions.
 
 Get suggestions on how to improve a model by using the [discussion board](https://github.com/weecology/DeepForest/discussions). Please be aware that only feature requests or bug reports should be posted on the [issues page](https://github.com/weecology/DeepForest/issues).
 
@@ -39,6 +38,3 @@ Remote sensing can transform the speed, scale, and cost of biodiversity and fore
 
 [Weinstein, B.G.; Marconi, S.; Bohlman, S.; Zare, A.; White, E. Individual Tree-Crown Detection in RGB Imagery Using Semi-Supervised Deep Learning Neural Networks.
 Remote Sens. 2019, 11, 1309](https://www.mdpi.com/2072-4292/11/11/1309)
-
-[Geographic Generalization in Airborne RGB Deep Learning Tree Detection Ben Weinstein, Sergio Marconi, Stephanie Bohlman, Alina Zare, Ethan P White
-bioRxiv 790071; doi: https://doi.org/10.1101/790071](https://www.biorxiv.org/content/10.1101/790071v1.abstract)

@@ -12,124 +12,43 @@
 | --- | --- | --- | --- |
 | [![Conda Recipe](https://img.shields.io/badge/recipe-deepforest-green.svg)](https://anaconda.org/conda-forge/deepforest) | [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/deepforest.svg)](https://anaconda.org/conda-forge/deepforest) | [![Conda Version](https://img.shields.io/conda/vn/conda-forge/deepforest.svg)](https://anaconda.org/conda-forge/deepforest) | [![Conda Platforms](https://img.shields.io/conda/pn/conda-forge/deepforest.svg)](https://anaconda.org/conda-forge/deepforest) |
 
-![](www/example_image.png)
+![](www/MEE_Figure4.png)
+![](www/example_predictions_small.png)
 
-A pytorch implementation of the DeepForest model for individual tree crown detection in RGB images. DeepForest is a python package for training and predicting individual tree crowns from airborne RGB imagery. DeepForest comes with a prebuilt model trained on data from the National Ecological Observatory Network. Users can extend this model by annotating and training custom models starting from the prebuilt model.
+# What is DeepForest?
 
-<sub> DeepForest es un paquete de python para la predicción de coronas de árboles individuales basada en modelos entrenados con imágenes remotas RVA ( RGB, por sus siglas en inglés). DeepForest viene con un modelo entrenado con datos proveídos por la Red Nacional de Observatorios Ecológicos (NEON, por sus siglas en inglés). Los usuarios pueden ampliar este modelo pre-construido por anotación de etiquetas y entrenamiento con datos locales. La documentación de DeepForest está escrita en inglés, sin embargo, agradeceríamos contribuciones con fin de hacerla accesible en otros idiomas.  <sub>
+DeepForest is a python package for training and predicting ecological objects in airborne imagery. DeepForest currently comes with a tree crown object detection model and a bird detection model. Both are single class modules that can be extended to species classification based on new data. Users can extend these models by annotating and training custom models.
 
- <sub> DeepForest(PyTorch版本)是一个Python软件包，它可以被用来训练以及预测机载RGB图像中的单个树冠。DeepForest内部带有一个基于国家生态观测站网络(NEON : National Ecological Observatory Network)数据训练的预训练模型。在此模型基础上，用户可以注释新的数据然后训练自己的模型。DeepForest的文档是用英文编写的，如果您有兴趣为翻译文档做出贡献。欢迎与我们团队联系。<sub>
+![](../www/image.png)
 
-## Motivation
+# Documentation
 
- The goal of deepforest is to provide an easy to access deep learning model for tree crown prediction in RGB images. The baseline model was primarily designed for *forest* images in 3cm imagery. Applications to urban images and lower resolution data can be successful, but need additional effort. For basic use see
-  
- https://deepforest.readthedocs.io/en/latest/getting_started.html#
+[DeepForest is documented on readthedocs](https://deepforest.readthedocs.io/)
 
-#### Try Demo using Jupyter Notebook
+## How does deepforest work?
+DeepForest uses deep learning object detection networks to predict bounding boxes corresponding to individual trees in RGB imagery. 
+DeepForest is built on the object detection module from the [torchvision package](http://pytorch.org/vision/stable/index.html) and designed to make training models for  detection simpler.
 
-Incorportating local data will always help prediction accuracy to customize the release model see see [Google colab demo on model training](https://colab.research.google.com/drive/1gKUiocwfCvcvVfiKzAaf6voiUVL2KK_r?usp=sharing)
+For more about the motivation behind DeepForest, see some recent talks we have given on computer vision for ecology and practical applications to machine learning in environmental monitoring.
 
-# Installation
+## Where can I get help, learn from others, and report bugs?
+Given the enormous array of forest types and image acquisition environments, it is unlikely that your image will be perfectly predicted by a prebuilt model. Below are some tips and some general guidelines to improve predictions.
 
-Deepforest can be install using either pip or conda.
+Get suggestions on how to improve a model by using the [discussion board](https://github.com/weecology/DeepForest/discussions). Please be aware that only feature requests or bug reports should be posted on the [issues page](https://github.com/weecology/DeepForest/issues).
 
-## pip
+# Developer Guidelines 
 
-```
-pip install deepforest
-```
+We welcome pull requests for any issue or extension of the models. Please follow the [developers guide](https://deepforest.readthedocs.io/en/latest/developer.html).
 
-## conda CPU
+## License
 
-Conda-based installs can be slow. We recommend using [mamba](https://mamba.readthedocs.io/en/latest/user_guide/mamba.html) to speed them up.
+Free software: [MIT license](https://github.com/weecology/DeepForest/blob/master/LICENSE)
 
-```
-conda create -n deepforest python=3 pytorch torchvision -c pytorch
-conda activate deepforest
-conda install deepforest albumentations -c conda-forge
-```
+## Why DeepForest?
 
-## conda GPU
+Remote sensing can transform the speed, scale, and cost of biodiversity and forestry surveys. Data acquisition currently outpaces the ability to identify individual organisms in high resolution imagery. Individual crown delineation has been a long-standing challenge in remote sensing and available algorithms produce mixed results. DeepForest is the first open source implementation of a deep learning model for crown detection. Deep learning has made enormous strides in a range of computer vision tasks but requires significant amounts of training data. By including a trained model, we hope to simplify the process of retraining deep learning models for a range of forests, sensors, and spatial resolutions.
 
-Depending on the GPU you will need with `cudatoolkit=10.2` or `cudatoolkit=11.3`:
+## Citation
 
-```
-conda create -n deepforest python=3 pytorch torchvision cudatoolkit=10.2 -c pytorch
-conda activate deepforest
-conda install deepforest albumentations -c conda-forge
-```
-
-# Usage
-
-# Use Benchmark release
-
-```Python
-from deepforest import main
-m = main.deepforest()
-m.use_release()
-```
-
-## Train a new model
-
-```Python
-m.create_trainer()
-m.trainer.fit(m)
-m.evaluate(csv_file=m.config["validation"]["csv_file"], root_dir=m.config["validation"]["root_dir"])
-```
- 
-## Predict a single image
-
-```Python
-#Create a sample 3 band image
-image = np.random.random((400,400,3)).astype("float32")
-prediction = m.predict_image(image = image)
-```
-
-## Predict a large tile
-
-Split the large tile into small pieces, predict each piece and re-assemble
-
-```Python
-predicted_boxes = m.predict_tile(raster_path = raster_path,
-                                        patch_size = 300,
-                                        patch_overlap = 0.5,
-                                        return_plot = False)
-```
-
-## Evaluate a file of annotations using intersection-over-union as an metric of accuracy
-
-```Python
-csv_file = get_data("example.csv")
-root_dir = os.path.dirname(csv_file)
-results = m.evaluate(csv_file, root_dir, iou_threshold = 0.5)
-```
-
-# Config
-
-DeepForest comes with a default config file (deepforest_config.yml) to control the location of training and evaluation data, the number of gpus, batch size and other hyperparameters. This file can be edited directly, or using the config dictionary after loading a deepforest object.
-
-```Python
-from deepforest import main
-m = main.deepforest()
-m.config["batch_size"] = 10
-```
-Config parameters are documented [here](https://deepforest.readthedocs.io/en/latest/ConfigurationFile.html).
-
-# Tree Detection Benchmark score
-
-Tree detection is a central task in forest ecology and remote sensing. The Weecology Lab at the University of Florida has built a tree detection benchmark for evaluation. After building a model, you can compare it to the benchmark using the evaluate method.
-
-```
-git clone https://github.com/weecology/NeonTreeEvaluation.git
-cd NeonTreeEvaluation
-```
-```Python
-results = m.evaluate(csv_file = "evaluation/RGB/benchmark_annotations.csv", root_dir = "evaluation/RGB/")
-results["box_recall"]
-results["box_precision"]
-```
-
-# Using DeepForest in R
-
-R wrapper is available for DeepForest in the [deepforestr package](https://github.com/weecology/deepforestr).
+[Weinstein, B.G.; Marconi, S.; Bohlman, S.; Zare, A.; White, E. Individual Tree-Crown Detection in RGB Imagery Using Semi-Supervised Deep Learning Neural Networks.
+Remote Sens. 2019, 11, 1309](https://www.mdpi.com/2072-4292/11/11/1309)
