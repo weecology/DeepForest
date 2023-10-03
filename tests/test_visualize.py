@@ -6,21 +6,6 @@ import os
 import pytest
 import numpy as np
 
-@pytest.fixture()
-def m():
-    m = main.deepforest()
-    m.config["train"]["csv_file"] = get_data("example.csv") 
-    m.config["train"]["root_dir"] = os.path.dirname(get_data("example.csv"))
-    m.config["train"]["fast_dev_run"] = True
-    m.config["batch_size"] = 2
-       
-    m.config["validation"]["csv_file"] = get_data("example.csv") 
-    m.config["validation"]["root_dir"] = os.path.dirname(get_data("example.csv"))
-       
-    m.create_trainer()
-    
-    return m
-
 def test_format_boxes(m):
     ds = m.val_dataloader()
     batch = next(iter(ds))
@@ -47,7 +32,6 @@ def test_plot_predictions(m, tmpdir,label):
 
         assert image.dtype == "uint8"
         
-    
 def test_plot_prediction_dataframe(m, tmpdir):
     ds = m.val_dataloader()
     batch = next(iter(ds))
