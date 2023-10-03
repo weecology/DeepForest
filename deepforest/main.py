@@ -116,6 +116,10 @@ class deepforest(pl.LightningModule):
         print("Setting default score threshold to 0.3")
         self.config["score_thresh"] = 0.3
 
+        # Set label dictionary to Bird
+        self.label_dict = {"Bird": 0}
+        self.numeric_to_label_dict = {v: k for k, v in self.label_dict.items()}
+
     def create_model(self):
         """Define a deepforest retinanet architecture"""
         self.model = model.create_model(self.num_classes, self.config["nms_thresh"],
