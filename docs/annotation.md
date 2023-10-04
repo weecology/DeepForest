@@ -7,16 +7,16 @@ For quick annotations of a few images, we recommend using QGIS or ArcGIS. Either
 ![QGISannotation](../www/QGIS_annotation.png)
 
 ## Do I need annotate all objects in my image?
-Yes! Object detection models use the non-annotated areas of an image as negative data. We know that it can be exceptionally hard to annotate all trees in an image, or determine the classes of all birds in an image. However, if you have objects in the image that are not annotated, the model is learning *to ignore* those portion of the image. This can severly effect model performance.
+Yes! Object detection models use the non-annotated areas of an image as negative data. We know that it can be exceptionally hard to annotate all trees in an image, or determine the classes of all birds in an image. However, if you have objects in the image that are not annotated, the model is learning *to ignore* those portion of the image. This can severely affect model performance.
 
 ## Can I annotate points instead of bounding boxes?
-Yes. This make more sense for the bird detection task, as trees tend to vary widely in size. Often birds will be a standard size compared to the image resolution.
+Yes. This makes more sense for the bird detection task, as trees tend to vary widely in size. Often, birds will be a standard size compared to the image resolution.
 
 If you would like to train a model, here is a quick video on a simple way to annotate images.
 
 <div style="position: relative; padding-bottom: 62.5%; height: 0;"><iframe src="https://www.loom.com/embed/e1639d36b6ef4118a31b7b892344ba83" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe></div>
 
-Using a shapefile we could turn it into a dataframe of bounding box annotations by converting the points into boxes. If you already have boxes, you can exclude convert_to_boxes and buffer_size.
+Using a shapefile, we could turn it into a dataframe of bounding box annotations by converting the points into boxes. If you already have boxes, you can exclude convert_to_boxes and buffer_size.
 
 ```
 df = shapefile_to_annotations(
@@ -25,7 +25,7 @@ df = shapefile_to_annotations(
 )
 ```
 
-Optionally we can split these annotations into crops if the image is large and will not fit into memory. This is often the case.
+Optionally, we can split these annotations into crops if the image is large and will not fit into memory. This is often the case.
 
 ```
 df.to_csv("full_annotations.csv",index=False)
@@ -40,7 +40,8 @@ annotations = preprocess.split_raster(
 ```
 
 ## How can I view current predictions as shapefiles?
-It often useful to train new training annotations starting from current predictions. This allows users to more quickly find and correct errors. The following example shows how to create a list of files, predict detections in each and save as shapefiles. A user can then edit this shapefiles in a program like QGIS.
+
+It is often useful to train new training annotations starting from current predictions. This allows users to more quickly find and correct errors. The following example shows how to create a list of files, predict detections in each, and save as shapefiles. A user can then edit these shapefiles in a program like QGIS.
 
 ```
 from deepforest import main
