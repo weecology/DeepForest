@@ -1,8 +1,9 @@
 # Training
 
 The prebuilt models will always be improved by adding data from the target area. In our work, we have found that even one hour's worth of carefully chosen hand-annotation can yield enormous improvements in accuracy and precision.
-We envision that for the majority of scientific applications at least some fine-tuning of the prebuilt model will be worthwhile. When starting from the prebuilt model for training, we have found that 5-10 epochs is sufficient. 
-We have never seen a retraining task that improved after 10-30 epochs, but it is possible if there are very large datasets with very diverse classes.
+
+We expect that the prebuilt model will benefit from at least some fine-tuning for the vast majority of scientific applications. We have discovered that 5-10 epochs of training with the prebuilt model are adequate.
+The improvement of a retraining task after 10-30 epochs has never been observed, but it is theoretically feasible if there are very big datasets with extremely varied classes.
 
 Consider an annotations.csv file in the following format
 
@@ -22,7 +23,7 @@ OSBS_029.jpg,115,109,150,152,Tree
 OSBS_029.jpg,161,155,199,191,Tree
 ```
 
-We tell the config that we want to train on this csv file, and that the images are in the same directory. If images are in a separate folder, change the root_dir.
+The config file specifies the path to the CSV file that we want to use when training. The images are located in the working directory by default, and a user can provide a path to a different image directory.
 
 ```python
 # Example run with short training
@@ -107,7 +108,8 @@ image_path, xmin, ymin, xmax, ymax, label
 myimage.png, 0,0,0,0,"Tree"
 ```
 
-Excessive use of negative samples may have negative impact on model performance, but used sparingly it can increase precision. These samples are removed from evaluation and do not count in precision/recall. 
+Excessive use of negative samples may have a negative impact on model performance, but when used sparingly, they can increase precision. These samples are removed from evaluation and do not contribute to the precision or recall evaluation.
+
 
 ### Model checkpoints
 
@@ -153,6 +155,7 @@ pd.testing.assert_frame_equal(pred_after_train,pred_after_reload)
 ---
 
 Note that when reloading models, you should carefully inspect the model parameters, such as the score_thresh and nms_thresh. These parameters are updated during model creation and the config file is not read when loading from checkpoint!
+
 It is best to be direct to specify after loading checkpoint. If you want to save hyperparameters, edit the deepforest_config.yml directly. This will allow the hyperparameters to be reloaded on deepforest.save_model().
 
 ---

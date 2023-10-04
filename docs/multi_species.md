@@ -7,7 +7,8 @@ When creating a deepforest model object, pass the designed number of classes and
 m = main.deepforest(num_classes=2,label_dict={"Alive":0,"Dead":1})
 ```
 
-It is often, but not always, useful to start from a prebuilt model when trying to identify multiple species. This helps the model focus on learning the multiple classes and not wasting data and time re-learning  bounding boxes.
+It is often, but not always, useful to start with a prebuilt model when trying to identify multiple species. This helps the model focus on learning the multiple classes and not waste data and time re-learning bounding boxes.
+
 To load the backboard and box prediction portions of the release model, but create a classification model for more than one species.
 
 Here is an example using the alive/dead tree data stored in the package, but the same logic applies to the bird detector.

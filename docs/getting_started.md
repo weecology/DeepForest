@@ -27,7 +27,7 @@ For single images, ```predict_image``` can read an image from memory or file and
 
 ### Sample data
 
-DeepForest comes with a small set of sample data to help run the docs examples. Since users may install in a variety of manners, and it is impossible to know the relative location of the files, the helper function ```get_data``` is used. This function looks to where DeepForest is installed, and finds the deepforest/data/ directory.
+DeepForest comes with a small set of sample data that can be used to test out the provided examples. The data resides in the DeepForest data directory. Use the `get_data` helper function to locate the path to this directory, if needed.
 
 ```python
 sample_image = get_data("OSBS_029.png")
@@ -35,7 +35,7 @@ sample_image
 '/Users/benweinstein/Documents/DeepForest/deepforest/data/OSBS_029.png'
 ```
 
-For non-tutorial images, you do not need the get_data function, just provide the full path to the data anywhere on your computer.
+To use images other than those in the sample data directory, provide the full path for the images.
 
 ```python
 image_path = get_data("OSBS_029.png")
