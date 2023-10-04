@@ -407,7 +407,6 @@ class deepforest(pl.LightningModule):
                      iou_threshold=0.15,
                      return_plot=False,
                      mosaic=True,
-                     use_soft_nms=False,
                      sigma=0.5,
                      thresh=0.001,
                      color=None,
@@ -427,7 +426,6 @@ class deepforest(pl.LightningModule):
                 Lower values suppress more boxes at edges.
             return_plot: Should the image be returned with the predictions drawn?
             mosaic: Return a single prediction dataframe (True) or a tuple of image crops and predictions (False)
-            use_soft_nms: whether to perform Gaussian Soft NMS or not, if false, default perform NMS.
             sigma: variance of Gaussian function used in Gaussian Soft NMS
             thresh: the score thresh used to filter bboxes after soft-nms performed
             color: color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255)
@@ -466,7 +464,6 @@ class deepforest(pl.LightningModule):
         if mosaic:
             results = predict.mosiac(results,
                                      ds.windows,
-                                     use_soft_nms=use_soft_nms,
                                      sigma=sigma,
                                      thresh=thresh,
                                      iou_threshold=iou_threshold)
