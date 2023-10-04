@@ -67,11 +67,7 @@ def predict_image(model,
         return df
 
 
-def mosiac(boxes,
-           windows,
-           sigma=0.5,
-           thresh=0.001,
-           iou_threshold=0.1):
+def mosiac(boxes, windows, sigma=0.5, thresh=0.001, iou_threshold=0.1):
     # transform the coordinates to original system
     for index, _ in enumerate(boxes):
         xmin, ymin, xmax, ymax = windows[index].getRect()
