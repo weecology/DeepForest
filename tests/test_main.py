@@ -175,18 +175,6 @@ def test_predict_tile(m, raster_path):
     assert isinstance(prediction, pd.DataFrame)
     assert set(prediction.columns) == {"xmin","ymin","xmax","ymax","label","score","image_path"}
     assert not prediction.empty
-    
-def test_predict_tile_softnms(m, raster_path):
-    #test soft-nms method
-    m.create_trainer()
-    soft_nms_pred = m.predict_tile(raster_path = raster_path,
-                                            patch_size = 300,
-                                            patch_overlap = 0.1,
-                                            return_plot = False,
-                                            use_soft_nms = True)
-    assert isinstance(soft_nms_pred, pd.DataFrame)
-    assert set(soft_nms_pred.columns) == {"xmin","ymin","xmax","ymax","label","score","image_path"}
-    assert not soft_nms_pred.empty
 
 @pytest.mark.parametrize("patch_overlap",[0.1, 0])
 def test_predict_tile_from_array(m, patch_overlap, raster_path):

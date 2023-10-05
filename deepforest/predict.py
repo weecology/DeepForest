@@ -67,12 +67,7 @@ def predict_image(model,
         return df
 
 
-def mosiac(boxes,
-           windows,
-           use_soft_nms=False,
-           sigma=0.5,
-           thresh=0.001,
-           iou_threshold=0.1):
+def mosiac(boxes, windows, sigma=0.5, thresh=0.001, iou_threshold=0.1):
     # transform the coordinates to original system
     for index, _ in enumerate(boxes):
         xmin, ymin, xmax, ymax = windows[index].getRect()
@@ -90,14 +85,9 @@ def mosiac(boxes,
                          dtype=torch.float32)
     scores = torch.tensor(predicted_boxes.score.values, dtype=torch.float32)
     labels = predicted_boxes.label.values
-
-    if use_soft_nms:
-        # Performs soft non-maximum suppression (soft-NMS) on the boxes.
-        bbox_left_idx = soft_nms(boxes=boxes, scores=scores, sigma=sigma, thresh=thresh)
-    else:
-        # Performs non-maximum suppression (NMS) on the boxes according to
-        # their intersection-over-union (IoU).
-        bbox_left_idx = nms(boxes=boxes, scores=scores, iou_threshold=iou_threshold)
+    # Performs non-maximum suppression (NMS) on the boxes according to
+    # their intersection-over-union (IoU).
+    bbox_left_idx = nms(boxes=boxes, scores=scores, iou_threshold=iou_threshold)
 
     bbox_left_idx = bbox_left_idx.numpy()
     new_boxes, new_labels, new_scores = boxes[bbox_left_idx].type(
@@ -117,71 +107,6 @@ def mosiac(boxes,
     print(f"{mosaic_df.shape[0]} predictions kept after non-max suppression")
 
     return mosaic_df
-
-
-def soft_nms(boxes, scores, sigma=0.5, thresh=0.001):
-    """
-    Perform python soft_nms to reduce the confidances of the proposals proportional  to IoU value
-    Paper: Improving Object Detection With One Line of Code
-    Code : https://github.com/DocF/Soft-NMS/blob/master/softnms_pytorch.py
-    Args:
-        boxes: predicitons bounding boxes tensor format [x1,y1,x2,y2]
-        scores: the score corresponding to each box tensors
-        sigma: variance of Gaussian function
-        thresh: score thresh
-    Return:
-        idxs_keep: the index list of the selected boxes
-
-    """
-    # indexes concatenate boxes with the last column
-    N = boxes.shape[0]
-    indexes = torch.arange(0, N, dtype=torch.float).view(N, 1)
-
-    boxes = torch.cat((boxes, indexes), dim=1)
-
-    # The order of boxes coordinate is [x1,y1,y2,x2]
-    x1 = boxes[:, 0]
-    y1 = boxes[:, 1]
-    x2 = boxes[:, 2]
-    y2 = boxes[:, 3]
-    areas = (x2 - x1 + 1) * (y2 - y1 + 1)
-
-    for i in range(N):
-        # intermediate parameters for later parameters exchange
-        tscore = scores[i].clone()
-        pos = i + 1
-
-        if i != N - 1:
-            maxscore, maxpos = torch.max(scores[pos:], dim=0)
-            if tscore < maxscore:
-                boxes[i], boxes[maxpos.item() + i +
-                                1] = boxes[maxpos.item() + i +
-                                           1].clone(), boxes[i].clone()
-                scores[i], scores[maxpos.item() + i +
-                                  1] = scores[maxpos.item() + i +
-                                              1].clone(), scores[i].clone()
-                areas[i], areas[maxpos + i + 1] = areas[maxpos + \
-                                                        i + 1].clone(), areas[i].clone()
-
-        # IoU calculate
-        xx1 = np.maximum(boxes[i, 0].numpy(), boxes[pos:, 0].numpy())
-        yy1 = np.maximum(boxes[i, 1].numpy(), boxes[pos:, 1].numpy())
-        xx2 = np.minimum(boxes[i, 2].numpy(), boxes[pos:, 2].numpy())
-        yy2 = np.minimum(boxes[i, 3].numpy(), boxes[pos:, 3].numpy())
-
-        w = np.maximum(0.0, xx2 - xx1 + 1)
-        h = np.maximum(0.0, yy2 - yy1 + 1)
-        inter = torch.tensor(w * h)
-        ovr = torch.div(inter, (areas[i] + areas[pos:] - inter))
-
-        # Gaussian decay
-        weight = torch.exp(-(ovr * ovr) / sigma)
-        scores[pos:] = weight * scores[pos:]
-
-    # select the boxes and keep the corresponding indexes
-    idxs_keep = boxes[:, 4][scores > thresh].int()
-
-    return idxs_keep
 
 
 def across_class_nms(predicted_boxes, iou_threshold=0.15):
