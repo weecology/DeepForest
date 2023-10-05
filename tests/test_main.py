@@ -361,4 +361,6 @@ def test_over_score_thresh(m):
     assert m.model.score_thresh == 0.8
     assert not m.model.score_thresh == original_score_thresh
     
-    
+def test_iou_metric(m):
+    results = m.trainer.validate(m)
+    list(results.keys()) == ['iou']

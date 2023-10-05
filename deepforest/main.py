@@ -8,6 +8,7 @@ import typing
 import pytorch_lightning as pl
 from torch import optim
 import numpy as np
+from torchmetrics.detection import IntersectionOverUnion
 
 from deepforest import dataset, visualize, get_data, utilities, model, predict
 from deepforest import evaluate as evaluate_iou
@@ -21,7 +22,6 @@ import warnings
 class deepforest(pl.LightningModule):
     """Class for training and predicting tree crowns in RGB images
     """
-
     def __init__(self,
                  num_classes: int = 1,
                  label_dict: dict = {"Tree": 0},
@@ -56,6 +56,9 @@ class deepforest(pl.LightningModule):
 
         self.num_classes = num_classes
         self.create_model()
+        
+        # Metrics
+        self.iou_metric = IntersectionOverUnion(class_metrics=True)
 
         #Create a default trainer.
         self.create_trainer()
@@ -512,8 +515,7 @@ class deepforest(pl.LightningModule):
         return losses
 
     def validation_step(self, batch, batch_idx):
-        """Train on a loaded dataset
-
+        """Evaluate a batch
         """
         try:
             path, images, targets = batch
@@ -525,6 +527,10 @@ class deepforest(pl.LightningModule):
         self.model.train()
         with torch.no_grad():
             loss_dict = self.model.forward(images, targets)
+            
+        self.model.eval()
+        preds = self.model.forward(images)
+        self.iou_metric(preds, targets)
 
         # sum of regression and classification loss
         losses = sum([loss for loss in loss_dict.values()])
