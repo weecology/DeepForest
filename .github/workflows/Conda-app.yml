@@ -38,5 +38,7 @@ jobs:
           cache-env: true
           cache-downloads: true
 
-      - name: "Run tests"
-        run: "pytest -v"
+      - name: Run pytest and style tests
+        run: |
+          pytest -v
+          yapf -d --recursive deepforest/ --style=.style.yapf
