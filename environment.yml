@@ -19,6 +19,7 @@ dependencies:
   - pillow
   - pip
   - pytorch-lightning>1.5.0
+  - pycocotools
   - matplotlib
   - sphinx_rtd_theme
   - opencv>=4.5.4
