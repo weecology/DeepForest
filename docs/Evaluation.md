@@ -1,12 +1,13 @@
 # Evaluation 
 
-Independent analysis of whether a model can generalize from training data to new areas is critical for creating a robust workflow. We stress that evaluation data must be different from training data, as neural networks have millions of parameters and can easily memorize thousands of samples. Therefore, while it would be rather easy to tune the model to get extremely high scores on the training data, it would fail when exposed to new images. Avoid random train-test splits, try to create test datasets that mimic downstream tasks. If you are predicting among temporal surveys or across imaging platforms, your train-test data should reflect these partitions. Random sampling is always never the right choice, biological data often has high spatial, temporal or taxonomic correlation that makes it easier for your model to generalize, but will fail when pushed into new situations.
+ We stress that evaluation data must be different from training data, as neural networks have millions of parameters and can easily memorize thousands of samples. Avoid random train-test splits, try to create test datasets that mimic downstream tasks. If you are predicting among temporal surveys or across imaging platforms, your train-test data should reflect these partitions. Random sampling is almost never the right choice, biological data often has high spatial, temporal or taxonomic correlation that makes it easier for your model to generalize, but will fail when pushed into new situations.
 
 DeepForest provides several evaluation metrics. There is no one size fits all evaluation approach and the user needs to consider is the evaluation metric best fits the task. There is significant information online evaluation of object detection networks. Our philosophy is to provide a user a range of statistics and visualizations. Always visualize results and trust your judgement. Never be guided by a single metric.
 
 ### Further Reading
 
 [MeanAveragePrecision in torchmetrics](https://medium.com/data-science-at-microsoft/how-to-smoothly-integrate-meanaverageprecision-into-your-training-loop-using-torchmetrics-7d6f2ce0a2b3)
+
 [A general explanation of the mAP metric](https://jonathan-hui.medium.com/map-mean-average-precision-for-object-detection-45c121a31173)
 
 [Comparing Object Detection Models](https://www.comet.com/site/blog/compare-object-detection-models-from-torchvision/)
@@ -24,7 +25,7 @@ mAP is the standard COCO evaluation metric and the most common for comparing com
 
 ## Precision and Recall at a set IoU threshold.
 
-This was the original DeepForest metric, set a IoU = 0.4. This means that all predictions that overlap a ground truth box at IoU > 0.4 are true positives. As opposed to the torchmetrics above it is intuitive and matches downstream ecological tasks. The drawback is it coarse, does not fully reward the model for having high confidence scores on true positives.
+This was the original DeepForest metric, set a IoU = 0.4. This means that all predictions that overlap a ground truth box at IoU > 0.4 are true positives. As opposed to the torchmetrics above it is intuitive and matches downstream ecological tasks. The drawback is it slow, coarse, does not fully reward the model for having high confidence scores on true positives.
 
 There is an additional difference between ecological object detection like tree crowns and traditional computer vision methods. Instead of a single or set of easy to differentiate ground truths, we could have 60 or 70 objects that overlap in an image. How to best assign each prediction to each ground truth? DeepForest uses the [hungarian matching algorithm](https://thinkautonomous.medium.com/computer-vision-for-tracking-8220759eee85) to assign predictions to ground truth based on maximum IoU overlap. This is slow compared to the methods above, and so isn't a good choice for running hundreds of times during model training see config["validation"]["val_accuracy_interval"] for setting the frequency of the evaluate callback for this metric.
 
@@ -67,9 +68,9 @@ This creates a dictionary of the average IoU ('iou') as well as 'iou' for each c
 
 > **_Advanced tip:_**  Users can set the frequency of pytorch lightning evaluation using kwargs passed to main.deepforest.create_trainer(). For example [check_val_every_n_epochs](https://lightning.ai/docs/pytorch/stable/common/trainer.html#check-val-every-n-epoch).
 
-## Recall and Precision Scores
+## Recall and Precision at a fixed IoU Score
 
-To get a recall and precision at a set IoU evaluation score, specify an annotations file in the config before creating a trainer object. 
+To get a recall and precision at a set IoU evaluation score, specify an annotations file an using the m.evaluate method.
 
 ```
 m = main.deepforest()
@@ -94,7 +95,6 @@ This dataframe contains a numeric id for each predicted crown in each image and 
 
 The recall is the proportion of ground truth that has a true positive match with a prediction based on the intersection-over-union threshold. The default threshold is 0.4 and can be changed in the model.evaluate(iou_threshold=<>)
 
-
 ```
 results["box_recall"]
 0.705
@@ -106,6 +106,8 @@ The regression box precision is the proportion of predicted boxes which overlap 
 results["box_precision"]
 0.781
 ```
+
+### Worked example of calculating IoU and recall/precision values
 
 To convert overlap among predicted and ground truth bounding boxes into measures of accuracy and precision, the most common approach is to compare the overlap using the intersection-over-union metric (IoU).
 IoU is the ratio between the area of the overlap between the predicted polygon box and the ground truth polygon box divided by the area of the combined bounding box region.
@@ -207,8 +209,10 @@ result["class_recall"]
 0  Tree     1.0    0.67033    61
 ```
 
+### How to average evaluation metrics across images?
+
 One important decision was how to average precision and recall across multiple images. Two reasonable options might be to take all predictions and all ground truth and compute the statistic on the entire dataset. 
-This strategy makes more sense for evaluation data that are relatively homogenous across images. We prefer to take the average of per-image precision and recall. This helps balanace the dataset if some images have many trees, and other have few trees, such as when you are comparing multiple habitat types. 
+This strategy makes more sense for evaluation data that are relatively homogenous across images. We prefer to take the average of per-image precision and recall. This helps balanace the dataset if some images have many objects, and other have few objects, such as when you are comparing multiple habitat types. 
 Users are welcome to calculate their own statistics directly from the results dataframe.
 
 ```
@@ -221,7 +225,7 @@ result["results"].head()
 34             34         4  0.595862  ...       Tree  OSBS_029.tif   True
 ```
 
-## Evaluating tiles
+### Evaluating tiles too large for memory
 
 The evaluation method uses deepforest.predict_image for each of the paths supplied in the image_path column. This means that the entire image is passed for prediction. This will not work for large images. The deepforest.predict_tile method does a couple things under hood that need to be repeated for evaluation.
 

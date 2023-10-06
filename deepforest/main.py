@@ -22,6 +22,7 @@ import warnings
 class deepforest(pl.LightningModule):
     """Class for training and predicting tree crowns in RGB images
     """
+
     def __init__(self,
                  num_classes: int = 1,
                  label_dict: dict = {"Tree": 0},
@@ -56,13 +57,12 @@ class deepforest(pl.LightningModule):
 
         self.num_classes = num_classes
         self.create_model()
-        
+
         # Metrics
         self.iou_metric = IntersectionOverUnion(
-            class_metrics=True,
-            iou_threshold=self.config["validation"]["iou_threshold"])
+            class_metrics=True, iou_threshold=self.config["validation"]["iou_threshold"])
         self.mAP_metric = MeanAveragePrecision()
-        
+
         #Create a default trainer.
         self.create_trainer()
 
@@ -530,7 +530,7 @@ class deepforest(pl.LightningModule):
         self.model.train()
         with torch.no_grad():
             loss_dict = self.model.forward(images, targets)
-            
+
         # sum of regression and classification loss
         losses = sum([loss for loss in loss_dict.values()])
 
@@ -539,14 +539,14 @@ class deepforest(pl.LightningModule):
 
         # Calculate intersection-over-union
         self.iou_metric.update(preds, targets)
-        self.mAP_metric.update(preds,targets)
+        self.mAP_metric.update(preds, targets)
 
         # Log loss
         for key, value in loss_dict.items():
             self.log("val_{}".format(key), value, on_epoch=True)
 
         return losses
-    
+
     def on_validation_epoch_end(self):
         output = self.iou_metric.compute()
         self.log_dict(output)
@@ -555,7 +555,7 @@ class deepforest(pl.LightningModule):
         output = self.mAP_metric.compute()
         self.log_dict(output)
         self.mAP_metric.reset()
-        
+
     def predict_step(self, batch, batch_idx):
         batch_results = self.model(batch)
 
