@@ -20,6 +20,7 @@ def multi_class():
     
     return csv_file
 
+
 @pytest.mark.parametrize("csv_file,label_dict",[(single_class(), {"Tree":0}), (multi_class(),{"Alive":0,"Dead":1})])
 def test_TreeDataset(csv_file, label_dict):
     root_dir = os.path.dirname(get_data("OSBS_029.png"))
@@ -65,6 +66,8 @@ def test_single_class_with_empty(tmpdir):
     #Second image has no annotations
     assert torch.sum(ds[1][2]["boxes"]) == 0
     
+
+
 @pytest.mark.parametrize("augment",[True,False])
 def test_TreeDataset_transform(augment):
     csv_file = get_data("example.csv")

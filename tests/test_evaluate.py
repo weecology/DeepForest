@@ -9,6 +9,13 @@ import pytest
 import pandas as pd
 import numpy as np
 
+@pytest.fixture()
+def m(download_release):
+    m = main.deepforest()
+    m.use_release(check_release=False)
+    
+    return m
+
 def test_evaluate_image(m):
     csv_file = get_data("OSBS_029.csv")
     predictions = m.predict_file(csv_file=csv_file, root_dir=os.path.dirname(csv_file))
@@ -35,8 +42,9 @@ def test_evaluate(m):
     assert "score" in results["results"].columns
     assert results["results"].true_label.unique() == "Tree"
 
-def test_evaluate_multi():
+def test_evaluate_multi(m):
     csv_file = get_data("testfile_multi.csv")
+    m = main.deepforest(num_classes=2,label_dict={"Alive":0,"Dead":1})
     ground_truth = pd.read_csv(csv_file)
     ground_truth["label"] = ground_truth.label.astype("category").cat.codes
     
@@ -49,8 +57,9 @@ def test_evaluate_multi():
     assert results["results"].shape[0] == ground_truth.shape[0]
     assert results["class_recall"].shape == (2,4)
     
-def test_evaluate_save_images(tmpdir):
+def test_evaluate_save_images(m, tmpdir):
     csv_file = get_data("testfile_multi.csv")
+    m = main.deepforest(num_classes=2,label_dict={"Alive":0,"Dead":1})
     ground_truth = pd.read_csv(csv_file)
     ground_truth["label"] = ground_truth.label.astype("category").cat.codes
     
@@ -61,7 +70,7 @@ def test_evaluate_save_images(tmpdir):
     results = evaluate.evaluate(predictions=predictions, ground_df=ground_truth, root_dir=os.path.dirname(csv_file), savedir=tmpdir)     
     assert all([os.path.exists("{}/{}".format(tmpdir,x)) for x in ground_truth.image_path])
 
-def test_evaluate_empty(m):
+def test_evaluate_empty():
     m = main.deepforest()
     m.config["score_thresh"] = 0.8
     csv_file = get_data("OSBS_029.csv")
@@ -74,23 +83,3 @@ def test_evaluate_empty(m):
     
     df = pd.read_csv(csv_file)
     assert results["results"].shape[0] == df.shape[0]
-
-@pytest.fixture
-def sample_results():
-    # Create a sample DataFrame for testing
-    data = {
-        'true_label': [1, 1, 2],
-        'predicted_label': [1, 2, 1]
-    }
-    return pd.DataFrame(data)
-
-def test_compute_class_recall(sample_results):
-    # Test case with sample data
-    expected_recall = pd.DataFrame({
-        'label': [1, 2],
-        'recall': [0.5, 0],
-        'precision': [0.5, 0],
-        'size': [2, 1]
-    }).reset_index(drop=True)
-
-    assert evaluate.compute_class_recall(sample_results).equals(expected_recall)

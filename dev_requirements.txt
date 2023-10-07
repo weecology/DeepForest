@@ -22,7 +22,6 @@ docutils<0.18
 slidingwindow
 opencv-python
 sphinx_rtd_theme
-furo
 sphinx_markdown_tables
 tqdm
 twine
