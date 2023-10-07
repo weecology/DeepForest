@@ -22,6 +22,10 @@ def download_release():
     utilities.use_release()
     assert os.path.exists(get_data("NEON.pt"))
 
+@pytest.fixture(scope="session")
+def ROOT():
+    return _ROOT
+
 @pytest.fixture()
 def two_class_m():
     m = main.deepforest(num_classes=2,label_dict={"Alive":0,"Dead":1})
