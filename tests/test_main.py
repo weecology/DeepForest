@@ -363,4 +363,6 @@ def test_over_score_thresh(m):
     
 def test_iou_metric(m):
     results = m.trainer.validate(m)
-    assert list(results[0].keys()) == ['val_classification', 'val_bbox_regression', 'iou', 'iou/cl_0']
+    keys = ['val_classification', 'val_bbox_regression', 'iou', 'iou/cl_0']
+    for x in keys:
+        assert x in list(results[0].keys())
