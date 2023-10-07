@@ -1,43 +1,12 @@
-# Model
-import torchvision
-from torchvision.models.detection.retinanet import RetinaNet
-from torchvision.models.detection.retinanet import AnchorGenerator
-from torchvision.models.detection.retinanet import RetinaNet_ResNet50_FPN_Weights
+# Model - common class
+from deepforest.models import *
+import torch
 
 
-def load_backbone():
-    """A torch vision retinanet model"""
-    backbone = torchvision.models.detection.retinanet_resnet50_fpn(
-        weights=RetinaNet_ResNet50_FPN_Weights.COCO_V1)
-
-    # load the model onto the computation device
-    return backbone
-
-
-def create_anchor_generator(sizes=((8, 16, 32, 64, 128, 256, 400),),
-                            aspect_ratios=((0.5, 1.0, 2.0),)):
-    """
-    Create anchor box generator as a function of sizes and aspect ratios
-    Documented https://github.com/pytorch/vision/blob/67b25288ca202d027e8b06e17111f1bcebd2046c/torchvision/models/detection/anchor_utils.py#L9
-    let's make the network generate 5 x 3 anchors per spatial
-    location, with 5 different sizes and 3 different aspect
-    ratios. We have a Tuple[Tuple[int]] because each feature
-    map could potentially have different sizes and
-    aspect ratios
-    Args:
-        sizes:
-        aspect_ratios:
-
-    Returns: anchor_generator, a pytorch module
-
-    """
-    anchor_generator = AnchorGenerator(sizes=sizes, aspect_ratios=aspect_ratios)
-
-    return anchor_generator
-
-
-def create_model(num_classes, nms_thresh, score_thresh, backbone=None):
-    """Create a retinanet model
+class Model():
+    """A architecture agnostic class that controls the basic train, eval and predict functions.
+    A model should optionally allow a backbone for pretraining. To add new architectures, simply create a new module in models/ and write a create_model. 
+    Then add the result to the if else statement below.
     Args:
         num_classes (int): number of classes in the model
         nms_thresh (float): non-max suppression threshold for intersection-over-union [0,1]
@@ -45,15 +14,38 @@ def create_model(num_classes, nms_thresh, score_thresh, backbone=None):
     Returns:
         model: a pytorch nn module
     """
-    if not backbone:
-        resnet = load_backbone()
-        backbone = resnet.backbone
 
-    model = RetinaNet(backbone=backbone, num_classes=num_classes)
-    model.nms_thresh = nms_thresh
-    model.score_thresh = score_thresh
+    def __init__(self, config):
 
-    # Optionally allow anchor generator parameters to be created here
-    # https://pytorch.org/vision/stable/_modules/torchvision/models/detection/retinanet.html
+        # Check for required properties and formats
+        self.config = config
 
-    return model
+        # Check input output format:
+        self.check_model()
+
+    def create_model(self):
+        """This function converts a deepforest config file into a model. An architecture should have a list of nested arguments in config that match this function"""
+        raise ValueError(
+            "The create_model class method needs to be implemented. Take in args and return a pytorch nn module."
+        )
+
+    def check_model(self):
+        """
+        Ensure that model follows deepforest guidelines, see #####
+        If fails, raise ValueError
+        """
+        # This assumes model creation is not expensive
+        test_model = self.create_model()
+        test_model.eval()
+
+        # Create a dummy batch of 3 band data.
+        x = [torch.rand(3, 300, 400), torch.rand(3, 500, 400)]
+
+        predictions = test_model(x)
+        # Model takes in a batch of images
+        assert len(predictions) == 2
+
+        # Returns a list equal to number of images with proper keys per image
+        model_keys = list(predictions[1].keys())
+        model_keys.sort()
+        assert model_keys == ['boxes', 'labels', 'scores']
