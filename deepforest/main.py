@@ -553,9 +553,9 @@ class deepforest(pl.LightningModule):
         self.iou_metric.reset()
 
         output = self.mAP_metric.compute()
-        
+
         # Remove classes from output dict
-        output = {key:value for key, value in output.items() if not key == "classes"}
+        output = {key: value for key, value in output.items() if not key == "classes"}
         self.log_dict(output)
         self.mAP_metric.reset()
 
