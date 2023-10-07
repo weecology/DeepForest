@@ -18,9 +18,11 @@ import cv2
 import warnings
 import importlib
 
+
 class deepforest(pl.LightningModule):
     """Class for training and predicting tree crowns in RGB images
     """
+
     def __init__(self,
                  num_classes: int = 1,
                  label_dict: dict = {"Tree": 0},
@@ -64,7 +66,9 @@ class deepforest(pl.LightningModule):
 
         # If num classes is specified, overwrite config
         if not num_classes == 1:
-            warnings.warn("Directly specifying the num_classes arg in deepforest.main will be deprecated in 2.0 in favor of config_args. Use deepforest.main(config_args={'num_classes':value})")
+            warnings.warn(
+                "Directly specifying the num_classes arg in deepforest.main will be deprecated in 2.0 in favor of config_args. Use deepforest.main(config_args={'num_classes':value})"
+            )
 
         #Create a default trainer.
         self.create_trainer()
@@ -100,7 +104,9 @@ class deepforest(pl.LightningModule):
         release_tag, self.release_state_dict = utilities.use_release(
             check_release=check_release)
         if self.config["architecture"] is not "retinanet":
-            warnings.warn("The config file specifies architecture {}, but the release model is torchvision retinanet. Reloading with deepforest.main with a retinanet model".format(self.config["architecture"]))
+            warnings.warn(
+                "The config file specifies architecture {}, but the release model is torchvision retinanet. Reloading with deepforest.main with a retinanet model"
+                .format(self.config["architecture"]))
             self.config["architecture"] = "retinanet"
             self.create_model()
         self.model.load_state_dict(torch.load(self.release_state_dict))
