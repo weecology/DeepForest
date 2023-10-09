@@ -70,7 +70,7 @@ class deepforest(pl.LightningModule):
             warnings.warn(
                 "Directly specifying the num_classes arg in deepforest.main will be deprecated in 2.0 in favor of config_args. Use deepforest.main(config_args={'num_classes':value})"
             )
-        
+
         # Metrics
         self.iou_metric = IntersectionOverUnion(
             class_metrics=True, iou_threshold=self.config["validation"]["iou_threshold"])
