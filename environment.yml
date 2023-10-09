@@ -35,3 +35,4 @@ dependencies:
     - sphinx-markdown-tables
     - imagecodecs
     - albumentations>=1.0.0
+    - pycocotools
