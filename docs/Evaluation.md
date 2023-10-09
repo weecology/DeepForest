@@ -2,7 +2,7 @@
 
  We stress that evaluation data must be different from training data, as neural networks have millions of parameters and can easily memorize thousands of samples. Avoid random train-test splits, try to create test datasets that mimic downstream tasks. If you are predicting among temporal surveys or across imaging platforms, your train-test data should reflect these partitions. Random sampling is almost never the right choice, biological data often has high spatial, temporal or taxonomic correlation that makes it easier for your model to generalize, but will fail when pushed into new situations.
 
-DeepForest provides several evaluation metrics. There is no one size fits all evaluation approach and the user needs to consider is the evaluation metric best fits the task. There is significant information online evaluation of object detection networks. Our philosophy is to provide a user a range of statistics and visualizations. Always visualize results and trust your judgement. Never be guided by a single metric.
+DeepForest provides several evaluation metrics. There is no one-size-fits all evaluation approach, and the user needs to consider which evaluation metric best fits the task. There is significant information online about the evaluation of object detection networks. Our philosophy is to provide a user with a range of statistics and visualizations. Always visualize results and trust your judgment. Never be guided by a single metric.
 
 ### Further Reading
 
@@ -13,21 +13,20 @@ DeepForest provides several evaluation metrics. There is no one size fits all ev
 [Comparing Object Detection Models](https://www.comet.com/site/blog/compare-object-detection-models-from-torchvision/)
 
 ## Average Intersection over Union
-
-DeepForest modules use torchmetric's [IntersectionOverUnion](https://torchmetrics.readthedocs.io/en/stable/detection/intersection_over_union.html) metric. This calculates the average overlap between predictions and ground truth boxes. This can be considered a general indicator of model performance, but not sufficient on its own for model evaluation. There are lots of reasons predictions might overlap with ground truth, for example consider a model that covered an entire image with boxes. This would have high IoU, but low value to the user. 
+DeepForest modules use torchmetric's [IntersectionOverUnion](https://torchmetrics.readthedocs.io/en/stable/detection/intersection_over_union.html) metric. This calculates the average overlap between predictions and ground truth boxes. This can be considered a general indicator of model performance but is not sufficient on its own for model evaluation. There are lots of reasons predictions might overlap with ground truth; for example, consider a model that covers an entire image with boxes. This would have a high IoU but a low value for model utility.
 
 ## Mean-Average-Precision (mAP)
-
 mAP is the standard COCO evaluation metric and the most common for comparing computer vision models. It is useful as a summary statistic. However, it has several limitations for an ecological use case. 
 
 1. Not intuitive and difficult to translate to ecological applications. Read the sections above and visualize the mAP metric, which is essentially the area under the precision-recall curve at a range of IoU values. 
 2. The vast majority of biological applications use a fixed cutoff to determine an object of interest in an image. Perhaps in the future we will weight tree boxes by their confidence score, but currently we do things like, "All predictions > 0.4 score are considered positive detections". This does not connect well with the mAP metric.
 
 ## Precision and Recall at a set IoU threshold.
+This was the original DeepForest metric, set to an IoU of 0.4. This means that all predictions that overlap a ground truth box at IoU > 0.4 are true positives. As opposed to the torchmetrics above, it is intuitive and matches downstream ecological tasks. The drawback is that it is slow, coarse, and does not fully reward the model for having high confidence scores on true positives.
 
-This was the original DeepForest metric, set a IoU = 0.4. This means that all predictions that overlap a ground truth box at IoU > 0.4 are true positives. As opposed to the torchmetrics above it is intuitive and matches downstream ecological tasks. The drawback is it slow, coarse, does not fully reward the model for having high confidence scores on true positives.
+There is an additional difference between ecological object detection methods like tree crowns and traditional computer vision methods. Instead of a single or set of easily differentiated ground truths, we could have 60 or 70 objects that overlap in an image. How do you best assign each prediction to each ground truth?
 
-There is an additional difference between ecological object detection like tree crowns and traditional computer vision methods. Instead of a single or set of easy to differentiate ground truths, we could have 60 or 70 objects that overlap in an image. How to best assign each prediction to each ground truth? DeepForest uses the [hungarian matching algorithm](https://thinkautonomous.medium.com/computer-vision-for-tracking-8220759eee85) to assign predictions to ground truth based on maximum IoU overlap. This is slow compared to the methods above, and so isn't a good choice for running hundreds of times during model training see config["validation"]["val_accuracy_interval"] for setting the frequency of the evaluate callback for this metric.
+DeepForest uses the [hungarian matching algorithm](https://thinkautonomous.medium.com/computer-vision-for-tracking-8220759eee85) to assign predictions to ground truth based on maximum IoU overlap. This is slow compared to the methods above, and so isn't a good choice for running hundreds of times during model training see config["validation"]["val_accuracy_interval"] for setting the frequency of the evaluate callback for this metric.
 
 # Calculating Evaluation Metrics 
 
@@ -43,7 +42,7 @@ These metrics are largely used during training to keep track of model performanc
     m.config["validation"]["root_dir] = root_dir
     results = m.trainer.validate(m)
 ```
-This creates a dictionary of the average IoU ('iou') as well as 'iou' for each class. Here there is just one class, 'Tree'. Then the COCO mAP scores. See Further Reading above for explanation of mAP level scores. The val_bbox_regression is the loss function of the object detection box head, the loss_classification is the loss function of the object classification head.
+This creates a dictionary of the average IoU ('iou') as well as 'iou' for each class. Here there is just one class, 'Tree'. Then the COCO mAP scores. See Further Reading above for an explanation of mAP level scores. The val_bbox_regression is the loss function of the object detection box head, and the loss_classification is the loss function of the object classification head.
 ```
         classes                    0.0
            iou              0.6305446564807566
@@ -69,8 +68,7 @@ This creates a dictionary of the average IoU ('iou') as well as 'iou' for each c
 > **_Advanced tip:_**  Users can set the frequency of pytorch lightning evaluation using kwargs passed to main.deepforest.create_trainer(). For example [check_val_every_n_epochs](https://lightning.ai/docs/pytorch/stable/common/trainer.html#check-val-every-n-epoch).
 
 ## Recall and Precision at a fixed IoU Score
-
-To get a recall and precision at a set IoU evaluation score, specify an annotations file an using the m.evaluate method.
+To get a recall and precision at a set IoU evaluation score, specify an annotations' file using the m.evaluate method.
 
 ```
 m = main.deepforest()
@@ -108,7 +106,6 @@ results["box_precision"]
 ```
 
 ### Worked example of calculating IoU and recall/precision values
-
 To convert overlap among predicted and ground truth bounding boxes into measures of accuracy and precision, the most common approach is to compare the overlap using the intersection-over-union metric (IoU).
 IoU is the ratio between the area of the overlap between the predicted polygon box and the ground truth polygon box divided by the area of the combined bounding box region.
 
@@ -210,9 +207,7 @@ result["class_recall"]
 ```
 
 ### How to average evaluation metrics across images?
-
-One important decision was how to average precision and recall across multiple images. Two reasonable options might be to take all predictions and all ground truth and compute the statistic on the entire dataset. 
-This strategy makes more sense for evaluation data that are relatively homogenous across images. We prefer to take the average of per-image precision and recall. This helps balanace the dataset if some images have many objects, and other have few objects, such as when you are comparing multiple habitat types. 
+One important decision was how to average precision and recall across multiple images. Two reasonable options might be to take all predictions and all ground truth and compute the statistic on the entire dataset. This strategy makes more sense for evaluation data that is relatively homogenous across images. We prefer to take the average of per-image precision and recall. This helps balance the dataset if some images have many objects and others have few objects, such as when you are comparing multiple habitat types.
 Users are welcome to calculate their own statistics directly from the results dataframe.
 
 ```
@@ -227,7 +222,7 @@ result["results"].head()
 
 ### Evaluating tiles too large for memory
 
-The evaluation method uses deepforest.predict_image for each of the paths supplied in the image_path column. This means that the entire image is passed for prediction. This will not work for large images. The deepforest.predict_tile method does a couple things under hood that need to be repeated for evaluation.
+The evaluation method uses deepforest.predict_image for each of the paths supplied in the image_path column. This means that the entire image is passed for prediction. This will not work for large images. The deepforest.predict_tile method does a couple things under the hood that need to be repeated for evaluation.
 
 psuedo_code:
 
