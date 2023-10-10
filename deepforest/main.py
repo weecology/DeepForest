@@ -8,6 +8,7 @@ import typing
 import pytorch_lightning as pl
 from torch import optim
 import numpy as np
+from torchmetrics.detection import IntersectionOverUnion, MeanAveragePrecision
 
 from deepforest import dataset, visualize, get_data, utilities, model, predict
 from deepforest import evaluate as evaluate_iou
@@ -56,6 +57,11 @@ class deepforest(pl.LightningModule):
 
         self.num_classes = num_classes
         self.create_model()
+
+        # Metrics
+        self.iou_metric = IntersectionOverUnion(
+            class_metrics=True, iou_threshold=self.config["validation"]["iou_threshold"])
+        self.mAP_metric = MeanAveragePrecision()
 
         #Create a default trainer.
         self.create_trainer()
@@ -512,8 +518,7 @@ class deepforest(pl.LightningModule):
         return losses
 
     def validation_step(self, batch, batch_idx):
-        """Train on a loaded dataset
-
+        """Evaluate a batch
         """
         try:
             path, images, targets = batch
@@ -529,11 +534,30 @@ class deepforest(pl.LightningModule):
         # sum of regression and classification loss
         losses = sum([loss for loss in loss_dict.values()])
 
+        self.model.eval()
+        preds = self.model.forward(images)
+
+        # Calculate intersection-over-union
+        self.iou_metric.update(preds, targets)
+        self.mAP_metric.update(preds, targets)
+
         # Log loss
         for key, value in loss_dict.items():
             self.log("val_{}".format(key), value, on_epoch=True)
 
         return losses
+
+    def on_validation_epoch_end(self):
+        output = self.iou_metric.compute()
+        self.log_dict(output)
+        self.iou_metric.reset()
+
+        output = self.mAP_metric.compute()
+
+        # Remove classes from output dict
+        output = {key: value for key, value in output.items() if not key == "classes"}
+        self.log_dict(output)
+        self.mAP_metric.reset()
 
     def predict_step(self, batch, batch_idx):
         batch_results = self.model(batch)

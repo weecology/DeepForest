@@ -31,3 +31,4 @@ xmltodict
 comet_ml
 imagecodecs
 yapf
+pycocotools
