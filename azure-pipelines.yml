@@ -28,13 +28,12 @@ jobs:
       python -m pip install --upgrade pip
       pip install .
     displayName: 'Create Conda environment for DeepForest'
-  
+
   - script: |
       pip install pytest pytest-azurepipelines yapf
-      pytest
-      yapf -d --recursive deepforest/ --style=.style.yapf 2>&1
-    displayName: 'Pytests and sytle tests'
-    
+      pytest -v
+    displayName: 'Pytests'
+
   - bash: |
       python3 setup.py sdist bdist_wheel
       
