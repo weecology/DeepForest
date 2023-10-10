@@ -30,3 +30,4 @@ torchvision>=0.13
 xmltodict
 comet_ml
 imagecodecs
+yapf

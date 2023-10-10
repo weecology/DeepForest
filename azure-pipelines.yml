@@ -29,6 +29,11 @@ jobs:
       pip install .
     displayName: 'Create Conda environment for DeepForest'
 
+  - script: |
+      pip install pytest pytest-azurepipelines yapf
+      pytest -v
+    displayName: 'Pytests'
+
   - bash: |
       python3 setup.py sdist bdist_wheel
       
