@@ -17,6 +17,7 @@ from pytorch_lightning.callbacks import LearningRateMonitor
 import rasterio as rio
 import cv2
 import warnings
+import importlib
 
 
 class deepforest(pl.LightningModule):
@@ -27,11 +28,16 @@ class deepforest(pl.LightningModule):
                  num_classes: int = 1,
                  label_dict: dict = {"Tree": 0},
                  transforms=None,
-                 config_file: str = 'deepforest_config.yml'):
+                 config_file: str = 'deepforest_config.yml',
+                 config_args=None,
+                 model=None):
         """
         Args:
             num_classes (int): number of classes in the model
             config_file (str): path to deepforest config file
+            model (model.Model()): a deepforest model object, see model.Model().
+            config_args (dict): a dictionary of key->value to update config file at run time. e.g. {"batch_size":10}
+-           This is useful for iterating over arguments during model testing. 
         Returns:
             self: a deepforest pytorch lightning module
         """
@@ -51,12 +57,19 @@ class deepforest(pl.LightningModule):
 
         print("Reading config file: {}".format(config_path))
         self.config = utilities.read_config(config_path)
+        self.model = model
 
         # release version id to flag if release is being used
         self.__release_version__ = None
 
-        self.num_classes = num_classes
+        self.config["num_classes"] = num_classes
         self.create_model()
+
+        # If num classes is specified, overwrite config
+        if not num_classes == 1:
+            warnings.warn(
+                "Directly specifying the num_classes arg in deepforest.main will be deprecated in 2.0 in favor of config_args. Use deepforest.main(config_args={'num_classes':value})"
+            )
 
         # Metrics
         self.iou_metric = IntersectionOverUnion(
@@ -67,12 +80,12 @@ class deepforest(pl.LightningModule):
         self.create_trainer()
 
         # Label encoder and decoder
-        if not len(label_dict) == num_classes:
+        if not len(label_dict) == self.config["num_classes"]:
             raise ValueError('label_dict {} does not match requested number of '
                              'classes {}, please supply a label_dict argument '
                              '{{"label1":0, "label2":1, "label3":2 ... etc}} '
                              'for each label in the '
-                             'dataset'.format(label_dict, num_classes))
+                             'dataset'.format(label_dict, self.config["num_classes"]))
 
         self.label_dict = label_dict
         self.numeric_to_label_dict = {v: k for k, v in label_dict.items()}
@@ -96,6 +109,12 @@ class deepforest(pl.LightningModule):
         # Download latest model from github release
         release_tag, self.release_state_dict = utilities.use_release(
             check_release=check_release)
+        if self.config["architecture"] is not "retinanet":
+            warnings.warn(
+                "The config file specifies architecture {}, but the release model is torchvision retinanet. Reloading with deepforest.main with a retinanet model"
+                .format(self.config["architecture"]))
+            self.config["architecture"] = "retinanet"
+            self.create_model()
         self.model.load_state_dict(torch.load(self.release_state_dict))
 
         # load saved model and tag release
@@ -127,16 +146,30 @@ class deepforest(pl.LightningModule):
         self.numeric_to_label_dict = {v: k for k, v in self.label_dict.items()}
 
     def create_model(self):
-        """Define a deepforest retinanet architecture"""
-        self.model = model.create_model(self.num_classes, self.config["nms_thresh"],
-                                        self.config["score_thresh"])
+        """Define a deepforest architecture. This can be done in two ways. 
+        Passed as the model argument to deepforest __init__(),
+        or as a named architecture in config["architecture"], 
+        which corresponds to a file in models/, as is a subclass of model.Model().
+        The config args in the .yaml are specified 
+        retinanet:
+            nms_thresh: 0.1
+            score_thresh: 0.2
+        RCNN:
+            nms_thresh: 0.1
+        etc.
+        """
+        if self.model is None:
+            model_name = importlib.import_module("deepforest.models.{}".format(
+                self.config["architecture"]))
+            self.model = model_name.Model(config=self.config).create_model()
+        else:
+            pass
 
     def create_trainer(self, logger=None, callbacks=[], **kwargs):
         """Create a pytorch lightning training by reading config files
         Args:
             callbacks (list): a list of pytorch-lightning callback classes
         """
-
         # If val data is passed, monitor learning rate and setup classification metrics
         if not self.config["validation"]["csv_file"] is None:
             if logger is not None:
@@ -293,7 +326,6 @@ class deepforest(pl.LightningModule):
                             "np.array(image).astype(float32)".format(type(image)))
 
         self.model.eval()
-        self.model.score_thresh = self.config["score_thresh"]
 
         if image.dtype != "float32":
             warnings.warn(f"Image type is {image.dtype}, transforming to float32. "
@@ -354,7 +386,6 @@ class deepforest(pl.LightningModule):
             df: pandas dataframe with bounding boxes, label and scores for each image in the csv file
         """
         self.model.eval()
-        self.model.score_thresh = self.config["score_thresh"]
         df = pd.read_csv(csv_file)
         paths = df.image_path.unique()
         ds = dataset.TreeDataset(csv_file=csv_file,
@@ -442,7 +473,6 @@ class deepforest(pl.LightningModule):
             Otherwise a numpy array of predicted bounding boxes, scores and labels
         """
         self.model.eval()
-        self.model.score_thresh = self.config["score_thresh"]
         self.model.nms_thresh = self.config["nms_thresh"]
 
         if (raster_path is None) and (image is None):
@@ -606,7 +636,6 @@ class deepforest(pl.LightningModule):
             results: dict of ("results", "precision", "recall") for a given threshold
         """
         self.model.eval()
-        self.model.score_thresh = self.config["score_thresh"]
 
         predictions = self.predict_file(csv_file=csv_file,
                                         root_dir=root_dir,

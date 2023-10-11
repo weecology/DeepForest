@@ -44,6 +44,7 @@ The most helpful thing you can do is leave feedback on DeepForest `issue page`_.
    training
    Evaluation
    multi_species
+   Model_Architecture
    ConfigurationFile
    deepforestr
    FAQ

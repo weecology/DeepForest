@@ -3,15 +3,28 @@
 import pytest
 from deepforest import utilities, main
 from deepforest import get_data
+from deepforest import _ROOT
 import os
 
 collect_ignore = ['setup.py']
+
+@pytest.fixture(scope="session")
+def config():
+    config = utilities.read_config("{}/deepforest_config.yml".format(os.path.dirname(_ROOT)))
+    config["fast_dev_run"] = True
+    config["batch_size"] = True
+
+    return config
 
 @pytest.fixture(scope="session")
 def download_release():
     print("running fixtures")
     utilities.use_release()
     assert os.path.exists(get_data("NEON.pt"))
+
+@pytest.fixture(scope="session")
+def ROOT():
+    return _ROOT
 
 @pytest.fixture()
 def two_class_m():

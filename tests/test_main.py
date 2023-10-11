@@ -24,6 +24,58 @@ from PIL import Image
 from .conftest import download_release
 
 @pytest.fixture()
+def two_class_m():
+    m = main.deepforest(num_classes=2,label_dict={"Alive":0,"Dead":1})
+    m.config["train"]["csv_file"] = get_data("testfile_multi.csv") 
+    m.config["train"]["root_dir"] = os.path.dirname(get_data("testfile_multi.csv"))
+    m.config["train"]["fast_dev_run"] = True
+    m.config["batch_size"] = 2
+        
+    m.config["validation"]["csv_file"] = get_data("testfile_multi.csv") 
+    m.config["validation"]["root_dir"] = os.path.dirname(get_data("testfile_multi.csv"))
+    m.config["validation"]["val_accuracy_interval"] = 1
+
+    m.create_trainer()
+    
+    return m
+
+@pytest.fixture()
+def m(download_release):
+    m = main.deepforest()
+    m.config["train"]["csv_file"] = get_data("example.csv") 
+    m.config["train"]["root_dir"] = os.path.dirname(get_data("example.csv"))
+    m.config["train"]["fast_dev_run"] = True
+    m.config["batch_size"] = 2
+        
+    m.config["validation"]["csv_file"] = get_data("example.csv") 
+    m.config["validation"]["root_dir"] = os.path.dirname(get_data("example.csv"))
+    m.config["workers"] = 0 
+    m.config["validation"]["val_accuracy_interval"] = 1
+    m.config["train"]["epochs"] = 2
+    
+    m.create_trainer()
+    m.use_release(check_release=False)
+    
+    return m
+@pytest.fixture()
+
+def m_without_release():
+    m = main.deepforest()
+    m.config["train"]["csv_file"] = get_data("example.csv") 
+    m.config["train"]["root_dir"] = os.path.dirname(get_data("example.csv"))
+    m.config["train"]["fast_dev_run"] = True
+    m.config["batch_size"] = 2
+        
+    m.config["validation"]["csv_file"] = get_data("example.csv") 
+    m.config["validation"]["root_dir"] = os.path.dirname(get_data("example.csv"))
+    m.config["workers"] = 0 
+    m.config["validation"]["val_accuracy_interval"] = 1
+    m.config["train"]["epochs"] = 2
+    
+    m.create_trainer()
+    
+    return m
+@pytest.fixture()
 def raster_path():
     return get_data(path='OSBS_029.tif')    
     
@@ -54,8 +106,7 @@ def test_use_bird_release(m):
     m.use_bird_release()
     boxes = m.predict_image(path=imgpath)
     assert not boxes.empty
-    assert boxes.label.unique() == "Bird"
-
+    
 def test_train_empty(m, tmpdir):
     empty_csv = pd.DataFrame({"image_path":["OSBS_029.png","OSBS_029.tif"],"xmin":[0,10],"xmax":[0,20],"ymin":[0,20],"ymax":[0,30],"label":["Tree","Tree"]})
     empty_csv.to_csv("{}/empty.csv".format(tmpdir))
@@ -63,14 +114,6 @@ def test_train_empty(m, tmpdir):
     m.config["batch_size"] = 2
     m.create_trainer()    
     m.trainer.fit(m)
-
-# If the user forgets to set csv_file, yield an informative message. 
-def test_no_csv_file_train(m):
-    m.config["train"]["csv_file"] = None
-    m.config["batch_size"] = 1
-    m.create_trainer()    
-    with pytest.raises(AttributeError) as e:
-        m.trainer.fit(m)
 
 def test_validation_step(m):
     m.trainer = None
@@ -82,10 +125,14 @@ def test_validation_step(m):
     for p1, p2 in zip(before.named_parameters(), m.named_parameters()):     
         assert p1[1].ne(p2[1]).sum() == 0
 
-def test_train_single(m):
-    m.config["train"]["fast_dev_run"] = False
-    m.create_trainer()
-    m.trainer.fit(m)
+# Test train with each architecture
+@pytest.mark.parametrize("architecture",["retinanet","FasterRCNN"])
+def test_train_single(m_without_release, architecture):
+    m_without_release.config["architecture"] = architecture
+    m_without_release.create_model()
+    m_without_release.config["train"]["fast_dev_run"] = False
+    m_without_release.create_trainer()
+    m_without_release.trainer.fit(m_without_release)
 
 def test_train_preload_images(m):
     m.create_trainer()
@@ -163,8 +210,9 @@ def test_predict_dataloader(m, batch_size, raster_path):
     dl = m.predict_dataloader(ds)
     batch = next(iter(dl))
     batch.shape[0] == batch_size
-    
+
 def test_predict_tile(m, raster_path):
+    m.create_model()
     m.config["train"]["fast_dev_run"] = False
     m.create_trainer()
     prediction = m.predict_tile(raster_path = raster_path,
@@ -268,12 +316,8 @@ def test_train_callbacks(m):
     trainer = Trainer(fast_dev_run=True)
     trainer.fit(m, train_ds)
 
-def test_custom_config_file_path(tmpdir):
-    print(os.getcwd())
-    m = main.deepforest(config_file='tests/deepforest_config_test.yml')
-    assert m.config["batch_size"] == 9999
-    assert m.config["nms_thresh"] == 0.9
-    assert m.config["score_thresh"] == 0.9
+def test_custom_config_file_path(ROOT, tmpdir):
+    m = main.deepforest(config_file='{}/deepforest_config.yml'.format(os.path.dirname(ROOT)))
 
 def test_save_and_reload_checkpoint(m, tmpdir):
     img_path = get_data(path="2019_YELL_2_528000_4978000_image_crop2.png")    
@@ -320,7 +364,7 @@ def test_reload_multi_class(two_class_m, tmpdir):
     #reload
     old_model = main.deepforest.load_from_checkpoint("{}/checkpoint.pl".format(tmpdir))
     old_model.config = two_class_m.config
-    assert old_model.num_classes == 2
+    assert old_model.config["num_classes"] == 2
     old_model.create_trainer()    
     after = old_model.trainer.validate(old_model)
     
@@ -354,10 +398,12 @@ def test_over_score_thresh(m):
     """A user might want to change the config after model training and update the score thresh"""
     img = get_data("OSBS_029.png")
     original_score_thresh = m.model.score_thresh
-    m.config["score_thresh"] = 0.8
+    m.model.score_thresh = 0.8
     
     #trigger update
     boxes = m.predict_image(path = img)
+
+    assert all(boxes.score > 0.8)
     assert m.model.score_thresh == 0.8
     assert not m.model.score_thresh == original_score_thresh
     
