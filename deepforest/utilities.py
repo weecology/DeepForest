@@ -251,7 +251,7 @@ def shapefile_to_annotations(shapefile,
     Convert a shapefile of annotations into annotations csv file for DeepForest training and evaluation
 
     Geometry Handling:
-    The geometry_type is the form of the objects in the given shapefile it can be "boundingbox" or "point".
+    The geometry_type is the form of the objects in the given shapefile. It can be "boundingbox" or "point".
     If geometry_type is set to "boundingbox" (default) then the bounding boxes in the shapefile will be used as is and transferred over
     to the annotations file. However, if the geometry_type is "point" then a bounding box will be created in its place that's centered on
     the original point with an apothem equal to buffer_size.
