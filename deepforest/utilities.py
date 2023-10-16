@@ -262,14 +262,15 @@ def shapefile_to_annotations(shapefile,
         rgb: Path to the RGB image on disk
         savedir: Directory to save csv files
         buffer_size: size of point to box expansion in map units of the target object, meters for projected data, pixels for unprojected data. The buffer_size is added to each side of the x,y point to create the box. 
-        geometry_type (bbox): Specifies the spatial representation used in the shapefile; can be "bbox" or "point"
+        geometry_type: Specifies the spatial representation used in the shapefile; can be "bbox" or "point"
     Returns:
         results: a pandas dataframe
     """
 
     # Verify the geometry_type is valid
     if geometry_type not in ["bbox", "point"]:
-        raise ValueError(f"Invalid argument for 'geometry_type'. Expected 'point' or 'bbox'.")
+        raise ValueError(
+            "Invalid argument for 'geometry_type'. Expected 'point' or 'bbox'.")
 
     # Read shapefile
     gdf = gpd.read_file(shapefile)
