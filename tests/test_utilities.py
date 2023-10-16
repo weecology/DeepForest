@@ -58,7 +58,7 @@ def test_shapefile_to_annotations_convert_to_boxes(tmpdir):
     gdf = gpd.GeoDataFrame(df, geometry="geometry")
     gdf.to_file("{}/annotations.shp".format(tmpdir))
     image_path = get_data("OSBS_029.tif")
-    shp = utilities.shapefile_to_annotations(shapefile="{}/annotations.shp".format(tmpdir), rgb=image_path, savedir=tmpdir, convert_to_boxes=True)
+    shp = utilities.shapefile_to_annotations(shapefile="{}/annotations.shp".format(tmpdir), rgb=image_path, savedir=tmpdir, geometry_type="point")
     assert shp.shape[0] == 2
     
 def test_shapefile_to_annotations(tmpdir):
@@ -70,7 +70,7 @@ def test_shapefile_to_annotations(tmpdir):
     
     gdf.to_file("{}/annotations.shp".format(tmpdir))
     image_path = get_data("OSBS_029.tif")
-    shp = utilities.shapefile_to_annotations(shapefile="{}/annotations.shp".format(tmpdir), rgb=image_path, savedir=tmpdir, convert_to_boxes=False)
+    shp = utilities.shapefile_to_annotations(shapefile="{}/annotations.shp".format(tmpdir), rgb=image_path, savedir=tmpdir, geometry_type="bbox")
     assert shp.shape[0] == 2
     
 def test_boxes_to_shapefile_projected(m):

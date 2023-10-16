@@ -245,24 +245,38 @@ def xml_to_annotations(xml_path):
 def shapefile_to_annotations(shapefile,
                              rgb,
                              buffer_size=0.5,
-                             convert_to_boxes=False,
+                             geometry_type="bbox",
                              savedir="."):
     """
     Convert a shapefile of annotations into annotations csv file for DeepForest training and evaluation
+
+    Geometry Handling:
+    The geometry_type is the form of the objects in the given shapefile. It can be "bbox" or "point".
+    If geometry_type is set to "bbox" (default) then the bounding boxes in the shapefile will be used as is and transferred over
+    to the annotations file. If the geometry_type is "point" then a bounding box will be created for each 
+    point that is centered on the point location and has an apothem equal to buffer_size, resulting in a bounding box with dimensions of 2 
+    times the value of buffer_size.
+    
     Args:
         shapefile: Path to a shapefile on disk. If a label column is present, it will be used, else all labels are assumed to be "Tree"
         rgb: Path to the RGB image on disk
         savedir: Directory to save csv files
         buffer_size: size of point to box expansion in map units of the target object, meters for projected data, pixels for unprojected data. The buffer_size is added to each side of the x,y point to create the box. 
-        convert_to_boxes (False): If True, convert the point objects in the shapefile into bounding boxes with size 'buffer_size'.  
+        geometry_type: Specifies the spatial representation used in the shapefile; can be "bbox" or "point"
     Returns:
         results: a pandas dataframe
     """
+
+    # Verify the geometry_type is valid
+    if geometry_type not in ["bbox", "point"]:
+        raise ValueError(
+            "Invalid argument for 'geometry_type'. Expected 'point' or 'bbox'.")
+
     # Read shapefile
     gdf = gpd.read_file(shapefile)
 
     # define in image coordinates and buffer to create a box
-    if convert_to_boxes:
+    if geometry_type == "point":
         gdf["geometry"] = [
             shapely.geometry.Point(x, y)
             for x, y in zip(gdf.geometry.x.astype(float), gdf.geometry.y.astype(float))
