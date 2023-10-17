@@ -56,7 +56,7 @@ The most helpful thing you can do is leave feedback on DeepForest `issue page`_.
    authors.rst
    source/modules.rst
    use
-   developer
+   CONTRIBUTING.md
 
 Indices and tables
 ==================

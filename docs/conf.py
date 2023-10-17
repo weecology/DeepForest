@@ -2,12 +2,9 @@
 # -*- coding: utf-8 -*-
 import os
 import sys
-from typing import Any
 import urllib.request
+from typing import Any
 
-import recommonmark
-from recommonmark.parser import CommonMarkParser
-from recommonmark.parser import CommonMarkParser
 from recommonmark.parser import CommonMarkParser
 from recommonmark.transform import AutoStructify
 
@@ -23,13 +20,13 @@ Commands are very similar with some minor differences due to how the wrapping pr
 using [reticulate](https://rstudio.github.io/reticulate/) works.
 
 """
-file_obj = open('deepforestr.md','w')
+file_obj = open('deepforestr.md', 'w')
 readme_url = 'https://raw.githubusercontent.com/weecology/deepforestr/main/README.md'
 file_obj.write(deepforestr_title)
 
 with urllib.request.urlopen(readme_url) as response:
     lines = response.readlines()
-    badge_section =  True
+    badge_section = True
     for line in lines:
         line = line.decode("utf8")
         if "## Installation" in line and badge_section:
@@ -37,6 +34,22 @@ with urllib.request.urlopen(readme_url) as response:
         if not badge_section:
             file_obj.write(line)
 file_obj.close()
+
+# Create copy of CONTRIBUTING.md
+contributing_url = "https://raw.githubusercontent.com/weecology/DeepForest/main/CONTRIBUTING.md"
+contributing_url = "https://raw.githubusercontent.com/weecology/DeepForest/main/README.md"
+contributing_source = "../CONTRIBUTING.md"
+
+if not os.path.exists(contributing_source):
+    with urllib.request.urlopen(contributing_url) as response:
+        lines = response.readlines()
+        with open(contributing_source, "w") as file1:
+            file1.write(lines)
+
+# reading from file1 and writing to file2
+with open(contributing_source, "r") as file1:
+    with open("CONTRIBUTING.md", "w") as file2:
+        file2.write(file1.read())
 
 needs_sphinx = "1.8"
 
