@@ -25,10 +25,11 @@ To address these challenges, the next phase of ecological computer vision needs 
 
 DeepForest aims to be **simple**, **customizable**, and **modular**. DeepForest makes an effort to keep unnecessary complexity hidden from the ordinary user by developing straightforward functions like "predict_tile." The majority of machine learning projects actually fail due to poor data and project management, not clever models. DeepForest makes an effort to generate straightforward defaults, utilize already-existing labeling tools and interfaces, and minimize the effect of learning new APIs and code.
 
+## Where can I get help, learn from others, and report bugs?
+Given the enormous array of forest types and image acquisition environments, it is unlikely that your image will be perfectly predicted by a prebuilt model. Below are some tips and some general guidelines to improve predictions.
 
-**Feedback? How are you using DeepForest?**
+Get suggestions on how to improve a model by using the [discussion board](https://github.com/weecology/DeepForest/discussions). Please be aware that only feature requests or bug reports should be posted on the issues page. The most helpful thing you can do is leave feedback on DeepForest `issue page`_. No feature or issue, or positive affirmation is too small. Please do it now!
 
-The most helpful thing you can do is leave feedback on DeepForest `issue page`_. No feature or issue, or positive affirmation is too small. Please do it now!
 
 `Source code`_ is available on GitHub.
 
