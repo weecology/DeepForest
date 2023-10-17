@@ -8,10 +8,10 @@ import os
 
 def wrapper(m):
     eval_csvs = {
-    #"Radogoshi_Sweden":"/blue/ewhite/DeepForest/Radogoshi_Sweden/test.csv",
-    #"NeonTreeEvaluation":"/orange/idtrees-collab/NeonTreeEvaluation/evaluation/RGB/benchmark_annotations.csv",
-    "Beloiu_2023": "/blue/ewhite/DeepForest/Beloiu_2023/test.csv",
-    "NeonTreeEvaluation_local":"/Users/benweinstein/Documents/NeonTreeEvaluation/evaluation/RGB/benchmark_annotations.csv"}
+    "Radogoshi_Sweden":"/blue/ewhite/DeepForest/Radogoshi_Sweden/test.csv",
+    "NeonTreeEvaluation":"/orange/idtrees-collab/NeonTreeEvaluation/evaluation/RGB/benchmark_annotations.csv",
+    "Beloiu_2023": "/blue/ewhite/DeepForest/Beloiu_2023/test.csv"}
+
     dfs = []
     for name in eval_csvs:
         try:
@@ -24,6 +24,6 @@ def wrapper(m):
             continue
         dfs.append(results)
     dfs = pd.DataFrame(dfs)
-
+    
     return dfs
     
