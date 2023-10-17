@@ -1,28 +1,27 @@
 # entry point for deepforest model
+import importlib
 import os
-import pandas as pd
-from PIL import Image
-import torch
 import typing
+import warnings
 
-import pytorch_lightning as pl
-from torch import optim
+import cv2
 import numpy as np
+import pandas as pd
+import pytorch_lightning as pl
+import rasterio as rio
+import torch
+from PIL import Image
+from pytorch_lightning.callbacks import LearningRateMonitor
+from torch import optim
 from torchmetrics.detection import IntersectionOverUnion, MeanAveragePrecision
 
-from deepforest import dataset, visualize, get_data, utilities, model, predict
+from deepforest import dataset, visualize, get_data, utilities, predict
 from deepforest import evaluate as evaluate_iou
 from deepforest.callbacks import iou_callback
-from pytorch_lightning.callbacks import LearningRateMonitor
-import rasterio as rio
-import cv2
-import warnings
-import importlib
 
 
 class deepforest(pl.LightningModule):
-    """Class for training and predicting tree crowns in RGB images
-    """
+    """Class for training and predicting tree crowns in RGB images"""
 
     def __init__(self,
                  num_classes: int = 1,
@@ -31,13 +30,13 @@ class deepforest(pl.LightningModule):
                  config_file: str = 'deepforest_config.yml',
                  config_args=None,
                  model=None):
-        """
-        Args:
+        """Args:
             num_classes (int): number of classes in the model
             config_file (str): path to deepforest config file
             model (model.Model()): a deepforest model object, see model.Model().
-            config_args (dict): a dictionary of key->value to update config file at run time. e.g. {"batch_size":10}
--           This is useful for iterating over arguments during model testing. 
+            config_args (dict): a dictionary of key->value to update
+            config file at run time. e.g. {"batch_size":10}
+            This is useful for iterating over arguments during model testing.
         Returns:
             self: a deepforest pytorch lightning module
         """
@@ -76,7 +75,7 @@ class deepforest(pl.LightningModule):
             class_metrics=True, iou_threshold=self.config["validation"]["iou_threshold"])
         self.mAP_metric = MeanAveragePrecision()
 
-        #Create a default trainer.
+        # Create a default trainer.
         self.create_trainer()
 
         # Label encoder and decoder
@@ -146,24 +145,23 @@ class deepforest(pl.LightningModule):
         self.numeric_to_label_dict = {v: k for k, v in self.label_dict.items()}
 
     def create_model(self):
-        """Define a deepforest architecture. This can be done in two ways. 
+        """Define a deepforest architecture. This can be done in two ways.
         Passed as the model argument to deepforest __init__(),
-        or as a named architecture in config["architecture"], 
+        or as a named architecture in config["architecture"],
         which corresponds to a file in models/, as is a subclass of model.Model().
-        The config args in the .yaml are specified 
-        retinanet:
-            nms_thresh: 0.1
-            score_thresh: 0.2
-        RCNN:
-            nms_thresh: 0.1
-        etc.
+        The config args in the .yaml are specified
+
+        >>> # retinanet:
+        >>> #   ms_thresh: 0.1
+        >>> #   score_thresh: 0.2
+        >>> # RCNN:
+        >>> #   nms_thresh: 0.1
+        >>> # etc.
         """
         if self.model is None:
             model_name = importlib.import_module("deepforest.models.{}".format(
                 self.config["architecture"]))
             self.model = model_name.Model(config=self.config).create_model()
-        else:
-            pass
 
     def create_trainer(self, logger=None, callbacks=[], **kwargs):
         """Create a pytorch lightning training by reading config files
@@ -399,7 +397,7 @@ class deepforest(pl.LightningModule):
             out = self.predict_step(batch, i)
             batched_results.append(out)
 
-        #Flatten list from batched prediction
+        # Flatten list from batched prediction
         prediction_list = []
         for batch in batched_results:
             for boxes in batch:
@@ -491,7 +489,7 @@ class deepforest(pl.LightningModule):
                                  patch_size=patch_size)
         batched_results = self.trainer.predict(self, self.predict_dataloader(ds))
 
-        #Flatten list from batched prediction
+        # Flatten list from batched prediction
         results = []
         for batch in batched_results:
             for boxes in batch:
@@ -556,7 +554,7 @@ class deepforest(pl.LightningModule):
             print("Empty batch encountered, skipping")
             return None
 
-        #Get loss from "train" mode, but don't allow optimization
+        # Get loss from "train" mode, but don't allow optimization
         self.model.train()
         with torch.no_grad():
             loss_dict = self.model.forward(images, targets)

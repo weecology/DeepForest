@@ -8,6 +8,7 @@
 .DS_Store
 .RHistory
 build/
+CONTRIBUTING.md
 current_bird_release.csv
 current_release.csv
 lightning_logs/*
