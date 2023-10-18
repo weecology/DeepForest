@@ -60,7 +60,7 @@ Get suggestions on how to improve a model by using the [discussion board](https:
    authors.rst
    source/modules.rst
    use
-   developer
+   CONTRIBUTING.md
 
 Indices and tables
 ==================
