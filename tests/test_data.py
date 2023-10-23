@@ -1,8 +1,7 @@
 # test data locations and existance
 import os
-
 import deepforest
-
+from deepforest.utilities import read_config
 
 # Make sure package data is present
 def test_get_data():
@@ -14,3 +13,9 @@ def test_get_data():
     assert os.path.exists(deepforest.get_data("OSBS_029.tif"))
     assert os.path.exists(deepforest.get_data("SOAP_061.png"))    
     assert os.path.exists(deepforest.get_data("classes.csv"))
+
+# Assert that the included config file matches the front of the repo.
+def test_matching_config(ROOT):
+    config = read_config("{}/deepforest_config.yml".format(os.path.dirname(ROOT)))
+    config_from_data_dir = read_config("{}/data/deepforest_config.yml".format(ROOT))
+    assert config == config_from_data_dir
