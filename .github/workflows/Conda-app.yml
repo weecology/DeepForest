@@ -46,4 +46,4 @@ jobs:
 
       - name: Test Docs
         run: |
-          cd docs && make clean && make html SPHINXOPTS="-W" 2>&1
+          cd docs && make clean && make html SPHINXOPTS="-W"
