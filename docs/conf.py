@@ -37,7 +37,6 @@ file_obj.close()
 
 # Create copy of CONTRIBUTING.md
 contributing_url = "https://raw.githubusercontent.com/weecology/DeepForest/main/CONTRIBUTING.md"
-contributing_url = "https://raw.githubusercontent.com/weecology/DeepForest/main/README.md"
 contributing_source = "../CONTRIBUTING.md"
 
 if not os.path.exists(contributing_source):
@@ -61,6 +60,7 @@ autodoc_member_order = 'groupwise'
 autoclass_content = 'both'
 
 extensions = [
+    'nbsphinx',
     'pygments.sphinxext',
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
@@ -73,6 +73,10 @@ extensions = [
     'sphinx.ext.todo',
     'sphinx.ext.viewcode',
     'sphinx_markdown_tables']
+
+
+nbsphinx_execute = 'never'
+nbsphinx_allow_errors = True
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
