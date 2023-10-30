@@ -108,20 +108,14 @@ def test_boxes_to_shapefile_unprojected(m, flip_y_axis, projected):
     img = get_data("OSBS_029.png")
     r = rio.open(img)
     df = m.predict_image(path=img)
-    if projected and flip_y_axis:
-        with pytest.warns(UserWarning):
-            gdf = utilities.boxes_to_shapefile(
-                df,
-                root_dir=os.path.dirname(img),
-                projected=projected,
-                flip_y_axis=flip_y_axis)
-    else:
+
+    with pytest.warns(UserWarning):
         gdf = utilities.boxes_to_shapefile(
-        df,
-        root_dir=os.path.dirname(img),
-        projected=projected,
-        flip_y_axis=flip_y_axis)
+            df,
+            root_dir=os.path.dirname(img),
+            projected=projected,
+            flip_y_axis=flip_y_axis)
     
-    #Confirm that each boxes within image bounds
+    # Confirm that each boxes within image bounds
     geom = geometry.box(*r.bounds)
     assert all(gdf.geometry.apply(lambda x: geom.intersects(geom)).values)

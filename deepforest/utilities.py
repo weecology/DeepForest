@@ -388,9 +388,9 @@ def boxes_to_shapefile(df, root_dir, projected=True, flip_y_axis=False):
     Returns:
        df: a geospatial dataframe with the boxes optionally transformed to the target crs
     """
-    # Check if the user has set flip_y_axis, but not projected. Warn and confirm.
+    # Raise a warning and confirm if a user sets projected to True when flip_y_axis is True.
 
-    if (flip_y_axis and projected):
+    if flip_y_axis and projected:
         warnings.warn(
             "flip_y_axis is {}, and projected is {}. In most cases, projected should be False when inverting y axis. Setting projected=False"
             .format(flip_y_axis, projected), UserWarning)
