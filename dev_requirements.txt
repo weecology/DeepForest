@@ -32,3 +32,5 @@ comet_ml
 imagecodecs
 yapf
 pycocotools
+nbmake
+nbsphinx

@@ -38,7 +38,12 @@ jobs:
           cache-env: true
           cache-downloads: true
 
-      - name: Run pytest and style tests
+      - name: Run pytest, test style, and notebooks
         run: |
           pytest -v
           yapf -d --recursive deepforest/ --style=.style.yapf
+          pytest --nbmake docs/*.ipynb
+
+      - name: Test Docs
+        run: |
+          cd docs && make clean && make html SPHINXOPTS="-W"

@@ -32,6 +32,8 @@ dependencies:
   - slidingwindow
   - bumpversion
   - yapf
+  - nbmake
+  - nbsphinx
   - pip:
     - sphinx-markdown-tables
     - imagecodecs
