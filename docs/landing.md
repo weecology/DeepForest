@@ -11,14 +11,13 @@ DeepForest is built on the object detection module from the [torchvision package
 
 For more about the motivation behind DeepForest, see some recent talks we have given on computer vision for ecology and practical applications to machine learning in environmental monitoring.
 
-**Towards a general AI for computer vision for ecology**
+**Airborne Ecology**
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/ifsl6zwvWw0?si=wLGtZtRa1jZZMa3V" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/O4K95-0W5FE?si=Vw8-yFLgRWaVIdbu" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
 
+**Practical Intro to Computer Vision in Ecology Research**
 
-**Computer Vision for Ecology**
-
-<iframe width="560" height="315" src="https://www.youtube.com/embed/r7zqn4AZmb0?start=1080" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+[<iframe width="560" height="315" src="https://www.youtube.com/embed/r7zqn4AZmb0?start=1080" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>](https://youtu.be/wRBG74STulc?si=SRMWh6n9VlRU8kff)
 
 ## Where can I get help, learn from others, and report bugs?
 
