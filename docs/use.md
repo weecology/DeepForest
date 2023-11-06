@@ -17,6 +17,8 @@ Gan, Y., Q. Wang, and A. Iio. 2023. Tree Crown Detection and Delineation in a Te
 
 Wang, C., D. Jia, S. Lei, I. Numata, and L. Tian. 2023. Accuracy Assessment and Impact Factor Analysis of GEDI Leaf Area Index Product in Temperate Forest. Remote Sensing 15:1535. <https://doi.org/10.3390/rs15061535>
 
+Kapil, R.; Castilla, G.; Marvasti-Zadeh, S.M.; Goodsman, D.; Erbilgin, N.; Ray, N. Orthomosaicking Thermal Drone Images of Forests via Simultaneously Acquired RGB Images. Remote Sens. 2023, 15, 2653. https://doi.org/10.3390/rs15102653. https://www.mdpi.com/2072-4292/15/10/2653
+
 ### 2022
 
 Babu Saheer, L., A. Bhasy, M. Maktabdar, and J. Zarrin. 2022. Data-Driven Framework for Understanding and Predicting Air Quality in Urban Areas. Frontiers in Big Data 5. <https://doi.org/10.3389/fdata.2022.822573>
