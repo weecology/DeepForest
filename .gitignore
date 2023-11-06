@@ -7,8 +7,10 @@
 *__pycache__*
 .DS_Store
 .RHistory
-build/
+.coverage
+.idea
 CONTRIBUTING.md
+build/
 current_bird_release.csv
 current_release.csv
 lightning_logs/*

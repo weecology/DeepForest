@@ -14,7 +14,11 @@ jobs:
       fail-fast: false
       matrix:
         python-version:
+          - "3.x"
+          - "3.12"
+          - "3.11"
           - "3.10"
+
         os:
           - "ubuntu-latest"
 
