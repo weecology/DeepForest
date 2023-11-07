@@ -19,6 +19,8 @@ Wang, C., D. Jia, S. Lei, I. Numata, and L. Tian. 2023. Accuracy Assessment and 
 
 Kapil, R.; Castilla, G.; Marvasti-Zadeh, S.M.; Goodsman, D.; Erbilgin, N.; Ray, N. Orthomosaicking Thermal Drone Images of Forests via Simultaneously Acquired RGB Images. Remote Sens. 2023, 15, 2653. https://doi.org/10.3390/rs15102653. https://www.mdpi.com/2072-4292/15/10/2653
 
+Kapil, R. Marvasti-Zadeh, S, Erbilgin, N, Ray, N. 2023. ShadowSense: Unsupervised Domain Adaptation and Feature Fusion for Shadow-Agnostic Tree Crown Detection from RGB-Thermal Drone Imagery. https://doi.org/10.48550/arXiv.2310.16212. https://arxiv.org/abs/2310.16212
+
 ### 2022
 
 Babu Saheer, L., A. Bhasy, M. Maktabdar, and J. Zarrin. 2022. Data-Driven Framework for Understanding and Predicting Air Quality in Urban Areas. Frontiers in Big Data 5. <https://doi.org/10.3389/fdata.2022.822573>
