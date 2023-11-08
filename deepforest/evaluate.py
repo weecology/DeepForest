@@ -165,6 +165,7 @@ def evaluate(predictions, ground_df, root_dir, iou_threshold=0.4, savedir=None):
         "class_recall": class_recall
     }
 
+
 def _point_recall_image_(predictions, ground_df, root_dir=None, savedir=None):
     """
     Compute intersection-over-union matching among prediction and ground truth boxes for one image
@@ -187,13 +188,18 @@ def _point_recall_image_(predictions, ground_df, root_dir=None, savedir=None):
         lambda x: shapely.geometry.box(x.xmin, x.ymin, x.xmax, x.ymax), axis=1)
     predictions = gpd.GeoDataFrame(predictions, geometry='geometry')
 
-    ground_df['geometry'] = ground_df.apply(
-        lambda x: shapely.geometry.Point(x.x, x.y), axis=1)
+    ground_df['geometry'] = ground_df.apply(lambda x: shapely.geometry.Point(x.x, x.y),
+                                            axis=1)
     ground_df = gpd.GeoDataFrame(ground_df, geometry='geometry')
 
     # Which points in boxes
-    result = gpd.sjoin(ground_df,predictions, op='within', how="left")
-    result = result.rename(columns={"label_left":"true_label","label_right":"predicted_label","image_path_left":"image_path"})
+    result = gpd.sjoin(ground_df, predictions, op='within', how="left")
+    result = result.rename(
+        columns={
+            "label_left": "true_label",
+            "label_right": "predicted_label",
+            "image_path_left": "image_path"
+        })
     result = result.drop(columns=["index_right"])
 
     if savedir:
@@ -205,6 +211,7 @@ def _point_recall_image_(predictions, ground_df, root_dir=None, savedir=None):
         cv2.imwrite("{}/{}".format(savedir, plot_name), image)
 
     return result
+
 
 def point_recall(predictions, ground_df, root_dir=None, savedir=None):
     """Evaluate the proportion on ground truth points overlap with predictions
@@ -225,7 +232,7 @@ def point_recall(predictions, ground_df, root_dir=None, savedir=None):
     if savedir:
         if root_dir is None:
             raise AttributeError("savedir is {}, but root dir is None".format(savedir))
-    
+
     # Run evaluation on all images
     results = []
     box_recalls = []
@@ -248,12 +255,12 @@ def point_recall(predictions, ground_df, root_dir=None, savedir=None):
         else:
             group = group.reset_index(drop=True)
             result = _point_recall_image_(predictions=image_predictions,
-                                    ground_df=group,
-                                    root_dir=root_dir,
-                                    savedir=savedir)
+                                          ground_df=group,
+                                          root_dir=root_dir,
+                                          savedir=savedir)
 
         result["image_path"] = image_path
-       
+
         # What proportion of boxes match? Regardless of label
         true_positive = sum(result.predicted_label.notnull())
         recall = true_positive / result.shape[0]
@@ -268,8 +275,4 @@ def point_recall(predictions, ground_df, root_dir=None, savedir=None):
     matched_results = results[results.predicted_label.notnull()]
     class_recall = compute_class_recall(matched_results)
 
-    return {
-        "results": results,
-        "box_recall": box_recall,
-        "class_recall": class_recall
-    }
+    return {"results": results, "box_recall": box_recall, "class_recall": class_recall}

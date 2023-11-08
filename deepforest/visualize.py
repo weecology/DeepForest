@@ -133,6 +133,7 @@ def plot_predictions(image, df, color=None, thickness=1):
 
     return image
 
+
 def plot_points(image, df, color=None, thickness=1):
     """Plot a set of boxes on an image
     By default this function does not show, but only plots an axis
@@ -162,13 +163,13 @@ def plot_points(image, df, color=None, thickness=1):
     for index, row in df.iterrows():
         if not color:
             color = label_to_color(row["label"])
-        cv2.circle(image,
-                    (row["x"],row["y"]),
-                    color=color,
-                    radius=5,
-                    thickness=thickness)
+        cv2.circle(image, (row["x"], row["y"]),
+                   color=color,
+                   radius=5,
+                   thickness=thickness)
 
     return image
+
 
 def label_to_color(label):
     color_dict = {}
