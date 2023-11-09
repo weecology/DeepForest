@@ -370,7 +370,6 @@ class deepforest(pl.LightningModule):
 
     def predict_file(self, csv_file, root_dir, savedir=None, color=None, thickness=1):
         """Create a dataset and predict entire annotation file
-
         Csv file format is .csv file with the columns "image_path", "xmin","ymin","xmax","ymax" for the image name and bounding box position.
         Image_path is the relative filename, not absolute path, which is in the root_dir directory. One bounding box per line.
 
@@ -383,55 +382,15 @@ class deepforest(pl.LightningModule):
         Returns:
             df: pandas dataframe with bounding boxes, label and scores for each image in the csv file
         """
-        self.model.eval()
-        df = pd.read_csv(csv_file)
-        paths = df.image_path.unique()
-        ds = dataset.TreeDataset(csv_file=csv_file,
-                                 root_dir=root_dir,
-                                 transforms=None,
-                                 train=False)
-
-        batched_results = []
-        for i, batch in enumerate(self.predict_dataloader(ds)):
-            batch = self.transfer_batch_to_device(batch, self.device, dataloader_idx=0)
-            out = self.predict_step(batch, i)
-            batched_results.append(out)
-
-        # Flatten list from batched prediction
-        prediction_list = []
-        for batch in batched_results:
-            for boxes in batch:
-                prediction_list.append(boxes)
-
-        results = []
-        for index, prediction in enumerate(prediction_list):
-            # If there is more than one class, apply NMS Loop through images and apply cross
-            if len(prediction.label.unique()) > 1:
-                prediction = predict.across_class_nms(
-                    prediction, iou_threshold=self.config["nms_thresh"])
-
-            if savedir:
-                # Just predict the images, even though we have the annotations
-                image = np.array(Image.open("{}/{}".format(root_dir,
-                                                           paths[index])))[:, :, ::-1]
-                image = visualize.plot_predictions(image, prediction)
-
-                # Plot annotations if they exist
-                annotations = df[df.image_path == paths[index]]
-
-                image = visualize.plot_predictions(image,
-                                                   annotations,
-                                                   color=color,
-                                                   thickness=thickness)
-                cv2.imwrite(
-                    "{}/{}.png".format(savedir,
-                                       os.path.splitext(paths[index])[0]), image)
-
-            prediction["image_path"] = paths[index]
-            results.append(prediction)
-
-        results = pd.concat(results, ignore_index=True)
-
+        results = predict.predict_file(
+                model=self,
+                csv_file=csv_file,
+                root_dir=root_dir,
+                nms_thresh=self.config["nms_thresh"],
+                savedir=savedir,
+                color=color,
+                thickness=thickness
+                )
         return results
 
     def predict_tile(self,
