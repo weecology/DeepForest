@@ -21,6 +21,10 @@ Kapil, R.; Castilla, G.; Marvasti-Zadeh, S.M.; Goodsman, D.; Erbilgin, N.; Ray, 
 
 Kapil, R. Marvasti-Zadeh, S, Erbilgin, N, Ray, N. 2023. ShadowSense: Unsupervised Domain Adaptation and Feature Fusion for Shadow-Agnostic Tree Crown Detection from RGB-Thermal Drone Imagery. https://doi.org/10.48550/arXiv.2310.16212. https://arxiv.org/abs/2310.16212
 
+Jamie Tolan, Hung-I Yang, Benjamin Nosarzewski, Guillaume Couairon, Huy V. Vo, John Brandt, Justine Spore, Sayantan Majumdar, Daniel Haziza, Janaki Vamaraju, Theo Moutakanni, Piotr Bojanowski, Tracy Johns, Brian White, Tobias Tiecke, Camille Couprie,
+Very high resolution canopy height maps from RGB imagery using self-supervised vision transformer and convolutional decoder trained on aerial lidar, Remote Sensing of Environment, Volume 300, 2024, 113888, ISSN 0034-4257,
+https://doi.org/10.1016/j.rse.2023.113888. In [RSE](https://www.sciencedirect.com/science/article/pii/S003442572300439X), and on [arxiv](https://arxiv.org/abs/2304.07213). 
+
 ### 2022
 
 Babu Saheer, L., A. Bhasy, M. Maktabdar, and J. Zarrin. 2022. Data-Driven Framework for Understanding and Predicting Air Quality in Urban Areas. Frontiers in Big Data 5. <https://doi.org/10.3389/fdata.2022.822573>
