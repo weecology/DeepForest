@@ -382,15 +382,13 @@ class deepforest(pl.LightningModule):
         Returns:
             df: pandas dataframe with bounding boxes, label and scores for each image in the csv file
         """
-        results = predict.predict_file(
-                model=self,
-                csv_file=csv_file,
-                root_dir=root_dir,
-                nms_thresh=self.config["nms_thresh"],
-                savedir=savedir,
-                color=color,
-                thickness=thickness
-                )
+        results = predict.predict_file(model=self,
+                                       csv_file=csv_file,
+                                       root_dir=root_dir,
+                                       nms_thresh=self.config["nms_thresh"],
+                                       savedir=savedir,
+                                       color=color,
+                                       thickness=thickness)
         return results
 
     def predict_tile(self,

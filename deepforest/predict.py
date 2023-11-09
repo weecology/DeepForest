@@ -13,6 +13,7 @@ from deepforest import preprocess
 from deepforest import visualize
 from deepforest import dataset
 
+
 def predict_image(model,
                   image,
                   return_plot,
@@ -138,7 +139,14 @@ def across_class_nms(predicted_boxes, iou_threshold=0.15):
 
     return new_df
 
-def predict_file(model, csv_file, root_dir, nms_thresh, savedir=None, color=None, thickness=1):
+
+def predict_file(model,
+                 csv_file,
+                 root_dir,
+                 nms_thresh,
+                 savedir=None,
+                 color=None,
+                 thickness=1):
     """Create a dataset and predict entire annotation file
 
     Csv file format is .csv file with the columns "image_path", "xmin","ymin","xmax","ymax" for the image name and bounding box position.
@@ -158,12 +166,12 @@ def predict_file(model, csv_file, root_dir, nms_thresh, savedir=None, color=None
     df = pd.read_csv(csv_file)
     paths = df.image_path.unique()
     ds = dataset.TreeDataset(csv_file=csv_file,
-                                root_dir=root_dir,
-                                transforms=None,
-                                train=False)
+                             root_dir=root_dir,
+                             transforms=None,
+                             train=False)
 
     dataloader = model.predict_dataloader(ds)
-    
+
     #Make sure the latest trainer is used.
     model.create_trainer()
     trainer = model.trainer
@@ -179,25 +187,23 @@ def predict_file(model, csv_file, root_dir, nms_thresh, savedir=None, color=None
     for index, prediction in enumerate(prediction_list):
         # If there is more than one class, apply NMS Loop through images and apply cross
         if len(prediction.label.unique()) > 1:
-            prediction = across_class_nms(
-                prediction, iou_threshold=nms_thresh)
+            prediction = across_class_nms(prediction, iou_threshold=nms_thresh)
 
         if savedir:
             # Just predict the images, even though we have the annotations
             image = np.array(Image.open("{}/{}".format(root_dir,
-                                                        paths[index])))[:, :, ::-1]
+                                                       paths[index])))[:, :, ::-1]
             image = visualize.plot_predictions(image, prediction)
 
             # Plot annotations if they exist
             annotations = df[df.image_path == paths[index]]
 
             image = visualize.plot_predictions(image,
-                                                annotations,
-                                                color=color,
-                                                thickness=thickness)
-            cv2.imwrite(
-                "{}/{}.png".format(savedir,
-                                    os.path.splitext(paths[index])[0]), image)
+                                               annotations,
+                                               color=color,
+                                               thickness=thickness)
+            cv2.imwrite("{}/{}.png".format(savedir,
+                                           os.path.splitext(paths[index])[0]), image)
 
         prediction["image_path"] = paths[index]
         results.append(prediction)
