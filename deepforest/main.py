@@ -56,6 +56,7 @@ class deepforest(pl.LightningModule):
 
         print("Reading config file: {}".format(config_path))
         self.config = utilities.read_config(config_path)
+
         self.model = model
 
         # release version id to flag if release is being used
