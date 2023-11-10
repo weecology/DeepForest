@@ -63,7 +63,7 @@ class images_callback(Callback):
                   "skipping upload, images were saved to {}, "
                   "error was rasied {}".format(self.savedir, e))
 
-    def on_validation_epoch_end(self, trainer, pl_module):
+    def on_validation_end(self, trainer, pl_module):
         if trainer.sanity_checking:  # optional skip
             return
 

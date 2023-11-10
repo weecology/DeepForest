@@ -2,6 +2,8 @@
 import cv2
 import pandas as pd
 import numpy as np
+import os
+from PIL import Image
 import warnings
 
 import torch
@@ -9,6 +11,7 @@ from torchvision.ops import nms
 
 from deepforest import preprocess
 from deepforest import visualize
+from deepforest import dataset
 
 
 def predict_image(model,
@@ -135,3 +138,76 @@ def across_class_nms(predicted_boxes, iou_threshold=0.15):
                           columns=["xmin", "ymin", "xmax", "ymax", "label", "score"])
 
     return new_df
+
+
+def predict_file(model,
+                 csv_file,
+                 root_dir,
+                 nms_thresh,
+                 savedir=None,
+                 color=None,
+                 thickness=1):
+    """Create a dataset and predict entire annotation file
+
+    Csv file format is .csv file with the columns "image_path", "xmin","ymin","xmax","ymax" for the image name and bounding box position.
+    Image_path is the relative filename, not absolute path, which is in the root_dir directory. One bounding box per line.
+
+    Args:
+        model: deepforest.main object
+        csv_file: path to csv file
+        root_dir: directory of images. If none, uses "image_dir" in config
+        nms_thresh: Non-max supression threshold, see config["nms_thresh"]
+        savedir: Optional. Directory to save image plots.
+        color: color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255)
+        thickness: thickness of the rectangle border line in px
+    Returns:
+        df: pandas dataframe with bounding boxes, label and scores for each image in the csv file
+    """
+    df = pd.read_csv(csv_file)
+    paths = df.image_path.unique()
+    ds = dataset.TreeDataset(csv_file=csv_file,
+                             root_dir=root_dir,
+                             transforms=None,
+                             train=False)
+
+    dataloader = model.predict_dataloader(ds)
+
+    #Make sure the latest trainer is used.
+    model.create_trainer()
+    trainer = model.trainer
+    batched_results = trainer.predict(model, dataloader)
+
+    # Flatten list from batched prediction
+    prediction_list = []
+    for batch in batched_results:
+        for images in batch:
+            prediction_list.append(images)
+
+    results = []
+    for index, prediction in enumerate(prediction_list):
+        # If there is more than one class, apply NMS Loop through images and apply cross
+        if len(prediction.label.unique()) > 1:
+            prediction = across_class_nms(prediction, iou_threshold=nms_thresh)
+
+        if savedir:
+            # Just predict the images, even though we have the annotations
+            image = np.array(Image.open("{}/{}".format(root_dir,
+                                                       paths[index])))[:, :, ::-1]
+            image = visualize.plot_predictions(image, prediction)
+
+            # Plot annotations if they exist
+            annotations = df[df.image_path == paths[index]]
+
+            image = visualize.plot_predictions(image,
+                                               annotations,
+                                               color=color,
+                                               thickness=thickness)
+            cv2.imwrite("{}/{}.png".format(savedir,
+                                           os.path.splitext(paths[index])[0]), image)
+
+        prediction["image_path"] = paths[index]
+        results.append(prediction)
+
+    results = pd.concat(results, ignore_index=True)
+
+    return results
