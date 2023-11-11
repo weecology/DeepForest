@@ -135,7 +135,7 @@ def plot_predictions(image, df, color=None, thickness=1):
 
 
 def plot_points(image, df, color=None, thickness=1):
-    """Plot a set of boxes on an image
+    """Plot a set of points on an image
     By default this function does not show, but only plots an axis
     Label column must be numeric!
     Image must be BGR color order!

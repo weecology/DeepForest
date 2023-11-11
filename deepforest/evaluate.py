@@ -170,17 +170,16 @@ def _point_recall_image_(predictions, ground_df, root_dir=None, savedir=None):
     """
     Compute intersection-over-union matching among prediction and ground truth boxes for one image
     Args:
-        df: a pandas dataframe with columns name, xmin, xmax, ymin, ymax, label. The 'name' column should be the path relative to the location of the file.
-        summarize: Whether to group statistics by plot and overall score
-        image_coordinates: Whether the current boxes are in coordinate system of the image, e.g. origin (0,0) upper left.
-        root_dir: Where to search for image names in df, only needed if savedir is supplied
+        predictions: a pandas dataframe. The labels in ground truth and predictions must match. For example, if one is numeric, the other must be numeric.
+        ground_df: a pandas dataframe
+        root_dir: location of files in the dataframe 'name' column, only needed if savedir is supplied
         savedir: optional directory to save image with overlaid predictions and annotations
     Returns:
         result: pandas dataframe with crown ids of prediciton and ground truth and the IoU score.
     """
     plot_names = predictions["image_path"].unique()
     if len(plot_names) > 1:
-        raise ValueError("More than one plot passed to image crown: {}".format(plot_name))
+        raise ValueError("More than one image passed to function: {}".format(plot_name))
     else:
         plot_name = plot_names[0]
 
@@ -221,13 +220,12 @@ def point_recall(predictions, ground_df, root_dir=None, savedir=None):
         predictions: a pandas dataframe, if supplied a root dir is needed to give the relative path of files in df.name. The labels in ground truth and predictions must match. If one is numeric, the other must be numeric.
         ground_df: a pandas dataframe, if supplied a root dir is needed to give the relative path of files in df.name
         root_dir: location of files in the dataframe 'name' column.
+        savedir: optional directory to save image with overlaid predictions and annotations
     Returns:
-        results: a dataframe of match bounding boxes
-        box_recall: proportion of true positives of box position, regardless of class
-        box_precision: proportion of predictions that are true positive, regardless of class
+        results: a dataframe of matched bounding boxes and ground truth labels
+        box_recall: proportion of true positives between predicted boxes and ground truth points, regardless of class
         class_recall: a pandas dataframe of class level recall and precision with class sizes
     """
-
     check_file(predictions)
     if savedir:
         if root_dir is None:
