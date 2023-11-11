@@ -164,3 +164,113 @@ def evaluate(predictions, ground_df, root_dir, iou_threshold=0.4, savedir=None):
         "box_recall": box_recall,
         "class_recall": class_recall
     }
+
+
+def _point_recall_image_(predictions, ground_df, root_dir=None, savedir=None):
+    """
+    Compute intersection-over-union matching among prediction and ground truth boxes for one image
+    Args:
+        predictions: a pandas dataframe. The labels in ground truth and predictions must match. For example, if one is numeric, the other must be numeric.
+        ground_df: a pandas dataframe
+        root_dir: location of files in the dataframe 'name' column, only needed if savedir is supplied
+        savedir: optional directory to save image with overlaid predictions and annotations
+    Returns:
+        result: pandas dataframe with crown ids of prediciton and ground truth and the IoU score.
+    """
+    plot_names = predictions["image_path"].unique()
+    if len(plot_names) > 1:
+        raise ValueError("More than one image passed to function: {}".format(plot_name))
+    else:
+        plot_name = plot_names[0]
+
+    predictions['geometry'] = predictions.apply(
+        lambda x: shapely.geometry.box(x.xmin, x.ymin, x.xmax, x.ymax), axis=1)
+    predictions = gpd.GeoDataFrame(predictions, geometry='geometry')
+
+    ground_df['geometry'] = ground_df.apply(lambda x: shapely.geometry.Point(x.x, x.y),
+                                            axis=1)
+    ground_df = gpd.GeoDataFrame(ground_df, geometry='geometry')
+
+    # Which points in boxes
+    result = gpd.sjoin(ground_df, predictions, op='within', how="left")
+    result = result.rename(
+        columns={
+            "label_left": "true_label",
+            "label_right": "predicted_label",
+            "image_path_left": "image_path"
+        })
+    result = result.drop(columns=["index_right"])
+
+    if savedir:
+        if root_dir is None:
+            raise AttributeError("savedir is {}, but root dir is None".format(savedir))
+        image = np.array(Image.open("{}/{}".format(root_dir, plot_name)))[:, :, ::-1]
+        image = visualize.plot_predictions(image, df=predictions)
+        image = visualize.plot_points(image, df=ground_df, color=(0, 165, 255))
+        cv2.imwrite("{}/{}".format(savedir, plot_name), image)
+
+    return result
+
+
+def point_recall(predictions, ground_df, root_dir=None, savedir=None):
+    """Evaluate the proportion on ground truth points overlap with predictions
+    submission can be submitted as a .shp, existing pandas dataframe or .csv path
+    For bounding box recall, see evaluate(). 
+    Args:
+        predictions: a pandas dataframe, if supplied a root dir is needed to give the relative path of files in df.name. The labels in ground truth and predictions must match. If one is numeric, the other must be numeric.
+        ground_df: a pandas dataframe, if supplied a root dir is needed to give the relative path of files in df.name
+        root_dir: location of files in the dataframe 'name' column.
+        savedir: optional directory to save image with overlaid predictions and annotations
+    Returns:
+        results: a dataframe of matched bounding boxes and ground truth labels
+        box_recall: proportion of true positives between predicted boxes and ground truth points, regardless of class
+        class_recall: a pandas dataframe of class level recall and precision with class sizes
+    """
+    check_file(predictions)
+    if savedir:
+        if root_dir is None:
+            raise AttributeError("savedir is {}, but root dir is None".format(savedir))
+
+    # Run evaluation on all images
+    results = []
+    box_recalls = []
+    for image_path, group in ground_df.groupby("image_path"):
+        image_predictions = predictions[predictions["image_path"] ==
+                                        image_path].reset_index(drop=True)
+
+        # If empty, add to list without computing recall
+        if image_predictions.empty:
+            result = pd.DataFrame({
+                "recall": 0,
+                "predicted_label": None,
+                "score": None,
+                "true_label": group.label
+            })
+            # An empty prediction set has recall of 0, precision of NA.
+            box_recalls.append(0)
+            results.append(result)
+            continue
+        else:
+            group = group.reset_index(drop=True)
+            result = _point_recall_image_(predictions=image_predictions,
+                                          ground_df=group,
+                                          root_dir=root_dir,
+                                          savedir=savedir)
+
+        result["image_path"] = image_path
+
+        # What proportion of boxes match? Regardless of label
+        true_positive = sum(result.predicted_label.notnull())
+        recall = true_positive / result.shape[0]
+
+        box_recalls.append(recall)
+        results.append(result)
+
+    results = pd.concat(results)
+    box_recall = np.mean(box_recalls)
+
+    # Only matching boxes are considered in class recall
+    matched_results = results[results.predicted_label.notnull()]
+    class_recall = compute_class_recall(matched_results)
+
+    return {"results": results, "box_recall": box_recall, "class_recall": class_recall}
