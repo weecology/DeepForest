@@ -141,21 +141,21 @@ def save_crop(base_dir, image_name, index, crop):
 def split_raster(annotations_file,
                  path_to_raster=None,
                  numpy_image=None,
-                 base_dir=".",
+                 save_dir=".",
                  patch_size=400,
                  patch_overlap=0.05,
                  allow_empty=False,
-                 image_name=None):
+                 image_name=None,
+                 base_dir=None):
     """Divide a large tile into smaller arrays. Each crop will be saved to
     file.
 
     Args:
         numpy_image: a numpy object to be used as a raster, usually opened from rasterio.open.read()
         path_to_raster: (str): Path to a tile that can be read by rasterio on disk
-        annotations_file (str): Path to annotations file (with column names)
-            data in the format -> image_path, xmin, ymin, xmax, ymax, label
-        base_dir (str): Where to save the annotations and image
-            crops relative to current working dir
+        annotations_file (str or pd.DataFrame): A pandas dataframe or path to annotations csv file. In the format -> image_path, xmin, ymin, xmax, ymax, label
+        save_dir (str): Directory to save images
+        base_dir (str): Directory to save images
         patch_size (int): Maximum dimensions of square window
         patch_overlap (float): Percent of overlap among windows 0->1
         allow_empty: If True, include images with no annotations
@@ -163,10 +163,15 @@ def split_raster(annotations_file,
         image_name (str): If numpy_image arg is used, what name to give the raster?
 
     Returns:
-        A pandas dataframe with annotations file for training.
+        A pandas dataframe with annotations file for training. 
+        A copy of this file is written to save_dir as a side effect.
     """
+    # Set deprecation warning for base_dir
+    if base_dir:
+        warnings.warn(
+            "base_dir argument will be deprecated in 2.0. The naming is confusing, the rest of the API uses 'save_dir' to refer to location of images. Please use 'save_dir' argument.",
+            DeprecationWarning)
 
-    # Load raster as image
     # Load raster as image
     if (numpy_image is None) & (path_to_raster is None):
         raise IOError("supply a raster either as a path_to_raster or if ready "
@@ -211,7 +216,14 @@ def split_raster(annotations_file,
         image_name = os.path.basename(path_to_raster)
 
     # Load annotations file and coerce dtype
-    annotations = pd.read_csv(annotations_file)
+    if type(annotations_file) == str:
+        annotations = pd.read_csv(annotations_file)
+    elif type(annotations_file) == pd.DataFrame:
+        annotations = annotations_file
+    else:
+        raise TypeError(
+            "annotations file must either by a path or a pd.Dataframe, found {}".format(
+                type(annotations_file)))
 
     # open annotations file
     image_annotations = annotations[annotations.image_path == image_name]

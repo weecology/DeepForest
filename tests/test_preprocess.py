@@ -74,25 +74,28 @@ def test_select_annotations_tile(config, image):
     assert selected_annotations.xmax.max() <= config["patch_size"]
     assert selected_annotations.ymax.max() <= config["patch_size"]
 
-def test_split_raster(config, tmpdir):
+@pytest.mark.parametrize("input_type",["path","dataframe"])
+def test_split_raster(config, tmpdir, input_type):
     """Split raster into crops with overlaps to maintain all annotations"""
     raster = get_data("2019_YELL_2_528000_4978000_image_crop2.png")
     annotations = utilities.xml_to_annotations(get_data("2019_YELL_2_528000_4978000_image_crop2.xml"))
     annotations.to_csv("{}/example.csv".format(tmpdir), index=False)
     #annotations.label = 0
+
+    if input_type =="path":
+        annotations_file = "{}/example.csv".format(tmpdir)
+    else:
+        annotations_file = annotations  
     
-    annotations_file = preprocess.split_raster(path_to_raster=raster,
-                                               annotations_file="{}/example.csv".format(tmpdir),
+    output_annotations = preprocess.split_raster(path_to_raster=raster,
+                                               annotations_file=annotations_file,
                                                base_dir=tmpdir,
                                                patch_size=500,
                                                patch_overlap=0)
 
     # Returns a 6 column pandas array
-    assert annotations_file.shape[1] == 6
-    
-    #Assert that all boxes that exists are the same as original size
-    #annotations_file["label"] = 0 
-    #visualize.plot_prediction_dataframe(df=annotations_file, root_dir=tmpdir, show=True)
+    assert not output_annotations.empty
+    assert output_annotations.shape[1] == 6
 
 def test_split_raster_empty_crops(config, tmpdir):
     """Split raster into crops with overlaps to maintain all annotations, allow empty crops"""
