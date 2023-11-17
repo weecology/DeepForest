@@ -141,12 +141,13 @@ def save_crop(base_dir, image_name, index, crop):
 def split_raster(annotations_file,
                  path_to_raster=None,
                  numpy_image=None,
-                 save_dir=".",
+                 base_dir=None,
                  patch_size=400,
                  patch_overlap=0.05,
                  allow_empty=False,
                  image_name=None,
-                 base_dir=None):
+                 save_dir="."
+                 ):
     """Divide a large tile into smaller arrays. Each crop will be saved to
     file.
 
@@ -167,7 +168,7 @@ def split_raster(annotations_file,
         A copy of this file is written to save_dir as a side effect.
     """
     # Set deprecation warning for base_dir
-    if base_dir:
+    if not base_dir == ".":
         warnings.warn(
             "base_dir argument will be deprecated in 2.0. The naming is confusing, the rest of the API uses 'save_dir' to refer to location of images. Please use 'save_dir' argument.",
             DeprecationWarning)
