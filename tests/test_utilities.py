@@ -72,19 +72,22 @@ def test_shapefile_to_annotations(tmpdir):
     image_path = get_data("OSBS_029.tif")
     shp = utilities.shapefile_to_annotations(shapefile="{}/annotations.shp".format(tmpdir), rgb=image_path, savedir=tmpdir, geometry_type="bbox")
     assert shp.shape[0] == 2
-    
+
+
 def test_boxes_to_shapefile_projected(m):
-    img = get_data("OSBS_029.tif")
-    r = rio.open(img)
-    df = m.predict_image(path=img)
-    gdf = utilities.boxes_to_shapefile(df, root_dir=os.path.dirname(img), projected=True)
-    
-    #Confirm that each boxes within image bounds
+    raster_path = get_data("OSBS_029.tif")
+    r = rio.open(raster_path)
+    df = m.predict_image(path=raster_path)
+
+    gdf = utilities.boxes_to_shapefile(df, rgb_image_path=raster_path, projected=True)
+
+    # Confirm that each boxes within image bounds
     geom = geometry.box(*r.bounds)
     assert all(gdf.geometry.apply(lambda x: geom.intersects(geom)).values)
-    
-    #Edge case, only one row in predictions
-    gdf = utilities.boxes_to_shapefile(df.iloc[:1,], root_dir=os.path.dirname(img), projected=True)
+
+    # Edge case, only one row in predictions
+    gdf = utilities.boxes_to_shapefile(df.iloc[:1, ], rgb_image_path=raster_path,
+                                       projected=True)
     assert gdf.shape[0] == 1
 
 def test_boxes_to_shapefile_projected_from_predict_tile(m):
