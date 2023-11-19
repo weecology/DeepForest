@@ -376,29 +376,24 @@ def check_image(image):
                          "found image with shape {}".format(image.shape))
 
 
-def boxes_to_shapefile(df, root_dir, projected=True, flip_y_axis=False):
+def boxes_to_shapefile(df, rgb_image_path, projected=True, flip_y_axis=False):
     """
     Convert from image coordinates to geographic coordinates
     Note that this assumes df is just a single plot being passed to this function
     Args:
-       df: a pandas type dataframe with columns: name, xmin, ymin, xmax, ymax. Name is the relative path to the root_dir arg.
-       root_dir: directory of images to lookup image_path column
-       projected: If True, convert from image to geographic coordinates, if False, keep in image coordinate system
-       flip_y_axis: If True, reflect predictions over y axis to align with raster data in QGIS, which uses a negative y origin compared to numpy. See https://gis.stackexchange.com/questions/306684/why-does-qgis-use-negative-y-spacing-in-the-default-raster-geotransform
+       df: a pandas type dataframe with columns: name, xmin, ymin, xmax, ymax. Name is
+       the relative path to the root_dir arg.
+       rgb_image_path: absolute path to the rgb image
+       projected: If True, convert from image to geographic coordinates, if False, keep
+       in image coordinate system
+       flip_y_axis: If True, reflect predictions over y axis to align with raster data
+       in QGIS, which uses a negative y origin compared to numpy. See
+       https://gis.stackexchange.com/questions/306684/why-does-qgis-use-negative-y-spacing-in-the-default-raster-geotransform
     Returns:
        df: a geospatial dataframe with the boxes optionally transformed to the target crs
     """
-    plot_names = df.image_path.unique()
-    if len(plot_names) > 1:
-        raise ValueError("This function projects a single plots worth of data. "
-                         "Multiple plot names found {}".format(plot_names))
-    else:
-        plot_name = plot_names[0]
 
-    rgb_path = "{}/{}".format(root_dir, plot_name)
-    with rasterio.open(rgb_path) as dataset:
-        bounds = dataset.bounds
-        pixelSizeX, pixelSizeY = dataset.res
+    with rasterio.open(rgb_image_path) as dataset:
         crs = dataset.crs
         transform = dataset.transform
 
