@@ -25,6 +25,10 @@ Jamie Tolan, Hung-I Yang, Benjamin Nosarzewski, Guillaume Couairon, Huy V. Vo, J
 Very high resolution canopy height maps from RGB imagery using self-supervised vision transformer and convolutional decoder trained on aerial lidar, Remote Sensing of Environment, Volume 300, 2024, 113888, ISSN 0034-4257,
 https://doi.org/10.1016/j.rse.2023.113888. In [RSE](https://www.sciencedirect.com/science/article/pii/S003442572300439X), and on [arxiv](https://arxiv.org/abs/2304.07213). 
 
+Kwon, Ryoungseob, et al. "Merging multiple sensing platforms and deep learning empowers individual tree mapping and species detection at the city scale." ISPRS Journal of Photogrammetry and Remote Sensing 206 (2023): 201-221.
+
+Velasquez-Camacho, Luisa, Maddi Etxegarai, and Sergio de-Miguel. "Implementing Deep Learning algorithms for urban tree detection and geolocation with high-resolution aerial, satellite, and ground-level images." Computers, Environment and Urban Systems 105 (2023): 102025.
+
 ### 2022
 
 Babu Saheer, L., A. Bhasy, M. Maktabdar, and J. Zarrin. 2022. Data-Driven Framework for Understanding and Predicting Air Quality in Urban Areas. Frontiers in Big Data 5. <https://doi.org/10.3389/fdata.2022.822573>
@@ -50,6 +54,9 @@ Zhang, Y., Y. Wang, Z. Tang, Z. Zhai, Y. Shang, and R. Viegut. 2022. Deep Learni
 Weinstein, B. G., S. J. Graves, S. Marconi, A. Singh, A. Zare, D. Stewart, S. A. Bohlman, and E. P. White. 2021. A benchmark dataset for canopy crown detection and delineation in co-registered airborne RGB, LiDAR and hyperspectral imagery from the National Ecological Observation Network. PLOS Computational Biology 17:e1009180. <https://doi.org/10.1371/journal.pcbi.1009180>
 
 Weinstein, B. G., S. Marconi, S. A. Bohlman, A. Zare, A. Singh, S. J. Graves, and E. P. White. 2021. A remote sensing derived data set of 100 million individual tree crowns for the National Ecological Observatory Network. eLife 10:e62922. <https://doi.org/10.7554/eLife.62922>
+
+Aubry-Kientz, Mélaine, et al. "Multisensor data fusion for improved segmentation of individual tree crowns in dense tropical forests." IEEE Journal of Selected Topics in Applied Earth Observations and Remote Sensing 14 (2021): 3927-3936.
+
 
 ### 2020
 
