@@ -29,6 +29,8 @@ Kwon, Ryoungseob, et al. "Merging multiple sensing platforms and deep learning e
 
 Velasquez-Camacho, Luisa, Maddi Etxegarai, and Sergio de-Miguel. "Implementing Deep Learning algorithms for urban tree detection and geolocation with high-resolution aerial, satellite, and ground-level images." Computers, Environment and Urban Systems 105 (2023): 102025.
 
+Marvasti-Zadeh, Seyed Mojtaba, et al. "Crown-CAM: Interpretable Visual Explanations for Tree Crown Detection in Aerial Images." IEEE Geoscience and Remote Sensing Letters (2023).
+
 ### 2022
 
 Babu Saheer, L., A. Bhasy, M. Maktabdar, and J. Zarrin. 2022. Data-Driven Framework for Understanding and Predicting Air Quality in Urban Areas. Frontiers in Big Data 5. <https://doi.org/10.3389/fdata.2022.822573>
@@ -50,6 +52,8 @@ Weinstein, B. G., S. Marconi, S. J. Graves, A. Zare, A. Singh, S. A. Bohlman, L.
 Zhang, Y., Y. Wang, Z. Tang, Z. Zhai, Y. Shang, and R. Viegut. 2022. Deep Learning Methods for Tree Detection and Classification. Pages 148–155 2022 IEEE 4th International Conference on Cognitive Machine Intelligence (CogMI). <https://doi.org/10.1109/CogMI56440.2022.00030>
 
 ### 2021
+
+Saheer, Lakshmi Babu, and Mohamed Shahawy. "Self-supervised approach for urban tree recognition on aerial images." IFIP International Conference on Artificial Intelligence Applications and Innovations. Cham: Springer International Publishing, 2021.
 
 Weinstein, B. G., S. J. Graves, S. Marconi, A. Singh, A. Zare, D. Stewart, S. A. Bohlman, and E. P. White. 2021. A benchmark dataset for canopy crown detection and delineation in co-registered airborne RGB, LiDAR and hyperspectral imagery from the National Ecological Observation Network. PLOS Computational Biology 17:e1009180. <https://doi.org/10.1371/journal.pcbi.1009180>
 
