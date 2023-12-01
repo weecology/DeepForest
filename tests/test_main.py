@@ -18,6 +18,8 @@ from deepforest import get_data
 from deepforest import dataset
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import Callback
+from pytorch_lightning.loggers import TensorBoardLogger
+
 from PIL import Image
 
 #Import release model from global script to avoid thrasing github during testing. Just download once.
@@ -101,6 +103,22 @@ def big_file():
 def test_main():
     from deepforest import main
 
+def test_tensorboard_logger(m, tmpdir):
+    annotations_file = get_data("testfile_deepforest.csv")
+    logger = TensorBoardLogger(save_dir=tmpdir)
+    m.config["train"]['epochs']= 5
+    m.config["score_thresh"] = 0.3
+    m.config["nms_thresh"] = 0.05
+    m.config["save-snapshot"] = False
+    m.config["train"]["csv_file"] = annotations_file
+    m.config["train"]["root_dir"] = os.path.dirname(annotations_file)
+    m.config["validation"]["csv_file"] = annotations_file
+    m.config["validation"]["root_dir"] = os.path.dirname(annotations_file)
+
+    #Create model trainer and fit model
+    m.create_trainer(logger=logger, check_val_every_n_epoch=1)
+    m.trainer.fit(m)
+    
 def test_use_bird_release(m):
     imgpath = get_data("AWPE Pigeon Lake 2020 DJI_0005.JPG")    
     m.use_bird_release()
