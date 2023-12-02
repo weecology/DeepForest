@@ -322,31 +322,31 @@ class deepforest(pl.LightningModule):
 
         if image.dtype != "float32":
             warnings.warn(f"Image type is {image.dtype}, transforming to float32. "
-                            f"This assumes that the range of pixel values is 0-255, as "
-                            f"opposed to 0-1.To suppress this warning, transform image "
-                            f"(image.astype('float32')")
+                          f"This assumes that the range of pixel values is 0-255, as "
+                          f"opposed to 0-1.To suppress this warning, transform image "
+                          f"(image.astype('float32')")
             image = image.astype("float32")
 
         image = torch.tensor(image, device=self.device).permute(2, 0, 1)
         image = image / 255
 
-        result = predict._predict_image_(
-            model=self.model,
-            image=image,
-            path=path,
-            nms_thresh=self.config["nms_thresh"],
-            return_plot=return_plot,
-            thickness=thickness,
-            color=color)
-        
+        result = predict._predict_image_(model=self.model,
+                                         image=image,
+                                         path=path,
+                                         nms_thresh=self.config["nms_thresh"],
+                                         return_plot=return_plot,
+                                         thickness=thickness,
+                                         color=color)
+
         if return_plot:
-            return result  
+            return result
         else:
             #If there were no predictions, return None
             if result is None:
                 return None
             else:
-                result["label"] = result.label.apply(lambda x: self.numeric_to_label_dict[x])
+                result["label"] = result.label.apply(
+                    lambda x: self.numeric_to_label_dict[x])
 
         return result
 
@@ -372,14 +372,14 @@ class deepforest(pl.LightningModule):
         dataloader = self.predict_dataloader(ds)
 
         results = predict._predict_a_dataloader_(model=self,
-                                       trainer=self.trainer,
-                                       annotations=df,
-                                       dataloader=dataloader,
-                                       root_dir=root_dir,
-                                       nms_thresh=self.config["nms_thresh"],
-                                       savedir=savedir,
-                                       color=color,
-                                       thickness=thickness)
+                                                 trainer=self.trainer,
+                                                 annotations=df,
+                                                 dataloader=dataloader,
+                                                 root_dir=root_dir,
+                                                 nms_thresh=self.config["nms_thresh"],
+                                                 savedir=savedir,
+                                                 color=color,
+                                                 thickness=thickness)
 
         return results
 

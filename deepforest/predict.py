@@ -15,14 +15,13 @@ from deepforest import visualize
 from deepforest import dataset
 
 
-def _predict_image_(
-        model,
-        image: typing.Optional[np.ndarray] = None,
-        path: typing.Optional[str] = None,
-        nms_thresh: float = 0.15,
-        return_plot: bool = False,
-        thickness: int = 1,
-        color: typing.Optional[tuple] = (0, 165, 255)):
+def _predict_image_(model,
+                    image: typing.Optional[np.ndarray] = None,
+                    path: typing.Optional[str] = None,
+                    nms_thresh: float = 0.15,
+                    return_plot: bool = False,
+                    thickness: int = 1,
+                    color: typing.Optional[tuple] = (0, 165, 255)):
     """Predict a single image with a deepforest model
             
     Args:
@@ -56,10 +55,7 @@ def _predict_image_(
         image = np.rollaxis(image, 0, 3)
         image = image[:, :, ::-1] * 255
         image = image.astype("uint8")
-        image = visualize.plot_predictions(image,
-                                            df,
-                                            color=color,
-                                            thickness=thickness)
+        image = visualize.plot_predictions(image, df, color=color, thickness=thickness)
 
         return image
     else:
@@ -140,14 +136,14 @@ def across_class_nms(predicted_boxes, iou_threshold=0.15):
 
 
 def _predict_a_dataloader_(model,
-                 trainer,
-                 dataloader,
-                 root_dir,
-                 annotations,
-                 nms_thresh,
-                 savedir=None,
-                 color=None,
-                 thickness=1):
+                           trainer,
+                           dataloader,
+                           root_dir,
+                           annotations,
+                           nms_thresh,
+                           savedir=None,
+                           color=None,
+                           thickness=1):
     """Create a dataset and predict entire annotation file
 
     Csv file format is .csv file with the columns "image_path", "xmin","ymin","xmax","ymax" for the image name and bounding box position.
