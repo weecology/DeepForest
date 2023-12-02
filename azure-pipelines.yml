@@ -30,7 +30,7 @@ jobs:
     displayName: 'Create Conda environment for DeepForest'
 
   - script: |
-      pip install pytest pytest-azurepipelines yapf
+      pip install pytest tensorboard pytest-azurepipelines yapf
       pytest -v
     displayName: 'Pytests'
 
