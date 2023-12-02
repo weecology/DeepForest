@@ -69,7 +69,7 @@ class images_callback(Callback):
             for x in saved_plots:
                 pl_module.logger.experiment.log_image(x)
         except Exception as e:
-            print("Could not find logger in lightning module, "
+            print("Could not find comet logger in lightning module, "
                   "skipping upload, images were saved to {}, "
                   "error was rasied {}".format(self.savedir, e))
 

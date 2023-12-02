@@ -112,9 +112,14 @@ def test_tensorboard_logger(m, tmpdir):
     m.config["train"]["fast_dev_run"] = False
     m.config["validation"]["csv_file"] = annotations_file
     m.config["validation"]["root_dir"] = os.path.dirname(annotations_file)
+    m.config["val_accuracy_interval"] = 1
+    m.config["train"]["epochs"] = 2
 
     m.create_trainer(logger=logger)
     m.trainer.fit(m)
+
+    assert m.trainer.logged_metrics["box_precision"]
+    assert m.trainer.logged_metrics["box_recall"]
     
 def test_use_bird_release(m):
     imgpath = get_data("AWPE Pigeon Lake 2020 DJI_0005.JPG")    

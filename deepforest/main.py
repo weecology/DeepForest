@@ -3,7 +3,6 @@ import importlib
 import os
 import typing
 import warnings
-import glob
 
 import cv2
 import numpy as np
