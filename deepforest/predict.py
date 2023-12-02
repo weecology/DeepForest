@@ -188,6 +188,10 @@ def predict_file(trainer,
     results = pd.concat(results, ignore_index=True)
 
     if savedir:
-        visualize.plot_prediction_dataframe(results,root_dir=root_dir, savedir=savedir, color=color, thickness=thickness)
-      
+        visualize.plot_prediction_dataframe(results,
+                                            root_dir=root_dir,
+                                            savedir=savedir,
+                                            color=color,
+                                            thickness=thickness)
+
     return results

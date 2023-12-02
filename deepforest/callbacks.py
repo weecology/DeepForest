@@ -32,7 +32,13 @@ class images_callback(Callback):
         None: either prints validation scores or logs them to the pytorch-lightning logger
         """
 
-    def __init__(self, savedir, n=2, every_n_epochs=5, select_random=False, color=None, thickness=1):
+    def __init__(self,
+                 savedir,
+                 n=2,
+                 every_n_epochs=5,
+                 select_random=False,
+                 color=None,
+                 thickness=1):
         self.savedir = savedir
         self.n = n
         self.color = color
@@ -43,19 +49,19 @@ class images_callback(Callback):
     def log_images(self, pl_module):
         # It is not clear if this is per device, or per batch. If per batch, then this will not work.
         df = pl_module.predictions[0]
-        
+
         # limit to n images, potentially randomly selected
         if self.select_random:
             selected_images = np.random.choice(df.image_path.unique(), self.n)
         else:
             selected_images = df.image_path.unique()[:self.n]
         df = df[df.image_path.isin(selected_images)]
-    
+
         visualize.plot_prediction_dataframe(
             df,
             root_dir=pl_module.config["validation"]["root_dir"],
-            savedir=self.savedir, 
-            color=self.color, 
+            savedir=self.savedir,
+            color=self.color,
             thickness=self.thickness)
 
         try:

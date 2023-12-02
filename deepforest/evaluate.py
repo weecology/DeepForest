@@ -90,8 +90,14 @@ def compute_class_recall(results):
 
     return class_recall
 
-def __evaluate_wrapper__(predictions, ground_df, root_dir, iou_threshold, numeric_to_label_dict, savedir=None):
-        """Evaluate a set of predictions against a ground truth csv file
+
+def __evaluate_wrapper__(predictions,
+                         ground_df,
+                         root_dir,
+                         iou_threshold,
+                         numeric_to_label_dict,
+                         savedir=None):
+    """Evaluate a set of predictions against a ground truth csv file
         Args:   
             predictions: a pandas dataframe, if supplied a root dir is needed to give the relative path of files in df.name. The labels in ground truth and predictions must match. If one is numeric, the other must be numeric.
             csv_file: a csv file with columns xmin, ymin, xmax, ymax, label, image_path
@@ -101,28 +107,29 @@ def __evaluate_wrapper__(predictions, ground_df, root_dir, iou_threshold, numeri
         Returns:
             results: a dictionary of results with keys, results, box_recall, box_precision, class_recall
         """
-        # remove empty samples from ground truth
-        ground_df = ground_df[~((ground_df.xmin == 0) & (ground_df.xmax == 0))]
+    # remove empty samples from ground truth
+    ground_df = ground_df[~((ground_df.xmin == 0) & (ground_df.xmax == 0))]
 
-        results = evaluate(predictions=predictions,
-                                        ground_df=ground_df,
-                                        root_dir=root_dir,
-                                        iou_threshold=iou_threshold,
-                                        savedir=savedir)
+    results = evaluate(predictions=predictions,
+                       ground_df=ground_df,
+                       root_dir=root_dir,
+                       iou_threshold=iou_threshold,
+                       savedir=savedir)
 
-        # replace classes if not NUll
-        if not results is None:
-            results["results"]["predicted_label"] = results["results"][
-                "predicted_label"].apply(lambda x: numeric_to_label_dict[x]
-                                         if not pd.isnull(x) else x)
-            results["results"]["true_label"] = results["results"]["true_label"].apply(
-                lambda x: numeric_to_label_dict[x])
-            results["predictions"] = predictions
-            results["predictions"]["label"] = results["predictions"]["label"].apply(
-                lambda x: numeric_to_label_dict[x])
-        
-        return results
-    
+    # replace classes if not NUll
+    if not results is None:
+        results["results"]["predicted_label"] = results["results"][
+            "predicted_label"].apply(lambda x: numeric_to_label_dict[x]
+                                     if not pd.isnull(x) else x)
+        results["results"]["true_label"] = results["results"]["true_label"].apply(
+            lambda x: numeric_to_label_dict[x])
+        results["predictions"] = predictions
+        results["predictions"]["label"] = results["predictions"]["label"].apply(
+            lambda x: numeric_to_label_dict[x])
+
+    return results
+
+
 def evaluate(predictions, ground_df, root_dir, iou_threshold=0.4, savedir=None):
     """Image annotated crown evaluation routine
     submission can be submitted as a .shp, existing pandas dataframe or .csv path

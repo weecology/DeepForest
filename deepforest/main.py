@@ -197,7 +197,7 @@ class deepforest(pl.LightningModule):
                                   limit_val_batches=limit_val_batches,
                                   num_sanity_val_steps=num_sanity_val_steps,
                                   **kwargs)
-        
+
     def on_fit_start(self):
         if self.config["train"]["csv_file"] is None:
             raise AttributeError(
@@ -380,22 +380,21 @@ class deepforest(pl.LightningModule):
         """
         df = pd.read_csv(csv_file)
         ds = dataset.TreeDataset(csv_file=csv_file,
-                             root_dir=root_dir,
-                             transforms=None,
-                             train=False)
+                                 root_dir=root_dir,
+                                 transforms=None,
+                                 train=False)
         dataloader = self.predict_dataloader(ds)
-        
-        results = predict.predict_file(
-            model=self,
-            trainer=self.trainer,
-            annotations=df,
-            dataloader=dataloader,
-            root_dir=root_dir,
-            nms_thresh=self.config["nms_thresh"],
-            savedir=savedir,
-            color=color,
-            thickness=thickness)
-        
+
+        results = predict.predict_file(model=self,
+                                       trainer=self.trainer,
+                                       annotations=df,
+                                       dataloader=dataloader,
+                                       root_dir=root_dir,
+                                       nms_thresh=self.config["nms_thresh"],
+                                       savedir=savedir,
+                                       color=color,
+                                       thickness=thickness)
+
         return results
 
     def predict_tile(self,
@@ -558,7 +557,7 @@ class deepforest(pl.LightningModule):
         output = {key: value for key, value in output.items() if not key == "classes"}
         self.log_dict(output)
         self.mAP_metric.reset()
-        
+
         # Evaluate on validation data predictions
         self.predictions_df = pd.concat(self.predictions)
         ground_df = pd.read_csv(self.config["validation"]["csv_file"])
@@ -572,17 +571,17 @@ class deepforest(pl.LightningModule):
                 root_dir=self.config["validation"]["root_dir"],
                 iou_threshold=self.config["validation"]["iou_threshold"],
                 savedir=None,
-                numeric_to_label_dict=self.numeric_to_label_dict
-                )
-        
+                numeric_to_label_dict=self.numeric_to_label_dict)
+
             self.log("box_recall", results["box_recall"])
             self.log("box_precision", results["box_precision"])
             if isinstance(results, pd.DataFrame):
                 for index, row in results["class_recall"].iterrows():
+                    self.log("{}_Recall".format(self.numeric_to_label_dict[row["label"]]),
+                             row["recall"])
                     self.log(
-                            "{}_Recall".format(self.numeric_to_label_dict[row["label"]]),row["recall"])
-                    self.log(
-                            "{}_Precision".format(self.numeric_to_label_dict[row["label"]]),row["precision"])
+                        "{}_Precision".format(self.numeric_to_label_dict[row["label"]]),
+                        row["precision"])
 
     def predict_step(self, batch, batch_idx):
         batch_results = self.model(batch)

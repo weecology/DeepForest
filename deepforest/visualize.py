@@ -69,7 +69,12 @@ def plot_prediction_and_targets(image, predictions, targets, image_name, savedir
     return figure_path
 
 
-def plot_prediction_dataframe(df, root_dir, savedir, color=None, thickness=1, ground_truth=None):
+def plot_prediction_dataframe(df,
+                              root_dir,
+                              savedir,
+                              color=None,
+                              thickness=1,
+                              ground_truth=None):
     """For each row in dataframe, call plot predictions and save plot files to disk. 
     For multi-class labels, boxes will be colored by labels. Ground truth boxes will all be same color, regardless of class.
     Args:
