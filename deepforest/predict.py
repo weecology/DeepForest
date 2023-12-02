@@ -140,10 +140,12 @@ def across_class_nms(predicted_boxes, iou_threshold=0.15):
     return new_df
 
 
-def predict_file(model,
-                 csv_file,
-                 root_dir,
+def predict_file(trainer,
+                 model,
+                 dataloader,
                  nms_thresh,
+                 root_dir,
+                 annotations,
                  savedir=None,
                  color=None,
                  thickness=1):
@@ -154,27 +156,18 @@ def predict_file(model,
 
     Args:
         model: deepforest.main object
-        csv_file: path to csv file
+        trainer: a pytorch lightning trainer object
+        dataloader: pytorch dataloader object
         root_dir: directory of images. If none, uses "image_dir" in config
         nms_thresh: Non-max supression threshold, see config["nms_thresh"]
+        df: pandas dataframe with bounding boxes, label and scores for each image in the csv file
         savedir: Optional. Directory to save image plots.
         color: color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255)
         thickness: thickness of the rectangle border line in px
     Returns:
         df: pandas dataframe with bounding boxes, label and scores for each image in the csv file
     """
-    df = pd.read_csv(csv_file)
-    paths = df.image_path.unique()
-    ds = dataset.TreeDataset(csv_file=csv_file,
-                             root_dir=root_dir,
-                             transforms=None,
-                             train=False)
-
-    dataloader = model.predict_dataloader(ds)
-
-    #Make sure the latest trainer is used.
-    model.create_trainer()
-    trainer = model.trainer
+    paths = annotations.image_path.unique()
     batched_results = trainer.predict(model, dataloader)
 
     # Flatten list from batched prediction
@@ -189,25 +182,12 @@ def predict_file(model,
         if len(prediction.label.unique()) > 1:
             prediction = across_class_nms(prediction, iou_threshold=nms_thresh)
 
-        if savedir:
-            # Just predict the images, even though we have the annotations
-            image = np.array(Image.open("{}/{}".format(root_dir,
-                                                       paths[index])))[:, :, ::-1]
-            image = visualize.plot_predictions(image, prediction)
-
-            # Plot annotations if they exist
-            annotations = df[df.image_path == paths[index]]
-
-            image = visualize.plot_predictions(image,
-                                               annotations,
-                                               color=color,
-                                               thickness=thickness)
-            cv2.imwrite("{}/{}.png".format(savedir,
-                                           os.path.splitext(paths[index])[0]), image)
-
         prediction["image_path"] = paths[index]
         results.append(prediction)
 
     results = pd.concat(results, ignore_index=True)
 
+    if savedir:
+        visualize.plot_prediction_dataframe(results,root_dir=root_dir, savedir=savedir, color=color, thickness=thickness)
+      
     return results

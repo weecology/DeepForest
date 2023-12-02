@@ -104,19 +104,16 @@ def test_main():
     from deepforest import main
 
 def test_tensorboard_logger(m, tmpdir):
+    #Create model trainer and fit model
     annotations_file = get_data("testfile_deepforest.csv")
     logger = TensorBoardLogger(save_dir=tmpdir)
-    m.config["train"]['epochs']= 5
-    m.config["score_thresh"] = 0.3
-    m.config["nms_thresh"] = 0.05
-    m.config["save-snapshot"] = False
     m.config["train"]["csv_file"] = annotations_file
     m.config["train"]["root_dir"] = os.path.dirname(annotations_file)
+    m.config["train"]["fast_dev_run"] = False
     m.config["validation"]["csv_file"] = annotations_file
     m.config["validation"]["root_dir"] = os.path.dirname(annotations_file)
 
-    #Create model trainer and fit model
-    m.create_trainer(logger=logger, check_val_every_n_epoch=1)
+    m.create_trainer(logger=logger)
     m.trainer.fit(m)
     
 def test_use_bird_release(m):

@@ -21,39 +21,43 @@ import torch
 class images_callback(Callback):
     """Run evaluation on a file of annotations during training
     Args:
-        model: pytorch model
-        csv_file: path to csv with columns, image_path, xmin, ymin, xmax, ymax, label
-        epoch: integer. current epoch
-        experiment: optional comet_ml experiment
         savedir: optional, directory to save predicted images
-        project: whether to project image coordinates into geographic coordinations, see deepforest.evaluate
-        root_dir: root directory of images to search for 'image path' values from the csv file
-        iou_threshold: intersection-over-union threshold, see deepforest.evaluate
         probability_threshold: minimum probablity for inclusion, see deepforest.evaluate
         n: number of images to upload
+        select_random (False): whether to select random images or the first n images
         every_n_epochs: run epoch interval
+        color: color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255)
+        thickness: thickness of the rectangle border line in px
     Returns:
-        None: either prints validation scores or logs them to a comet experiment
+        None: either prints validation scores or logs them to the pytorch-lightning logger
         """
 
-    def __init__(self, csv_file, root_dir, savedir, n=2, every_n_epochs=5):
+    def __init__(self, savedir, n=2, every_n_epochs=5, select_random=False, color=None, thickness=1):
         self.savedir = savedir
-        self.root_dir = root_dir
         self.n = n
-
-        # limit to n images
-        df = pd.read_csv(csv_file)
-        selected_images = np.random.choice(df.image_path.unique(), self.n)
-        df = df[df.image_path.isin(selected_images)]
-        df.to_csv("{}/image_callback.csv".format(savedir))
-
-        self.csv_file = "{}/image_callback.csv".format(savedir)
+        self.color = color
+        self.thickness = thickness
+        self.select_random = select_random
         self.every_n_epochs = every_n_epochs
 
     def log_images(self, pl_module):
-        boxes = pl_module.predict_file(csv_file=self.csv_file,
-                                       root_dir=self.root_dir,
-                                       savedir=self.savedir)
+        # It is not clear if this is per device, or per batch. If per batch, then this will not work.
+        df = pl_module.predictions[0]
+        
+        # limit to n images, potentially randomly selected
+        if self.select_random:
+            selected_images = np.random.choice(df.image_path.unique(), self.n)
+        else:
+            selected_images = df.image_path.unique()[:self.n]
+        df = df[df.image_path.isin(selected_images)]
+    
+        visualize.plot_prediction_dataframe(
+            df,
+            root_dir=pl_module.config["validation"]["root_dir"],
+            savedir=self.savedir, 
+            color=self.color, 
+            thickness=self.thickness)
+
         try:
             saved_plots = glob.glob("{}/*.png".format(self.savedir))
             for x in saved_plots:
@@ -63,50 +67,10 @@ class images_callback(Callback):
                   "skipping upload, images were saved to {}, "
                   "error was rasied {}".format(self.savedir, e))
 
-    def on_validation_end(self, trainer, pl_module):
+    def on_validation_epoch_end(self, trainer, pl_module):
         if trainer.sanity_checking:  # optional skip
             return
 
         if trainer.current_epoch % self.every_n_epochs == 0:
             print("Running image callback")
             self.log_images(pl_module)
-
-
-class iou_callback(Callback):
-    """Run evaluation on a file of annotations during training
-    Args:
-        model: pytorch model
-        csv_file: path to csv with columns, image_path, xmin, ymin, xmax, ymax, label
-        epoch: integer. current epoch
-        experiment: optional comet_ml experiment
-        savedir: optional, directory to save predicted images
-        project: whether to project image coordinates into geographic coordinations, see deepforest.evaluate
-        root_dir: root directory of images to search for 'image path' values from the csv file
-        iou_threshold: intersection-over-union threshold, see deepforest.evaluate
-        probability_threshold: minimum probablity for inclusion, see deepforest.evaluate
-        n: number of images to upload
-        every_n_epochs: run epoch interval
-    Returns:
-        None: either prints validation scores or logs them to a comet experiment
-        """
-
-    def __init__(self, config, every_n_epochs=5):
-        self.config = config
-        self.every_n_epochs = every_n_epochs
-
-    def on_validation_epoch_end(self, trainer, pl_module):
-        if trainer.current_epoch % self.every_n_epochs == 0:
-            results = pl_module.evaluate(csv_file=self.config["validation"]["csv_file"],
-                                         root_dir=self.config["validation"]["root_dir"])
-            self.log("box_recall", results["box_recall"])
-            self.log("box_precision", results["box_precision"])
-
-            if isinstance(results, pd.DataFrame):
-                for index, row in results["class_recall"].iterrows():
-                    self.log(
-                        "{}_Recall".format(pl_module.numeric_to_label_dict[row["label"]]),
-                        row["recall"])
-                    self.log(
-                        "{}_Precision".format(
-                            pl_module.numeric_to_label_dict[row["label"]]),
-                        row["precision"])

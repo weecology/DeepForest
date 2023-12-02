@@ -3,6 +3,7 @@ import importlib
 import os
 import typing
 import warnings
+import glob
 
 import cv2
 import numpy as np
@@ -17,7 +18,6 @@ from torchmetrics.detection import IntersectionOverUnion, MeanAveragePrecision
 
 from deepforest import dataset, visualize, get_data, utilities, predict
 from deepforest import evaluate as evaluate_iou
-from deepforest.callbacks import iou_callback
 
 
 class deepforest(pl.LightningModule):
@@ -172,10 +172,6 @@ class deepforest(pl.LightningModule):
         if not self.config["validation"]["csv_file"] is None:
             if logger is not None:
                 lr_monitor = LearningRateMonitor(logging_interval='epoch')
-                eval_callback = iou_callback(
-                    self.config,
-                    every_n_epochs=self.config["validation"]["val_accuracy_interval"])
-                callbacks.append(eval_callback)
                 callbacks.append(lr_monitor)
             limit_val_batches = 1.0
             num_sanity_val_steps = 2
@@ -201,7 +197,7 @@ class deepforest(pl.LightningModule):
                                   limit_val_batches=limit_val_batches,
                                   num_sanity_val_steps=num_sanity_val_steps,
                                   **kwargs)
-
+        
     def on_fit_start(self):
         if self.config["train"]["csv_file"] is None:
             raise AttributeError(
@@ -382,13 +378,24 @@ class deepforest(pl.LightningModule):
         Returns:
             df: pandas dataframe with bounding boxes, label and scores for each image in the csv file
         """
-        results = predict.predict_file(model=self,
-                                       csv_file=csv_file,
-                                       root_dir=root_dir,
-                                       nms_thresh=self.config["nms_thresh"],
-                                       savedir=savedir,
-                                       color=color,
-                                       thickness=thickness)
+        df = pd.read_csv(csv_file)
+        ds = dataset.TreeDataset(csv_file=csv_file,
+                             root_dir=root_dir,
+                             transforms=None,
+                             train=False)
+        dataloader = self.predict_dataloader(ds)
+        
+        results = predict.predict_file(
+            model=self,
+            trainer=self.trainer,
+            annotations=df,
+            dataloader=dataloader,
+            root_dir=root_dir,
+            nms_thresh=self.config["nms_thresh"],
+            savedir=savedir,
+            color=color,
+            thickness=thickness)
+        
         return results
 
     def predict_tile(self,
@@ -530,7 +537,15 @@ class deepforest(pl.LightningModule):
         for key, value in loss_dict.items():
             self.log("val_{}".format(key), value, on_epoch=True)
 
+        for index, result in enumerate(preds):
+            boxes = visualize.format_boxes(result)
+            boxes["image_path"] = path[index]
+            self.predictions.append(boxes)
+
         return losses
+
+    def on_validation_epoch_start(self):
+        self.predictions = []
 
     def on_validation_epoch_end(self):
         output = self.iou_metric.compute()
@@ -543,6 +558,31 @@ class deepforest(pl.LightningModule):
         output = {key: value for key, value in output.items() if not key == "classes"}
         self.log_dict(output)
         self.mAP_metric.reset()
+        
+        # Evaluate on validation data predictions
+        self.predictions_df = pd.concat(self.predictions)
+        ground_df = pd.read_csv(self.config["validation"]["csv_file"])
+        ground_df["label"] = ground_df.label.apply(lambda x: self.label_dict[x])
+
+        #Evaluate every n epochs
+        if self.current_epoch % self.config["validation"]["val_accuracy_interval"] == 0:
+            results = evaluate_iou.__evaluate_wrapper__(
+                predictions=self.predictions_df,
+                ground_df=ground_df,
+                root_dir=self.config["validation"]["root_dir"],
+                iou_threshold=self.config["validation"]["iou_threshold"],
+                savedir=None,
+                numeric_to_label_dict=self.numeric_to_label_dict
+                )
+        
+            self.log("box_recall", results["box_recall"])
+            self.log("box_precision", results["box_precision"])
+            if isinstance(results, pd.DataFrame):
+                for index, row in results["class_recall"].iterrows():
+                    self.log(
+                            "{}_Recall".format(self.numeric_to_label_dict[row["label"]]),row["recall"])
+                    self.log(
+                            "{}_Precision".format(self.numeric_to_label_dict[row["label"]]),row["precision"])
 
     def predict_step(self, batch, batch_idx):
         batch_results = self.model(batch)
@@ -581,7 +621,6 @@ class deepforest(pl.LightningModule):
 
     def evaluate(self, csv_file, root_dir, iou_threshold=None, savedir=None):
         """Compute intersection-over-union and precision/recall for a given iou_threshold
-
         Args:
             csv_file: location of a csv file with columns "name","xmin","ymin","xmax","ymax","label", each box in a row
             root_dir: location of files in the dataframe 'name' column.
@@ -590,37 +629,18 @@ class deepforest(pl.LightningModule):
         Returns:
             results: dict of ("results", "precision", "recall") for a given threshold
         """
-        self.model.eval()
-
+        ground_df = pd.read_csv(csv_file)
+        ground_df["label"] = ground_df.label.apply(lambda x: self.label_dict[x])
         predictions = self.predict_file(csv_file=csv_file,
                                         root_dir=root_dir,
                                         savedir=savedir)
 
-        ground_df = pd.read_csv(csv_file)
-        ground_df["label"] = ground_df.label.apply(lambda x: self.label_dict[x])
-
-        # remove empty samples from ground truth
-        ground_df = ground_df[~((ground_df.xmin == 0) & (ground_df.xmax == 0))]
-
-        # if no arg for iou_threshold, set as config
-        if iou_threshold is None:
-            iou_threshold = self.config["validation"]["iou_threshold"]
-
-        results = evaluate_iou.evaluate(predictions=predictions,
-                                        ground_df=ground_df,
-                                        root_dir=root_dir,
-                                        iou_threshold=iou_threshold,
-                                        savedir=savedir)
-
-        # replace classes if not NUll, wrap in try catch if no predictions
-        if not results is None:
-            results["results"]["predicted_label"] = results["results"][
-                "predicted_label"].apply(lambda x: self.numeric_to_label_dict[x]
-                                         if not pd.isnull(x) else x)
-            results["results"]["true_label"] = results["results"]["true_label"].apply(
-                lambda x: self.numeric_to_label_dict[x])
-            results["predictions"] = predictions
-            results["predictions"]["label"] = results["predictions"]["label"].apply(
-                lambda x: self.numeric_to_label_dict[x])
+        results = evaluate_iou.__evaluate_wrapper__(
+            predictions=predictions,
+            ground_df=ground_df,
+            root_dir=root_dir,
+            iou_threshold=iou_threshold,
+            numeric_to_label_dict=self.numeric_to_label_dict,
+            savedir=savedir)
 
         return results
