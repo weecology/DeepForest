@@ -8,41 +8,35 @@ import warnings
 
 import torch
 from torchvision.ops import nms
+import typing
 
 from deepforest import preprocess
 from deepforest import visualize
 from deepforest import dataset
 
 
-def predict_image(model,
-                  image,
-                  return_plot,
-                  device,
-                  iou_threshold=0.1,
-                  color=None,
-                  thickness=1):
-    """Predict an image with a deepforest model
-
+def _predict_image_(
+        model,
+        image: typing.Optional[np.ndarray] = None,
+        path: typing.Optional[str] = None,
+        nms_thresh: float = 0.15,
+        return_plot: bool = False,
+        thickness: int = 1,
+        color: typing.Optional[tuple] = (0, 165, 255)):
+    """Predict a single image with a deepforest model
+            
     Args:
-        image: a numpy array of a RGB image ranged from 0-255
+        model: a deepforest.main.model object
+        image: a tensor of shape (channels, height, width)
         path: optional path to read image from disk instead of passing image arg
+        nm_thresh: Non-max supression threshold, see config["nms_thresh"]
         return_plot: Return image with plotted detections
-        device: pytorch device of 'cuda' or 'cpu' for gpu prediction. Set internally.
-        color: color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255)
         thickness: thickness of the rectangle border line in px
+        color: color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255)
     Returns:
-        boxes: A pandas dataframe of predictions (Default)
+        df: A pandas dataframe of predictions (Default)
         img: The input with predictions overlaid (Optional)
     """
-
-    if image.dtype != "float32":
-        warnings.warn(f"Image type is {image.dtype}, transforming to float32. "
-                      f"This assumes that the range of pixel values is 0-255, as "
-                      f"opposed to 0-1.To suppress this warning, transform image "
-                      f"(image.astype('float32')")
-        image = image.astype("float32")
-    image = preprocess.preprocess_image(image)
-
     with torch.no_grad():
         prediction = model(image.unsqueeze(0))
 
@@ -50,9 +44,8 @@ def predict_image(model,
     if len(prediction[0]["boxes"]) == 0:
         return None
 
-    # This function on takes in a single image.
     df = visualize.format_boxes(prediction[0])
-    df = across_class_nms(df, iou_threshold=iou_threshold)
+    df = across_class_nms(df, iou_threshold=nms_thresh)
 
     if return_plot:
         # Bring to gpu
@@ -63,11 +56,17 @@ def predict_image(model,
         image = np.rollaxis(image, 0, 3)
         image = image[:, :, ::-1] * 255
         image = image.astype("uint8")
-        image = visualize.plot_predictions(image, df, color=color, thickness=thickness)
+        image = visualize.plot_predictions(image,
+                                            df,
+                                            color=color,
+                                            thickness=thickness)
 
         return image
     else:
-        return df
+        if path:
+            df["image_path"] = os.path.basename(path)
+
+    return df
 
 
 def mosiac(boxes, windows, sigma=0.5, thresh=0.001, iou_threshold=0.1):
@@ -140,12 +139,12 @@ def across_class_nms(predicted_boxes, iou_threshold=0.15):
     return new_df
 
 
-def predict_file(trainer,
-                 model,
+def _predict_a_dataloader_(model,
+                 trainer,
                  dataloader,
-                 nms_thresh,
                  root_dir,
                  annotations,
+                 nms_thresh,
                  savedir=None,
                  color=None,
                  thickness=1):
@@ -159,13 +158,13 @@ def predict_file(trainer,
         trainer: a pytorch lightning trainer object
         dataloader: pytorch dataloader object
         root_dir: directory of images. If none, uses "image_dir" in config
+        annotations: a pandas dataframe of annotations
         nms_thresh: Non-max supression threshold, see config["nms_thresh"]
-        df: pandas dataframe with bounding boxes, label and scores for each image in the csv file
         savedir: Optional. Directory to save image plots.
         color: color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255)
         thickness: thickness of the rectangle border line in px
     Returns:
-        df: pandas dataframe with bounding boxes, label and scores for each image in the csv file
+        results: pandas dataframe with bounding boxes, label and scores for each image in the csv file
     """
     paths = annotations.image_path.unique()
     batched_results = trainer.predict(model, dataloader)

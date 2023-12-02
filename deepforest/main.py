@@ -295,10 +295,9 @@ class deepforest(pl.LightningModule):
                       image: typing.Optional[np.ndarray] = None,
                       path: typing.Optional[str] = None,
                       return_plot: bool = False,
-                      thickness: int = 1,
-                      color: typing.Optional[tuple] = (0, 165, 255)):
+                      color: typing.Optional[tuple] = (0, 165, 255),
+                      thickness: int = 1):
         """Predict a single image with a deepforest model
-                
         Args:
             image: a float32 numpy array of a RGB with channels last format
             path: optional path to read image from disk instead of passing image arg
@@ -306,9 +305,12 @@ class deepforest(pl.LightningModule):
             color: color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255)
             thickness: thickness of the rectangle border line in px
         Returns:
-            boxes: A pandas dataframe of predictions (Default)
+            result: A pandas dataframe of predictions (Default)
             img: The input with predictions overlaid (Optional)
         """
+        # Ensure we are in eval mode
+        self.model.eval()
+
         if path:
             image = np.array(Image.open(path).convert("RGB")).astype("float32")
 
@@ -318,50 +320,35 @@ class deepforest(pl.LightningModule):
                             "from PIL, wrap in "
                             "np.array(image).astype(float32)".format(type(image)))
 
-        self.model.eval()
-
         if image.dtype != "float32":
             warnings.warn(f"Image type is {image.dtype}, transforming to float32. "
-                          f"This assumes that the range of pixel values is 0-255, as "
-                          f"opposed to 0-1.To suppress this warning, transform image "
-                          f"(image.astype('float32')")
+                            f"This assumes that the range of pixel values is 0-255, as "
+                            f"opposed to 0-1.To suppress this warning, transform image "
+                            f"(image.astype('float32')")
             image = image.astype("float32")
 
         image = torch.tensor(image, device=self.device).permute(2, 0, 1)
         image = image / 255
 
-        with torch.no_grad():
-            prediction = self.model(image.unsqueeze(0))
-
-        # return None for no predictions
-        if len(prediction[0]["boxes"]) == 0:
-            return None
-
-        df = visualize.format_boxes(prediction[0])
-        df = predict.across_class_nms(df, iou_threshold=self.config["nms_thresh"])
-
+        result = predict._predict_image_(
+            model=self.model,
+            image=image,
+            path=path,
+            nms_thresh=self.config["nms_thresh"],
+            return_plot=return_plot,
+            thickness=thickness,
+            color=color)
+        
         if return_plot:
-            # Bring to gpu
-            image = image.cpu()
-
-            # Cv2 likes no batch dim, BGR image and channels last, 0-255
-            image = np.array(image.squeeze(0))
-            image = np.rollaxis(image, 0, 3)
-            image = image[:, :, ::-1] * 255
-            image = image.astype("uint8")
-            image = visualize.plot_predictions(image,
-                                               df,
-                                               color=color,
-                                               thickness=thickness)
-
-            return image
+            return result  
         else:
-            if path:
-                df["image_path"] = os.path.basename(path)
+            #If there were no predictions, return None
+            if result is None:
+                return None
+            else:
+                result["label"] = result.label.apply(lambda x: self.numeric_to_label_dict[x])
 
-            df["label"] = df.label.apply(lambda x: self.numeric_to_label_dict[x])
-
-        return df
+        return result
 
     def predict_file(self, csv_file, root_dir, savedir=None, color=None, thickness=1):
         """Create a dataset and predict entire annotation file
@@ -384,7 +371,7 @@ class deepforest(pl.LightningModule):
                                  train=False)
         dataloader = self.predict_dataloader(ds)
 
-        results = predict.predict_file(model=self,
+        results = predict._predict_a_dataloader_(model=self,
                                        trainer=self.trainer,
                                        annotations=df,
                                        dataloader=dataloader,
