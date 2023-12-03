@@ -10,9 +10,7 @@ import torch
 from torchvision.ops import nms
 import typing
 
-from deepforest import preprocess
 from deepforest import visualize
-from deepforest import dataset
 
 
 def _predict_image_(model,
@@ -28,7 +26,7 @@ def _predict_image_(model,
         model: a deepforest.main.model object
         image: a tensor of shape (channels, height, width)
         path: optional path to read image from disk instead of passing image arg
-        nm_thresh: Non-max supression threshold, see config["nms_thresh"]
+        nms_thresh: Non-max supression threshold, see config["nms_thresh"]
         return_plot: Return image with plotted detections
         thickness: thickness of the rectangle border line in px
         color: color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255)
@@ -135,7 +133,7 @@ def across_class_nms(predicted_boxes, iou_threshold=0.15):
     return new_df
 
 
-def _predict_a_dataloader_(model,
+def _dataloader_wrapper_(model,
                            trainer,
                            dataloader,
                            root_dir,

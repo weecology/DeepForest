@@ -371,7 +371,7 @@ class deepforest(pl.LightningModule):
                                  train=False)
         dataloader = self.predict_dataloader(ds)
 
-        results = predict._predict_a_dataloader_(model=self,
+        results = predict._dataloader_wrapper_(model=self,
                                                  trainer=self.trainer,
                                                  annotations=df,
                                                  dataloader=dataloader,
