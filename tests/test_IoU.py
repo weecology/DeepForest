@@ -10,7 +10,7 @@ import shapely
 import geopandas as gpd
 import pandas as pd
 
-def test_compute_IoU(m, download_release, tmpdir):
+def test_compute_IoU(m, tmpdir):
     csv_file = get_data("OSBS_029.csv")
     predictions = m.predict_file(csv_file=csv_file, root_dir=os.path.dirname(csv_file))
     ground_truth = pd.read_csv(csv_file)
@@ -23,7 +23,11 @@ def test_compute_IoU(m, download_release, tmpdir):
     
     ground_truth.label = 0
     predictions.label = 0
-    visualize.plot_prediction_dataframe(df=predictions, ground_truth=ground_truth, root_dir=os.path.dirname(csv_file), savedir=tmpdir)        
+    visualize.plot_prediction_dataframe(
+        df=predictions, 
+        ground_truth=ground_truth, 
+        root_dir=os.path.dirname(csv_file), 
+        savedir=tmpdir)        
     
     result = IoU.compute_IoU(ground_truth, predictions)
     assert result.shape[0] == ground_truth.shape[0]

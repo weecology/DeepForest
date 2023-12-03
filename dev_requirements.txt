@@ -27,6 +27,7 @@ sphinx_markdown_tables
 tqdm
 twine
 torchvision>=0.13
+tensorboard
 xmltodict
 comet_ml
 imagecodecs

@@ -69,7 +69,12 @@ def plot_prediction_and_targets(image, predictions, targets, image_name, savedir
     return figure_path
 
 
-def plot_prediction_dataframe(df, root_dir, savedir, ground_truth=None):
+def plot_prediction_dataframe(df,
+                              root_dir,
+                              savedir,
+                              color=None,
+                              thickness=1,
+                              ground_truth=None):
     """For each row in dataframe, call plot predictions and save plot files to disk. 
     For multi-class labels, boxes will be colored by labels. Ground truth boxes will all be same color, regardless of class.
     Args:
@@ -87,7 +92,7 @@ def plot_prediction_dataframe(df, root_dir, savedir, ground_truth=None):
 
         if ground_truth is not None:
             annotations = ground_truth[ground_truth.image_path == name]
-            image = plot_predictions(image, annotations)
+            image = plot_predictions(image, annotations, color=color, thickness=thickness)
 
         figure_name = "{}/{}.png".format(savedir, os.path.splitext(name)[0])
         written_figures.append(figure_name)

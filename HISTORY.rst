@@ -2,7 +2,14 @@
 DeepForest Change Log
 =====================
 
+**1.3.0**
+
+* Removed IoU_Callback to better align with pytorch-lightning API, see https://github.com/Lightning-AI/pytorch-lightning/issues/19101
+* Refactored evaluate code to use pytorch-lightning evaluation loop directly to calculate results frame during training.
+* Refactored image_callbacks. Now uses predictions directly, you do not need to specify the root dir or csv file, since it assumed to be evaluation file.
+
 **1.1.3**
+
 Add box coordinates to evaluate results frame.
 
 **1.1.2**
