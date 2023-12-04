@@ -80,8 +80,10 @@ def plot_prediction_dataframe(df,
     Args:
         df: a pandas dataframe with image_path, xmin, xmax, ymin, ymax and label columns. The image_path column should be the relative path from root_dir, not the full path.
         root_dir: relative dir to look for image names from df.image_path
-        ground_truth: an optional pandas dataframe in same format as df holding ground_truth boxes
         savedir: save the plot to an optional directory path.
+        color: color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255)
+        thickness: thickness of the rectangle border line in px
+        ground_truth: an optional pandas dataframe in same format as df holding ground_truth boxes
     Returns:
         written_figures: list of filenames written
         """
