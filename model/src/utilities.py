@@ -8,6 +8,11 @@ import glob
 import geopandas as gpd
 from deepforest.utilities import shapefile_to_annotations
 import os
+import re
+import rasterio
+import rasterstats
+import math
+import numpy as np
 
 def read_config(config_path):
     """Read config yaml file"""
@@ -112,3 +117,85 @@ def read_justdiggit(path):
 
     return annotation_df
 
+def bounds_to_geoindex(bounds):
+    """Convert an extent into NEONs naming schema
+    Args:
+        bounds: list of top, left, bottom, right bounds, usually from geopandas.total_bounds
+    Return:
+        geoindex: str {easting}_{northing}
+    """
+    easting = int(np.mean([bounds[0], bounds[2]]))
+    northing = int(np.mean([bounds[1], bounds[3]]))
+
+    easting = math.floor(easting / 1000) * 1000
+    northing = math.floor(northing / 1000) * 1000
+
+    geoindex = "{}_{}".format(easting, northing)
+
+    return geoindex
+
+def find_sensor_path(lookup_pool, shapefile=None, bounds=None, geo_index=None, all_years=False):
+    """Find a hyperspec path based on the shapefile using NEONs schema
+    Args:
+        bounds: Optional: list of top, left, bottom, right bounds, usually from geopandas.total_bounds. Instead of providing a shapefile
+        lookup_pool: glob string to search for matching files for geoindex
+    Returns:
+        match: full path to sensor tile, if all years, a list of paths
+    """
+    if not geo_index:
+        if shapefile:
+            basename = os.path.splitext(os.path.basename(shapefile))[0]
+            geo_index = re.search("(\d+_\d+)_image", basename).group(1)
+        else:
+            geo_index = bounds_to_geoindex(bounds=bounds) 
+    
+    match = [x for x in lookup_pool if geo_index in x]
+    
+    if len(match) == 0:
+        raise ValueError("No matches for geoindex {} in sensor pool".format(geo_index))                    
+        
+    #Get most recent year or all years
+    if all_years:
+        # No duplicate years
+        years = [year_from_tile(x) for x in match]
+        year_df = pd.DataFrame({"year":years,"tiles":match})
+        all_year_match = year_df.groupby("year").apply(lambda x: x.head(1)).tiles.values
+
+        return all_year_match
+    else:        
+        match.sort()
+        match = match[::-1]
+        
+        return match[0]
+    
+def year_from_tile(path):
+    return path.split("/")[-8]
+
+def crop(bounds, sensor_path=None, savedir = None, basename = None, rasterio_src=None, as_numpy=False):
+    """Given a 4 pointed bounding box, crop sensor data"""
+    left, bottom, right, top = bounds 
+    if rasterio_src is None:
+        src = rasterio.open(sensor_path)
+    else:
+        src = rasterio_src
+    img = src.read(window=rasterio.windows.from_bounds(left, bottom, right, top, transform=src.transform)) 
+    if img.size == 0:
+        raise ValueError("Bounds {} does not create a valid crop for source {}".format(bounds, src.transform))    
+    if (img==-9999).any():
+        raise ValueError("Crown has no data value of -9999")
+    if savedir:
+        if as_numpy:
+            filename = "{}/{}.npy".format(savedir, basename)            
+            np.save(filename, img)
+        else:
+            res = src.res[0]
+            height = (top - bottom)/res
+            width = (right - left)/res                 
+            filename = "{}/{}.tif".format(savedir, basename)
+            with rasterio.open(filename, "w", driver="GTiff",height=height, width=width, count = img.shape[0], dtype=img.dtype) as dst:
+                dst.write(img)
+    if savedir:
+        return filename
+    else:
+        return img   
+    

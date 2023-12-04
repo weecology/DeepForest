@@ -15,6 +15,8 @@ def run(m, csv_file, root_dir):
 if __name__ == "__main__":
     m = main.deepforest()
     m.use_release()
+    m.config["workers"] = 0
+    m.config["batch_size"] = 24
     
     csv_file = get_data("OSBS_029.csv")
     image_path = get_data("OSBS_029.png")
