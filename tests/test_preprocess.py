@@ -115,12 +115,12 @@ def test_split_raster_empty_crops(config, tmpdir):
     # Returns a 6 column pandas array
     assert not annotations_file[(annotations_file.xmin == 0) & (annotations_file.xmax == 0)].empty
     
-def test_split_raster_from_image(config):
+def test_split_raster_from_image(config, tmpdir):
     r = rasterio.open(config["path_to_raster"]).read()
     r = np.rollaxis(r,0,3)
     annotations_file = preprocess.split_raster(numpy_image=r,
                                                annotations_file=config["annotations_file"],
-                                               base_dir="tests/data/",
+                                               save_dir=tmpdir,
                                                patch_size=config["patch_size"],
                                                patch_overlap=config["patch_overlap"],
                                                image_name="OSBS_029.tif")
@@ -168,11 +168,11 @@ def test_split_raster_empty(config):
     assert os.path.exists("tests/output/empty/OSBS_029_1.png")
 
 
-def test_split_size_error(config):
+def test_split_size_error(config, tmpdir):
     with pytest.raises(ValueError):
         annotations_file = preprocess.split_raster(path_to_raster=config["path_to_raster"],
                                                    annotations_file=config["annotations_file"],
-                                                   base_dir="tests/data/",
+                                                   base_dir=tmpdir,
                                                    patch_size=2000,
                                                    patch_overlap=config["patch_overlap"])
 

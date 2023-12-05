@@ -178,13 +178,6 @@ def split_raster(annotations_file,
     if (numpy_image is None) & (path_to_raster is None):
         raise IOError("supply a raster either as a path_to_raster or if ready "
                       "from existing in memory numpy object, as numpy_image=")
-    
-    # Confirm that raster is H x W x C, if not, convert
-    if numpy_image.shape[0] < numpy_image.shape[1]:
-        warnings.warn(
-            "Input rasterio had shape {}, assuming channels first. Converting to channels last".format(
-                numpy_image.shape), UserWarning)
-        numpy_image = np.moveaxis(numpy_image, 0, 2)
 
     if path_to_raster:
         numpy_image = rasterio.open(path_to_raster).read()
@@ -194,6 +187,13 @@ def split_raster(annotations_file,
             raise (IOError("If passing an numpy_image, please also specify a image_name"
                            " to match the column in the annotation.csv file"))
 
+    # Confirm that raster is H x W x C, if not, convert
+    if numpy_image.shape[0] < numpy_image.shape[1]:
+        warnings.warn(
+            "Input rasterio had shape {}, assuming channels first. Converting to channels last".format(
+                numpy_image.shape), UserWarning)
+        numpy_image = np.moveaxis(numpy_image, 0, 2)
+    
     # Check that its 3 band
     bands = numpy_image.shape[2]
     if not bands == 3:
