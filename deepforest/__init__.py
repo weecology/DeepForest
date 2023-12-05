@@ -2,7 +2,7 @@
 """Top-level package for DeepForest."""
 __author__ = """Ben Weinstein"""
 __email__ = 'ben.weinstein@weecology.org'
-__version__ = '1.3.0'
+__version__ = '1.3.1'
 
 import os
 
