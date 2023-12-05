@@ -372,14 +372,14 @@ class deepforest(pl.LightningModule):
         dataloader = self.predict_dataloader(ds)
 
         results = predict._dataloader_wrapper_(model=self,
-                                                 trainer=self.trainer,
-                                                 annotations=df,
-                                                 dataloader=dataloader,
-                                                 root_dir=root_dir,
-                                                 nms_thresh=self.config["nms_thresh"],
-                                                 savedir=savedir,
-                                                 color=color,
-                                                 thickness=thickness)
+                                               trainer=self.trainer,
+                                               annotations=df,
+                                               dataloader=dataloader,
+                                               root_dir=root_dir,
+                                               nms_thresh=self.config["nms_thresh"],
+                                               savedir=savedir,
+                                               color=color,
+                                               thickness=thickness)
 
         return results
 

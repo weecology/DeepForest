@@ -146,8 +146,7 @@ def split_raster(annotations_file,
                  patch_overlap=0.05,
                  allow_empty=False,
                  image_name=None,
-                 save_dir="."
-                 ):
+                 save_dir="."):
     """Divide a large tile into smaller arrays. Each crop will be saved to
     file.
 
@@ -190,15 +189,16 @@ def split_raster(annotations_file,
     # Confirm that raster is H x W x C, if not, convert, assuming image is wider/taller than channels
     if numpy_image.shape[0] < numpy_image.shape[-1]:
         warnings.warn(
-            "Input rasterio had shape {}, assuming channels first. Converting to channels last".format(
-                numpy_image.shape), UserWarning)
+            "Input rasterio had shape {}, assuming channels first. Converting to channels last"
+            .format(numpy_image.shape), UserWarning)
         numpy_image = np.moveaxis(numpy_image, 0, 2)
-    
+
     # Check that its 3 band
     bands = numpy_image.shape[2]
     if not bands == 3:
-        warnings.warn("Input rasterio had non-3 band shape of {}, ignoring "
-                      "alpha channel".format(numpy_image.shape), UserWarning)
+        warnings.warn(
+            "Input rasterio had non-3 band shape of {}, ignoring "
+            "alpha channel".format(numpy_image.shape), UserWarning)
         try:
             numpy_image = numpy_image[:, :, :3].astype("uint8")
         except:

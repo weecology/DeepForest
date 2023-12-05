@@ -134,14 +134,14 @@ def across_class_nms(predicted_boxes, iou_threshold=0.15):
 
 
 def _dataloader_wrapper_(model,
-                           trainer,
-                           dataloader,
-                           root_dir,
-                           annotations,
-                           nms_thresh,
-                           savedir=None,
-                           color=None,
-                           thickness=1):
+                         trainer,
+                         dataloader,
+                         root_dir,
+                         annotations,
+                         nms_thresh,
+                         savedir=None,
+                         color=None,
+                         thickness=1):
     """Create a dataset and predict entire annotation file
 
     Csv file format is .csv file with the columns "image_path", "xmin","ymin","xmax","ymax" for the image name and bounding box position.
