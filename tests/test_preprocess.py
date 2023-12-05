@@ -190,3 +190,13 @@ def test_split_raster_4_band_warns(config, tmpdir):
                         patch_size=config["patch_size"],
                         patch_overlap=config["patch_overlap"],
                         image_name="OSBS_029.tif")
+        
+    numpy_image = np.zeros((400, 400, 4), dtype=np.uint8)
+
+    with pytest.warns(UserWarning):
+        preprocess.split_raster(numpy_image=numpy_image,
+                        annotations_file=config["annotations_file"],
+                        save_dir=tmpdir,
+                        patch_size=config["patch_size"],
+                        patch_overlap=config["patch_overlap"],
+                        image_name="OSBS_029.tif")
