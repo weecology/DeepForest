@@ -187,8 +187,8 @@ def split_raster(annotations_file,
             raise (IOError("If passing an numpy_image, please also specify a image_name"
                            " to match the column in the annotation.csv file"))
 
-    # Confirm that raster is H x W x C, if not, convert
-    if numpy_image.shape[0] < numpy_image.shape[1]:
+    # Confirm that raster is H x W x C, if not, convert, assuming image is wider/taller than channels
+    if numpy_image.shape[0] < numpy_image.shape[-1]:
         warnings.warn(
             "Input rasterio had shape {}, assuming channels first. Converting to channels last".format(
                 numpy_image.shape), UserWarning)
