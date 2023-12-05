@@ -192,7 +192,7 @@ def split_raster(annotations_file,
         warnings.warn("Input rasterio had non-3 band shape of {}, ignoring "
                       "alpha channel".format(numpy_image.shape))
         try:
-            numpy_image = numpy_image[:, :, :3].astype("uint8")
+            numpy_image = numpy_image[:3, :, :].astype("uint8")
         except:
             raise IOError("Input file {} has {} bands. "
                           "DeepForest only accepts 3 band RGB rasters in the order "
