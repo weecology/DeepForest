@@ -423,11 +423,11 @@ class deepforest(pl.LightningModule):
         self.model.eval()
         self.model.nms_thresh = self.config["nms_thresh"]
         if raster_path is not None:
-        warnings.warn(
-            "The 'raster_path' argument is deprecated and will be removed in future versions. Use 'path' instead.",
-            DeprecationWarning
-        )
-        path = raster_path
+            warnings.warn(
+                "The 'raster_path' argument is deprecated and will be removed in future versions. Use 'path' instead.",
+                DeprecationWarning
+            )
+            path = raster_path
                          
         if (raster_path is None) and (image is None):
             raise ValueError(
