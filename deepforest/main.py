@@ -385,6 +385,7 @@ class deepforest(pl.LightningModule):
 
     def predict_tile(self,
                      raster_path=None,
+                     path=None,
                      image=None,
                      patch_size=400,
                      patch_overlap=0.05,
@@ -421,7 +422,13 @@ class deepforest(pl.LightningModule):
         """
         self.model.eval()
         self.model.nms_thresh = self.config["nms_thresh"]
-
+        if raster_path is not None:
+        warnings.warn(
+            "The 'raster_path' argument is deprecated and will be removed in future versions. Use 'path' instead.",
+            DeprecationWarning
+        )
+        path = raster_path
+                         
         if (raster_path is None) and (image is None):
             raise ValueError(
                 "Both tile and tile_path are None. Either supply a path to a tile on disk, or read one into memory!"
