@@ -52,3 +52,5 @@ Remote sensing can transform the speed, scale, and cost of biodiversity and fore
 
 [Weinstein, B.G.; Marconi, S.; Bohlman, S.; Zare, A.; White, E. Individual Tree-Crown Detection in RGB Imagery Using Semi-Supervised Deep Learning Neural Networks.
 Remote Sens. 2019, 11, 1309](https://www.mdpi.com/2072-4292/11/11/1309)
+
+
