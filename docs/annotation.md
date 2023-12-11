@@ -6,6 +6,12 @@ For quick annotations of a few images, we recommend using QGIS or ArcGIS. Either
 
 ![QGISannotation](../www/QGIS_annotation.png)
 
+### Label-studio
+
+For longer term projects, we recommend [label-studio](https://labelstud.io/) as an annotation platform. It has many useful features and is easy to set up.
+
+![QGISannotation](../www/label_studio.png)
+
 ## Do I need annotate all objects in my image?
 Yes! Object detection models use the non-annotated areas of an image as negative data. We know that it can be exceptionally hard to annotate all trees in an image, or determine the classes of all birds in an image. However, if you have objects in the image that are not annotated, the model is learning *to ignore* those portion of the image. This can severely affect model performance.
 
@@ -84,3 +90,6 @@ for path in files:
     shp.to_file("{}/{}.shp".format(PATH_TO_DIR,basename))
 ```
 
+## Fast iterations are the key to annotation success
+
+Many projects have a linear concept of annotations with all the annotations collected before model testing. This is often a mistake. Especially in multi-class scenerios, start with a small number of annotations and allow the model to decide which images are most needed. This can be done in an automated way, or simply by looking at confusion matrices and predicted images. Imagine model developement as a pipeline, the more times you can iterate, the more rapidly your model will improve. For an example in airborne wildlife remote sensing, see the excellent paper by [B. Kellenberger et al. 2019](https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=8807383&casa_token=ZCCfJk3Fy-IAAAAA:UyZyftM25on1ZUijB1o4gBUWw8JBD5lmVkAvzZqL7PlQTvQMzOIK2n9A73swGUpYZYhARUbw&tag=1).
