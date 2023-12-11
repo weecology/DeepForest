@@ -12,7 +12,7 @@ model.use_release()
 
 img = model.predict_image(path="/Users/benweinstein/Documents/NeonTreeEvaluation/evaluation/RGB/TEAK_049_2019.tif",return_plot=True)
 
-#predict_image returns plot in BlueGreenRed (opencv style), but matplotlib likes RedGreenBlue, switch the channel order.
+#predict_image returns plot in BlueGreenRed (opencv style), but matplotlib likes RedGreenBlue, switch the channel order. Many functions in deepforest will automatically perform this flip for you and give a warning.
 plt.imshow(img[:,:,::-1])
 ```
 
@@ -21,7 +21,6 @@ plt.imshow(img[:,:,::-1])
 ** please note that this video was made before the deepforest-pytorch -> deepforest name change. **
 
 <div style="position: relative; padding-bottom: 62.5%; height: 0;"><iframe src="https://www.loom.com/embed/f80ed6e3c7bd48d4a20ae32167af3d8c" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe></div>
-
 
 For single images, ```predict_image``` can read an image from memory or file and return predicted tree bounding boxes.
 
@@ -64,6 +63,10 @@ Let's show an example with a small image. For larger images, patch_size should b
 raster_path = get_data("OSBS_029.tif")
 # Window size of 300px with an overlap of 25% among windows for this small tile.
 predicted_raster = model.predict_tile(raster_path, return_plot = True, patch_size=300,patch_overlap=0.25)
+
+# View boxes overlayed when return_plot=True, when False, boxes are returned.
+plt.imshow(predicted_raster)
+plt.show()
 ```
 
 ** Please note the predict tile function is sensitive to patch_size, especially when using the prebuilt model on new data**
