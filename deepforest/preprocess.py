@@ -146,13 +146,12 @@ def split_raster(annotations_file,
                  patch_overlap=0.05,
                  allow_empty=False,
                  image_name=None,
-                 save_dir="."
-                 ):
+                 save_dir="."):
     """Divide a large tile into smaller arrays. Each crop will be saved to
     file.
 
     Args:
-        numpy_image: a numpy object to be used as a raster, usually opened from rasterio.open.read()
+        numpy_image: a numpy object to be used as a raster, usually opened from rasterio.open.read(), in order (height, width, channels)
         path_to_raster: (str): Path to a tile that can be read by rasterio on disk
         annotations_file (str or pd.DataFrame): A pandas dataframe or path to annotations csv file. In the format -> image_path, xmin, ymin, xmax, ymax, label
         save_dir (str): Directory to save images
@@ -167,11 +166,12 @@ def split_raster(annotations_file,
         A pandas dataframe with annotations file for training. 
         A copy of this file is written to save_dir as a side effect.
     """
-    # Set deprecation warning for base_dir
-    if not base_dir == ".":
+    # Set deprecation warning for base_dir and set to save_dir
+    if base_dir:
         warnings.warn(
             "base_dir argument will be deprecated in 2.0. The naming is confusing, the rest of the API uses 'save_dir' to refer to location of images. Please use 'save_dir' argument.",
             DeprecationWarning)
+        save_dir = base_dir
 
     # Load raster as image
     if (numpy_image is None) & (path_to_raster is None):
@@ -186,11 +186,19 @@ def split_raster(annotations_file,
             raise (IOError("If passing an numpy_image, please also specify a image_name"
                            " to match the column in the annotation.csv file"))
 
+    # Confirm that raster is H x W x C, if not, convert, assuming image is wider/taller than channels
+    if numpy_image.shape[0] < numpy_image.shape[-1]:
+        warnings.warn(
+            "Input rasterio had shape {}, assuming channels first. Converting to channels last"
+            .format(numpy_image.shape), UserWarning)
+        numpy_image = np.moveaxis(numpy_image, 0, 2)
+
     # Check that its 3 band
     bands = numpy_image.shape[2]
     if not bands == 3:
-        warnings.warn("Input rasterio had non-3 band shape of {}, ignoring "
-                      "alpha channel".format(numpy_image.shape))
+        warnings.warn(
+            "Input rasterio had non-3 band shape of {}, ignoring "
+            "alpha channel".format(numpy_image.shape), UserWarning)
         try:
             numpy_image = numpy_image[:, :, :3].astype("uint8")
         except:
@@ -265,7 +273,7 @@ def split_raster(annotations_file,
             annotations_files.append(crop_annotations)
 
             # save image crop
-            save_crop(base_dir, image_name, index, crop)
+            save_crop(save_dir, image_name, index, crop)
     if len(annotations_files) == 0:
         raise ValueError(
             "Input file has no overlapping annotations and allow_empty is {}".format(
@@ -277,7 +285,7 @@ def split_raster(annotations_file,
     # Use filename of the raster path to save the annotations
     image_basename = os.path.splitext(image_name)[0]
     file_path = image_basename + ".csv"
-    file_path = os.path.join(base_dir, file_path)
+    file_path = os.path.join(save_dir, file_path)
     annotations_files.to_csv(file_path, index=False, header=True)
 
     return annotations_files
