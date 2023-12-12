@@ -14,7 +14,7 @@ To load the backboard and box prediction portions of the release model, but crea
 Here is an example using the alive/dead tree data stored in the package, but the same logic applies to the bird detector.
 
 ```
-m = main.deepforest(num_classes=2, label_dict={"Alive":0,"Dead":0})
+m = main.deepforest(num_classes=2, label_dict={"Alive":0,"Dead":1})
 deepforest_release_model = main.deepforest()
 deepforest_release_model.use_release()
 m.model.backbone.load_state_dict(deepforest_release_model.model.backbone.state_dict())
