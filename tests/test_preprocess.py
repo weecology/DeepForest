@@ -176,22 +176,17 @@ def test_split_size_error(config, tmpdir):
                                                    patch_size=2000,
                                                    patch_overlap=config["patch_overlap"])
 
-def test_split_raster_4_band_warns(config, tmpdir):
+
+@pytest.mark.parametrize("orders", [(4, 400, 400), (400, 400, 4)])
+def test_split_raster_4_band_warns(config, tmpdir, orders):
+    """Test rasterio channel order
+    (400, 400, 4) C x H x W
+    (4, 400, 400) wrong channel order, H x W x C
+    """
+
     # Confirm that the rasterio channel order is C x H x W
     assert rasterio.open(get_data("OSBS_029.tif")).read().shape[0] == 3
-
-    # Create a 4 band image in the wrong channel order, it should be H x W x C
-    numpy_image = np.zeros((4, 400, 400), dtype=np.uint8)
-    
-    with pytest.warns(UserWarning):
-        preprocess.split_raster(numpy_image=numpy_image,
-                        annotations_file=config["annotations_file"],
-                        save_dir=tmpdir,
-                        patch_size=config["patch_size"],
-                        patch_overlap=config["patch_overlap"],
-                        image_name="OSBS_029.tif")
-        
-    numpy_image = np.zeros((400, 400, 4), dtype=np.uint8)
+    numpy_image = np.zeros(orders, dtype=np.uint8)
 
     with pytest.warns(UserWarning):
         preprocess.split_raster(numpy_image=numpy_image,
