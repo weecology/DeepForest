@@ -388,6 +388,14 @@ def boxes_to_shapefile(df, root_dir, projected=True, flip_y_axis=False):
     Returns:
        df: a geospatial dataframe with the boxes optionally transformed to the target crs
     """
+    # Raise a warning and confirm if a user sets projected to True when flip_y_axis is True.
+
+    if flip_y_axis and projected:
+        warnings.warn(
+            "flip_y_axis is {}, and projected is {}. In most cases, projected should be False when inverting y axis. Setting projected=False"
+            .format(flip_y_axis, projected), UserWarning)
+        projected = False
+
     plot_names = df.image_path.unique()
     if len(plot_names) > 1:
         raise ValueError("This function projects a single plots worth of data. "

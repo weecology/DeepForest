@@ -101,13 +101,21 @@ def test_boxes_to_shapefile_projected_from_predict_tile(m):
     gdf = utilities.boxes_to_shapefile(df.iloc[:1,], root_dir=os.path.dirname(img), projected=True)
     assert gdf.shape[0] == 1
     
+# Test unprojected data, including warning if flip_y_axis is set to True, but projected is False
 @pytest.mark.parametrize("flip_y_axis", [True, False])
-def test_boxes_to_shapefile_unprojected(m, flip_y_axis):
+@pytest.mark.parametrize("projected", [True, False])
+def test_boxes_to_shapefile_unprojected(m, flip_y_axis, projected):
     img = get_data("OSBS_029.png")
     r = rio.open(img)
     df = m.predict_image(path=img)
-    gdf = utilities.boxes_to_shapefile(df, root_dir=os.path.dirname(img), projected=False, flip_y_axis=flip_y_axis)
+
+    with pytest.warns(UserWarning):
+        gdf = utilities.boxes_to_shapefile(
+            df,
+            root_dir=os.path.dirname(img),
+            projected=projected,
+            flip_y_axis=flip_y_axis)
     
-    #Confirm that each boxes within image bounds
+    # Confirm that each boxes within image bounds
     geom = geometry.box(*r.bounds)
     assert all(gdf.geometry.apply(lambda x: geom.intersects(geom)).values)
