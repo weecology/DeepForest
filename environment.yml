@@ -4,7 +4,6 @@ channels:
   - defaults
 dependencies:
   - bumpversion
-  - comet_ml
   - docutils<0.18
   - furo
   - geopandas
@@ -41,4 +40,5 @@ dependencies:
     - sphinx-markdown-tables
     - imagecodecs
     - albumentations>=1.0.0
+    - comet_ml
 
