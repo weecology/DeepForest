@@ -49,21 +49,23 @@ validation:
 ```
 ## Passing config arguments at runtime using a dict
 
-It can often be useful to pass config args directly to a model instead of editing the config file. By using a dict with that matches with the config keys, main.deepforest will update the config after reading from file.
+It can often be useful to pass config args directly to a model instead of editing the config file. By using a dict containing the config keys and their values. Values provided in this dict will override values provided in deepforest_config.yml.
 
 ```
+# Default model has 1 class
 m = main.deepforest()
-assert not m.config["num_classes"] == 2
+not m.config["num_classes"] == 2
 
+# But we can override using config args, make sure to specify a new label dict.
 m = main.deepforest(config_args={"num_classes":2}, label_dict={"Alive":0,"Dead":1})
-assert m.config["num_classes"] == 2
+m.config["num_classes"] == 2
 
-# These call also be nested for train and val arguments
+# These can also be nested for train and val arguments
 m = main.deepforest()
-assert not m.config["train"]["epochs"] == 7
+not m.config["train"]["epochs"] == 7
 
 m = main.deepforest(config_args={"train":{"epochs":7}})
-assert m.config["train"]["epochs"] == 7
+m.config["train"]["epochs"] == 7
 ```
 
 ## Dataloaders
