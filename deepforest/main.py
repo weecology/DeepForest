@@ -70,7 +70,7 @@ class deepforest(pl.LightningModule):
                         "Config argument {} not found in config file".format(key))
                 if type(value) == dict:
                     for subkey, subvalue in value.items():
-                        print("setting config {} to {}").format(subkey, subvalue)
+                        print("setting config {} to {}".format(subkey, subvalue))
                         self.config[key][subkey] = subvalue
                 else:
                     print("setting config {} to {}".format(key, value))

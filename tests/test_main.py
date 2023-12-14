@@ -433,16 +433,14 @@ def test_iou_metric(m):
     for x in keys:
         assert x in list(results[0].keys())
 
-def test_config_args():
-    m = main.deepforest()
+def test_config_args(m):
     assert not m.config["num_classes"] == 2
 
     m = main.deepforest(config_args={"num_classes":2}, label_dict={"Alive":0,"Dead":1})
     assert m.config["num_classes"] == 2
 
     # These call also be nested for train and val arguments
-    m = main.deepforest()
     assert not m.config["train"]["epochs"] == 7
 
-    m = main.deepforest(config_args={"train":{"epochs":7}})
+    m2 = main.deepforest(config_args={"train":{"epochs":7}})
     assert m.config["train"]["epochs"] == 7
