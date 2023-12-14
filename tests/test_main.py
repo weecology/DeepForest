@@ -443,4 +443,4 @@ def test_config_args(m):
     assert not m.config["train"]["epochs"] == 7
 
     m2 = main.deepforest(config_args={"train":{"epochs":7}})
-    assert m.config["train"]["epochs"] == 7
+    assert m2.config["train"]["epochs"] == 7
