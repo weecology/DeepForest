@@ -124,7 +124,7 @@ class deepforest(pl.LightningModule):
             check_release=check_release)
         if self.config["architecture"] != "retinanet":
             warnings.warn(
-                "The config file specifies architecture {}, but the release model is torchvision retinanet. Reloading with deepforest.main with a retinanet model"
+                "The config file specifies architecture {}, but the release model is torchvision retinanet. Reloading with main.deepforest with a retinanet model"
                 .format(self.config["architecture"]))
             self.config["architecture"] = "retinanet"
             self.create_model()
