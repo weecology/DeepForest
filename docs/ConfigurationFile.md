@@ -54,18 +54,15 @@ It can often be useful to pass config args directly to a model instead of editin
 ```
 # Default model has 1 class
 m = main.deepforest()
-not m.config["num_classes"] == 2
+print(m.config["num_classes"])
 
 # But we can override using config args, make sure to specify a new label dict.
 m = main.deepforest(config_args={"num_classes":2}, label_dict={"Alive":0,"Dead":1})
-m.config["num_classes"] == 2
+print(m.config["num_classes"])
 
 # These can also be nested for train and val arguments
-m = main.deepforest()
-not m.config["train"]["epochs"] == 7
-
 m = main.deepforest(config_args={"train":{"epochs":7}})
-m.config["train"]["epochs"] == 7
+print(m.config["train"]["epochs"])
 ```
 
 ## Dataloaders

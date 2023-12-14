@@ -59,7 +59,7 @@ class deepforest(pl.LightningModule):
         # If num classes is specified, overwrite config
         if not num_classes == 1:
             warnings.warn(
-                "Directly specifying the num_classes arg in deepforest.main will be deprecated in 2.0 in favor of config_args. Use deepforest.main(config_args={'num_classes':value})"
+                "Directly specifying the num_classes arg in deepforest.main will be deprecated in 2.0 in favor of config_args. Use main.deepforest(config_args={'num_classes':value})"
             )
 
         # Update config with user supplied arguments
@@ -124,7 +124,7 @@ class deepforest(pl.LightningModule):
             check_release=check_release)
         if self.config["architecture"] != "retinanet":
             warnings.warn(
-                "The config file specifies architecture {}, but the release model is torchvision retinanet. Reloading with main.deepforest with a retinanet model"
+                "The config file specifies architecture {}, but the release model is torchvision retinanet. Reloading main.deepforest with a retinanet model"
                 .format(self.config["architecture"]))
             self.config["architecture"] = "retinanet"
             self.create_model()
