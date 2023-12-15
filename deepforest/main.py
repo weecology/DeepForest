@@ -55,19 +55,34 @@ class deepforest(pl.LightningModule):
 
         print("Reading config file: {}".format(config_path))
         self.config = utilities.read_config(config_path)
+        self.config["num_classes"] = num_classes
+        # If num classes is specified, overwrite config
+        if not num_classes == 1:
+            warnings.warn(
+                "Directly specifying the num_classes arg in deepforest.main will be deprecated in 2.0 in favor of config_args. Use main.deepforest(config_args={'num_classes':value})"
+            )
+
+        # Update config with user supplied arguments
+        if config_args:
+            for key, value in config_args.items():
+                if key not in self.config.keys():
+                    raise ValueError(
+                        "Config argument {} not found in config file".format(key))
+                if type(value) == dict:
+                    for subkey, subvalue in value.items():
+                        print("setting config {} to {}".format(subkey, subvalue))
+                        self.config[key][subkey] = subvalue
+                else:
+                    print("setting config {} to {}".format(key, value))
+                    self.config[key] = value
+
         self.model = model
 
         # release version id to flag if release is being used
         self.__release_version__ = None
 
-        self.config["num_classes"] = num_classes
         self.create_model()
 
-        # If num classes is specified, overwrite config
-        if not num_classes == 1:
-            warnings.warn(
-                "Directly specifying the num_classes arg in deepforest.main will be deprecated in 2.0 in favor of config_args. Use deepforest.main(config_args={'num_classes':value})"
-            )
 
         # Metrics
         self.iou_metric = IntersectionOverUnion(
@@ -109,7 +124,7 @@ class deepforest(pl.LightningModule):
             check_release=check_release)
         if self.config["architecture"] != "retinanet":
             warnings.warn(
-                "The config file specifies architecture {}, but the release model is torchvision retinanet. Reloading with deepforest.main with a retinanet model"
+                "The config file specifies architecture {}, but the release model is torchvision retinanet. Reloading main.deepforest with a retinanet model"
                 .format(self.config["architecture"]))
             self.config["architecture"] = "retinanet"
             self.create_model()
