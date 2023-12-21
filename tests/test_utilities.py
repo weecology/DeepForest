@@ -55,7 +55,7 @@ def test_shapefile_to_annotations_convert_to_boxes(tmpdir):
     sample_geometry = [geometry.Point(404211.9 + 10,3285102 + 20),geometry.Point(404211.9 + 20,3285102 + 20)]
     labels = ["Tree","Tree"]
     df = pd.DataFrame({"geometry":sample_geometry,"label":labels})
-    gdf = gpd.GeoDataFrame(df, geometry="geometry")
+    gdf = gpd.GeoDataFrame(df, geometry="geometry", crs="EPSG:32617")
     gdf.to_file("{}/annotations.shp".format(tmpdir))
     image_path = get_data("OSBS_029.tif")
     shp = utilities.shapefile_to_annotations(shapefile="{}/annotations.shp".format(tmpdir), rgb=image_path, savedir=tmpdir, geometry_type="point")
@@ -65,7 +65,7 @@ def test_shapefile_to_annotations(tmpdir):
     sample_geometry = [geometry.Point(404211.9 + 10,3285102 + 20),geometry.Point(404211.9 + 20,3285102 + 20)]
     labels = ["Tree","Tree"]
     df = pd.DataFrame({"geometry":sample_geometry,"label":labels})
-    gdf = gpd.GeoDataFrame(df, geometry="geometry")
+    gdf = gpd.GeoDataFrame(df, geometry="geometry", crs="EPSG:32617")
     gdf["geometry"] = [geometry.box(left, bottom, right, top) for left, bottom, right, top in gdf.geometry.buffer(0.5).bounds.values]
     
     gdf.to_file("{}/annotations.shp".format(tmpdir))
