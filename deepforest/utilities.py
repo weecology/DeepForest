@@ -296,10 +296,9 @@ def shapefile_to_annotations(shapefile,
 
     # Check matching the crs
     if not gdf.crs == src.crs:
-        raise ValueError(
-            "The shapefile crs {} does not match the image crs {}".format(
-                gdf.crs, src.crs))
-    
+        raise ValueError("The shapefile crs {} does not match the image crs {}".format(
+            gdf.crs, src.crs))
+
     # Transform project coordinates to image coordinates
     df["tile_xmin"] = (df.minx - left) / resolution
     df["tile_xmin"] = df["tile_xmin"].astype(int)
@@ -478,10 +477,11 @@ def annotations_to_shapefile(df, transform, crs):
     Returns:
         results: a geopandas dataframe where every entry is the bounding box for a detected tree.
     """
-    warnings.warn("This method is deprecated and will be "
-                  "removed in version DeepForest 2.0.0, "
-                  "please use boxes_to_shapefile which unifies project_boxes and "
-                  "annotations_to_shapefile functionalities", DeprecationWarning)
+    warnings.warn(
+        "This method is deprecated and will be "
+        "removed in version DeepForest 2.0.0, "
+        "please use boxes_to_shapefile which unifies project_boxes and "
+        "annotations_to_shapefile functionalities", DeprecationWarning)
 
     # Convert image pixel locations to geographic coordinates
     xmin_coords, ymin_coords = rasterio.transform.xy(transform=transform,
@@ -500,7 +500,7 @@ def annotations_to_shapefile(df, transform, crs):
         ymin_coords = [ymin_coords]
         xmax_coords = [xmax_coords]
         ymax_coords = [ymax_coords]
-    
+
     # One box polygon for each tree bounding box
     box_coords = zip(xmin_coords, ymin_coords, xmax_coords, ymax_coords)
     box_geoms = [
@@ -523,9 +523,11 @@ def project_boxes(df, root_dir, transform=True):
     root_dir: directory of images to lookup image_path column
     transform: If true, convert from image to geographic coordinates
     """
-    warnings.warn("This method is deprecated and will be removed in version "
-                  "DeepForest 2.0.0, please use boxes_to_shapefile which "
-                  "unifies project_boxes and annotations_to_shapefile functionalities", DeprecationWarning)
+    warnings.warn(
+        "This method is deprecated and will be removed in version "
+        "DeepForest 2.0.0, please use boxes_to_shapefile which "
+        "unifies project_boxes and annotations_to_shapefile functionalities",
+        DeprecationWarning)
     plot_names = df.image_path.unique()
     if len(plot_names) > 1:
         raise ValueError("This function projects a single plots worth of data. "

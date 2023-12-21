@@ -83,7 +83,6 @@ class deepforest(pl.LightningModule):
 
         self.create_model()
 
-
         # Metrics
         self.iou_metric = IntersectionOverUnion(
             class_metrics=True, iou_threshold=self.config["validation"]["iou_threshold"])
