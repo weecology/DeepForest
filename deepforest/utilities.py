@@ -293,9 +293,10 @@ def shapefile_to_annotations(shapefile,
     with rasterio.open(rgb) as src:
         left, bottom, right, top = src.bounds
         resolution = src.res[0]
+        raster_crs = src.crs
 
     # Check matching the crs
-    if not gdf.crs == src.crs:
+    if not gdf.crs == raster_crs:
         raise ValueError("The shapefile crs {} does not match the image crs {}".format(
             gdf.crs, src.crs))
 
