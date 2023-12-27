@@ -296,7 +296,7 @@ def shapefile_to_annotations(shapefile,
         raster_crs = src.crs
 
     # Check matching the crs
-    if not gdf.crs == raster_crs:
+    if not gdf.crs.to_string() == raster_crs.to_string():
         raise ValueError("The shapefile crs {} does not match the image crs {}".format(
             gdf.crs, src.crs))
 
