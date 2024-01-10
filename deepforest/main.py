@@ -261,37 +261,23 @@ class deepforest(pl.LightningModule):
 
         return data_loader
 
-    def train_dataloader(self):
+    def train_dataloader(self, train_dataloader):
         """
         Train loader using the configurations
         Returns: loader
 
         """
-        loader = self.load_dataset(csv_file=self.config["train"]["csv_file"],
-                                   root_dir=self.config["train"]["root_dir"],
-                                   augment=True,
-                                   shuffle=True,
-                                   batch_size=self.config["batch_size"])
 
-        return loader
+        return train_dataloader
 
-    def val_dataloader(self):
+    def val_dataloader(self, val_dataloader):
         """
         Create a val data loader only if specified in config
         Returns: a dataloader or a empty iterable.
 
         """
-        if self.config["validation"]["csv_file"] is not None:
-            loader = self.load_dataset(csv_file=self.config["validation"]["csv_file"],
-                                       root_dir=self.config["validation"]["root_dir"],
-                                       augment=False,
-                                       shuffle=False,
-                                       batch_size=self.config["batch_size"])
-        else:
-            # The preferred route for skipping validation is now (pl-2.0) an empty list, see https://github.com/Lightning-AI/lightning/issues/17154
-            loader = []
 
-        return loader
+        return val_dataloader
 
     def predict_dataloader(self, ds):
         """
