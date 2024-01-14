@@ -83,7 +83,7 @@ for path in files:
     plt.imshow(fig)
     
     #Create a shapefile, in this case img data was unprojected
-    shp = boxes_to_shapefile(boxes, root_dir=PATH_TO_DIR, projected=False)
+    shp = boxes_to_shapefile(boxes, rgb=PATH_TO_DIR, projected=False)
     
     #Get name of image and save a .shp in the same folder
     basename = os.path.splitext(os.path.basename(path))[0]
