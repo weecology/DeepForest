@@ -138,6 +138,7 @@ def evaluate(predictions, ground_df, root_dir, iou_threshold=0.4, savedir=None):
         predictions: a pandas dataframe, if supplied a root dir is needed to give the relative path of files in df.name. The labels in ground truth and predictions must match. If one is numeric, the other must be numeric.
         ground_df: a pandas dataframe, if supplied a root dir is needed to give the relative path of files in df.name
         root_dir: location of files in the dataframe 'name' column.
+        savedir: optional directory to save image with overlaid predictions and annotations
     Returns:
         results: a dataframe of match bounding boxes
         box_recall: proportion of true positives of box position, regardless of class
