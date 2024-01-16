@@ -472,6 +472,8 @@ class deepforest(pl.LightningModule):
                 # Draw predictions on BGR
                 if raster_path:
                     tile = rio.open(raster_path).read()
+                else:
+                    tile = self.image
                 drawn_plot = tile[:, :, ::-1]
                 drawn_plot = visualize.plot_predictions(tile,
                                                         results,
