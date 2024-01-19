@@ -33,6 +33,16 @@ Free software: [MIT license](https://github.com/weecology/DeepForest/blob/master
 
 Remote sensing can transform the speed, scale, and cost of biodiversity and forestry surveys. Data acquisition currently outpaces the ability to identify individual organisms in high resolution imagery. Individual crown delineation has been a long-standing challenge in remote sensing and available algorithms produce mixed results. DeepForest is the first open source implementation of a deep learning model for crown detection. Deep learning has made enormous strides in a range of computer vision tasks but requires significant amounts of training data. By including a trained model, we hope to simplify the process of retraining deep learning models for a range of forests, sensors, and spatial resolutions.
 
+## How can I contribute?
+
+DeepForest is an open-source python project that depends on user contributions. Users can help by
+
+* Making recommendations to the API and workflow. Please open an issue for anything that could help reduce friction and improve user experience.
+
+* Leading implementations of new features. Check out the 'good first issue' tag on the repo and get in touch with mantainers and tell us about your skills. 
+
+* Data contributions! The DeepForest backbone tree and bird models are not perfect. Please consider posting any annotations you make on zenodo, or sharing them with DeepForest mantainers. Open an [issue](https://github.com/weecology/DeepForest/issues) and tell us about the RGB data and annotations. For example, we are collecting tree annotations to create an [open-source benchmark](https://milliontrees.idtrees.org/). Please consider sharing data to make the models stronger and benefit you and other users. 
+
 ## Citation
 
 [Weinstein, B.G.; Marconi, S.; Bohlman, S.; Zare, A.; White, E. Individual Tree-Crown Detection in RGB Imagery Using Semi-Supervised Deep Learning Neural Networks.
