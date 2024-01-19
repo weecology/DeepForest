@@ -93,3 +93,7 @@ for path in files:
 ## Fast iterations are the key to annotation success
 
 Many projects have a linear concept of annotations with all the annotations collected before model testing. This is often a mistake. Especially in multi-class scenerios, start with a small number of annotations and allow the model to decide which images are most needed. This can be done in an automated way, or simply by looking at confusion matrices and predicted images. Imagine model developement as a pipeline, the more times you can iterate, the more rapidly your model will improve. For an example in airborne wildlife remote sensing, see the excellent paper by [B. Kellenberger et al. 2019](https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=8807383&casa_token=ZCCfJk3Fy-IAAAAA:UyZyftM25on1ZUijB1o4gBUWw8JBD5lmVkAvzZqL7PlQTvQMzOIK2n9A73swGUpYZYhARUbw&tag=1).
+
+# Please consider making your annotations open-source!
+
+The DeepForest backbone tree and bird models are not perfect. Please consider posting any annotations you make on zenodo, or sharing them with DeepForest mantainers. Open an [issue](https://github.com/weecology/DeepForest/issues) and tell us about the RGB data and annotations. For example, we are collecting tree annotations to create an [open-source benchmark](https://milliontrees.idtrees.org/). Please consider sharing data to make the models stronger and benefit you and other users. 
