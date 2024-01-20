@@ -256,6 +256,20 @@ def test_predict_tile_from_array(m, patch_overlap, raster_path):
                                 return_plot = False)
     assert not prediction.empty
 
+@pytest.mark.parametrize("patch_overlap",[0.1, 0])
+def test_predict_tile_from_array_with_return_plot(m, patch_overlap, raster_path):
+    #test predict numpy image
+    image = np.array(Image.open(raster_path))
+    m.config["train"]["fast_dev_run"] = False
+    m.create_trainer()      
+    prediction = m.predict_tile(image = image,
+                                patch_size = 300,
+                                patch_overlap = patch_overlap,
+                                return_plot = True,
+                                color=(0,255,0))
+    assert isinstance(prediction, np.ndarray)
+    assert prediction.size > 0
+
 def test_predict_tile_no_mosaic(m, raster_path):
     #test no mosaic, return a tuple of crop and prediction
     m.config["train"]["fast_dev_run"] = False
