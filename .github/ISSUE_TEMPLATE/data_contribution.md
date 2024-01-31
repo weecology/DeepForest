@@ -7,14 +7,20 @@ assignees: 'bw4sz'
 
 ---
 
-## Please describe the data (location, number of annotations, format and date of collection)
+**Data Description:**
+Provide details on the data, like its location, the number of annotations, format, and the date of collection.
 
-## Are these data available online?
+**Data Availability:**
+Specify if the data is available online and mention any recommended platforms for data archiving, such as Zenodo. Additionally, express openness to various data sources and formats.
 
-We recommend using zenodo for data archiving.
+**RGB Imagery Collection:**
+Explain how the RGB data imagery was collected and state the image resolution.
 
-## How was the RGB data imagery collected? What is the image resolution? 
+**Usage Restrictions:**
+Outline any restrictions associated with using this data in the development of a release model.
 
-## What are the restrictions to use this data as part of a release model?
+**Licensing Information:**
+If the data is associated with a license, provide details then name.
 
-## Contact Information
+**Contact Information:**
+Include relevant contact information for further inquiries or clarification.
