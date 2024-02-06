@@ -444,3 +444,27 @@ def test_config_args(m):
 
     m2 = main.deepforest(config_args={"train":{"epochs":7}})
     assert m2.config["train"]["epochs"] == 7
+
+def test_load_dataloader(m):
+    """Allow the user to optionally create a dataloader outside of the DeepForest class"""
+
+    # Create dummy loader with a different batch size to assert.
+    existing_loader = m.load_dataset(csv_file=m.config["train"]["csv_file"],
+                                    root_dir=m.config["train"]["root_dir"],
+                                    batch_size=m.config["batch_size"] + 1)
+    
+    # Normal method
+    m.trainer.fit(m)
+    assert len(batch) == m.config["batch_size"]
+
+    # Train dataloader
+    m.existing_train_dataloader = existing_loader
+    m.train_dataloader()
+    #Not clear how to grab the next batch
+    batch = next(m.trainer.train_dataloader)
+    result = m.training_step(batch, 0)
+    assert len(result) == m.config["batch_size"] + 1
+
+    # Val dataloader
+
+    # Predict dataloader

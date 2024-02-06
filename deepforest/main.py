@@ -28,7 +28,10 @@ class deepforest(pl.LightningModule):
                  transforms=None,
                  config_file: str = 'deepforest_config.yml',
                  config_args=None,
-                 model=None):
+                 model=None,
+                 existing_train_dataloader=None,
+                 existing_val_dataloader=None
+                 ):
         """Args:
             num_classes (int): number of classes in the model
             config_file (str): path to deepforest config file
@@ -36,6 +39,8 @@ class deepforest(pl.LightningModule):
             config_args (dict): a dictionary of key->value to update
             config file at run time. e.g. {"batch_size":10}
             This is useful for iterating over arguments during model testing.
+            existing_train_dataloader: a pytorch dataloader that yields a tuple path, images, targets 
+            existing_val_dataloader: a pytorch dataloader that yields a tuple path, images, targets 
         Returns:
             self: a deepforest pytorch lightning module
         """
@@ -81,6 +86,9 @@ class deepforest(pl.LightningModule):
         # release version id to flag if release is being used
         self.__release_version__ = None
 
+        self.existing_train_dataloader = existing_train_dataloader
+        self.existing_val_dataloader = existing_val_dataloader
+        
         self.create_model()
 
         # Metrics
@@ -267,11 +275,15 @@ class deepforest(pl.LightningModule):
         Returns: loader
 
         """
-        loader = self.load_dataset(csv_file=self.config["train"]["csv_file"],
-                                   root_dir=self.config["train"]["root_dir"],
-                                   augment=True,
-                                   shuffle=True,
-                                   batch_size=self.config["batch_size"])
+
+        if self.existing_train_dataloader:
+            return loader
+        else:
+            loader = self.load_dataset(csv_file=self.config["train"]["csv_file"],
+                                    root_dir=self.config["train"]["root_dir"],
+                                    augment=True,
+                                    shuffle=True,
+                                    batch_size=self.config["batch_size"])
 
         return loader
 
@@ -281,7 +293,9 @@ class deepforest(pl.LightningModule):
         Returns: a dataloader or a empty iterable.
 
         """
-        if self.config["validation"]["csv_file"] is not None:
+        if self.existing_val_dataloader:
+            loader = self.existing_val_dataloader
+        elif self.config["validation"]["csv_file"] is not None:
             loader = self.load_dataset(csv_file=self.config["validation"]["csv_file"],
                                        root_dir=self.config["validation"]["root_dir"],
                                        augment=False,
@@ -293,17 +307,23 @@ class deepforest(pl.LightningModule):
 
         return loader
 
-    def predict_dataloader(self, ds):
+    def predict_dataloader(self, ds, dataloader):
         """
         Create a pytorch dataloader for prediction
+        ds: a torchvision dataset to be wrapped into a dataloader using config args
+        The batch_size and num_workers argument are wrapped from self.config. By default dataloader is not shuffled.
+        dataloader: 
         Returns:
         """
-        data_loader = torch.utils.data.DataLoader(ds,
-                                                  batch_size=self.config["batch_size"],
-                                                  shuffle=False,
-                                                  num_workers=self.config["workers"])
+        if dataloader:
+            _data_loader_ = dataloader
+        else:
+            _data_loader_ = torch.utils.data.DataLoader(ds,
+                                                    batch_size=self.config["batch_size"],
+                                                    shuffle=False,
+                                                    num_workers=self.config["workers"])
 
-        return data_loader
+        return _data_loader_
 
     def predict_image(self,
                       image: typing.Optional[np.ndarray] = None,

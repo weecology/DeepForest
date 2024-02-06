@@ -5,6 +5,7 @@ from deepforest import utilities, main
 from deepforest import get_data
 from deepforest import _ROOT
 import os
+import urllib
 
 collect_ignore = ['setup.py']
 
@@ -19,7 +20,11 @@ def config():
 @pytest.fixture(scope="session")
 def download_release():
     print("running fixtures")
-    utilities.use_release()
+    try:
+        utilities.use_release()
+    except urllib.error.URLError:
+        # Add a edge case in case no internet access.
+        pass
     assert os.path.exists(get_data("NEON.pt"))
 
 @pytest.fixture(scope="session")
