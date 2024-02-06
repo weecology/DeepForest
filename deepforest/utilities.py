@@ -293,6 +293,12 @@ def shapefile_to_annotations(shapefile,
     with rasterio.open(rgb) as src:
         left, bottom, right, top = src.bounds
         resolution = src.res[0]
+        raster_crs = src.crs
+
+    # Check matching the crs
+    if not gdf.crs.to_string() == raster_crs.to_string():
+        raise ValueError("The shapefile crs {} does not match the image crs {}".format(
+            gdf.crs, src.crs))
 
     # Transform project coordinates to image coordinates
     df["tile_xmin"] = (df.minx - left) / resolution
@@ -388,6 +394,13 @@ def boxes_to_shapefile(df, root_dir, projected=True, flip_y_axis=False):
     Returns:
        df: a geospatial dataframe with the boxes optionally transformed to the target crs
     """
+    # Raise a warning and confirm if a user sets projected to True when flip_y_axis is True.
+    if flip_y_axis and projected:
+        warnings.warn(
+            "flip_y_axis is {}, and projected is {}. In most cases, projected should be False when inverting y axis. Setting projected=False"
+            .format(flip_y_axis, projected), UserWarning)
+        projected = False
+
     plot_names = df.image_path.unique()
     if len(plot_names) > 1:
         raise ValueError("This function projects a single plots worth of data. "
@@ -465,10 +478,11 @@ def annotations_to_shapefile(df, transform, crs):
     Returns:
         results: a geopandas dataframe where every entry is the bounding box for a detected tree.
     """
-    warnings.warn("This method is deprecated and will be "
-                  "removed in version DeepForest 2.0.0, "
-                  "please use boxes_to_shapefile which unifies project_boxes and "
-                  "annotations_to_shapefile functionalities")
+    warnings.warn(
+        "This method is deprecated and will be "
+        "removed in version DeepForest 2.0.0, "
+        "please use boxes_to_shapefile which unifies project_boxes and "
+        "annotations_to_shapefile functionalities", DeprecationWarning)
 
     # Convert image pixel locations to geographic coordinates
     xmin_coords, ymin_coords = rasterio.transform.xy(transform=transform,
@@ -480,6 +494,13 @@ def annotations_to_shapefile(df, transform, crs):
                                                      rows=df.ymax,
                                                      cols=df.xmax,
                                                      offset='center')
+
+    # If there is only one tree, the above comes out as a float, not a list
+    if type(xmin_coords) == float:
+        xmin_coords = [xmin_coords]
+        ymin_coords = [ymin_coords]
+        xmax_coords = [xmax_coords]
+        ymax_coords = [ymax_coords]
 
     # One box polygon for each tree bounding box
     box_coords = zip(xmin_coords, ymin_coords, xmax_coords, ymax_coords)
@@ -503,9 +524,11 @@ def project_boxes(df, root_dir, transform=True):
     root_dir: directory of images to lookup image_path column
     transform: If true, convert from image to geographic coordinates
     """
-    warnings.warn("This method is deprecated and will be removed in version "
-                  "DeepForest 2.0.0, please use boxes_to_shapefile which "
-                  "unifies project_boxes and annotations_to_shapefile functionalities")
+    warnings.warn(
+        "This method is deprecated and will be removed in version "
+        "DeepForest 2.0.0, please use boxes_to_shapefile which "
+        "unifies project_boxes and annotations_to_shapefile functionalities",
+        DeprecationWarning)
     plot_names = df.image_path.unique()
     if len(plot_names) > 1:
         raise ValueError("This function projects a single plots worth of data. "

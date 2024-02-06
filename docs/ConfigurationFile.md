@@ -6,39 +6,63 @@ Deepforest comes with a sample config file, deepforest_config.yml. Edit this fil
 the config.yml must be updated instead of updating the dictionary of an already loaded model.
 
 ```
-# Config file for DeepForest module
+# Config file for DeepForest pytorch module
 
-#cpu workers for data loaders
-#Dataloaders
+# Cpu workers for data loaders
+# Dataloaders
 workers: 1
 devices: auto
 accelerator: auto
 batch_size: 1
 
-#Non-max supression of overlapping predictions
+# Model Architecture
+architecture: 'retinanet'
+num_classes: 1
 nms_thresh: 0.05
-score_thresh: 0.1
+
+# Architecture specific params
+retinanet:
+    # Non-max supression of overlapping predictions
+    score_thresh: 0.1
 
 train:
-
     csv_file:
     root_dir:
     
-    #Optomizer  initial learning rate
+    # Optimizer initial learning rate
     lr: 0.001
 
-    #Print loss every n epochs
+    # Print loss every n epochs
     epochs: 1
-    #Useful debugging flag in pytorch lightning, set to True to get a single batch of training to test settings.
+    # Useful debugging flag in pytorch lightning, set to True to get a single batch of training to test settings.
     fast_dev_run: False
+    # pin images to GPU memory for fast training. This depends on GPU size and number of images.
+    preload_images: False
     
 validation:
-    #callback args
+    # callback args
     csv_file: 
     root_dir:
-    #Intersection over union evaluation
+    # Intersection over union evaluation
     iou_threshold: 0.4
-    val_accuracy_interval: 5
+    val_accuracy_interval: 20
+```
+## Passing config arguments at runtime using a dict
+
+It can often be useful to pass config args directly to a model instead of editing the config file. By using a dict containing the config keys and their values. Values provided in this dict will override values provided in deepforest_config.yml.
+
+```
+# Default model has 1 class
+m = main.deepforest()
+print(m.config["num_classes"])
+
+# But we can override using config args, make sure to specify a new label dict.
+m = main.deepforest(config_args={"num_classes":2}, label_dict={"Alive":0,"Dead":1})
+print(m.config["num_classes"])
+
+# These can also be nested for train and val arguments
+m = main.deepforest(config_args={"train":{"epochs":7}})
+print(m.config["train"]["epochs"])
 ```
 
 ## Dataloaders

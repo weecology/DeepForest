@@ -256,6 +256,20 @@ def test_predict_tile_from_array(m, patch_overlap, raster_path):
                                 return_plot = False)
     assert not prediction.empty
 
+@pytest.mark.parametrize("patch_overlap",[0.1, 0])
+def test_predict_tile_from_array_with_return_plot(m, patch_overlap, raster_path):
+    #test predict numpy image
+    image = np.array(Image.open(raster_path))
+    m.config["train"]["fast_dev_run"] = False
+    m.create_trainer()      
+    prediction = m.predict_tile(image = image,
+                                patch_size = 300,
+                                patch_overlap = patch_overlap,
+                                return_plot = True,
+                                color=(0,255,0))
+    assert isinstance(prediction, np.ndarray)
+    assert prediction.size > 0
+
 def test_predict_tile_no_mosaic(m, raster_path):
     #test no mosaic, return a tuple of crop and prediction
     m.config["train"]["fast_dev_run"] = False
@@ -432,3 +446,15 @@ def test_iou_metric(m):
     keys = ['val_classification', 'val_bbox_regression', 'iou', 'iou/cl_0']
     for x in keys:
         assert x in list(results[0].keys())
+
+def test_config_args(m):
+    assert not m.config["num_classes"] == 2
+
+    m = main.deepforest(config_args={"num_classes":2}, label_dict={"Alive":0,"Dead":1})
+    assert m.config["num_classes"] == 2
+
+    # These call also be nested for train and val arguments
+    assert not m.config["train"]["epochs"] == 7
+
+    m2 = main.deepforest(config_args={"train":{"epochs":7}})
+    assert m2.config["train"]["epochs"] == 7

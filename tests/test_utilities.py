@@ -55,7 +55,7 @@ def test_shapefile_to_annotations_convert_to_boxes(tmpdir):
     sample_geometry = [geometry.Point(404211.9 + 10,3285102 + 20),geometry.Point(404211.9 + 20,3285102 + 20)]
     labels = ["Tree","Tree"]
     df = pd.DataFrame({"geometry":sample_geometry,"label":labels})
-    gdf = gpd.GeoDataFrame(df, geometry="geometry")
+    gdf = gpd.GeoDataFrame(df, geometry="geometry", crs="EPSG:32617")
     gdf.to_file("{}/annotations.shp".format(tmpdir))
     image_path = get_data("OSBS_029.tif")
     shp = utilities.shapefile_to_annotations(shapefile="{}/annotations.shp".format(tmpdir), rgb=image_path, savedir=tmpdir, geometry_type="point")
@@ -65,14 +65,25 @@ def test_shapefile_to_annotations(tmpdir):
     sample_geometry = [geometry.Point(404211.9 + 10,3285102 + 20),geometry.Point(404211.9 + 20,3285102 + 20)]
     labels = ["Tree","Tree"]
     df = pd.DataFrame({"geometry":sample_geometry,"label":labels})
-    gdf = gpd.GeoDataFrame(df, geometry="geometry")
+    gdf = gpd.GeoDataFrame(df, geometry="geometry", crs="EPSG:32617")
     gdf["geometry"] = [geometry.box(left, bottom, right, top) for left, bottom, right, top in gdf.geometry.buffer(0.5).bounds.values]
     
     gdf.to_file("{}/annotations.shp".format(tmpdir))
     image_path = get_data("OSBS_029.tif")
     shp = utilities.shapefile_to_annotations(shapefile="{}/annotations.shp".format(tmpdir), rgb=image_path, savedir=tmpdir, geometry_type="bbox")
     assert shp.shape[0] == 2
+
+def test_shapefile_to_annotations_incorrect_crs(tmpdir):
+    sample_geometry = [geometry.Point(404211.9 + 10,3285102 + 20),geometry.Point(404211.9 + 20,3285102 + 20)]
+    labels = ["Tree","Tree"]
+    df = pd.DataFrame({"geometry":sample_geometry,"label":labels})
+    gdf = gpd.GeoDataFrame(df, geometry="geometry", crs="EPSG:32618")
+    gdf["geometry"] = [geometry.box(left, bottom, right, top) for left, bottom, right, top in gdf.geometry.buffer(0.5).bounds.values]
     
+    gdf.to_file("{}/annotations.shp".format(tmpdir))
+    image_path = get_data("OSBS_029.tif")
+    with pytest.raises(ValueError):
+        shp = utilities.shapefile_to_annotations(shapefile="{}/annotations.shp".format(tmpdir), rgb=image_path, savedir=tmpdir, geometry_type="bbox")
 def test_boxes_to_shapefile_projected(m):
     img = get_data("OSBS_029.tif")
     r = rio.open(img)
@@ -101,13 +112,21 @@ def test_boxes_to_shapefile_projected_from_predict_tile(m):
     gdf = utilities.boxes_to_shapefile(df.iloc[:1,], root_dir=os.path.dirname(img), projected=True)
     assert gdf.shape[0] == 1
     
+# Test unprojected data, including warning if flip_y_axis is set to True, but projected is False
 @pytest.mark.parametrize("flip_y_axis", [True, False])
-def test_boxes_to_shapefile_unprojected(m, flip_y_axis):
+@pytest.mark.parametrize("projected", [True, False])
+def test_boxes_to_shapefile_unprojected(m, flip_y_axis, projected):
     img = get_data("OSBS_029.png")
     r = rio.open(img)
     df = m.predict_image(path=img)
-    gdf = utilities.boxes_to_shapefile(df, root_dir=os.path.dirname(img), projected=False, flip_y_axis=flip_y_axis)
+
+    with pytest.warns(UserWarning):
+        gdf = utilities.boxes_to_shapefile(
+            df,
+            root_dir=os.path.dirname(img),
+            projected=projected,
+            flip_y_axis=flip_y_axis)
     
-    #Confirm that each boxes within image bounds
+    # Confirm that each boxes within image bounds
     geom = geometry.box(*r.bounds)
     assert all(gdf.geometry.apply(lambda x: geom.intersects(geom)).values)
