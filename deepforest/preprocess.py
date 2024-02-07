@@ -122,23 +122,38 @@ def select_annotations(annotations, windows, index, allow_empty=False):
 
 
 def save_crop(base_dir, image_name, index, crop):
-    """Save window crop as image file to be read by PIL.
-
-    Filename should match the image_name + window index
     """
-    # create dir if needed
+    Save window crop as an image file to be read by PIL.
+
+    Args:
+        base_dir (str): The base directory to save the image file.
+        image_name (str): The name of the original image.
+        index (int): The index of the window crop.
+        crop (numpy.ndarray): The window crop as a NumPy array.
+
+    Returns:
+        str: The filename of the saved image.
+    """
+    # Create directory if needed
     if not os.path.exists(base_dir):
         os.makedirs(base_dir)
 
+    # Convert NumPy array to PIL image
     im = Image.fromarray(crop)
+
+    # Extract the basename of the image
     image_basename = os.path.splitext(image_name)[0]
+
+    # Generate the filename for the saved image
     filename = "{}/{}_{}.png".format(base_dir, image_basename, index)
+
+    # Save the image
     im.save(filename)
 
     return filename
 
 
-def split_raster(annotations_file,
+def split_raster(annotations_file=None,
                  path_to_raster=None,
                  numpy_image=None,
                  base_dir=None,
@@ -153,18 +168,18 @@ def split_raster(annotations_file,
     Args:
         numpy_image: a numpy object to be used as a raster, usually opened from rasterio.open.read(), in order (height, width, channels)
         path_to_raster: (str): Path to a tile that can be read by rasterio on disk
-        annotations_file (str or pd.DataFrame): A pandas dataframe or path to annotations csv file. In the format -> image_path, xmin, ymin, xmax, ymax, label
+        annotations_file (str or pd.DataFrame): A pandas dataframe or path to annotations csv file to transform to cropped images. In the format -> image_path, xmin, ymin, xmax, ymax, label. If None, allow_empty is ignored and the function will only return the cropped images.
         save_dir (str): Directory to save images
         base_dir (str): Directory to save images
         patch_size (int): Maximum dimensions of square window
         patch_overlap (float): Percent of overlap among windows 0->1
         allow_empty: If True, include images with no annotations
-            to be included in the dataset
+            to be included in the dataset. If annotations_file is None, this is ignored.
         image_name (str): If numpy_image arg is used, what name to give the raster?
 
     Returns:
-        A pandas dataframe with annotations file for training. 
-        A copy of this file is written to save_dir as a side effect.
+        If annotations_file is provided, a pandas dataframe with annotations file for training. A copy of this file is written to save_dir as a side effect.
+        If not, a list of filenames of the cropped images.
     """
     # Set deprecation warning for base_dir and set to save_dir
     if base_dir:
@@ -225,37 +240,41 @@ def split_raster(annotations_file,
         image_name = os.path.basename(path_to_raster)
 
     # Load annotations file and coerce dtype
-    if type(annotations_file) == str:
+    if annotations_file is None:
+        allow_empty = True
+    elif type(annotations_file) == str:
         annotations = pd.read_csv(annotations_file)
     elif type(annotations_file) == pd.DataFrame:
         annotations = annotations_file
     else:
         raise TypeError(
-            "annotations file must either by a path or a pd.Dataframe, found {}".format(
-                type(annotations_file)))
+            "annotations file must either be None, a path or a pd.Dataframe, found {}".
+            format(type(annotations_file)))
 
-    # open annotations file
-    image_annotations = annotations[annotations.image_path == image_name]
+    # Select matching annotations
+    if annotations_file is not None:
+        image_annotations = annotations[annotations.image_path == image_name]
 
     # Sanity checks
-    if image_annotations.empty:
-        raise ValueError(
-            "No image names match between the file:{} and the image_path: {}. "
-            "Reminder that image paths should be the relative "
-            "path (e.g. 'image_name.tif'), not the full path "
-            "(e.g. path/to/dir/image_name.tif)".format(annotations_file, image_name))
+    if not allow_empty:
+        if image_annotations.empty:
+            raise ValueError(
+                "No image names match between the file:{} and the image_path: {}. "
+                "Reminder that image paths should be the relative "
+                "path (e.g. 'image_name.tif'), not the full path "
+                "(e.g. path/to/dir/image_name.tif)".format(annotations_file, image_name))
 
-    if not all([
-            x in annotations.columns
-            for x in ["image_path", "xmin", "ymin", "xmax", "ymax", "label"]
-    ]):
-        raise ValueError("Annotations file has {} columns, should have "
-                         "format image_path, xmin, ymin, xmax, ymax, label".format(
-                             annotations.shape[1]))
+        if not all([
+                x in annotations.columns
+                for x in ["image_path", "xmin", "ymin", "xmax", "ymax", "label"]
+        ]):
+            raise ValueError("Annotations file has {} columns, should have "
+                             "format image_path, xmin, ymin, xmax, ymax, label".format(
+                                 annotations.shape[1]))
 
     annotations_files = []
+    crop_filenames = []
     for index, window in enumerate(windows):
-
         # Crop image
         crop = numpy_image[windows[index].indices()]
 
@@ -264,28 +283,37 @@ def split_raster(annotations_file,
             continue
 
         # Find annotations, image_name is the basename of the path
-        crop_annotations = select_annotations(image_annotations, windows, index,
-                                              allow_empty)
+        if annotations_file is not None:
+            crop_annotations = select_annotations(image_annotations, windows, index,
+                                                  allow_empty)
+        else:
+            crop_annotations = None
 
         # If empty images not allowed, select annotations returns None
         if crop_annotations is not None:
             # save annotations
             annotations_files.append(crop_annotations)
 
-            # save image crop
-            save_crop(save_dir, image_name, index, crop)
-    if len(annotations_files) == 0:
-        raise ValueError(
-            "Input file has no overlapping annotations and allow_empty is {}".format(
-                allow_empty))
+        # save image crop
+        if allow_empty or crop_annotations is not None:
+            crop_filename = save_crop(save_dir, image_name, index, crop)
+            crop_filenames.append(crop_filename)
 
-    annotations_files = pd.concat(annotations_files)
+    if annotations_file is not None:
+        # Only concat annotations if there were supplied
+        if len(annotations_files) == 0:
+            raise ValueError(
+                "Input file has no overlapping annotations and allow_empty is {}".format(
+                    allow_empty))
 
-    # Checkpoint csv files, useful for parallelization
-    # Use filename of the raster path to save the annotations
-    image_basename = os.path.splitext(image_name)[0]
-    file_path = image_basename + ".csv"
-    file_path = os.path.join(save_dir, file_path)
-    annotations_files.to_csv(file_path, index=False, header=True)
+        annotations_files = pd.concat(annotations_files)
 
-    return annotations_files
+        # Checkpoint csv files, useful for parallelization and use filename of the raster path to save the annotations
+        image_basename = os.path.splitext(image_name)[0]
+        file_path = image_basename + ".csv"
+        file_path = os.path.join(save_dir, file_path)
+        annotations_files.to_csv(file_path, index=False, header=True)
+
+        return annotations_files
+    else:
+        return crop_filenames

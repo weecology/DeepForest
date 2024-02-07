@@ -2,6 +2,10 @@
 DeepForest Change Log
 =====================
 
+**1.3.3**
+
+* Allow for annotations_file to be none in split_raster, for use in data preprocessing.
+
 **1.3.0**
 
 * Removed IoU_Callback to better align with pytorch-lightning API, see https://github.com/Lightning-AI/pytorch-lightning/issues/19101
