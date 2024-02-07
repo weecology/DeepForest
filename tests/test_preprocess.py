@@ -102,9 +102,6 @@ def test_split_raster(config, tmpdir, input_type):
 def test_split_raster_no_annotations(config, tmpdir):
     """Split raster into crops with overlaps to maintain all annotations"""
     raster = get_data("2019_YELL_2_528000_4978000_image_crop2.png")
-    annotations = utilities.xml_to_annotations(
-        get_data("2019_YELL_2_528000_4978000_image_crop2.xml"))
-    annotations.to_csv("{}/example.csv".format(tmpdir), index=False)
 
     output_crops = preprocess.split_raster(path_to_raster=raster,
                                            annotations_file=None,
@@ -112,7 +109,7 @@ def test_split_raster_no_annotations(config, tmpdir):
                                            patch_size=500,
                                            patch_overlap=0)
 
-    # Returns a 6 length list of crops.
+    # Returns a list of crops.
     assert len(output_crops) == 25
 
     # Assert that all output_crops exist
