@@ -417,10 +417,10 @@ class deepforest(pl.LightningModule):
             raster_path: Path to image on disk
             image (array): Numpy image array in BGR channel order
                 following openCV convention
-            patch_size: patch size default400,
-            patch_overlap: patch overlap default 0.15,
+            patch_size: patch size for each window.
+            patch_overlap: patch overlap among windows.
             iou_threshold: Minimum iou overlap among predictions between
-                windows to be suppressed. Defaults to 0.5.
+                windows to be suppressed.
                 Lower values suppress more boxes at edges.
             return_plot: Should the image be returned with the predictions drawn?
             mosaic: Return a single prediction dataframe (True) or a tuple of image crops and predictions (False)
