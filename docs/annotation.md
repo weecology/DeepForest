@@ -45,6 +45,27 @@ annotations = preprocess.split_raster(
 )
 ```
 
+## Cutting large tiles into pieces
+
+It is often difficult to annotate very large airborne imagery. DeepForest has a small utility to crop images into smaller chunks that can be annotated more easily.
+
+```
+raster = get_data("2019_YELL_2_528000_4978000_image_crop2.png")
+
+output_crops = preprocess.split_raster(path_to_raster=raster,
+                                        annotations_file=None,
+                                        base_dir=tmpdir,
+                                        patch_size=500,
+                                        patch_overlap=0)
+
+# Returns a list of crop filenames.
+assert len(output_crops) == 25
+
+# Assert that all output_crops exist
+for crop in output_crops:
+    assert os.path.exists(crop)
+```
+
 ## How can I view current predictions as shapefiles?
 
 It is often useful to train new training annotations starting from current predictions. This allows users to more quickly find and correct errors. The following example shows how to create a list of files, predict detections in each, and save as shapefiles. A user can then edit these shapefiles in a program like QGIS.
