@@ -12,12 +12,6 @@ for f in files:
     basename = os.path.splitext(os.path.basename(f))[0]
     shp.to_file("/Users/benweinstein/Downloads/{}.shp".format(basename))
 
-
-from deepforest import main
-from deepforest import utilities
-import os
-import glob
-
 m = main.deepforest()
 m.use_release()
 patch_sizes = [400, 800]

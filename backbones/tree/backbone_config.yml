@@ -1,0 +1,10 @@
+# DeepForest tree foundation model training config
+train:
+test:
+savedir:
+
+pretrain:
+  use_pretrain: False
+  model:
+  train:
+  test:
