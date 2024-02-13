@@ -2,9 +2,15 @@
 train:
 test:
 savedir:
+# The path to the main deepforest config, if none, standard main.read_config search pattern
+deepforest_config: 
+checkpoint: 
 
 pretrain:
   use_pretrain: False
   model:
   train:
   test:
+  # How to filter pretraining samples
+  limit_samples:
+  groupby:

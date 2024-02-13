@@ -206,7 +206,7 @@ class deepforest(pl.LightningModule):
     def on_fit_start(self):
         if self.config["train"]["csv_file"] is None:
             raise AttributeError(
-                "Cannot train with a train annotations file, please set 'config['train']['csv_file'] before calling deepforest.create_trainer()'"
+                "Cannot train without a train annotations file, please set 'config['train']['csv_file'] before calling deepforest.create_trainer()'"
             )
 
     def save_model(self, path):
