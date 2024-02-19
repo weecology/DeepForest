@@ -13,9 +13,7 @@ import copy
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 
-from deepforest import main
-from deepforest import get_data
-from deepforest import dataset
+from deepforest import main, get_data, dataset
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import Callback
 from pytorch_lightning.loggers import TensorBoardLogger
@@ -498,6 +496,10 @@ def test_existing_val_dataloader(m, tmpdir, existing_loader):
     batch = next(iter(m.trainer.val_dataloaders))
     assert len(batch[0]) == m.config["batch_size"] + 1
 
-def test_existing_predict_dataloader(m, tmpdir, existing_loader):
-    batches = m.predict_dataloader(dataloader=existing_loader)
+def test_existing_predict_dataloader(m, tmpdir): 
+    # Predict datasets yield only images
+    ds = dataset.TileDataset(tile=np.random.random((400,400,3)).astype("float32"), patch_overlap=0.1, patch_size=100)
+    existing_loader = m.predict_dataloader(ds)
+
+    batches = m.trainer.predict(m, existing_loader)
     len(batches[0]) == m.config["batch_size"] + 1

@@ -80,7 +80,7 @@ scores (Tensor[N]): the scores of each detection
 
 # Custom Dataloaders
 
-For model training, evaluation and prediction, we usually let DeepForest create dataloaders with augmentations and formatting starting from a csv of annotations for training and evaluation, or image paths to prediction. That works well, but what happens if your data is already in the form of a pytorch dataloader? There are a number of emerging benchmarks (e.g. [WILDS](https://github.com/p-lambda/wilds)) that skip the finicky steps of data preprocessing and just yield data directly. We can pass dataloaders directly to DeepForest functions. Because this is a custom route, we leave the responsibility of formatting the data properly to users, see [dataset.TreeDataset](https://deepforest.readthedocs.io/en/latest/source/deepforest.html#deepforest.dataset.TreeDataset). Its important to note that everytime a dataloader is updated, the create_trainer() method needs to be called to update rest of the object.
+For model training, evaluation and prediction, we usually let DeepForest create dataloaders with augmentations and formatting starting from a csv of annotations for training and evaluation, or image paths to prediction. That works well, but what happens if your data is already in the form of a pytorch dataloader? There are a number of emerging benchmarks (e.g. [WILDS](https://github.com/p-lambda/wilds)) that skip the finicky steps of data preprocessing and just yield data directly. We can pass dataloaders directly to DeepForest functions. Because this is a custom route, we leave the responsibility of formatting the data properly to users, see [dataset.TreeDataset](https://deepforest.readthedocs.io/en/latest/source/deepforest.html#deepforest.dataset.TreeDataset) for an example. Any dataloader that meets the needed requirements could be used. Its important to note that everytime a dataloader is updated, the create_trainer() method needs to be called to update rest of the object.
 
 For train/test
 ```
@@ -95,9 +95,13 @@ m.create_trainer()
 m.trainer.fit()
 ```
 
-For prediction we don't need to do so much, just pass the optional dataloader directly
+For prediction directly on a dataloader, we need a dataloader that yields images, see [TileDataset](https://deepforest.readthedocs.io/en/latest/source/deepforest.html#deepforest.dataset.TileDataset) for an example. Any dataloader could be supplied to m.trainer.predict as long as it meets this specification.  
 
 ```
-m.predict_dataloader(dataloader=existing_loader)
+ds = dataset.TileDataset(tile=np.random.random((400,400,3)).astype("float32"), patch_overlap=0.1, patch_size=100)
+existing_loader = m.predict_dataloader(ds)
+
+batches = m.trainer.predict(m, existing_loader)
+len(batches[0]) == m.config["batch_size"] + 1
 ```
 

@@ -306,23 +306,22 @@ class deepforest(pl.LightningModule):
 
         return loader
 
-    def predict_dataloader(self, ds, dataloader=None):
+    def predict_dataloader(self, ds):
         """
-        Create a pytorch dataloader for prediction
-        ds: a torchvision dataset to be wrapped into a dataloader using config args
-        The batch_size and num_workers argument are wrapped from self.config. By default dataloader is not shuffled.
-        dataloader: 
-        Returns:
-        """
-        if dataloader:
-            _data_loader_ = dataloader
-        else:
-            _data_loader_ = torch.utils.data.DataLoader(ds,
-                                                    batch_size=self.config["batch_size"],
-                                                    shuffle=False,
-                                                    num_workers=self.config["workers"])
+        Create a PyTorch dataloader for prediction.
 
-        return _data_loader_
+        Args:
+            ds (torchvision.datasets.Dataset): A torchvision dataset to be wrapped into a dataloader using config args.
+
+        Returns:
+            torch.utils.data.DataLoader: A dataloader object that can be used for prediction.
+        """
+        loader = torch.utils.data.DataLoader(ds,
+                                             batch_size=self.config["batch_size"],
+                                             shuffle=False,
+                                             num_workers=self.config["workers"])
+
+        return loader
 
     def predict_image(self,
                       image: typing.Optional[np.ndarray] = None,
