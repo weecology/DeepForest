@@ -1,4 +1,4 @@
-# Model Architecture
+# Extending DeepForest with Custom Models and Dataloaders
 
 DeepForest allows users to specify custom model architectures if they follow certain guidelines. 
 To create a compliant format, follow the recipe below.
@@ -77,3 +77,27 @@ labels (Int64Tensor[N]): the predicted labels for each detection
 
 scores (Tensor[N]): the scores of each detection
 ```
+
+# Custom Dataloaders
+
+For model training, evaluation and prediction, we usually let DeepForest create dataloaders with augmentations and formatting starting from a csv of annotations for training and evaluation, or image paths to prediction. That works well, but what happens if your data is already in the form of a pytorch dataloader? There are a number of emerging benchmarks (e.g. [WILDS](https://github.com/p-lambda/wilds)) that skip the finicky steps of data preprocessing and just yield data directly. We can pass dataloaders directly to DeepForest functions. Because this is a custom route, we leave the responsibility of formatting the data properly to users, see [dataset.TreeDataset](https://deepforest.readthedocs.io/en/latest/source/deepforest.html#deepforest.dataset.TreeDataset). Its important to note that everytime a dataloader is updated, the create_trainer() method needs to be called to update rest of the object.
+
+For train/test
+```
+m = main.deepforest()
+existing_loader = m.load_dataset(csv_file=m.config["train"]["csv_file"],
+                                root_dir=m.config["train"]["root_dir"],
+                                batch_size=m.config["batch_size"])
+
+# Can be passed directly to main.deepforest(existing_train_dataloader) or reassign to existing deepforest object
+m.existing_train_dataloader_loader
+m.create_trainer()
+m.trainer.fit()
+```
+
+For prediction we don't need to do so much, just pass the optional dataloader directly
+
+```
+m.predict_dataloader(dataloader=existing_loader)
+```
+

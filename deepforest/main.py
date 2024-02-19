@@ -275,9 +275,8 @@ class deepforest(pl.LightningModule):
         Returns: loader
 
         """
-
         if self.existing_train_dataloader:
-            return loader
+            return self.existing_train_dataloader
         else:
             loader = self.load_dataset(csv_file=self.config["train"]["csv_file"],
                                     root_dir=self.config["train"]["root_dir"],
@@ -285,7 +284,7 @@ class deepforest(pl.LightningModule):
                                     shuffle=True,
                                     batch_size=self.config["batch_size"])
 
-        return loader
+            return loader
 
     def val_dataloader(self):
         """
@@ -307,7 +306,7 @@ class deepforest(pl.LightningModule):
 
         return loader
 
-    def predict_dataloader(self, ds, dataloader):
+    def predict_dataloader(self, ds, dataloader=None):
         """
         Create a pytorch dataloader for prediction
         ds: a torchvision dataset to be wrapped into a dataloader using config args

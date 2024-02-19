@@ -445,26 +445,59 @@ def test_config_args(m):
     m2 = main.deepforest(config_args={"train":{"epochs":7}})
     assert m2.config["train"]["epochs"] == 7
 
-def test_load_dataloader(m):
-    """Allow the user to optionally create a dataloader outside of the DeepForest class"""
+@pytest.fixture()
+def existing_loader(m, tmpdir):
+    # Create dummy loader with a different batch size to assert, we'll need a few more images to assess
+    train = pd.read_csv(m.config["train"]["csv_file"])
+    train2 = train.copy(deep=True)
+    train3 = train.copy(deep=True)
+    train2.image_path = train2.image_path + "2"
+    train3.image_path = train3.image_path + "3"
+    pd.concat([train, train2, train3]).to_csv("{}/train.csv".format(tmpdir.strpath))
 
-    # Create dummy loader with a different batch size to assert.
-    existing_loader = m.load_dataset(csv_file=m.config["train"]["csv_file"],
-                                    root_dir=m.config["train"]["root_dir"],
+    # Copy the new images to the tmpdir
+    train.image_path.unique()
+    image_path = train.image_path.unique()[0]
+    shutil.copyfile("{}/{}".format(m.config["train"]["root_dir"], image_path), tmpdir.strpath + "/{}".format(image_path))
+    shutil.copyfile("{}/{}".format(m.config["train"]["root_dir"], image_path), tmpdir.strpath + "/{}".format(image_path + "2"))
+    shutil.copyfile("{}/{}".format(m.config["train"]["root_dir"], image_path), tmpdir.strpath + "/{}".format(image_path + "3"))
+    existing_loader = m.load_dataset(csv_file="{}/train.csv".format(tmpdir.strpath),
+                                    root_dir=tmpdir.strpath,
                                     batch_size=m.config["batch_size"] + 1)
     
-    # Normal method
-    m.trainer.fit(m)
-    assert len(batch) == m.config["batch_size"]
+    return existing_loader
 
-    # Train dataloader
+def test_load_existing_train_dataloader(m, tmpdir, existing_loader):
+    """Allow the user to optionally create a dataloader outside of the DeepForest class, ensure this works for train/val/predict"""
+    # Inspect original for comparison of batch size
+    m.config["train"]["csv_file"] = "{}/train.csv".format(tmpdir.strpath)
+    m.config["train"]["root_dir"] = tmpdir.strpath
+    m.create_trainer()
+    m.trainer.fit(m)
+    batch = next(iter(m.trainer.train_dataloader))
+    assert len(batch[0]) == m.config["batch_size"] 
+
+    # Existing train dataloader
+    m.config["train"]["csv_file"] = "{}/train.csv".format(tmpdir.strpath)
+    m.config["train"]["root_dir"] = tmpdir.strpath
     m.existing_train_dataloader = existing_loader
     m.train_dataloader()
-    #Not clear how to grab the next batch
-    batch = next(m.trainer.train_dataloader)
-    result = m.training_step(batch, 0)
-    assert len(result) == m.config["batch_size"] + 1
+    m.create_trainer()
+    m.trainer.fit(m)
+    batch = next(iter(m.trainer.train_dataloader))
+    assert len(batch[0]) == m.config["batch_size"] + 1
+    m.trainer.fit(m)
 
-    # Val dataloader
+def test_existing_val_dataloader(m, tmpdir, existing_loader):
+    m.config["validation"]["csv_file"] = "{}/train.csv".format(tmpdir.strpath)
+    m.config["validation"]["root_dir"] = tmpdir.strpath
+    m.existing_val_dataloader = existing_loader
+    m.val_dataloader()
+    m.create_trainer()
+    m.trainer.validate(m)
+    batch = next(iter(m.trainer.val_dataloaders))
+    assert len(batch[0]) == m.config["batch_size"] + 1
 
-    # Predict dataloader
+def test_existing_predict_dataloader(m, tmpdir, existing_loader):
+    batches = m.predict_dataloader(dataloader=existing_loader)
+    len(batches[0]) == m.config["batch_size"] + 1
