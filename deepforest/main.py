@@ -30,8 +30,7 @@ class deepforest(pl.LightningModule):
                  config_args=None,
                  model=None,
                  existing_train_dataloader=None,
-                 existing_val_dataloader=None
-                 ):
+                 existing_val_dataloader=None):
         """Args:
             num_classes (int): number of classes in the model
             config_file (str): path to deepforest config file
@@ -88,7 +87,7 @@ class deepforest(pl.LightningModule):
 
         self.existing_train_dataloader = existing_train_dataloader
         self.existing_val_dataloader = existing_val_dataloader
-        
+
         self.create_model()
 
         # Metrics
@@ -279,10 +278,10 @@ class deepforest(pl.LightningModule):
             return self.existing_train_dataloader
         else:
             loader = self.load_dataset(csv_file=self.config["train"]["csv_file"],
-                                    root_dir=self.config["train"]["root_dir"],
-                                    augment=True,
-                                    shuffle=True,
-                                    batch_size=self.config["batch_size"])
+                                       root_dir=self.config["train"]["root_dir"],
+                                       augment=True,
+                                       shuffle=True,
+                                       batch_size=self.config["batch_size"])
 
             return loader
 
