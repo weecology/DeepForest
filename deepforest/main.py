@@ -38,8 +38,8 @@ class deepforest(pl.LightningModule):
             config_args (dict): a dictionary of key->value to update
             config file at run time. e.g. {"batch_size":10}
             This is useful for iterating over arguments during model testing.
-            existing_train_dataloader: a pytorch dataloader that yields a tuple path, images, targets 
-            existing_val_dataloader: a pytorch dataloader that yields a tuple path, images, targets 
+            existing_train_dataloader: a Pytorch dataloader that yields a tuple path, images, targets
+            existing_val_dataloader: a Pytorch dataloader that yields a tuple path, images, targets
         Returns:
             self: a deepforest pytorch lightning module
         """
@@ -276,14 +276,14 @@ class deepforest(pl.LightningModule):
         """
         if self.existing_train_dataloader:
             return self.existing_train_dataloader
-        else:
-            loader = self.load_dataset(csv_file=self.config["train"]["csv_file"],
-                                       root_dir=self.config["train"]["root_dir"],
-                                       augment=True,
-                                       shuffle=True,
-                                       batch_size=self.config["batch_size"])
 
-            return loader
+        loader = self.load_dataset(csv_file=self.config["train"]["csv_file"],
+                                   root_dir=self.config["train"]["root_dir"],
+                                   augment=True,
+                                   shuffle=True,
+                                   batch_size=self.config["batch_size"])
+
+        return loader
 
     def val_dataloader(self):
         """
@@ -291,18 +291,18 @@ class deepforest(pl.LightningModule):
         Returns: a dataloader or a empty iterable.
 
         """
+        # The preferred route for skipping validation is now (pl-2.0) an empty list,
+        # see https://github.com/Lightning-AI/lightning/issues/17154
+        loader = []
+
         if self.existing_val_dataloader:
-            loader = self.existing_val_dataloader
-        elif self.config["validation"]["csv_file"] is not None:
+            return self.existing_val_dataloader
+        if self.config["validation"]["csv_file"] is not None:
             loader = self.load_dataset(csv_file=self.config["validation"]["csv_file"],
                                        root_dir=self.config["validation"]["root_dir"],
                                        augment=False,
                                        shuffle=False,
                                        batch_size=self.config["batch_size"])
-        else:
-            # The preferred route for skipping validation is now (pl-2.0) an empty list, see https://github.com/Lightning-AI/lightning/issues/17154
-            loader = []
-
         return loader
 
     def predict_dataloader(self, ds):
