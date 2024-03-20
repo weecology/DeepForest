@@ -2,10 +2,10 @@
 
 Deepforest uses a config.yml to control hyperparameters related to model training and evaluation. This allows all the relevant parameters to live in one location and be easily changed when exploring new models.
 
-Deepforest comes with a sample config file, deepforest_config.yml. Edit this file to change settings while developing models. Please note that if you would like for deepforest to save the config file on reload (using deepforest.save_model), 
-the config.yml must be updated instead of updating the dictionary of an already loaded model.
+DeepForest includes a default sample config file named deepforest_config.yml. Users have the option to override this file by creating their own custom config file. Initially, DeepForest scans the current working directory for the file. If it's not found there, it automatically resorts to using the default configuration.
 
-**Note**: It's important to note the order in which DeepForest searches for the deepforest_config.yml file. First it looks for the file in your current working directory. If it can't find the file there, it defaults to using the default config. 
+You can edit this file to change settings while developing models. Please note that if you would like for deepforest to save the config file on reload (using deepforest.save_model), 
+the config.yml must be updated instead of updating the dictionary of an already loaded model.
 
 ```
 # Config file for DeepForest pytorch module
