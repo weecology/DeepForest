@@ -28,7 +28,7 @@ dependencies:
   - recommonmark
   - rtree
   - slidingwindow
-  - setuptools <59.6.
+  - setuptools <59.6
   - sphinx
   - sphinx_rtd_theme
   - pytorch::torchvision
