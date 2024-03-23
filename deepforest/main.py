@@ -416,7 +416,7 @@ class deepforest(pl.LightningModule):
 
     def predict_tile(self,
                      raster_path=None,
-                     path= None,
+                     path=None,
                      image=None,
                      patch_size=400,
                      patch_overlap=0.05,
@@ -459,7 +459,7 @@ class deepforest(pl.LightningModule):
                 "The 'raster_path' argument is deprecated and will be removed in future versions. Use 'path' instead.",
             DeprecationWarning
             )
-            path = raster_path
+            path = path
 
         if (raster_path is None) and (image is None):
             raise ValueError(
