@@ -395,7 +395,7 @@ class deepforest(pl.LightningModule):
         Returns:
             df: pandas dataframe with bounding boxes, label and scores for each image in the csv file
         """
-        df = pd.read_csv(csv_file)
+        df = utilities.read_file(csv_file)
         ds = dataset.TreeDataset(csv_file=csv_file,
                                  root_dir=root_dir,
                                  transforms=None,
@@ -411,6 +411,8 @@ class deepforest(pl.LightningModule):
                                                savedir=savedir,
                                                color=color,
                                                thickness=thickness)
+        
+        
 
         return results
 
@@ -579,7 +581,7 @@ class deepforest(pl.LightningModule):
 
         # Evaluate on validation data predictions
         self.predictions_df = pd.concat(self.predictions)
-        ground_df = pd.read_csv(self.config["validation"]["csv_file"])
+        ground_df = utilities.read_file(self.config["validation"]["csv_file"])
         ground_df["label"] = ground_df.label.apply(lambda x: self.label_dict[x])
 
         #Evaluate every n epochs
@@ -646,7 +648,7 @@ class deepforest(pl.LightningModule):
         Returns:
             results: dict of ("results", "precision", "recall") for a given threshold
         """
-        ground_df = pd.read_csv(csv_file)
+        ground_df = utilities.read_file(csv_file)
         ground_df["label"] = ground_df.label.apply(lambda x: self.label_dict[x])
         predictions = self.predict_file(csv_file=csv_file,
                                         root_dir=root_dir,

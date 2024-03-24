@@ -9,16 +9,17 @@ import cv2
 from PIL import Image
 
 from deepforest import IoU
-from deepforest.utilities import check_file
 from deepforest import visualize
+from deepforest.utilities import determine_geometry_type
+
 import warnings
 
 
-def evaluate_image(predictions, ground_df, root_dir, savedir=None):
+def evaluate_image_boxes(predictions, ground_df, root_dir, savedir=None):
     """
     Compute intersection-over-union matching among prediction and ground truth boxes for one image
     Args:
-        df: a pandas dataframe with columns name, xmin, xmax, ymin, ymax, label. The 'name' column should be the path relative to the location of the file.
+        df: a geopandas dataframe with geometry columns
         summarize: Whether to group statistics by plot and overall score
         image_coordinates: Whether the current boxes are in coordinate system of the image, e.g. origin (0,0) upper left.
         root_dir: Where to search for image names in df
@@ -31,14 +32,6 @@ def evaluate_image(predictions, ground_df, root_dir, savedir=None):
         raise ValueError("More than one plot passed to image crown: {}".format(plot_name))
     else:
         plot_name = plot_names[0]
-
-    predictions['geometry'] = predictions.apply(
-        lambda x: shapely.geometry.box(x.xmin, x.ymin, x.xmax, x.ymax), axis=1)
-    predictions = gpd.GeoDataFrame(predictions, geometry='geometry')
-
-    ground_df['geometry'] = ground_df.apply(
-        lambda x: shapely.geometry.box(x.xmin, x.ymin, x.xmax, x.ymax), axis=1)
-    ground_df = gpd.GeoDataFrame(ground_df, geometry='geometry')
 
     # match
     result = IoU.compute_IoU(ground_df, predictions)
@@ -107,14 +100,17 @@ def __evaluate_wrapper__(predictions,
         Returns:
             results: a dictionary of results with keys, results, box_recall, box_precision, class_recall
         """
-    # remove empty samples from ground truth
-    ground_df = ground_df[~((ground_df.xmin == 0) & (ground_df.xmax == 0))]
-
-    results = evaluate(predictions=predictions,
-                       ground_df=ground_df,
-                       root_dir=root_dir,
-                       iou_threshold=iou_threshold,
-                       savedir=savedir)
+    prediction_geometry = determine_geometry_type(predictions)
+    if prediction_geometry == "point":
+        raise NotImplementedError("Point evaluation is not yet implemented")
+    elif prediction_geometry == "box":
+        results = evaluate_boxes(predictions=predictions,
+                        ground_df=ground_df,
+                        root_dir=root_dir,
+                        iou_threshold=iou_threshold,
+                        savedir=savedir)
+    else:
+        raise NotImplementedError("Geometry type {} not implemented".format(prediction_geometry))
 
     # replace classes if not NUll
     if not results is None:
@@ -130,7 +126,7 @@ def __evaluate_wrapper__(predictions,
     return results
 
 
-def evaluate(predictions, ground_df, root_dir, iou_threshold=0.4, savedir=None):
+def evaluate_boxes(predictions, ground_df, root_dir, iou_threshold=0.4, savedir=None):
     """Image annotated crown evaluation routine
     submission can be submitted as a .shp, existing pandas dataframe or .csv path
 
@@ -145,10 +141,6 @@ def evaluate(predictions, ground_df, root_dir, iou_threshold=0.4, savedir=None):
         box_precision: proportion of predictions that are true positive, regardless of class
         class_recall: a pandas dataframe of class level recall and precision with class sizes
     """
-
-    check_file(ground_df)
-    check_file(predictions)
-
     # Run evaluation on all plots
     results = []
     box_recalls = []
@@ -175,7 +167,7 @@ def evaluate(predictions, ground_df, root_dir, iou_threshold=0.4, savedir=None):
             continue
         else:
             group = group.reset_index(drop=True)
-            result = evaluate_image(predictions=image_predictions,
+            result = evaluate_image_boxes(predictions=image_predictions,
                                     ground_df=group,
                                     root_dir=root_dir,
                                     savedir=savedir)

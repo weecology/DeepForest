@@ -11,6 +11,7 @@ from torchvision.ops import nms
 import typing
 
 from deepforest import visualize
+from deepforest.utilities import read_file
 
 
 def _predict_image_(model,
@@ -179,6 +180,7 @@ def _dataloader_wrapper_(model,
         results.append(prediction)
 
     results = pd.concat(results, ignore_index=True)
+    results = read_file(results, root_dir)
 
     if savedir:
         visualize.plot_prediction_dataframe(results,
