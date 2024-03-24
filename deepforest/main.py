@@ -459,9 +459,9 @@ class deepforest(pl.LightningModule):
                 "The 'raster_path' argument is deprecated and will be removed in future versions. Use 'path' instead.",
             DeprecationWarning
             )
-            path = path
+            path = raster_path
 
-        if (raster_path is None) and (image is None):
+        if (path is None) and (image is None):
             raise ValueError(
                 "Both tile and tile_path are None. Either supply a path to a tile on disk, or read one into memory!"
             )
