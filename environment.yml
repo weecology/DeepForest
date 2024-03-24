@@ -21,7 +21,7 @@ dependencies:
   - psutil
   - pytest
   - pytest-profiling
-  - pytorch
+  - pytorch::pytorch
   - pytorch-lightning>1.5.8
   - pyyaml>=5.1.0
   - rasterio
@@ -31,7 +31,7 @@ dependencies:
   - setuptools
   - sphinx
   - sphinx_rtd_theme
-  - torchvision>=0.13
+  - pytorch::torchvision
   - tqdm
   - twine
   - xmltodict
