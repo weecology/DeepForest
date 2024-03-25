@@ -417,6 +417,7 @@ class deepforest(pl.LightningModule):
                      iou_threshold=0.15,
                      return_plot=False,
                      mosaic=True,
+                     keep_projection = False,
                      sigma=0.5,
                      thresh=0.001,
                      color=None,
@@ -436,6 +437,7 @@ class deepforest(pl.LightningModule):
                 Lower values suppress more boxes at edges.
             return_plot: Should the image be returned with the predictions drawn?
             mosaic: Return a single prediction dataframe (True) or a tuple of image crops and predictions (False)
+            keep_projection: Return projected data if (True)
             sigma: variance of Gaussian function used in Gaussian Soft NMS
             thresh: the score thresh used to filter bboxes after soft-nms performed
             color: color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255)
@@ -464,6 +466,10 @@ class deepforest(pl.LightningModule):
                                  patch_size=patch_size)
         batched_results = self.trainer.predict(self, self.predict_dataloader(ds))
 
+        results_projected=[]
+        if keep_projection:
+            results_projected=utilities.boxes_to_shapefile(batched_results, root_dir=raster_path)
+
         # Flatten list from batched prediction
         results = []
         for batch in batched_results:
@@ -491,6 +497,9 @@ class deepforest(pl.LightningModule):
                                                         results,
                                                         color=color,
                                                         thickness=thickness)
+                if keep_projection:
+                    return drawn_plot,results_projected
+
                 return drawn_plot
         else:
             for df in results:
@@ -503,6 +512,9 @@ class deepforest(pl.LightningModule):
                 self.crops.append(crop)
 
             return list(zip(results, self.crops))
+
+        if keep_projection:
+            return results,results_projected
 
         return results
 
