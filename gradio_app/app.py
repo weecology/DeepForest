@@ -30,6 +30,7 @@ with gr.Blocks() as demo:
     submit_button_trees = gr.Button("Predict trees")
     submit_button_trees.click(show_trees, inputs=input_image, outputs=output_image)
     
+    gr.Markdown('## Bird Detection Model')
     gr.Markdown('### Predict birds')
     with gr.Row():
         with gr.Column():
