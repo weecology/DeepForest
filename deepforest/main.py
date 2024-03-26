@@ -60,6 +60,11 @@ class deepforest(pl.LightningModule):
         print("Reading config file: {}".format(config_path))
         self.config = utilities.read_config(config_path)
         self.config["num_classes"] = num_classes
+        # If num classes is specified, overwrite config
+        if not num_classes == 1:
+            warnings.warn(
+                "Directly specifying the num_classes arg in deepforest.main will be deprecated in 2.0 in favor of config_args. Use main.deepforest(config_args={'num_classes':value})"
+            )
 
         # Update config with user supplied arguments
         if config_args:
