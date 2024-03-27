@@ -44,6 +44,7 @@ jobs:
 
       - name: Run pytest, test style, and notebooks
         run: |
+          pip install -e .
           pytest -v
           yapf -d --recursive deepforest/ --style=.style.yapf
           pytest --nbmake docs/*.ipynb
