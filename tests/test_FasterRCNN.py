@@ -6,6 +6,8 @@ import numpy as np
 import torch
 import torchvision
 import os
+from typing import Literal
+
 
 os.environ['KMP_DUPLICATE_LIB_OK']='True'
 
@@ -22,12 +24,12 @@ def _make_empty_sample():
     targets = [negative_target]
     return images, targets
 
-def test_retinanet(config: np.Any):
+def test_retinanet(config: np.any):
     r = FasterRCNN.Model(config)
 
     assert r
 
-def test_load_backbone(config: np.Any):
+def test_load_backbone(config: np.any):
     r = FasterRCNN.Model(config)
     resnet_backbone = r.load_backbone()
     resnet_backbone.eval()
@@ -37,14 +39,14 @@ def test_load_backbone(config: np.Any):
 # This test still fails, do we want a way to pass kwargs directly to method, instead of being limited by config structure?
 # Need to create issue when I get online.
 @pytest.mark.parametrize("num_classes",[1,2,10])
-def test_create_model(config: np.Any, num_classes: Literal[1] | Literal[2] | Literal[10]):
+def test_create_model(config: np.any, num_classes: Literal[1] | Literal[2] | Literal[10]):
     config["num_classes"] = num_classes
     retinanet_model = FasterRCNN.Model(config).create_model()
     retinanet_model.eval()
     x = [torch.rand(3, 300, 400), torch.rand(3, 500, 400)]
     predictions = retinanet_model(x)    
 
-def test_forward_empty(config: np.Any):
+def test_forward_empty(config: np.any):
     r = FasterRCNN.Model(config)
     model = r.create_model()
     image, targets = _make_empty_sample()
