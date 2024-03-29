@@ -22,12 +22,12 @@ def _make_empty_sample():
     targets = [negative_target]
     return images, targets
 
-def test_retinanet(config):
+def test_retinanet(config: np.Any):
     r = FasterRCNN.Model(config)
 
-    return r
+    assert r
 
-def test_load_backbone(config):
+def test_load_backbone(config: np.Any):
     r = FasterRCNN.Model(config)
     resnet_backbone = r.load_backbone()
     resnet_backbone.eval()
@@ -37,14 +37,14 @@ def test_load_backbone(config):
 # This test still fails, do we want a way to pass kwargs directly to method, instead of being limited by config structure?
 # Need to create issue when I get online.
 @pytest.mark.parametrize("num_classes",[1,2,10])
-def test_create_model(config, num_classes):
+def test_create_model(config: np.Any, num_classes: Literal[1] | Literal[2] | Literal[10]):
     config["num_classes"] = num_classes
     retinanet_model = FasterRCNN.Model(config).create_model()
     retinanet_model.eval()
     x = [torch.rand(3, 300, 400), torch.rand(3, 500, 400)]
     predictions = retinanet_model(x)    
 
-def test_forward_empty(config):
+def test_forward_empty(config: np.Any):
     r = FasterRCNN.Model(config)
     model = r.create_model()
     image, targets = _make_empty_sample()
