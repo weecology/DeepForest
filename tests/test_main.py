@@ -306,6 +306,21 @@ def test_predict_tile_no_mosaic(m, raster_path):
     assert len(prediction[0]) == 2
     assert prediction[0][1].shape == (300,300, 3)    
 
+def test_predict_tile_with_projection(m, raster_path):
+    # test with projection enabled
+    m.config["train"]["fast_dev_run"] = False
+    m.create_trainer()
+    prediction, projection = m.predict_tile(raster_path=raster_path,
+                                            patch_size=300,
+                                            patch_overlap=0.1,
+                                            return_plot=False,
+                                            keep_projection=True)
+    
+    assert isinstance(prediction, pd.DataFrame)
+    assert set(prediction.columns) == {"xmin","ymin","xmax","ymax","label","score","image_path"}
+    assert not prediction.empty
+    
+    assert isinstance(projection, pd.DataFrame)  # Assert that projection dataframe is returned
 
 def test_evaluate(m, tmpdir):
     csv_file = get_data("OSBS_029.csv")
