@@ -3,8 +3,8 @@
 # Cpu workers for data loaders
 # Dataloaders
 workers: 1
-devices: auto
-accelerator: auto
+devices: 1
+accelerator: 'gpu'
 batch_size: 1
 
 # Model Architecture
