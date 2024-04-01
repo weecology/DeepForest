@@ -1,5 +1,9 @@
 # Getting started
 
+# Demo
+
+[Try out the DeepForest models online!](https://huggingface.co/spaces/weecology/deepforest-demo)
+
 ## How do I use a pretrained model to predict an image?
 
 ```python
@@ -19,7 +23,6 @@ plt.imshow(img[:,:,::-1])
 
 ![](../www/getting_started1.png)
 
-The demo for the above model can be found here: [Deepforest Demo](https://huggingface.co/spaces/weecology/deepforest-demo)
 
 ** please note that this video was made before the deepforest-pytorch -> deepforest name change. **
 
