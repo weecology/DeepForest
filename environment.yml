@@ -32,6 +32,7 @@ dependencies:
   - sphinx_rtd_theme
   - pytorch::torchvision
   - tqdm
+  - tensorboard
   - twine
   - xmltodict
   - yapf
