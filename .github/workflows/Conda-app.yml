@@ -14,7 +14,6 @@ jobs:
       fail-fast: false
       matrix:
         python-version:
-          - "3.x"
           - "3.12"
           - "3.11"
           - "3.10"
@@ -44,8 +43,8 @@ jobs:
         with:
           environment-name: DeepForest
           environment-file: environment.yml
-          extra-specs: "python=${{ matrix.python-version }}"
-          cache-env: true
+          create-args: "python=${{ matrix.python-version }}"
+          cache-environment: true
           cache-downloads: true
 
       - name: Run pytest, test style, and notebooks
