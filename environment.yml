@@ -17,7 +17,6 @@ dependencies:
   - pandas
   - pillow>6.2.0
   - pip
-  - pycocotools
   - psutil
   - pytest
   - pytest-profiling
@@ -41,4 +40,4 @@ dependencies:
     - imagecodecs
     - albumentations>=1.0.0
     - comet_ml
-
+    - pycocotools
