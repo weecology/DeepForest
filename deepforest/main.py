@@ -453,6 +453,15 @@ class deepforest(pl.LightningModule):
         self.model.eval()
         self.model.nms_thresh = self.config["nms_thresh"]
 
+        # if more than one GPU present, use only a the first available gpu
+        if torch.cuda.device_count() > 1:
+            # Get available gpus and regenerate trainer
+            warnings.warn(
+                "More than one GPU detected. Using only the first GPU for predict_tile."
+            )
+            self.config["devices"] = 1
+            self.create_trainer()
+
         if (raster_path is None) and (image is None):
             raise ValueError(
                 "Both tile and tile_path are None. Either supply a path to a tile on disk, or read one into memory!"
