@@ -17,7 +17,6 @@ dependencies:
   - pandas
   - pillow>6.2.0
   - pip
-  - pycocotools
   - psutil
   - pytest
   - pytest-profiling
@@ -28,11 +27,12 @@ dependencies:
   - recommonmark
   - rtree
   - slidingwindow
-  - setuptools<=59.2.0
+  - setuptools
   - sphinx
   - sphinx_rtd_theme
   - pytorch::torchvision
   - tqdm
+  - tensorboard
   - twine
   - xmltodict
   - yapf
@@ -41,4 +41,4 @@ dependencies:
     - imagecodecs
     - albumentations>=1.0.0
     - comet_ml
-
+    - pycocotools

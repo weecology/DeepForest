@@ -298,8 +298,9 @@ def shapefile_to_annotations(shapefile,
     if gdf.crs:
         # Check matching the crs
         if not gdf.crs.to_string() == raster_crs.to_string():
-            raise ValueError("The shapefile crs {} does not match the image crs {}".format(
-                gdf.crs, src.crs))
+            raise ValueError(
+                "The shapefile crs {} does not match the image crs {}".format(
+                    gdf.crs, src.crs))
 
     # Transform project coordinates to image coordinates
     df["tile_xmin"] = (df.minx - left) / resolution

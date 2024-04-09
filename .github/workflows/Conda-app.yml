@@ -14,7 +14,6 @@ jobs:
       fail-fast: false
       matrix:
         python-version:
-          - "3.x"
           - "3.12"
           - "3.11"
           - "3.10"
@@ -33,21 +32,29 @@ jobs:
       - name: "Checkout code"
         uses: "actions/checkout@v4"
 
+      - name: Install opencv dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgl1-mesa-glx libegl1-mesa
+          sudo apt-get install -y python3-opencv
+
       - name: Install Conda environment with Micromamba
         uses: mamba-org/setup-micromamba@v1
         with:
           environment-name: DeepForest
           environment-file: environment.yml
-          extra-specs: "python=${{ matrix.python-version }}"
-          cache-env: true
+          create-args: "python=${{ matrix.python-version }}"
+          cache-environment: true
           cache-downloads: true
 
-      - name: Run pytest, test style, and notebooks
-        run: |
-          pip install -e .
-          pytest -v
-          yapf -d --recursive deepforest/ --style=.style.yapf
-          pytest --nbmake docs/*.ipynb
+      - name: Run pytest
+        run: pytest -v
+
+      - name: Check style
+        run: yapf -d --recursive deepforest/ --style=.style.yapf
+          
+      - name: Check notebook build
+        run: pytest --nbmake docs/*.ipynb
 
       - name: Test Docs
         run: |
