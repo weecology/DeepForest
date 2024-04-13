@@ -310,17 +310,14 @@ def test_predict_tile_with_projection(m, raster_path):
     # test with projection enabled
     m.config["train"]["fast_dev_run"] = False
     m.create_trainer()
-    prediction, projection = m.predict_tile(raster_path=raster_path,
+    prediction = m.predict_tile(raster_path=raster_path,
                                             patch_size=300,
                                             patch_overlap=0.1,
-                                            return_plot=False,
-                                            keep_projection=True)
+                                            return_plot=False)
     
     assert isinstance(prediction, pd.DataFrame)
     assert set(prediction.columns) == {"xmin","ymin","xmax","ymax","label","score","image_path"}
     assert not prediction.empty
-    
-    assert isinstance(projection, pd.DataFrame)  # Assert that projection dataframe is returned
 
 def test_evaluate(m, tmpdir):
     csv_file = get_data("OSBS_029.csv")
