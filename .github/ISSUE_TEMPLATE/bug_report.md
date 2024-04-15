@@ -8,17 +8,38 @@ assignees: ''
 ---
 
 **Describe the bug**
-A clear and concise description of what the bug is.
+A clear and concise description of what the bug is. For questions and community discussion, please create a discussion (https://github.com/weecology/DeepForest/discussions). 
 
 **To Reproduce**
-Steps to reproduce the behavior:
+Steps to reproduce the behavior! Use data from the package to mock your issue. Issues without reproducible code are likely to be closed quickly. 
+
+```
+# Load the modules
+from deepforest import main
+from deepforest import get_data
+import os
+
+# Use the latest release
+m = main.deepforest()
+m.use_release()
+
+# Use package data for simple training example
+m.config["train"]["csv_file"] = get_data("example.csv") 
+m.config["train"]["root_dir"] = os.path.dirname(get_data("example.csv"))
+m.config["train"]["fast_dev_run"] = True    
+m.trainer.fit(m)
+```
 
 **Environment (please complete the following information):**
  - OS: 
  - Python version and environment : 
 
-**Screenshots**
-If applicable, add screenshots to help explain your problem.
+**Screenshots and Context**
+If applicable, add screenshots to help explain your problem. Please paste entire code instead of a snippet! 
 
-**Additional context**
-Add any other context about the problem here.
+**User Story**
+Tell us about who you are and what you hope to achieve with DeepForest
+
+“As a [type of user] I want [my goal] so that [my reason].”
+
+
