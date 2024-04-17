@@ -457,8 +457,7 @@ class deepforest(pl.LightningModule):
         if torch.cuda.device_count() > 1:
             # Get available gpus and regenerate trainer
             warnings.warn(
-                "More than one GPU detected. Using only the first GPU for predict_tile."
-            )
+                "More than one GPU detected. Using only the first GPU for predict_tile.")
             self.config["devices"] = 1
             self.create_trainer()
 
