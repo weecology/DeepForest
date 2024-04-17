@@ -11,7 +11,7 @@ assignees: ''
 A clear and concise description of what the bug is. For questions and community discussion, please create a discussion (https://github.com/weecology/DeepForest/discussions). 
 
 **To Reproduce**
-Steps to reproduce the behavior! Use data from the package to mock your issue. Issues without reproducible code are likely to be closed quickly. 
+Issues without reproducible code that we can run to explore the problem are much more difficult to understand and debug and so are much less likely to be addressed quickly.
 
 ```
 # Load the modules
