@@ -232,7 +232,7 @@ def _point_recall_image_(predictions, ground_df, root_dir=None, savedir=None):
     ground_df = gpd.GeoDataFrame(ground_df, geometry='geometry')
 
     # Which points in boxes
-    result = gpd.sjoin(ground_df, predictions, op='within', how="left")
+    result = gpd.sjoin(ground_df, predictions, predicate='within', how="left")
     result = result.rename(
         columns={
             "label_left": "true_label",

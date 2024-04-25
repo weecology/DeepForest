@@ -13,8 +13,8 @@ class Model(Model):
 
     def load_backbone(self):
         """A torch vision retinanet model"""
-        backbone = torchvision.models.detection.fasterrcnn_resnet50_fpn(pretrained=True)
-
+        backbone = torchvision.models.detection.fasterrcnn_resnet50_fpn(
+            weights='FasterRCNN_ResNet50_FPN_Weights.COCO_V1')
         return backbone
 
     def create_model(self, backbone=None):
@@ -25,7 +25,8 @@ class Model(Model):
             model: a pytorch nn module
         """
         # load Faster RCNN pre-trained model
-        model = torchvision.models.detection.fasterrcnn_resnet50_fpn(pretrained=True)
+        model = torchvision.models.detection.fasterrcnn_resnet50_fpn(
+            weights='FasterRCNN_ResNet50_FPN_Weights.COCO_V1')
 
         # get the number of input features
         in_features = model.roi_heads.box_predictor.cls_score.in_features

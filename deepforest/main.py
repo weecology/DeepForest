@@ -628,7 +628,6 @@ class deepforest(pl.LightningModule):
                                                                mode='min',
                                                                factor=0.1,
                                                                patience=10,
-                                                               verbose=True,
                                                                threshold=0.0001,
                                                                threshold_mode='rel',
                                                                cooldown=0,

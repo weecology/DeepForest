@@ -53,6 +53,7 @@ Get suggestions on how to improve a model by using the [discussion board](https:
    deepforestr
    FAQ
    better
+   scaling
    ExtendingModule
    code_of_conduct.rst
    history.rst
