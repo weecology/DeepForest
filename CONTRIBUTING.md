@@ -67,6 +67,25 @@ $ pip install . --upgrade # or python setup.py install
 $ pytest -v
 ```
 
+### Checking and fixing code style
+
+We use [yapf](https://github.com/google/yapf) for code formatting and style
+checking.
+
+The easiest way to make sure your code is formatted correctly is to integrate
+it into your editor.
+See <https://github.com/google/yapf/blob/main/EDITOR%20SUPPORT.md>.
+
+You can also run yapf from the command line to cleanup the style in your
+changes:
+
+```bash
+yapf -i --recursive deepforest/ --style=.style.yapf
+```
+
+If the style tests fail on a pull request, running the above command is the
+easiest way to fix this.
+
 ### Testing the Conda Deepforest Build
 
 We use the conda_recipe/meta.yaml to make sure that the conda build can
