@@ -1,0 +1,43 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below. You should also cite the model being used. See the README.md for more information."
+title: "DeepForest: A Python package for RGB deep learning tree crown delineation"
+doi: "10.1111/2041-210X.13472"
+date-released: 2020-08-28
+
+authors:
+  - family-names: "Weinstein"
+    given-names: "Ben G."
+  - family-names: "Marconi"
+    given-names: "Sergio"
+  - family-names: "Aubry-Kientz"
+    given-names: "Mélaine"
+  - family-names: "Vincent"
+    given-names: "Gregoire"
+  - family-names: "Senyondo"
+    given-names: "Henry"
+  - family-names: "White"
+    given-names: "Ethan P."
+
+preferred-citation:
+  title: "DeepForest: A Python package for RGB deep learning tree crown delineation"
+  doi: "10.1111/2041-210X.13472"
+  year: 2020
+  authors:
+    - family-names: "Weinstein"
+      given-names: "Ben G."
+    - family-names: "Marconi"
+      given-names: "Sergio"
+    - family-names: "Aubry-Kientz"
+      given-names: "Mélaine"
+    - family-names: "Vincent"
+      given-names: "Gregoire"
+    - family-names: "Senyondo"
+      given-names: "Henry"
+    - family-names: "White"
+      given-names: "Ethan P."
+  type: article
+  journal: "Methods in Ecology and Evolution"
+  volume: 11
+  issue: 12
+  pages: 1743-1751
+  
