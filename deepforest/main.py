@@ -458,7 +458,7 @@ class deepforest(pl.LightningModule):
             warnings.warn(
                 "The 'raster_path' argument is deprecated and will be removed in future versions. Use 'path' instead.",
                 DeprecationWarning
-                )
+            )
             path = raster_path
 
         if (path is None) and (image is None):
