@@ -28,11 +28,22 @@ See the [GitHub Repo](https://github.com/Weecology/DeepForest) to see the
 source code or submit issues and feature requests.
 
 ## Citation
-If you use this software in your research please cite it as:
 
-Geographic Generalization in Airborne RGB Deep Learning Tree Detection
-Ben. G. Weinstein, Sergio Marconi, Stephanie A. Bohlman, Alina Zare, Ethan P. White
-bioRxiv 790071; doi: https://doi.org/10.1101/790071
+Most usage of DeepForest should cite two papers.
+
+The first is the DeepForest paper, which describes the package:
+
+[Weinstein, B.G., Marconi, S., Aubry‐Kientz, M., Vincent, G., Senyondo, H. and White, E.P., 2020. DeepForest: A Python package for RGB deep learning tree crown delineation. Methods in Ecology and Evolution, 11(12), pp.1743-1751. https://doi.org/10.1111/2041-210X.13472](https://doi.org/10.1111/2041-210X.13472)
+
+The second is the paper describing the model.
+
+For the tree detection model cite:
+
+[Weinstein, B.G.; Marconi, S.; Bohlman, S.; Zare, A.; White, E.P., 2019. Individual Tree-Crown Detection in RGB Imagery Using Semi-Supervised Deep Learning Neural Networks. Remote Sensing 11, 1309 https://doi.org/10.3390/rs11111309](https://doi.org/10.3390/rs11111309)
+
+For the bird detection model cite:
+
+[Weinstein, B.G., L. Garner, V.R. Saccomanno, A. Steinkraus, A. Ortega, K. Brush, G.M. Yenni, A.E. McKellar, R. Converse, C.D. Lippitt, A. Wegmann, N.D. Holmes, A.J. Edney, T. Hart, M.J. Jessopp, R.H. Clarke, D. Marchowski, H. Senyondo, R. Dotson, E.P. White, P. Frederick, S.K.M. Ernest. 2022. A general deep learning model for bird detection in high‐resolution airborne imagery. Ecological Applications: e2694 https://doi.org/10.1002/eap.2694](https://doi.org/10.1002/eap.2694)
 
 
 ## Acknowledgments
@@ -53,27 +64,10 @@ setup(name=NAME,
       packages=find_packages(),
       include_package_data=True,
       install_requires=[
-          "albumentations>=1.0.0",
-          "geopandas",
-          "imagecodecs",
-          "matplotlib",
-          "numpy",
-          "opencv-python>=4.5.4",
-          "pandas",
-          "Pillow>6.2.0",
-          "progressbar2",
-          "pycocotools",
-          "pytorch-lightning>=1.5.8",
-          "rasterio",
-          "recommonmark",
-          "rtree",
-          "scipy>1.5",
-          "six",
-          "slidingwindow",
-          "sphinx",
-          "torch",
-          "torchvision>=0.13",
-          "tqdm",
+          "albumentations>=1.0.0", "geopandas", "imagecodecs", "matplotlib", "numpy",
+          "opencv-python>=4.5.4", "pandas", "Pillow>6.2.0", "progressbar2", "pycocotools",
+          "pytorch-lightning>=1.5.8", "rasterio", "recommonmark", "rtree", "scipy>1.5",
+          "six", "slidingwindow", "sphinx", "torch", "torchvision>=0.13", "tqdm",
           "xmltodict"
       ],
       zip_safe=False)

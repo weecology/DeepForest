@@ -45,5 +45,18 @@ DeepForest is an open-source python project that depends on user contributions. 
 
 ## Citation
 
-[Weinstein, B.G.; Marconi, S.; Bohlman, S.; Zare, A.; White, E. Individual Tree-Crown Detection in RGB Imagery Using Semi-Supervised Deep Learning Neural Networks.
-Remote Sens. 2019, 11, 1309](https://www.mdpi.com/2072-4292/11/11/1309)
+Most usage of DeepForest should cite two papers.
+
+The first is the DeepForest paper, which describes the package:
+
+[Weinstein, B.G., Marconi, S., Aubry‐Kientz, M., Vincent, G., Senyondo, H. and White, E.P., 2020. DeepForest: A Python package for RGB deep learning tree crown delineation. Methods in Ecology and Evolution, 11(12), pp.1743-1751. https://doi.org/10.1111/2041-210X.13472](https://doi.org/10.1111/2041-210X.13472)
+
+The second is the paper describing the model.
+
+For the tree detection model cite:
+
+[Weinstein, B.G.; Marconi, S.; Bohlman, S.; Zare, A.; White, E.P., 2019. Individual Tree-Crown Detection in RGB Imagery Using Semi-Supervised Deep Learning Neural Networks. Remote Sensing 11, 1309 https://doi.org/10.3390/rs11111309](https://doi.org/10.3390/rs11111309)
+
+For the bird detection model cite:
+
+[Weinstein, B.G., L. Garner, V.R. Saccomanno, A. Steinkraus, A. Ortega, K. Brush, G.M. Yenni, A.E. McKellar, R. Converse, C.D. Lippitt, A. Wegmann, N.D. Holmes, A.J. Edney, T. Hart, M.J. Jessopp, R.H. Clarke, D. Marchowski, H. Senyondo, R. Dotson, E.P. White, P. Frederick, S.K.M. Ernest. 2022. A general deep learning model for bird detection in high‐resolution airborne imagery. Ecological Applications: e2694 https://doi.org/10.1002/eap.2694](https://doi.org/10.1002/eap.2694)
