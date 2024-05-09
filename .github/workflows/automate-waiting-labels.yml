@@ -1,0 +1,35 @@
+name: Remove waiting labels after new comment
+on:
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+
+permissions:
+  issues: write # allow removing label from issue
+  pull-requests: write # allow removing label from PR
+
+jobs:
+  remove-label:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Remove label
+      uses: actions/github-script@v5
+      with:
+        script: |
+          const issueNumber = context.issue.number || context.pull_request.number;
+          const repo = context.repo;
+          const labelToRemove = "Awaiting author contribution";
+
+          const { data: issueLabels } = await github.rest.issues.listLabelsOnIssue({
+            ...repo,
+            issue_number: issueNumber
+          });
+
+          if (issueLabels.find(label => label.name === labelToRemove)) {
+            await github.rest.issues.removeLabel({
+              ...repo,
+              issue_number: issueNumber,
+              name: labelToRemove
+            });
+          }
