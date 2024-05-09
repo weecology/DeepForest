@@ -100,7 +100,7 @@ class TreeDataset(Dataset):
                                                  self.image_names[idx]]
             targets = {}
             targets["boxes"] = image_annotations[["xmin", "ymin", "xmax",
-                                                  "ymax"]].values.astype(float)
+                                                  "ymax"]].values.astype("float32")
 
             # Labels need to be encoded
             targets["labels"] = image_annotations.label.apply(
@@ -112,7 +112,7 @@ class TreeDataset(Dataset):
                 labels = torch.from_numpy(targets["labels"])
                 # channels last
                 image = np.rollaxis(image, 2, 0)
-                image = torch.from_numpy(image)
+                image = torch.from_numpy(image).float()
                 targets = {"boxes": boxes, "labels": labels}
                 return self.image_names[idx], image, targets
 
@@ -122,7 +122,7 @@ class TreeDataset(Dataset):
             image = augmented["image"]
 
             boxes = np.array(augmented["bboxes"])
-            boxes = torch.from_numpy(boxes)
+            boxes = torch.from_numpy(boxes).float()
             labels = np.array(augmented["category_ids"])
             labels = torch.from_numpy(labels)
             targets = {"boxes": boxes, "labels": labels}
