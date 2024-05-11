@@ -278,8 +278,8 @@ def shapefile_to_annotations(shapefile,
     # define in image coordinates and buffer to create a box
     if geometry_type == "point":
         gdf["geometry"] = [
-            shapely.geometry.Point(x, y)
-            for x, y in zip(gdf.geometry.x.astype(float), gdf.geometry.y.astype(float))
+            shapely.geometry.Point(x, y) for x, y in zip(gdf.geometry.x.astype("float32"),
+                                                         gdf.geometry.y.astype("float32"))
         ]
         gdf["geometry"] = [
             shapely.geometry.box(left, bottom, right, top)
@@ -547,10 +547,10 @@ def project_boxes(df, root_dir, transform=True):
     if transform:
         # subtract origin. Recall that numpy origin is top left! Not bottom
         # left.
-        df["xmin"] = (df["xmin"].astype(float) * pixelSizeX) + bounds.left
-        df["xmax"] = (df["xmax"].astype(float) * pixelSizeX) + bounds.left
-        df["ymin"] = bounds.top - (df["ymin"].astype(float) * pixelSizeY)
-        df["ymax"] = bounds.top - (df["ymax"].astype(float) * pixelSizeY)
+        df["xmin"] = (df["xmin"].astype("float32") * pixelSizeX) + bounds.left
+        df["xmax"] = (df["xmax"].astype("float32") * pixelSizeX) + bounds.left
+        df["ymin"] = bounds.top - (df["ymin"].astype("float32") * pixelSizeY)
+        df["ymax"] = bounds.top - (df["ymax"].astype("float32") * pixelSizeY)
 
     # combine column to a shapely Box() object, save shapefile
     df['geometry'] = df.apply(
