@@ -533,6 +533,10 @@ class deepforest(pl.LightningModule):
         # sum of regression and classification loss
         losses = sum([loss for loss in loss_dict.values()])
 
+        # Log loss
+        for key, value in loss_dict.items():
+            self.log("train_{}".format(key), value, on_epoch=True)
+
         return losses
 
     def validation_step(self, batch, batch_idx):
