@@ -539,7 +539,7 @@ class deepforest(pl.LightningModule):
 
         # Log sum of losses
         self.log("train_loss", losses, on_epoch=True)
-        
+
         return losses
 
     def validation_step(self, batch, batch_idx):
