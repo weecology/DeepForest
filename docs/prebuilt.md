@@ -38,6 +38,11 @@ We have created a [GPU colab tutorial](https://colab.research.google.com/drive/1
 
 For more information, or specific questions about the bird detection, please create issues on the [BirdDetector repo](https://github.com/weecology/BirdDetector)
 
+# Crop Classifiers
+
+## Alive/Dead trees
+
+
 ## Want more pretrained models?
 
 Please consider contributing your data to open source repositories, such as zenodo or lila.science. The more data we gather, the more we can combine the annotation and data collection efforts of hundreds of researchers to built models available to everyone. We welcome suggestions on what models and data are most urgently [needed](https://github.com/weecology/DeepForest/discussions). 
