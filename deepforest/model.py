@@ -15,6 +15,7 @@ from torch.utils.data import Dataset
 import torch.nn.functional as F
 import cv2
 
+
 class Model():
     """A architecture agnostic class that controls the basic train, eval and predict functions.
     A model should optionally allow a backbone for pretraining. To add new architectures, simply create a new module in models/ and write a create_model. 
@@ -62,42 +63,55 @@ class Model():
         model_keys.sort()
         assert model_keys == ['boxes', 'labels', 'scores']
 
+
 def simple_resnet_50(num_classes=2):
     m = models.resnet50(pretrained=True)
     num_ftrs = m.fc.in_features
-    m.fc = torch.nn.Linear(num_ftrs, num_classes) 
+    m.fc = torch.nn.Linear(num_ftrs, num_classes)
 
-    return m 
-    
+    return m
+
+
 class CropModel(LightningModule):
+
     def __init__(self, num_classes=2, batch_size=4, num_workers=0, lr=0.0001, model=None):
         super().__init__()
-        
+
         # Model
         self.num_classes = num_classes
         if model == None:
             self.model = simple_resnet_50(num_classes=num_classes)
         else:
-            self.model = model      
-        
+            self.model = model
+
         # Metrics
-        self.accuracy = torchmetrics.Accuracy(average='none', num_classes=num_classes, task="multiclass")      
-        self.total_accuracy = torchmetrics.Accuracy(num_classes=num_classes, task="multiclass")        
-        self.precision_metric = torchmetrics.Precision(num_classes=num_classes, task="multiclass")
-        self.metrics = torchmetrics.MetricCollection({"Class Accuracy":self.accuracy, "Accuracy":self.total_accuracy, "Precision":self.precision_metric})
+        self.accuracy = torchmetrics.Accuracy(average='none',
+                                              num_classes=num_classes,
+                                              task="multiclass")
+        self.total_accuracy = torchmetrics.Accuracy(num_classes=num_classes,
+                                                    task="multiclass")
+        self.precision_metric = torchmetrics.Precision(num_classes=num_classes,
+                                                       task="multiclass")
+        self.metrics = torchmetrics.MetricCollection({
+            "Class Accuracy": self.accuracy,
+            "Accuracy": self.total_accuracy,
+            "Precision": self.precision_metric
+        })
 
         # Training Hyperparameters
         self.batch_size = batch_size
         self.num_workers = num_workers
         self.lr = lr
-    
+
     def create_trainer(self, **kwargs):
         """Create a pytorch lightning trainer object"""
         self.trainer = Trainer(**kwargs)
-                
+
     def load_from_disk(self, train_dir, val_dir):
-        self.train_ds = ImageFolder(root=train_dir, transform=self.get_transform(augment=True))
-        self.val_ds = ImageFolder(root=val_dir, transform=self.get_transform(augment=False))
+        self.train_ds = ImageFolder(root=train_dir,
+                                    transform=self.get_transform(augment=True))
+        self.val_ds = ImageFolder(root=val_dir,
+                                  transform=self.get_transform(augment=False))
 
     def get_transform(self, augment):
         """
@@ -112,11 +126,11 @@ class CropModel(LightningModule):
         data_transforms = []
         data_transforms.append(transforms.ToTensor())
         data_transforms.append(self.normalize())
-        data_transforms.append(transforms.Resize([224,224]))
+        data_transforms.append(transforms.Resize([224, 224]))
         if augment:
             data_transforms.append(transforms.RandomHorizontalFlip(0.5))
         return transforms.Compose(data_transforms)
-    
+
     def write_crops(self, root_dir, images, boxes, labels, savedir):
         """
         Write crops to disk.
@@ -134,7 +148,7 @@ class CropModel(LightningModule):
 
         # Create a directory for each label
         for label in labels:
-            os.makedirs(os.path.join(savedir,label), exist_ok=True)
+            os.makedirs(os.path.join(savedir, label), exist_ok=True)
 
         # Use rasterio to read the image
         for index, box in enumerate(boxes):
@@ -150,63 +164,57 @@ class CropModel(LightningModule):
                 cv2.imwrite(img_path, img)
 
     def normalize(self):
-        return transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                 std=[0.229, 0.224, 0.225])
+        return transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+
     def forward(self, x):
         output = self.model(x)
         output = F.sigmoid(output)
 
         return output
-    
+
     def train_dataloader(self):
-        train_loader = torch.utils.data.DataLoader(
-            self.train_ds,
-            batch_size=self.batch_size,
-            shuffle=True,
-            num_workers=self.num_workers
-        )   
-        
+        train_loader = torch.utils.data.DataLoader(self.train_ds,
+                                                   batch_size=self.batch_size,
+                                                   shuffle=True,
+                                                   num_workers=self.num_workers)
+
         return train_loader
-    
+
     def predict_dataloader(self, ds):
-        loader = torch.utils.data.DataLoader(
-            ds,
-            batch_size=self.batch_size,
-            shuffle=False,
-            num_workers=self.num_workers
-        )   
-        
+        loader = torch.utils.data.DataLoader(ds,
+                                             batch_size=self.batch_size,
+                                             shuffle=False,
+                                             num_workers=self.num_workers)
+
         return loader
-    
+
     def val_dataloader(self):
-        val_loader = torch.utils.data.DataLoader(
-            self.val_ds,
-            batch_size=self.batch_size,
-            shuffle=True,
-            num_workers=self.num_workers
-        )   
-        
+        val_loader = torch.utils.data.DataLoader(self.val_ds,
+                                                 batch_size=self.batch_size,
+                                                 shuffle=True,
+                                                 num_workers=self.num_workers)
+
         return val_loader
-    
+
     def training_step(self, batch, batch_idx):
-        x,y = batch
+        x, y = batch
         outputs = self.forward(x)
-        loss = F.cross_entropy(outputs,y)
-        self.log("train_loss",loss)
-        
+        loss = F.cross_entropy(outputs, y)
+        self.log("train_loss", loss)
+
         return loss
-      
+
     def predict_step(self, batch, batch_idx):
         outputs = self.forward(batch)
         yhat = F.softmax(outputs, 1)
-        
+
         return yhat
-    
+
     def validation_step(self, batch, batch_idx):
-        x,y = batch
+        x, y = batch
         outputs = self(x)
-        loss = F.cross_entropy(outputs,y)        
-        self.log("val_loss",loss)      
+        loss = F.cross_entropy(outputs, y)
+        self.log("val_loss", loss)
         metric_dict = self.metrics(outputs, y)
         for key, value in metric_dict.items():
             for key, value in metric_dict.items():
@@ -216,35 +224,34 @@ class CropModel(LightningModule):
                 else:
                     self.log(key, value, on_step=False, on_epoch=True)
         return loss
-    
-    
+
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.lr)
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer,
-                                                                    mode='min',
-                                                                    factor=0.5,
-                                                                    patience=10,
-                                                                    verbose=True,
-                                                                    threshold=0.0001,
-                                                                    threshold_mode='rel',
-                                                                    cooldown=0,
-                                                                    min_lr=0,
-                                                                    eps=1e-08)
-        
+                                                               mode='min',
+                                                               factor=0.5,
+                                                               patience=10,
+                                                               verbose=True,
+                                                               threshold=0.0001,
+                                                               threshold_mode='rel',
+                                                               cooldown=0,
+                                                               min_lr=0,
+                                                               eps=1e-08)
+
         #Monitor rate is val data is used
-        return {'optimizer':optimizer, 'lr_scheduler': scheduler,"monitor":'val_loss'}
-            
+        return {'optimizer': optimizer, 'lr_scheduler': scheduler, "monitor": 'val_loss'}
+
     def dataset_confusion(self, loader):
         """Create a confusion matrix from a data loader"""
         true_class = []
         predicted_class = []
         self.eval()
         for batch in loader:
-            x,y = batch
-            true_class.append(F.one_hot(y,num_classes=self.num_classes).detach().numpy())
+            x, y = batch
+            true_class.append(F.one_hot(y, num_classes=self.num_classes).detach().numpy())
             prediction = self(x)
             predicted_class.append(prediction.detach().numpy())
-        
+
         true_class = np.concatenate(true_class)
         predicted_class = np.concatenate(predicted_class)
 

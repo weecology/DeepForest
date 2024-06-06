@@ -529,13 +529,12 @@ class deepforest(pl.LightningModule):
 
         if crop_model:
             # If a crop model is provided, predict on each crop
-            results = predict._predict_crop_model_(
-                crop_model=crop_model, 
-                results=results, 
-                raster_path=raster_path, 
-                trainer=self.trainer, 
-                transform=crop_transform, 
-                augment=crop_augment)
+            results = predict._predict_crop_model_(crop_model=crop_model,
+                                                   results=results,
+                                                   raster_path=raster_path,
+                                                   trainer=self.trainer,
+                                                   transform=crop_transform,
+                                                   augment=crop_augment)
 
         return results
 

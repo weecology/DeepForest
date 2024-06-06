@@ -190,7 +190,13 @@ def _dataloader_wrapper_(model,
 
     return results
 
-def _predict_crop_model_(crop_model, trainer, results, raster_path, transform=None, augment=False):
+
+def _predict_crop_model_(crop_model,
+                         trainer,
+                         results,
+                         raster_path,
+                         transform=None,
+                         augment=False):
     """
     Predicts crop model on a raster file.
 
@@ -203,12 +209,16 @@ def _predict_crop_model_(crop_model, trainer, results, raster_path, transform=No
     Returns:
         The updated results dataframe with predicted labels and scores.
     """
-    bounding_box_dataset = dataset.BoundingBoxDataset(results, root_dir=os.path.dirname(raster_path), transform=transform, augment=augment)
+    bounding_box_dataset = dataset.BoundingBoxDataset(
+        results,
+        root_dir=os.path.dirname(raster_path),
+        transform=transform,
+        augment=augment)
     crop_dataloader = crop_model.predict_dataloader(bounding_box_dataset)
     crop_results = trainer.predict(crop_model, crop_dataloader)
     stacked_outputs = np.vstack(np.concatenate(crop_results))
     label = np.argmax(stacked_outputs, 1)
-    score = np.max(stacked_outputs, 1)  
+    score = np.max(stacked_outputs, 1)
 
     results["cropmodel_label"] = label
     results["cropmodel_score"] = score
