@@ -535,7 +535,7 @@ class deepforest(pl.LightningModule):
                 raster_path=raster_path, 
                 trainer=self.trainer, 
                 transform=crop_transform, 
-                crop_augment=crop_augment)
+                augment=crop_augment)
 
         return results
 

@@ -10,6 +10,8 @@ Why would you want to apply a model directly on each crop? Why not train a multi
 
 * CropModels are simpler and more extendable. By decoupling the detection and classification workflows, you can seperately handle challenges like class imbalance and incomplete labels, without reducing the quality of the detections. We have found that training two stage object detection models to be finicky and involve reasonable knowledge on managing learning rates.
 
+* New data and multi-sensor learning. For many applications the data needed for detection and classification may be different. The CropModel concept allows an extendable piece that can allow others to make more advanced pipelines.
+
 ## Considerations
 
 * Using a CropModel will be slower, since for each detection, the sensor data needs to be cropped and passed to the detector. This is definitely less efficient than using a combined classification/detection system like the multi-class detection models. With modern GPUs, this ofter matters less, but its something to be mindful of.
@@ -18,39 +20,42 @@ Why would you want to apply a model directly on each crop? Why not train a multi
 
 ## Use
 
-To use the `CropModel` class, follow these steps:
+Consider a testfile with tree boxes and a 'Alive/Dead' label that comes with all DeepForest installations
 
-1. Import the `CropModel` class into your code:
+```
+df = pd.read_csv(get_data("testfile_multi.csv"))
+crop_model = model.CropModel(num_classes=2)
+```
 
-    ```python
-    from crop_model import CropModel
-    ```
+This is a pytorch-lightning object and can be trained like any other DeepForest model. 
 
-2. Create an instance of the `CropModel` class:
+```
+# Test forward pass
+x = torch.rand(4, 3, 224, 224)
+output = crop_model.forward(x)
+assert output.shape == (4, 2)
+```
 
-    ```python
-    model = CropModel()
-    ```
+The only difference is now we don't have boxes, we are classifier entire crops. We can do this within memory, or by writing a set of crops to disk. Let's start by writing to disk.
 
-3. Train the model using your training data:
+```
+boxes = df[['xmin', 'ymin', 'xmax', 'ymax']].values.tolist()
+image_path = os.path.join(os.path.dirname(get_data("SOAP_061.png")),df["image_path"].iloc[0])
+crop_model.write_crops(boxes=boxes,labels=df.label.values,image_path=image_path, savedir=tmpdir)
+```
 
-    ```python
-    model.train(X_train, y_train)
-    ```
-
-    Here, `X_train` represents the input features and `y_train` represents the corresponding crop yields.
-
-4. Make predictions using the trained model:
-
-    ```python
-    predictions = model.predict(X_test)
-    ```
-
-    Here, `X_test` represents the input features for which you want to predict the crop yields.
+This crops each box location and saves them in a folder with the label name. Now we have two folders in the savedir location, a 'Alive' and a 'Dead' folder.
 
 ## Training
 
-To train the `CropModel`, you need a dataset containing 
+We could train a new model from here in typical pytorch-lightning syntax. 
+
+```
+crop_model.create_trainer(fast_dev_run=True)
+crop_model.load_from_disk(train_dir=tmpdir, val_dir=tmpdir)
+crop_model.trainer.fit(crop_model)
+crop_model.trainer.validate(crop_model)
+```
 
 ## Customizing
 

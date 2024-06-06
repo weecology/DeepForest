@@ -1,7 +1,7 @@
 # Model - common class
 from deepforest.models import *
 import torch
-from pytorch_lightning import LightningModule
+from pytorch_lightning import LightningModule, Trainer
 import os
 import torch
 import torchmetrics
@@ -91,35 +91,66 @@ class CropModel(LightningModule):
         self.num_workers = num_workers
         self.lr = lr
     
+    def create_trainer(self, **kwargs):
+        """Create a pytorch lightning trainer object"""
+        self.trainer = Trainer(**kwargs)
+                
     def load_from_disk(self, train_dir, val_dir):
         self.train_ds = ImageFolder(root=train_dir, transform=self.get_transform(augment=True))
         self.val_ds = ImageFolder(root=val_dir, transform=self.get_transform(augment=False))
 
     def get_transform(self, augment):
+        """
+        Returns the data transformation pipeline for the model.
+
+        Parameters:
+            augment (bool): Flag indicating whether to apply data augmentation.
+
+        Returns:
+            torchvision.transforms.Compose: The composed data transformation pipeline.
+        """
         data_transforms = []
         data_transforms.append(transforms.ToTensor())
-        data_transforms.append(self.normalize)
+        data_transforms.append(self.normalize())
         data_transforms.append(transforms.Resize([224,224]))
         if augment:
             data_transforms.append(transforms.RandomHorizontalFlip(0.5))
         return transforms.Compose(data_transforms)
     
-    def write_crops(self, image_path, boxes, labels, savedir):
-        """Write crops to disk"""
+    def write_crops(self, root_dir, images, boxes, labels, savedir):
+        """
+        Write crops to disk.
+
+        Args:
+            root_dir (str): The root directory where the images are located.
+            images (list): A list of image filenames.
+            boxes (list): A list of bounding box coordinates in the format [xmin, ymin, xmax, ymax].
+            labels (list): A list of labels corresponding to each bounding box.
+            savedir (str): The directory where the cropped images will be saved.
+
+        Returns:
+            None
+        """
+
+        # Create a directory for each label
+        for label in labels:
+            os.makedirs(os.path.join(savedir,label), exist_ok=True)
+
         # Use rasterio to read the image
-        with rasterio.open(image_path) as src:
-            for index, box in enumerate(boxes):
-                xmin, ymin, xmax, ymax = box
-                label = labels[index]
+        for index, box in enumerate(boxes):
+            xmin, ymin, xmax, ymax = box
+            label = labels[index]
+            image = images[index]
+            with rasterio.open(os.path.join(root_dir, image)) as src:
                 # Crop the image using the bounding box coordinates
                 img = src.read(window=((ymin, ymax), (xmin, xmax)))
                 # Save the cropped image as a PNG file using opencv
-                img_path = os.path.join(savedir,label,f"crop_{index}.png")
+                img_path = os.path.join(savedir, label, f"crop_{index}.png")
                 img = np.rollaxis(img, 0, 3)
                 cv2.imwrite(img_path, img)
 
     def normalize(self):
-        transforms.Normalize(mean=[0.485, 0.456, 0.406],
+        return transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                  std=[0.229, 0.224, 0.225])
     def forward(self, x):
         output = self.model(x)
@@ -178,13 +209,14 @@ class CropModel(LightningModule):
         self.log("val_loss",loss)      
         metric_dict = self.metrics(outputs, y)
         for key, value in metric_dict.items():
-            self.log(key,value)
-        
+            for key, value in metric_dict.items():
+                if isinstance(value, torch.Tensor) and value.numel() > 1:
+                    for i, v in enumerate(value):
+                        self.log(f"{key}_{i}", v, on_step=False, on_epoch=True)
+                else:
+                    self.log(key, value, on_step=False, on_epoch=True)
         return loss
     
-    def on_validation_epoch_end(self):
-        val_metrics = self.metrics.compute()
-        self.log_dict(val_metrics)
     
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.lr)
