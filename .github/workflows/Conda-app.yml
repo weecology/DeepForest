@@ -13,26 +13,20 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version:
-          - "3.12"
-          - "3.11"
-          - "3.10"
+        python-version: [ "3.12", "3.11", "3.10" ]
+        os: [ "ubuntu-latest" ]
 
-        os:
-          - "ubuntu-latest"
+    runs-on: ${{ matrix.os }}
 
-    runs-on: "${{ matrix.os }}"
-
-    # use bash everywhere
     defaults:
       run:
-        shell: "bash -l {0}"
+        shell: bash -l {0}
 
     steps:
-      - name: "Checkout code"
-        uses: "actions/checkout@v4"
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: Install opencv dependencies
+      - name: Install OpenCV dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y libgl1-mesa-glx libegl1-mesa
@@ -48,14 +42,14 @@ jobs:
           cache-downloads: true
 
       - name: Run pytest
-        run: pytest -v
+        run: micromamba run -n DeepForest pytest -v
 
       - name: Check style
-        run: yapf -d --recursive deepforest/ --style=.style.yapf
+        run: micromamba run -n DeepForest yapf -d --recursive deepforest/ --style=.style.yapf
           
       - name: Check notebook build
-        run: pytest --nbmake docs/*.ipynb
+        run: micromamba run -n DeepForest pytest --nbmake docs/*.ipynb
 
       - name: Test Docs
         run: |
-          cd docs && make clean && make html SPHINXOPTS="-W"
+          cd docs && micromamba run -n DeepForest make clean && make html SPHINXOPTS="-W"
