@@ -4,6 +4,7 @@
 [![Documentation Status](https://readthedocs.org/projects/deepforest/badge/?version=latest)](http://deepforest.readthedocs.io/en/latest/?badge=latest)
 [![Version](https://img.shields.io/pypi/v/DeepForest.svg)](https://pypi.python.org/pypi/DeepForest)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.2538143.svg)](https://doi.org/10.5281/zenodo.2538143)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/weecology/deepforest/badge)](https://scorecard.dev/viewer/?uri=github.com/weecology/deepforest)
 
 
 ### Conda-forge build status
