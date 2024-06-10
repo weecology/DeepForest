@@ -54,6 +54,16 @@ model.trainer.fit(model)
 
 [For more, see Google colab demo on model training](https://colab.research.google.com/drive/1gKUiocwfCvcvVfiKzAaf6voiUVL2KK_r?usp=sharing)
 
+## Loggers
+
+DeepForest logs the training loss, validation loss and class metrics (for multi-class models) during each epoch. To view the training curves, we *highly* recommend using a pytorch-lightning logger, this is the proper way of handling the many outputs during training. See [pytorch-lightning docs](https://lightning.ai/docs/pytorch/stable/extensions/logging.html) for all available loggers.
+
+```
+from deepforest import main
+m = main.deepforest()
+logger = <any support pytorch lightning logger>
+m.create_trainer(logger=logger)
+```
 
 ### Video walkthrough of colab
 
