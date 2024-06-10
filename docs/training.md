@@ -61,7 +61,7 @@ DeepForest logs the training loss, validation loss and class metrics (for multi-
 ```
 from deepforest import main
 m = main.deepforest()
-logger = <any support pytorch lightning logger>
+logger = <any supported pytorch lightning logger>
 m.create_trainer(logger=logger)
 ```
 
