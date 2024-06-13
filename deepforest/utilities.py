@@ -9,6 +9,8 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 import rasterio
+from rasterio.crs import CRS
+import requests
 import shapely
 import xmltodict
 import yaml
@@ -560,3 +562,64 @@ def project_boxes(df, root_dir, transform=True):
     df.crs = crs
 
     return df
+
+def download_ArcGIS_REST(url, xmin, ymin, xmax, ymax, savedir, additional_params=None, image_name="image.tiff", download_service="exportImage"):
+    """
+    Fetch data from a web server using geographic boundaries. The data is saved as a GeoTIFF file. The bbox is in the format of xmin, ymin, xmax, ymax for lat long coordinates..
+    This function is used to download data from an ArcGIS REST service, not WMTS or WMS services. 
+    Example url: https://gis.calgary.ca/arcgis/rest/services/pub_Orthophotos/CurrentOrthophoto/ImageServer/
+
+    Parameters:
+    - url: The base URL of the web server.
+    - xmin: The minimum x-coordinate (longitude).
+    - ymin: The minimum y-coordinate (latitude).
+    - xmax: The maximum x-coordinate (longitude).
+    - ymax: The maximum y-coordinate (latitude).
+    - savedir: The directory to save the downloaded image.
+    - additional_params: Additional query parameters to include in the request.
+
+    Returns:
+    The response from the web server.
+    """
+    # Construct the query parameters with the geographic boundaries
+    params = {
+        "f": "json"
+    }
+    # add any additional parameters
+    if additional_params:
+        params.update(additional_params)
+
+    # Make the GET request with the URL and parameters
+    response = requests.get(url, params=params)
+
+    # turn into dict
+    response_dict = json.loads(response.content)    
+    spatialReference = response_dict["spatialReference"]
+    if "latestWkid" in spatialReference:
+        wkid = spatialReference["latestWkid"]
+        crs = CRS.from_epsg(wkid)
+    elif 'wkt' in spatialReference:
+        crs = CRS.from_wkt(spatialReference['wkt'])
+
+    # Convert bbox into image coordinates
+    bbox = f"{xmin},{ymin},{xmax},{ymax}"
+    bounds = gpd.GeoDataFrame(geometry=[shapely.geometry.box(ymin, xmin, ymax, xmax)], crs='EPSG:4326').to_crs(crs).bounds
+
+    # update the params
+    params.update({
+        "bbox": f"{bounds.minx[0]},{bounds.miny[0]},{bounds.maxx[0]},{bounds.maxy[0]}",
+        "f": "image",
+        'format':'tiff',
+        "noData": "0"
+    })
+
+    # Make the GET request with the URL and parameters
+    download_url_service = f"{url}/{download_service}"
+    response = requests.get(download_url_service, params=params)
+    if response.status_code == 200:
+        filename = f"{savedir}/{image_name}"
+        with open(filename, "wb") as f:
+            f.write(response.content)
+        return filename
+    else:
+        raise Exception(f"Failed to fetch data: {response.code}")

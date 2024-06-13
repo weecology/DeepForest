@@ -2,6 +2,10 @@
 DeepForest Change Log
 =====================
 
+**1.3.5**
+
+Create a utilities.download_ArcGIS_REST function to download tiles from ArcGIS REST API. For example to download NAIP imagery.
+
 **1.3.3**
 
 * Allow for annotations_file to be none in split_raster, for use in data preprocessing.
