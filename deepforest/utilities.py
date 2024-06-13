@@ -563,7 +563,16 @@ def project_boxes(df, root_dir, transform=True):
 
     return df
 
-def download_ArcGIS_REST(url, xmin, ymin, xmax, ymax, savedir, additional_params=None, image_name="image.tiff", download_service="exportImage"):
+
+def download_ArcGIS_REST(url,
+                         xmin,
+                         ymin,
+                         xmax,
+                         ymax,
+                         savedir,
+                         additional_params=None,
+                         image_name="image.tiff",
+                         download_service="exportImage"):
     """
     Fetch data from a web server using geographic boundaries. The data is saved as a GeoTIFF file. The bbox is in the format of xmin, ymin, xmax, ymax for lat long coordinates..
     This function is used to download data from an ArcGIS REST service, not WMTS or WMS services. 
@@ -582,9 +591,7 @@ def download_ArcGIS_REST(url, xmin, ymin, xmax, ymax, savedir, additional_params
     The response from the web server.
     """
     # Construct the query parameters with the geographic boundaries
-    params = {
-        "f": "json"
-    }
+    params = {"f": "json"}
     # add any additional parameters
     if additional_params:
         params.update(additional_params)
@@ -593,7 +600,7 @@ def download_ArcGIS_REST(url, xmin, ymin, xmax, ymax, savedir, additional_params
     response = requests.get(url, params=params)
 
     # turn into dict
-    response_dict = json.loads(response.content)    
+    response_dict = json.loads(response.content)
     spatialReference = response_dict["spatialReference"]
     if "latestWkid" in spatialReference:
         wkid = spatialReference["latestWkid"]
@@ -603,13 +610,14 @@ def download_ArcGIS_REST(url, xmin, ymin, xmax, ymax, savedir, additional_params
 
     # Convert bbox into image coordinates
     bbox = f"{xmin},{ymin},{xmax},{ymax}"
-    bounds = gpd.GeoDataFrame(geometry=[shapely.geometry.box(ymin, xmin, ymax, xmax)], crs='EPSG:4326').to_crs(crs).bounds
+    bounds = gpd.GeoDataFrame(geometry=[shapely.geometry.box(ymin, xmin, ymax, xmax)],
+                              crs='EPSG:4326').to_crs(crs).bounds
 
     # update the params
     params.update({
         "bbox": f"{bounds.minx[0]},{bounds.miny[0]},{bounds.maxx[0]},{bounds.maxy[0]}",
         "f": "image",
-        'format':'tiff',
+        'format': 'tiff',
         "noData": "0"
     })
 
