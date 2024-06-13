@@ -4,11 +4,11 @@ One of the most requested features since the early days of DeepForest was the ab
 
 ## Benefits
 
-Why would you want to apply a model directly on each crop? Why not train a multi-class object detection model? This is certainly a reasonable approach, but there are a few benefits in particular common use-cases. 
+Why would you want to apply a model directly on each crop? Why not train a multi-class object detection model? This is certainly a reasonable approach, but there are a few benefits in particular common use-cases.  
 
-* Object detection models require that all objects of a particular class are annotated within an image. This is often impossible for detailed category labels. For example, you might have bounding boxes for all 'trees' in an image, but only have species or health labels for a small portion of them based on ground surveys. 
+* Object detection models require that all objects of a particular class are annotated within an image. This is often impossible for detailed category labels. For example, you might have bounding boxes for all 'trees' in an image, but only have species or health labels for a small portion of them based on ground surveys. Training a multi-class object detection model would invariably mean training on only a portion of your available data. 
 
-* CropModels are simpler and more extendable. By decoupling the detection and classification workflows, you can seperately handle challenges like class imbalance and incomplete labels, without reducing the quality of the detections. We have found that training two stage object detection models to be finicky and involve reasonable knowledge on managing learning rates.
+* CropModels are simpler and more extendable. By decoupling the detection and classification workflows, you can seperately handle challenges like class imbalance and incomplete labels, without reducing the quality of the detections. We have found that training two stage object detection models to be finicky for many similar classes and involve reasonable knowledge on managing learning rates.
 
 * New data and multi-sensor learning. For many applications the data needed for detection and classification may be different. The CropModel concept allows an extendable piece that can allow others to make more advanced pipelines.
 
@@ -27,7 +27,7 @@ df = pd.read_csv(get_data("testfile_multi.csv"))
 crop_model = model.CropModel(num_classes=2)
 ```
 
-This is a pytorch-lightning object and can be trained like any other DeepForest model. 
+This is a pytorch-lightning object and can be used like any other model. 
 
 ```
 # Test forward pass
@@ -36,7 +36,7 @@ output = crop_model.forward(x)
 assert output.shape == (4, 2)
 ```
 
-The only difference is now we don't have boxes, we are classifier entire crops. We can do this within memory, or by writing a set of crops to disk. Let's start by writing to disk.
+The only difference is now we don't have boxes, we are classifier for entire crops. We can do this within memory, or by writing a set of crops to disk. Let's start by writing to disk.
 
 ```
 boxes = df[['xmin', 'ymin', 'xmax', 'ymax']].values.tolist()
@@ -52,6 +52,7 @@ We could train a new model from here in typical pytorch-lightning syntax.
 
 ```
 crop_model.create_trainer(fast_dev_run=True)
+# Get the data stored from the write_crops step above.
 crop_model.load_from_disk(train_dir=tmpdir, val_dir=tmpdir)
 crop_model.trainer.fit(crop_model)
 crop_model.trainer.validate(crop_model)
