@@ -197,7 +197,6 @@ class deepforest(pl.LightningModule):
             num_sanity_val_steps = 2
         else:
             # Disable validation, don't use trainer defaults
-            print("No validation file provided. Turning off validation loop")
             limit_val_batches = 0
             num_sanity_val_steps = 0
         # Check for model checkpoint object
