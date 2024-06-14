@@ -578,6 +578,7 @@ def download_ArcGIS_REST(url,
     This function is used to download data from an ArcGIS REST service, not WMTS or WMS services. 
     Example url: https://gis.calgary.ca/arcgis/rest/services/pub_Orthophotos/CurrentOrthophoto/ImageServer/
 
+    There are many types of ImageServer, mapServer and open source alternatives. This function is designed to work with ArcGIS ImageServer, but may work with other services. Its very hard to anticipate all params and add to additional_params and download_service name to meet the specifications.
     Parameters:
     - url: The base URL of the web server.
     - xmin: The minimum x-coordinate (longitude).
@@ -592,9 +593,6 @@ def download_ArcGIS_REST(url,
     """
     # Construct the query parameters with the geographic boundaries
     params = {"f": "json"}
-    # add any additional parameters
-    if additional_params:
-        params.update(additional_params)
 
     # Make the GET request with the URL and parameters
     response = requests.get(url, params=params)
@@ -618,8 +616,11 @@ def download_ArcGIS_REST(url,
         "bbox": f"{bounds.minx[0]},{bounds.miny[0]},{bounds.maxx[0]},{bounds.maxy[0]}",
         "f": "image",
         'format': 'tiff',
-        "noData": "0"
     })
+
+    # add any additional parameters
+    if additional_params:
+        params.update(additional_params)
 
     # Make the GET request with the URL and parameters
     download_url_service = f"{url}/{download_service}"

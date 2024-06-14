@@ -15,6 +15,8 @@ from deepforest import main
 from .conftest import download_release
 import requests
 import pytest
+import matplotlib.pyplot as plt
+import cv2
 
 @pytest.fixture()
 def config():
@@ -143,46 +145,48 @@ def test_boxes_to_shapefile_unprojected(m, flip_y_axis, projected):
     geom = geometry.box(*r.bounds)
     assert all(gdf.geometry.apply(lambda x: geom.intersects(geom)).values)
     
-def test_get_imageserver_CaliforniaNAIP(tmpdir):
-    url = "https://map.dfg.ca.gov/arcgis/rest/services/Base_Remote_Sensing/NAIP_2020_CIR/ImageServer/"
-
-    xmin, ymin, xmax, ymax = 40.49457, -124.112622, 40.493891, -124.111536
-
-    # Call the function
-    image_name="image.tif"
-    filename = utilities.get_imageserver(url, xmin, ymin, xmax, ymax, savedir=tmpdir, image_name=image_name)
-
-    # Check the saved file
-    assert os.path.exists("{}/{}".format(tmpdir, image_name))
-
-    # Confirm file has crs
-    with rio.open("{}/{}".format(tmpdir, image_name)) as src:
-        assert src.crs is not None
-
 def url():
     return [
         "https://map.dfg.ca.gov/arcgis/rest/services/Base_Remote_Sensing/NAIP_2020_CIR/ImageServer/",
-        "https://gis.calgary.ca/arcgis/rest/services/pub_Orthophotos/CurrentOrthophoto/ImageServer/"
+        "https://gis.calgary.ca/arcgis/rest/services/pub_Orthophotos/CurrentOrthophoto/ImageServer/",
+        "https://orthos.its.ny.gov/arcgis/rest/services/wms/Latest/MapServer"
     ]
 
-def box():
+def boxes():
     return [
         (40.49457, -124.112622, 40.493891, -124.111536),
-        (51.07332, -114.12529, 51.072134, -114.12117)
+        (51.07332, -114.12529, 51.072134, -114.12117),
+        (41.111626,-73.763941, 41.111032,-73.763447)
+    ]
+
+def additional_params():
+    return [
+        None,
+        None,
+        {"format":"png"}
+    ]
+
+def download_service():
+    return [
+        "exportImage",
+        "exportImage",
+        "export"
     ]
 
 # Pair each URL with its corresponding box
-url_box_pairs = list(zip(["CA.tif","MA.tif"],url(), box()))
-@pytest.mark.parametrize("image_name, url, box", url_box_pairs)
-def test_download_ArcGIS_REST(tmpdir, image_name, url, box):
+url_box_pairs = list(zip(["CA.tif","MA.tif","NY.png"],url(), boxes(), additional_params(), download_service()))
+@pytest.mark.parametrize("image_name, url, box, params,download_service_name", url_box_pairs)
+def test_download_ArcGIS_REST(tmpdir, image_name, url, box, params, download_service_name):
     xmin, ymin, xmax, ymax = box
     # Call the function
-    filename = utilities.download_ArcGIS_REST(url, xmin, ymin, xmax, ymax, savedir=tmpdir, image_name=image_name)
+    filename = utilities.download_ArcGIS_REST(url, xmin, ymin, xmax, ymax, savedir=tmpdir, image_name=image_name,additional_params=params, download_service=download_service_name)
     # Check the saved file
     assert os.path.exists("{}/{}".format(tmpdir, image_name))
     # Confirm file has crs
-    with rio.open("{}/{}".format(tmpdir, image_name)) as src:
-        assert src.crs is not None
-        # Show
-        import matplotlib.pyplot as plt
-        plt.imshow(src.read().transpose(1,2,0))
+    with rio.open(filename) as src:
+        if image_name.endswith('.tif'):
+            assert src.crs is not None
+            plt.imshow(src.read().transpose(1,2,0))
+        else:
+            assert src.crs is None
+            plt.imshow(cv2.imread(filename)[:,:,::-1])
