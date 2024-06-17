@@ -65,8 +65,7 @@ Get suggestions on how to improve a model by using the [discussion board](https:
    use
    CONTRIBUTING.md
    sample
-   examples/Australia
-   examples/nest_detection
+   examples/Australia.ipynb
 
 
 Indices and tables
