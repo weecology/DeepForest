@@ -33,6 +33,26 @@ train:
     
     # Optimizer initial learning rate
     lr: 0.001
+    scheduler:
+        type:
+        params:
+            # Common parameters
+            T_max: 10
+            eta_min: 0.00001
+            lr_lambda: "lambda epoch: 0.95 ** epoch"  # For lambdaLR and multiplicativeLR
+            step_size: 30  # For stepLR
+            gamma: 0.1  # For stepLR, multistepLR, and exponentialLR
+            milestones: [50, 100]  # For multistepLR
+
+            # ReduceLROnPlateau parameters (used if type is not explicitly mentioned)
+            mode: "min"
+            factor: 0.1
+            patience: 10
+            threshold: 0.0001
+            threshold_mode: "rel"
+            cooldown: 0
+            min_lr: 0
+            eps: 1e-08
 
     # Print loss every n epochs
     epochs: 1
@@ -48,6 +68,7 @@ validation:
     # Intersection over union evaluation
     iou_threshold: 0.4
     val_accuracy_interval: 20
+
 ```
 ## Passing config arguments at runtime using a dict
 
@@ -127,6 +148,8 @@ Learning rate for the training optimization. By default the optimizer is stochas
 optim.SGD(self.model.parameters(), lr=self.config["train"]["lr"], momentum=0.9)
 ```
 
+A learning rate scheduler is used to adjust the learning rate based on validation loss. The default scheduler is ReduceLROnPlateau:
+
 ```
 self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, mode='min', 
                                                    factor=0.1, patience=10, 
@@ -134,12 +157,41 @@ self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, mode
                                                    threshold_mode='rel', cooldown=0, 
                                                    min_lr=0, eps=1e-08)
 ```
-This scheduler can be overwritten by replacing the model class
+This default scheduler can be overridden by specifying a different scheduler in the config_args:
 
 ```
-m = main.deepforest()
-m.scheduler = <>
+scheduler_config = {
+    "type": "cosine",  # or "lambdaLR", "multiplicativeLR", "stepLR", "multistepLR", "exponentialLR", "reduceLROnPlateau"
+    "params": {
+        # Scheduler-specific parameters
+    }
+}
+
+config_args = {
+    "train": {
+        "lr": 0.01,
+        "scheduler": scheduler_config,
+        "csv_file": "path/to/annotations.csv",
+        "root_dir": "path/to/root_dir",
+        "fast_dev_run": False,
+        "epochs": 2
+    },
+    "validation": {
+        "csv_file": "path/to/annotations.csv",
+        "root_dir": "path/to/root_dir"
+    }
+}
 ```
+
+The scheduler types supported are:
+
+- **cosine**: CosineAnnealingLR
+- **lambdaLR**: LambdaLR
+- **multiplicativeLR**: MultiplicativeLR
+- **stepLR**: StepLR
+- **multistepLR**: MultiStepLR
+- **exponentialLR**: ExponentialLR
+- **reduceLROnPlateau**: ReduceLROnPlateau
 
 ### Epochs
 

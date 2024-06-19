@@ -662,7 +662,7 @@ class deepforest(pl.LightningModule):
             
         else:
             scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer,
-                                                               mode=params["min"],
+                                                               mode=params["mode"],
                                                                factor=params["factor"],
                                                                patience=params["patience"],
                                                                threshold=params["threshold"],

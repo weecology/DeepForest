@@ -554,3 +554,267 @@ def test_existing_predict_dataloader(m, tmpdir):
     existing_loader = m.predict_dataloader(ds)
     batches = m.trainer.predict(m, existing_loader)
     len(batches[0]) == m.config["batch_size"] + 1
+
+
+def test_configure_optimizers_cosine_scheduler():
+    scheduler_config={
+            "type": "cosine",
+            "params": {
+                "T_max": 10,
+                "eta_min": 0.01
+            },
+            "expected": "CosineAnnealingLR"
+        }
+    annotations_file = get_data("testfile_deepforest.csv")
+    root_dir = os.path.dirname(annotations_file)
+    
+    config_args = {
+        "train": {
+            "lr": 0.01,
+            "scheduler": scheduler_config,
+            "csv_file": annotations_file,
+            "root_dir": root_dir,
+            "fast_dev_run": False,
+            "epochs": 2
+        },
+        "validation": {
+            "csv_file": annotations_file,
+            "root_dir": root_dir
+        }
+    }
+    
+    # Initialize the model with the config arguments
+    m = main.deepforest(config_args=config_args)
+    
+    # Create and run the trainer
+    m.create_trainer(limit_train_batches=1.0)
+    m.trainer.fit(m)
+    
+    # Assert the scheduler type
+    assert type(m.trainer.lr_scheduler_configs[0].scheduler).__name__ == scheduler_config["expected"], f"Scheduler type mismatch for {scheduler_config['type']}"
+
+def test_configure_optimizers_lambdaLR_scheduler():
+    scheduler_config={
+            "type": "lambdaLR",
+            "params": {
+                "lr_lambda": lambda epoch: 0.95 ** epoch
+            },
+            "expected": "LambdaLR"
+    }
+    annotations_file = get_data("testfile_deepforest.csv")
+    root_dir = os.path.dirname(annotations_file)
+    
+    config_args = {
+        "train": {
+            "lr": 0.01,
+            "scheduler": scheduler_config,
+            "csv_file": annotations_file,
+            "root_dir": root_dir,
+            "fast_dev_run": False,
+            "epochs": 2
+        },
+        "validation": {
+            "csv_file": annotations_file,
+            "root_dir": root_dir
+        }
+    }
+    
+    # Initialize the model with the config arguments
+    m = main.deepforest(config_args=config_args)
+    
+    # Create and run the trainer
+    m.create_trainer(limit_train_batches=1.0)
+    m.trainer.fit(m)
+    
+    # Assert the scheduler type
+    assert type(m.trainer.lr_scheduler_configs[0].scheduler).__name__ == scheduler_config["expected"], f"Scheduler type mismatch for {scheduler_config['type']}"
+    
+
+def test_configure_optimizers_multiplicativeLR_scheduler():
+    scheduler_config={
+            "type": "multiplicativeLR",
+            "params": {
+                "lr_lambda": lambda epoch: 0.95
+            },
+            "expected": "MultiplicativeLR"
+    }
+    annotations_file = get_data("testfile_deepforest.csv")
+    root_dir = os.path.dirname(annotations_file)
+    
+    config_args = {
+        "train": {
+            "lr": 0.01,
+            "scheduler": scheduler_config,
+            "csv_file": annotations_file,
+            "root_dir": root_dir,
+            "fast_dev_run": False,
+            "epochs": 2
+        },
+        "validation": {
+            "csv_file": annotations_file,
+            "root_dir": root_dir
+        }
+    }
+    
+    # Initialize the model with the config arguments
+    m = main.deepforest(config_args=config_args)
+    
+    # Create and run the trainer
+    m.create_trainer(limit_train_batches=1.0)
+    m.trainer.fit(m)
+    
+    # Assert the scheduler type
+    assert type(m.trainer.lr_scheduler_configs[0].scheduler).__name__ == scheduler_config["expected"], f"Scheduler type mismatch for {scheduler_config['type']}"
+
+def test_configure_optimizers_stepLR_scheduler():
+    scheduler_config={
+            "type": "stepLR",
+            "params": {
+                "step_size": 5,
+                "gamma": 0.1
+            },
+            "expected": "StepLR"
+    }
+    annotations_file = get_data("testfile_deepforest.csv")
+    root_dir = os.path.dirname(annotations_file)
+    
+    config_args = {
+        "train": {
+            "lr": 0.01,
+            "scheduler": scheduler_config,
+            "csv_file": annotations_file,
+            "root_dir": root_dir,
+            "fast_dev_run": False,
+            "epochs": 2
+        },
+        "validation": {
+            "csv_file": annotations_file,
+            "root_dir": root_dir
+        }
+    }
+    
+    # Initialize the model with the config arguments
+    m = main.deepforest(config_args=config_args)
+    
+    # Create and run the trainer
+    m.create_trainer(limit_train_batches=1.0)
+    m.trainer.fit(m)
+    
+    # Assert the scheduler type
+    assert type(m.trainer.lr_scheduler_configs[0].scheduler).__name__ == scheduler_config["expected"], f"Scheduler type mismatch for {scheduler_config['type']}"
+
+def test_configure_optimizers_multistepLR_scheduler():
+    scheduler_config={
+            "type": "multistepLR",
+            "params": {
+                "milestones": [30, 80],
+                "gamma": 0.1
+            },
+            "expected": "MultiStepLR"
+    }
+    annotations_file = get_data("testfile_deepforest.csv")
+    root_dir = os.path.dirname(annotations_file)
+    
+    config_args = {
+        "train": {
+            "lr": 0.01,
+            "scheduler": scheduler_config,
+            "csv_file": annotations_file,
+            "root_dir": root_dir,
+            "fast_dev_run": False,
+            "epochs": 2
+        },
+        "validation": {
+            "csv_file": annotations_file,
+            "root_dir": root_dir
+        }
+    }
+    
+    # Initialize the model with the config arguments
+    m = main.deepforest(config_args=config_args)
+    
+    # Create and run the trainer
+    m.create_trainer(limit_train_batches=1.0)
+    m.trainer.fit(m)
+    
+    # Assert the scheduler type
+    assert type(m.trainer.lr_scheduler_configs[0].scheduler).__name__ == scheduler_config["expected"], f"Scheduler type mismatch for {scheduler_config['type']}"
+
+def test_configure_optimizers_exponentialLR_scheduler():
+    scheduler_config={
+            "type": "exponentialLR",
+            "params": {
+                "gamma": 0.9
+            },
+            "expected": "ExponentialLR"
+    }
+    annotations_file = get_data("testfile_deepforest.csv")
+    root_dir = os.path.dirname(annotations_file)
+    
+    config_args = {
+        "train": {
+            "lr": 0.01,
+            "scheduler": scheduler_config,
+            "csv_file": annotations_file,
+            "root_dir": root_dir,
+            "fast_dev_run": False,
+            "epochs": 2
+        },
+        "validation": {
+            "csv_file": annotations_file,
+            "root_dir": root_dir
+        }
+    }
+    
+    # Initialize the model with the config arguments
+    m = main.deepforest(config_args=config_args)
+    
+    # Create and run the trainer
+    m.create_trainer(limit_train_batches=1.0)
+    m.trainer.fit(m)
+    
+    # Assert the scheduler type
+    assert type(m.trainer.lr_scheduler_configs[0].scheduler).__name__ == scheduler_config["expected"], f"Scheduler type mismatch for {scheduler_config['type']}"
+
+def test_configure_optimizers_reduceLROnPlateau_scheduler():
+    scheduler_config={
+            "type": "reduceLROnPlateau",
+            "params": {
+                "mode": "min",
+                "factor": 0.1,
+                "patience": 10,
+                "threshold": 0.0001,
+                "threshold_mode": "rel",
+                "cooldown": 0,
+                "min_lr": 0,
+                "eps": 1e-08
+            },
+            "expected": "ReduceLROnPlateau"
+    }
+    annotations_file = get_data("testfile_deepforest.csv")
+    root_dir = os.path.dirname(annotations_file)
+    
+    config_args = {
+        "train": {
+            "lr": 0.01,
+            "scheduler": scheduler_config,
+            "csv_file": annotations_file,
+            "root_dir": root_dir,
+            "fast_dev_run": False,
+            "epochs": 2
+        },
+        "validation": {
+            "csv_file": annotations_file,
+            "root_dir": root_dir
+        }
+    }
+    
+    # Initialize the model with the config arguments
+    m = main.deepforest(config_args=config_args)
+    
+    # Create and run the trainer
+    m.create_trainer(limit_train_batches=1.0)
+    m.trainer.fit(m)
+    
+    # Assert the scheduler type
+    assert type(m.trainer.lr_scheduler_configs[0].scheduler).__name__ == scheduler_config["expected"], f"Scheduler type mismatch for {scheduler_config['type']}"
