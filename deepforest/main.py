@@ -635,15 +635,41 @@ class deepforest(pl.LightningModule):
         optimizer = optim.SGD(self.model.parameters(),
                               lr=self.config["train"]["lr"],
                               momentum=0.9)
-        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer,
-                                                               mode='min',
-                                                               factor=0.1,
-                                                               patience=10,
-                                                               threshold=0.0001,
-                                                               threshold_mode='rel',
-                                                               cooldown=0,
-                                                               min_lr=0,
-                                                               eps=1e-08)
+        
+        scheduler_config = self.config["train"]["scheduler"]
+        scheduler_type = scheduler_config["type"]
+        params = scheduler_config["params"]
+        
+        if scheduler_type == "cosine":
+            scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,
+                                                                   T_max=params["T_max"],
+                                                                   eta_min=params["eta_min"])
+            
+        elif scheduler_type=="lambdaLR":
+            scheduler=torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=params["lr_lambda"])
+            
+        elif scheduler_type=="multiplicativeLR":
+            scheduler=torch.optim.lr_scheduler.MultiplicativeLR(optimizer, lr_lambda=params["lr_lambda"])
+            
+        elif scheduler_type=="stepLR":
+            scheduler=torch.optim.lr_scheduler.StepLR(optimizer, step_size=params["step_size"], gamma=params["gamma"])
+            
+        elif scheduler_type=="multistepLR":
+            scheduler=torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=params["milestones"], gamma=params["gamma"])
+            
+        elif scheduler_type=="exponentialLR":
+            scheduler=torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=params["gamma"])
+            
+        else:
+            scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer,
+                                                               mode=params["mode"],
+                                                               factor=params["factor"],
+                                                               patience=params["patience"],
+                                                               threshold=params["threshold"],
+                                                               threshold_mode=params["threshold_mode"],
+                                                               cooldown=params["cooldown"],
+                                                               min_lr=params["min_lr"],
+                                                               eps=params["eps"])
 
         # Monitor rate is val data is used
         if self.config["validation"]["csv_file"] is not None:
