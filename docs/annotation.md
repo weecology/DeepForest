@@ -118,3 +118,34 @@ Many projects have a linear concept of annotations with all the annotations coll
 # Please consider making your annotations open-source!
 
 The DeepForest backbone tree and bird models are not perfect. Please consider posting any annotations you make on zenodo, or sharing them with DeepForest mantainers. Open an [issue](https://github.com/weecology/DeepForest/issues) and tell us about the RGB data and annotations. For example, we are collecting tree annotations to create an [open-source benchmark](https://milliontrees.idtrees.org/). Please consider sharing data to make the models stronger and benefit you and other users. 
+
+# How can I get new airborne data?
+
+Many remote sensing assets are stored as an ImageServer within ArcGIS REST protocol. As part of automating airborne image workflows, we have tools that help work with these assets. For example [California NAIP data](https://map.dfg.ca.gov/arcgis/rest/services/Base_Remote_Sensing/NAIP_2020_CIR/ImageServer). 
+
+More work is needed to encompass the *many* different param settings and specifications. We welcome pull requests from those with experience with  [WebMapTileServices](https://enterprise.arcgis.com/en/server/latest/publish-services/windows/wmts-services.htm).
+
+## Example: Specificy a lat long box and crop an ImageServer asset 
+
+```
+from deepforest import utilities
+import matplotlib.pyplot as plt
+import rasterio as rio
+import os
+
+url = "https://map.dfg.ca.gov/arcgis/rest/services/Base_Remote_Sensing/NAIP_2020_CIR/ImageServer/"
+xmin, ymin, xmax, ymax = 40.49457, -124.112622, 40.493891, -124.111536
+tmpdir = <download_location>
+image_name = "example_crop.tif"
+filename = utilities.download_ArcGIS_REST(url, xmin, ymin, xmax, ymax, savedir=tmpdir, image_name=image_name)
+
+# Check the saved file exists
+assert os.path.exists("{}/{}".format(tmpdir, image_name))
+
+# Confirm file has crs and show
+with rio.open("{}/{}".format(tmpdir, image_name)) as src:
+    assert src.crs is not None
+    # Show
+    plt.imshow(src.read().transpose(1,2,0))
+    plt.show()
+```
