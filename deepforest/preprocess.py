@@ -263,6 +263,16 @@ def split_raster(annotations_file=None,
                 "path (e.g. 'image_name.tif'), not the full path "
                 "(e.g. path/to/dir/image_name.tif)".format(annotations_file, image_name))
 
+        # Find all 0 coordinates occurrences in an image
+        zero_annotations = (image_annotations[['xmin', 'ymin', 'xmax', 'ymax']] == 0).all(axis=1)
+        if zero_annotations.any():
+            
+            dropped_count = zero_annotations.sum()
+            image_annotations = image_annotations[~zero_annotations]
+            warnings.warn(f"Dropped {dropped_count} annotations with zero coordinates."
+                          "If you want to process empty frames, consider running a separate "
+                          "job with `allow_empty=True` to include images with no annotations.")
+
         required_columns = ["image_path", "xmin", "ymin", "xmax", "ymax", "label"]
         if not all(column in annotations.columns for column in required_columns):
             raise ValueError(f"Annotations file should have columns {required_columns}")
