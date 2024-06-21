@@ -13,6 +13,7 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset
 import torch.nn.functional as F
+import cv2
 
 class Model():
     """A architecture agnostic class that controls the basic train, eval and predict functions.
@@ -61,30 +62,39 @@ class Model():
         model_keys.sort()
         assert model_keys == ['boxes', 'labels', 'scores']
 
+def simple_resnet_50(num_classes=2):
+    m = models.resnet50(pretrained=True)
+    num_ftrs = m.fc.in_features
+    m.fc = torch.nn.Linear(num_ftrs, num_classes) 
+
+    return m 
+    
 class CropModel(LightningModule):
-    def __init__(self, config, num_classes=2):
+    def __init__(self, num_classes=2, batch_size=4, num_workers=0, lr=0.0001, model=None):
         super().__init__()
         
         # Model
         self.num_classes = num_classes
-        self.model = models.resnet50(pretrained=True)
-        num_ftrs = self.model.fc.in_features
-        self.model.fc = torch.nn.Linear(num_ftrs, num_classes)        
+        if model == None:
+            self.model = simple_resnet_50(num_classes=num_classes)
+        else:
+            self.model = model      
         
         # Metrics
         self.accuracy = torchmetrics.Accuracy(average='none', num_classes=num_classes, task="multiclass")      
         self.total_accuracy = torchmetrics.Accuracy(num_classes=num_classes, task="multiclass")        
         self.precision_metric = torchmetrics.Precision(num_classes=num_classes, task="multiclass")
         self.metrics = torchmetrics.MetricCollection({"Class Accuracy":self.accuracy, "Accuracy":self.total_accuracy, "Precision":self.precision_metric})
-        
-        # Data
-        self.config = config
-        self.ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-        train_dir = os.path.join(self.ROOT,config["train_dir"])
-        val_dir = os.path.join(self.ROOT,config["test_dir"])
+
+        # Training Hyperparameters
+        self.batch_size = batch_size
+        self.num_workers = num_workers
+        self.lr = lr
+    
+    def load_from_disk(self, train_dir, val_dir):
         self.train_ds = ImageFolder(root=train_dir, transform=self.get_transform(augment=True))
         self.val_ds = ImageFolder(root=val_dir, transform=self.get_transform(augment=False))
-    
+
     def get_transform(self, augment):
         data_transforms = []
         data_transforms.append(transforms.ToTensor())
@@ -93,6 +103,20 @@ class CropModel(LightningModule):
         if augment:
             data_transforms.append(transforms.RandomHorizontalFlip(0.5))
         return transforms.Compose(data_transforms)
+    
+    def write_crops(self, image_path, boxes, labels, savedir):
+        """Write crops to disk"""
+        # Use rasterio to read the image
+        with rasterio.open(image_path) as src:
+            for index, box in enumerate(boxes):
+                xmin, ymin, xmax, ymax = box
+                label = labels[index]
+                # Crop the image using the bounding box coordinates
+                img = src.read(window=((ymin, ymax), (xmin, xmax)))
+                # Save the cropped image as a PNG file using opencv
+                img_path = os.path.join(savedir,label,f"crop_{index}.png")
+                img = np.rollaxis(img, 0, 3)
+                cv2.imwrite(img_path, img)
 
     def normalize(self):
         transforms.Normalize(mean=[0.485, 0.456, 0.406],
@@ -106,9 +130,9 @@ class CropModel(LightningModule):
     def train_dataloader(self):
         train_loader = torch.utils.data.DataLoader(
             self.train_ds,
-            batch_size=self.config["batch_size"],
+            batch_size=self.batch_size,
             shuffle=True,
-            num_workers=self.config["num_workers"]
+            num_workers=self.num_workers
         )   
         
         return train_loader
@@ -116,9 +140,9 @@ class CropModel(LightningModule):
     def predict_dataloader(self, ds):
         loader = torch.utils.data.DataLoader(
             ds,
-            batch_size=self.config["batch_size"],
+            batch_size=self.batch_size,
             shuffle=False,
-            num_workers=self.config["num_workers"]
+            num_workers=self.num_workers
         )   
         
         return loader
@@ -126,9 +150,9 @@ class CropModel(LightningModule):
     def val_dataloader(self):
         val_loader = torch.utils.data.DataLoader(
             self.val_ds,
-            batch_size=self.config["batch_size"],
+            batch_size=self.batch_size,
             shuffle=True,
-            num_workers=self.config["num_workers"]
+            num_workers=self.num_workers
         )   
         
         return val_loader
@@ -163,7 +187,7 @@ class CropModel(LightningModule):
         self.log_dict(val_metrics)
     
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), lr=self.config["lr"])
+        optimizer = torch.optim.Adam(self.parameters(), lr=self.lr)
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer,
                                                                     mode='min',
                                                                     factor=0.5,

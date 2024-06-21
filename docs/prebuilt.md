@@ -41,7 +41,19 @@ For more information, or specific questions about the bird detection, please cre
 # Crop Classifiers
 
 ## Alive/Dead trees
+To provide a simple filter for trees that appear dead in the RGB data we collected 6,342 image crops from the prediction landscape, as well as other NEON sites, and hand annotated them as either alive or dead. We finetuned a resnet-50 pre-trained on ImageNet to classify alive or dead trees before passing them to the species classification model. The model was trained with an ADAM optimizer with a learning rate of 0.001 and batch size of 128 for 40 epochs, and was evaluated on a randomly held out of 10% of the crops. The evaluation accuracy of the alive-dead model was 95.8% (Table S1).
 
+Table S1 Confusion matrix for the Alive/Dead model in Weinstein et al. 2023
+
+        |        Predicted | Alive | Dead |
+        |-----------------|-------|------|
+        | Observed        | 527   | 9    |
+        |                 | 10    | 89   |
+
+* Note *, due to the smaller training sizes, the confidence scores are overfit and not smooth. We do not recommend using the confidence scores from this model until it is trained on more diverse data.
+
+
+Citation: Weinstein, Ben G., et al. "Capturing long‐tailed individual tree diversity using an airborne imaging and a multi‐temporal hierarchical model." Remote Sensing in Ecology and Conservation 9.5 (2023): 656-670.
 
 ## Want more pretrained models?
 

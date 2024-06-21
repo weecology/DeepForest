@@ -179,7 +179,7 @@ class TileDataset(Dataset):
 
         return crop
 
-def bounding_box_transform(augment):
+def bounding_box_transform(augment=False):
     data_transforms = []
     data_transforms.append(transforms.ToTensor())
     data_transforms.append(resnet_normalize)
@@ -200,15 +200,19 @@ class BoundingBoxDataset(Dataset):
     Returns:
         rgb: a tensor of shape (3, height, width)
     """
-    def __init__(self, df, root_dir, transform=None):
+    def __init__(self, df, root_dir, transform=None, augment=False):
         self.df = df
         
+        if transform is None:
+            self.transform = bounding_box_transform(augment=augment)
+        else:
+            self.transform = transform
+
         unique_image = self.df['image_path'].unique()
         assert len(unique_image) == 1, "There should be only one unique image for this class object"
 
         # Open the image using rasterio
         self.src = rio.open(os.path.join(root_dir,unique_image[0]))
-        self.transform = transform
 
     def __len__(self):
         return len(self.df)

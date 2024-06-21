@@ -162,13 +162,14 @@ def test_BoundingBoxDataset():
     df = pd.read_csv(get_data("OSBS_029.csv"))
 
     # Create the BoundingBoxDataset object
-    dataset = BoundingBoxDataset(df, root_dir=os.path.dirname(get_data("OSBS_029.png")))
+    ds = BoundingBoxDataset(df, root_dir=os.path.dirname(get_data("OSBS_029.png")))
 
     # Check the length of the dataset
-    assert len(dataset) == df.shape[0]
+    assert len(ds) == df.shape[0]
 
     # Get an item from the dataset
-    item = dataset[0]
+    item = ds[0]
 
     # Check the shape of the RGB tensor
-    assert item.shape == (df["ymax"].values[0] - df["ymin"].values[0], df["xmax"].values[0] - df["xmin"].values[0], 3)
+    assert item.shape == (3, 224,224)
+
