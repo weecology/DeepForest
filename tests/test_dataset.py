@@ -8,7 +8,8 @@ import torch
 import pandas as pd
 import numpy as np
 import tempfile
-import rasterio as rio
+import rasterio as rio        
+from deepforest.dataset import BoundingBoxDataset
 
 def single_class():
     csv_file = get_data("example.csv")
@@ -155,4 +156,19 @@ def test_TileDataset(preload_images):
     #assert crop shape
     assert ds[1].shape == (3, 100, 100)
     
-        
+
+def test_BoundingBoxDataset():
+    # Create a sample dataframe
+    df = pd.read_csv(get_data("OSBS_029.csv"))
+
+    # Create the BoundingBoxDataset object
+    dataset = BoundingBoxDataset(df, root_dir=os.path.dirname(get_data("OSBS_029.png")))
+
+    # Check the length of the dataset
+    assert len(dataset) == df.shape[0]
+
+    # Get an item from the dataset
+    item = dataset[0]
+
+    # Check the shape of the RGB tensor
+    assert item.shape == (df["ymax"].values[0] - df["ymin"].values[0], df["xmax"].values[0] - df["xmin"].values[0], 3)

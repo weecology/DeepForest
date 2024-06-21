@@ -429,7 +429,8 @@ class deepforest(pl.LightningModule):
                      sigma=0.5,
                      thresh=0.001,
                      color=None,
-                     thickness=1):
+                     thickness=1,
+                     crop_model=None):
         """For images too large to input into the model, predict_tile cuts the
         image into overlapping windows, predicts trees on each window and
         reassambles into a single array.
@@ -449,6 +450,7 @@ class deepforest(pl.LightningModule):
             thresh: the score thresh used to filter bboxes after soft-nms performed
             color: color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255)
             thickness: thickness of the rectangle border line in px
+            cropModel: a deepforest.model.CropModel object to predict on crops
 
         Returns:
             boxes (array): if return_plot, an image.
@@ -520,6 +522,13 @@ class deepforest(pl.LightningModule):
                 self.crops.append(crop)
 
             return list(zip(results, self.crops))
+
+        if crop_model:
+            # If a crop model is provided, predict on each crop
+            bounding_box_dataset = dataset.BoundingBoxDataset(results)
+            crop_dataloader = crop_model.predict_dataloader(bounding_box_dataset)
+            crop_results = self.trainer.predict(crop_model, crop_dataloader)
+            results["cropmodel_label"] = crop_results
 
         return results
 

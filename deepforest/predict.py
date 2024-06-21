@@ -11,6 +11,7 @@ from torchvision.ops import nms
 import typing
 
 from deepforest import visualize
+import rasterio
 
 
 def _predict_image_(model,
