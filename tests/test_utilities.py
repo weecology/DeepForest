@@ -75,6 +75,17 @@ def test_shapefile_to_annotations_convert_unprojected_to_boxes(tmpdir):
     shp = utilities.shapefile_to_annotations(shapefile="{}/annotations.shp".format(tmpdir), rgb=image_path, savedir=tmpdir, geometry_type="point")
     assert shp.shape[0] == 2
 
+def test_shapefile_to_annotations_invalid_epsg(tmpdir):
+    sample_geometry = [geometry.Point(404211.9 + 10, 3285102 + 20), geometry.Point(404211.9 + 20, 3285102 + 20)]
+    labels = ["Tree", "Tree"]
+    df = pd.DataFrame({"geometry": sample_geometry, "label": labels})
+    gdf = gpd.GeoDataFrame(df, geometry="geometry", crs="EPSG:4326")
+    gdf.to_file("{}/annotations.shp".format(tmpdir))
+    assert gdf.crs.to_string() == "EPSG:4326"
+    image_path = get_data("OSBS_029.tif")
+    with pytest.raises(ValueError):
+        shp = utilities.shapefile_to_annotations(shapefile="{}/annotations.shp".format(tmpdir), rgb=image_path, savedir=tmpdir, geometry_type="bbox")
+        
 def test_shapefile_to_annotations(tmpdir):
     sample_geometry = [geometry.Point(404211.9 + 10,3285102 + 20),geometry.Point(404211.9 + 20,3285102 + 20)]
     labels = ["Tree","Tree"]

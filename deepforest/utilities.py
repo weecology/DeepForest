@@ -298,6 +298,11 @@ def shapefile_to_annotations(shapefile,
         raster_crs = src.crs
 
     if gdf.crs:
+        # If epsg is 4326, then the buffer size is in degrees, not meters, see https://github.com/weecology/DeepForest/issues/694
+        if gdf.crs.to_string() == "EPSG:4326":
+            raise ValueError(
+                "The shapefile crs is in degrees. This function works for UTM and meter based crs only. see https://github.com/weecology/DeepForest/issues/694")
+
         # Check matching the crs
         if not gdf.crs.to_string() == raster_crs.to_string():
             raise ValueError(
