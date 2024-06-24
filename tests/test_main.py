@@ -13,7 +13,7 @@ import copy
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 
-from deepforest import main, get_data, dataset
+from deepforest import main, get_data, dataset, model
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import Callback
 from pytorch_lightning.loggers import TensorBoardLogger
@@ -555,6 +555,7 @@ def test_existing_predict_dataloader(m, tmpdir):
     batches = m.trainer.predict(m, existing_loader)
     len(batches[0]) == m.config["batch_size"] + 1
 
+
 # Test train with each scheduler
 @pytest.mark.parametrize("scheduler,expected",[("cosine","CosineAnnealingLR"),
                                                ("lambdaLR","LambdaLR"),
@@ -614,3 +615,34 @@ def test_configure_optimizers(scheduler, expected):
     
     # Assert the scheduler type
     assert type(m.trainer.lr_scheduler_configs[0].scheduler).__name__ == scheduler_config["expected"], f"Scheduler type mismatch for {scheduler_config['type']}"
+
+@pytest.fixture()
+def crop_model():
+    return model.CropModel()
+
+def test_predict_tile_with_crop_model(m, config):
+    raster_path = get_data("SOAP_061.png")
+    patch_size = 400
+    patch_overlap = 0.05
+    iou_threshold = 0.15
+    return_plot = False
+    mosaic = True
+
+
+    # Set up the crop model
+    crop_model = model.CropModel()
+
+    # Call the predict_tile method with the crop_model
+    m.config["train"]["fast_dev_run"] = False
+    m.create_trainer()
+    result = m.predict_tile(raster_path=raster_path,
+                                           patch_size=patch_size,
+                                           patch_overlap=patch_overlap,
+                                           iou_threshold=iou_threshold,
+                                           return_plot=return_plot,
+                                           mosaic=mosaic,
+                                           crop_model=crop_model)
+
+    # Assert the result
+    assert isinstance(result, pd.DataFrame)
+    assert set(result.columns) == {"xmin", "ymin", "xmax", "ymax", "label", "score", "cropmodel_label","cropmodel_score","image_path"}

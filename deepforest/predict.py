@@ -10,7 +10,8 @@ import torch
 from torchvision.ops import nms
 import typing
 
-from deepforest import visualize
+from deepforest import visualize, dataset
+import rasterio
 
 
 def _predict_image_(model,
@@ -186,5 +187,40 @@ def _dataloader_wrapper_(model,
                                             savedir=savedir,
                                             color=color,
                                             thickness=thickness)
+
+    return results
+
+
+def _predict_crop_model_(crop_model,
+                         trainer,
+                         results,
+                         raster_path,
+                         transform=None,
+                         augment=False):
+    """
+    Predicts crop model on a raster file.
+
+    Args:
+        crop_model: The crop model to be used for prediction.
+        trainer: The pytorch lightning trainer object for prediction.
+        results: The results dataframe to store the predicted labels and scores.
+        raster_path: The path to the raster file.
+
+    Returns:
+        The updated results dataframe with predicted labels and scores.
+    """
+    bounding_box_dataset = dataset.BoundingBoxDataset(
+        results,
+        root_dir=os.path.dirname(raster_path),
+        transform=transform,
+        augment=augment)
+    crop_dataloader = crop_model.predict_dataloader(bounding_box_dataset)
+    crop_results = trainer.predict(crop_model, crop_dataloader)
+    stacked_outputs = np.vstack(np.concatenate(crop_results))
+    label = np.argmax(stacked_outputs, 1)
+    score = np.max(stacked_outputs, 1)
+
+    results["cropmodel_label"] = label
+    results["cropmodel_score"] = score
 
     return results
