@@ -125,7 +125,7 @@ Many remote sensing assets are stored as an ImageServer within ArcGIS REST proto
 
 More work is needed to encompass the *many* different param settings and specifications. We welcome pull requests from those with experience with  [WebMapTileServices](https://enterprise.arcgis.com/en/server/latest/publish-services/windows/wmts-services.htm).
 
-## Example: Specificy a lat long box and crop an ImageServer asset 
+## Example: Specify a lat-long box and crop an ImageServer asset 
 
 ```
 from deepforest import utilities
