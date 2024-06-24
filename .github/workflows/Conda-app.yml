@@ -1,55 +1,56 @@
 name: Conda package
 
 on:
-  push:
-    branches: [ main ]
   pull_request:
-    branches: [ main ]
+  push:
+    branches: [main]
 
 jobs:
-  ci:
-    name: "CI setup"
-
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: [ "3.12", "3.11", "3.10" ]
-        os: [ "ubuntu-latest" ]
-
-    runs-on: ${{ matrix.os }}
-
+  mypy:
+    runs-on: ubuntu-latest
     defaults:
       run:
         shell: bash -l {0}
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install OpenCV dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libgl1-mesa-glx libegl1-mesa
-          sudo apt-get install -y python3-opencv
-
-      - name: Install Conda environment with Micromamba
-        uses: mamba-org/setup-micromamba@v1
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+      - name: Cache conda
+        uses: actions/cache@v4
+        env:
+          # Increase this value to reset cache if environment-test.yml has not changed
+          CACHE_NUMBER: 0
         with:
-          environment-name: DeepForest
+          path: ~/conda_pkgs_dir
+          key: ${{ runner.os }}-py39-conda-${{ env.CACHE_NUMBER }}-${{
+            hashFiles('environment.yml') }}
+      - name: Cache multiple paths
+        uses: actions/cache@v4
+        env:
+          # Increase this value to reset cache if requirements.txt has not changed
+          CACHE_NUMBER: 0
+        with:
+          path: |
+            ~/.cache/pip
+            $RUNNER_TOOL_CACHE/Python/*
+            ~\AppData\Local\pip\Cache
+          key: ${{ runner.os }}-build-${{ matrix.python-version }}-${{ env.CACHE_NUMBER }}-${{
+            hashFiles('requirements.txt') }}
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          miniforge-variant: Mambaforge
+          miniforge-version: latest
+          mamba-version: "*"
+          activate-environment: DeepForest
+          channel-priority: strict
           environment-file: environment.yml
-          create-args: "python=${{ matrix.python-version }}"
-          cache-environment: true
-          cache-downloads: true
-
-      - name: Run pytest
-        run: micromamba run -n DeepForest pytest -v
-
-      - name: Check style
-        run: micromamba run -n DeepForest yapf -d --recursive deepforest/ --style=.style.yapf
-          
-      - name: Check notebook build
-        run: micromamba run -n DeepForest pytest --nbmake docs/*.ipynb
-
-      - name: Test Docs
+          python-version: "3.10"  # Run pre-commit on oldest supported Python version
+          use-mamba: true
+          use-only-tar-bz2: false # IMPORTANT: This may break caching of conda packages! See https://github.com/conda-incubator/setup-miniconda/issues/267
+      - name: Install-pymc and mypy dependencies
         run: |
-          cd docs && micromamba run -n DeepForest make clean && make html SPHINXOPTS="-W"
+          conda activate DeepForest
+          pip install -e .
+          python --version
+      - name: Run Pytest
+        run: |
+          conda activate DeepForest
+          python pytest -v
