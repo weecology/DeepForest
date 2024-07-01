@@ -125,27 +125,81 @@ Many remote sensing assets are stored as an ImageServer within ArcGIS REST proto
 
 More work is needed to encompass the *many* different param settings and specifications. We welcome pull requests from those with experience with  [WebMapTileServices](https://enterprise.arcgis.com/en/server/latest/publish-services/windows/wmts-services.htm).
 
-## Example: Specify a lat-long box and crop an ImageServer asset 
+## Example 1: Specify a lat-long box and crop an ImageServer asset 
 
-```
+```python
 from deepforest import utilities
 import matplotlib.pyplot as plt
 import rasterio as rio
 import os
+import asyncio
+from aiolimiter import AsyncLimiter
 
-url = "https://map.dfg.ca.gov/arcgis/rest/services/Base_Remote_Sensing/NAIP_2020_CIR/ImageServer/"
-xmin, ymin, xmax, ymax = 40.49457, -124.112622, 40.493891, -124.111536
-tmpdir = <download_location>
-image_name = "example_crop.tif"
-filename = utilities.download_ArcGIS_REST(url, xmin, ymin, xmax, ymax, savedir=tmpdir, image_name=image_name)
+async def main():
+    url = "https://map.dfg.ca.gov/arcgis/rest/services/Base_Remote_Sensing/NAIP_2020_CIR/ImageServer/"
+    xmin, ymin, xmax, ymax = -124.112622, 40.493891, -124.111536, 40.49457
+    tmpdir = "<download_location>"
+    image_name = "example_crop.tif"
+    
+    # Create semaphore and rate limiter
+    semaphore = asyncio.Semaphore(1)
+    limiter = AsyncLimiter(1, 0.05)
 
-# Check the saved file exists
-assert os.path.exists("{}/{}".format(tmpdir, image_name))
+    # Ensure the directory exists
+    os.makedirs(tmpdir, exist_ok=True)
 
-# Confirm file has crs and show
-with rio.open("{}/{}".format(tmpdir, image_name)) as src:
-    assert src.crs is not None
-    # Show
-    plt.imshow(src.read().transpose(1,2,0))
-    plt.show()
+    # Download the image
+    filename = await utilities.download_ArcGIS_REST(semaphore, limiter, url, xmin, ymin, xmax, ymax, "EPSG:4326", savedir=tmpdir, image_name=image_name)
+
+    # Check the saved file exists
+    assert os.path.exists(os.path.join(tmpdir, image_name))
+
+    # Confirm file has crs and show
+    with rio.open(os.path.join(tmpdir, image_name)) as src:
+        assert src.crs is not None
+        # Show
+        plt.imshow(src.read().transpose(1, 2, 0))
+        plt.show()
+
+# Run the async function
+asyncio.run(main())
+```
+
+## Example 2: Downloading a batch of images
+
+```python
+import asyncio
+import pandas as pd
+from aiolimiter import AsyncLimiter
+from deepforest import utilities
+
+async def download_crops(result_df, tmp_dir):
+    url = 'https://map.dfg.ca.gov/arcgis/rest/services/Base_Remote_Sensing/NAIP_2022/ImageServer'
+    
+    # Semaphore to limit the number of concurrent downloads to 20
+    semaphore = asyncio.Semaphore(20)
+
+    # Rate limiter to control the download rate (1 request per 0.05 seconds)
+    limiter = AsyncLimiter(1, 0.05)
+    tasks = []
+    for idx, row in result_df.iterrows():
+        xmin, ymin, xmax, ymax = row['xmin'], row['ymin'], row['xmax'], row['ymax']
+        os.makedirs(tmp_dir, exist_ok=True)
+        image_name = f"image_{idx}.tif"
+        # Create an async task for each image download
+        task = utilities.download_ArcGIS_REST(semaphore, limiter, url, xmin, ymin, xmax, ymax, "EPSG:4326", savedir=tmp_dir, image_name=image_name)
+        tasks.append(task)
+    
+    # Wait for all tasks to complete
+    await asyncio.gather(*tasks)
+
+# Create a sample DataFrame
+data = {
+    'xmin': [-121.5, -122.0],
+    'ymin': [37.0, 37.5],
+    'xmax': [-121.0, -121.5],
+    'ymax': [37.5, 38.0]
+}
+df = pd.DataFrame(data)
+asyncio.run(download_crops(df, "/path/to/tmp_dir"))
 ```
