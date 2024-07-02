@@ -17,6 +17,8 @@ import requests
 import pytest
 import matplotlib.pyplot as plt
 import cv2
+import asyncio
+from aiolimiter import AsyncLimiter
 
 @pytest.fixture()
 def config():
@@ -165,9 +167,9 @@ def url():
 
 def boxes():
     return [
-        (40.49457, -124.112622, 40.493891, -124.111536),
-        (51.07332, -114.12529, 51.072134, -114.12117),
-        (41.111626,-73.763941, 41.111032,-73.763447)
+        (-124.112622, 40.493891, -124.111536, 40.49457),
+        (-114.12529, 51.072134, -114.12117, 51.07332),
+        (-73.763941, 41.111032, -73.763447, 41.111626)
     ]
 
 def additional_params():
@@ -186,18 +188,26 @@ def download_service():
 
 # Pair each URL with its corresponding box
 url_box_pairs = list(zip(["CA.tif","MA.tif","NY.png"],url(), boxes(), additional_params(), download_service()))
-@pytest.mark.parametrize("image_name, url, box, params,download_service_name", url_box_pairs)
+@pytest.mark.parametrize("image_name, url, box, params, download_service_name", url_box_pairs)
 def test_download_ArcGIS_REST(tmpdir, image_name, url, box, params, download_service_name):
-    xmin, ymin, xmax, ymax = box
-    # Call the function
-    filename = utilities.download_ArcGIS_REST(url, xmin, ymin, xmax, ymax, savedir=tmpdir, image_name=image_name,additional_params=params, download_service=download_service_name)
-    # Check the saved file
-    assert os.path.exists("{}/{}".format(tmpdir, image_name))
-    # Confirm file has crs
-    with rio.open(filename) as src:
-        if image_name.endswith('.tif'):
-            assert src.crs is not None
-            plt.imshow(src.read().transpose(1,2,0))
-        else:
-            assert src.crs is None
-            plt.imshow(cv2.imread(filename)[:,:,::-1])
+    async def run_test():
+        semaphore = asyncio.Semaphore(20)
+        limiter = AsyncLimiter(1,0.05)
+        xmin, ymin, xmax, ymax = box
+        bbox_crs = "EPSG:4326"  # Assuming WGS84 for bounding box CRS
+        savedir = tmpdir
+        filename = await utilities.download_ArcGIS_REST(semaphore, limiter, url, xmin, ymin, xmax, ymax, bbox_crs, savedir, additional_params=params, image_name=image_name, download_service=download_service_name)
+        
+        # Check the saved file
+        assert os.path.exists(filename)
+        
+        # Confirm file has CRS
+        with rio.open(filename) as src:
+            if image_name.endswith('.tif'):
+                assert src.crs is not None
+                plt.imshow(src.read().transpose(1, 2, 0))
+            else:
+                assert src.crs is None
+                plt.imshow(cv2.imread(filename)[:, :, ::-1])
+    
+    asyncio.run(run_test())
