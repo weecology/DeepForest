@@ -42,3 +42,4 @@ dependencies:
     - albumentations>=1.0.0
     - comet_ml
     - pycocotools
+    - aiolimiter

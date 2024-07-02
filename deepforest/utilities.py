@@ -15,6 +15,8 @@ import shapely
 import xmltodict
 import yaml
 from tqdm import tqdm
+import aiohttp
+import traceback
 
 from deepforest import _ROOT
 
@@ -569,71 +571,72 @@ def project_boxes(df, root_dir, transform=True):
     return df
 
 
-def download_ArcGIS_REST(url,
-                         xmin,
-                         ymin,
-                         xmax,
-                         ymax,
-                         savedir,
-                         additional_params=None,
-                         image_name="image.tiff",
-                         download_service="exportImage"):
+async def download_ArcGIS_REST(semaphore, limiter, url, xmin, ymin, xmax, ymax, bbox_crs, savedir, additional_params=None, image_name="image.tiff", download_service="exportImage"):
+    
     """
-    Fetch data from a web server using geographic boundaries. The data is saved as a GeoTIFF file. The bbox is in the format of xmin, ymin, xmax, ymax for lat long coordinates..
-    This function is used to download data from an ArcGIS REST service, not WMTS or WMS services. 
+    Fetch data from a web server using geographic boundaries and save it as a GeoTIFF file.
+    This function is used to download data from an ArcGIS REST service, not WMTS or WMS services.
     Example url: https://gis.calgary.ca/arcgis/rest/services/pub_Orthophotos/CurrentOrthophoto/ImageServer/
-
-    There are many types of ImageServer, mapServer and open source alternatives. This function is designed to work with ArcGIS ImageServer, but may work with other services. Its very hard to anticipate all params and add to additional_params and download_service name to meet the specifications.
+    
     Parameters:
-    - url: The base URL of the web server.
+    - semaphore: An asyncio.Semaphore instance to limit concurrent downloads.
+    - limiter: An asyncio-based rate limiter to control the download rate.
+    - url: The base URL of the ArcGIS REST service 
     - xmin: The minimum x-coordinate (longitude).
     - ymin: The minimum y-coordinate (latitude).
     - xmax: The maximum x-coordinate (longitude).
     - ymax: The maximum y-coordinate (latitude).
+    - bbox_crs: The coordinate reference system (CRS) of the bounding box.
     - savedir: The directory to save the downloaded image.
-    - additional_params: Additional query parameters to include in the request.
+    - additional_params: Additional query parameters to include in the request (default is None).
+    - image_name: The name of the image file to be saved (default is "image.tiff").
+    - download_service: The specific service to use for downloading the image (default is "exportImage").
 
     Returns:
-    The response from the web server.
+    - The file path of the saved image if the download is successful.
+    - None if the download fails.
     """
-    # Construct the query parameters with the geographic boundaries
+    
     params = {"f": "json"}
 
-    # Make the GET request with the URL and parameters
-    response = requests.get(url, params=params)
+    async with aiohttp.ClientSession() as session:
+        await semaphore.acquire()
+        async with limiter:
+            try:
+                async with session.get(url, params=params) as resp:
+                    response = await resp.read()
+                    response_dict = json.loads(response)
+                    spatialReference = response_dict["spatialReference"]
+                    if "latestWkid" in spatialReference:
+                        wkid = spatialReference["latestWkid"]
+                        crs = CRS.from_epsg(wkid)
+                    elif 'wkt' in spatialReference:
+                        crs = CRS.from_wkt(spatialReference['wkt'])
 
-    # turn into dict
-    response_dict = json.loads(response.content)
-    spatialReference = response_dict["spatialReference"]
-    if "latestWkid" in spatialReference:
-        wkid = spatialReference["latestWkid"]
-        crs = CRS.from_epsg(wkid)
-    elif 'wkt' in spatialReference:
-        crs = CRS.from_wkt(spatialReference['wkt'])
+                bbox = f"{xmin},{ymin},{xmax},{ymax}"
+                bounds = gpd.GeoDataFrame(geometry=[shapely.geometry.box(xmin, ymin, xmax, ymax)], crs=bbox_crs).to_crs(crs).bounds
 
-    # Convert bbox into image coordinates
-    bbox = f"{xmin},{ymin},{xmax},{ymax}"
-    bounds = gpd.GeoDataFrame(geometry=[shapely.geometry.box(ymin, xmin, ymax, xmax)],
-                              crs='EPSG:4326').to_crs(crs).bounds
+                params.update({
+                    "bbox": f"{bounds.minx[0]},{bounds.miny[0]},{bounds.maxx[0]},{bounds.maxy[0]}",
+                    "f": "image",
+                    'format': 'tiff',
+                })
 
-    # update the params
-    params.update({
-        "bbox": f"{bounds.minx[0]},{bounds.miny[0]},{bounds.maxx[0]},{bounds.maxy[0]}",
-        "f": "image",
-        'format': 'tiff',
-    })
+                if additional_params:
+                    params.update(additional_params)
 
-    # add any additional parameters
-    if additional_params:
-        params.update(additional_params)
-
-    # Make the GET request with the URL and parameters
-    download_url_service = f"{url}/{download_service}"
-    response = requests.get(download_url_service, params=params)
-    if response.status_code == 200:
-        filename = f"{savedir}/{image_name}"
-        with open(filename, "wb") as f:
-            f.write(response.content)
-        return filename
-    else:
-        raise Exception(f"Failed to fetch data: {response.code}")
+                download_url_service = f"{url}/{download_service}"
+                async with session.get(download_url_service, params=params) as resp:
+                    response = await resp.read()
+                    if resp.status == 200:
+                        filename = f"{savedir}/{image_name}"
+                        with open(filename, "wb") as f:
+                            f.write(response)
+                        return filename
+                    else:
+                        raise Exception(f"Failed to fetch data: {resp.status}")
+            
+            except Exception as e:
+                print(f"Error downloading image {image_name}: {e}")
+            finally:
+                semaphore.release()
