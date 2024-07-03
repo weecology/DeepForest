@@ -49,6 +49,7 @@ Get suggestions on how to improve a model by using the [discussion board](https:
    Evaluation
    multi_species
    Model_Architecture
+   CropModel
    ConfigurationFile
    deepforestr
    FAQ
