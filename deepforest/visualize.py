@@ -8,7 +8,7 @@ import pandas.api.types as ptypes
 import cv2
 import random
 import warnings
-
+import supervision as sv
 
 def view_dataset(ds, savedir=None, color=None, thickness=1):
     """Plot annotations on images for debugging purposes
@@ -202,3 +202,41 @@ def label_to_color(label):
     color_dict[8] = (0, 215, 255)
 
     return color_dict[label]
+
+
+def convert_to_sv_format(df):
+    """
+    Convert DeepForest prediction results to a supervision Detections object.
+
+    Args:
+        df (pd.DataFrame): The results from `predict_image` or `predict_tile`.
+                           Expected columns: ['xmin', 'ymin', 'xmax', 'ymax', 'label', 'score', 'image_path'].
+
+    Returns:
+        sv.Detections: A supervision Detections object containing bounding boxes, class IDs,
+                       confidence scores, and class names object mapping classes ids to corresponding
+                       class names inside of data dictionary.
+
+    Example:
+        detections = convert_to_sv_format(result)
+    """
+    # Extract bounding boxes as a 2D numpy array with shape (_, 4)
+    boxes = df[['xmin', 'ymin', 'xmax', 'ymax']].values.astype(np.float32)
+
+    label_mapping = {label: idx for idx, label in enumerate(df['label'].unique())}
+
+    # Extract labels as a numpy array
+    labels = df['label'].map(label_mapping).values.astype(int)
+
+    # Extract scores as a numpy array
+    scores = np.array(df['score'].tolist())
+    # Create a reverse mapping from integer to string labels
+    class_name = {v: k for k, v in label_mapping.items()}
+
+    return sv.Detections(
+        xyxy=boxes,
+        class_id=labels,
+        confidence=scores,
+        data={"class_name": [class_name[class_id] for class_id in labels]}
+
+    )

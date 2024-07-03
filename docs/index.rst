@@ -48,6 +48,7 @@ Get suggestions on how to improve a model by using the [discussion board](https:
    training
    Evaluation
    multi_species
+   Visualization
    Model_Architecture
    ConfigurationFile
    deepforestr

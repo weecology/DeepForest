@@ -35,3 +35,4 @@ tqdm
 twine
 xmltodict
 yapf
+supervision
