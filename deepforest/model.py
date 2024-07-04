@@ -73,6 +73,9 @@ def simple_resnet_50(num_classes=2):
 
 
 class CropModel(LightningModule):
+    """
+    A architecture agnostic class for classification based on crops coming from the core detection models
+    """
 
     def __init__(self, num_classes=2, batch_size=4, num_workers=0, lr=0.0001, model=None):
         super().__init__()
