@@ -124,6 +124,9 @@ source_suffix = {
 # Temporary workaround to remove multiple build warnings caused by upstream bug
 # See https://github.com/zulip/zulip/issues/13263 for details.
 
+# Suppress warnings due to recommonmark config not being cacheable
+suppress_warnings = ["config.cache"]
+
 
 class CustomCommonMarkParser(CommonMarkParser):
 
