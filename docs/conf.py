@@ -60,20 +60,11 @@ autodoc_member_order = 'groupwise'
 autoclass_content = 'both'
 
 extensions = [
-    'nbsphinx',
-    'pygments.sphinxext',
-    'sphinx.ext.autodoc',
-    'sphinx.ext.autosummary',
-    'sphinx.ext.doctest',
-    'sphinx.ext.githubpages',
-    'sphinx.ext.inheritance_diagram',
-    'sphinx.ext.intersphinx',
-    'sphinx.ext.mathjax',
-    'sphinx.ext.napoleon',
-    'sphinx.ext.todo',
-    'sphinx.ext.viewcode',
-    'sphinx_markdown_tables']
-
+    'nbsphinx', 'pygments.sphinxext', 'sphinx.ext.autodoc', 'sphinx.ext.autosummary',
+    'sphinx.ext.doctest', 'sphinx.ext.githubpages', 'sphinx.ext.inheritance_diagram',
+    'sphinx.ext.intersphinx', 'sphinx.ext.mathjax', 'sphinx.ext.napoleon',
+    'sphinx.ext.todo', 'sphinx.ext.viewcode', 'sphinx_markdown_tables'
+]
 
 nbsphinx_execute = 'never'
 nbsphinx_allow_errors = True
@@ -106,15 +97,14 @@ htmlhelp_basename = 'deepforestdoc'
 
 latex_elements = {}
 latex_documents = [
-    (master_doc, 'deepforest.tex', u'DeepForest Documentation',
-     u'Ben Weinstein', 'manual'),
+    (master_doc, 'deepforest.tex', u'DeepForest Documentation', u'Ben Weinstein',
+     'manual'),
 ]
 
 # -- Options for manual page output ------------------------------------
 
 # One entry per manual page. List of tuples
-man_pages = [(master_doc, 'deepforest', u'DeepForest Documentation', [author],
-              1)]
+man_pages = [(master_doc, 'deepforest', u'DeepForest Documentation', [author], 1)]
 
 # -- Options for Texinfo output ----------------------------------------
 
@@ -122,8 +112,8 @@ man_pages = [(master_doc, 'deepforest', u'DeepForest Documentation', [author],
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'deepforest', u'DeepForest Documentation', author,
-     'deepforest', 'One line description of project.', 'Miscellaneous'),
+    (master_doc, 'deepforest', u'DeepForest Documentation', author, 'deepforest',
+     'One line description of project.', 'Miscellaneous'),
 ]
 
 source_suffix = {
@@ -131,11 +121,12 @@ source_suffix = {
     '.md': 'markdown',
 }
 
-# Temporary workaround to remove multiple build warnings caused by upstream bug.
+# Temporary workaround to remove multiple build warnings caused by upstream bug
 # See https://github.com/zulip/zulip/issues/13263 for details.
 
 
 class CustomCommonMarkParser(CommonMarkParser):
+
     def visit_document(self, node):
         pass
 
