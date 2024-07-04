@@ -595,6 +595,27 @@ async def download_ArcGIS_REST(semaphore, limiter, url, xmin, ymin, xmax, ymax, 
     Returns:
     - The file path of the saved image if the download is successful.
     - None if the download fails.
+    
+    Function usage:
+        import asyncio
+        from asyncio import Semaphore
+        from aiolimiter import AsyncLimiter
+        from deepforest import utilities
+
+        async def main():
+            semaphore = Semaphore(10)
+            limiter = AsyncLimiter(1, 0.5)
+            url = "https://map.dfg.ca.gov/arcgis/rest/services/Base_Remote_Sensing/NAIP_2020_CIR/ImageServer/
+            xmin, ymin, xmax, ymax = -114.0719, 51.0447, -114.001, 51.075
+            bbox_crs = "EPSG:4326"
+            savedir = "/path/to/save"
+            image_name = "example_image.tiff"
+            await utilities.download_ArcGIS_REST(semaphore, limiter, url, xmin, ymin, xmax, ymax, bbox_crs, savedir, image_name=image_name)
+
+        asyncio.run(main())
+        
+    For more details on the function usage, refer to https://deepforest.readthedocs.io/en/latest/annotation.html.
+ 
     """
     
     params = {"f": "json"}

@@ -125,7 +125,7 @@ Many remote sensing assets are stored as an ImageServer within ArcGIS REST proto
 
 More work is needed to encompass the *many* different param settings and specifications. We welcome pull requests from those with experience with  [WebMapTileServices](https://enterprise.arcgis.com/en/server/latest/publish-services/windows/wmts-services.htm).
 
-## Example 1: Specify a lat-long box and crop an ImageServer asset 
+## Specify a lat-long box and crop an ImageServer asset 
 
 ```python
 from deepforest import utilities
@@ -165,7 +165,7 @@ async def main():
 asyncio.run(main())
 ```
 
-## Example 2: Downloading a batch of images
+## Downloading a batch of images
 
 ```python
 import asyncio
