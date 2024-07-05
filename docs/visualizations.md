@@ -1,11 +1,11 @@
 
-# Visualizations
+# Visualization
 
 # `convert_to_sv_format` Function
 
 ## Description
 
-The `convert_to_sv_format` function converts DeepForest prediction results into a `supervision.Detections` object. This object contains bounding boxes, class IDs, confidence scores, and class names. It is designed to facilitate the visualization and further processing of object detection results using supervision library.
+The `convert_to_sv_format` function converts DeepForest prediction results into a `supervision.Detections` object. This object contains bounding boxes, class IDs, confidence scores, and class names. It is designed to facilitate the visualization and further processing of object detection results using [supervision](https://supervision.roboflow.com/latest/) library.
 
 ## Arguments
 
@@ -94,10 +94,4 @@ plt.axis('off')  # Hide axes for a cleaner look
 plt.show()
 ```
 ![Labels](figures/tree_predicted_labels.jpeg)
-
-You can also use the bounding box with labels if you want,
-
-And you can find many more annotators on [Supervision Docs](https://supervision.roboflow.com/latest/detection/annotators/).
 ---
-
-This documentation provides a comprehensive overview of the `convert_to_sv_format` function, including a detailed description, argument definitions, return values, and usage examples.
