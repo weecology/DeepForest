@@ -64,10 +64,10 @@ setup(name=NAME,
       packages=find_packages(),
       include_package_data=True,
       install_requires=[
-          "albumentations>=1.0.0","aiolimiter", "geopandas", "imagecodecs", "matplotlib", "numpy",
-          "opencv-python>=4.5.4", "pandas", "Pillow>6.2.0", "progressbar2", "pycocotools",
-          "pytorch-lightning>=1.5.8", "rasterio", "recommonmark", "rtree", "scipy>1.5",
-          "six", "slidingwindow", "sphinx", "torch", "torchvision>=0.13", "tqdm",
-          "xmltodict"
+          "aiohttp", "albumentations>=1.0.0", "aiolimiter", "geopandas", "imagecodecs",
+          "matplotlib", "numpy", "opencv-python>=4.5.4", "pandas", "Pillow>6.2.0",
+          "progressbar2", "pycocotools", "pytorch-lightning>=1.5.8", "rasterio",
+          "recommonmark", "rtree", "scipy>1.5", "six", "slidingwindow", "sphinx", "torch",
+          "torchvision>=0.13", "tqdm", "xmltodict"
       ],
       zip_safe=False)

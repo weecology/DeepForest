@@ -3,6 +3,7 @@ channels:
   - conda-forge
   - defaults
 dependencies:
+  - aiohttp
   - bumpversion
   - docutils<0.18
   - furo
