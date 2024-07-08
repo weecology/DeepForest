@@ -1,5 +1,6 @@
 albumentations>=1.0.0
 aiolimiter
+aiohttp
 bumpversion
 comet_ml
 docutils<0.18
@@ -29,6 +30,7 @@ slidingwindow
 sphinx
 sphinx_markdown_tables
 sphinx_rtd_theme
+supervision
 tensorboard
 torch
 torchvision>=0.13
@@ -36,4 +38,3 @@ tqdm
 twine
 xmltodict
 yapf
-supervision
