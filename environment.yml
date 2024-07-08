@@ -43,3 +43,5 @@ dependencies:
     - comet_ml
     - pycocotools
     - aiolimiter
+    - aiohttp
+    - supervision

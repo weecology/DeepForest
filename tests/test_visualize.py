@@ -5,6 +5,7 @@ from deepforest import get_data
 import os
 import pytest
 import numpy as np
+import pandas as pd
 
 def test_format_boxes(m):
     ds = m.val_dataloader()
@@ -53,4 +54,31 @@ def test_plot_predictions_and_targets(m, tmpdir):
         image = image.permute(1,2,0)
         save_figure_path = visualize.plot_prediction_and_targets(image, prediction, target, image_name=os.path.basename(path), savedir=tmpdir)
         assert os.path.exists(save_figure_path)
+
+def test_convert_to_sv_format():
+    # Create a mock DataFrame
+    data = {
+        'xmin': [0, 10],
+        'ymin': [0, 20],
+        'xmax': [5, 15],
+        'ymax': [5, 25],
+        'label': ['tree', 'tree'],
+        'score': [0.9, 0.8],
+        'image_path': ['image1.jpg', 'image1.jpg']
+    }
+    df = pd.DataFrame(data)
     
+    # Call the function
+    detections = visualize.convert_to_sv_format(df)
+    
+    # Expected values
+    expected_boxes = np.array([[0, 0, 5, 5], [10, 20, 15, 25]], dtype=np.float32)
+    expected_labels = np.array([0, 0])
+    expected_scores = np.array([0.9, 0.8])
+
+    
+    # Assertions
+    np.testing.assert_array_equal(detections.xyxy, expected_boxes)
+    np.testing.assert_array_equal(detections.class_id, expected_labels)
+    np.testing.assert_array_equal(detections.confidence, expected_scores)
+    assert detections['class_name'] == ['tree', 'tree']
