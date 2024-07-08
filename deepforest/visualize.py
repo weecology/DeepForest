@@ -10,6 +10,7 @@ import random
 import warnings
 import supervision as sv
 
+
 def view_dataset(ds, savedir=None, color=None, thickness=1):
     """Plot annotations on images for debugging purposes
     Args:
@@ -237,6 +238,4 @@ def convert_to_sv_format(df):
         xyxy=boxes,
         class_id=labels,
         confidence=scores,
-        data={"class_name": [class_name[class_id] for class_id in labels]}
-
-    )
+        data={"class_name": [class_name[class_id] for class_id in labels]})

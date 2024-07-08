@@ -572,8 +572,18 @@ def project_boxes(df, root_dir, transform=True):
     return df
 
 
-async def download_ArcGIS_REST(semaphore, limiter, url, xmin, ymin, xmax, ymax, bbox_crs, savedir, additional_params=None, image_name="image.tiff", download_service="exportImage"):
-    
+async def download_ArcGIS_REST(semaphore,
+                               limiter,
+                               url,
+                               xmin,
+                               ymin,
+                               xmax,
+                               ymax,
+                               bbox_crs,
+                               savedir,
+                               additional_params=None,
+                               image_name="image.tiff",
+                               download_service="exportImage"):
     """
     Fetch data from a web server using geographic boundaries and save it as a GeoTIFF file.
     This function is used to download data from an ArcGIS REST service, not WMTS or WMS services.
@@ -618,7 +628,7 @@ async def download_ArcGIS_REST(semaphore, limiter, url, xmin, ymin, xmax, ymax, 
     For more details on the function usage, refer to https://deepforest.readthedocs.io/en/latest/annotation.html.
  
     """
-    
+
     params = {"f": "json"}
 
     async with aiohttp.ClientSession() as session:
@@ -636,12 +646,18 @@ async def download_ArcGIS_REST(semaphore, limiter, url, xmin, ymin, xmax, ymax, 
                         crs = CRS.from_wkt(spatialReference['wkt'])
 
                 bbox = f"{xmin},{ymin},{xmax},{ymax}"
-                bounds = gpd.GeoDataFrame(geometry=[shapely.geometry.box(xmin, ymin, xmax, ymax)], crs=bbox_crs).to_crs(crs).bounds
+                bounds = gpd.GeoDataFrame(geometry=[
+                    shapely.geometry.box(xmin, ymin, xmax, ymax)
+                ],
+                                          crs=bbox_crs).to_crs(crs).bounds
 
                 params.update({
-                    "bbox": f"{bounds.minx[0]},{bounds.miny[0]},{bounds.maxx[0]},{bounds.maxy[0]}",
-                    "f": "image",
-                    'format': 'tiff',
+                    "bbox":
+                        f"{bounds.minx[0]},{bounds.miny[0]},{bounds.maxx[0]},{bounds.maxy[0]}",
+                    "f":
+                        "image",
+                    'format':
+                        'tiff',
                 })
 
                 if additional_params:
@@ -657,7 +673,7 @@ async def download_ArcGIS_REST(semaphore, limiter, url, xmin, ymin, xmax, ymax, 
                         return filename
                     else:
                         raise Exception(f"Failed to fetch data: {resp.status}")
-            
+
             except Exception as e:
                 print(f"Error downloading image {image_name}: {e}")
             finally:
