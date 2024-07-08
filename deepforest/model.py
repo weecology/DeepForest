@@ -176,6 +176,7 @@ class CropModel(LightningModule):
         return output
 
     def train_dataloader(self):
+        """Train data loader"""
         train_loader = torch.utils.data.DataLoader(self.train_ds,
                                                    batch_size=self.batch_size,
                                                    shuffle=True,
@@ -184,6 +185,7 @@ class CropModel(LightningModule):
         return train_loader
 
     def predict_dataloader(self, ds):
+        """Prediction data loader"""
         loader = torch.utils.data.DataLoader(ds,
                                              batch_size=self.batch_size,
                                              shuffle=False,
@@ -192,6 +194,7 @@ class CropModel(LightningModule):
         return loader
 
     def val_dataloader(self):
+        """Validation data loader"""
         val_loader = torch.utils.data.DataLoader(self.val_ds,
                                                  batch_size=self.batch_size,
                                                  shuffle=True,
