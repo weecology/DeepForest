@@ -1,4 +1,5 @@
 albumentations>=1.0.0
+aiolimiter
 bumpversion
 comet_ml
 docutils<0.18

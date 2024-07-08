@@ -25,9 +25,23 @@ Consider a testfile with tree boxes and a 'Alive/Dead' label that comes with all
 ```
 df = pd.read_csv(get_data("testfile_multi.csv"))
 crop_model = model.CropModel(num_classes=2)
+# Or set up the crop model or load weights model.CropModel.load_from_checkpoint(<path>)
+
+m.create_trainer()
+result = m.predict_tile(raster_path=raster_path, crop_model=crop_model)
 ```
 
-This is a pytorch-lightning object and can be used like any other model. 
+```
+result.head()
+    xmin   ymin   xmax  ...    image_path cropmodel_label  cropmodel_score
+0  273.0  230.0  313.0  ...  SOAP_061.png               1         0.519510
+1   47.0   82.0   81.0  ...  SOAP_061.png               1         0.506423
+2    0.0   72.0   34.0  ...  SOAP_061.png               1         0.505258
+3  341.0   40.0  374.0  ...  SOAP_061.png               1         0.517231
+4    0.0  183.0   26.0  ...  SOAP_061.png               1         0.513122
+```
+
+A crop model is a pytorch-lightning object and can also be used like any other model. 
 
 ```
 # Test forward pass
