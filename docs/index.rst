@@ -48,7 +48,7 @@ Get suggestions on how to improve a model by using the [discussion board](https:
    training
    Evaluation
    multi_species
-   Visualization
+   visualizations
    Model_Architecture
    CropModel
    ConfigurationFile
