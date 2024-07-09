@@ -22,7 +22,9 @@ from deepforest import _ROOT
 
 
 def read_config(config_path):
-    """Read config yaml file"""
+    """
+    Read config yaml file
+    """
     try:
         with open(config_path, 'r') as f:
             config = yaml.load(f, Loader=yaml.FullLoader)
@@ -35,11 +37,14 @@ def read_config(config_path):
 
 
 class DownloadProgressBar(tqdm):
-    """Download progress bar class."""
+    """
+    Download progress bar class.
+    """
 
     def update_to(self, b=1, bsize=1, tsize=None):
         """
         Update class attributes
+        
         Args:
             b:
             bsize:
@@ -57,11 +62,13 @@ def use_bird_release(
         save_dir=os.path.join(_ROOT, "data/"), prebuilt_model="bird", check_release=True):
     """
     Check the existence of, or download the latest model release from github
+    
     Args:
         save_dir: Directory to save filepath, default to "data" in deepforest repo
         prebuilt_model: Currently only accepts "NEON", but could be expanded to include other prebuilt models. The local model will be called prebuilt_model.h5 on disk.
         check_release (logical): whether to check github for a model recent release. In cases where you are hitting the github API rate limit, set to False and any local model will be downloaded. If no model has been downloaded an error will raise.
-    Returns: release_tag, output_path (str): path to downloaded model
+    Returns: 
+        release_tag, output_path (str): path to downloaded model
 
     """
 
@@ -123,12 +130,14 @@ def use_release(
         save_dir=os.path.join(_ROOT, "data/"), prebuilt_model="NEON", check_release=True):
     """
     Check the existence of, or download the latest model release from github
+    
     Args:
         save_dir: Directory to save filepath, default to "data" in deepforest repo
         prebuilt_model: Currently only accepts "NEON", but could be expanded to include other prebuilt models. The local model will be called prebuilt_model.h5 on disk.
         check_release (logical): whether to check github for a model recent release. In cases where you are hitting the github API rate limit, set to False and any local model will be downloaded. If no model has been downloaded an error will raise.
         
-    Returns: release_tag, output_path (str): path to downloaded model
+    Returns: 
+        release_tag, output_path (str): path to downloaded model
 
     """
     # Naming based on pre-built model
@@ -187,13 +196,15 @@ def use_release(
 
 def xml_to_annotations(xml_path):
     """
+    
     Load annotations from xml format (e.g. RectLabel editor) and convert
     them into retinanet annotations format.
+    
     Args:
         xml_path (str): Path to the annotations xml, formatted by RectLabel
     Returns:
         Annotations (pandas dataframe): in the
-            format -> path-to-image.png,x1,y1,x2,y2,class_name
+        format -> path-to-image.png,x1,y1,x2,y2,class_name
     """
     # parse
     with open(xml_path) as fd:
@@ -355,7 +366,9 @@ def shapefile_to_annotations(shapefile,
 
 
 def round_with_floats(x):
-    """Check if string x is float or int, return int, rounded if needed."""
+    """
+    Check if string x is float or int, return int, rounded if needed.
+    """
 
     try:
         result = int(x)
@@ -372,7 +385,9 @@ def round_with_floats(x):
 
 
 def check_file(df):
-    """Check a file format for correct column names and structure"""
+    """
+    Check a file format for correct column names and structure
+    """
 
     if not all(x in df.columns
                for x in ["image_path", "xmin", "xmax", "ymin", "ymax", "label"]):
@@ -384,10 +399,13 @@ def check_file(df):
 
 
 def check_image(image):
-    """Check an image is three channel, channel last format
-        Args:
-           image: numpy array
-        Returns: None, throws error on assert
+    """
+    Check an image is three channel, channel last format
+    
+    Args:
+        image: numpy array
+    Returns: 
+        None, throws error on assert
     """
     if not image.shape[2] == 3:
         raise ValueError("image is expected have three channels, channel last format, "
@@ -398,6 +416,7 @@ def boxes_to_shapefile(df, root_dir, projected=True, flip_y_axis=False):
     """
     Convert from image coordinates to geographic coordinates
     Note that this assumes df is just a single plot being passed to this function
+    
     Args:
        df: a pandas type dataframe with columns: name, xmin, ymin, xmax, ymax. Name is the relative path to the root_dir arg.
        root_dir: directory of images to lookup image_path column
@@ -531,10 +550,12 @@ def project_boxes(df, root_dir, transform=True):
     """
     Convert from image coordinates to geographic coordinates
     Note that this assumes df is just a single plot being passed to this function
-    df: a pandas type dataframe with columns: name, xmin, ymin, xmax, ymax.
-    Name is the relative path to the root_dir arg.
-    root_dir: directory of images to lookup image_path column
-    transform: If true, convert from image to geographic coordinates
+    
+    Args:
+        df: a pandas type dataframe with columns: name, xmin, ymin, xmax, ymax.
+        Name is the relative path to the root_dir arg.
+        root_dir: directory of images to lookup image_path column
+        transform: If true, convert from image to geographic coordinates
     """
     warnings.warn(
         "This method is deprecated and will be removed in version "
@@ -589,23 +610,23 @@ async def download_ArcGIS_REST(semaphore,
     This function is used to download data from an ArcGIS REST service, not WMTS or WMS services.
     Example url: https://gis.calgary.ca/arcgis/rest/services/pub_Orthophotos/CurrentOrthophoto/ImageServer/
     
-    Parameters:
-    - semaphore: An asyncio.Semaphore instance to limit concurrent downloads.
-    - limiter: An asyncio-based rate limiter to control the download rate.
-    - url: The base URL of the ArcGIS REST service 
-    - xmin: The minimum x-coordinate (longitude).
-    - ymin: The minimum y-coordinate (latitude).
-    - xmax: The maximum x-coordinate (longitude).
-    - ymax: The maximum y-coordinate (latitude).
-    - bbox_crs: The coordinate reference system (CRS) of the bounding box.
-    - savedir: The directory to save the downloaded image.
-    - additional_params: Additional query parameters to include in the request (default is None).
-    - image_name: The name of the image file to be saved (default is "image.tiff").
-    - download_service: The specific service to use for downloading the image (default is "exportImage").
+    Args:
+        semaphore: An asyncio.Semaphore instance to limit concurrent downloads.
+        limiter: An asyncio-based rate limiter to control the download rate.
+        url: The base URL of the ArcGIS REST service 
+        xmin: The minimum x-coordinate (longitude).
+        ymin: The minimum y-coordinate (latitude).
+        xmax: The maximum x-coordinate (longitude).
+        ymax: The maximum y-coordinate (latitude).
+        bbox_crs: The coordinate reference system (CRS) of the bounding box.
+        savedir: The directory to save the downloaded image.
+        additional_params: Additional query parameters to include in the request (default is None).
+        image_name: The name of the image file to be saved (default is "image.tiff").
+        download_service: The specific service to use for downloading the image (default is "exportImage").
 
     Returns:
-    - The file path of the saved image if the download is successful.
-    - None if the download fails.
+        The file path of the saved image if the download is successful.
+        None if the download fails.
     
     Function usage:
         import asyncio

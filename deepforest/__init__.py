@@ -10,5 +10,7 @@ _ROOT = os.path.abspath(os.path.dirname(__file__))
 
 
 def get_data(path):
-    """helper function to get package sample data"""
+    """
+    helper function to get package sample data
+    """
     return os.path.normpath(os.path.join(_ROOT, 'data', path))

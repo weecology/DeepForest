@@ -19,7 +19,9 @@ import torch
 
 
 class images_callback(Callback):
-    """Run evaluation on a file of annotations during training
+    """
+    Run evaluation on a file of annotations during training
+    
     Args:
         savedir: optional, directory to save predicted images
         probability_threshold: minimum probablity for inclusion, see deepforest.evaluate
@@ -28,6 +30,7 @@ class images_callback(Callback):
         every_n_epochs: run epoch interval
         color: color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255)
         thickness: thickness of the rectangle border line in px
+        
     Returns:
         None: either prints validation scores or logs them to the pytorch-lightning logger
         """

@@ -16,7 +16,9 @@ import rasterio
 
 
 def preprocess_image(image):
-    """Preprocess a single RGB numpy array as a prediction from channels last, to channels first"""
+    """
+    Preprocess a single RGB numpy array as a prediction from channels last, to channels first
+    """
     image = torch.tensor(image).permute(2, 0, 1)
     image = image / 255
 
@@ -24,7 +26,9 @@ def preprocess_image(image):
 
 
 def image_name_from_path(image_path):
-    """Convert path to image name for use in indexing."""
+    """
+    Convert path to image name for use in indexing.
+    """
     image_name = os.path.basename(image_path)
     image_name = os.path.splitext(image_name)[0]
 
@@ -32,7 +36,8 @@ def image_name_from_path(image_path):
 
 
 def compute_windows(numpy_image, patch_size, patch_overlap):
-    """Create a sliding window object from a raster tile.
+    """
+    Create a sliding window object from a raster tile.
 
     Args:
         numpy_image (array): Raster object as numpy array to cut into crops
@@ -53,7 +58,8 @@ def compute_windows(numpy_image, patch_size, patch_overlap):
 
 
 def select_annotations(annotations, windows, index, allow_empty=False):
-    """Select annotations that overlap with selected image crop.
+    """
+    Select annotations that overlap with selected image crop.
 
     Args:
         image_name (str): Name of the image in the annotations file to lookup.
@@ -162,7 +168,8 @@ def split_raster(annotations_file=None,
                  allow_empty=False,
                  image_name=None,
                  save_dir="."):
-    """Divide a large tile into smaller arrays. Each crop will be saved to
+    """
+    Divide a large tile into smaller arrays. Each crop will be saved to
     file.
 
     Args:

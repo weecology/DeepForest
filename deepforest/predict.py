@@ -21,7 +21,8 @@ def _predict_image_(model,
                     return_plot: bool = False,
                     thickness: int = 1,
                     color: typing.Optional[tuple] = (0, 165, 255)):
-    """Predict a single image with a deepforest model
+    """
+    Predict a single image with a deepforest model
             
     Args:
         model: a deepforest.main.model object
@@ -107,7 +108,9 @@ def mosiac(boxes, windows, sigma=0.5, thresh=0.001, iou_threshold=0.1):
 
 
 def across_class_nms(predicted_boxes, iou_threshold=0.15):
-    """perform non-max suppression for a dataframe of results (see visualize.format_boxes) to remove boxes that overlap by iou_thresholdold of IoU"""
+    """
+    perform non-max suppression for a dataframe of results (see visualize.format_boxes) to remove boxes that overlap by iou_thresholdold of IoU
+    """
 
     # move prediciton to tensor
     boxes = torch.tensor(predicted_boxes[["xmin", "ymin", "xmax", "ymax"]].values,
@@ -143,7 +146,8 @@ def _dataloader_wrapper_(model,
                          savedir=None,
                          color=None,
                          thickness=1):
-    """Create a dataset and predict entire annotation file
+    """
+    Create a dataset and predict entire annotation file
 
     Csv file format is .csv file with the columns "image_path", "xmin","ymin","xmax","ymax" for the image name and bounding box position.
     Image_path is the relative filename, not absolute path, which is in the root_dir directory. One bounding box per line.

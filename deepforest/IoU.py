@@ -17,7 +17,9 @@ def create_rtree_from_poly(poly_list):
 
 
 def _overlap_(test_poly, truth_polys, rtree_index):
-    """Calculate overlap between one polygon and all ground truth by area"""
+    """
+    Calculate overlap between one polygon and all ground truth by area
+    """
     prediction_id = []
     truth_id = []
     area = []
@@ -44,7 +46,9 @@ def _overlap_(test_poly, truth_polys, rtree_index):
 
 
 def _overlap_all(test_polys, truth_polys, rtree_index):
-    """Find area of overlap among all sets of ground truth and prediction"""
+    """
+    Find area of overlap among all sets of ground truth and prediction
+    """
     results = []
     for index, row in test_polys.iterrows():
         result = _overlap_(test_poly=row,
@@ -57,7 +61,9 @@ def _overlap_all(test_polys, truth_polys, rtree_index):
 
 
 def _iou_(test_poly, truth_poly):
-    """Intersection over union"""
+    """
+    Intersection over union
+    """
     intersection_result = test_poly.intersection(truth_poly.geometry)
     intersection_area = intersection_result.area
     union_area = test_poly.union(truth_poly.geometry).area
@@ -66,6 +72,7 @@ def _iou_(test_poly, truth_poly):
 
 def compute_IoU(ground_truth, submission):
     """
+    
     Args:
         ground_truth: a projected geopandas dataframe with geoemtry
         submission: a projected geopandas dataframe with geometry

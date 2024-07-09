@@ -20,7 +20,9 @@ from deepforest import evaluate as evaluate_iou
 
 
 class deepforest(pl.LightningModule):
-    """Class for training and predicting tree crowns in RGB images"""
+    """
+    Class for training and predicting tree crowns in RGB images
+    """
 
     def __init__(self,
                  num_classes: int = 1,
@@ -118,8 +120,10 @@ class deepforest(pl.LightningModule):
         self.save_hyperparameters()
 
     def use_release(self, check_release=True):
-        """Use the latest DeepForest model release from github and load model.
+        """
+        Use the latest DeepForest model release from github and load model.
         Optionally download if release doesn't exist.
+        
         Args:
             check_release (logical): whether to check github for a model recent release. In cases where you are hitting the github API rate limit, set to False and any local model will be downloaded. If no model has been downloaded an error will raise.
         Returns:
@@ -141,8 +145,10 @@ class deepforest(pl.LightningModule):
         print("Loading pre-built model: {}".format(release_tag))
 
     def use_bird_release(self, check_release=True):
-        """Use the latest DeepForest bird model release from github and load model.
+        """
+        Use the latest DeepForest bird model release from github and load model.
         Optionally download if release doesn't exist.
+        
         Args:
             check_release (logical): whether to check github for a model recent release. In cases where you are hitting the github API rate limit, set to False and any local model will be downloaded. If no model has been downloaded an error will raise.
         Returns:
@@ -165,7 +171,8 @@ class deepforest(pl.LightningModule):
         self.numeric_to_label_dict = {v: k for k, v in self.label_dict.items()}
 
     def create_model(self):
-        """Define a deepforest architecture. This can be done in two ways.
+        """
+        Define a deepforest architecture. This can be done in two ways.
         Passed as the model argument to deepforest __init__(),
         or as a named architecture in config["architecture"],
         which corresponds to a file in models/, as is a subclass of model.Model().
@@ -184,7 +191,9 @@ class deepforest(pl.LightningModule):
             self.model = model_name.Model(config=self.config).create_model()
 
     def create_trainer(self, logger=None, callbacks=[], **kwargs):
-        """Create a pytorch lightning training by reading config files
+        """
+        Create a pytorch lightning training by reading config files
+        
         Args:
             callbacks (list): a list of pytorch-lightning callback classes
         """
@@ -231,6 +240,7 @@ class deepforest(pl.LightningModule):
     def save_model(self, path):
         """
         Save the trainer checkpoint in user defined path, in order to access in future
+        
         Args:
             Path: the path located the model checkpoint
 
@@ -244,7 +254,8 @@ class deepforest(pl.LightningModule):
                      shuffle=True,
                      batch_size=1,
                      train=False):
-        """Create a tree dataset for inference
+        """
+        Create a tree dataset for inference
         Csv file format is .csv file with the columns "image_path", "xmin","ymin","xmax","ymax" for the image name and bounding box position.
         Image_path is the relative filename, not absolute path, which is in the root_dir directory. One bounding box per line.
 
@@ -275,7 +286,9 @@ class deepforest(pl.LightningModule):
     def train_dataloader(self):
         """
         Train loader using the configurations
-        Returns: loader
+        
+        Returns: 
+            loader
 
         """
         if self.existing_train_dataloader:
@@ -292,7 +305,9 @@ class deepforest(pl.LightningModule):
     def val_dataloader(self):
         """
         Create a val data loader only if specified in config
-        Returns: a dataloader or a empty iterable.
+        
+        Returns: 
+            a dataloader or a empty iterable.
 
         """
         # The preferred route for skipping validation is now (pl-2.0) an empty list,
@@ -332,7 +347,9 @@ class deepforest(pl.LightningModule):
                       return_plot: bool = False,
                       color: typing.Optional[tuple] = (0, 165, 255),
                       thickness: int = 1):
-        """Predict a single image with a deepforest model
+        """
+        Predict a single image with a deepforest model
+        
         Args:
             image: a float32 numpy array of a RGB with channels last format
             path: optional path to read image from disk instead of passing image arg
@@ -386,7 +403,8 @@ class deepforest(pl.LightningModule):
         return result
 
     def predict_file(self, csv_file, root_dir, savedir=None, color=None, thickness=1):
-        """Create a dataset and predict entire annotation file
+        """
+        Create a dataset and predict entire annotation file
         Csv file format is .csv file with the columns "image_path", "xmin","ymin","xmax","ymax" for the image name and bounding box position.
         Image_path is the relative filename, not absolute path, which is in the root_dir directory. One bounding box per line.
 
@@ -433,7 +451,8 @@ class deepforest(pl.LightningModule):
                      crop_model=None,
                      crop_transform=None,
                      crop_augment=False):
-        """For images too large to input into the model, predict_tile cuts the
+        """
+        For images too large to input into the model, predict_tile cuts the
         image into overlapping windows, predicts trees on each window and
         reassambles into a single array.
 
@@ -539,7 +558,8 @@ class deepforest(pl.LightningModule):
         return results
 
     def training_step(self, batch, batch_idx):
-        """Train on a loaded dataset
+        """
+        Train on a loaded dataset
         """
         # Confirm model is in train mode
         self.model.train()
@@ -562,7 +582,8 @@ class deepforest(pl.LightningModule):
         return losses
 
     def validation_step(self, batch, batch_idx):
-        """Evaluate a batch
+        """
+        Evaluate a batch
         """
         try:
             path, images, targets = batch
@@ -703,7 +724,9 @@ class deepforest(pl.LightningModule):
             return optimizer
 
     def evaluate(self, csv_file, root_dir, iou_threshold=None, savedir=None):
-        """Compute intersection-over-union and precision/recall for a given iou_threshold
+        """
+        Compute intersection-over-union and precision/recall for a given iou_threshold
+        
         Args:
             csv_file: location of a csv file with columns "name","xmin","ymin","xmax","ymax","label", each box in a row
             root_dir: location of files in the dataframe 'name' column.
