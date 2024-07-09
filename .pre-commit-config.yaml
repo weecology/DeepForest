@@ -1,0 +1,11 @@
+repos:
+- repo: local
+  hooks:
+  - id: yapf
+    name: yapf
+    entry: yapf
+    args: ['-i', '--style', '.style.yapf', '--recursive', 'deepforest/']
+    language: system
+    types: [python]
+    pass_filenames: false
+    stages: [commit]
