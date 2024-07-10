@@ -26,8 +26,8 @@ def config():
     return config
 
 
-def test_xml_to_annotations():
-    annotations = utilities.xml_to_annotations(
+def test_read_pascal_voc():
+    annotations = utilities.read_pascal_voc(
         xml_path=get_data("OSBS_029.xml"))
     print(annotations.shape)
     assert annotations.shape == (61, 6)
@@ -47,7 +47,7 @@ def test_use_bird_release(download_release):
 def test_float_warning(config):
     """Users should get a rounding warning when adding annotations with floats"""
     float_annotations = "tests/data/float_annotations.txt"
-    annotations = utilities.xml_to_annotations(float_annotations)
+    annotations = utilities.read_pascal_voc(float_annotations)
     assert annotations.xmin.dtype is np.dtype('int64')
 
 def test_project_boxes():

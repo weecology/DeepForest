@@ -26,7 +26,7 @@ def config():
     config["path_to_raster"] = get_data("OSBS_029.tif")
 
     # Create a clean config test data
-    annotations = utilities.xml_to_annotations(xml_path=config["annotations_xml"])
+    annotations = utilities.read_pascal_voc(xml_path=config["annotations_xml"])
     annotations.to_csv("tests/data/OSBS_029.csv", index=False)
 
     return config
@@ -79,7 +79,7 @@ def test_select_annotations_tile(config, image):
 def test_split_raster(config, tmpdir, input_type):
     """Split raster into crops with overlaps to maintain all annotations"""
     raster = get_data("2019_YELL_2_528000_4978000_image_crop2.png")
-    annotations = utilities.xml_to_annotations(
+    annotations = utilities.read_pascal_voc(
         get_data("2019_YELL_2_528000_4978000_image_crop2.xml"))
     annotations.to_csv("{}/example.csv".format(tmpdir), index=False)
     #annotations.label = 0
@@ -120,7 +120,7 @@ def test_split_raster_no_annotations(config, tmpdir):
 def test_split_raster_empty_crops(config, tmpdir):
     """Split raster into crops with overlaps to maintain all annotations, allow empty crops"""
     raster = get_data("2019_YELL_2_528000_4978000_image_crop2.png")
-    annotations = utilities.xml_to_annotations(
+    annotations = utilities.read_pascal_voc(
         get_data("2019_YELL_2_528000_4978000_image_crop2.xml"))
     annotations.to_csv("{}/example.csv".format(tmpdir), index=False)
     #annotations.label = 0
