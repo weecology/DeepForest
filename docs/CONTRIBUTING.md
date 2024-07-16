@@ -90,8 +90,8 @@ easiest way to fix this.
 
 #### Using pre-commit 
 
-We use the `.pre-commit-config.yaml` file to configure all the checks we want to perform. 
-To verify your code styling before committing, you can run `pre-commit run`, which will use the `.style.yapf` file to check your code formatting, For more check [pre-commit](https://pre-commit.com/index.html).
+We configure all our checks using the `.pre-commit-config.yaml` file. To verify your code styling before committing, you should run `pre-commit install` to set up the hooks, followed by `pre-commit run` to execute them. This will apply the formatting rules specified in the .style.yapf file. For additional information, please refer to the [pre-commit documentation](https://pre-commit.com/index.html).
+
 
 ### Testing the Conda Deepforest Build
 
