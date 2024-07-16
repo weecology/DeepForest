@@ -3,6 +3,7 @@ aiolimiter
 aiohttp
 bumpversion
 comet_ml
+docformatter
 docutils<0.18
 furo
 geopandas

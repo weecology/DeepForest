@@ -12,7 +12,7 @@ class Model(Model):
         super().__init__(config)
 
     def load_backbone(self):
-        """A torch vision retinanet model"""
+        """A torch vision retinanet model."""
         backbone = torchvision.models.detection.fasterrcnn_resnet50_fpn(
             weights='FasterRCNN_ResNet50_FPN_Weights.COCO_V1')
         return backbone

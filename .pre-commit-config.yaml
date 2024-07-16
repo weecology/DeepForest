@@ -1,0 +1,23 @@
+repos:
+- repo: local
+  hooks:
+  - id: yapf
+    name: yapf
+    entry: yapf
+    args: ['-i', '--style', '.style.yapf', '--recursive', 'deepforest/']
+    language: system
+    types: [python]
+    pass_filenames: false
+    stages: [commit]
+
+-   repo: local
+    hooks:
+    -   id: docformatter
+        name: docformatter
+        entry: docformatter
+        language: python
+        types: [python]
+        args: ['--in-place', '--recursive','deepforest/']
+        pass_filenames: false
+        stages: [commit]
+

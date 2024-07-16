@@ -1,4 +1,4 @@
-"""Utilities model"""
+"""Utilities model."""
 import json
 import os
 import urllib
@@ -22,9 +22,7 @@ from deepforest import _ROOT
 
 
 def read_config(config_path):
-    """
-    Read config yaml file
-    """
+    """Read config yaml file."""
     try:
         with open(config_path, 'r') as f:
             config = yaml.load(f, Loader=yaml.FullLoader)
@@ -37,21 +35,17 @@ def read_config(config_path):
 
 
 class DownloadProgressBar(tqdm):
-    """
-    Download progress bar class.
-    """
+    """Download progress bar class."""
 
     def update_to(self, b=1, bsize=1, tsize=None):
-        """
-        Update class attributes
-        
+        """Update class attributes.
+
         Args:
             b:
             bsize:
             tsize:
 
         Returns:
-
         """
         if tsize is not None:
             self.total = tsize
@@ -60,16 +54,15 @@ class DownloadProgressBar(tqdm):
 
 def use_bird_release(
         save_dir=os.path.join(_ROOT, "data/"), prebuilt_model="bird", check_release=True):
-    """
-    Check the existence of, or download the latest model release from github
-    
+    """Check the existence of, or download the latest model release from
+    github.
+
     Args:
         save_dir: Directory to save filepath, default to "data" in deepforest repo
         prebuilt_model: Currently only accepts "NEON", but could be expanded to include other prebuilt models. The local model will be called prebuilt_model.h5 on disk.
         check_release (logical): whether to check github for a model recent release. In cases where you are hitting the github API rate limit, set to False and any local model will be downloaded. If no model has been downloaded an error will raise.
-    Returns: 
+    Returns:
         release_tag, output_path (str): path to downloaded model
-
     """
 
     # Naming based on pre-built model
@@ -128,17 +121,16 @@ def use_bird_release(
 
 def use_release(
         save_dir=os.path.join(_ROOT, "data/"), prebuilt_model="NEON", check_release=True):
-    """
-    Check the existence of, or download the latest model release from github
-    
+    """Check the existence of, or download the latest model release from
+    github.
+
     Args:
         save_dir: Directory to save filepath, default to "data" in deepforest repo
         prebuilt_model: Currently only accepts "NEON", but could be expanded to include other prebuilt models. The local model will be called prebuilt_model.h5 on disk.
         check_release (logical): whether to check github for a model recent release. In cases where you are hitting the github API rate limit, set to False and any local model will be downloaded. If no model has been downloaded an error will raise.
-        
-    Returns: 
-        release_tag, output_path (str): path to downloaded model
 
+    Returns:
+        release_tag, output_path (str): path to downloaded model
     """
     # Naming based on pre-built model
     output_path = os.path.join(save_dir, prebuilt_model + ".pt")
@@ -195,11 +187,9 @@ def use_release(
 
 
 def read_pascal_voc(xml_path):
-    """
-    
-    Load annotations from xml format (e.g. RectLabel editor) and convert
+    """Load annotations from xml format (e.g. RectLabel editor) and convert
     them into retinanet annotations format.
-    
+
     Args:
         xml_path (str): Path to the annotations xml, formatted by RectLabel
     Returns:
@@ -271,21 +261,21 @@ def shapefile_to_annotations(shapefile,
                              buffer_size=0.5,
                              geometry_type="bbox",
                              savedir="."):
-    """
-    Convert a shapefile of annotations into annotations csv file for DeepForest training and evaluation
+    """Convert a shapefile of annotations into annotations csv file for
+    DeepForest training and evaluation.
 
     Geometry Handling:
     The geometry_type is the form of the objects in the given shapefile. It can be "bbox" or "point".
     If geometry_type is set to "bbox" (default) then the bounding boxes in the shapefile will be used as is and transferred over
-    to the annotations file. If the geometry_type is "point" then a bounding box will be created for each 
-    point that is centered on the point location and has an apothem equal to buffer_size, resulting in a bounding box with dimensions of 2 
+    to the annotations file. If the geometry_type is "point" then a bounding box will be created for each
+    point that is centered on the point location and has an apothem equal to buffer_size, resulting in a bounding box with dimensions of 2
     times the value of buffer_size.
-    
+
     Args:
         shapefile: Path to a shapefile on disk. If a label column is present, it will be used, else all labels are assumed to be "Tree"
         rgb: Path to the RGB image on disk
         savedir: Directory to save csv files
-        buffer_size: size of point to box expansion in map units of the target object, meters for projected data, pixels for unprojected data. The buffer_size is added to each side of the x,y point to create the box. 
+        buffer_size: size of point to box expansion in map units of the target object, meters for projected data, pixels for unprojected data. The buffer_size is added to each side of the x,y point to create the box.
         geometry_type: Specifies the spatial representation used in the shapefile; can be "bbox" or "point"
     Returns:
         results: a pandas dataframe
@@ -375,9 +365,7 @@ def shapefile_to_annotations(shapefile,
 
 
 def round_with_floats(x):
-    """
-    Check if string x is float or int, return int, rounded if needed.
-    """
+    """Check if string x is float or int, return int, rounded if needed."""
 
     try:
         result = int(x)
@@ -394,9 +382,7 @@ def round_with_floats(x):
 
 
 def check_file(df):
-    """
-    Check a file format for correct column names and structure
-    """
+    """Check a file format for correct column names and structure."""
 
     if not all(x in df.columns
                for x in ["image_path", "xmin", "xmax", "ymin", "ymax", "label"]):
@@ -408,12 +394,11 @@ def check_file(df):
 
 
 def check_image(image):
-    """
-    Check an image is three channel, channel last format
-    
+    """Check an image is three channel, channel last format.
+
     Args:
         image: numpy array
-    Returns: 
+    Returns:
         None, throws error on assert
     """
     if not image.shape[2] == 3:
@@ -422,10 +407,9 @@ def check_image(image):
 
 
 def boxes_to_shapefile(df, root_dir, projected=True, flip_y_axis=False):
-    """
-    Convert from image coordinates to geographic coordinates
-    Note that this assumes df is just a single plot being passed to this function
-    
+    """Convert from image coordinates to geographic coordinates Note that this
+    assumes df is just a single plot being passed to this function.
+
     Args:
        df: a pandas type dataframe with columns: name, xmin, ymin, xmax, ymax. Name is the relative path to the root_dir arg.
        root_dir: directory of images to lookup image_path column
@@ -508,8 +492,8 @@ def collate_fn(batch):
 
 
 def annotations_to_shapefile(df, transform, crs):
-    """
-    Convert output from predict_image and  predict_tile to a geopandas data.frame
+    """Convert output from predict_image and  predict_tile to a geopandas
+    data.frame.
 
     Args:
         df: prediction data.frame with columns  ['xmin','ymin','xmax','ymax','label','score']
@@ -556,10 +540,9 @@ def annotations_to_shapefile(df, transform, crs):
 
 
 def project_boxes(df, root_dir, transform=True):
-    """
-    Convert from image coordinates to geographic coordinates
-    Note that this assumes df is just a single plot being passed to this function
-    
+    """Convert from image coordinates to geographic coordinates Note that this
+    assumes df is just a single plot being passed to this function.
+
     Args:
         df: a pandas type dataframe with columns: name, xmin, ymin, xmax, ymax.
         Name is the relative path to the root_dir arg.

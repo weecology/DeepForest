@@ -1,16 +1,16 @@
-"""
-Dataset model
+"""Dataset model.
 
 https://pytorch.org/docs/stable/torchvision/models.html#object-detection-instance-segmentation-and-person-keypoint-detection
 
-During training, the model expects both the input tensors, as well as a targets (list of dictionary), containing:
+During training, the model expects both the input tensors, as well as a
+targets (list of dictionary), containing:
 
-boxes (FloatTensor[N, 4]): the ground-truth boxes in [x1, y1, x2, y2] format, with values between 0 and H and 0 and W
+boxes (FloatTensor[N, 4]): the ground-truth boxes in [x1, y1, x2, y2]
+format, with values between 0 and H and 0 and W
 
 labels (Int64Tensor[N]): the class label for each ground-truth box
 
 https://colab.research.google.com/github/benihime91/pytorch_retinanet/blob/master/demo.ipynb#scrollTo=0zNGhr6D7xGN
-
 """
 import os
 import pandas as pd
@@ -29,9 +29,7 @@ from torchvision import transforms
 
 
 def get_transform(augment):
-    """
-    Albumentations transformation of bounding boxs
-    """
+    """Albumentations transformation of bounding boxs."""
     if augment:
         transform = A.Compose(
             [A.HorizontalFlip(p=0.5), ToTensorV2()],
@@ -203,14 +201,13 @@ resnet_normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
 
 
 class BoundingBoxDataset(Dataset):
-    """
-    An in memory dataset for bounding box predictions
-    
+    """An in memory dataset for bounding box predictions.
+
     Args:
         df: a pandas dataframe with image_path and xmin,xmax,ymin,ymax columns
         transform: a function to apply to the image
         root_dir: the directory where the image is stored
-        
+
     Returns:
         rgb: a tensor of shape (3, height, width)
     """

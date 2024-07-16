@@ -17,11 +17,12 @@ import cv2
 
 
 class Model():
-    """
-    A architecture agnostic class that controls the basic train, eval and predict functions.
-    A model should optionally allow a backbone for pretraining. To add new architectures, simply create a new module in models/ and write a create_model. 
-    Then add the result to the if else statement below.
-    
+    """A architecture agnostic class that controls the basic train, eval and
+    predict functions. A model should optionally allow a backbone for
+    pretraining. To add new architectures, simply create a new module in
+    models/ and write a create_model. Then add the result to the if else
+    statement below.
+
     Args:
         num_classes (int): number of classes in the model
         nms_thresh (float): non-max suppression threshold for intersection-over-union [0,1]
@@ -39,8 +40,10 @@ class Model():
         self.check_model()
 
     def create_model(self):
-        """
-        This function converts a deepforest config file into a model. An architecture should have a list of nested arguments in config that match this function
+        """This function converts a deepforest config file into a model.
+
+        An architecture should have a list of nested arguments in config
+        that match this function
         """
 
         raise ValueError(
@@ -48,10 +51,8 @@ class Model():
         )
 
     def check_model(self):
-        """
-        Ensure that model follows deepforest guidelines, see #####
-        If fails, raise ValueError
-        """
+        """Ensure that model follows deepforest guidelines, see ##### If fails,
+        raise ValueError."""
         # This assumes model creation is not expensive
         test_model = self.create_model()
         test_model.eval()
@@ -78,9 +79,8 @@ def simple_resnet_50(num_classes=2):
 
 
 class CropModel(LightningModule):
-    """
-    An architecture agnostic class for classification based on crops coming from the core detection models
-    """
+    """An architecture agnostic class for classification based on crops coming
+    from the core detection models."""
 
     def __init__(self, num_classes=2, batch_size=4, num_workers=0, lr=0.0001, model=None):
         super().__init__()
@@ -112,9 +112,7 @@ class CropModel(LightningModule):
         self.lr = lr
 
     def create_trainer(self, **kwargs):
-        """
-        Create a pytorch lightning trainer object
-        """
+        """Create a pytorch lightning trainer object."""
         self.trainer = Trainer(**kwargs)
 
     def load_from_disk(self, train_dir, val_dir):
@@ -124,8 +122,7 @@ class CropModel(LightningModule):
                                   transform=self.get_transform(augment=False))
 
     def get_transform(self, augment):
-        """
-        Returns the data transformation pipeline for the model.
+        """Returns the data transformation pipeline for the model.
 
         Args:
             augment (bool): Flag indicating whether to apply data augmentation.
@@ -142,8 +139,7 @@ class CropModel(LightningModule):
         return transforms.Compose(data_transforms)
 
     def write_crops(self, root_dir, images, boxes, labels, savedir):
-        """
-        Write crops to disk.
+        """Write crops to disk.
 
         Args:
             root_dir (str): The root directory where the images are located.
@@ -183,9 +179,7 @@ class CropModel(LightningModule):
         return output
 
     def train_dataloader(self):
-        """
-        Train data loader
-        """
+        """Train data loader."""
         train_loader = torch.utils.data.DataLoader(self.train_ds,
                                                    batch_size=self.batch_size,
                                                    shuffle=True,
@@ -194,9 +188,7 @@ class CropModel(LightningModule):
         return train_loader
 
     def predict_dataloader(self, ds):
-        """
-        Prediction data loader
-        """
+        """Prediction data loader."""
         loader = torch.utils.data.DataLoader(ds,
                                              batch_size=self.batch_size,
                                              shuffle=False,
@@ -205,9 +197,7 @@ class CropModel(LightningModule):
         return loader
 
     def val_dataloader(self):
-        """
-        Validation data loader
-        """
+        """Validation data loader."""
         val_loader = torch.utils.data.DataLoader(self.val_ds,
                                                  batch_size=self.batch_size,
                                                  shuffle=True,
@@ -261,9 +251,7 @@ class CropModel(LightningModule):
         return {'optimizer': optimizer, 'lr_scheduler': scheduler, "monitor": 'val_loss'}
 
     def dataset_confusion(self, loader):
-        """
-        Create a confusion matrix from a data loader
-        """
+        """Create a confusion matrix from a data loader."""
         true_class = []
         predicted_class = []
         self.eval()
