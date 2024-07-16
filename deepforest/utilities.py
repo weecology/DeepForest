@@ -194,7 +194,7 @@ def use_release(
         return release_txt.current_release[0], output_path
 
 
-def xml_to_annotations(xml_path):
+def read_pascal_voc(xml_path):
     """
     
     Load annotations from xml format (e.g. RectLabel editor) and convert
@@ -255,6 +255,15 @@ def xml_to_annotations(xml_path):
         "label": label
     })
     return (annotations)
+
+
+def xml_to_annotations(xml_path):
+
+    warnings.warn(
+        "xml_to_annotations will be deprecated in 2.0. Please use read_pascal_voc instead.",
+        DeprecationWarning)
+
+    return read_pascal_voc(xml_path)
 
 
 def shapefile_to_annotations(shapefile,

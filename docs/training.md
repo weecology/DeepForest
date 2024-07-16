@@ -88,7 +88,7 @@ src.read().shape
 With 574 trees annotations
 
 ```
-annotations = utilities.xml_to_annotations(get_data("2019_YELL_2_528000_4978000_image_crop2.xml"))
+annotations = utilities.read_pascal_voc(get_data("2019_YELL_2_528000_4978000_image_crop2.xml"))
 annotations.shape
 (574, 6)
 ```
