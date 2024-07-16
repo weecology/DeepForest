@@ -219,25 +219,22 @@ def test_predict_return_plot(m):
     plot = m.predict_image(image = image, return_plot=True)
     assert isinstance(plot, np.ndarray)
 
-
 def test_predict_big_file(m, tmpdir):
     m.config["train"]["fast_dev_run"] = False
     m.create_trainer()    
     csv_file = big_file()
     original_file = pd.read_csv(csv_file)
     df = m.predict_file(csv_file=csv_file, root_dir = os.path.dirname(csv_file), savedir=tmpdir)
-    assert set(df.columns) == {"xmin","ymin","xmax","ymax","label","score","image_path"}
+    assert set(df.columns) == {'label', 'score', 'image_path', 'geometry'}
     
     printed_plots = glob.glob("{}/*.png".format(tmpdir))
     assert len(printed_plots) == len(original_file.image_path.unique())
-
 
 def test_predict_small_file(m, tmpdir):
     csv_file = get_data("OSBS_029.csv")
     original_file = pd.read_csv(csv_file)
     df = m.predict_file(csv_file, root_dir = os.path.dirname(csv_file), savedir=tmpdir)
-    assert set(df.columns) == {"xmin","ymin","xmax","ymax","label","score","image_path"}
-    
+    assert set(df.columns) == {'label', 'score', 'image_path', 'geometry'}
     printed_plots = glob.glob("{}/*.png".format(tmpdir))
     assert len(printed_plots) == len(original_file.image_path.unique())
 

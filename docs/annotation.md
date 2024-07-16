@@ -15,6 +15,18 @@ For longer term projects, we recommend [label-studio](https://labelstud.io/) as 
 ## Do I need annotate all objects in my image?
 Yes! Object detection models use the non-annotated areas of an image as negative data. We know that it can be exceptionally hard to annotate all trees in an image, or determine the classes of all birds in an image. However, if you have objects in the image that are not annotated, the model is learning *to ignore* those portion of the image. This can severely affect model performance.
 
+## Annotation geometries
+
+DeepForest was originally designed for bounding box annotations. As of DeepForest 1.4.0, Point and Polygon annotation are also supported. There are two ways to format annotations, depending on what kind of annotation platform you were using.
+
+### Box CSV file format
+
+### Point CSV file format
+
+### Polygon CSV file format
+
+Since we cannot anticipate the number of vertexes in a polygon, we use Well-Known-Text (wkt) format.
+ 
 ## Can I annotate points instead of bounding boxes?
 Yes. This makes more sense for the bird detection task, as trees tend to vary widely in size. Often, birds will be a standard size compared to the image resolution.
 

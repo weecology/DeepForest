@@ -1,0 +1,16 @@
+{
+<<<<<<< HEAD
+  "python.testing.unittestEnabled": false,
+  "python.testing.pytestEnabled": true
+=======
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true,
+    "python.testing.unittestArgs": [
+        "-v",
+        "-s",
+        "./tests",
+        "-p",
+        "test_*.py"
+    ]
+>>>>>>> squashed into one geotype commit
+}

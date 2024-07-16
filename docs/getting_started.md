@@ -28,7 +28,7 @@ plt.imshow(img[:,:,::-1])
 
 <div style="position: relative; padding-bottom: 62.5%; height: 0;"><iframe src="https://www.loom.com/embed/f80ed6e3c7bd48d4a20ae32167af3d8c" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe></div>
 
-For single images, ```predict_image``` can read an image from memory or file and return predicted tree bounding boxes.
+For single images, ```predict_image``` can read an image from memory or file and return predicted bounding boxes.
 
 ### Sample data
 
@@ -57,7 +57,7 @@ boxes.head()
 4  328.604736   45.947182  361.095276   80.635254      0  0.638212
 ```
 
-For the release model, there is only one category "Tree", which is numeric 0 label.
+For the tree release model, there is only one category "Tree", which is numeric 0 label.
 
 ### Predict a tile
 

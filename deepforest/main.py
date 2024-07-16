@@ -406,7 +406,7 @@ class deepforest(pl.LightningModule):
         Returns:
             df: pandas dataframe with bounding boxes, label and scores for each image in the csv file
         """
-        df = pd.read_csv(csv_file)
+        df = utilities.read_file(csv_file)
         ds = dataset.TreeDataset(csv_file=csv_file,
                                  root_dir=root_dir,
                                  transforms=None,
@@ -422,6 +422,8 @@ class deepforest(pl.LightningModule):
                                                savedir=savedir,
                                                color=color,
                                                thickness=thickness)
+        
+        
 
         return results
 
@@ -618,28 +620,41 @@ class deepforest(pl.LightningModule):
 
         # Evaluate on validation data predictions
         self.predictions_df = pd.concat(self.predictions)
-        ground_df = pd.read_csv(self.config["validation"]["csv_file"])
+
+        #Create a geospatial column
+        self.predictions_df = utilities.read_file(self.predictions_df)
+
+        ground_df = utilities.read_file(self.config["validation"]["csv_file"])
         ground_df["label"] = ground_df.label.apply(lambda x: self.label_dict[x])
 
         #Evaluate every n epochs
         if self.current_epoch % self.config["validation"]["val_accuracy_interval"] == 0:
-            results = evaluate_iou.__evaluate_wrapper__(
-                predictions=self.predictions_df,
-                ground_df=ground_df,
-                root_dir=self.config["validation"]["root_dir"],
-                iou_threshold=self.config["validation"]["iou_threshold"],
-                savedir=None,
-                numeric_to_label_dict=self.numeric_to_label_dict)
-
-            self.log("box_recall", results["box_recall"])
-            self.log("box_precision", results["box_precision"])
-            if isinstance(results, pd.DataFrame):
-                for index, row in results["class_recall"].iterrows():
-                    self.log("{}_Recall".format(self.numeric_to_label_dict[row["label"]]),
-                             row["recall"])
-                    self.log(
-                        "{}_Precision".format(self.numeric_to_label_dict[row["label"]]),
-                        row["precision"])
+            if self.predictions_df.empty:
+                warnings.warn("No predictions made, skipping evaluation")
+                geom_type = utilities.determine_geometry_type(ground_df)
+                if geom_type == "box":
+                    result = {"box_recall": 0, "box_precision": 0, "class_recall": pd.DataFrame()}
+            else:
+                results = evaluate_iou.__evaluate_wrapper__(
+                    predictions=self.predictions_df,
+                    ground_df=ground_df,
+                    root_dir=self.config["validation"]["root_dir"],
+                    iou_threshold=self.config["validation"]["iou_threshold"],
+                    savedir=None,
+                    numeric_to_label_dict=self.numeric_to_label_dict)
+            
+            # Log each key value pair of the results dict
+            for key, value in results.items():
+                if isinstance(results, pd.DataFrame):
+                    # Log each row in the dataframe
+                    for index, row in value.iterrows():
+                        self.log("{}_Recall".format(self.numeric_to_label_dict[row["label"]]),
+                                 row["recall"])
+                        self.log(
+                            "{}_Precision".format(self.numeric_to_label_dict[row["label"]]),
+                            row["precision"])
+                else:
+                    self.log(key, value)
 
     def predict_step(self, batch, batch_idx):
         batch_results = self.model(batch)
@@ -719,7 +734,7 @@ class deepforest(pl.LightningModule):
         Returns:
             results: dict of ("results", "precision", "recall") for a given threshold
         """
-        ground_df = pd.read_csv(csv_file)
+        ground_df = utilities.read_file(csv_file)
         ground_df["label"] = ground_df.label.apply(lambda x: self.label_dict[x])
         predictions = self.predict_file(csv_file=csv_file,
                                         root_dir=root_dir,

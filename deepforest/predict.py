@@ -3,16 +3,13 @@ import cv2
 import pandas as pd
 import numpy as np
 import os
-from PIL import Image
-import warnings
 
 import torch
 from torchvision.ops import nms
 import typing
 
 from deepforest import visualize, dataset
-import rasterio
-
+from deepforest.utilities import read_file
 
 def _predict_image_(model,
                     image: typing.Optional[np.ndarray] = None,
@@ -182,6 +179,7 @@ def _dataloader_wrapper_(model,
         results.append(prediction)
 
     results = pd.concat(results, ignore_index=True)
+    results = read_file(results, root_dir)
 
     if savedir:
         visualize.plot_prediction_dataframe(results,

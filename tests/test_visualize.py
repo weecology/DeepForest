@@ -7,6 +7,11 @@ import pytest
 import numpy as np
 import pandas as pd
 
+import pandas as pd
+import geopandas as gpd
+from shapely import geometry
+
+
 def test_format_boxes(m):
     ds = m.val_dataloader()
     batch = next(iter(ds))
