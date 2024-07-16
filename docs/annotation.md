@@ -24,7 +24,7 @@ If you would like to train a model, here is a quick video on a simple way to ann
 
 Using a shapefile, we could turn it into a dataframe of bounding box annotations by converting the points into boxes. If you already have boxes, you can exclude convert_to_boxes and buffer_size.
 
-```
+```python
 df = shapefile_to_annotations(
     shapefile="annotations.shp", 
     rgb="image_path", convert_to_boxes=True, buffer_size=0.15
@@ -32,8 +32,7 @@ df = shapefile_to_annotations(
 ```
 
 Optionally, we can split these annotations into crops if the image is large and will not fit into memory. This is often the case.
-
-```
+```python
 df.to_csv("full_annotations.csv",index=False)
 annotations = preprocess.split_raster(
     path_to_raster=image_path,
@@ -49,7 +48,7 @@ annotations = preprocess.split_raster(
 
 It is often difficult to annotate very large airborne imagery. DeepForest has a small utility to crop images into smaller chunks that can be annotated more easily.
 
-```
+```python
 raster = get_data("2019_YELL_2_528000_4978000_image_crop2.png")
 
 output_crops = preprocess.split_raster(path_to_raster=raster,
@@ -70,7 +69,7 @@ for crop in output_crops:
 
 It is often useful to train new training annotations starting from current predictions. This allows users to more quickly find and correct errors. The following example shows how to create a list of files, predict detections in each, and save as shapefiles. A user can then edit these shapefiles in a program like QGIS.
 
-```
+```python
 from deepforest import main
 from deepforest.visualize import plot_predictions
 from deepforest.utilities import boxes_to_shapefile
@@ -110,6 +109,42 @@ for path in files:
     basename = os.path.splitext(os.path.basename(path))[0]
     shp.to_file("{}/{}.shp".format(PATH_TO_DIR,basename))
 ```
+## Understanding Pascal VOC and the read_pascal_voc Function
+### What is Pascal VOC?
+The Pascal Visual Object Classes (VOC) dataset is a benchmark in visual object category recognition and detection, providing a standard dataset of images and annotation, and standard evaluation procedures. 
+
+Pascal VOC annotations are typically stored in XML format, which includes information about the image and the bounding boxes of the objects present within it. Each bounding box is defined by its coordinates (xmin, ymin, xmax, ymax) and is associated with a class label. The annotations also include other metadata about the image, such as its filename. You can know more about Pascal VOC from [Here](https://roboflow.com/formats/pascal-voc-xml)
+
+
+
+### The `read_pascal_voc` Function
+The `read_pascal_voc` function is designed to read these XML annotations and convert them into a format suitable for use with object detection models, such as RetinaNet. This function parses the XML file, extracts the relevant information, and constructs a pandas DataFrame containing the image path and the bounding box coordinates along with the class labels.
+
+Example:
+```python
+from deepforest import get_data
+from deepforest.utilities import read_pascal_voc
+
+xml_path = get_data("OSBS_029.xml")
+df = read_pascal_voc(xml_path)
+print(df)
+```
+This prints:
+```
+      image_path  xmin  ymin  xmax  ymax label
+0   OSBS_029.tif   203    67   227    90  Tree
+1   OSBS_029.tif   256    99   288   140  Tree
+2   OSBS_029.tif   166   253   225   304  Tree
+3   OSBS_029.tif   365     2   400    27  Tree
+4   OSBS_029.tif   312    13   349    47  Tree
+..           ...   ...   ...   ...   ...   ...
+56  OSBS_029.tif    60   292    96   332  Tree
+57  OSBS_029.tif    89   362   114   390  Tree
+58  OSBS_029.tif   236   132   253   152  Tree
+59  OSBS_029.tif   316   174   346   214  Tree
+60  OSBS_029.tif   220   208   251   244  Tree
+```
+---
 
 ## Fast iterations are the key to annotation success
 
