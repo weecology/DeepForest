@@ -76,7 +76,7 @@ def test_shapefile_to_annotations_convert_unprojected_to_boxes(tmpdir):
     gdf = gpd.GeoDataFrame(df, geometry="geometry")
     gdf.to_file("{}/annotations.shp".format(tmpdir))
     image_path = get_data("OSBS_029.png")
-    shp = utilities.shapefile_to_annotations(shapefile="{}/annotations.shp".format(tmpdir), rgb=image_path, savedir=tmpdir, geometry_type="point")
+    shp = utilities.shapefile_to_annotations(shapefile="{}/annotations.shp".format(tmpdir), rgb=image_path)
     assert shp.shape[0] == 2
 
 def test_shapefile_to_annotations_invalid_epsg(tmpdir):
@@ -88,7 +88,7 @@ def test_shapefile_to_annotations_invalid_epsg(tmpdir):
     assert gdf.crs.to_string() == "EPSG:4326"
     image_path = get_data("OSBS_029.tif")
     with pytest.raises(ValueError):
-        shp = utilities.shapefile_to_annotations(shapefile="{}/annotations.shp".format(tmpdir), rgb=image_path, savedir=tmpdir, geometry_type="bbox")
+        shp = utilities.shapefile_to_annotations(shapefile="{}/annotations.shp".format(tmpdir), rgb=image_path)
         
 def test_read_file_boxes_projected(tmpdir):
     sample_geometry = [geometry.Point(404211.9 + 10,3285102 + 20),geometry.Point(404211.9 + 20,3285102 + 20)]
@@ -336,11 +336,11 @@ def test_image_to_geo_coordinates(tmpdir):
     assert geo_coords[geo_coords.intersects(src_window)].shape[0] == pd.read_csv(annotations).shape[0]  
 
     # Plot using geopandas
-    fig, ax = plt.subplots(figsize=(10, 10))
-    gpd.GeoSeries(src_window).plot(ax=ax, color="blue", alpha=0.5)
-    geo_coords.plot(ax=ax, color="red", alpha=0.2)
-    show(src, ax=ax)
-    plt.show()
+    #fig, ax = plt.subplots(figsize=(10, 10))
+    #gpd.GeoSeries(src_window).plot(ax=ax, color="blue", alpha=0.5)
+    #geo_coords.plot(ax=ax, color="red", alpha=0.2)
+    #show(src, ax=ax)
+    #plt.show()
 
 def test_image_to_geo_coordinates_boxes(tmpdir):
     annotations = get_data("2018_SJER_3_252000_4107000_image_477.csv")
@@ -365,11 +365,11 @@ def test_image_to_geo_coordinates_boxes(tmpdir):
     assert geo_coords[geo_coords.intersects(src_window)].shape[0] == pd.read_csv(annotations).shape[0]  
 
     # Plot using geopandas
-    fig, ax = plt.subplots(figsize=(10, 10))
-    gpd.GeoSeries(src_window).plot(ax=ax, color="blue", alpha=0.5)
-    geo_coords.plot(ax=ax, color="red", alpha=0.2)
-    show(src, ax=ax)
-    plt.show()
+    #fig, ax = plt.subplots(figsize=(10, 10))
+    #gpd.GeoSeries(src_window).plot(ax=ax, color="blue", alpha=0.5)
+    #geo_coords.plot(ax=ax, color="red", alpha=0.2)
+    #show(src, ax=ax)
+    #plt.show()
 
 def test_image_to_geo_coordinates_points(tmpdir):
     annotations = get_data("2018_SJER_3_252000_4107000_image_477.csv")
@@ -395,11 +395,11 @@ def test_image_to_geo_coordinates_points(tmpdir):
     assert geo_coords[geo_coords.intersects(src_window)].shape[0] == pd.read_csv(annotations).shape[0]  
 
     # Plot using geopandas
-    fig, ax = plt.subplots(figsize=(10, 10))
-    gpd.GeoSeries(src_window).plot(ax=ax, color="blue", alpha=0.5)
-    geo_coords.plot(ax=ax, color="red", alpha=0.2)
-    show(src, ax=ax)
-    plt.show()
+    #fig, ax = plt.subplots(figsize=(10, 10))
+    #gpd.GeoSeries(src_window).plot(ax=ax, color="blue", alpha=0.5)
+    #geo_coords.plot(ax=ax, color="red", alpha=0.2)
+    #show(src, ax=ax)
+    #plt.show()
 
 def test_image_to_geo_coordinates_polygons(tmpdir):
     annotations = get_data("2018_SJER_3_252000_4107000_image_477.csv")
@@ -426,11 +426,11 @@ def test_image_to_geo_coordinates_polygons(tmpdir):
     assert geo_coords[geo_coords.intersects(src_window)].shape[0] == pd.read_csv(annotations).shape[0]  
 
     # Plot using geopandas
-    fig, ax = plt.subplots(figsize=(10, 10))
-    gpd.GeoSeries(src_window).plot(ax=ax, color="blue", alpha=0.5)
-    geo_coords.plot(ax=ax, color="red", alpha=0.2)
-    show(src, ax=ax)
-    plt.show()
+    #fig, ax = plt.subplots(figsize=(10, 10))
+    #gpd.GeoSeries(src_window).plot(ax=ax, color="blue", alpha=0.5)
+    #geo_coords.plot(ax=ax, color="red", alpha=0.2)
+    #show(src, ax=ax)
+    #plt.show()
 
 
 def test_boxes_to_shapefile_projected(m):

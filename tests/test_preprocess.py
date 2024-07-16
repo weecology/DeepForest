@@ -90,8 +90,9 @@ def test_split_raster(config, tmpdir, input_type, geodataframe):
                                                  patch_overlap=0)
 
     # Returns a 7 column pandas array
+    assert output_annotations.shape[1] == 7
     assert not output_annotations.empty
-    assert output_annotations.shape[1] == 3
+    
 def test_split_raster_no_annotations(config, tmpdir):
     """Split raster into crops with overlaps to maintain all annotations"""
     raster = get_data("2019_YELL_2_528000_4978000_image_crop2.png")

@@ -5,6 +5,7 @@ import shapely
 import numpy as np
 import cv2
 from PIL import Image
+import warnings
 
 from deepforest import IoU
 from deepforest import visualize
@@ -17,6 +18,8 @@ def evaluate_image_boxes(predictions, ground_df, root_dir, savedir=None):
 
     Args:
         df: a geopandas dataframe with geometry columns
+        predictions: a geopandas dataframe with geometry columns
+        ground_df: a geopandas dataframe with geometry columns
         summarize: Whether to group statistics by plot and overall score
         image_coordinates: Whether the current boxes are in coordinate system of the image, e.g. origin (0,0) upper left.
         root_dir: Where to search for image names in df
@@ -103,6 +106,16 @@ def __evaluate_wrapper__(predictions,
         """
     # remove empty samples from ground truth
     ground_df = ground_df[~((ground_df.xmin == 0) & (ground_df.xmax == 0))]
+    
+    # Default results for blank predictions
+    if predictions.empty:
+        results = {"results": None, "box_recall": 0, "box_precision": np.nan, "class_recall": None}
+        return results
+    
+    # Convert pandas to geopandas if needed
+    if not isinstance(predictions, gpd.GeoDataFrame):
+        warnings.warn("Converting predictions to GeoDataFrame using geometry column")
+        predictions = gpd.GeoDataFrame(predictions, geometry="geometry")
 
     prediction_geometry = determine_geometry_type(predictions)
     if prediction_geometry == "point":
@@ -245,7 +258,7 @@ def _point_recall_image_(predictions, ground_df, root_dir=None, savedir=None):
             raise AttributeError("savedir is {}, but root dir is None".format(savedir))
         image = np.array(Image.open("{}/{}".format(root_dir, plot_name)))[:, :, ::-1]
         image = visualize.plot_predictions(image, df=predictions)
-        image = visualize.plot_points(image, df=ground_df, color=(0, 165, 255))
+        image = visualize.plot_points(image, points=ground_df[["x","y"]].values, color=(0, 165, 255))
         cv2.imwrite("{}/{}".format(savedir, plot_name), image)
 
     return result

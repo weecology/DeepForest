@@ -179,6 +179,10 @@ def _dataloader_wrapper_(model,
         results.append(prediction)
 
     results = pd.concat(results, ignore_index=True)
+    if results.empty:
+        results["geometry"] = None
+        return results
+    
     results = read_file(results, root_dir)
 
     if savedir:

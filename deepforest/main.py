@@ -4,7 +4,7 @@ import os
 import typing
 import warnings
 
-import cv2
+import geopandas as gpd
 import numpy as np
 import pandas as pd
 import pytorch_lightning as pl
@@ -597,7 +597,10 @@ class deepforest(pl.LightningModule):
             self.log("val_{}".format(key), value, on_epoch=True)
 
         for index, result in enumerate(preds):
-            boxes = visualize.format_boxes(result)
+            # Skip empty predictions
+            if result["boxes"].shape[0] == 0:
+                continue
+            boxes = visualize.format_geometry(result)
             boxes["image_path"] = path[index]
             self.predictions.append(boxes)
 
@@ -618,17 +621,17 @@ class deepforest(pl.LightningModule):
         self.log_dict(output)
         self.mAP_metric.reset()
 
-        # Evaluate on validation data predictions
-        self.predictions_df = pd.concat(self.predictions)
-
-        #Create a geospatial column
-        self.predictions_df = utilities.read_file(self.predictions_df)
-
-        ground_df = utilities.read_file(self.config["validation"]["csv_file"])
-        ground_df["label"] = ground_df.label.apply(lambda x: self.label_dict[x])
+        if len(self.predictions) == 0:
+            return None
+        else:
+            self.predictions_df = pd.concat(self.predictions)
 
         #Evaluate every n epochs
         if self.current_epoch % self.config["validation"]["val_accuracy_interval"] == 0:
+            #Create a geospatial column
+            ground_df = utilities.read_file(self.config["validation"]["csv_file"])
+            ground_df["label"] = ground_df.label.apply(lambda x: self.label_dict[x])
+
             if self.predictions_df.empty:
                 warnings.warn("No predictions made, skipping evaluation")
                 geom_type = utilities.determine_geometry_type(ground_df)
@@ -642,19 +645,21 @@ class deepforest(pl.LightningModule):
                     iou_threshold=self.config["validation"]["iou_threshold"],
                     savedir=None,
                     numeric_to_label_dict=self.numeric_to_label_dict)
-            
-            # Log each key value pair of the results dict
-            for key, value in results.items():
-                if isinstance(results, pd.DataFrame):
-                    # Log each row in the dataframe
-                    for index, row in value.iterrows():
-                        self.log("{}_Recall".format(self.numeric_to_label_dict[row["label"]]),
-                                 row["recall"])
-                        self.log(
-                            "{}_Precision".format(self.numeric_to_label_dict[row["label"]]),
-                            row["precision"])
-                else:
-                    self.log(key, value)
+                
+                # Log each key value pair of the results dict
+                for key, value in results.items():
+                    if key in ["class_recall"]:
+                        for index, row in value.iterrows():
+                            self.log("{}_Recall".format(self.numeric_to_label_dict[row["label"]]),
+                                    row["recall"])
+                            self.log(
+                                "{}_Precision".format(self.numeric_to_label_dict[row["label"]]),
+                                row["precision"])                    
+                    else:
+                        try:
+                            self.log(key, value)
+                        except:
+                            pass
 
     def predict_step(self, batch, batch_idx):
         batch_results = self.model(batch)
