@@ -10,7 +10,6 @@
 *.pt
 *.wp*
 build/
-CONTRIBUTING.md
 current_bird_release.csv
 current_release.csv
 env/
