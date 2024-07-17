@@ -110,7 +110,7 @@ class TreeDataset(Dataset):
 
             # If image has no annotations, don't augment
             if np.sum(targets["boxes"]) == 0:
-                boxes = boxes = torch.zeros((0, 4), dtype=torch.float32)
+                boxes = torch.zeros((0, 4), dtype=torch.float32)
                 labels = torch.from_numpy(targets["labels"])
                 # channels last
                 image = np.rollaxis(image, 2, 0)
