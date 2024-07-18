@@ -55,7 +55,10 @@ jobs:
           
       - name: Check notebook build
         run: pytest --nbmake docs/*.ipynb
-
+      
+      - name: Run docformatter
+        run: docformatter --check --recursive deepforest/
+        
       - name: Test Docs
         run: |
           cd docs && make clean && make html SPHINXOPTS="-W"

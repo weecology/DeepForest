@@ -12,7 +12,8 @@ import supervision as sv
 
 
 def view_dataset(ds, savedir=None, color=None, thickness=1):
-    """Plot annotations on images for debugging purposes
+    """Plot annotations on images for debugging purposes.
+
     Args:
         ds: a deepforest pytorch dataset, see deepforest.dataset or deepforest.load_dataset() to start from a csv file
         savedir: optional path to save figures. If none (default) images will be interactively plotted
@@ -33,12 +34,14 @@ def view_dataset(ds, savedir=None, color=None, thickness=1):
 
 
 def format_boxes(prediction, scores=True):
-    """Format a retinanet prediction into a pandas dataframe for a single image
-       Args:
-           prediction: a dictionary with keys 'boxes' and 'labels' coming from a retinanet
-           scores: Whether boxes come with scores, during prediction, or without scores, as in during training.
-        Returns:
-           df: a pandas dataframe
+    """Format a retinanet prediction into a pandas dataframe for a single
+    image.
+
+    Args:
+        prediction: a dictionary with keys 'boxes' and 'labels' coming from a retinanet
+        scores: Whether boxes come with scores, during prediction, or without scores, as in during training.
+    Returns:
+        df: a pandas dataframe
     """
 
     df = pd.DataFrame(prediction["boxes"].cpu().detach().numpy(),
@@ -52,7 +55,9 @@ def format_boxes(prediction, scores=True):
 
 
 def plot_prediction_and_targets(image, predictions, targets, image_name, savedir):
-    """Plot an image, its predictions, and its ground truth targets for debugging
+    """Plot an image, its predictions, and its ground truth targets for
+    debugging.
+
     Args:
         image: torch tensor, RGB color order
         targets: torch tensor
@@ -76,8 +81,10 @@ def plot_prediction_dataframe(df,
                               color=None,
                               thickness=1,
                               ground_truth=None):
-    """For each row in dataframe, call plot predictions and save plot files to disk. 
-    For multi-class labels, boxes will be colored by labels. Ground truth boxes will all be same color, regardless of class.
+    """For each row in dataframe, call plot predictions and save plot files to
+    disk. For multi-class labels, boxes will be colored by labels. Ground truth
+    boxes will all be same color, regardless of class.
+
     Args:
         df: a pandas dataframe with image_path, xmin, xmax, ymin, ymax and label columns. The image_path column should be the relative path from root_dir, not the full path.
         root_dir: relative dir to look for image names from df.image_path
@@ -85,7 +92,7 @@ def plot_prediction_dataframe(df,
         savedir: save the plot to an optional directory path.
     Returns:
         written_figures: list of filenames written
-        """
+    """
     written_figures = []
     for name, group in df.groupby("image_path"):
         image = np.array(Image.open("{}/{}".format(root_dir, name)))[:, :, ::-1].copy()
@@ -103,12 +110,12 @@ def plot_prediction_dataframe(df,
 
 
 def plot_predictions(image, df, color=None, thickness=1):
-    """Plot a set of boxes on an image
-    By default this function does not show, but only plots an axis
-    Label column must be numeric!
-    Image must be BGR color order!
+    """Plot a set of boxes on an image By default this function does not show,
+    but only plots an axis Label column must be numeric! Image must be BGR
+    color order!
+
     Args:
-        image: a numpy array in *BGR* color order! Channel order is channels first 
+        image: a numpy array in *BGR* color order! Channel order is channels first
         df: a pandas dataframe with xmin, xmax, ymin, ymax and label column
         color: color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255)
         thickness: thickness of the rectangle border line in px
@@ -141,12 +148,14 @@ def plot_predictions(image, df, color=None, thickness=1):
 
 
 def plot_points(image, df, color=None, thickness=1):
-    """Plot a set of points on an image
+    """Plot a set of points on an image.
+
     By default this function does not show, but only plots an axis
     Label column must be numeric!
     Image must be BGR color order!
+
     Args:
-        image: a numpy array in *BGR* color order! Channel order is channels first 
+        image: a numpy array in *BGR* color order! Channel order is channels first
         df: a pandas dataframe with x,y and label column
         color: color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255)
         thickness: thickness of the rectangle border line in px
@@ -206,8 +215,8 @@ def label_to_color(label):
 
 
 def convert_to_sv_format(df):
-    """
-    Convert DeepForest prediction results to a supervision Detections object.
+    """Convert DeepForest prediction results to a supervision Detections
+    object.
 
     Args:
         df (pd.DataFrame): The results from `predict_image` or `predict_tile`.

@@ -45,3 +45,4 @@ dependencies:
     - aiolimiter
     - aiohttp
     - supervision
+    - docformatter
