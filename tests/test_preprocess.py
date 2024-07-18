@@ -25,13 +25,10 @@ def config():
     config["rgb_dir"] = "data"
     config["path_to_raster"] = get_data("OSBS_029.tif")
 
-<<<<<<< HEAD
     # Create a clean config test data
     annotations = utilities.read_pascal_voc(xml_path=config["annotations_xml"])
     annotations.to_csv("tests/data/OSBS_029.csv", index=False)
 
-=======
->>>>>>> squashed into one geotype commit
     return config
 
 @pytest.fixture()
@@ -69,15 +66,12 @@ def test_select_annotations(config, image):
 @pytest.mark.parametrize("input_type", ["path", "dataframe"])
 def test_split_raster(config, tmpdir, input_type, geodataframe):
     """Split raster into crops with overlaps to maintain all annotations"""
-<<<<<<< HEAD
     raster = get_data("2019_YELL_2_528000_4978000_image_crop2.png")
     annotations = utilities.read_pascal_voc(
         get_data("2019_YELL_2_528000_4978000_image_crop2.xml"))
     annotations.to_csv("{}/example.csv".format(tmpdir), index=False)
     #annotations.label = 0
 
-=======
->>>>>>> squashed into one geotype commit
     if input_type == "path":
         annotations_file = get_data("OSBS_029.csv")
     else:
@@ -111,33 +105,7 @@ def test_split_raster_no_annotations(config, tmpdir):
         assert os.path.exists(crop)
     
 
-<<<<<<< HEAD
-def test_split_raster_empty_crops(config, tmpdir):
-    """Split raster into crops with overlaps to maintain all annotations, allow empty crops"""
-    raster = get_data("2019_YELL_2_528000_4978000_image_crop2.png")
-    annotations = utilities.read_pascal_voc(
-        get_data("2019_YELL_2_528000_4978000_image_crop2.xml"))
-    annotations.to_csv("{}/example.csv".format(tmpdir), index=False)
-    #annotations.label = 0
-    #visualize.plot_prediction_dataframe(df=annotations, root_dir=os.path.dirname(get_data(".")), show=True)
-
-    annotations_file = preprocess.split_raster(
-        path_to_raster=raster,
-        annotations_file="{}/example.csv".format(tmpdir),
-        base_dir=tmpdir,
-        patch_size=100,
-        patch_overlap=0,
-        allow_empty=True)
-
-    # Returns a 6 column pandas array
-    assert not annotations_file[(annotations_file.xmin == 0) &
-                                (annotations_file.xmax == 0)].empty
-
-
-def test_split_raster_from_image(config, tmpdir):
-=======
 def test_split_raster_from_image(config, tmpdir, geodataframe):
->>>>>>> squashed into one geotype commit
     r = rasterio.open(config["path_to_raster"]).read()
     r = np.rollaxis(r, 0, 3)
     annotations_file = preprocess.split_raster(
