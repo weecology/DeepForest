@@ -20,6 +20,7 @@ pillow>6.2.0
 pip
 psutil
 pycocotools
+Pygments
 pytest
 pytest-profiling
 pytorch-lightning>=1.5.8

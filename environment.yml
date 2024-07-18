@@ -46,3 +46,4 @@ dependencies:
     - aiohttp
     - supervision
     - nbqa
+    - Pygments
