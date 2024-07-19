@@ -1,7 +1,20 @@
 from setuptools import setup, find_packages
+from setuptools.command.install import install
 import setuptools
 from distutils.command.build_ext import build_ext as DistUtilsBuildExt
+import subprocess
 
+# Custom command to install pre-commit hooks
+class PostInstallCommand(install):
+    """Post-installation for installation mode."""
+    def run(self):
+        # Run the standard install command
+        install.run(self)
+        # Run the 'pre-commit install' command to set up pre-commit hooks
+        print('######'*1000)
+        subprocess.call(['pre-commit', 'install'])
+        
+        
 NAME = 'deepforest'
 VERSION = '1.3.3'
 DESCRIPTION = 'Tree crown prediction using deep learning retinanets'
@@ -64,10 +77,13 @@ setup(name=NAME,
       packages=find_packages(),
       include_package_data=True,
       install_requires=[
-          "albumentations>=1.0.0","aiolimiter", "aiohttp", "docformatter", "geopandas", "imagecodecs", "matplotlib", "numpy",
-          "opencv-python>=4.5.4", "pandas", "Pillow>6.2.0", "progressbar2", "pycocotools",
+          "albumentations>=1.0.0","aiolimiter", "aiohttp", "docformatter", "geopandas", "matplotlib", "numpy",
+          "opencv-python>=4.5.4", "pandas", "Pillow>6.2.0", "pre-commit", "progressbar2", "pycocotools",
           "pytorch-lightning>=1.5.8", "rasterio", "recommonmark", "rtree", "scipy>1.5",
           "six", "slidingwindow", "sphinx", "supervision", "torch", "torchvision>=0.13", "tqdm",
           "xmltodict",
       ],
-      zip_safe=False)
+      zip_safe=False,
+      cmdclass={
+        'install': PostInstallCommand,},
+    )
