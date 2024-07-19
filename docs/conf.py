@@ -8,6 +8,11 @@ from typing import Any
 from recommonmark.parser import CommonMarkParser
 from recommonmark.transform import AutoStructify
 
+from sphinx.highlighting import lexers
+from pygments.lexers.python import PythonLexer
+
+lexers["python"]=PythonLexer()
+
 curr_path = os.path.dirname(os.path.abspath(os.path.expanduser(__file__)))
 sys.path.insert(0, os.path.join(curr_path, '..'))
 sys.path.insert(0, os.path.abspath('..'))

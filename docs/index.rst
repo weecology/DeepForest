@@ -65,6 +65,7 @@ Get suggestions on how to improve a model by using the [discussion board](https:
    use
    CONTRIBUTING.md
    sample
+   examples/nest_detection
 
 
 Indices and tables
