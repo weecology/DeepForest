@@ -44,4 +44,6 @@ dependencies:
     - aiolimiter
     - aiohttp
     - supervision
+    - nbqa
+    - Pygments
     - docformatter
