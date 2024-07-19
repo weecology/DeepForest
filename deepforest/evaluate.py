@@ -1,6 +1,4 @@
-"""
-Evaluation module
-"""
+"""Evaluation module."""
 import pandas as pd
 import geopandas as gpd
 import shapely
@@ -15,14 +13,16 @@ import warnings
 
 
 def evaluate_image(predictions, ground_df, root_dir, savedir=None):
-    """
-    Compute intersection-over-union matching among prediction and ground truth boxes for one image
+    """Compute intersection-over-union matching among prediction and ground
+    truth boxes for one image.
+
     Args:
         df: a pandas dataframe with columns name, xmin, xmax, ymin, ymax, label. The 'name' column should be the path relative to the location of the file.
         summarize: Whether to group statistics by plot and overall score
         image_coordinates: Whether the current boxes are in coordinate system of the image, e.g. origin (0,0) upper left.
         root_dir: Where to search for image names in df
         savedir: optional directory to save image with overlaid predictions and annotations
+
     Returns:
         result: pandas dataframe with crown ids of prediciton and ground truth and the IoU score.
     """
@@ -58,7 +58,11 @@ def evaluate_image(predictions, ground_df, root_dir, savedir=None):
 
 
 def compute_class_recall(results):
-    """Given a set of evaluations, what proportion of predicted boxes match. True boxes which are not matched to predictions do not count against accuracy."""
+    """Given a set of evaluations, what proportion of predicted boxes match.
+
+    True boxes which are not matched to predictions do not count against
+    accuracy.
+    """
     # Per class recall and precision
     class_recall_dict = {}
     class_precision_dict = {}
@@ -97,16 +101,17 @@ def __evaluate_wrapper__(predictions,
                          iou_threshold,
                          numeric_to_label_dict,
                          savedir=None):
-    """Evaluate a set of predictions against a ground truth csv file
-        Args:   
-            predictions: a pandas dataframe, if supplied a root dir is needed to give the relative path of files in df.name. The labels in ground truth and predictions must match. If one is numeric, the other must be numeric.
-            csv_file: a csv file with columns xmin, ymin, xmax, ymax, label, image_path
-            root_dir: location of files in the dataframe 'name' column.
-            iou_threshold: intersection-over-union threshold, see deepforest.evaluate
-            savedir: optional directory to save image with overlaid predictions and annotations
-        Returns:
-            results: a dictionary of results with keys, results, box_recall, box_precision, class_recall
-        """
+    """Evaluate a set of predictions against a ground truth csv file.
+
+    Args:
+        predictions: a pandas dataframe, if supplied a root dir is needed to give the relative path of files in df.name. The labels in ground truth and predictions must match. If one is numeric, the other must be numeric.
+        csv_file: a csv file with columns xmin, ymin, xmax, ymax, label, image_path
+        root_dir: location of files in the dataframe 'name' column.
+        iou_threshold: intersection-over-union threshold, see deepforest.evaluate
+        savedir: optional directory to save image with overlaid predictions and annotations
+    Returns:
+        results: a dictionary of results with keys, results, box_recall, box_precision, class_recall
+    """
     # remove empty samples from ground truth
     ground_df = ground_df[~((ground_df.xmin == 0) & (ground_df.xmax == 0))]
 
@@ -131,14 +136,15 @@ def __evaluate_wrapper__(predictions,
 
 
 def evaluate(predictions, ground_df, root_dir, iou_threshold=0.4, savedir=None):
-    """Image annotated crown evaluation routine
-    submission can be submitted as a .shp, existing pandas dataframe or .csv path
+    """Image annotated crown evaluation routine submission can be submitted as
+    a .shp, existing pandas dataframe or .csv path.
 
     Args:
         predictions: a pandas dataframe, if supplied a root dir is needed to give the relative path of files in df.name. The labels in ground truth and predictions must match. If one is numeric, the other must be numeric.
         ground_df: a pandas dataframe, if supplied a root dir is needed to give the relative path of files in df.name
         root_dir: location of files in the dataframe 'name' column.
         savedir: optional directory to save image with overlaid predictions and annotations
+
     Returns:
         results: a dataframe of match bounding boxes
         box_recall: proportion of true positives of box position, regardless of class
@@ -207,13 +213,15 @@ def evaluate(predictions, ground_df, root_dir, iou_threshold=0.4, savedir=None):
 
 
 def _point_recall_image_(predictions, ground_df, root_dir=None, savedir=None):
-    """
-    Compute intersection-over-union matching among prediction and ground truth boxes for one image
+    """Compute intersection-over-union matching among prediction and ground
+    truth boxes for one image.
+
     Args:
         predictions: a pandas dataframe. The labels in ground truth and predictions must match. For example, if one is numeric, the other must be numeric.
         ground_df: a pandas dataframe
         root_dir: location of files in the dataframe 'name' column, only needed if savedir is supplied
         savedir: optional directory to save image with overlaid predictions and annotations
+
     Returns:
         result: pandas dataframe with crown ids of prediciton and ground truth and the IoU score.
     """
@@ -254,13 +262,15 @@ def _point_recall_image_(predictions, ground_df, root_dir=None, savedir=None):
 
 def point_recall(predictions, ground_df, root_dir=None, savedir=None):
     """Evaluate the proportion on ground truth points overlap with predictions
-    submission can be submitted as a .shp, existing pandas dataframe or .csv path
-    For bounding box recall, see evaluate(). 
+    submission can be submitted as a .shp, existing pandas dataframe or .csv
+    path For bounding box recall, see evaluate().
+
     Args:
         predictions: a pandas dataframe, if supplied a root dir is needed to give the relative path of files in df.name. The labels in ground truth and predictions must match. If one is numeric, the other must be numeric.
         ground_df: a pandas dataframe, if supplied a root dir is needed to give the relative path of files in df.name
         root_dir: location of files in the dataframe 'name' column.
         savedir: optional directory to save image with overlaid predictions and annotations
+
     Returns:
         results: a dataframe of matched bounding boxes and ground truth labels
         box_recall: proportion of true positives between predicted boxes and ground truth points, regardless of class

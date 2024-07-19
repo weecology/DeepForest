@@ -13,6 +13,7 @@ build/
 CONTRIBUTING.md
 current_bird_release.csv
 current_release.csv
+docs/_build/
 env/
 lightning_logs/*
 public/
