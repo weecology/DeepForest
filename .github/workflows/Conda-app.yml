@@ -60,5 +60,4 @@ jobs:
         run: docformatter --check --recursive deepforest/
         
       - name: Test Docs
-        run: |
-          cd docs && make clean && make html SPHINXOPTS="-W"
+        run: cd docs && make clean && make html SPHINXOPTS="-W"
