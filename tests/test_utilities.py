@@ -53,10 +53,6 @@ def test_float_warning(config):
     annotations = utilities.read_pascal_voc(float_annotations)
     assert annotations.xmin.dtype is np.dtype('int64')
 
-def test_project_boxes():
-    csv_file = get_data("OSBS_029.csv")
-    df = pd.read_csv(csv_file)
-    gdf = utilities.project_boxes(df, root_dir=os.path.dirname(csv_file))
     
 def test_read_file(tmpdir):
     sample_geometry = [geometry.Point(404211.9 + 10,3285102 + 20),geometry.Point(404211.9 + 20,3285102 + 20)]

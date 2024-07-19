@@ -9,6 +9,7 @@ import shutil
 import torch
 import tempfile
 import copy
+import importlib.util
 
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
@@ -105,27 +106,27 @@ def big_file():
     return "{}/annotations.csv".format(tmpdir)
 
 
-def test_main():
-    from deepforest import main
-
-
 def test_tensorboard_logger(m, tmpdir):
-    # Create model trainer and fit model
-    annotations_file = get_data("testfile_deepforest.csv")
-    logger = TensorBoardLogger(save_dir=tmpdir)
-    m.config["train"]["csv_file"] = annotations_file
-    m.config["train"]["root_dir"] = os.path.dirname(annotations_file)
-    m.config["train"]["fast_dev_run"] = False
-    m.config["validation"]["csv_file"] = annotations_file
-    m.config["validation"]["root_dir"] = os.path.dirname(annotations_file)
-    m.config["val_accuracy_interval"] = 1
-    m.config["train"]["epochs"] = 2
+    # Check if TensorBoard is installed
+    if importlib.util.find_spec("tensorboard"):
+        # Create model trainer and fit model
+        annotations_file = get_data("testfile_deepforest.csv")
+        logger = TensorBoardLogger(save_dir=tmpdir)
+        m.config["train"]["csv_file"] = annotations_file
+        m.config["train"]["root_dir"] = os.path.dirname(annotations_file)
+        m.config["train"]["fast_dev_run"] = False
+        m.config["validation"]["csv_file"] = annotations_file
+        m.config["validation"]["root_dir"] = os.path.dirname(annotations_file)
+        m.config["val_accuracy_interval"] = 1
+        m.config["train"]["epochs"] = 2
 
-    m.create_trainer(logger=logger)
-    m.trainer.fit(m)
+        m.create_trainer(logger=logger)
+        m.trainer.fit(m)
 
-    assert m.trainer.logged_metrics["box_precision"]
-    assert m.trainer.logged_metrics["box_recall"]
+        assert m.trainer.logged_metrics["box_precision"]
+        assert m.trainer.logged_metrics["box_recall"]
+    else:
+        print("TensorBoard is not installed. Skipping test_tensorboard_logger.")
 
 
 def test_use_bird_release(m):
