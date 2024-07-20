@@ -38,7 +38,6 @@ dependencies:
   - yapf
   - pip:
     - sphinx-markdown-tables
-    - imagecodecs
     - albumentations>=1.0.0
     - comet_ml
     - pycocotools

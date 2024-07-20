@@ -19,3 +19,4 @@ lightning_logs/*
 public/
 tests/__pycache__
 tests/data/*
+.vscode/
