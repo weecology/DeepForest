@@ -29,7 +29,7 @@ import urllib.request
 
 
 def read_config(config_path):
-    """Read config yaml file"""
+    """Read config yaml file."""
     try:
         with open(config_path, 'r') as f:
             config = yaml.load(f, Loader=yaml.FullLoader)
@@ -193,10 +193,9 @@ def use_release(
 
 
 def read_pascal_voc(xml_path):
-    """
-    Load annotations from xml format (e.g. RectLabel editor) and convert
+    """Load annotations from xml format (e.g. RectLabel editor) and convert
     them into retinanet annotations format.
-    
+
     Args:
         xml_path (str): Path to the annotations xml, formatted by RectLabel
     Returns:
@@ -256,13 +255,13 @@ def read_pascal_voc(xml_path):
 
 
 def convert_point_to_bbox(gdf, buffer_size):
-    """
-    Convert an input point type annotation to a bounding box by buffering the point with a fixed size.
-    
+    """Convert an input point type annotation to a bounding box by buffering
+    the point with a fixed size.
+
     Args:
         gdf (GeoDataFrame): The input point type annotation.
         buffer_size (float): The size of the buffer to be applied to the point.
-        
+
     Returns:
         gdf (GeoDataFrame): The output bounding box type annotation.
     """
@@ -296,13 +295,13 @@ def shapefile_to_annotations(shapefile,
                              convert_point=False,
                              geometry_type=None,
                              save_dir=None):
-    """
-    Convert a shapefile of annotations into annotations csv file for DeepForest training and evaluation
-    
+    """Convert a shapefile of annotations into annotations csv file for
+    DeepForest training and evaluation.
+
     Args:
         shapefile: Path to a shapefile on disk. If a label column is present, it will be used, else all labels are assumed to be "Tree"
         rgb: Path to the RGB image on disk
-        root_dir: Optional directory to prepend to the image_path column        
+        root_dir: Optional directory to prepend to the image_path column
     Returns:
         results: a pandas dataframe
     """
@@ -427,7 +426,9 @@ def determine_geometry_type(df):
 
 
 def read_file(input, root_dir=None):
-    """Read a file and return a geopandas dataframe. This is the main entry point for reading annotations into deepforest.
+    """Read a file and return a geopandas dataframe.
+
+    This is the main entry point for reading annotations into deepforest.
     Args:
         input: a path to a file or a pandas dataframe
         root_dir: Optional directory to prepend to the image_path column
@@ -643,14 +644,13 @@ def check_image(image):
 
 
 def image_to_geo_coordinates(gdf, root_dir, flip_y_axis=False):
-    """
-    Convert from image coordinates to geographic coordinates.
-    
+    """Convert from image coordinates to geographic coordinates.
+
     Args:
         gdf: A geodataframe.
         root_dir: Directory of images to lookup image_path column.
         flip_y_axis: If True, reflect predictions over y axis to align with raster data in QGIS, which uses a negative y origin compared to numpy.
-    
+
     Returns:
         transformed_gdf: A geospatial dataframe with the boxes optionally transformed to the target crs.
     """
@@ -815,8 +815,8 @@ def boxes_to_shapefile(df, root_dir, projected=True, flip_y_axis=False):
 
 
 def annotations_to_shapefile(df, transform, crs):
-    """
-    Convert output from predict_image and  predict_tile to a geopandas data.frame
+    """Convert output from predict_image and  predict_tile to a geopandas
+    data.frame.
 
     Args:
         df: prediction data.frame with columns  ['xmin','ymin','xmax','ymax','label','score']

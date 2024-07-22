@@ -136,7 +136,8 @@ def split_raster(annotations_file=None,
                  allow_empty=False,
                  image_name=None,
                  save_dir="."):
-    """Divide a large tile into smaller arrays. Each crop will be saved to file.
+    """Divide a large tile into smaller arrays. Each crop will be saved to
+    file.
 
     Args:
         numpy_image: a numpy object to be used as a raster, usually opened from rasterio.open.read(), in order (height, width, channels)
