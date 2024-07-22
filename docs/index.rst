@@ -37,7 +37,7 @@ Get suggestions on how to improve a model by using the [discussion board](https:
 `Source code`_ is available on GitHub.
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
    :caption: Contents:
 
    landing
@@ -65,6 +65,7 @@ Get suggestions on how to improve a model by using the [discussion board](https:
    use
    CONTRIBUTING.md
    sample
+   examples/Australia
 
 
 Indices and tables
