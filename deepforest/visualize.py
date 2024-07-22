@@ -12,6 +12,7 @@ import supervision as sv
 import shapely
 from deepforest.utilities import determine_geometry_type
 
+
 def view_dataset(ds, savedir=None, color=None, thickness=1):
     """Plot annotations on images for debugging purposes.
 
@@ -42,19 +43,20 @@ def format_geometry(predictions, scores=True):
     Returns:
         df: a pandas dataframe
     """
-        # Detect geometry type
+    # Detect geometry type
     geom_type = determine_geometry_type(predictions)
 
     if geom_type == "box":
         df = format_boxes(predictions, scores=scores)
         df['geometry'] = df.apply(
-                        lambda x: shapely.geometry.box(x.xmin, x.ymin, x.xmax, x.ymax), axis=1)
+            lambda x: shapely.geometry.box(x.xmin, x.ymin, x.xmax, x.ymax), axis=1)
     elif geom_type == "polygon":
         raise ValueError("Polygon predictions are not yet supported for formatting")
     elif geom_type == "point":
         raise ValueError("Point predictions are not yet supported for formatting")
 
     return df
+
 
 def format_boxes(prediction, scores=True):
     """Format a retinanet prediction into a pandas dataframe for a single
@@ -130,6 +132,7 @@ def plot_prediction_dataframe(df,
 
     return written_figures
 
+
 def plot_points(image, points, color=None, radius=5, thickness=1):
     """Plot points on an image
     Args:
@@ -143,7 +146,7 @@ def plot_points(image, points, color=None, radius=5, thickness=1):
     """
     if image.shape[0] == 3:
         warnings.warn("Input images must be channels last format [h, w, 3] not channels "
-                        "first [3, h, w], using np.rollaxis(image, 0, 3) to invert!")
+                      "first [3, h, w], using np.rollaxis(image, 0, 3) to invert!")
         image = np.rollaxis(image, 0, 3)
     if image.dtype == "float32":
         image = image.astype("uint8")
@@ -152,9 +155,13 @@ def plot_points(image, points, color=None, radius=5, thickness=1):
         color = (0, 165, 255)  # Default color is orange
 
     for point in points:
-        cv2.circle(image, (int(point[0]), int(point[1])), color=color, radius=radius, thickness=thickness)
+        cv2.circle(image, (int(point[0]), int(point[1])),
+                   color=color,
+                   radius=radius,
+                   thickness=thickness)
 
     return image
+
 
 def plot_predictions(image, df, color=None, thickness=1):
     """Plot a set of boxes on an image By default this function does not show,
@@ -197,15 +204,19 @@ def plot_predictions(image, df, color=None, thickness=1):
                 cv2.polylines(image, polygon, True, color, thickness=thickness)
             elif geometry_type == "Point":
                 int_coords = lambda x: np.array(x).round().astype(np.int32)
-                cv2.circle(image, (int_coords(row["geometry"].x), int_coords(row["geometry"].y)), color=color, radius=5, thickness=thickness)
+                cv2.circle(image,
+                           (int_coords(row["geometry"].x), int_coords(row["geometry"].y)),
+                           color=color,
+                           radius=5,
+                           thickness=thickness)
             else:
                 raise ValueError("Only polygons and points are supported")
         elif "xmin" in df.columns:
             cv2.rectangle(image, (int(row["xmin"]), int(row["ymin"])),
-                        (int(row["xmax"]), int(row["ymax"])),
-                        color=color,
-                        thickness=thickness,
-                        lineType=cv2.LINE_AA)
+                          (int(row["xmax"]), int(row["ymax"])),
+                          color=color,
+                          thickness=thickness,
+                          lineType=cv2.LINE_AA)
         elif "x" in df.columns:
             cv2.circle(image, (row["x"], row["y"]),
                        color=color,

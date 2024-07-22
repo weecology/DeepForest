@@ -422,8 +422,6 @@ class deepforest(pl.LightningModule):
                                                savedir=savedir,
                                                color=color,
                                                thickness=thickness)
-        
-        
 
         return results
 
@@ -636,7 +634,11 @@ class deepforest(pl.LightningModule):
                 warnings.warn("No predictions made, skipping evaluation")
                 geom_type = utilities.determine_geometry_type(ground_df)
                 if geom_type == "box":
-                    result = {"box_recall": 0, "box_precision": 0, "class_recall": pd.DataFrame()}
+                    result = {
+                        "box_recall": 0,
+                        "box_precision": 0,
+                        "class_recall": pd.DataFrame()
+                    }
             else:
                 results = evaluate_iou.__evaluate_wrapper__(
                     predictions=self.predictions_df,
@@ -645,16 +647,19 @@ class deepforest(pl.LightningModule):
                     iou_threshold=self.config["validation"]["iou_threshold"],
                     savedir=None,
                     numeric_to_label_dict=self.numeric_to_label_dict)
-                
+
                 # Log each key value pair of the results dict
                 for key, value in results.items():
                     if key in ["class_recall"]:
                         for index, row in value.iterrows():
-                            self.log("{}_Recall".format(self.numeric_to_label_dict[row["label"]]),
-                                    row["recall"])
                             self.log(
-                                "{}_Precision".format(self.numeric_to_label_dict[row["label"]]),
-                                row["precision"])                    
+                                "{}_Recall".format(
+                                    self.numeric_to_label_dict[row["label"]]),
+                                row["recall"])
+                            self.log(
+                                "{}_Precision".format(
+                                    self.numeric_to_label_dict[row["label"]]),
+                                row["precision"])
                     else:
                         try:
                             self.log(key, value)

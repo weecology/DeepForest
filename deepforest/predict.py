@@ -11,6 +11,7 @@ import typing
 from deepforest import visualize, dataset
 from deepforest.utilities import read_file
 
+
 def _predict_image_(model,
                     image: typing.Optional[np.ndarray] = None,
                     path: typing.Optional[str] = None,
@@ -182,7 +183,7 @@ def _dataloader_wrapper_(model,
     if results.empty:
         results["geometry"] = None
         return results
-    
+
     results = read_file(results, root_dir)
 
     if savedir:

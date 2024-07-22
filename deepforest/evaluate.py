@@ -106,12 +106,17 @@ def __evaluate_wrapper__(predictions,
         """
     # remove empty samples from ground truth
     ground_df = ground_df[~((ground_df.xmin == 0) & (ground_df.xmax == 0))]
-    
+
     # Default results for blank predictions
     if predictions.empty:
-        results = {"results": None, "box_recall": 0, "box_precision": np.nan, "class_recall": None}
+        results = {
+            "results": None,
+            "box_recall": 0,
+            "box_precision": np.nan,
+            "class_recall": None
+        }
         return results
-    
+
     # Convert pandas to geopandas if needed
     if not isinstance(predictions, gpd.GeoDataFrame):
         warnings.warn("Converting predictions to GeoDataFrame using geometry column")
@@ -122,12 +127,13 @@ def __evaluate_wrapper__(predictions,
         raise NotImplementedError("Point evaluation is not yet implemented")
     elif prediction_geometry == "box":
         results = evaluate_boxes(predictions=predictions,
-                        ground_df=ground_df,
-                        root_dir=root_dir,
-                        iou_threshold=iou_threshold,
-                        savedir=savedir)
+                                 ground_df=ground_df,
+                                 root_dir=root_dir,
+                                 iou_threshold=iou_threshold,
+                                 savedir=savedir)
     else:
-        raise NotImplementedError("Geometry type {} not implemented".format(prediction_geometry))
+        raise NotImplementedError(
+            "Geometry type {} not implemented".format(prediction_geometry))
 
     # replace classes if not NUll
     if not results is None:
@@ -186,9 +192,9 @@ def evaluate_boxes(predictions, ground_df, root_dir, iou_threshold=0.4, savedir=
         else:
             group = group.reset_index(drop=True)
             result = evaluate_image_boxes(predictions=image_predictions,
-                                    ground_df=group,
-                                    root_dir=root_dir,
-                                    savedir=savedir)
+                                          ground_df=group,
+                                          root_dir=root_dir,
+                                          savedir=savedir)
 
         result["image_path"] = image_path
         result["match"] = result.IoU > iou_threshold
@@ -258,7 +264,9 @@ def _point_recall_image_(predictions, ground_df, root_dir=None, savedir=None):
             raise AttributeError("savedir is {}, but root dir is None".format(savedir))
         image = np.array(Image.open("{}/{}".format(root_dir, plot_name)))[:, :, ::-1]
         image = visualize.plot_predictions(image, df=predictions)
-        image = visualize.plot_points(image, points=ground_df[["x","y"]].values, color=(0, 165, 255))
+        image = visualize.plot_points(image,
+                                      points=ground_df[["x", "y"]].values,
+                                      color=(0, 165, 255))
         cv2.imwrite("{}/{}".format(savedir, plot_name), image)
 
     return result

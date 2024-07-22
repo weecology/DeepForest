@@ -18,6 +18,7 @@ import geopandas as gpd
 from deepforest.utilities import read_file
 from shapely import geometry
 
+
 def preprocess_image(image):
     """Preprocess a single RGB numpy array as a prediction from channels last,
     to channels first."""
@@ -55,6 +56,7 @@ def compute_windows(numpy_image, patch_size, patch_overlap):
 
     return (windows)
 
+
 def select_annotations(annotations, window):
     """Select annotations that overlap with selected image crop.
 
@@ -66,18 +68,18 @@ def select_annotations(annotations, window):
     """
     # Get window coordinates
     window_xmin, window_ymin, w, h = window.getRect()
-    
+
     # Create a shapely box from the window
     window_box = geometry.box(window_xmin, window_ymin, window_xmin + w, window_ymin + h)
     selected_annotations = annotations[annotations.intersects(window_box)]
-        
+
     # cut off any annotations over the border
     original_area = selected_annotations.geometry.area
     clipped_annotations = gpd.clip(selected_annotations, window_box)
 
     if clipped_annotations.empty:
         return clipped_annotations
-    
+
     # For points, keep all annotations.
     if selected_annotations.iloc[0].geometry.geom_type == "Point":
         return selected_annotations
@@ -85,11 +87,13 @@ def select_annotations(annotations, window):
     else:
         # Only keep clipped boxes if they are more than 50% of the original size.
         clipped_area = clipped_annotations.geometry.area
-        clipped_annotations = clipped_annotations[(clipped_area/original_area) > 0.5]
-    
-    clipped_annotations.geometry = clipped_annotations.geometry.translate(xoff=-window_xmin, yoff=-window_ymin)
+        clipped_annotations = clipped_annotations[(clipped_area / original_area) > 0.5]
+
+    clipped_annotations.geometry = clipped_annotations.geometry.translate(
+        xoff=-window_xmin, yoff=-window_ymin)
 
     return clipped_annotations
+
 
 def save_crop(base_dir, image_name, index, crop):
     """Save window crop as an image file to be read by PIL.
@@ -247,11 +251,13 @@ def split_raster(annotations_file=None,
 
         # Find annotations, image_name is the basename of the path
         if annotations_file is not None:
-            crop_annotations = select_annotations(image_annotations, window = windows[index])
+            crop_annotations = select_annotations(image_annotations,
+                                                  window=windows[index])
             crop_annotations["image_path"] = "{}_{}.png".format(image_basename, index)
             if crop_annotations.empty:
                 if allow_empty:
-                    crop_annotations.loc[0, "image_path"] = "{}_{}.png".format(image_basename, index)
+                    crop_annotations.loc[0, "image_path"] = "{}_{}.png".format(
+                        image_basename, index)
                 else:
                     continue
             annotations_files.append(crop_annotations)
@@ -260,7 +266,7 @@ def split_raster(annotations_file=None,
         if allow_empty or crop_annotations is not None:
             crop_filename = save_crop(save_dir, image_name, index, crop)
             crop_filenames.append(crop_filename)
-    
+
     if annotations_file is None:
         return crop_filenames
     elif len(annotations_files) == 0:
