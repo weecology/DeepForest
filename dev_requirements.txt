@@ -8,10 +8,10 @@ docutils<0.18
 furo
 geopandas
 h5py
-imagecodecs
 matplotlib
 nbmake
 nbsphinx
+nbqa
 numpy
 numpydoc
 opencv-python>=4.5.4
@@ -20,6 +20,7 @@ pillow>6.2.0
 pip
 psutil
 pycocotools
+Pygments
 pytest
 pytest-profiling
 pytorch-lightning>=1.5.8
