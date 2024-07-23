@@ -442,7 +442,7 @@ def read_file(input, root_dir=None):
         elif input.endswith((".shp", ".gpkg")):
             df = shapefile_to_annotations(input, root_dir=root_dir)
         elif input.endswith(".xml"):
-            df = xml_to_annotations(input)
+            df = read_pascal_voc(input)
         else:
             raise ValueError(
                 "File type {} not supported. DeepForest currently supports .csv, .shp or .xml files. See https://deepforest.readthedocs.io/en/latest/annotation.html "

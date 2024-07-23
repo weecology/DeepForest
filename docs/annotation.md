@@ -1,5 +1,5 @@
 # Annotation
-Annotation is likely the most important part of machine learning projects. Fancy models are nice, but data is always paramount. If you aren't happy with model performance, annotating new samples is always the best first idea.
+Annotation is likely the most important part of machine learning projects. Fancy models are nice, but data are always paramount. If you aren't happy with model performance, annotating new samples is the best idea.
 
 ## How should I annotate images?
 For quick annotations of a few images, we recommend using QGIS or ArcGIS. Either as project or unprojected data. Create a shapefile for each image.
@@ -14,47 +14,6 @@ For longer term projects, we recommend [label-studio](https://labelstud.io/) as 
 
 ## Do I need annotate all objects in my image?
 Yes! Object detection models use the non-annotated areas of an image as negative data. We know that it can be exceptionally hard to annotate all trees in an image, or determine the classes of all birds in an image. However, if you have objects in the image that are not annotated, the model is learning *to ignore* those portion of the image. This can severely affect model performance.
-
-## Annotation geometries
-
-DeepForest was originally designed for bounding box annotations. As of DeepForest 1.4.0, Point and Polygon annotation are also supported. There are two ways to format annotations, depending on what kind of annotation platform you were using.
-
-### Box CSV file format
-
-### Point CSV file format
-
-### Polygon CSV file format
-
-Since we cannot anticipate the number of vertexes in a polygon, we use Well-Known-Text (wkt) format.
- 
-## Can I annotate points instead of bounding boxes?
-Yes. This makes more sense for the bird detection task, as trees tend to vary widely in size. Often, birds will be a standard size compared to the image resolution.
-
-If you would like to train a model, here is a quick video on a simple way to annotate images.
-
-<div style="position: relative; padding-bottom: 62.5%; height: 0;"><iframe src="https://www.loom.com/embed/e1639d36b6ef4118a31b7b892344ba83" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe></div>
-
-Using a shapefile, we could turn it into a dataframe of bounding box annotations by converting the points into boxes. If you already have boxes, you can exclude convert_to_boxes and buffer_size.
-
-```python
-df = shapefile_to_annotations(
-    shapefile="annotations.shp", 
-    rgb="image_path", convert_to_boxes=True, buffer_size=0.15
-)
-```
-
-Optionally, we can split these annotations into crops if the image is large and will not fit into memory. This is often the case.
-```python
-df.to_csv("full_annotations.csv",index=False)
-annotations = preprocess.split_raster(
-    path_to_raster=image_path,
-    annotations_file="full_annotations.csv",
-    patch_size=450,
-    patch_overlap=0,
-    base_dir=directory_to_save_crops,
-    allow_empty=False
-)
-```
 
 ## Cutting large tiles into pieces
 

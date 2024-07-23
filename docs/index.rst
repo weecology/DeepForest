@@ -44,6 +44,7 @@ Get suggestions on how to improve a model by using the [discussion board](https:
    installation
    prebuilt
    getting_started
+   ConfigurationFile
    annotation
    training
    Evaluation
@@ -51,12 +52,11 @@ Get suggestions on how to improve a model by using the [discussion board](https:
    visualizations
    Model_Architecture
    CropModel
-   ConfigurationFile
-   deepforestr
    FAQ
    better
    scaling
    ExtendingModule
+   deepforestr
    code_of_conduct.rst
    history.rst
    source/deepforest

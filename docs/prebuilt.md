@@ -1,4 +1,3 @@
-(prebuilt_models)=
 # Prebuilt models
 
 At the moment, DeepForest has two prebuilt models: Bird Detection and Tree Crown Detection.

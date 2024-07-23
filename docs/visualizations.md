@@ -1,11 +1,24 @@
 
 # Visualization
 
-## Description
+Simple visualization can be done during inference and saved. These are intended as quick ways of looking at data and lack the customized options below.
+
+```
+The color and line thickness of boxes can be customized using the `color` and `thickness` arguments.
+`color` is the color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255).
+`thickness` is the thickness of the rectangle border line in pixels.
+
+```python
+image_path = get_data("OSBS_029.png")
+boxes = model.predict_image(path=image_path, return_plot = True, color=(0, 165, 255), thickness=3)
+```
+
+
+## More advanced visualizations
 
 The `convert_to_sv_format` function converts DeepForest prediction results into a `supervision.Detections` object. This object contains bounding boxes, class IDs, confidence scores, and class names. It is designed to facilitate the visualization and further processing of object detection results using [supervision](https://supervision.roboflow.com/latest/) library.
 
-## Arguments
+### Arguments
 
 - `df (pd.DataFrame)`: The DataFrame containing the results from `predict_image` or `predict_tile`. The DataFrame is expected to have the following columns:
   - `xmin`: The minimum x-coordinate of the bounding box.
@@ -16,15 +29,13 @@ The `convert_to_sv_format` function converts DeepForest prediction results into 
   - `score`: The confidence score of the detection.
   - `image_path`: The path to the image (optional, not used in this function).
 
-## Returns
+### Returns
 
 - `sv.Detections`: A `supervision.Detections` object containing:
   - `xyxy (ndarray)`: A 2D numpy array of shape (_, 4) with bounding box coordinates.
   - `class_id (ndarray)`: A numpy array of integer class IDs.
   - `confidence (ndarray)`: A numpy array of confidence scores.
   - `data (Dict[str, List[str]])`: A dictionary containing additional data, including class names.
-
-## Usage Example
 
 ### Example 1: Converting Prediction Results and Annotating an Image
 
