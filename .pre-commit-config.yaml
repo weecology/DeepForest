@@ -9,3 +9,14 @@ repos:
     types: [python]
     pass_filenames: false
     stages: [commit]
+-   repo: local
+    hooks:
+    -   id: docformatter
+        name: docformatter
+        entry: docformatter
+        language: python
+        types: [python]
+        args: ['--in-place', '--recursive','deepforest/']
+        pass_filenames: false
+        stages: [commit]
+

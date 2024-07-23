@@ -12,9 +12,11 @@
 build/
 current_bird_release.csv
 current_release.csv
-docs/_build
+docs/_build/
 env/
 lightning_logs/*
 public/
 tests/__pycache__
 tests/data/*
+.vscode/
+

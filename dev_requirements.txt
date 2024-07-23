@@ -3,14 +3,15 @@ aiolimiter
 aiohttp
 bumpversion
 comet_ml
+docformatter
 docutils<0.18
 furo
 geopandas
 h5py
-imagecodecs
 matplotlib
 nbmake
 nbsphinx
+nbqa
 numpy
 numpydoc
 opencv-python>=4.5.4
@@ -20,6 +21,7 @@ pip
 pre-commit
 psutil
 pycocotools
+Pygments
 pytest
 pytest-profiling
 pytorch-lightning>=1.5.8

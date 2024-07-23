@@ -52,10 +52,16 @@ jobs:
 
       - name: Check style
         run: yapf -d --recursive deepforest/ --style=.style.yapf
+        
+      - name: Check notebook style 
+        run: nbqa yapf --in-place docs/examples/*.ipynb --style=.style.yapf
           
       - name: Check notebook build
         run: pytest --nbmake docs/*.ipynb
-
+      
+      - name: Run docformatter
+        run: docformatter --check --recursive deepforest/
+        
       - name: Test Docs
         run: |
           cd docs && make clean && make html SPHINXOPTS="-W"

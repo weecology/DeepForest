@@ -1,7 +1,6 @@
-"""
- A deepforest callback
- Callbacks must have the following methods on_epoch_begin, on_epoch_end, on_fit_end, on_fit_begin methods and inject model and epoch kwargs.
-"""
+"""A deepforest callback Callbacks must have the following methods
+on_epoch_begin, on_epoch_end, on_fit_end, on_fit_begin methods and inject model
+and epoch kwargs."""
 
 from deepforest import visualize
 from matplotlib import pyplot as plt
@@ -19,7 +18,8 @@ import torch
 
 
 class images_callback(Callback):
-    """Run evaluation on a file of annotations during training
+    """Run evaluation on a file of annotations during training.
+
     Args:
         savedir: optional, directory to save predicted images
         probability_threshold: minimum probablity for inclusion, see deepforest.evaluate
@@ -28,9 +28,10 @@ class images_callback(Callback):
         every_n_epochs: run epoch interval
         color: color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255)
         thickness: thickness of the rectangle border line in px
+
     Returns:
         None: either prints validation scores or logs them to the pytorch-lightning logger
-        """
+    """
 
     def __init__(self,
                  savedir,
