@@ -24,7 +24,7 @@ raster = get_data("2019_YELL_2_528000_4978000_image_crop2.png")
 
 output_crops = preprocess.split_raster(path_to_raster=raster,
                                         annotations_file=None,
-                                        base_dir=tmpdir,
+                                        save_dir=tmpdir,
                                         patch_size=500,
                                         patch_overlap=0)
 
