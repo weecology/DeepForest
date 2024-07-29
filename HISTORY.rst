@@ -4,6 +4,7 @@ DeepForest Change Log
 
 **1.3.5**
 
+Add Support for multiple annotation types (point, box, polygon).
 Create a utilities.download_ArcGIS_REST function to download tiles from ArcGIS REST API. For example to download NAIP imagery.
 
 **1.3.3**
