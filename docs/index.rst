@@ -37,13 +37,14 @@ Get suggestions on how to improve a model by using the [discussion board](https:
 `Source code`_ is available on GitHub.
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
    :caption: Contents:
 
    landing
    installation
    prebuilt
    getting_started
+   ConfigurationFile
    annotation
    training
    Evaluation
@@ -51,12 +52,11 @@ Get suggestions on how to improve a model by using the [discussion board](https:
    visualizations
    Model_Architecture
    CropModel
-   ConfigurationFile
-   deepforestr
    FAQ
    better
    scaling
    ExtendingModule
+   deepforestr
    code_of_conduct.rst
    history.rst
    source/deepforest
@@ -65,6 +65,7 @@ Get suggestions on how to improve a model by using the [discussion board](https:
    use
    CONTRIBUTING.md
    sample
+   examples/Australia
    examples/nest_detection
 
 

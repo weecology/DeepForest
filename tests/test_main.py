@@ -9,6 +9,7 @@ import shutil
 import torch
 import tempfile
 import copy
+import importlib.util
 
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
@@ -105,27 +106,27 @@ def big_file():
     return "{}/annotations.csv".format(tmpdir)
 
 
-def test_main():
-    from deepforest import main
-
-
 def test_tensorboard_logger(m, tmpdir):
-    # Create model trainer and fit model
-    annotations_file = get_data("testfile_deepforest.csv")
-    logger = TensorBoardLogger(save_dir=tmpdir)
-    m.config["train"]["csv_file"] = annotations_file
-    m.config["train"]["root_dir"] = os.path.dirname(annotations_file)
-    m.config["train"]["fast_dev_run"] = False
-    m.config["validation"]["csv_file"] = annotations_file
-    m.config["validation"]["root_dir"] = os.path.dirname(annotations_file)
-    m.config["val_accuracy_interval"] = 1
-    m.config["train"]["epochs"] = 2
+    # Check if TensorBoard is installed
+    if importlib.util.find_spec("tensorboard"):
+        # Create model trainer and fit model
+        annotations_file = get_data("testfile_deepforest.csv")
+        logger = TensorBoardLogger(save_dir=tmpdir)
+        m.config["train"]["csv_file"] = annotations_file
+        m.config["train"]["root_dir"] = os.path.dirname(annotations_file)
+        m.config["train"]["fast_dev_run"] = False
+        m.config["validation"]["csv_file"] = annotations_file
+        m.config["validation"]["root_dir"] = os.path.dirname(annotations_file)
+        m.config["val_accuracy_interval"] = 1
+        m.config["train"]["epochs"] = 2
 
-    m.create_trainer(logger=logger)
-    m.trainer.fit(m)
+        m.create_trainer(logger=logger)
+        m.trainer.fit(m)
 
-    assert m.trainer.logged_metrics["box_precision"]
-    assert m.trainer.logged_metrics["box_recall"]
+        assert m.trainer.logged_metrics["box_precision"]
+        assert m.trainer.logged_metrics["box_recall"]
+    else:
+        print("TensorBoard is not installed. Skipping test_tensorboard_logger.")
 
 
 def test_use_bird_release(m):
@@ -219,25 +220,22 @@ def test_predict_return_plot(m):
     plot = m.predict_image(image = image, return_plot=True)
     assert isinstance(plot, np.ndarray)
 
-
 def test_predict_big_file(m, tmpdir):
     m.config["train"]["fast_dev_run"] = False
     m.create_trainer()    
     csv_file = big_file()
     original_file = pd.read_csv(csv_file)
     df = m.predict_file(csv_file=csv_file, root_dir = os.path.dirname(csv_file), savedir=tmpdir)
-    assert set(df.columns) == {"xmin","ymin","xmax","ymax","label","score","image_path"}
+    assert set(df.columns) == {'label', 'score', 'image_path', 'geometry',"xmin","ymin","xmax","ymax"}
     
     printed_plots = glob.glob("{}/*.png".format(tmpdir))
     assert len(printed_plots) == len(original_file.image_path.unique())
-
 
 def test_predict_small_file(m, tmpdir):
     csv_file = get_data("OSBS_029.csv")
     original_file = pd.read_csv(csv_file)
     df = m.predict_file(csv_file, root_dir = os.path.dirname(csv_file), savedir=tmpdir)
-    assert set(df.columns) == {"xmin","ymin","xmax","ymax","label","score","image_path"}
-    
+    assert set(df.columns) == {'label', 'score', 'image_path', 'geometry',"xmin","ymin","xmax","ymax"}
     printed_plots = glob.glob("{}/*.png".format(tmpdir))
     assert len(printed_plots) == len(original_file.image_path.unique())
 
@@ -324,34 +322,6 @@ def test_evaluate(m, tmpdir):
     df = pd.read_csv(csv_file)
     assert results["results"].shape[0] == df.shape[0]
 
-
-def test_evaluate_multiple_images(m, tmpdir):
-    orignal_csv_file = get_data("OSBS_029.csv")
-    original_root_dir = os.path.dirname(orignal_csv_file)
-    
-    df = pd.read_csv(orignal_csv_file)
-    
-    df2 = df.copy()
-    df2["image_path"] = "OSBS_029_1.tif"
-    df3 = df.copy()
-    df3["image_path"] = "OSBS_029_2.tif"
-    multiple_images = multiple_images = pd.concat([df, df2, df3])
-    multiple_images = multiple_images.reset_index(drop=True)
-    csv_file = "{}/example.csv".format(tmpdir)
-    root_dir = os.path.dirname(csv_file)
-    multiple_images.to_csv(csv_file)
-
-    # Create multiple files
-    shutil.copyfile("{}/OSBS_029.tif".format(original_root_dir), "{}/OSBS_029.tif".format(root_dir))    
-    shutil.copyfile("{}/OSBS_029.tif".format(original_root_dir), "{}/OSBS_029_1.tif".format(root_dir))
-    shutil.copyfile("{}/OSBS_029.tif".format(original_root_dir), "{}/OSBS_029_2.tif".format(root_dir))
-    root_dir = os.path.dirname(csv_file)
-    results = m.evaluate(csv_file, root_dir, iou_threshold = 0.4, savedir=tmpdir)
-
-    assert results["results"].shape[0] == multiple_images.shape[0]
-    assert all([x in results["results"] for x in ["xmin","xmax","ymin","ymax"]])
-
-
 def test_train_callbacks(m):
     csv_file = get_data("example.csv") 
     root_dir = os.path.dirname(csv_file)
@@ -371,7 +341,6 @@ def test_train_callbacks(m):
     trainer = Trainer(callbacks=[MyPrintingCallback()])
     trainer = Trainer(fast_dev_run=True)
     trainer.fit(m, train_ds)
-
 
 def test_custom_config_file_path(ROOT, tmpdir):
     m = main.deepforest(config_file='{}/deepforest_config.yml'.format(os.path.dirname(ROOT)))

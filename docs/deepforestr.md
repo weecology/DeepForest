@@ -16,13 +16,8 @@ This will create a local Python installation that will only be used by R and ins
 If installing on Windows you need to [install RTools](https://cran.r-project.org/bin/windows/Rtools/) before installing the R package.
 
 ```R
-install.packages('reticulate') # Install R package for interacting with Python
-reticulate::install_miniconda() # Install Python
-reticulate::py_install(c('gdal', 'rasterio', 'fiona')) # Install spatial dependencies via conda
-reticulate::conda_remove('r-reticulate', packages = c('mkl')) # Remove package that causes conflicts on Windows (and maybe macOS)
-reticulate::py_install('DeepForest', pip=TRUE) # Install the Python retriever package
-devtools::install_github('weecology/deepforestr') # Install the R package for running the retriever
-install.packages('raster') # For visualizing output for rasters
+devtools::install_github('weecology/deepforestr') # Install the R package from GitHub
+deepforestr::install_deepforest() # Install Python & DeepForest; Takes ~3 minutes
 ```
 
 **After running these commands restart R.**
@@ -60,14 +55,23 @@ Alternatively you can select the Python environment through the `reticulate` pac
 
 ```R
 library(reticulate)
-use_conda('name_of_conda_environment')
+conda_create("name_of_environment")
+
+# install Python packages e.g SciPy, deepforest
+conda_install("name_of_environment", "scipy", "deepforest")
+use_condaenv('name_of_environment')
 ```
 
 or `virtualenv`:
 
 ```R
 library(reticulate)
-use_virtualenv("path_to_virtualenv_environment")
+# create a new environment
+virtualenv_create("name_of_environment")
+
+# install Python packages
+virtualenv_install("name_of_environment", "scipy", "deepforest")
+use_virtualenv("name_of_environment")
 ```
 
 You can check to see which Python environment is being used with:

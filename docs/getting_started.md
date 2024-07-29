@@ -28,7 +28,7 @@ plt.imshow(img[:,:,::-1])
 
 <div style="position: relative; padding-bottom: 62.5%; height: 0;"><iframe src="https://www.loom.com/embed/f80ed6e3c7bd48d4a20ae32167af3d8c" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe></div>
 
-For single images, ```predict_image``` can read an image from memory or file and return predicted tree bounding boxes.
+For single images, ```predict_image``` can read an image from memory or file and return predicted bounding boxes.
 
 ### Sample data
 
@@ -48,16 +48,17 @@ boxes = model.predict_image(path=image_path, return_plot = False)
 ```
 
 ```
-boxes.head()
-         xmin        ymin        xmax        ymax  label    scores
-0  334.708405  342.333954  375.941376  392.187531      0  0.736650
-1  295.990601  371.456604  331.521240  400.000000      0  0.714327
-2  216.828201  207.996216  245.123276  240.167023      0  0.691064
-3  276.206848  330.758636  303.309631  363.038422      0  0.690987
-4  328.604736   45.947182  361.095276   80.635254      0  0.638212
+>>> boxes
+     xmin   ymin   xmax   ymax label     score    image_path
+0   330.0  342.0  373.0  391.0  Tree  0.802979  OSBS_029.png
+1   216.0  206.0  248.0  242.0  Tree  0.778803  OSBS_029.png
+2   325.0   44.0  363.0   82.0  Tree  0.751573  OSBS_029.png
+3   261.0  238.0  296.0  276.0  Tree  0.748605  OSBS_029.png
+4   173.0    0.0  229.0   33.0  Tree  0.738210  OSBS_029.png
+5   258.0  198.0  291.0  230.0  Tree  0.716250  OSBS_029.png
+6    97.0  305.0  152.0  363.0  Tree  0.711664  OSBS_029.png
+7    52.0   72.0   85.0  108.0  Tree  0.698782  OSBS_029.png
 ```
-
-For the release model, there is only one category "Tree", which is numeric 0 label.
 
 ### Predict a tile
 
@@ -79,79 +80,4 @@ plt.show()
 
 We encourage users to try out a variety of patch sizes. For 0.1m data, 400-800px per window is appropriate, but it will depend on the density of tree plots. For coarser resolution tiles, >800px patch sizes have been effective, but we welcome feedback from users using a variety of spatial resolutions.
 
-### Predict a set of annotations
 
-During evaluation of ground truth data, it is useful to have a way to predict a set of images and combine them into a single data frame. The ```predict_generator``` method allows a user to point towards a file of annotations and returns the predictions for all images.
-
-Consider a headerless annotations.csv file in the following format
-
-```
-image_path, xmin, ymin, xmax, ymax, label
-```
-with each bounding box on a separate row. The image path is relative to the root dir. Its often easiest to just save the .csv file alongside the images.
-
-We can view predictions by supplying a save dir ("." = current directory). Predictions in green, annotations in black.
-
-```python
-import os
-
-csv_file = get_data("testfile_deepforest.csv")
-boxes = model.predict_file(csv_file=csv_file, root_dir = os.path.dirname(csv_file),savedir=".")
-```
-
-### Projecting predictions
-
-DeepForest operates on image data without any concept of geopgraphic projection. 
-Annotations and predictions are made in reference to the image coordinate system (0,0). It is often useful to transform this to geographic coordinates. [Rasterio](https://rasterio.readthedocs.io/en/latest/quickstart.html#dataset-georeferencing) provides us with helpful utilities to do this based on a projected image.
-
-For example, consider some sample data that comes with package. We can read in the image, get the transform and coordinate reference system (crs).
-
-```
-    img = get_data("OSBS_029.tif")
-    r = rasterio.open(img)
-    transform = r.transform 
-    crs = r.crs
-    print(crs)
-```
-
-```
-    CRS.from_epsg(32617)
-```
-
-We can predict tree crowns in the image and then convert them back into projected space
-
-```
-    m = main.deepforest()
-    m.use_release(check_release=False)
-    df = m.predict_image(path=img)
-    gdf = utilities.annotations_to_shapefile(df, transform=transform, crs=crs)
-```
-
-```
-    gdf.total_bounds
-    array([ 404211.95, 3285102.85,  404251.95, 3285142.85])
-    gdf.crs
-    <Projected CRS: EPSG:32617>
-    Name: WGS 84 / UTM zone 17N
-    Axis Info [cartesian]:
-    - [east]: Easting (metre)
-    - [north]: Northing (metre)
-    Area of Use:
-    - undefined
-    Coordinate Operation:
-    - name: UTM zone 17N
-    - method: Transverse Mercator
-    Datum: World Geodetic System 1984
-    - Ellipsoid: WGS 84
-    - Prime Meridian: Greenwich
-```
-### Customizing box appearance for predictions
-
-The color and line thickness of boxes can be customized using the `color` and `thickness` arguments.
-`color` is the color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255).
-`thickness` is the thickness of the rectangle border line in pixels.
-
-```python
-image_path = get_data("OSBS_029.png")
-boxes = model.predict_image(path=image_path, return_plot = True, color=(0, 165, 255), thickness=3)
-```

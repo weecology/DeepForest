@@ -13,7 +13,6 @@ dependencies:
   - nbsphinx
   - numpy
   - numpydoc
-  - opencv>=4.5.4
   - pandas
   - pillow>6.2.0
   - pip
