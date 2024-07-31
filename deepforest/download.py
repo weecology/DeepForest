@@ -89,15 +89,15 @@ async def download_ArcGIS_REST(semaphore,
                                additional_params=None,
                                image_name="image.tiff",
                                download_service="exportImage"):
-    """
-    Fetch data from a web server using geographic boundaries and save it as a GeoTIFF file.
-    This function is used to download data from an ArcGIS REST service, not WMTS or WMS services.
-    Example url: https://gis.calgary.ca/arcgis/rest/services/pub_Orthophotos/CurrentOrthophoto/ImageServer/
-    
+    """Fetch data from a web server using geographic boundaries and save it as
+    a GeoTIFF file. This function is used to download data from an ArcGIS REST
+    service, not WMTS or WMS services. Example url: https://gis.calgary.ca/arcg
+    is/rest/services/pub_Orthophotos/CurrentOrthophoto/ImageServer/
+
     Parameters:
     - semaphore: An asyncio.Semaphore instance to limit concurrent downloads.
     - limiter: An asyncio-based rate limiter to control the download rate.
-    - url: The base URL of the ArcGIS REST service 
+    - url: The base URL of the ArcGIS REST service
     - xmin: The minimum x-coordinate (longitude).
     - ymin: The minimum y-coordinate (latitude).
     - xmax: The maximum x-coordinate (longitude).
@@ -111,7 +111,7 @@ async def download_ArcGIS_REST(semaphore,
     Returns:
     - The file path of the saved image if the download is successful.
     - None if the download fails.
-    
+
     Function usage:
         import asyncio
         from asyncio import Semaphore
@@ -129,9 +129,8 @@ async def download_ArcGIS_REST(semaphore,
             await utilities.download_ArcGIS_REST(semaphore, limiter, url, xmin, ymin, xmax, ymax, bbox_crs, savedir, image_name=image_name)
 
         asyncio.run(main())
-        
+
     For more details on the function usage, refer to https://deepforest.readthedocs.io/en/latest/annotation.html.
- 
     """
 
     params = {"f": "json"}
@@ -196,40 +195,28 @@ async def download_TileMapServer(semaphore,
                                  save_image=True,
                                  save_dir=None,
                                  image_name='image.tiff'):
-    """
-    Download map tiles from a Tile Map Server (TMS) and optionally save them as a single image.
+    """Download map tiles from a Tile Map Server (TMS) and optionally save them
+    as a single image.
 
     This function uses a Tile Map Server to download individual map tiles, stitches them together,
     and optionally saves the resulting image as a GeoTIFF file. It supports concurrent downloads
     with rate limiting and semaphore control.
 
     Parameters:
-    - semaphore: asyncio.Semaphore
-        Semaphore to limit the number of concurrent downloads.
-    - limiter: aiolimiter.AsyncLimiter
-        Rate limiter to control the download rate.
-    - source: str
-        URL template for the Tile Map Server, with placeholders for zoom level (z), and tile coordinates (x, y).
-    - lat0: float
-        Latitude of the first point defining the bounding box.
-    - lon0: float
-        Longitude of the first point defining the bounding box.
-    - lat1: float
-        Latitude of the second point defining the bounding box.
-    - lon1: float
-        Longitude of the second point defining the bounding box.
-    - zoom: int
-        Zoom level for the map tiles.
-    - save_image: bool, optional
-        Whether to save the downloaded tiles as a single image. Default is True.
-    - save_dir: str, optional
-        Directory where the image will be saved. Required if save_image is True.
-    - image_name: str, optional
-        Name of the output image file. Default is 'image.tiff'.
+    - semaphore: Semaphore to limit the number of concurrent downloads.
+    - limiter: Rate limiter to control the download rate.
+    - source: URL template for the Tile Map Server, with placeholders for zoom level (z), and tile coordinates (x, y).
+    - lat0: Latitude of the first point defining the bounding box.
+    - lon0: Longitude of the first point defining the bounding box.
+    - lat1: Latitude of the second point defining the bounding box.
+    - lon1: Longitude of the second point defining the bounding box.
+    - zoom: Zoom level for the map tiles.
+    - save_image: Whether to save the downloaded tiles as a single image. Default is True.
+    - save_dir: Directory where the image will be saved. Required if save_image is True.
+    - image_name: Name of the output image file. Default is 'image.tiff'.
 
     Returns:
-    - retim: PIL.Image or None
-        The stitched image of map tiles, or None if save_image is False.
+    - retim: The stitched image of map tiles, or None if save_image is False.
 
     Raises:
     - Exception: If there is an error during the download process.
@@ -315,16 +302,16 @@ async def download_TileMapServer(semaphore,
 
 
 async def download_web_server(semaphore, limiter, url, *args, **kwargs):
-    """
-    Wrapper function to determine the appropriate download method based on the URL.
-    
+    """Wrapper function to determine the appropriate download method based on
+    the URL.
+
     Parameters:
     - semaphore: An asyncio.Semaphore instance to limit concurrent downloads.
     - limiter: An asyncio-based rate limiter to control the download rate.
     - url: The base URL of the web server to download data from.
     - *args: Additional positional arguments for the specific download function.
     - **kwargs: Additional keyword arguments for the specific download function.
-    
+
     Returns:
     - The result of the specific download function.
     """
