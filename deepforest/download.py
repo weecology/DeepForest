@@ -76,6 +76,7 @@ def paste_tile(bigim, base_size, tile, corner_xy, bbox):
     im.close()
     return newim
 
+
 async def download_ArcGIS_REST(semaphore,
                                limiter,
                                url,
@@ -183,7 +184,7 @@ async def download_ArcGIS_REST(semaphore,
             finally:
                 semaphore.release()
 
-# Taken from https://github.com/gumblex/tms2geotiff 
+
 async def download_TileMapServer(semaphore,
                                  limiter,
                                  source,
@@ -311,6 +312,7 @@ async def download_TileMapServer(semaphore,
                 print(f"Error: {e}")
             finally:
                 semaphore.release()
+
 
 async def download_web_server(semaphore, limiter, url, *args, **kwargs):
     """
