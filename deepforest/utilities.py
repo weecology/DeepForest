@@ -4,17 +4,13 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 import rasterio
-import requests
 import shapely
 import xmltodict
 import yaml
 from tqdm import tqdm
-import aiohttp
 
 from PIL import Image
 from deepforest import _ROOT
-from shapely.geometry import Point, box
-from pyproj import CRS
 import json
 import warnings
 import geopandas as gpd
@@ -22,9 +18,7 @@ import rasterio
 import shapely
 from tqdm import tqdm
 from deepforest import _ROOT
-from shapely.geometry import box
 import json
-import requests
 import urllib.request
 
 
@@ -843,111 +837,3 @@ def project_boxes(df, root_dir, transform=True):
         "This function is deprecated. Please use image_to_geo_coordinates instead.")
 
     return df
-
-
-async def download_ArcGIS_REST(semaphore,
-                               limiter,
-                               url,
-                               xmin,
-                               ymin,
-                               xmax,
-                               ymax,
-                               bbox_crs,
-                               savedir,
-                               additional_params=None,
-                               image_name="image.tiff",
-                               download_service="exportImage"):
-    """
-    Fetch data from a web server using geographic boundaries and save it as a GeoTIFF file.
-    This function is used to download data from an ArcGIS REST service, not WMTS or WMS services.
-    Example url: https://gis.calgary.ca/arcgis/rest/services/pub_Orthophotos/CurrentOrthophoto/ImageServer/
-    
-    Parameters:
-    - semaphore: An asyncio.Semaphore instance to limit concurrent downloads.
-    - limiter: An asyncio-based rate limiter to control the download rate.
-    - url: The base URL of the ArcGIS REST service 
-    - xmin: The minimum x-coordinate (longitude).
-    - ymin: The minimum y-coordinate (latitude).
-    - xmax: The maximum x-coordinate (longitude).
-    - ymax: The maximum y-coordinate (latitude).
-    - bbox_crs: The coordinate reference system (CRS) of the bounding box.
-    - savedir: The directory to save the downloaded image.
-    - additional_params: Additional query parameters to include in the request (default is None).
-    - image_name: The name of the image file to be saved (default is "image.tiff").
-    - download_service: The specific service to use for downloading the image (default is "exportImage").
-
-    Returns:
-    - The file path of the saved image if the download is successful.
-    - None if the download fails.
-    
-    Function usage:
-        import asyncio
-        from asyncio import Semaphore
-        from aiolimiter import AsyncLimiter
-        from deepforest import utilities
-
-        async def main():
-            semaphore = Semaphore(10)
-            limiter = AsyncLimiter(1, 0.5)
-            url = "https://map.dfg.ca.gov/arcgis/rest/services/Base_Remote_Sensing/NAIP_2020_CIR/ImageServer/
-            xmin, ymin, xmax, ymax = -114.0719, 51.0447, -114.001, 51.075
-            bbox_crs = "EPSG:4326"
-            savedir = "/path/to/save"
-            image_name = "example_image.tiff"
-            await utilities.download_ArcGIS_REST(semaphore, limiter, url, xmin, ymin, xmax, ymax, bbox_crs, savedir, image_name=image_name)
-
-        asyncio.run(main())
-        
-    For more details on the function usage, refer to https://deepforest.readthedocs.io/en/latest/annotation.html.
- 
-    """
-
-    params = {"f": "json"}
-
-    async with aiohttp.ClientSession() as session:
-        await semaphore.acquire()
-        async with limiter:
-            try:
-                async with session.get(url, params=params) as resp:
-                    response = await resp.read()
-                    response_dict = json.loads(response)
-                    spatialReference = response_dict["spatialReference"]
-                    if "latestWkid" in spatialReference:
-                        wkid = spatialReference["latestWkid"]
-                        crs = CRS.from_epsg(wkid)
-                    elif 'wkt' in spatialReference:
-                        crs = CRS.from_wkt(spatialReference['wkt'])
-
-                bbox = f"{xmin},{ymin},{xmax},{ymax}"
-                bounds = gpd.GeoDataFrame(geometry=[
-                    shapely.geometry.box(xmin, ymin, xmax, ymax)
-                ],
-                                          crs=bbox_crs).to_crs(crs).bounds
-
-                params.update({
-                    "bbox":
-                        f"{bounds.minx[0]},{bounds.miny[0]},{bounds.maxx[0]},{bounds.maxy[0]}",
-                    "f":
-                        "image",
-                    'format':
-                        'tiff',
-                })
-
-                if additional_params:
-                    params.update(additional_params)
-
-                download_url_service = f"{url}/{download_service}"
-                async with session.get(download_url_service, params=params) as resp:
-                    response = await resp.read()
-                    if resp.status == 200:
-                        filename = f"{savedir}/{image_name}"
-                        with open(filename, "wb") as f:
-                            f.write(response)
-                        return filename
-                    else:
-                        raise Exception(f"Failed to fetch data: {resp.status}")
-
-            except Exception as e:
-                print(f"Error downloading image {image_name}: {e}")
-            finally:
-                semaphore.release()

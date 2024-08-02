@@ -8,7 +8,6 @@ from rasterio.plot import show
 from rasterio import warp
 from shapely import geometry
 import geopandas as gpd
-from matplotlib import pyplot as plt
 
 from deepforest import get_data
 from deepforest import utilities, visualize
@@ -17,13 +16,7 @@ from deepforest import main
 
 #import general model fixture
 from .conftest import download_release
-import requests
 import pytest
-import matplotlib.pyplot as plt
-import cv2
-import asyncio
-from aiolimiter import AsyncLimiter
-
 
 from PIL import Image
 
@@ -442,57 +435,3 @@ def test_boxes_to_shapefile_projected(m):
     #Edge case, only one row in predictions
     gdf = utilities.boxes_to_shapefile(df.iloc[:1,], root_dir=os.path.dirname(img), projected=True)
     assert gdf.shape[0] == 1
-    
-def url():
-    return [
-        "https://map.dfg.ca.gov/arcgis/rest/services/Base_Remote_Sensing/NAIP_2020_CIR/ImageServer/",
-        "https://gis.calgary.ca/arcgis/rest/services/pub_Orthophotos/CurrentOrthophoto/ImageServer/",
-        "https://orthos.its.ny.gov/arcgis/rest/services/wms/Latest/MapServer"
-    ]
-
-def boxes():
-    return [
-        (-124.112622, 40.493891, -124.111536, 40.49457),
-        (-114.12529, 51.072134, -114.12117, 51.07332),
-        (-73.763941, 41.111032, -73.763447, 41.111626)
-    ]
-
-def additional_params():
-    return [
-        None,
-        None,
-        {"format":"png"}
-    ]
-
-def download_service():
-    return [
-        "exportImage",
-        "exportImage",
-        "export"
-    ]
-
-# Pair each URL with its corresponding box
-url_box_pairs = list(zip(["CA.tif","MA.tif","NY.png"],url(), boxes(), additional_params(), download_service()))
-@pytest.mark.parametrize("image_name, url, box, params, download_service_name", url_box_pairs)
-def test_download_ArcGIS_REST(tmpdir, image_name, url, box, params, download_service_name):
-    async def run_test():
-        semaphore = asyncio.Semaphore(20)
-        limiter = AsyncLimiter(1,0.05)
-        xmin, ymin, xmax, ymax = box
-        bbox_crs = "EPSG:4326"  # Assuming WGS84 for bounding box CRS
-        savedir = tmpdir
-        filename = await utilities.download_ArcGIS_REST(semaphore, limiter, url, xmin, ymin, xmax, ymax, bbox_crs, savedir, additional_params=params, image_name=image_name, download_service=download_service_name)
-        
-        # Check the saved file
-        assert os.path.exists(filename)
-        
-        # Confirm file has CRS
-        with rio.open(filename) as src:
-            if image_name.endswith('.tif'):
-                assert src.crs is not None
-                plt.imshow(src.read().transpose(1, 2, 0))
-            else:
-                assert src.crs is None
-                plt.imshow(cv2.imread(filename)[:, :, ::-1])
-    
-    asyncio.run(run_test())
