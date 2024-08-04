@@ -71,7 +71,7 @@ class Model():
 
 
 def simple_resnet_50(num_classes=2):
-    m = models.resnet50(pretrained=True)
+    m = models.resnet50(weights=models.ResNet50_Weights.DEFAULT)
     num_ftrs = m.fc.in_features
     m.fc = torch.nn.Linear(num_ftrs, num_classes)
 
