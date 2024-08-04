@@ -377,7 +377,7 @@ def test_save_and_reload_weights(m, tmpdir):
 
     # reload the checkpoint to model object
     after = main.deepforest()
-    after.model.load_state_dict(torch.load("{}/checkpoint.pt".format(tmpdir)))
+    after.model.load_state_dict(torch.load("{}/checkpoint.pt".format(tmpdir), weights_only=True))
     pred_after_reload = after.predict_image(path=img_path)
 
     assert not pred_after_train.empty

@@ -135,7 +135,7 @@ class deepforest(pl.LightningModule):
                 .format(self.config["architecture"]))
             self.config["architecture"] = "retinanet"
             self.create_model()
-        self.model.load_state_dict(torch.load(self.release_state_dict))
+        self.model.load_state_dict(torch.load(self.release_state_dict, weights_only=True))
 
         # load saved model and tag release
         self.__release_version__ = release_tag
@@ -153,7 +153,7 @@ class deepforest(pl.LightningModule):
         # Download latest model from github release
         release_tag, self.release_state_dict = utilities.use_bird_release(
             check_release=check_release)
-        self.model.load_state_dict(torch.load(self.release_state_dict))
+        self.model.load_state_dict(torch.load(self.release_state_dict, weights_only=True))
 
         # load saved model and tag release
         self.__release_version__ = release_tag
