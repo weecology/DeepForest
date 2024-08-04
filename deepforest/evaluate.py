@@ -5,19 +5,21 @@ import shapely
 import numpy as np
 import cv2
 from PIL import Image
-
-from deepforest import IoU
-from deepforest.utilities import check_file
-from deepforest import visualize
 import warnings
 
+from deepforest import IoU
+from deepforest import visualize
+from deepforest.utilities import determine_geometry_type
 
-def evaluate_image(predictions, ground_df, root_dir, savedir=None):
+
+def evaluate_image_boxes(predictions, ground_df, root_dir, savedir=None):
     """Compute intersection-over-union matching among prediction and ground
     truth boxes for one image.
 
     Args:
-        df: a pandas dataframe with columns name, xmin, xmax, ymin, ymax, label. The 'name' column should be the path relative to the location of the file.
+        df: a geopandas dataframe with geometry columns
+        predictions: a geopandas dataframe with geometry columns
+        ground_df: a geopandas dataframe with geometry columns
         summarize: Whether to group statistics by plot and overall score
         image_coordinates: Whether the current boxes are in coordinate system of the image, e.g. origin (0,0) upper left.
         root_dir: Where to search for image names in df
@@ -31,14 +33,6 @@ def evaluate_image(predictions, ground_df, root_dir, savedir=None):
         raise ValueError("More than one plot passed to image crown: {}".format(plot_name))
     else:
         plot_name = plot_names[0]
-
-    predictions['geometry'] = predictions.apply(
-        lambda x: shapely.geometry.box(x.xmin, x.ymin, x.xmax, x.ymax), axis=1)
-    predictions = gpd.GeoDataFrame(predictions, geometry='geometry')
-
-    ground_df['geometry'] = ground_df.apply(
-        lambda x: shapely.geometry.box(x.xmin, x.ymin, x.xmax, x.ymax), axis=1)
-    ground_df = gpd.GeoDataFrame(ground_df, geometry='geometry')
 
     # match
     result = IoU.compute_IoU(ground_df, predictions)
@@ -101,25 +95,45 @@ def __evaluate_wrapper__(predictions,
                          iou_threshold,
                          numeric_to_label_dict,
                          savedir=None):
-    """Evaluate a set of predictions against a ground truth csv file.
-
-    Args:
-        predictions: a pandas dataframe, if supplied a root dir is needed to give the relative path of files in df.name. The labels in ground truth and predictions must match. If one is numeric, the other must be numeric.
-        csv_file: a csv file with columns xmin, ymin, xmax, ymax, label, image_path
-        root_dir: location of files in the dataframe 'name' column.
-        iou_threshold: intersection-over-union threshold, see deepforest.evaluate
-        savedir: optional directory to save image with overlaid predictions and annotations
-    Returns:
-        results: a dictionary of results with keys, results, box_recall, box_precision, class_recall
-    """
+    """Evaluate a set of predictions against a ground truth csv file
+        Args:   
+            predictions: a pandas dataframe, if supplied a root dir is needed to give the relative path of files in df.name. The labels in ground truth and predictions must match. If one is numeric, the other must be numeric.
+            root_dir: location of files in the dataframe 'name' column.
+            iou_threshold: intersection-over-union threshold, see deepforest.evaluate
+            savedir: optional directory to save image with overlaid predictions and annotations
+        Returns:
+            results: a dictionary of results with keys, results, box_recall, box_precision, class_recall
+        """
     # remove empty samples from ground truth
     ground_df = ground_df[~((ground_df.xmin == 0) & (ground_df.xmax == 0))]
 
-    results = evaluate(predictions=predictions,
-                       ground_df=ground_df,
-                       root_dir=root_dir,
-                       iou_threshold=iou_threshold,
-                       savedir=savedir)
+    # Default results for blank predictions
+    if predictions.empty:
+        results = {
+            "results": None,
+            "box_recall": 0,
+            "box_precision": np.nan,
+            "class_recall": None
+        }
+        return results
+
+    # Convert pandas to geopandas if needed
+    if not isinstance(predictions, gpd.GeoDataFrame):
+        warnings.warn("Converting predictions to GeoDataFrame using geometry column")
+        predictions = gpd.GeoDataFrame(predictions, geometry="geometry")
+
+    prediction_geometry = determine_geometry_type(predictions)
+    if prediction_geometry == "point":
+        raise NotImplementedError("Point evaluation is not yet implemented")
+    elif prediction_geometry == "box":
+        results = evaluate_boxes(predictions=predictions,
+                                 ground_df=ground_df,
+                                 root_dir=root_dir,
+                                 iou_threshold=iou_threshold,
+                                 savedir=savedir)
+    else:
+        raise NotImplementedError(
+            "Geometry type {} not implemented".format(prediction_geometry))
 
     # replace classes if not NUll
     if not results is None:
@@ -135,7 +149,7 @@ def __evaluate_wrapper__(predictions,
     return results
 
 
-def evaluate(predictions, ground_df, root_dir, iou_threshold=0.4, savedir=None):
+def evaluate_boxes(predictions, ground_df, root_dir, iou_threshold=0.4, savedir=None):
     """Image annotated crown evaluation routine submission can be submitted as
     a .shp, existing pandas dataframe or .csv path.
 
@@ -151,10 +165,6 @@ def evaluate(predictions, ground_df, root_dir, iou_threshold=0.4, savedir=None):
         box_precision: proportion of predictions that are true positive, regardless of class
         class_recall: a pandas dataframe of class level recall and precision with class sizes
     """
-
-    check_file(ground_df)
-    check_file(predictions)
-
     # Run evaluation on all plots
     results = []
     box_recalls = []
@@ -181,10 +191,10 @@ def evaluate(predictions, ground_df, root_dir, iou_threshold=0.4, savedir=None):
             continue
         else:
             group = group.reset_index(drop=True)
-            result = evaluate_image(predictions=image_predictions,
-                                    ground_df=group,
-                                    root_dir=root_dir,
-                                    savedir=savedir)
+            result = evaluate_image_boxes(predictions=image_predictions,
+                                          ground_df=group,
+                                          root_dir=root_dir,
+                                          savedir=savedir)
 
         result["image_path"] = image_path
         result["match"] = result.IoU > iou_threshold
@@ -254,7 +264,9 @@ def _point_recall_image_(predictions, ground_df, root_dir=None, savedir=None):
             raise AttributeError("savedir is {}, but root dir is None".format(savedir))
         image = np.array(Image.open("{}/{}".format(root_dir, plot_name)))[:, :, ::-1]
         image = visualize.plot_predictions(image, df=predictions)
-        image = visualize.plot_points(image, df=ground_df, color=(0, 165, 255))
+        image = visualize.plot_points(image,
+                                      points=ground_df[["x", "y"]].values,
+                                      color=(0, 165, 255))
         cv2.imwrite("{}/{}".format(savedir, plot_name), image)
 
     return result
@@ -276,7 +288,6 @@ def point_recall(predictions, ground_df, root_dir=None, savedir=None):
         box_recall: proportion of true positives between predicted boxes and ground truth points, regardless of class
         class_recall: a pandas dataframe of class level recall and precision with class sizes
     """
-    check_file(predictions)
     if savedir:
         if root_dir is None:
             raise AttributeError("savedir is {}, but root dir is None".format(savedir))

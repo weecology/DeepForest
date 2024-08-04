@@ -9,6 +9,8 @@ import cv2
 import random
 import warnings
 import supervision as sv
+import shapely
+from deepforest.utilities import determine_geometry_type
 
 
 def view_dataset(ds, savedir=None, color=None, thickness=1):
@@ -33,6 +35,29 @@ def view_dataset(ds, savedir=None, color=None, thickness=1):
         cv2.waitKey(0)
 
 
+def format_geometry(predictions, scores=True):
+    """Format a retinanet prediction into a pandas dataframe for a batch of images
+    Args:
+        predictions: a list of dictionaries with keys 'boxes' and 'labels' coming from a retinanet
+        scores: Whether boxes come with scores, during prediction, or without scores, as in during training.
+    Returns:
+        df: a pandas dataframe
+    """
+    # Detect geometry type
+    geom_type = determine_geometry_type(predictions)
+
+    if geom_type == "box":
+        df = format_boxes(predictions, scores=scores)
+        df['geometry'] = df.apply(
+            lambda x: shapely.geometry.box(x.xmin, x.ymin, x.xmax, x.ymax), axis=1)
+    elif geom_type == "polygon":
+        raise ValueError("Polygon predictions are not yet supported for formatting")
+    elif geom_type == "point":
+        raise ValueError("Point predictions are not yet supported for formatting")
+
+    return df
+
+
 def format_boxes(prediction, scores=True):
     """Format a retinanet prediction into a pandas dataframe for a single
     image.
@@ -43,7 +68,6 @@ def format_boxes(prediction, scores=True):
     Returns:
         df: a pandas dataframe
     """
-
     df = pd.DataFrame(prediction["boxes"].cpu().detach().numpy(),
                       columns=["xmin", "ymin", "xmax", "ymax"])
     df["label"] = prediction["labels"].cpu().detach().numpy()
@@ -109,6 +133,36 @@ def plot_prediction_dataframe(df,
     return written_figures
 
 
+def plot_points(image, points, color=None, radius=5, thickness=1):
+    """Plot points on an image
+    Args:
+        image: a numpy array in *BGR* color order! Channel order is channels first 
+        points: a numpy array of shape (N, 2) representing the coordinates of the points
+        color: color of the points as a tuple of BGR color, e.g. orange points is (0, 165, 255)
+        radius: radius of the points in px
+        thickness: thickness of the point border line in px
+    Returns:
+        image: a numpy array with drawn points
+    """
+    if image.shape[0] == 3:
+        warnings.warn("Input images must be channels last format [h, w, 3] not channels "
+                      "first [3, h, w], using np.rollaxis(image, 0, 3) to invert!")
+        image = np.rollaxis(image, 0, 3)
+    if image.dtype == "float32":
+        image = image.astype("uint8")
+    image = image.copy()
+    if not color:
+        color = (0, 165, 255)  # Default color is orange
+
+    for point in points:
+        cv2.circle(image, (int(point[0]), int(point[1])),
+                   color=color,
+                   radius=radius,
+                   thickness=thickness)
+
+    return image
+
+
 def plot_predictions(image, df, color=None, thickness=1):
     """Plot a set of boxes on an image By default this function does not show,
     but only plots an axis Label column must be numeric! Image must be BGR
@@ -138,50 +192,39 @@ def plot_predictions(image, df, color=None, thickness=1):
     for index, row in df.iterrows():
         if not color:
             color = label_to_color(row["label"])
-        cv2.rectangle(image, (int(row["xmin"]), int(row["ymin"])),
-                      (int(row["xmax"]), int(row["ymax"])),
-                      color=color,
-                      thickness=thickness,
-                      lineType=cv2.LINE_AA)
 
-    return image
-
-
-def plot_points(image, df, color=None, thickness=1):
-    """Plot a set of points on an image.
-
-    By default this function does not show, but only plots an axis
-    Label column must be numeric!
-    Image must be BGR color order!
-
-    Args:
-        image: a numpy array in *BGR* color order! Channel order is channels first
-        df: a pandas dataframe with x,y and label column
-        color: color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255)
-        thickness: thickness of the rectangle border line in px
-    Returns:
-        image: a numpy array with drawn annotations
-    """
-    if image.shape[0] == 3:
-        warnings.warn("Input images must be channels last format [h, w, 3] not channels "
-                      "first [3, h, w], using np.rollaxis(image, 0, 3) to invert!")
-        image = np.rollaxis(image, 0, 3)
-    if image.dtype == "float32":
-        image = image.astype("uint8")
-    image = image.copy()
-    if not color:
-        if not ptypes.is_numeric_dtype(df.label):
-            warnings.warn("No color was provided and the label column is not numeric. "
-                          "Using a single default color.")
-            color = (255, 255, 255)
-
-    for index, row in df.iterrows():
-        if not color:
-            color = label_to_color(row["label"])
-        cv2.circle(image, (row["x"], row["y"]),
-                   color=color,
-                   radius=5,
-                   thickness=thickness)
+        # Plot rectangle, points or polygon
+        if "geometry" in df.columns:
+            # Get geometry type
+            geometry_type = row["geometry"].geom_type
+            if geometry_type == "Polygon":
+                # convert to int32 and numpy array
+                int_coords = lambda x: np.array(x).round().astype(np.int32)
+                polygon = [int_coords(row["geometry"].exterior.coords)]
+                cv2.polylines(image, polygon, True, color, thickness=thickness)
+            elif geometry_type == "Point":
+                int_coords = lambda x: np.array(x).round().astype(np.int32)
+                cv2.circle(image,
+                           (int_coords(row["geometry"].x), int_coords(row["geometry"].y)),
+                           color=color,
+                           radius=5,
+                           thickness=thickness)
+            else:
+                raise ValueError("Only polygons and points are supported")
+        elif "xmin" in df.columns:
+            cv2.rectangle(image, (int(row["xmin"]), int(row["ymin"])),
+                          (int(row["xmax"]), int(row["ymax"])),
+                          color=color,
+                          thickness=thickness,
+                          lineType=cv2.LINE_AA)
+        elif "x" in df.columns:
+            cv2.circle(image, (row["x"], row["y"]),
+                       color=color,
+                       radius=5,
+                       thickness=thickness)
+        elif "polygon" in df.columns:
+            polygon = np.array(row["polygon"])
+            cv2.polylines(image, [polygon], True, color, thickness=thickness)
 
     return image
 

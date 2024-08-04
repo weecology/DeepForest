@@ -81,7 +81,7 @@ setup(name=NAME,
           "opencv-python>=4.5.4", "pandas", "Pillow>6.2.0", "pre-commit", "progressbar2", "pycocotools",
           "pytorch-lightning>=1.5.8", "rasterio", "recommonmark", "rtree", "scipy>1.5",
           "six", "slidingwindow", "sphinx", "supervision", "torch", "torchvision>=0.13", "tqdm",
-          "xmltodict",
+          "xmltodict","geopandas"
       ],
       zip_safe=False,
       cmdclass={

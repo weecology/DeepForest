@@ -112,6 +112,6 @@ def compute_IoU(ground_truth, submission):
             }))
 
     iou_df = pd.concat(iou_df)
-    iou_df = iou_df.merge(ground_truth[["truth_id", "xmin", "xmax", "ymin", "ymax"]])
+    iou_df = iou_df.merge(ground_truth[["truth_id", "geometry"]])
 
     return iou_df

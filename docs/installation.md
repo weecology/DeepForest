@@ -32,6 +32,10 @@ conda activate deepforest
 conda install deepforest -c conda-forge
 ```
 
+## Geopandas Errors
+
+Occasionally, it is easier to conda install geopandas, followed by pip install DeepForest. Geopandas has compiled libraries that need conda to work best (unless you already have GDAL installed). Once geopandas is install DeepForest can find it and pip can be much faster. See [geopandas documentation](https://geopandas.org/en/latest/getting_started/install.html) for more solutions. 
+
 ## Source Installation
 
 DeepForest can alternatively be installed from source using the github repository. The python package dependencies are managed by conda.

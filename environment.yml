@@ -13,7 +13,6 @@ dependencies:
   - nbsphinx
   - numpy
   - numpydoc
-  - opencv>=4.5.4
   - pandas
   - pillow>6.2.0
   - pip
@@ -38,11 +37,12 @@ dependencies:
   - yapf
   - pip:
     - sphinx-markdown-tables
-    - imagecodecs
     - albumentations>=1.0.0
     - comet_ml
     - pycocotools
     - aiolimiter
     - aiohttp
     - supervision
+    - nbqa
+    - Pygments
     - docformatter
