@@ -208,7 +208,9 @@ def test_predict_image_fromarray(m):
         prediction = m.predict_image(image = image)
             
     image = np.array(Image.open(image_path).convert("RGB"))
-    prediction = m.predict_image(image = image)    
+    with pytest.warns(UserWarning, match="Image type is uint8, transforming to float32"):
+        prediction = m.predict_image(image = image)    
+    
     assert isinstance(prediction, pd.DataFrame)
     assert set(prediction.columns) == {"xmin","ymin","xmax","ymax","label","score"}
 
@@ -393,10 +395,10 @@ def test_reload_multi_class(two_class_m, tmpdir):
     before = two_class_m.trainer.validate(two_class_m)
     
     # reload
-    old_model = main.deepforest.load_from_checkpoint("{}/checkpoint.pl".format(tmpdir))
+    old_model = main.deepforest.load_from_checkpoint("{}/checkpoint.pl".format(tmpdir), weights_only=True)
     old_model.config = two_class_m.config
     assert old_model.config["num_classes"] == 2
-    old_model.create_trainer()    
+    old_model.create_trainer()
     after = old_model.trainer.validate(old_model)
 
     assert after[0]["val_classification"] == before[0]["val_classification"]
