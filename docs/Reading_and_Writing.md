@@ -4,7 +4,9 @@ The most time confusing part of many open source projects in getting the data in
 
 ## Annotation geometries and coordinate systems
 
-DeepForest was originally designed for bounding box annotations. As of DeepForest 1.4.0, Point and Polygon annotation are also supported. There are two ways to format annotations, depending on what kind of annotation platform you were using. 'read_file' can read points, polygons, boxes, in both coordinates with reference to image origin, as well as projected coordinates on the earth's surface.
+DeepForest was originally designed for bounding box annotations. As of DeepForest 1.4.0, Point and Polygon annotation are also supported. There are two ways to format annotations, depending on what kind of annotation platform you were using. 'read_file' can read points, polygons, boxes, in both coordinates with reference to image origin (top left 0,0), as well as projected coordinates on the earth's surface.
+
+**Note:** For csv files, coordinates are expected to be in the image coordinate system, not the projected coordinate (such as lat long or UTM).
 
 ### Boxes
 
@@ -61,6 +63,12 @@ shp.head()
 
 ### CSV
 
+```
+x,y,label
+10,20,Tree
+15,30,Tree
+```
+
 ### Shapefile
 ```
 annotations = utilities.read_file(input="{}/test_read_file_points_projected.shp".format(tmpdir))
@@ -74,8 +82,14 @@ annotations.head()
 
 ## CSV
 
+Polygons are expressed well-known-text format. Learn more about (wkt)[https://en.wikipedia.org/wiki/Well-known_text_representation_of_geometry]. 
 
-## Shapfile
+```
+"POLYGON ((0 0, 0 2, 1 1, 1 0, 0 0))",Tree,OSBS_029.png
+"POLYGON ((2 2, 2 4, 3 3, 3 2, 2 2))",Tree,OSBS_029.png
+```
+
+## Shapefile
 ```
 annotations = utilities.read_file(input="{}/test_read_file_polygons_unprojected.shp".format(tmpdir))
 annotations.head()
@@ -86,5 +100,33 @@ annotations.head()
 
 # Writing Data
  
+Objects read in by deepforest.utilities.read_file are [geopandas geodataframes](https://geopandas.org/en/stable/docs/reference/api/geopandas.GeoDataFrame.html). They can be exported as csv files or shapefiles. 
+
+```
+annotations.to_csv("annotations.csv")
+annotations.to_file("annotations.shp")
+```
+
 ## Converting from image to geographic coordinates
 
+Standard computer visions models have no concept of geographic information, which is why we use the image coordinate system to represent coordinates within DeepForest. If you want to convert predictions back into geographic coordinates, we provide a utility to go from image to geo coordinates based on coordinate reference system of the file in the image_path column.
+
+```
+from deepforest import get_data
+import rasterio as rio
+import geopandas as gpd
+from matplotlib import pyplot as plt
+
+annotations = get_data("2018_SJER_3_252000_4107000_image_477.csv")
+path_to_raster = get_data("2018_SJER_3_252000_4107000_image_477.tif")
+src = rio.open(path_to_raster)
+original = utilities.read_file(annotations)
+
+geo_coords = utilities.image_to_geo_coordinates(original, root_dir=os.path.dirname(path_to_raster))
+src_window = geometry.box(*src.bounds)
+
+fig, ax = plt.subplots(figsize=(10, 10))
+gpd.GeoSeries(src_window).plot(ax=ax, color="blue", alpha=0.5)
+geo_coords.plot(ax=ax, color="red")
+plt.show()
+```
