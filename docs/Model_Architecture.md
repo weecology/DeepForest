@@ -103,4 +103,3 @@ existing_loader = m.predict_dataloader(ds)
 batches = m.trainer.predict(m, existing_loader)
 len(batches[0]) == m.config["batch_size"] + 1
 ```
-

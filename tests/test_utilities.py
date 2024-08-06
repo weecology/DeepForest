@@ -100,6 +100,33 @@ def test_read_file_boxes_projected(tmpdir):
     shp = utilities.read_file(input="{}/test_read_file_boxes_projected.shp".format(tmpdir))
     assert shp.shape[0] == 2
 
+def test_read_file_points_csv(tmpdir):
+    x = [10, 20]
+    y = [20, 20]
+    labels = ["Tree", "Tree"]
+    image_path = [get_data("OSBS_029.tif"),get_data("OSBS_029.tif")]
+    df = pd.DataFrame({"x": x, "y": y, "label": labels})
+    df.to_csv("{}/test_read_file_points.csv".format(tmpdir), index=False)
+    read_df = utilities.read_file(input="{}/test_read_file_points.csv".format(tmpdir))
+    assert read_df.shape[0] == 2
+
+def test_read_file_polygons_csv(tmpdir):
+    # Create a sample GeoDataFrame with polygon geometries with 6 points
+    sample_geometry = [geometry.Polygon([(0, 0), (0, 2), (1, 1), (1, 0), (0, 0)]), geometry.Polygon([(2, 2), (2, 4), (3, 3), (3, 2), (2, 2)])]
+    
+    labels = ["Tree", "Tree"]
+    image_path = get_data("OSBS_029.png")
+    df = pd.DataFrame({"geometry": sample_geometry, "label": labels, "image_path": os.path.basename(image_path)})
+    df.to_csv("{}/test_read_file_polygons.csv".format(tmpdir), index=False)
+
+    # Call the function under test
+    annotations = utilities.read_file(input="{}/test_read_file_polygons.csv".format(tmpdir))
+
+    # Assert the expected number of annotations
+    assert annotations.shape[0] == 2
+    assert annotations.geometry.iloc[0].type == "Polygon"
+
+
 def test_read_file_polygons_projected(tmpdir):
     sample_geometry = [geometry.Point(404211.9 + 10,3285102 + 20),geometry.Point(404211.9 + 20,3285102 + 20)]
     labels = ["Tree", "Tree"]

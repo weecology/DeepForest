@@ -1,9 +1,8 @@
 
 # Visualization
 
-Simple visualization can be done during inference and saved. These are intended as quick ways of looking at data and lack the customized options below.
+Simple visualization can be done during inference and saved. These are intended as quick ways of looking at data.
 
-```
 The color and line thickness of boxes can be customized using the `color` and `thickness` arguments.
 `color` is the color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255).
 `thickness` is the thickness of the rectangle border line in pixels.
@@ -13,8 +12,7 @@ image_path = get_data("OSBS_029.png")
 boxes = model.predict_image(path=image_path, return_plot = True, color=(0, 165, 255), thickness=3)
 ```
 
-
-## More advanced visualizations
+## Visualizations using Roboflow's supervision package
 
 The `convert_to_sv_format` function converts DeepForest prediction results into a `supervision.Detections` object. This object contains bounding boxes, class IDs, confidence scores, and class names. It is designed to facilitate the visualization and further processing of object detection results using [supervision](https://supervision.roboflow.com/latest/) library.
 

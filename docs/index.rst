@@ -44,6 +44,7 @@ Get suggestions on how to improve a model by using the [discussion board](https:
    installation
    prebuilt
    getting_started
+   Reading_and_Writing
    ConfigurationFile
    annotation
    training
@@ -51,8 +52,7 @@ Get suggestions on how to improve a model by using the [discussion board](https:
    multi_species
    visualizations
    Model_Architecture
-   CropModel
-   FAQ
+   CropModels
    better
    scaling
    ExtendingModule

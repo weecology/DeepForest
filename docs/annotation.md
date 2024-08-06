@@ -1,5 +1,5 @@
 # Annotation
-Annotation is likely the most important part of machine learning projects. Fancy models are nice, but data are always paramount. If you aren't happy with model performance, annotating new samples is the best idea.
+Annotation is the most important part of machine learning projects.  If you aren't happy with model performance, annotating new samples is the best first step.
 
 ## How should I annotate images?
 For quick annotations of a few images, we recommend using QGIS or ArcGIS. Either as project or unprojected data. Create a shapefile for each image.
@@ -7,17 +7,35 @@ For quick annotations of a few images, we recommend using QGIS or ArcGIS. Either
 ![QGISannotation](../www/QGIS_annotation.png)
 
 ### Label-studio
-
 For longer term projects, we recommend [label-studio](https://labelstud.io/) as an annotation platform. It has many useful features and is easy to set up.
 
 ![QGISannotation](../www/label_studio.png)
 
 ## Do I need annotate all objects in my image?
-Yes! Object detection models use the non-annotated areas of an image as negative data. We know that it can be exceptionally hard to annotate all trees in an image, or determine the classes of all birds in an image. However, if you have objects in the image that are not annotated, the model is learning *to ignore* those portion of the image. This can severely affect model performance.
+Yes! Object detection models use the non-annotated areas of an image as negative data. We know that it can be difficult to annotate all objects in an image, but non-annotation will cause the model *to ignore* objects that should be treated as positive samples, leading to poor model performance. 
+
+## How can I speed up annotation?
+
+1. Consider which images are needed. Duplicate backgrounds or objects contribute little to model generalization. Focus on gathering as wide a selection of object appearances as possible. 
+2. Do not overly split classification labels. Often a super-class can be useful for detecting objects, followed by a separate model for classification, see the [`CropModel`](CropModel.md).
+3. Consider the downstream need for accurate boxes versus general detection or counting. Often, objects will be a standard size compared to the image resolution. If predicted detections can be loosely accurate, one option is to annotate using keypoints and infer a general box size.
+
+Here is a quick video on a simple way to annotate images.
+
+<div style="position: relative; padding-bottom: 62.5%; height: 0;"><iframe src="https://www.loom.com/embed/e1639d36b6ef4118a31b7b892344ba83" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe></div>
+
+Using a shapefile, we could turn it into a dataframe of bounding box annotations by converting the points into boxes. If you already have boxes, you can exclude convert_to_boxes and buffer_size.
+
+```python
+df = shapefile_to_annotations(
+    shapefile="annotations.shp", 
+    rgb="image_path", convert_to_boxes=True, buffer_size=0.15
+)
+```
 
 ## Cutting large tiles into pieces
 
-It is often difficult to annotate very large airborne imagery. DeepForest has a small utility to crop images into smaller chunks that can be annotated more easily.
+It is often difficult to annotate large airborne imagery. DeepForest has a utility to crop images into smaller chunks that can be annotated more easily.
 
 ```python
 raster = get_data("2019_YELL_2_528000_4978000_image_crop2.png")
@@ -27,16 +45,9 @@ output_crops = preprocess.split_raster(path_to_raster=raster,
                                         save_dir=tmpdir,
                                         patch_size=500,
                                         patch_overlap=0)
-
-# Returns a list of crop filenames.
-assert len(output_crops) == 25
-
-# Assert that all output_crops exist
-for crop in output_crops:
-    assert os.path.exists(crop)
 ```
 
-## How can I view current predictions as shapefiles?
+## Starting annotations from pre-labeled imagery.
 
 It is often useful to train new training annotations starting from current predictions. This allows users to more quickly find and correct errors. The following example shows how to create a list of files, predict detections in each, and save as shapefiles. A user can then edit these shapefiles in a program like QGIS.
 
@@ -80,15 +91,11 @@ for path in files:
     basename = os.path.splitext(os.path.basename(path))[0]
     shp.to_file("{}/{}.shp".format(PATH_TO_DIR,basename))
 ```
-## Understanding Pascal VOC and the read_pascal_voc Function
-### What is Pascal VOC?
-The Pascal Visual Object Classes (VOC) dataset is a benchmark in visual object category recognition and detection, providing a standard dataset of images and annotation, and standard evaluation procedures. 
 
-Pascal VOC annotations are typically stored in XML format, which includes information about the image and the bounding boxes of the objects present within it. Each bounding box is defined by its coordinates (xmin, ymin, xmax, ymax) and is associated with a class label. The annotations also include other metadata about the image, such as its filename. You can know more about Pascal VOC from [Here](https://roboflow.com/formats/pascal-voc-xml)
+## Reading xml annotations in Pascal VOC
 
+As an alternative to shapefiles, DeepForest can read annotations in PASCAL VOC format. The Pascal Visual Object Classes (VOC) dataset is a benchmark in visual object category recognition and detection, providing a standard dataset of images and annotation, and standard evaluation procedures. [Pascal VOC annotations](https://roboflow.com/formats/pascal-voc-xml) are typically stored in XML format, which includes information about the image and the bounding boxes of the objects present within it. Each bounding box is defined by its coordinates (xmin, ymin, xmax, ymax) and is associated with a class label. The annotations also include other metadata about the image, such as its filename.
 
-
-### The `read_pascal_voc` Function
 The `read_pascal_voc` function is designed to read these XML annotations and convert them into a format suitable for use with object detection models, such as RetinaNet. This function parses the XML file, extracts the relevant information, and constructs a pandas DataFrame containing the image path and the bounding box coordinates along with the class labels.
 
 Example:
@@ -129,7 +136,7 @@ The DeepForest backbone tree and bird models are not perfect. Please consider po
 
 Many remote sensing assets are stored as an ImageServer within ArcGIS REST protocol. As part of automating airborne image workflows, we have tools that help work with these assets. For example [California NAIP data](https://map.dfg.ca.gov/arcgis/rest/services/Base_Remote_Sensing/NAIP_2020_CIR/ImageServer). 
 
-More work is needed to encompass the *many* different param settings and specifications. We welcome pull requests from those with experience with  [WebMapTileServices](https://enterprise.arcgis.com/en/server/latest/publish-services/windows/wmts-services.htm).
+More work is needed to encompass the *many* different param settings and specifications. We welcome pull requests from those with experience with [WebMapTileServices](https://enterprise.arcgis.com/en/server/latest/publish-services/windows/wmts-services.htm).
 
 ## Specify a lat-long box and crop an ImageServer asset 
 
