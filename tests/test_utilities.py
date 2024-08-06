@@ -43,7 +43,8 @@ def test_use_bird_release(download_release):
 def test_float_warning(config):
     """Users should get a rounding warning when adding annotations with floats"""
     float_annotations = "tests/data/float_annotations.txt"
-    annotations = utilities.read_pascal_voc(float_annotations)
+    with pytest.warns(UserWarning, match="Annotations file contained non-integer coordinates"):
+        annotations = utilities.read_pascal_voc(float_annotations)
     assert annotations.xmin.dtype is np.dtype('int64')
 
     
