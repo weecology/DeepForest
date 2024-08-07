@@ -42,7 +42,7 @@ model.config["train"]["fast_dev_run"] = True
 
 See [config](https://deepforest.readthedocs.io/en/latest/ConfigurationFile.html) for full set of available arguments. You can also pass any [additional](https://pytorch-lightning.readthedocs.io/en/latest/common/trainer.html) pytorch lightning argument to trainer.
 
-To begin training, we create a pytorch-lightning trainer and call trainer.fit on the model object directly on itself. 
+To begin training, we create a pytorch-lightning trainer and call trainer.fit on the model object directly on itself.
 While this might look a touch awkward, it is useful for exposing the pytorch lightning functionality.
 
 ```
@@ -50,6 +50,14 @@ model.trainer.fit(model)
 ```
 
 [For more, see Google colab demo on model training](https://colab.research.google.com/drive/1gKUiocwfCvcvVfiKzAaf6voiUVL2KK_r?usp=sharing)
+
+## Disable the progress bar
+
+If you want to disable the progress bar while training change the `create_trainer` call to:
+
+```python
+ model.create_trainer(enable_progress_bar=False)
+```
 
 ## Loggers
 
@@ -70,7 +78,7 @@ m.create_trainer(logger=logger)
 
 High resolution tiles may exceed GPU or CPU memory during training, especially when many target objecrts are present. To reduce the size of each tile, use preprocess.split_raster to divide the original tile into smaller pieces and create a corresponding annotations file.
 
-For example, this sample data raster has size 2472, 2299 pixels. 
+For example, this sample data raster has size 2472, 2299 pixels.
 ```
 """Split raster into crops with overlaps to maintain all annotations"""
 raster = get_data("2019_YELL_2_528000_4978000_image_crop2.png")
@@ -123,11 +131,11 @@ Pytorch lightning allows you to [save a model](https://pytorch-lightning.readthe
 
 ```
 callback = ModelCheckpoint(dirpath='temp/dir',
-                                 monitor='box_recall', 
+                                 monitor='box_recall',
                                  mode="max",
                                  save_top_k=3,
                                  filename="box_recall-{epoch:02d}-{box_recall:.2f}")
-model.create_trainer(logger=TensorBoardLogger(save_dir='logdir/'), 
+model.create_trainer(logger=TensorBoardLogger(save_dir='logdir/'),
                                   callbacks=[callback])
 model.trainer.fit(model)
 ```
@@ -140,7 +148,7 @@ tmpdir = tempfile.TemporaryDirectory()
 
 model.use_release()
 
-#save the prediction dataframe after training and compare with prediction after reload checkpoint 
+#save the prediction dataframe after training and compare with prediction after reload checkpoint
 img_path = get_data("OSBS_029.png")
 model.create_trainer()
 model.trainer.fit(model)
@@ -190,7 +198,7 @@ Note that if you trained on GPU and restore on cpu, you will need the map_locati
 
 ### New Augmentations
 
-DeepForest uses the same transform for train/test, so you need to encode a switch for turning the 'augment' off. 
+DeepForest uses the same transform for train/test, so you need to encode a switch for turning the 'augment' off.
 Wrap any new augmentations like so:
 
 ```
@@ -201,12 +209,12 @@ def get_transform(augment):
             A.HorizontalFlip(p=0.5),
             ToTensorV2()
         ], bbox_params=A.BboxParams(format='pascal_voc',label_fields=["category_ids"]))
-        
+
     else:
         transform = ToTensorV2()
-        
+
     return transform
-        
+
 m = main.deepforest(transforms=get_transform)
 ```
 
