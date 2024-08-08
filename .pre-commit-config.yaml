@@ -9,7 +9,6 @@ repos:
     types: [python]
     pass_filenames: false
     stages: [commit]
-
 -   repo: local
     hooks:
     -   id: docformatter

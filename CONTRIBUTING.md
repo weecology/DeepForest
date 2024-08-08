@@ -69,6 +69,8 @@ $ pytest -v
 
 ### Checking and fixing code style
 
+#### Using Yapf
+
 We use [yapf](https://github.com/google/yapf) for code formatting and style
 checking.
 
@@ -85,6 +87,11 @@ yapf -i --recursive deepforest/ --style=.style.yapf
 
 If the style tests fail on a pull request, running the above command is the
 easiest way to fix this.
+
+#### Using pre-commit 
+
+We configure all our checks using the `.pre-commit-config.yaml` file. To verify your code styling before committing, you should run `pre-commit install` to set up the hooks, followed by `pre-commit run` to execute them. This will apply the formatting rules specified in the .style.yapf file. For additional information, please refer to the [pre-commit documentation](https://pre-commit.com/index.html).
+
 
 ### Testing the Conda Deepforest Build
 

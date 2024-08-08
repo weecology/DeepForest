@@ -10,7 +10,6 @@
 *.pt
 *.wp*
 build/
-CONTRIBUTING.md
 current_bird_release.csv
 current_release.csv
 docs/_build/
@@ -20,3 +19,4 @@ public/
 tests/__pycache__
 tests/data/*
 .vscode/
+
