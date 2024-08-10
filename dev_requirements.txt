@@ -18,6 +18,7 @@ opencv-python>=4.5.4
 pandas
 pillow>6.2.0
 pip
+pre-commit
 psutil
 pycocotools
 Pygments
