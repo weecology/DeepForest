@@ -43,6 +43,7 @@ dependencies:
     - aiolimiter
     - aiohttp
     - supervision
+    - pre-commit
     - nbqa
     - Pygments
     - docformatter
