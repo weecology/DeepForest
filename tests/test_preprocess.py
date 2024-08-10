@@ -79,7 +79,7 @@ def test_split_raster(config, tmpdir, input_type, geodataframe):
 
     output_annotations = preprocess.split_raster(path_to_raster=get_data("OSBS_029.tif"),
                                                  annotations_file=annotations_file,
-                                                 base_dir=tmpdir,
+                                                 save_dir=tmpdir,
                                                  patch_size=300,
                                                  patch_overlap=0)
 
@@ -93,7 +93,7 @@ def test_split_raster_no_annotations(config, tmpdir):
 
     output_crops = preprocess.split_raster(path_to_raster=raster,
                                            annotations_file=None,
-                                           base_dir=tmpdir,
+                                           save_dir=tmpdir,
                                            patch_size=500,
                                            patch_overlap=0)
 
@@ -138,7 +138,7 @@ def test_split_raster_empty(tmpdir, config, allow_empty):
             annotations_file = preprocess.split_raster(
                 path_to_raster=config["path_to_raster"],
                 annotations_file=tmpdir.join("blank_annotations.csv").strpath,
-                base_dir=tmpdir,
+                save_dir=tmpdir,
                 patch_size=config["patch_size"],
                 patch_overlap=config["patch_overlap"],
                 allow_empty=allow_empty)
@@ -146,7 +146,7 @@ def test_split_raster_empty(tmpdir, config, allow_empty):
             annotations_file = preprocess.split_raster(
                 path_to_raster=config["path_to_raster"],
                 annotations_file=tmpdir.join("blank_annotations.csv").strpath,
-                base_dir=tmpdir,
+                save_dir=tmpdir,
                 patch_size=config["patch_size"],
                 patch_overlap=config["patch_overlap"],
                 allow_empty=allow_empty)
@@ -158,7 +158,7 @@ def test_split_size_error(config, tmpdir, geodataframe):
         annotations_file = preprocess.split_raster(
             path_to_raster=config["path_to_raster"],
             annotations_file=geodataframe,
-            base_dir=tmpdir,
+            save_dir=tmpdir,
             patch_size=2000,
             patch_overlap=config["patch_overlap"])
 
