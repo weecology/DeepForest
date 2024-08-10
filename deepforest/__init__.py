@@ -5,8 +5,12 @@ __email__ = 'ben.weinstein@weecology.org'
 __version__ = '1.3.3'
 
 import os
+from pytorch_lightning.utilities import disable_possible_user_warnings
 
 _ROOT = os.path.abspath(os.path.dirname(__file__))
+
+# Disable PyTorch warnings that confuse users
+disable_possible_user_warnings()
 
 
 def get_data(path):
