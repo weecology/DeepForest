@@ -14,5 +14,3 @@ def test_get_data():
     assert os.path.exists(deepforest.get_data("OSBS_029.tif"))
     assert os.path.exists(deepforest.get_data("SOAP_061.png"))
     assert os.path.exists(deepforest.get_data("classes.csv"))
-
-
