@@ -25,14 +25,14 @@ def _make_empty_sample():
 def test_retinanet(config):
     r = FasterRCNN.Model(config)
 
-    return r
+    assert r
 
 def test_load_backbone(config):
     r = FasterRCNN.Model(config)
     resnet_backbone = r.load_backbone()
     resnet_backbone.eval()
     x = [torch.rand(3, 300, 400), torch.rand(3, 500, 400)]
-    prediction = resnet_backbone(x)    
+    prediction = resnet_backbone(x)
 
 # This test still fails, do we want a way to pass kwargs directly to method, instead of being limited by config structure?
 # Need to create issue when I get online.
@@ -42,7 +42,7 @@ def test_create_model(config, num_classes):
     retinanet_model = FasterRCNN.Model(config).create_model()
     retinanet_model.eval()
     x = [torch.rand(3, 300, 400), torch.rand(3, 500, 400)]
-    predictions = retinanet_model(x)    
+    predictions = retinanet_model(x)
 
 def test_forward_empty(config):
     r = FasterRCNN.Model(config)

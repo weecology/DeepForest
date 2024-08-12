@@ -27,8 +27,7 @@ def _make_empty_sample():
 
 def test_retinanet(config):
     r = retinanet.Model(config)
-
-    return r
+    assert r
 
 def test_load_backbone(config):
     r = retinanet.Model(config)
