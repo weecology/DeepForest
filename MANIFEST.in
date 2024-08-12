@@ -1,4 +1,4 @@
-include deepforest/data/deepforest_config.yml
+include deepforest_config.yml
 include deepforest/data/testfile_deepforest.csv
 include deepforest/data/testfile_multi.csv
 include deepforest/data/classes.csv
