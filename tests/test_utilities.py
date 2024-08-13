@@ -13,33 +13,36 @@ from deepforest import get_data
 from deepforest import utilities, visualize
 from deepforest import main
 
-
-#import general model fixture
+# import general model fixture
 from .conftest import download_release
 import pytest
 
 from PIL import Image
+
 
 @pytest.fixture()
 def config():
     config = utilities.read_config("deepforest_config.yml")
     return config
 
+
 def test_read_pascal_voc():
-    annotations = utilities.read_pascal_voc(
-        xml_path=get_data("OSBS_029.xml"))
+    annotations = utilities.read_pascal_voc(xml_path=get_data("OSBS_029.xml"))
     print(annotations.shape)
     assert annotations.shape[0] == 61
+
 
 def test_use_release(download_release):
     # Download latest model from github release
     release_tag, state_dict = utilities.use_release(check_release=False)
 
+
 def test_use_bird_release(download_release):
     # Download latest model from github release
     release_tag, state_dict = utilities.use_bird_release()
-    assert os.path.exists(get_data("bird.pt"))    
-    
+    assert os.path.exists(get_data("bird.pt"))
+
+
 def test_float_warning(config):
     """Users should get a rounding warning when adding annotations with floats"""
     float_annotations = "tests/data/float_annotations.txt"
@@ -47,27 +50,30 @@ def test_float_warning(config):
         annotations = utilities.read_pascal_voc(float_annotations)
     assert annotations.xmin.dtype is np.dtype('int64')
 
-    
+
 def test_read_file(tmpdir):
-    sample_geometry = [geometry.Point(404211.9 + 10,3285102 + 20),geometry.Point(404211.9 + 20,3285102 + 20)]
-    labels = ["Tree","Tree"]
-    df = pd.DataFrame({"geometry":sample_geometry,"label":labels})
+    sample_geometry = [geometry.Point(404211.9 + 10, 3285102 + 20), geometry.Point(404211.9 + 20, 3285102 + 20)]
+    labels = ["Tree", "Tree"]
+    df = pd.DataFrame({"geometry": sample_geometry, "label": labels})
     gdf = gpd.GeoDataFrame(df, geometry="geometry", crs="EPSG:32617")
-    gdf["geometry"] = [geometry.box(left, bottom, right, top) for left, bottom, right, top in gdf.geometry.buffer(0.5).bounds.values]
+    gdf["geometry"] = [geometry.box(left, bottom, right, top) for left, bottom, right, top in
+                       gdf.geometry.buffer(0.5).bounds.values]
     gdf["image_path"] = get_data("OSBS_029.tif")
     gdf.to_file("{}/annotations.shp".format(tmpdir))
     shp = utilities.read_file(input="{}/annotations.shp".format(tmpdir))
     assert shp.shape[0] == 2
 
+
 def test_shapefile_to_annotations_convert_unprojected_to_boxes(tmpdir):
-    sample_geometry = [geometry.Point(10,20),geometry.Point(20,40)]
-    labels = ["Tree","Tree"]
-    df = pd.DataFrame({"geometry":sample_geometry,"label":labels})
+    sample_geometry = [geometry.Point(10, 20), geometry.Point(20, 40)]
+    labels = ["Tree", "Tree"]
+    df = pd.DataFrame({"geometry": sample_geometry, "label": labels})
     gdf = gpd.GeoDataFrame(df, geometry="geometry")
     gdf.to_file("{}/annotations.shp".format(tmpdir))
     image_path = get_data("OSBS_029.png")
     shp = utilities.shapefile_to_annotations(shapefile="{}/annotations.shp".format(tmpdir), rgb=image_path)
     assert shp.shape[0] == 2
+
 
 def test_shapefile_to_annotations_invalid_epsg(tmpdir):
     sample_geometry = [geometry.Point(404211.9 + 10, 3285102 + 20), geometry.Point(404211.9 + 20, 3285102 + 20)]
@@ -79,13 +85,15 @@ def test_shapefile_to_annotations_invalid_epsg(tmpdir):
     image_path = get_data("OSBS_029.tif")
     with pytest.raises(ValueError):
         shp = utilities.shapefile_to_annotations(shapefile="{}/annotations.shp".format(tmpdir), rgb=image_path)
-        
+
+
 def test_read_file_boxes_projected(tmpdir):
-    sample_geometry = [geometry.Point(404211.9 + 10,3285102 + 20),geometry.Point(404211.9 + 20,3285102 + 20)]
-    labels = ["Tree","Tree"]
-    df = pd.DataFrame({"geometry":sample_geometry,"label":labels})
+    sample_geometry = [geometry.Point(404211.9 + 10, 3285102 + 20), geometry.Point(404211.9 + 20, 3285102 + 20)]
+    labels = ["Tree", "Tree"]
+    df = pd.DataFrame({"geometry": sample_geometry, "label": labels})
     gdf = gpd.GeoDataFrame(df, geometry="geometry", crs="EPSG:32617")
-    gdf["geometry"] = [geometry.box(left, bottom, right, top) for left, bottom, right, top in gdf.geometry.buffer(0.5).bounds.values]
+    gdf["geometry"] = [geometry.box(left, bottom, right, top) for left, bottom, right, top in
+                       gdf.geometry.buffer(0.5).bounds.values]
     image_path = get_data("OSBS_029.tif")
     gdf["image_path"] = image_path
     gdf.to_file("{}/test_read_file_boxes_projected.shp".format(tmpdir))
@@ -94,20 +102,23 @@ def test_read_file_boxes_projected(tmpdir):
     shp = utilities.read_file(input="{}/test_read_file_boxes_projected.shp".format(tmpdir))
     assert shp.shape[0] == 2
 
+
 def test_read_file_points_csv(tmpdir):
     x = [10, 20]
     y = [20, 20]
     labels = ["Tree", "Tree"]
-    image_path = [get_data("OSBS_029.tif"),get_data("OSBS_029.tif")]
+    image_path = [get_data("OSBS_029.tif"), get_data("OSBS_029.tif")]
     df = pd.DataFrame({"x": x, "y": y, "label": labels})
     df.to_csv("{}/test_read_file_points.csv".format(tmpdir), index=False)
     read_df = utilities.read_file(input="{}/test_read_file_points.csv".format(tmpdir))
     assert read_df.shape[0] == 2
 
+
 def test_read_file_polygons_csv(tmpdir):
     # Create a sample GeoDataFrame with polygon geometries with 6 points
-    sample_geometry = [geometry.Polygon([(0, 0), (0, 2), (1, 1), (1, 0), (0, 0)]), geometry.Polygon([(2, 2), (2, 4), (3, 3), (3, 2), (2, 2)])]
-    
+    sample_geometry = [geometry.Polygon([(0, 0), (0, 2), (1, 1), (1, 0), (0, 0)]),
+                       geometry.Polygon([(2, 2), (2, 4), (3, 3), (3, 2), (2, 2)])]
+
     labels = ["Tree", "Tree"]
     image_path = get_data("OSBS_029.png")
     df = pd.DataFrame({"geometry": sample_geometry, "label": labels, "image_path": os.path.basename(image_path)})
@@ -122,19 +133,21 @@ def test_read_file_polygons_csv(tmpdir):
 
 
 def test_read_file_polygons_projected(tmpdir):
-    sample_geometry = [geometry.Point(404211.9 + 10,3285102 + 20),geometry.Point(404211.9 + 20,3285102 + 20)]
+    sample_geometry = [geometry.Point(404211.9 + 10, 3285102 + 20), geometry.Point(404211.9 + 20, 3285102 + 20)]
     labels = ["Tree", "Tree"]
     df = pd.DataFrame({"geometry": sample_geometry, "label": labels})
     gdf = gpd.GeoDataFrame(df, geometry="geometry", crs="EPSG:32617")
-    gdf["geometry"] = [geometry.Polygon([(left, bottom), (left, top), (right, top), (right, bottom)]) for left, bottom, right, top in gdf.geometry.buffer(0.5).bounds.values]
+    gdf["geometry"] = [geometry.Polygon([(left, bottom), (left, top), (right, top), (right, bottom)]) for
+                       left, bottom, right, top in gdf.geometry.buffer(0.5).bounds.values]
     image_path = get_data("OSBS_029.tif")
     gdf["image_path"] = image_path
     gdf.to_file("{}/test_read_file_polygons_projected.shp".format(tmpdir))
     shp = utilities.read_file(input="{}/test_read_file_polygons_projected.shp".format(tmpdir))
     assert shp.shape[0] == 2
 
+
 def test_read_file_points_projected(tmpdir):
-    sample_geometry = [geometry.Point(404211.9 + 10,3285102 + 20),geometry.Point(404211.9 + 20,3285102 + 20)]
+    sample_geometry = [geometry.Point(404211.9 + 10, 3285102 + 20), geometry.Point(404211.9 + 20, 3285102 + 20)]
     labels = ["Tree", "Tree"]
     df = pd.DataFrame({"geometry": sample_geometry, "label": labels})
     gdf = gpd.GeoDataFrame(df, geometry="geometry", crs="EPSG:32617")
@@ -144,6 +157,7 @@ def test_read_file_points_projected(tmpdir):
     shp = utilities.read_file(input="{}/test_read_file_points_projected.shp".format(tmpdir))
     assert shp.shape[0] == 2
     assert shp.geometry.iloc[0].type == "Point"
+
 
 def test_read_file_boxes_unprojected(tmpdir):
     # Create a sample GeoDataFrame with box geometries
@@ -159,6 +173,7 @@ def test_read_file_boxes_unprojected(tmpdir):
     # Assert the expected number of annotations and geometry type
     assert annotations.shape[0] == 2
     assert annotations.geometry.iloc[0].type == "Polygon"
+
 
 def test_read_file_points_unprojected(tmpdir):
     # Create a sample GeoDataFrame with point geometries
@@ -176,10 +191,12 @@ def test_read_file_points_unprojected(tmpdir):
     assert annotations.shape[0] == 2
     assert annotations.geometry.iloc[0].type == "Point"
 
+
 def test_read_file_polygons_unprojected(tmpdir):
     # Create a sample GeoDataFrame with polygon geometries with 6 points
-    sample_geometry = [geometry.Polygon([(0, 0), (0, 2), (1, 1), (1, 0), (0, 0)]), geometry.Polygon([(2, 2), (2, 4), (3, 3), (3, 2), (2, 2)])]
-    
+    sample_geometry = [geometry.Polygon([(0, 0), (0, 2), (1, 1), (1, 0), (0, 0)]),
+                       geometry.Polygon([(2, 2), (2, 4), (3, 3), (3, 2), (2, 2)])]
+
     labels = ["Tree", "Tree"]
     df = pd.DataFrame({"geometry": sample_geometry, "label": labels})
     gdf = gpd.GeoDataFrame(df, geometry="geometry")
@@ -194,10 +211,11 @@ def test_read_file_polygons_unprojected(tmpdir):
     assert annotations.shape[0] == 2
     assert annotations.geometry.iloc[0].type == "Polygon"
 
+
 def test_crop_raster_valid_crop(tmpdir):
     rgb_path = get_data("2018_SJER_3_252000_4107000_image_477.tif")
     raster_bounds = rio.open(rgb_path).bounds
-    
+
     # Define the bounds for cropping
     bounds = (raster_bounds[0] + 10, raster_bounds[1] + 10, raster_bounds[0] + 30, raster_bounds[1] + 30)
 
@@ -216,10 +234,11 @@ def test_crop_raster_valid_crop(tmpdir):
         assert src.count == 3
         assert src.dtypes == ("uint8", "uint8", "uint8")
 
+
 def test_crop_raster_invalid_crop(tmpdir):
     rgb_path = get_data("2018_SJER_3_252000_4107000_image_477.tif")
     raster_bounds = rio.open(rgb_path).bounds
-    
+
     # Define the bounds for cropping
     bounds = (raster_bounds[0] - 100, raster_bounds[1] - 100, raster_bounds[0] - 30, raster_bounds[1] - 30)
 
@@ -227,18 +246,21 @@ def test_crop_raster_invalid_crop(tmpdir):
     with pytest.raises(ValueError):
         result = utilities.crop_raster(bounds, rgb_path=rgb_path, savedir=tmpdir, filename="crop")
 
+
 def test_crop_raster_no_savedir(tmpdir):
     rgb_path = get_data("2018_SJER_3_252000_4107000_image_477.tif")
     raster_bounds = rio.open(rgb_path).bounds
-    
+
     # Define the bounds for cropping
-    bounds = (int(raster_bounds[0] + 10), int(raster_bounds[1] + 10), int(raster_bounds[0] + 20), int(raster_bounds[1] + 20))
+    bounds = (int(raster_bounds[0] + 10), int(raster_bounds[1] + 10),
+              int(raster_bounds[0] + 20), int(raster_bounds[1] + 20))
 
     # Call the function under test
     result = utilities.crop_raster(bounds, rgb_path=rgb_path)
 
     # Assert out is a output numpy array
     assert isinstance(result, np.ndarray)
+
 
 def test_crop_raster_png_unprojected(tmpdir):
     # Define the bounds for cropping
@@ -264,6 +286,7 @@ def test_crop_raster_png_unprojected(tmpdir):
         # Assert the crs is not present
         assert src.crs is None
 
+
 def test_geo_to_image_coordinates_UTM_N(tmpdir):
     """Read in a csv file, make a projected shapefile, convert to image coordinates and view the results"""
     annotations = get_data("2018_SJER_3_252000_4107000_image_477.csv")
@@ -281,61 +304,69 @@ def test_geo_to_image_coordinates_UTM_N(tmpdir):
     # geo_coords.plot(ax=ax, color="red")
     # plt.show()
 
-    assert geo_coords[geo_coords.intersects(src_window)].shape[0] == pd.read_csv(annotations).shape[0]  
+    assert geo_coords[geo_coords.intersects(src_window)].shape[0] == pd.read_csv(annotations).shape[0]
 
     # Convert to image coordinates
-    image_coords = utilities.geo_to_image_coordinates(geo_coords, image_bounds=src.bounds, image_resolution=src.res[0])   
+    image_coords = utilities.geo_to_image_coordinates(geo_coords, image_bounds=src.bounds, image_resolution=src.res[0])
     assert image_coords.crs is None
 
-    #Confirm overlap
+    # Confirm overlap
     numpy_image = src.read()
     channels, height, width = numpy_image.shape
     numpy_window = geometry.box(0, 0, width, height)
-    assert image_coords[image_coords.intersects(numpy_window)].shape[0] == pd.read_csv(annotations).shape[0]
+    assert image_coords[image_coords.intersects(numpy_window)].shape[0] == pd.read_csv(
+        annotations).shape[0]
 
-    images = visualize.plot_prediction_dataframe(image_coords, root_dir=os.path.dirname(path_to_raster), savedir=tmpdir)
+    images = visualize.plot_prediction_dataframe(image_coords,
+                                                 root_dir=os.path.dirname(path_to_raster),
+                                                 savedir=tmpdir)
     # Confirm the image coordinates are correct
     for image in images:
         im = Image.open(image)
         im.show()
+
 
 def test_geo_to_image_coordinates_UTM_S(tmpdir):
     """Read in a csv file, make a projected shapefile, convert to image coordinates and view the results"""
     annotations = get_data("australia.shp")
     path_to_raster = get_data("australia.tif")
     src = rio.open(path_to_raster)
-    
+
     geo_coords = gpd.read_file(annotations)
     src_window = geometry.box(*src.bounds)
-    #fig, ax = plt.subplots(figsize=(10, 10))
-    #gpd.GeoSeries(src_window).plot(ax=ax, color="blue", alpha=0.5)
-    #geo_coords.plot(ax=ax, color="red")
-    #plt.show()
-    
-    assert geo_coords[geo_coords.intersects(src_window)].shape[0] == gpd.read_file(annotations).shape[0]  
+    # fig, ax = plt.subplots(figsize=(10, 10))
+    # gpd.GeoSeries(src_window).plot(ax=ax, color="blue", alpha=0.5)
+    # geo_coords.plot(ax=ax, color="red")
+    # plt.show()
+
+    assert geo_coords[geo_coords.intersects(src_window)].shape[0] == gpd.read_file(
+        annotations).shape[0]
 
     # Convert to image coordinates
-    image_coords = utilities.geo_to_image_coordinates(geo_coords, image_bounds=src.bounds, image_resolution=src.res[0])   
+    image_coords = utilities.geo_to_image_coordinates(geo_coords, image_bounds=src.bounds, image_resolution=src.res[0])
     assert image_coords.crs is None
 
-    #Confirm overlap
+    # Confirm overlap
     numpy_image = src.read()
     channels, height, width = numpy_image.shape
     numpy_window = geometry.box(0, 0, width, height)
-    assert image_coords[image_coords.intersects(numpy_window)].shape[0] == gpd.read_file(annotations).shape[0] 
+    assert image_coords[image_coords.intersects(numpy_window)].shape[0] == gpd.read_file(annotations).shape[0]
 
-    images = visualize.plot_prediction_dataframe(image_coords, root_dir=os.path.dirname(path_to_raster), savedir=tmpdir)
+    images = visualize.plot_prediction_dataframe(image_coords,
+                                                 root_dir=os.path.dirname(path_to_raster),
+                                                 savedir=tmpdir)
     # Confirm the image coordinates are correct
     for image in images:
         im = Image.open(image)
         im.show()
+
 
 def test_image_to_geo_coordinates(tmpdir):
     annotations = get_data("2018_SJER_3_252000_4107000_image_477.csv")
     path_to_raster = get_data("2018_SJER_3_252000_4107000_image_477.tif")
 
     # Convert to image coordinates
-    gdf = utilities.read_file(annotations)   
+    gdf = utilities.read_file(annotations)
     images = visualize.plot_prediction_dataframe(gdf, root_dir=os.path.dirname(path_to_raster), savedir=tmpdir)
 
     # Confirm it has no crs
@@ -345,27 +376,30 @@ def test_image_to_geo_coordinates(tmpdir):
     for image in images:
         im = Image.open(image)
         im.show(title="before")
-    
+
     # Convert to geo coordinates
     src = rio.open(path_to_raster)
     geo_coords = utilities.image_to_geo_coordinates(gdf, root_dir=os.path.dirname(path_to_raster))
     src_window = geometry.box(*src.bounds)
-    assert geo_coords[geo_coords.intersects(src_window)].shape[0] == pd.read_csv(annotations).shape[0]  
+    assert geo_coords[geo_coords.intersects(src_window)].shape[0] == pd.read_csv(annotations).shape[0]
 
     # Plot using geopandas
-    #fig, ax = plt.subplots(figsize=(10, 10))
-    #gpd.GeoSeries(src_window).plot(ax=ax, color="blue", alpha=0.5)
-    #geo_coords.plot(ax=ax, color="red", alpha=0.2)
-    #show(src, ax=ax)
-    #plt.show()
+    # fig, ax = plt.subplots(figsize=(10, 10))
+    # gpd.GeoSeries(src_window).plot(ax=ax, color="blue", alpha=0.5)
+    # geo_coords.plot(ax=ax, color="red", alpha=0.2)
+    # show(src, ax=ax)
+    # plt.show()
+
 
 def test_image_to_geo_coordinates_boxes(tmpdir):
     annotations = get_data("2018_SJER_3_252000_4107000_image_477.csv")
     path_to_raster = get_data("2018_SJER_3_252000_4107000_image_477.tif")
 
     # Convert to image coordinates
-    gdf = utilities.read_file(annotations)   
-    images = visualize.plot_prediction_dataframe(gdf, root_dir=os.path.dirname(path_to_raster), savedir=tmpdir)
+    gdf = utilities.read_file(annotations)
+    images = visualize.plot_prediction_dataframe(gdf,
+                                                 root_dir=os.path.dirname(path_to_raster),
+                                                 savedir=tmpdir)
 
     # Confirm it has no crs
     assert gdf.crs is None
@@ -374,28 +408,31 @@ def test_image_to_geo_coordinates_boxes(tmpdir):
     for image in images:
         im = Image.open(image)
         im.show(title="before")
-    
+
     # Convert to geo coordinates
     src = rio.open(path_to_raster)
     geo_coords = utilities.image_to_geo_coordinates(gdf, root_dir=os.path.dirname(path_to_raster))
     src_window = geometry.box(*src.bounds)
-    assert geo_coords[geo_coords.intersects(src_window)].shape[0] == pd.read_csv(annotations).shape[0]  
+    assert geo_coords[geo_coords.intersects(src_window)].shape[0] == pd.read_csv(annotations).shape[0]
 
     # Plot using geopandas
-    #fig, ax = plt.subplots(figsize=(10, 10))
-    #gpd.GeoSeries(src_window).plot(ax=ax, color="blue", alpha=0.5)
-    #geo_coords.plot(ax=ax, color="red", alpha=0.2)
-    #show(src, ax=ax)
-    #plt.show()
+    # fig, ax = plt.subplots(figsize=(10, 10))
+    # gpd.GeoSeries(src_window).plot(ax=ax, color="blue", alpha=0.5)
+    # geo_coords.plot(ax=ax, color="red", alpha=0.2)
+    # show(src, ax=ax)
+    # plt.show()
+
 
 def test_image_to_geo_coordinates_points(tmpdir):
     annotations = get_data("2018_SJER_3_252000_4107000_image_477.csv")
     path_to_raster = get_data("2018_SJER_3_252000_4107000_image_477.tif")
 
     # Convert to image coordinates
-    gdf = utilities.read_file(annotations)   
+    gdf = utilities.read_file(annotations)
     gdf["geometry"] = gdf.geometry.centroid
-    images = visualize.plot_prediction_dataframe(gdf, root_dir=os.path.dirname(path_to_raster), savedir=tmpdir)
+    images = visualize.plot_prediction_dataframe(gdf,
+                                                 root_dir=os.path.dirname(path_to_raster),
+                                                 savedir=tmpdir)
 
     # Confirm it has no crs
     assert gdf.crs is None
@@ -404,29 +441,32 @@ def test_image_to_geo_coordinates_points(tmpdir):
     for image in images:
         im = Image.open(image)
         im.show(title="before")
-    
+
     # Convert to geo coordinates
     src = rio.open(path_to_raster)
     geo_coords = utilities.image_to_geo_coordinates(gdf, root_dir=os.path.dirname(path_to_raster))
     src_window = geometry.box(*src.bounds)
-    assert geo_coords[geo_coords.intersects(src_window)].shape[0] == pd.read_csv(annotations).shape[0]  
+    assert geo_coords[geo_coords.intersects(src_window)].shape[0] == pd.read_csv(annotations).shape[0]
 
     # Plot using geopandas
-    #fig, ax = plt.subplots(figsize=(10, 10))
-    #gpd.GeoSeries(src_window).plot(ax=ax, color="blue", alpha=0.5)
-    #geo_coords.plot(ax=ax, color="red", alpha=0.2)
-    #show(src, ax=ax)
-    #plt.show()
+    # fig, ax = plt.subplots(figsize=(10, 10))
+    # gpd.GeoSeries(src_window).plot(ax=ax, color="blue", alpha=0.5)
+    # geo_coords.plot(ax=ax, color="red", alpha=0.2)
+    # show(src, ax=ax)
+    # plt.show()
+
 
 def test_image_to_geo_coordinates_polygons(tmpdir):
     annotations = get_data("2018_SJER_3_252000_4107000_image_477.csv")
     path_to_raster = get_data("2018_SJER_3_252000_4107000_image_477.tif")
 
     # Convert to image coordinates
-    gdf = utilities.read_file(annotations)   
+    gdf = utilities.read_file(annotations)
     # Skew boxes to make them polygons
-    gdf["geometry"] = gdf.geometry.skew(7,7)
-    images = visualize.plot_prediction_dataframe(gdf, root_dir=os.path.dirname(path_to_raster), savedir=tmpdir)
+    gdf["geometry"] = gdf.geometry.skew(7, 7)
+    images = visualize.plot_prediction_dataframe(gdf,
+                                                 root_dir=os.path.dirname(path_to_raster),
+                                                 savedir=tmpdir)
 
     # Confirm it has no crs
     assert gdf.crs is None
@@ -435,19 +475,19 @@ def test_image_to_geo_coordinates_polygons(tmpdir):
     for image in images:
         im = Image.open(image)
         im.show(title="before")
-    
+
     # Convert to geo coordinates
     src = rio.open(path_to_raster)
     geo_coords = utilities.image_to_geo_coordinates(gdf, root_dir=os.path.dirname(path_to_raster))
     src_window = geometry.box(*src.bounds)
-    assert geo_coords[geo_coords.intersects(src_window)].shape[0] == pd.read_csv(annotations).shape[0]  
+    assert geo_coords[geo_coords.intersects(src_window)].shape[0] == pd.read_csv(annotations).shape[0]
 
     # Plot using geopandas
-    #fig, ax = plt.subplots(figsize=(10, 10))
-    #gpd.GeoSeries(src_window).plot(ax=ax, color="blue", alpha=0.5)
-    #geo_coords.plot(ax=ax, color="red", alpha=0.2)
-    #show(src, ax=ax)
-    #plt.show()
+    # fig, ax = plt.subplots(figsize=(10, 10))
+    # gpd.GeoSeries(src_window).plot(ax=ax, color="blue", alpha=0.5)
+    # geo_coords.plot(ax=ax, color="red", alpha=0.2)
+    # show(src, ax=ax)
+    # plt.show()
 
 
 def test_boxes_to_shapefile_projected(m):
@@ -455,11 +495,11 @@ def test_boxes_to_shapefile_projected(m):
     r = rio.open(img)
     df = m.predict_image(path=img)
     gdf = utilities.boxes_to_shapefile(df, root_dir=os.path.dirname(img), projected=True)
-    
-    #Confirm that each boxes within image bounds
+
+    # Confirm that each boxes within image bounds
     geom = geometry.box(*r.bounds)
     assert all(gdf.geometry.apply(lambda x: geom.intersects(geom)).values)
-    
-    #Edge case, only one row in predictions
-    gdf = utilities.boxes_to_shapefile(df.iloc[:1,], root_dir=os.path.dirname(img), projected=True)
+
+    # Edge case, only one row in predictions
+    gdf = utilities.boxes_to_shapefile(df.iloc[:1, ], root_dir=os.path.dirname(img), projected=True)
     assert gdf.shape[0] == 1
