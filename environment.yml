@@ -7,6 +7,7 @@ dependencies:
   - docutils<0.18
   - furo
   - geopandas
+  - huggingface_hub
   - h5py
   - matplotlib
   - nbmake

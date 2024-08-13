@@ -20,6 +20,8 @@ from tqdm import tqdm
 from deepforest import _ROOT
 import json
 import urllib.request
+from huggingface_hub import hf_hub_download
+from huggingface_hub.utils._errors import RevisionNotFoundError, HfHubHTTPError
 
 
 def read_config(config_path):
@@ -54,6 +56,50 @@ class DownloadProgressBar(tqdm):
         self.update(b * bsize - self.n)
 
 
+def fetch_model(save_dir, repo_id, model_filename, version="main"):
+    """Downloads a model from Hugging Face and saves it to a specified
+    directory.
+
+    Parameters:
+    - save_dir (str): The directory where the model will be saved.
+    - repo_id (str): The ID of the Hugging Face repository (e.g., "weecology/deepforest-tree").
+    - model_filename (str): The name of the model file in the repository (e.g., "NEON.pt").
+    - version (str): The version or branch of the model to download (e.g., "main", "v1.0.0"). Default is "main".
+
+    Returns:
+    - output_path (str): The path where the model is saved.
+    """
+    # Ensure the save directory exists
+    os.makedirs(save_dir, exist_ok=True)
+
+    # Define the output path
+    output_path = os.path.join(save_dir, model_filename)
+
+    try:
+        # Download the model from Hugging Face
+        hf_hub_download(
+            repo_id=repo_id,
+            filename=model_filename,
+            local_dir=save_dir,
+            revision=version  # Specify the version or branch of the model to download
+        )
+        print(f"Model saved to: {output_path}")
+    except RevisionNotFoundError as e:
+        print(f"Error: {e}")
+        print(
+            f"Check that the file '{model_filename}' and revision '{version}' exist in the repository '{repo_id}'."
+        )
+    except HfHubHTTPError as e:
+        print(f"HTTP Error: {e}")
+        print(
+            "There might be a problem with your internet connection or the file may not exist."
+        )
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+
+    return version, output_path
+
+
 def use_bird_release(
         save_dir=os.path.join(_ROOT, "data/"), prebuilt_model="bird", check_release=True):
     """
@@ -63,61 +109,10 @@ def use_bird_release(
         prebuilt_model: Currently only accepts "NEON", but could be expanded to include other prebuilt models. The local model will be called prebuilt_model.h5 on disk.
         check_release (logical): whether to check github for a model recent release. In cases where you are hitting the github API rate limit, set to False and any local model will be downloaded. If no model has been downloaded an error will raise.
     Returns: release_tag, output_path (str): path to downloaded model
-
     """
-
-    # Naming based on pre-built model
-    output_path = os.path.join(save_dir, prebuilt_model + ".pt")
-
-    if check_release:
-        # Find latest github tag release from the DeepLidar repo
-        _json = json.loads(
-            urllib.request.urlopen(
-                urllib.request.Request(
-                    'https://api.github.com/repos/Weecology/BirdDetector/releases/latest',
-                    headers={'Accept': 'application/vnd.github.v3+json'},
-                )).read())
-        asset = _json['assets'][0]
-        url = asset['browser_download_url']
-
-        # Check the release tagged locally
-        try:
-            release_txt = pd.read_csv(save_dir + "current_bird_release.csv")
-        except BaseException:
-            release_txt = pd.DataFrame({"current_bird_release": [None]})
-
-        # Download the current release it doesn't exist
-        if not release_txt.current_bird_release[0] == _json["html_url"]:
-
-            print("Downloading model from BirdDetector release {}, see {} for details".
-                  format(_json["tag_name"], _json["html_url"]))
-
-            with DownloadProgressBar(unit='B',
-                                     unit_scale=True,
-                                     miniters=1,
-                                     desc=url.split('/')[-1]) as t:
-                urllib.request.urlretrieve(url,
-                                           filename=output_path,
-                                           reporthook=t.update_to)
-
-            print("Model was downloaded and saved to {}".format(output_path))
-
-            # record the release tag locally
-            release_txt = pd.DataFrame({"current_bird_release": [_json["html_url"]]})
-            release_txt.to_csv(save_dir + "current_bird_release.csv")
-        else:
-            print("Model from BirdDetector Repo release {} was already downloaded. "
-                  "Loading model from file.".format(_json["html_url"]))
-
-        return _json["html_url"], output_path
-    else:
-        try:
-            release_txt = pd.read_csv(save_dir + "current_release.csv")
-        except BaseException:
-            raise ValueError("Check release argument is {}, but no release has been "
-                             "previously downloaded".format(check_release))
-
-        return release_txt.current_release[0], output_path
+    return fetch_model(save_dir,
+                       repo_id="weecology/deepforest-bird",
+                       model_filename="bird.pt")
 
 
 def use_release(
@@ -132,58 +127,9 @@ def use_release(
     Returns: release_tag, output_path (str): path to downloaded model
 
     """
-    # Naming based on pre-built model
-    output_path = os.path.join(save_dir, prebuilt_model + ".pt")
-
-    if check_release:
-        # Find latest github tag release from the DeepLidar repo
-        _json = json.loads(
-            urllib.request.urlopen(
-                urllib.request.Request(
-                    'https://api.github.com/repos/Weecology/DeepForest/releases/latest',
-                    headers={'Accept': 'application/vnd.github.v3+json'},
-                )).read())
-        asset = _json['assets'][0]
-        url = asset['browser_download_url']
-
-        # Check the release tagged locally
-        try:
-            release_txt = pd.read_csv(save_dir + "current_release.csv")
-        except BaseException:
-            release_txt = pd.DataFrame({"current_release": [None]})
-
-        # Download the current release it doesn't exist
-        if not release_txt.current_release[0] == _json["html_url"]:
-
-            print("Downloading model from DeepForest release {}, see {} "
-                  "for details".format(_json["tag_name"], _json["html_url"]))
-
-            with DownloadProgressBar(unit='B',
-                                     unit_scale=True,
-                                     miniters=1,
-                                     desc=url.split('/')[-1]) as t:
-                urllib.request.urlretrieve(url,
-                                           filename=output_path,
-                                           reporthook=t.update_to)
-
-            print("Model was downloaded and saved to {}".format(output_path))
-
-            # record the release tag locally
-            release_txt = pd.DataFrame({"current_release": [_json["html_url"]]})
-            release_txt.to_csv(save_dir + "current_release.csv")
-        else:
-            print("Model from DeepForest release {} was already downloaded. "
-                  "Loading model from file.".format(_json["html_url"]))
-
-        return _json["html_url"], output_path
-    else:
-        try:
-            release_txt = pd.read_csv(save_dir + "current_release.csv")
-        except BaseException:
-            raise ValueError("Check release argument is {}, but no release "
-                             "has been previously downloaded".format(check_release))
-
-        return release_txt.current_release[0], output_path
+    return fetch_model(save_dir,
+                       repo_id="weecology/deepforest-tree",
+                       model_filename="NEON.pt")
 
 
 def read_pascal_voc(xml_path):
