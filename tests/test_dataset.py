@@ -24,13 +24,10 @@ def multi_class():
     return csv_file
 
 
-@pytest.mark.parametrize("csv_file,label_dict",
-                         [(single_class(), {"Tree": 0}), (multi_class(), {"Alive": 0, "Dead": 1})])
-def test_TreeDataset(csv_file, label_dict):
+@pytest.mark.parametrize("csv_file,label_dict", [(single_class(), {"Tree": 0}), (multi_class(), {"Alive": 0, "Dead": 1})])
+def test_tree_dataset(csv_file, label_dict):
     root_dir = os.path.dirname(get_data("OSBS_029.png"))
-    ds = dataset.TreeDataset(csv_file=csv_file,
-                             root_dir=root_dir,
-                             label_dict=label_dict)
+    ds = dataset.TreeDataset(csv_file=csv_file, root_dir=root_dir, label_dict=label_dict)
     raw_data = pd.read_csv(csv_file)
 
     assert len(ds) == len(raw_data.image_path.unique())
@@ -126,9 +123,7 @@ def test_empty_collate():
 def test_dataloader():
     csv_file = get_data("example.csv")
     root_dir = os.path.dirname(csv_file)
-    ds = dataset.TreeDataset(csv_file=csv_file,
-                             root_dir=root_dir,
-                             train=False)
+    ds = dataset.TreeDataset(csv_file=csv_file, root_dir=root_dir, train=False)
     image = next(iter(ds))
     # Assert image is channels first format
     assert image.shape[0] == 3
@@ -161,7 +156,10 @@ def test_tile_dataset(preload_images):
     tile_path = get_data("2019_YELL_2_528000_4978000_image_crop2.png")
     tile = rio.open(tile_path).read()
     tile = np.moveaxis(tile, 0, 2)
-    ds = dataset.TileDataset(tile=tile, preload_images=preload_images, patch_size=100, patch_overlap=0)
+    ds = dataset.TileDataset(tile=tile,
+                             preload_images=preload_images,
+                             patch_size=100,
+                             patch_overlap=0)
     assert len(ds) > 0
 
     # assert crop shape

@@ -27,7 +27,8 @@ if __name__ == "__main__":
 
     big_frame = []
     for x in range(100):
-        img = Image.open("{}/{}".format(os.path.dirname(csv_file), df.image_path.unique()[0]))
+        img = Image.open("{}/{}".format(os.path.dirname(csv_file),
+                                        df.image_path.unique()[0]))
         cv2.imwrite("{}/{}.png".format(tmpdir, x), np.array(img))
         new_df = df.copy()
         new_df.image_path = "{}.png".format(x)

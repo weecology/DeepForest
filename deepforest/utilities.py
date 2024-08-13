@@ -57,8 +57,8 @@ class DownloadProgressBar(tqdm):
 
 
 def fetch_model(save_dir, repo_id, model_filename, version="main"):
-    """
-    Downloads a model from Hugging Face and saves it to a specified directory.
+    """Downloads a model from Hugging Face and saves it to a specified
+    directory.
 
     Parameters:
     - save_dir (str): The directory where the model will be saved.

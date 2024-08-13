@@ -46,8 +46,8 @@ def test_plot_prediction_dataframe(m, tmpdir):
     for path, image, target in zip(paths, images, targets):
         target_df = visualize.format_boxes(target, scores=False)
         target_df["image_path"] = path
-        filenames = visualize.plot_prediction_dataframe(df=target_df, savedir=tmpdir,
-                                                        root_dir=m.config["validation"]["root_dir"])
+        filenames = visualize.plot_prediction_dataframe(
+            df=target_df, savedir=tmpdir, root_dir=m.config["validation"]["root_dir"])
 
     assert all([os.path.exists(x) for x in filenames])
 
@@ -60,8 +60,8 @@ def test_plot_predictions_and_targets(m, tmpdir):
     predictions = m.model(images)
     for path, image, target, prediction in zip(paths, images, targets, predictions):
         image = image.permute(1, 2, 0)
-        save_figure_path = visualize.plot_prediction_and_targets(image, prediction, target,
-                                                                 image_name=os.path.basename(path), savedir=tmpdir)
+        save_figure_path = visualize.plot_prediction_and_targets(
+            image, prediction, target, image_name=os.path.basename(path), savedir=tmpdir)
         assert os.path.exists(save_figure_path)
 
 
