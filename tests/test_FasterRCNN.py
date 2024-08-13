@@ -14,11 +14,13 @@ os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 def _make_empty_sample():
     images = [torch.rand((3, 100, 100), dtype=torch.float32)]
     boxes = torch.zeros((0, 4), dtype=torch.float32)
-    negative_target = {"boxes": boxes,
-                       "labels": torch.zeros(0, dtype=torch.int64),
-                       "image_id": 4,
-                       "area": (boxes[:, 3] - boxes[:, 1]) * (boxes[:, 2] - boxes[:, 0]),
-                       "iscrowd": torch.zeros((0,), dtype=torch.int64)}
+    negative_target = {
+        "boxes": boxes,
+        "labels": torch.zeros(0, dtype=torch.int64),
+        "image_id": 4,
+        "area": (boxes[:, 3] - boxes[:, 1]) * (boxes[:, 2] - boxes[:, 0]),
+        "iscrowd": torch.zeros((0,), dtype=torch.int64)
+    }
 
     targets = [negative_target]
     return images, targets

@@ -12,7 +12,9 @@ def run(m):
     predictions = m.predict_file(csv_file=csv_file, root_dir=os.path.dirname(csv_file))
     predictions.label = "Tree"
     ground_truth = pd.read_csv(csv_file)
-    results = evaluate.evaluate(predictions=predictions, ground_df=ground_truth, root_dir=os.path.dirname(csv_file),
+    results = evaluate.evaluate(predictions=predictions,
+                                ground_df=ground_truth,
+                                root_dir=os.path.dirname(csv_file),
                                 savedir=None)
 
 

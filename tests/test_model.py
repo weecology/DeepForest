@@ -28,7 +28,8 @@ def crop_model():
     return crop_model
 
 
-def test_crop_model(crop_model):  # Use pytest tempdir fixture to create a temporary directory
+def test_crop_model(
+        crop_model):  # Use pytest tempdir fixture to create a temporary directory
     # Test forward pass
     x = torch.rand(4, 3, 224, 224)
     output = crop_model.forward(x)
@@ -50,7 +51,11 @@ def test_crop_model_train(crop_model, tmpdir):
     boxes = df[['xmin', 'ymin', 'xmax', 'ymax']].values.tolist()
     root_dir = os.path.dirname(get_data("SOAP_061.png"))
     images = df.image_path.values
-    crop_model.write_crops(boxes=boxes, labels=df.label.values, root_dir=root_dir, images=images, savedir=tmpdir)
+    crop_model.write_crops(boxes=boxes,
+                           labels=df.label.values,
+                           root_dir=root_dir,
+                           images=images,
+                           savedir=tmpdir)
 
     # Create a trainer
     crop_model.create_trainer(fast_dev_run=True)

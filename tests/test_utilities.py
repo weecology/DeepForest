@@ -27,8 +27,7 @@ def config():
 
 
 def test_read_pascal_voc():
-    annotations = utilities.read_pascal_voc(
-        xml_path=get_data("OSBS_029.xml"))
+    annotations = utilities.read_pascal_voc(xml_path=get_data("OSBS_029.xml"))
     print(annotations.shape)
     assert annotations.shape[0] == 61
 
@@ -253,8 +252,8 @@ def test_crop_raster_no_savedir(tmpdir):
     raster_bounds = rio.open(rgb_path).bounds
 
     # Define the bounds for cropping
-    bounds = (
-    int(raster_bounds[0] + 10), int(raster_bounds[1] + 10), int(raster_bounds[0] + 20), int(raster_bounds[1] + 20))
+    bounds = (int(raster_bounds[0] + 10), int(raster_bounds[1] + 10),
+              int(raster_bounds[0] + 20), int(raster_bounds[1] + 20))
 
     # Call the function under test
     result = utilities.crop_raster(bounds, rgb_path=rgb_path)
@@ -315,9 +314,12 @@ def test_geo_to_image_coordinates_UTM_N(tmpdir):
     numpy_image = src.read()
     channels, height, width = numpy_image.shape
     numpy_window = geometry.box(0, 0, width, height)
-    assert image_coords[image_coords.intersects(numpy_window)].shape[0] == pd.read_csv(annotations).shape[0]
+    assert image_coords[image_coords.intersects(numpy_window)].shape[0] == pd.read_csv(
+        annotations).shape[0]
 
-    images = visualize.plot_prediction_dataframe(image_coords, root_dir=os.path.dirname(path_to_raster), savedir=tmpdir)
+    images = visualize.plot_prediction_dataframe(image_coords,
+                                                 root_dir=os.path.dirname(path_to_raster),
+                                                 savedir=tmpdir)
     # Confirm the image coordinates are correct
     for image in images:
         im = Image.open(image)
@@ -337,7 +339,8 @@ def test_geo_to_image_coordinates_UTM_S(tmpdir):
     # geo_coords.plot(ax=ax, color="red")
     # plt.show()
 
-    assert geo_coords[geo_coords.intersects(src_window)].shape[0] == gpd.read_file(annotations).shape[0]
+    assert geo_coords[geo_coords.intersects(src_window)].shape[0] == gpd.read_file(
+        annotations).shape[0]
 
     # Convert to image coordinates
     image_coords = utilities.geo_to_image_coordinates(geo_coords, image_bounds=src.bounds, image_resolution=src.res[0])
@@ -349,7 +352,9 @@ def test_geo_to_image_coordinates_UTM_S(tmpdir):
     numpy_window = geometry.box(0, 0, width, height)
     assert image_coords[image_coords.intersects(numpy_window)].shape[0] == gpd.read_file(annotations).shape[0]
 
-    images = visualize.plot_prediction_dataframe(image_coords, root_dir=os.path.dirname(path_to_raster), savedir=tmpdir)
+    images = visualize.plot_prediction_dataframe(image_coords,
+                                                 root_dir=os.path.dirname(path_to_raster),
+                                                 savedir=tmpdir)
     # Confirm the image coordinates are correct
     for image in images:
         im = Image.open(image)
@@ -392,7 +397,9 @@ def test_image_to_geo_coordinates_boxes(tmpdir):
 
     # Convert to image coordinates
     gdf = utilities.read_file(annotations)
-    images = visualize.plot_prediction_dataframe(gdf, root_dir=os.path.dirname(path_to_raster), savedir=tmpdir)
+    images = visualize.plot_prediction_dataframe(gdf,
+                                                 root_dir=os.path.dirname(path_to_raster),
+                                                 savedir=tmpdir)
 
     # Confirm it has no crs
     assert gdf.crs is None
@@ -423,7 +430,9 @@ def test_image_to_geo_coordinates_points(tmpdir):
     # Convert to image coordinates
     gdf = utilities.read_file(annotations)
     gdf["geometry"] = gdf.geometry.centroid
-    images = visualize.plot_prediction_dataframe(gdf, root_dir=os.path.dirname(path_to_raster), savedir=tmpdir)
+    images = visualize.plot_prediction_dataframe(gdf,
+                                                 root_dir=os.path.dirname(path_to_raster),
+                                                 savedir=tmpdir)
 
     # Confirm it has no crs
     assert gdf.crs is None
@@ -455,7 +464,9 @@ def test_image_to_geo_coordinates_polygons(tmpdir):
     gdf = utilities.read_file(annotations)
     # Skew boxes to make them polygons
     gdf["geometry"] = gdf.geometry.skew(7, 7)
-    images = visualize.plot_prediction_dataframe(gdf, root_dir=os.path.dirname(path_to_raster), savedir=tmpdir)
+    images = visualize.plot_prediction_dataframe(gdf,
+                                                 root_dir=os.path.dirname(path_to_raster),
+                                                 savedir=tmpdir)
 
     # Confirm it has no crs
     assert gdf.crs is None

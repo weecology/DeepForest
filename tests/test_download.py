@@ -17,11 +17,9 @@ def url():
 
 
 def boxes():
-    return [
-        (-124.112622, 40.493891, -124.111536, 40.49457),
-        (-114.12529, 51.072134, -114.12117, 51.07332),
-        (-73.763941, 41.111032, -73.763447, 41.111626)
-    ]
+    return [(-124.112622, 40.493891, -124.111536, 40.49457),
+            (-114.12529, 51.072134, -114.12117, 51.07332),
+            (-73.763941, 41.111032, -73.763447, 41.111626)]
 
 
 def additional_params():
@@ -58,6 +56,7 @@ def test_download_arcgis_rest(tmpdir, image_name, url, box, params, download_ser
             else:
                 assert src.crs is None
                 plt.imshow(cv2.imread(filename)[:, :, ::-1])
+
     asyncio.run(run_test())
 
 
