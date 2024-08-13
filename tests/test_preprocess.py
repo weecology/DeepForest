@@ -113,13 +113,12 @@ def test_split_raster_no_annotations(config, tmpdir):
 def test_split_raster_from_image(config, tmpdir, geodataframe):
     r = rasterio.open(config["path_to_raster"]).read()
     r = np.rollaxis(r, 0, 3)
-    annotations_file = preprocess.split_raster(
-        numpy_image=r,
-        annotations_file=geodataframe,
-        save_dir=tmpdir,
-        patch_size=config["patch_size"],
-        patch_overlap=config["patch_overlap"],
-        image_name="OSBS_029.tif")
+    annotations_file = preprocess.split_raster(numpy_image=r,
+                                               annotations_file=geodataframe,
+                                               save_dir=tmpdir,
+                                               patch_size=config["patch_size"],
+                                               patch_overlap=config["patch_overlap"],
+                                               image_name="OSBS_029.tif")
 
     assert not annotations_file.empty
 
@@ -202,7 +201,8 @@ def test_split_raster_with_point_annotations(tmpdir, config):
     annotations.to_csv(annotations_file, index=False)
 
     # Call split_raster function
-    preprocess.split_raster(annotations_file=annotations_file.strpath, path_to_raster=config["path_to_raster"],
+    preprocess.split_raster(annotations_file=annotations_file.strpath,
+                            path_to_raster=config["path_to_raster"],
                             save_dir=tmpdir)
 
     # Assert that the output annotations file is created
@@ -224,7 +224,8 @@ def test_split_raster_with_box_annotations(tmpdir, config):
     annotations.to_csv(annotations_file, index=False)
 
     # Call split_raster function
-    preprocess.split_raster(annotations_file=annotations_file.strpath, path_to_raster=config["path_to_raster"],
+    preprocess.split_raster(annotations_file=annotations_file.strpath,
+                            path_to_raster=config["path_to_raster"],
                             save_dir=tmpdir)
 
     # Assert that the output annotations file is created
@@ -234,8 +235,10 @@ def test_split_raster_with_box_annotations(tmpdir, config):
 # Test split_raster with polygon annotations file
 def test_split_raster_with_polygon_annotations(tmpdir, config):
     # Create a temporary polygon annotations file with a polygon in WKT format
-    sample_geometry = [geometry.Polygon([(0, 0), (0, 2), (1, 1), (1, 0), (0, 0)]),
-                       geometry.Polygon([(2, 2), (2, 4), (3, 3), (3, 2), (2, 2)])]
+    sample_geometry = [
+        geometry.Polygon([(0, 0), (0, 2), (1, 1), (1, 0), (0, 0)]),
+        geometry.Polygon([(2, 2), (2, 4), (3, 3), (3, 2), (2, 2)])
+    ]
     annotations = pd.DataFrame({
         "image_path": ["OSBS_029.tif", "OSBS_029.tif"],
         "polygon": [sample_geometry[0].wkt, sample_geometry[1].wkt],
@@ -246,7 +249,8 @@ def test_split_raster_with_polygon_annotations(tmpdir, config):
 
     # Call split_raster function
     split_annotations = preprocess.split_raster(annotations_file=annotations_file.strpath,
-                                                path_to_raster=config["path_to_raster"], save_dir=tmpdir)
+                                                path_to_raster=config["path_to_raster"],
+                                                save_dir=tmpdir)
 
     assert not split_annotations.empty
 
@@ -261,16 +265,17 @@ def test_split_raster_from_csv(tmpdir):
     path_to_raster = get_data("2018_SJER_3_252000_4107000_image_477.tif")
 
     # Check original data
-    split_annotations = preprocess.split_raster(
-        annotations_file=annotations,
-        path_to_raster=path_to_raster,
-        save_dir=tmpdir,
-        root_dir=os.path.dirname(path_to_raster),
-        patch_size=300)
+    split_annotations = preprocess.split_raster(annotations_file=annotations,
+                                                path_to_raster=path_to_raster,
+                                                save_dir=tmpdir,
+                                                root_dir=os.path.dirname(path_to_raster),
+                                                patch_size=300)
     assert not split_annotations.empty
 
     # Plot labels
-    images = visualize.plot_prediction_dataframe(split_annotations, root_dir=tmpdir, savedir=tmpdir)
+    images = visualize.plot_prediction_dataframe(split_annotations,
+                                                 root_dir=tmpdir,
+                                                 savedir=tmpdir)
 
     for image in images:
         im = Image.open(image)
@@ -281,23 +286,29 @@ def test_split_raster_from_shp(tmpdir):
     annotations = get_data("2018_SJER_3_252000_4107000_image_477.csv")
     path_to_raster = get_data("2018_SJER_3_252000_4107000_image_477.tif")
     gdf = utilities.read_file(annotations)
-    geo_coords = utilities.image_to_geo_coordinates(gdf, root_dir=os.path.dirname(path_to_raster))
+    geo_coords = utilities.image_to_geo_coordinates(
+        gdf, root_dir=os.path.dirname(path_to_raster))
     annotations_file = tmpdir.join("projected_annotations.shp").strpath
     geo_coords.to_file(annotations_file)
 
     # Call split_raster function
-    split_annotations = preprocess.split_raster(
-        annotations_file=annotations_file,
-        path_to_raster=path_to_raster, save_dir=tmpdir, root_dir=os.path.dirname(path_to_raster), patch_size=300)
+    split_annotations = preprocess.split_raster(annotations_file=annotations_file,
+                                                path_to_raster=path_to_raster,
+                                                save_dir=tmpdir,
+                                                root_dir=os.path.dirname(path_to_raster),
+                                                patch_size=300)
 
     assert not split_annotations.empty
 
     # Plot labels
-    images = visualize.plot_prediction_dataframe(split_annotations, root_dir=tmpdir, savedir=tmpdir)
+    images = visualize.plot_prediction_dataframe(split_annotations,
+                                                 root_dir=tmpdir,
+                                                 savedir=tmpdir)
 
     for image in images:
         im = Image.open(image)
         im.show()
+
 
 # def test_view_annotation_split(tmpdir, config):
 #     """Test that the split annotations can be visualized and mantain location, turn show to True for debugging interactively"""

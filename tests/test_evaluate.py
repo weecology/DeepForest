@@ -17,7 +17,8 @@ def test_evaluate_image(m):
     predictions = m.predict_file(csv_file=csv_file, root_dir=os.path.dirname(csv_file))
     ground_truth = read_file(csv_file)
     predictions.label = 0
-    result = evaluate.evaluate_image_boxes(predictions=predictions, ground_df=ground_truth,
+    result = evaluate.evaluate_image_boxes(predictions=predictions,
+                                           ground_df=ground_truth,
                                            root_dir=os.path.dirname(csv_file))
 
     assert result.shape[0] == ground_truth.shape[0]
@@ -30,7 +31,8 @@ def test_evaluate_boxes(m, tmpdir):
     predictions.label = "Tree"
     ground_truth = read_file(csv_file)
     predictions = predictions.loc[range(10)]
-    results = evaluate.evaluate_boxes(predictions=predictions, ground_df=ground_truth,
+    results = evaluate.evaluate_boxes(predictions=predictions,
+                                      ground_df=ground_truth,
                                       root_dir=os.path.dirname(csv_file))
 
     assert results["results"].shape[0] == ground_truth.shape[0]
@@ -51,7 +53,8 @@ def test_evaluate_boxes_multiclass():
     predictions = ground_truth.copy()
     predictions["score"] = 1
     predictions.iloc[[36, 35, 34], predictions.columns.get_indexer(['label'])]
-    results = evaluate.evaluate_boxes(predictions=predictions, ground_df=ground_truth,
+    results = evaluate.evaluate_boxes(predictions=predictions,
+                                      ground_df=ground_truth,
                                       root_dir=os.path.dirname(csv_file))
 
     assert results["results"].shape[0] == ground_truth.shape[0]
@@ -67,8 +70,10 @@ def test_evaluate_boxes_save_images(tmpdir):
     predictions = ground_truth.copy()
     predictions["score"] = 1
     predictions.iloc[[36, 35, 34], predictions.columns.get_indexer(['label'])]
-    results = evaluate.evaluate_boxes(predictions=predictions, ground_df=ground_truth,
-                                      root_dir=os.path.dirname(csv_file), savedir=tmpdir)
+    results = evaluate.evaluate_boxes(predictions=predictions,
+                                      ground_df=ground_truth,
+                                      root_dir=os.path.dirname(csv_file),
+                                      savedir=tmpdir)
     assert all([os.path.exists("{}/{}".format(tmpdir, x)) for x in ground_truth.image_path])
 
 
@@ -87,10 +92,7 @@ def test_evaluate_empty(m):
 @pytest.fixture
 def sample_results():
     # Create a sample DataFrame for testing
-    data = {
-        'true_label': [1, 1, 2],
-        'predicted_label': [1, 2, 1]
-    }
+    data = {'true_label': [1, 1, 2], 'predicted_label': [1, 2, 1]}
     return pd.DataFrame(data)
 
 
