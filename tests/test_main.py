@@ -222,6 +222,7 @@ def test_predict_return_plot(m):
     plot = m.predict_image(image = image, return_plot=True)
     assert isinstance(plot, np.ndarray)
 
+
 def test_predict_big_file(m, tmpdir):
     m.config["train"]["fast_dev_run"] = False
     m.create_trainer()    
@@ -232,6 +233,7 @@ def test_predict_big_file(m, tmpdir):
     
     printed_plots = glob.glob("{}/*.png".format(tmpdir))
     assert len(printed_plots) == len(original_file.image_path.unique())
+
 
 def test_predict_small_file(m, tmpdir):
     csv_file = get_data("OSBS_029.csv")
@@ -281,7 +283,7 @@ def test_predict_tile_from_array(m, patch_overlap, raster_path):
 
 @pytest.mark.parametrize("patch_overlap",[0.1, 0])
 def test_predict_tile_from_array_with_return_plot(m, patch_overlap, raster_path):
-    #test predict numpy image
+    # test predict numpy image
     image = np.array(Image.open(raster_path))
     m.config["train"]["fast_dev_run"] = False
     m.create_trainer()      
@@ -292,6 +294,7 @@ def test_predict_tile_from_array_with_return_plot(m, patch_overlap, raster_path)
                                 color=(0,255,0))
     assert isinstance(prediction, np.ndarray)
     assert prediction.size > 0
+
 
 def test_predict_tile_no_mosaic(m, raster_path):
     # test no mosaic, return a tuple of crop and prediction
@@ -324,6 +327,7 @@ def test_evaluate(m, tmpdir):
     df = pd.read_csv(csv_file)
     assert results["results"].shape[0] == df.shape[0]
 
+
 def test_train_callbacks(m):
     csv_file = get_data("example.csv") 
     root_dir = os.path.dirname(csv_file)
@@ -343,6 +347,7 @@ def test_train_callbacks(m):
     trainer = Trainer(callbacks=[MyPrintingCallback()])
     trainer = Trainer(fast_dev_run=True)
     trainer.fit(m, train_ds)
+
 
 def test_custom_config_file_path(ROOT, tmpdir):
     m = main.deepforest(config_file='{}/deepforest_config.yml'.format(os.path.dirname(ROOT)))
@@ -587,9 +592,11 @@ def test_configure_optimizers(scheduler, expected):
     # Assert the scheduler type
     assert type(m.trainer.lr_scheduler_configs[0].scheduler).__name__ == scheduler_config["expected"], f"Scheduler type mismatch for {scheduler_config['type']}"
 
+
 @pytest.fixture()
 def crop_model():
     return model.CropModel()
+
 
 def test_predict_tile_with_crop_model(m, config):
     raster_path = get_data("SOAP_061.png")
@@ -598,8 +605,6 @@ def test_predict_tile_with_crop_model(m, config):
     iou_threshold = 0.15
     return_plot = False
     mosaic = True
-
-
     # Set up the crop model
     crop_model = model.CropModel()
 
