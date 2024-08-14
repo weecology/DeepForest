@@ -180,5 +180,3 @@ For a complete list of supported augmentations, refer to the [Albumentations doc
 ## Conclusion
 
 Customizing data augmentations in DeepForest is simple and flexible. By defining your desired augmentations in the `deepforest_config.yml` file and passing them to the model using `get_augmentations`, you can easily tailor the training and validation processes to suit your specific needs.
-
---- 
