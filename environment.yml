@@ -48,3 +48,5 @@ dependencies:
     - nbqa
     - Pygments
     - docformatter
+    - opencv-python-headless
+

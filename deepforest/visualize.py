@@ -2,6 +2,7 @@
 import os
 import pandas as pd
 import matplotlib
+from matplotlib import pyplot as plt
 from PIL import Image
 import numpy as np
 import pandas.api.types as ptypes
@@ -31,8 +32,7 @@ def view_dataset(ds, savedir=None, color=None, thickness=1):
     if savedir:
         cv2.imwrite("{}/{}".format(savedir, image_path[0]), image)
     else:
-        cv2.imshow(image)
-        cv2.waitKey(0)
+        plt.imshow(image)
 
 
 def format_geometry(predictions, scores=True):
