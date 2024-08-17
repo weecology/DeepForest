@@ -15,7 +15,7 @@ nbsphinx
 nbqa
 numpy
 numpydoc
-opencv-python>=4.5.4
+opencv-python-headless>=4.5.4
 pandas
 pillow>6.2.0
 pip

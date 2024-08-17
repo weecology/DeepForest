@@ -36,7 +36,6 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libgl1-mesa-glx libegl1-mesa
-          sudo apt-get install -y python3-opencv
 
       - name: Install Conda environment with Micromamba
         uses: mamba-org/setup-micromamba@v1
