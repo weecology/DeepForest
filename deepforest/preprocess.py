@@ -91,6 +91,13 @@ def select_annotations(annotations, window):
 
     clipped_annotations.geometry = clipped_annotations.geometry.translate(
         xoff=-window_xmin, yoff=-window_ymin)
+    
+    # Update xmin, ymin, xmax, ymax based on the clipped annotations' geometry
+    if clipped_annotations.shape[0] > 0:
+      clipped_annotations['xmin'] = clipped_annotations.geometry.bounds.minx
+      clipped_annotations['ymin'] = clipped_annotations.geometry.bounds.miny
+      clipped_annotations['xmax'] = clipped_annotations.geometry.bounds.maxx
+      clipped_annotations['ymax'] = clipped_annotations.geometry.bounds.maxy
 
     return clipped_annotations
 
