@@ -25,7 +25,7 @@ pycocotools
 Pygments
 pytest
 pytest-profiling
-pytorch-lightning>=1.5.8
+pytorch-lightning>2.0.0
 pyyaml>=5.1.0
 rasterio
 recommonmark
