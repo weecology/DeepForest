@@ -4,7 +4,6 @@ aiohttp
 bumpversion
 comet_ml
 docformatter
-docutils<0.18
 furo
 geopandas
 huggingface_hub
@@ -25,7 +24,7 @@ pycocotools
 Pygments
 pytest
 pytest-profiling
-pytorch-lightning>2.0.0
+pytorch-lightning
 pyyaml>=5.1.0
 rasterio
 recommonmark
