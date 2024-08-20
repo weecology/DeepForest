@@ -21,7 +21,7 @@ img = model.predict_image(path=sample_image_path, return_plot=True)
 plt.imshow(img[:,:,::-1])
 ```
 
-![](../www/getting_started1.png)
+![](../../www/getting_started1.png)
 
 
 ** please note that this video was made before the deepforest-pytorch -> deepforest name change. **
