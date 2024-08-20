@@ -56,7 +56,7 @@ jobs:
         run: nbqa yapf --in-place docs/examples/*.ipynb --style=.style.yapf
           
       - name: Check notebook build
-        run: pytest --nbmake docs/*.ipynb
+        run: pytest --nbmake docs/**/*_test.ipynb
       
       - name: Run docformatter
         run: docformatter --check --recursive deepforest/
