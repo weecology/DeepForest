@@ -7,4 +7,4 @@ Getting Started
 
    getting_started
    Reading_and_Writing
-   sample
+   sample_test
