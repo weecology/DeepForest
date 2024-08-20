@@ -57,7 +57,7 @@ Citation: Weinstein, Ben G., et al. "Capturing long‐tailed individual tree div
 
 ## Livestock Detectors
 
-The goal of this project is to detect livestock using drone and UAV imagery. To ensure that the model generalizes well across different points of view and camera types, various datasets will be used. This approach aims to enhance the model's ability to perform accurately under diverse conditions and perspectives.
+This model has a single label 'cattle' trained on drone imagery of cows, sheep and other large mammals in agricultural settings. The model was trained on data from [insert countries and other metadata about landscapes].
 
 ![image](../www/livestock-example.png)
 
