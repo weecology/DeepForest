@@ -3,7 +3,7 @@
 import os
 import sys
 import urllib.request
-from typing import Any
+from typing import Any, Dict
 
 from recommonmark.parser import CommonMarkParser
 from recommonmark.transform import AutoStructify
@@ -90,8 +90,20 @@ pygments_style = 'sphinx'
 todo_include_todos = False
 
 # -- Options for HTML output -------------------------------------------
-html_theme = 'furo'
+html_theme = 'pydata_sphinx_theme'
 html_static_path = []
+html_theme_options = {
+    "navbar_start": ["navbar-logo"],
+    "navbar_align": "content",
+    "navbar_center": ["navbar2"],
+    "header_links_before_dropdown": 5,
+    "secondary_sidebar_items": ["page-toc", "searchbox", "edit-this-page", "sourcelink"],
+}
+html_sidebars: Dict[str, Any] = {
+    "index": [],
+    "**": ["sidebar-nav-bs.html"],
+}
+
 
 # -- Options for HTMLHelp output ---------------------------------------
 
@@ -130,7 +142,7 @@ source_suffix = {
 # See https://github.com/zulip/zulip/issues/13263 for details.
 
 # Suppress warnings due to recommonmark config not being cacheable
-suppress_warnings = ["config.cache"]
+suppress_warnings = ["config.cache","toc.not_readable"]
 
 
 class CustomCommonMarkParser(CommonMarkParser):

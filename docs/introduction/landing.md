@@ -2,7 +2,7 @@
 
 DeepForest is a python package for training and predicting ecological objects in airborne imagery. DeepForest comes with prebuilt models for immediate use and fine-tuning by annotating and training custom models on their own data. Deepforest models can also be extended to species classification based on new data. DeepForest is designed for 1) applied researchers with limited machine learning experience, 2) applications with limited data that can be supported by prebuilt models, 3) scientists looking for a easy to use baseline to compare methods against. DeepForest uses deep learning object detection networks to predict the location of ecological objects in airborne imagery. The design of DeepForest is intended to be simple, modular and reproducible. 
 
-![](../www/image.png)
+![](../../www/image.png)
 
 For more about the motivation behind DeepForest, see some recent talks we have given on computer vision for ecology and practical applications to machine learning in environmental monitoring.
 
