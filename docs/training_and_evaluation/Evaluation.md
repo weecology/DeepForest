@@ -148,13 +148,13 @@ ground_truth.head()
 visualize.plot_prediction_dataframe(predictions, ground_truth, root_dir = os.path.dirname(csv_file))
 ```
 
-![](figures/Figure_1.png)
+![](../figures/Figure_1.png)
 
 The IoU metric ranges between 0 (no overlap) to 1 (perfect overlap). In the wider computer vision literature, the conventional threshold value for overlap is 0.5, but this value is arbitrary and does not ultimately relate to any particular ecological question. 
 We considered boxes which have an IoU score of greater than 0.4 as true positive, and scores less than 0.4 as false negatives. The 0.4 value was chosen based on visual evaluation of the threshold that indicated a good visual match between the predicted and observed crown.
 We tested a range of overlap thresholds from 0.3 (less overlap among matching crowns) to 0.6 (more overlap among matching crowns) and found that 0.4 balanced a rigorous cutoff without spuriously removing trees that would be useful for downstream analysis.
 
-![](figures/iou_equation.png)
+![](../figures/iou_equation.png)
 
 After computing the IoU for the ground truth data, we get the resulting dataframe.
 

@@ -82,7 +82,7 @@ plt.show()
 
 ```
 
-![Bounding Boxes](figures/tree_predicted_bounding_boxes.jpeg)
+![Bounding Boxes](../figures/tree_predicted_bounding_boxes.jpeg)
 
 To show labels:
 
@@ -100,5 +100,5 @@ plt.imshow(annotated_frame)
 plt.axis('off')  # Hide axes for a cleaner look
 plt.show()
 ```
-![Labels](figures/tree_predicted_labels.jpeg)
+![Labels](../figures/tree_predicted_labels.jpeg)
 ---

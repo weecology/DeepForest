@@ -4,12 +4,12 @@ Annotation is the most important part of machine learning projects.  If you aren
 ## How should I annotate images?
 For quick annotations of a few images, we recommend using QGIS or ArcGIS. Either as project or unprojected data. Create a shapefile for each image.
 
-![QGISannotation](../www/QGIS_annotation.png)
+![QGISannotation](../../www/QGIS_annotation.png)
 
 ### Label-studio
 For longer term projects, we recommend [label-studio](https://labelstud.io/) as an annotation platform. It has many useful features and is easy to set up.
 
-![QGISannotation](../www/label_studio.png)
+![QGISannotation](../../www/label_studio.png)
 
 ## Do I need annotate all objects in my image?
 Yes! Object detection models use the non-annotated areas of an image as negative data. We know that it can be difficult to annotate all objects in an image, but non-annotation will cause the model *to ignore* objects that should be treated as positive samples, leading to poor model performance. 
