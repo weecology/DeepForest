@@ -59,7 +59,7 @@ Citation: Weinstein, Ben G., et al. "Capturing long‐tailed individual tree div
 
 This model has a single label 'cattle' trained on drone imagery of cows, sheep and other large mammals in agricultural settings. The model was trained on data from [insert countries and other metadata about landscapes].
 
-![image](../www/livestock-example.png)
+![image](../../www/livestock-example.png)
 
 ## Want more pretrained models?
 
