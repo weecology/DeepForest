@@ -117,6 +117,60 @@ class deepforest(pl.LightningModule):
 
         self.save_hyperparameters()
 
+    def load_model(self, model_name="deepforest-tree", version='main'):
+        """Load DeepForest models from Hugging Face.
+
+        Args:
+            model_name (str): The name of the model to load ('deepforest' or 'bird').
+            version (str): The model version ('main', 'v1.0.0').
+
+        Returns:
+            model (object): A trained PyTorch model.
+        """
+        if model_name == "deepforest-tree":
+            # Use DeepForest model release
+            release_tag, self.release_state_dict = utilities.fetch_model(
+                repo_id="weecology/deepforest-tree", model_filename="NEON.pt")
+            self.create_model()
+
+        elif model_name == "bird":
+            # Use DeepForest bird model release
+            release_tag, self.release_state_dict = utilities.fetch_model(
+                repo_id="weecology/deepforest-bird", model_filename="bird.pt")
+
+            # Set bird-specific settings
+            self.config["score_thresh"] = 0.3
+            self.label_dict = {"Bird": 0}
+            self.numeric_to_label_dict = {v: k for k, v in self.label_dict.items()}
+
+        elif model_name == "livestock":
+            # Use DeepForest bird model release
+            release_tag, self.release_state_dict = utilities.fetch_model(
+                repo_id="weecology/deepforest-livestock", model_filename="livestock.pt")
+
+        elif model_name == "nest":
+            # Use DeepForest bird model release
+            release_tag, self.release_state_dict = utilities.fetch_model(
+                repo_id="weecology/everglades-nest-detection", model_filename="nest.pt")
+
+        elif model_name == "deadtrees":
+            # Use DeepForest bird model release
+            release_tag, self.release_state_dict = utilities.fetch_model(
+                repo_id="weecology/cropmodel-deadtrees",
+                model_filename="cropmodel-deadtrees.pl")
+
+        else:
+            raise ValueError(
+                "Invalid model_name specified. Choose from 'tree', 'bird', 'livestock', 'nest', or 'deadtrees'."
+            )
+
+        # Load the model state dict
+        self.model.load_state_dict(torch.load(self.release_state_dict))
+
+        print(f"Loading model: {release_tag}")
+
+        return self.model
+
     def use_release(self, check_release=True):
         """Use the latest DeepForest model release from github and load model.
         Optionally download if release doesn't exist.
@@ -126,20 +180,10 @@ class deepforest(pl.LightningModule):
         Returns:
             model (object): A trained PyTorch model
         """
-        # Download latest model from github release
-        release_tag, self.release_state_dict = utilities.use_release(
-            check_release=check_release)
-        if self.config["architecture"] != "retinanet":
-            warnings.warn(
-                "The config file specifies architecture {}, but the release model is torchvision retinanet. Reloading main.deepforest with a retinanet model"
-                .format(self.config["architecture"]))
-            self.config["architecture"] = "retinanet"
-            self.create_model()
-        self.model.load_state_dict(torch.load(self.release_state_dict, weights_only=True))
 
-        # load saved model and tag release
-        self.__release_version__ = release_tag
-        print("Loading pre-built model: {}".format(release_tag))
+        warnings.warn("use_release will be deprecated in 2.0. use load_model() instead",
+                      DeprecationWarning)
+        self.load_model()
 
     def use_bird_release(self, check_release=True):
         """Use the latest DeepForest bird model release from github and load
@@ -150,21 +194,11 @@ class deepforest(pl.LightningModule):
         Returns:
             model (object): A trained pytorch model
         """
-        # Download latest model from github release
-        release_tag, self.release_state_dict = utilities.use_bird_release(
-            check_release=check_release)
-        self.model.load_state_dict(torch.load(self.release_state_dict, weights_only=True))
 
-        # load saved model and tag release
-        self.__release_version__ = release_tag
-        print("Loading pre-built model: {}".format(release_tag))
-
-        print("Setting default score threshold to 0.3")
-        self.config["score_thresh"] = 0.3
-
-        # Set label dictionary to Bird
-        self.label_dict = {"Bird": 0}
-        self.numeric_to_label_dict = {v: k for k, v in self.label_dict.items()}
+        warnings.warn(
+            "use_bird_release will be deprecated in 2.0. use load_model('bird') instead",
+            DeprecationWarning)
+        self.load_model('bird')
 
     def create_model(self):
         """Define a deepforest architecture. This can be done in two ways.
