@@ -18,8 +18,10 @@ from torchmetrics.detection import IntersectionOverUnion, MeanAveragePrecision
 from deepforest import dataset, visualize, get_data, utilities, predict
 from deepforest import evaluate as evaluate_iou
 
+from huggingface_hub import PyTorchModelHubMixin
 
-class deepforest(pl.LightningModule):
+
+class deepforest(pl.LightningModule, PyTorchModelHubMixin):
     """Class for training and predicting tree crowns in RGB images."""
 
     def __init__(self,
@@ -118,58 +120,45 @@ class deepforest(pl.LightningModule):
         self.save_hyperparameters()
 
     def load_model(self, model_name="deepforest-tree", version='main'):
-        """Load DeepForest models from Hugging Face.
+        """Load DeepForest models from Hugging Face using from_pretrained().
 
         Args:
-            model_name (str): The name of the model to load ('deepforest' or 'bird').
-            version (str): The model version ('main', 'v1.0.0').
+            model_name (str): The name of the model to load ('deepforest-tree', 'bird', 'livestock', 'nest', 'deadtrees').
+            version (str): The model version ('main', 'v1.0.0', etc.).
 
         Returns:
             model (object): A trained PyTorch model.
         """
-        if model_name == "deepforest-tree":
-            # Use DeepForest model release
-            release_tag, self.release_state_dict = utilities.fetch_model(
-                repo_id="weecology/deepforest-tree", model_filename="NEON.pt")
-            self.create_model()
+        # Map model names to Hugging Face Hub repository IDs
+        model_repo_dict = {
+            "deepforest-tree": "weecology/deepforest-tree",
+            "bird": "weecology/deepforest-bird",
+            "livestock": "weecology/deepforest-livestock",
+            "nest": "weecology/everglades-nest-detection",
+            "deadtrees": "weecology/cropmodel-deadtrees"
+        }
 
-        elif model_name == "bird":
-            # Use DeepForest bird model release
-            release_tag, self.release_state_dict = utilities.fetch_model(
-                repo_id="weecology/deepforest-bird", model_filename="bird.pt")
-
-            # Set bird-specific settings
-            self.config["score_thresh"] = 0.3
-            self.label_dict = {"Bird": 0}
-            self.numeric_to_label_dict = {v: k for k, v in self.label_dict.items()}
-
-        elif model_name == "livestock":
-            # Use DeepForest bird model release
-            release_tag, self.release_state_dict = utilities.fetch_model(
-                repo_id="weecology/deepforest-livestock", model_filename="livestock.pt")
-
-        elif model_name == "nest":
-            # Use DeepForest bird model release
-            release_tag, self.release_state_dict = utilities.fetch_model(
-                repo_id="weecology/everglades-nest-detection", model_filename="nest.pt")
-
-        elif model_name == "deadtrees":
-            # Use DeepForest bird model release
-            release_tag, self.release_state_dict = utilities.fetch_model(
-                repo_id="weecology/cropmodel-deadtrees",
-                model_filename="cropmodel-deadtrees.pl")
-
-        else:
+        # Validate model name
+        if model_name not in model_repo_dict:
             raise ValueError(
-                "Invalid model_name specified. Choose from 'tree', 'bird', 'livestock', 'nest', or 'deadtrees'."
+                "Invalid model_name specified. Choose from 'deepforest-tree', 'bird', 'livestock', 'nest', or 'deadtrees'."
             )
 
-        # Load the model state dict
-        self.model.load_state_dict(torch.load(self.release_state_dict))
+        # Retrieve the repository ID for the model
+        repo_id = model_repo_dict[model_name]
 
-        print(f"Loading model: {release_tag}")
+        # Load the model using from_pretrained
+        model = deepforest.from_pretrained('weecology/deepforest-bird', 'bird.pt')
 
-        return self.model
+        # Set bird-specific settings if loading the bird model
+        if model_name == "bird":
+            model.config["score_thresh"] = 0.3
+            model.label_dict = {"Bird": 0}
+            model.numeric_to_label_dict = {v: k for k, v in model.label_dict.items()}
+
+        print(f"Loading model: {model_name} from version: {version}")
+
+        return model
 
     def use_release(self, check_release=True):
         """Use the latest DeepForest model release from github and load model.
