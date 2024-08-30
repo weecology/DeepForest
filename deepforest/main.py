@@ -148,7 +148,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         repo_id = model_repo_dict[model_name]
 
         # Load the model using from_pretrained
-        model = deepforest.from_pretrained('weecology/deepforest-bird')
+        model = deepforest.from_pretrained('MuMagdy/test_model')
 
         # Set bird-specific settings if loading the bird model
         if model_name == "bird":
