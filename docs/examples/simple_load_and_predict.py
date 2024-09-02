@@ -2,11 +2,9 @@ from deepforest import main
 from deepforest import visualize
 import supervision as sv
 import cv2
+import matplotlib.pyplot as plt
 
 # This script loads an image, performs tree detection using the DeepForest library, and visualizes the detected trees with bounding boxes.
-
-# Import necessary libraries
-import matplotlib.pyplot as plt
 
 # Load the image
 image_path = "<path_to_image>"
