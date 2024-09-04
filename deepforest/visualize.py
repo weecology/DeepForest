@@ -11,7 +11,7 @@ import random
 import warnings
 import supervision as sv
 import shapely
-from deepforest.utilities import determine_geometry_type
+from deepforest.utilities import determine_geometry_type, convert_to_sv_format
 
 
 def view_dataset(ds, savedir=None, color=None, thickness=1):
@@ -273,21 +273,73 @@ def convert_to_sv_format(df):
     Example:
         detections = convert_to_sv_format(result)
     """
-    # Extract bounding boxes as a 2D numpy array with shape (_, 4)
-    boxes = df[['xmin', 'ymin', 'xmax', 'ymax']].values.astype(np.float32)
+    geom_type = determine_geometry_type(df)
+    
+    if geom_type == "box":
+        # Extract bounding boxes as a 2D numpy array with shape (_, 4)
+        boxes = df[['xmin', 'ymin', 'xmax', 'ymax']].values.astype(np.float32)
 
-    label_mapping = {label: idx for idx, label in enumerate(df['label'].unique())}
+        label_mapping = {label: idx for idx, label in enumerate(df['label'].unique())}
 
-    # Extract labels as a numpy array
-    labels = df['label'].map(label_mapping).values.astype(int)
+        # Extract labels as a numpy array
+        labels = df['label'].map(label_mapping).values.astype(int)
 
-    # Extract scores as a numpy array
-    scores = np.array(df['score'].tolist())
-    # Create a reverse mapping from integer to string labels
-    class_name = {v: k for k, v in label_mapping.items()}
+        # Extract scores as a numpy array
+        scores = np.array(df['score'].tolist())
+        # Create a reverse mapping from integer to string labels
+        class_name = {v: k for k, v in label_mapping.items()}
 
-    return sv.Detections(
-        xyxy=boxes,
-        class_id=labels,
-        confidence=scores,
-        data={"class_name": [class_name[class_id] for class_id in labels]})
+        return sv.Detections(
+            xyxy=boxes,
+            class_id=labels,
+            confidence=scores,
+            data={"class_name": [class_name[class_id] for class_id in labels]})
+    elif geom_type == "polygon":
+        raise ValueError("Polygon predictions are not yet supported for conversion")
+    elif geom_type == "point":
+        raise ValueError("Point predictions are not yet supported for conversion")
+
+def plot_results(df, savedir=None, root_dir=None):
+    """Plot the prediction results.
+
+    Args:
+        df: a pandas dataframe with prediction results
+        savedir: optional path to save the figure. If None (default), the figure will be interactively plotted.
+        root_dir: optional path to the root directory containing the images. If None (default), the image paths in the dataframe should be full paths.
+    """
+    # Determine the geometry type
+    geom_type = determine_geometry_type(df)
+
+    # Convert the prediction dataframe to supervision format
+    detections = convert_to_sv_format(df)
+
+    # Read images
+    image = np.array(Image.open(os.path.join(root_dir,df.image_path.unique()[0])))
+
+    # Plot the results following https://supervision.roboflow.com/annotators/
+    fig, ax = plt.subplots()
+    if geom_type == "box":
+        bounding_box_annotator = sv.BoundingBoxAnnotator()
+        annotated_frame = bounding_box_annotator.annotate(
+            scene=image.copy(),
+            detections=detections,
+        )
+    elif geom_type == "polygon":
+        polygon_annotator = sv.PolygonAnnotator()
+        annotated_frame = polygon_annotator.annotate(
+            scene=image.copy(),
+            detections=detections,
+        )
+    elif geom_type == "point":
+        point_annotator = sv.PointAnnotator()
+        annotated_frame = point_annotator.annotate(
+            scene=image.copy(),
+            detections=detections,
+        )
+    if savedir:
+        plt.savefig(os.path.join(savedir, "{image_name}.png".format(image_name=df.image_path.unique()[0])))
+    else:
+        # Display the image using Matplotlib
+        plt.imshow(annotated_frame)
+        plt.axis('off')  # Hide axes for a cleaner look
+        plt.show()
