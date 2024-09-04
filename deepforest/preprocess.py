@@ -275,7 +275,7 @@ def split_raster(annotations_file=None,
                 if allow_empty:
                     geom_type = determine_geometry_type(image_annotations)
                     # The safest thing is to use the first label and it will be ignored
-                    crop_annotations.loc[0, "label"] = image_annotations.iloc[0, "label"]
+                    crop_annotations.loc[0, "label"] = image_annotations.label.unique()[0]
                     crop_annotations.loc[0, "image_path"] = "{}_{}.png".format(
                         image_basename, index)
                     if geom_type == "box":
