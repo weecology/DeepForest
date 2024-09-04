@@ -1,4 +1,3 @@
-
 # Visualization
 
 Simple visualization can be done during inference and saved. These are intended as quick ways of looking at data.
@@ -12,7 +11,27 @@ image_path = get_data("OSBS_029.png")
 boxes = model.predict_image(path=image_path, return_plot = True, color=(0, 165, 255), thickness=3)
 ```
 
-## Visualizations using Roboflow's supervision package
+For a bit more interactivity, we can use matplotlib to directly draw boxes on the image
+
+```
+from deepforest import main
+from deepforest import visualize
+from matplotlib import pyplot as plt
+from PIL import Image
+import numpy as np
+
+image_path = "<path on disk>"
+
+# Open and create numpy array
+image = np.array(Image.open(image_path))
+m = main.deepforest()
+boxes = m.predict_image(image=image)
+fig = visualize.plot_predictions(image=image, df=boxes)
+plt.imshow(fig)
+plt.show()
+```
+
+## Advanced visualizations using Roboflow's supervision package
 
 The `convert_to_sv_format` function converts DeepForest prediction results into a `supervision.Detections` object. This object contains bounding boxes, class IDs, confidence scores, and class names. It is designed to facilitate the visualization and further processing of object detection results using [supervision](https://supervision.roboflow.com/latest/) library.
 
