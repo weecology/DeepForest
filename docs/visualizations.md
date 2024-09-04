@@ -24,8 +24,10 @@ image_path = "<path on disk>"
 
 # Open and create numpy array
 image = np.array(Image.open(image_path))
+
 m = main.deepforest()
 boxes = m.predict_image(image=image)
+
 fig = visualize.plot_predictions(image=image, df=boxes)
 plt.imshow(fig)
 plt.show()
