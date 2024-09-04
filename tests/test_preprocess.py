@@ -74,7 +74,6 @@ def test_split_raster(config, tmpdir, input_type, geodataframe):
     annotations = utilities.read_pascal_voc(
         get_data("2019_YELL_2_528000_4978000_image_crop2.xml"))
     annotations.to_csv("{}/example.csv".format(tmpdir), index=False)
-    # annotations.label = 0
 
     if input_type == "path":
         annotations_file = get_data("OSBS_029.csv")
@@ -91,6 +90,19 @@ def test_split_raster(config, tmpdir, input_type, geodataframe):
     assert output_annotations.shape[1] == 7
     assert not output_annotations.empty
 
+def test_split_raster_from_pd_dataframe(tmpdir):
+    """Split raster into crops with overlaps to maintain all annotations"""
+    annotations_file = pd.read_csv(get_data("OSBS_029.csv"))
+    output_annotations = preprocess.split_raster(path_to_raster=get_data("OSBS_029.tif"),
+                                                 annotations_file=annotations_file,
+                                                 save_dir=tmpdir,
+                                                 root_dir=os.path.dirname(get_data("OSBS_029.tif")),
+                                                 patch_size=300,
+                                                 patch_overlap=0)
+
+    # Returns a 7 column pandas array
+    assert output_annotations.shape[1] == 7
+    assert not output_annotations.empty
 
 def test_split_raster_no_annotations(config, tmpdir):
     """Split raster into crops with overlaps to maintain all annotations"""
@@ -155,6 +167,10 @@ def test_split_raster_empty(tmpdir, config, allow_empty):
             patch_overlap=config["patch_overlap"],
             allow_empty=allow_empty)
         assert annotations_file.shape[0] == 4
+        assert annotations_file["xmin"].sum() == 0
+        assert annotations_file["ymin"].sum() == 0
+        assert annotations_file["xmax"].sum() == 0
+        assert annotations_file["ymax"].sum() == 0
         assert tmpdir.join("OSBS_029_1.png").exists()
 
 
