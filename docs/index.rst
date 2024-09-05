@@ -46,6 +46,7 @@ Get suggestions on how to improve a model by using the [discussion board](https:
    getting_started
    Reading_and_Writing
    ConfigurationFile
+   augmentations
    annotation
    training
    Evaluation
