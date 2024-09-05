@@ -160,7 +160,8 @@ def split_raster(annotations_file=None,
         allow_empty: If True, include images with no annotations
             to be included in the dataset. If annotations_file is None, this is ignored.
         image_name (str): If numpy_image arg is used, what name to give the raster?
-
+    Note:
+        When allow_empty is True, the function will return 0's for coordinates, following torchvision style, the label will be ignored, so for continuity, the first label in the annotations_file will be used.
     Returns:
         If annotations_file is provided, a pandas dataframe with annotations file for training. A copy of this file is written to save_dir as a side effect.
         If not, a list of filenames of the cropped images.
@@ -225,14 +226,20 @@ def split_raster(annotations_file=None,
     # Load annotations file and coerce dtype
     if annotations_file is None:
         allow_empty = True
-    elif isinstance(annotations_file, str):
+    elif type(annotations_file) == str:
         annotations = read_file(annotations_file, root_dir=root_dir)
-    elif isinstance(annotations_file, gpd.GeoDataFrame):
+    elif type(annotations_file) == pd.DataFrame:
+        if root_dir is None:
+            raise ValueError(
+                "If passing a pandas DataFrame with relative pathnames in image_path, please also specify a root_dir"
+            )
+        annotations = read_file(annotations_file, root_dir=root_dir)
+    elif type(annotations_file) == gpd.GeoDataFrame:
         annotations = annotations_file
     else:
         raise TypeError(
-            "Annotations file must either be None, a path, or a ggpd.DataFrame, found {}".
-            format(type(annotations_file)))
+            "Annotations file must either be None, a path, Pandas Dataframe, or Geopandas GeoDataFrame, found {}"
+            .format(type(annotations_file)))
 
     # Select matching annotations
     if annotations_file is not None:
@@ -266,10 +273,32 @@ def split_raster(annotations_file=None,
             crop_annotations["image_path"] = "{}_{}.png".format(image_basename, index)
             if crop_annotations.empty:
                 if allow_empty:
+                    geom_type = determine_geometry_type(image_annotations)
+                    # The safest thing is to use the first label and it will be ignored
+                    crop_annotations.loc[0, "label"] = image_annotations.label.unique()[0]
                     crop_annotations.loc[0, "image_path"] = "{}_{}.png".format(
                         image_basename, index)
+                    if geom_type == "box":
+                        crop_annotations.loc[0, "xmin"] = 0
+                        crop_annotations.loc[0, "ymin"] = 0
+                        crop_annotations.loc[0, "xmax"] = 0
+                        crop_annotations.loc[0, "ymax"] = 0
+                    elif geom_type == "point":
+                        crop_annotations.loc[0, "geometry"] = geometry.Point(0, 0)
+                        crop_annotations.loc[0, "x"] = 0
+                        crop_annotations.loc[0, "y"] = 0
+                    elif geom_type == "polygon":
+                        crop_annotations.loc[0, "geometry"] = geometry.Polygon([(0, 0),
+                                                                                (0, 0),
+                                                                                (0, 0)])
+                        crop_annotations.loc[0, "polygon"] = 0
                 else:
                     continue
+
+            # Update geometry column
+            crop_annotations.drop(columns="geometry", inplace=True)
+            crop_annotations = pd.DataFrame(crop_annotations)
+            crop_annotations = read_file(crop_annotations, root_dir=root_dir)
             annotations_files.append(crop_annotations)
 
         # Save image crop
