@@ -13,14 +13,14 @@ The prebuilt model was trained on 10cm data at 400px crops. The model is sensiti
 tile = model.predict_tile("/Users/ben/Desktop/test.jpg",return_plot=True,patch_overlap=0,iou_threshold=0.05,patch_size=400)
 ```
 
-![](../www/example_patch400.png)
+![](../../www/example_patch400.png)
 
 Acceptable, but not ideal.
 
 
 Here is 1000 px patches.
 
-![](../www/example_patch1000.png)
+![](../../www/example_patch1000.png)
 
 
 improved.
