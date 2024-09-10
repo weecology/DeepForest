@@ -256,38 +256,200 @@ def label_to_color(label):
 
     return color_dict[label]
 
-
-def convert_to_sv_format(df):
+def convert_to_sv_format(df, width=None, height=None):
     """Convert DeepForest prediction results to a supervision Detections
     object.
 
     Args:
         df (pd.DataFrame): The results from `predict_image` or `predict_tile`.
                            Expected columns: ['xmin', 'ymin', 'xmax', 'ymax', 'label', 'score', 'image_path'].
+        width (int): The width of the image in pixels. Required if the geometry type is 'polygon'.
+        height (int): The height of the image in pixels. Required if the geometry type is 'polygon'.
 
     Returns:
         sv.Detections: A supervision Detections object containing bounding boxes, class IDs,
                        confidence scores, and class names object mapping classes ids to corresponding
                        class names inside of data dictionary.
 
+
     Example:
         detections = convert_to_sv_format(result)
     """
-    # Extract bounding boxes as a 2D numpy array with shape (_, 4)
-    boxes = df[['xmin', 'ymin', 'xmax', 'ymax']].values.astype(np.float32)
+    geom_type = determine_geometry_type(df)
+    
+    if geom_type == "box":
+        # Extract bounding boxes as a 2D numpy array with shape (_, 4)
+        boxes = df.geometry.apply(lambda x: (x.bounds[0], x.bounds[1], x.bounds[2], x.bounds[3])).values
+        boxes = np.stack(boxes)
 
-    label_mapping = {label: idx for idx, label in enumerate(df['label'].unique())}
+        label_mapping = {label: idx for idx, label in enumerate(df['label'].unique())}
 
-    # Extract labels as a numpy array
-    labels = df['label'].map(label_mapping).values.astype(int)
+        # Extract labels as a numpy array
+        labels = df['label'].map(label_mapping).values.astype(int)
 
-    # Extract scores as a numpy array
-    scores = np.array(df['score'].tolist())
-    # Create a reverse mapping from integer to string labels
-    class_name = {v: k for k, v in label_mapping.items()}
+        # Extract scores as a numpy array
+        try:
+            scores = np.array(df['score'].tolist())
+        except KeyError:
+            scores = np.ones(len(labels))
+            
+        # Create a reverse mapping from integer to string labels
+        class_name = {v: k for k, v in label_mapping.items()}
 
-    return sv.Detections(
-        xyxy=boxes,
-        class_id=labels,
-        confidence=scores,
-        data={"class_name": [class_name[class_id] for class_id in labels]})
+        detections = sv.Detections(
+            xyxy=boxes,
+            class_id=labels,
+            confidence=scores,
+            data={"class_name": [class_name[class_id] for class_id in labels]})
+                
+    elif geom_type == "polygon":
+        # Extract bounding boxes as a 2D numpy array with shape (_, 4)
+        boxes = df.geometry.apply(lambda x: (x.bounds[0], x.bounds[1], x.bounds[2], x.bounds[3])).values
+        boxes = np.stack(boxes)
+
+        label_mapping = {label: idx for idx, label in enumerate(df['label'].unique())}
+
+        # Extract labels as a numpy array
+        labels = df['label'].map(label_mapping).values.astype(int)
+
+        # Extract scores as a numpy array
+        scores = np.array(df['score'].tolist())
+        # Create a reverse mapping from integer to string labels
+        class_name = {v: k for k, v in label_mapping.items()}
+
+        # Create masks
+        if height is None or width is None:
+            raise ValueError("height and width of the mask must be provided for polygon predictions")
+        
+        polygons = df.geometry.apply(lambda x: np.array(x.exterior.coords)).values
+        # as integers
+        polygons = [np.array(p).round().astype(np.int32) for p in polygons]
+        masks = [ sv.polygon_to_mask(p,(width,height)) for p in polygons ]
+        masks = np.stack(masks)
+
+        detections = sv.Detections(
+            xyxy=boxes,
+            mask=masks,
+            class_id=labels,
+            confidence=scores,
+            data={"class_name": [class_name[class_id] for class_id in labels]})
+            
+    elif geom_type == "point":
+        points = df.geometry.apply(lambda x: (x.x, x.y)).values
+        points = np.stack(points)
+        points = np.expand_dims(points, axis=1)
+    
+        label_mapping = {label: idx for idx, label in enumerate(df['label'].unique())}
+
+        # Extract labels as a numpy array
+        labels = df['label'].map(label_mapping).values.astype(int)
+
+        # Extract scores as a numpy array
+        scores = np.array(df['score'].tolist())
+        scores = np.expand_dims(np.stack(scores), 1)
+        
+        # Create a reverse mapping from integer to string labels
+        class_name = {v: k for k, v in label_mapping.items()}
+
+        detections = sv.KeyPoints(
+            xy=points,
+            class_id=labels,
+            confidence=scores,
+            data={"class_name": [class_name[class_id] for class_id in labels
+            ]})
+        
+    return detections
+
+def plot_results(results, root_dir, ground_truth=None, savedir=None, height=None, width=None, results_color=None, ground_truth_color=None, thickness=2, radius=3):
+    """Plot the prediction results.
+
+    Args:
+        df: a pandas dataframe with prediction results
+        root_dir: the root directory where the images are stored
+        ground_truth: an optional pandas dataframe with ground truth annotations
+        savedir: optional path to save the figure. If None (default), the figure will be interactively plotted.
+        height: height of the image in pixels. Required if the geometry type is 'polygon'.
+        width: width of the image in pixels. Required if the geometry type is 'polygon'.
+        results_color (list): color of the results annotations as a tuple of RGB color, e.g. orange annotations is [245, 135, 66]
+    Returns:
+        None
+    """
+    # Convert colors, check for multi-class labels
+    if results_color is None:
+        sv_color = sv.Color(245, 135, 66)
+    elif type(results_color) is list:
+        sv_color = sv.Color(results_color[0], results_color[1], results_color[2])
+    else:
+        sv_color = results_color
+    
+    num_labels = len(results.label.unique())
+    if num_labels > 1 and results_color is not None:
+        warnings.warn("Multiple labels detected in the results. Each label will be plotted with a different color using a color ramp, results color argument is ignored.")
+    if num_labels > 1:
+        sv_color = sv.ColorPalette.from_matplotlib('viridis', 5)
+
+    # Read images
+    image_path = os.path.join(root_dir, results.image_path.unique()[0])
+    image = np.array(Image.open(image_path))
+
+    # Plot the results following https://supervision.roboflow.com/annotators/
+    fig, ax = plt.subplots()
+    annotated_scene = _plot_image_with_results(df=results,image=image, sv_color=sv_color, height=height, width=width, thickness=thickness, radius=radius)
+
+    if ground_truth is not None:
+        if ground_truth_color is None:
+            sv_color = sv.Color(0, 165, 255)
+        elif type(ground_truth_color) is list:
+            sv_color = sv.Color(ground_truth_color[0], ground_truth_color[1], ground_truth_color[2])
+        else:
+            sv_color = ground_truth_color
+        # Plot the ground truth annotations
+        annotated_scene = _plot_image_with_results(df=ground_truth,image=annotated_scene, sv_color=sv_color, height=height, width=width, thickness=thickness, radius=radius)
+
+    if savedir:
+        basename = os.path.splitext(os.path.basename(results.image_path.unique()[0]))[0]
+        image_name = "{}.png".format(basename)
+        plt.savefig(os.path.join(savedir, image_name), bbox_inches='tight', pad_inches=0)
+    else:
+        # Display the image using Matplotlib
+        plt.imshow(annotated_scene)
+        plt.axis('off')  # Hide axes for a cleaner look
+        plt.show()
+    
+def _plot_image_with_results(df, image, sv_color, thickness=1, radius=3, height=None, width=None):  
+    """
+    Annotates an image with the given results.
+
+    Args:
+        df (pandas.DataFrame): The DataFrame containing the results.
+        image (numpy.ndarray): The image to annotate.
+        sv_color (str): The color of the annotations.
+        thickness (int): The thickness of the annotations.
+
+    Returns:
+        numpy.ndarray: The annotated image.
+    """
+    # Determine the geometry type
+    geom_type = determine_geometry_type(df)
+    detections = convert_to_sv_format(df, height=height, width=width)
+
+    if geom_type == "box":
+        bounding_box_annotator = sv.BoxAnnotator(color=sv_color, thickness=thickness)
+        annotated_frame = bounding_box_annotator.annotate(
+            scene=image.copy(),
+            detections=detections,
+        )
+    elif geom_type == "polygon":
+
+        polygon_annotator = sv.PolygonAnnotator(color=sv_color, thickness=thickness)
+        annotated_frame = polygon_annotator.annotate(
+            scene=image.copy(),
+            detections=detections,
+        )
+    elif geom_type == "point":
+        point_annotator = sv.VertexAnnotator(color=sv_color, radius=radius)
+        annotated_frame = point_annotator.annotate(
+            scene=image.copy(),
+                    key_points=detections
+                    )
+    return annotated_frame

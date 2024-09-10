@@ -341,13 +341,13 @@ class deepforest(pl.LightningModule):
         Args:
             image: a float32 numpy array of a RGB with channels last format
             path: optional path to read image from disk instead of passing image arg
-            return_plot: Return image with plotted detections
             color: color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255)
             thickness: thickness of the rectangle border line in px
         Returns:
             result: A pandas dataframe of predictions (Default)
             img: The input with predictions overlaid (Optional)
         """
+
         # Ensure we are in eval mode
         self.model.eval()
 
@@ -373,24 +373,20 @@ class deepforest(pl.LightningModule):
         result = predict._predict_image_(model=self.model,
                                          image=image,
                                          path=path,
-                                         nms_thresh=self.config["nms_thresh"],
-                                         return_plot=return_plot,
-                                         thickness=thickness,
-                                         color=color)
+                                         nms_thresh=self.config["nms_thresh"])
 
-        if return_plot:
-            return result
+        #If there were no predictions, return None
+        if result is None:
+            return None
         else:
-            #If there were no predictions, return None
-            if result is None:
-                return None
-            else:
-                result["label"] = result.label.apply(
-                    lambda x: self.numeric_to_label_dict[x])
+            result["label"] = result.label.apply(
+                lambda x: self.numeric_to_label_dict[x])
+
+        result = utilities.read_file(result)
 
         return result
 
-    def predict_file(self, csv_file, root_dir, savedir=None, color=None, thickness=1):
+    def predict_file(self, csv_file, root_dir):
         """Create a dataset and predict entire annotation file Csv file format
         is .csv file with the columns "image_path", "xmin","ymin","xmax","ymax"
         for the image name and bounding box position. Image_path is the
@@ -400,12 +396,10 @@ class deepforest(pl.LightningModule):
         Args:
             csv_file: path to csv file
             root_dir: directory of images. If none, uses "image_dir" in config
-            savedir: Optional. Directory to save image plots.
-            color: color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255)
-            thickness: thickness of the rectangle border line in px
         Returns:
             df: pandas dataframe with bounding boxes, label and scores for each image in the csv file
         """
+        
         df = utilities.read_file(csv_file)
         ds = dataset.TreeDataset(csv_file=csv_file,
                                  root_dir=root_dir,
@@ -418,10 +412,7 @@ class deepforest(pl.LightningModule):
                                                annotations=df,
                                                dataloader=dataloader,
                                                root_dir=root_dir,
-                                               nms_thresh=self.config["nms_thresh"],
-                                               savedir=savedir,
-                                               color=color,
-                                               thickness=thickness)
+                                               nms_thresh=self.config["nms_thresh"])
 
         return results
 
@@ -431,12 +422,9 @@ class deepforest(pl.LightningModule):
                      patch_size=400,
                      patch_overlap=0.05,
                      iou_threshold=0.15,
-                     return_plot=False,
                      mosaic=True,
                      sigma=0.5,
                      thresh=0.001,
-                     color=None,
-                     thickness=1,
                      crop_model=None,
                      crop_transform=None,
                      crop_augment=False):
@@ -453,12 +441,9 @@ class deepforest(pl.LightningModule):
             iou_threshold: Minimum iou overlap among predictions between
                 windows to be suppressed.
                 Lower values suppress more boxes at edges.
-            return_plot: Should the image be returned with the predictions drawn?
             mosaic: Return a single prediction dataframe (True) or a tuple of image crops and predictions (False)
             sigma: variance of Gaussian function used in Gaussian Soft NMS
             thresh: the score thresh used to filter bboxes after soft-nms performed
-            color: color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255)
-            thickness: thickness of the rectangle border line in px
             cropModel: a deepforest.model.CropModel object to predict on crops
             crop_transform: a torchvision.transforms object to apply to crops
             crop_augment: a boolean to apply augmentations to crops
@@ -510,18 +495,6 @@ class deepforest(pl.LightningModule):
                 lambda x: self.numeric_to_label_dict[x])
             if raster_path:
                 results["image_path"] = os.path.basename(raster_path)
-            if return_plot:
-                # Draw predictions on BGR
-                if raster_path:
-                    tile = rio.open(raster_path).read()
-                else:
-                    tile = self.image
-                drawn_plot = tile[:, :, ::-1]
-                drawn_plot = visualize.plot_predictions(tile,
-                                                        results,
-                                                        color=color,
-                                                        thickness=thickness)
-                return drawn_plot
         else:
             for df in results:
                 df["label"] = df.label.apply(lambda x: self.numeric_to_label_dict[x])
@@ -542,6 +515,8 @@ class deepforest(pl.LightningModule):
                                                    trainer=self.trainer,
                                                    transform=crop_transform,
                                                    augment=crop_augment)
+
+        results = utilities.read_file(results)
 
         return results
 
@@ -732,7 +707,7 @@ class deepforest(pl.LightningModule):
         else:
             return optimizer
 
-    def evaluate(self, csv_file, root_dir, iou_threshold=None, savedir=None):
+    def evaluate(self, csv_file, root_dir, iou_threshold=None):
         """Compute intersection-over-union and precision/recall for a given
         iou_threshold.
 
@@ -740,22 +715,19 @@ class deepforest(pl.LightningModule):
             csv_file: location of a csv file with columns "name","xmin","ymin","xmax","ymax","label", each box in a row
             root_dir: location of files in the dataframe 'name' column.
             iou_threshold: float [0,1] intersection-over-union union between annotation and prediction to be scored true positive
-            savedir: optional path dir to save evaluation images
         Returns:
             results: dict of ("results", "precision", "recall") for a given threshold
         """
         ground_df = utilities.read_file(csv_file)
         ground_df["label"] = ground_df.label.apply(lambda x: self.label_dict[x])
         predictions = self.predict_file(csv_file=csv_file,
-                                        root_dir=root_dir,
-                                        savedir=savedir)
+                                        root_dir=root_dir)
 
         results = evaluate_iou.__evaluate_wrapper__(
             predictions=predictions,
             ground_df=ground_df,
             root_dir=root_dir,
             iou_threshold=iou_threshold,
-            numeric_to_label_dict=self.numeric_to_label_dict,
-            savedir=savedir)
+            numeric_to_label_dict=self.numeric_to_label_dict)
 
         return results
