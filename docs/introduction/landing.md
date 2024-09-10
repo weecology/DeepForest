@@ -18,9 +18,6 @@ For more about the motivation behind DeepForest, see some recent talks we have g
 
 Get suggestions on how to improve a model by using the [discussion board](https://github.com/weecology/DeepForest/discussions). Please be aware that only feature requests or bug reports should be posted on the [issues page](https://github.com/weecology/DeepForest/issues).
 
-## License
-
-Free software: [MIT license](https://github.com/weecology/DeepForest/blob/master/LICENSE)
 
 ## Why DeepForest?
 
@@ -35,6 +32,10 @@ DeepForest is an open-source python project that depends on user contributions. 
 * Leading implementations of new features. Check out the 'good first issue' tag on the repo and get in touch with mantainers and tell us about your skills. 
 
 * Data contributions! The DeepForest backbone tree and bird models are not perfect. Please consider posting any annotations you make on zenodo, or sharing them with DeepForest mantainers. Open an [issue](https://github.com/weecology/DeepForest/issues) and tell us about the RGB data and annotations. For example, we are collecting tree annotations to create an [open-source benchmark](https://milliontrees.idtrees.org/). Please consider sharing data to make the models stronger and benefit you and other users. 
+
+## License
+
+Free software: [MIT license](https://github.com/weecology/DeepForest/blob/master/LICENSE)
 
 ## Citation
 

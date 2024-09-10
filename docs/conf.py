@@ -40,21 +40,6 @@ with urllib.request.urlopen(readme_url) as response:
             file_obj.write(line)
 file_obj.close()
 
-# Create copy of CONTRIBUTING.md
-contributing_url = "https://raw.githubusercontent.com/weecology/DeepForest/main/CONTRIBUTING.md"
-contributing_source = "../CONTRIBUTING.md"
-
-if not os.path.exists(contributing_source):
-    with urllib.request.urlopen(contributing_url) as response:
-        lines = response.readlines()
-        with open(contributing_source, "w") as file1:
-            file1.write(lines)
-
-# reading from file1 and writing to file2
-with open(contributing_source, "r") as file1:
-    with open("CONTRIBUTING.md", "w") as file2:
-        file2.write(file1.read())
-
 needs_sphinx = "1.8"
 
 autodoc_default_options = {
