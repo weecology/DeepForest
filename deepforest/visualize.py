@@ -256,6 +256,7 @@ def label_to_color(label):
 
     return color_dict[label]
 
+
 def convert_to_sv_format(df, width=None, height=None):
     """Convert DeepForest prediction results to a supervision Detections
     object.
@@ -276,10 +277,11 @@ def convert_to_sv_format(df, width=None, height=None):
         detections = convert_to_sv_format(result)
     """
     geom_type = determine_geometry_type(df)
-    
+
     if geom_type == "box":
         # Extract bounding boxes as a 2D numpy array with shape (_, 4)
-        boxes = df.geometry.apply(lambda x: (x.bounds[0], x.bounds[1], x.bounds[2], x.bounds[3])).values
+        boxes = df.geometry.apply(
+            lambda x: (x.bounds[0], x.bounds[1], x.bounds[2], x.bounds[3])).values
         boxes = np.stack(boxes)
 
         label_mapping = {label: idx for idx, label in enumerate(df['label'].unique())}
@@ -292,7 +294,7 @@ def convert_to_sv_format(df, width=None, height=None):
             scores = np.array(df['score'].tolist())
         except KeyError:
             scores = np.ones(len(labels))
-            
+
         # Create a reverse mapping from integer to string labels
         class_name = {v: k for k, v in label_mapping.items()}
 
@@ -301,10 +303,11 @@ def convert_to_sv_format(df, width=None, height=None):
             class_id=labels,
             confidence=scores,
             data={"class_name": [class_name[class_id] for class_id in labels]})
-                
+
     elif geom_type == "polygon":
         # Extract bounding boxes as a 2D numpy array with shape (_, 4)
-        boxes = df.geometry.apply(lambda x: (x.bounds[0], x.bounds[1], x.bounds[2], x.bounds[3])).values
+        boxes = df.geometry.apply(
+            lambda x: (x.bounds[0], x.bounds[1], x.bounds[2], x.bounds[3])).values
         boxes = np.stack(boxes)
 
         label_mapping = {label: idx for idx, label in enumerate(df['label'].unique())}
@@ -319,12 +322,13 @@ def convert_to_sv_format(df, width=None, height=None):
 
         # Create masks
         if height is None or width is None:
-            raise ValueError("height and width of the mask must be provided for polygon predictions")
-        
+            raise ValueError(
+                "height and width of the mask must be provided for polygon predictions")
+
         polygons = df.geometry.apply(lambda x: np.array(x.exterior.coords)).values
         # as integers
         polygons = [np.array(p).round().astype(np.int32) for p in polygons]
-        masks = [ sv.polygon_to_mask(p,(width,height)) for p in polygons ]
+        masks = [sv.polygon_to_mask(p, (width, height)) for p in polygons]
         masks = np.stack(masks)
 
         detections = sv.Detections(
@@ -333,12 +337,12 @@ def convert_to_sv_format(df, width=None, height=None):
             class_id=labels,
             confidence=scores,
             data={"class_name": [class_name[class_id] for class_id in labels]})
-            
+
     elif geom_type == "point":
         points = df.geometry.apply(lambda x: (x.x, x.y)).values
         points = np.stack(points)
         points = np.expand_dims(points, axis=1)
-    
+
         label_mapping = {label: idx for idx, label in enumerate(df['label'].unique())}
 
         # Extract labels as a numpy array
@@ -347,7 +351,7 @@ def convert_to_sv_format(df, width=None, height=None):
         # Extract scores as a numpy array
         scores = np.array(df['score'].tolist())
         scores = np.expand_dims(np.stack(scores), 1)
-        
+
         # Create a reverse mapping from integer to string labels
         class_name = {v: k for k, v in label_mapping.items()}
 
@@ -355,12 +359,21 @@ def convert_to_sv_format(df, width=None, height=None):
             xy=points,
             class_id=labels,
             confidence=scores,
-            data={"class_name": [class_name[class_id] for class_id in labels
-            ]})
-        
+            data={"class_name": [class_name[class_id] for class_id in labels]})
+
     return detections
 
-def plot_results(results, root_dir, ground_truth=None, savedir=None, height=None, width=None, results_color=None, ground_truth_color=None, thickness=2, radius=3):
+
+def plot_results(results,
+                 root_dir,
+                 ground_truth=None,
+                 savedir=None,
+                 height=None,
+                 width=None,
+                 results_color=None,
+                 ground_truth_color=None,
+                 thickness=2,
+                 radius=3):
     """Plot the prediction results.
 
     Args:
@@ -381,10 +394,12 @@ def plot_results(results, root_dir, ground_truth=None, savedir=None, height=None
         sv_color = sv.Color(results_color[0], results_color[1], results_color[2])
     else:
         sv_color = results_color
-    
+
     num_labels = len(results.label.unique())
     if num_labels > 1 and results_color is not None:
-        warnings.warn("Multiple labels detected in the results. Each label will be plotted with a different color using a color ramp, results color argument is ignored.")
+        warnings.warn(
+            "Multiple labels detected in the results. Each label will be plotted with a different color using a color ramp, results color argument is ignored."
+        )
     if num_labels > 1:
         sv_color = sv.ColorPalette.from_matplotlib('viridis', 5)
 
@@ -394,17 +409,30 @@ def plot_results(results, root_dir, ground_truth=None, savedir=None, height=None
 
     # Plot the results following https://supervision.roboflow.com/annotators/
     fig, ax = plt.subplots()
-    annotated_scene = _plot_image_with_results(df=results,image=image, sv_color=sv_color, height=height, width=width, thickness=thickness, radius=radius)
+    annotated_scene = _plot_image_with_results(df=results,
+                                               image=image,
+                                               sv_color=sv_color,
+                                               height=height,
+                                               width=width,
+                                               thickness=thickness,
+                                               radius=radius)
 
     if ground_truth is not None:
         if ground_truth_color is None:
             sv_color = sv.Color(0, 165, 255)
         elif type(ground_truth_color) is list:
-            sv_color = sv.Color(ground_truth_color[0], ground_truth_color[1], ground_truth_color[2])
+            sv_color = sv.Color(ground_truth_color[0], ground_truth_color[1],
+                                ground_truth_color[2])
         else:
             sv_color = ground_truth_color
         # Plot the ground truth annotations
-        annotated_scene = _plot_image_with_results(df=ground_truth,image=annotated_scene, sv_color=sv_color, height=height, width=width, thickness=thickness, radius=radius)
+        annotated_scene = _plot_image_with_results(df=ground_truth,
+                                                   image=annotated_scene,
+                                                   sv_color=sv_color,
+                                                   height=height,
+                                                   width=width,
+                                                   thickness=thickness,
+                                                   radius=radius)
 
     if savedir:
         basename = os.path.splitext(os.path.basename(results.image_path.unique()[0]))[0]
@@ -415,8 +443,15 @@ def plot_results(results, root_dir, ground_truth=None, savedir=None, height=None
         plt.imshow(annotated_scene)
         plt.axis('off')  # Hide axes for a cleaner look
         plt.show()
-    
-def _plot_image_with_results(df, image, sv_color, thickness=1, radius=3, height=None, width=None):  
+
+
+def _plot_image_with_results(df,
+                             image,
+                             sv_color,
+                             thickness=1,
+                             radius=3,
+                             height=None,
+                             width=None):
     """
     Annotates an image with the given results.
 
@@ -448,8 +483,6 @@ def _plot_image_with_results(df, image, sv_color, thickness=1, radius=3, height=
         )
     elif geom_type == "point":
         point_annotator = sv.VertexAnnotator(color=sv_color, radius=radius)
-        annotated_frame = point_annotator.annotate(
-            scene=image.copy(),
-                    key_points=detections
-                    )
+        annotated_frame = point_annotator.annotate(scene=image.copy(),
+                                                   key_points=detections)
     return annotated_frame

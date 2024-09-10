@@ -379,8 +379,7 @@ class deepforest(pl.LightningModule):
         if result is None:
             return None
         else:
-            result["label"] = result.label.apply(
-                lambda x: self.numeric_to_label_dict[x])
+            result["label"] = result.label.apply(lambda x: self.numeric_to_label_dict[x])
 
         result = utilities.read_file(result)
 
@@ -399,7 +398,7 @@ class deepforest(pl.LightningModule):
         Returns:
             df: pandas dataframe with bounding boxes, label and scores for each image in the csv file
         """
-        
+
         df = utilities.read_file(csv_file)
         ds = dataset.TreeDataset(csv_file=csv_file,
                                  root_dir=root_dir,
@@ -720,8 +719,7 @@ class deepforest(pl.LightningModule):
         """
         ground_df = utilities.read_file(csv_file)
         ground_df["label"] = ground_df.label.apply(lambda x: self.label_dict[x])
-        predictions = self.predict_file(csv_file=csv_file,
-                                        root_dir=root_dir)
+        predictions = self.predict_file(csv_file=csv_file, root_dir=root_dir)
 
         results = evaluate_iou.__evaluate_wrapper__(
             predictions=predictions,
