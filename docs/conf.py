@@ -83,6 +83,7 @@ html_theme_options = {
     "navbar_center": ["navbar2"],
     "header_links_before_dropdown": 5,
     "secondary_sidebar_items": ["page-toc", "searchbox", "edit-this-page", "sourcelink"],
+    "github_url": "https://github.com/weecology/DeepForest",
 }
 html_sidebars: Dict[str, Any] = {
     "index": [],
