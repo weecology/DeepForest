@@ -40,7 +40,6 @@ plot_results(boxes, root_dir=os.path.dirname(raster_path))
 
 We encourage users to try out a variety of patch sizes. For 0.1m data, 400-800px per window is appropriate, but it will depend on the density of tree plots. For coarser resolution tiles, >800px patch sizes have been effective, but we welcome feedback from users using a variety of spatial resolutions.
 
-
 ### Sample package data
 
 DeepForest comes with a small set of sample data that can be used to test out the provided examples. The data resides in the DeepForest data directory. Use the `get_data` helper function to locate the path to this directory, if needed.
