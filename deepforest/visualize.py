@@ -365,7 +365,6 @@ def convert_to_sv_format(df, width=None, height=None):
 
 
 def plot_results(results,
-                 root_dir,
                  ground_truth=None,
                  savedir=None,
                  height=None,
@@ -378,7 +377,6 @@ def plot_results(results,
 
     Args:
         df: a pandas dataframe with prediction results
-        root_dir: the root directory where the images are stored
         ground_truth: an optional pandas dataframe with ground truth annotations
         savedir: optional path to save the figure. If None (default), the figure will be interactively plotted.
         height: height of the image in pixels. Required if the geometry type is 'polygon'.
@@ -404,6 +402,7 @@ def plot_results(results,
         sv_color = sv.ColorPalette.from_matplotlib('viridis', 5)
 
     # Read images
+    root_dir = results.root_dir
     image_path = os.path.join(root_dir, results.image_path.unique()[0])
     image = np.array(Image.open(image_path))
 

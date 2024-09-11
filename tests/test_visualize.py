@@ -68,7 +68,7 @@ def test_plot_predictions_and_targets(m, tmpdir):
 def test_predict_and_plot(m, tmpdir):
     sample_image_path = get_data("OSBS_029.png")
     results = m.predict_image(path=sample_image_path)
-    visualize.plot_results(results, root_dir=os.path.dirname(sample_image_path), savedir=tmpdir)
+    visualize.plot_results(results, savedir=tmpdir)
 
     assert os.path.exists(os.path.join(tmpdir, "OSBS_029.png"))
 
@@ -113,9 +113,10 @@ def test_plot_results_box(m, tmpdir):
     } 
     df = pd.DataFrame(data)
     gdf = read_file(df)
+    gdf.root_dir = os.path.dirname(get_data("OSBS_029.tif"))
 
     # Call the function
-    visualize.plot_results(gdf, savedir=tmpdir, root_dir=os.path.dirname(df['image_path'].iloc[0]))
+    visualize.plot_results(gdf, savedir=tmpdir)
 
     # Assertions
     assert os.path.exists(os.path.join(tmpdir, "OSBS_029.png"))
@@ -132,9 +133,10 @@ def test_plot_results_point(m, tmpdir):
     }
     df = pd.DataFrame(data)
     gdf = read_file(df)
+    gdf.root_dir = os.path.dirname(get_data("OSBS_029.tif"))
 
     # Call the function
-    visualize.plot_results(gdf, savedir=tmpdir, root_dir=os.path.dirname(df['image_path'].iloc[0]))
+    visualize.plot_results(gdf, savedir=tmpdir)
 
     # Assertions
     assert os.path.exists(os.path.join(tmpdir, "OSBS_029.png"))
@@ -155,9 +157,10 @@ def test_plot_results_polygon(m, tmpdir):
     image = cv2.imread(get_data("OSBS_029.tif"))
     height = image.shape[0]
     width = image.shape[1]
+    gdf.root_dir = os.path.dirname(get_data("OSBS_029.tif"))
     
     # Call the function
-    visualize.plot_results(gdf, savedir=tmpdir, root_dir=os.path.dirname(gdf['image_path'].iloc[0]),height=height, width=width)
+    visualize.plot_results(gdf, savedir=tmpdir,height=height, width=width)
 
     # Assertions
     assert os.path.exists(os.path.join(tmpdir, "OSBS_029.png"))
