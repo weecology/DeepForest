@@ -338,11 +338,14 @@ class deepforest(pl.LightningModule):
                       thickness: int = 1):
         """Predict a single image with a deepforest model.
 
+        Deprecation warning: The return_plot argument is deprecated and will be removed in 2.0. Use visualize.plot_results on the result instead.
+
         Args:
             image: a float32 numpy array of a RGB with channels last format
             path: optional path to read image from disk instead of passing image arg
             color: color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255)
             thickness: thickness of the rectangle border line in px
+        
         Returns:
             result: A pandas dataframe of predictions (Default)
             img: The input with predictions overlaid (Optional)
@@ -373,13 +376,25 @@ class deepforest(pl.LightningModule):
         result = predict._predict_image_(model=self.model,
                                          image=image,
                                          path=path,
+                                         color=color,
+                                         thickness=thickness,
+                                         return_plot=return_plot,
                                          nms_thresh=self.config["nms_thresh"])
 
-        #If there were no predictions, return None
-        if result is None:
-            return None
+        if return_plot:
+            # Add deprecated warning
+            warnings.warn(
+                "return_plot is deprecated and will be removed in 2.0. Use visualize.plot_results on the result instead."
+            )
+            
+            return result
         else:
-            result["label"] = result.label.apply(lambda x: self.numeric_to_label_dict[x])
+            #If there were no predictions, return None
+            if result is None:
+                return None
+            else:
+                result["label"] = result.label.apply(
+                    lambda x: self.numeric_to_label_dict[x])
 
         result = utilities.read_file(result)
         if path is None:
@@ -391,12 +406,14 @@ class deepforest(pl.LightningModule):
 
         return result
 
-    def predict_file(self, csv_file, root_dir):
+    def predict_file(self, csv_file, root_dir, savedir=None, thickness=1, color=None):
         """Create a dataset and predict entire annotation file Csv file format
         is .csv file with the columns "image_path", "xmin","ymin","xmax","ymax"
         for the image name and bounding box position. Image_path is the
         relative filename, not absolute path, which is in the root_dir
         directory. One bounding box per line.
+
+        Deprecation warning: The return_plot argument is deprecated and will be removed in 2.0. Use visualize.plot_results on the result instead.
 
         Args:
             csv_file: path to csv file
@@ -417,6 +434,9 @@ class deepforest(pl.LightningModule):
                                                annotations=df,
                                                dataloader=dataloader,
                                                root_dir=root_dir,
+                                               color=color,
+                                               thickness=thickness,
+                                               savedir=savedir,
                                                nms_thresh=self.config["nms_thresh"])
 
         results.root_dir = root_dir
@@ -431,7 +451,10 @@ class deepforest(pl.LightningModule):
                      iou_threshold=0.15,
                      mosaic=True,
                      sigma=0.5,
+                     return_plot=False,
                      thresh=0.001,
+                     color=None,
+                     thickness=1,
                      crop_model=None,
                      crop_transform=None,
                      crop_augment=False):
@@ -454,6 +477,8 @@ class deepforest(pl.LightningModule):
             cropModel: a deepforest.model.CropModel object to predict on crops
             crop_transform: a torchvision.transforms object to apply to crops
             crop_augment: a boolean to apply augmentations to crops
+
+        Deprecation: The return_plot argument is deprecated and will be removed in 2.0. Use visualize.plot_results on the result instead.
 
         Returns:
             boxes (array): if return_plot, an image.
@@ -502,6 +527,22 @@ class deepforest(pl.LightningModule):
                 lambda x: self.numeric_to_label_dict[x])
             if raster_path:
                 results["image_path"] = os.path.basename(raster_path)
+            if return_plot:
+                # Add deprecated warning
+                warnings.warn(
+                    "return_plot is deprecated and will be removed in 2.0. Use visualize.plot_results on the result instead."
+                )
+                # Draw predictions on BGR
+                if raster_path:
+                    tile = rio.open(raster_path).read()
+                else:
+                    tile = self.image
+                drawn_plot = tile[:, :, ::-1]
+                drawn_plot = visualize.plot_predictions(tile,
+                                                        results,
+                                                        color=color,
+                                                        thickness=thickness)
+                return drawn_plot
         else:
             for df in results:
                 df["label"] = df.label.apply(lambda x: self.numeric_to_label_dict[x])

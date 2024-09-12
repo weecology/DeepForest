@@ -186,6 +186,13 @@ def _dataloader_wrapper_(model,
 
     results = read_file(results, root_dir)
 
+    if savedir:
+        visualize.plot_prediction_dataframe(results,
+                                            root_dir=root_dir,
+                                            savedir=savedir,
+                                            color=color,
+                                            thickness=thickness)
+    
     return results
 
 
