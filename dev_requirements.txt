@@ -1,7 +1,7 @@
 albumentations>=1.0.0
 aiolimiter
 aiohttp
-bumpversion
+bump-my-version
 comet_ml
 docformatter
 pydata-sphinx-theme
