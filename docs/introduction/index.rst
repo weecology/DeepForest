@@ -91,13 +91,3 @@ The [supervision](https://supervision.roboflow.com/latest/), [inference](https:/
 [Torchgeo](https://github.com/microsoft/torchgeo) is a Python library written by developers at Microsoft to help automate remote sensing machine learning. Torchgeo has general structures, but the documents and general structure are focused on raster-based remote sensing, especially using earth-facing satellite data. Torchgeo has a number of useful datasets and curates pretrained models for remote sensing applications. The Torchgeo audience is generally more experienced with machine learning than the average DeepForest user.
 
 We hope to continue to connect with both Roboflow and Torchgeo to improve interoperability among all model types and training. The future of open-source depends on collaboration, and we welcome users from all packages to submit ideas on how best to serve the community and reduce any duplication and wasted effort. There are many packages that hold useful individual models (e.g., [DetectTree2](https://github.com/PatBall1/detectree2)) related to individual scientific publications. Our hope with DeepForest is to wrap general routines beyond individual research projects to make machine learning applications to environmental monitoring easier.
-
-## How can I contribute?
-
-DeepForest is an open-source python project that depends on user contributions. Users can help by
-
-* Making recommendations to the API and workflow. Please open an issue for anything that could help reduce friction and improve user experience.
-
-* Leading implementations of new features. Check out the 'good first issue' tag on the repo and get in touch with mantainers and tell us about your skills. 
-
-* Data contributions! The DeepForest backbone tree and bird models are not perfect. Please consider posting any annotations you make on zenodo, or sharing them with DeepForest mantainers. Open an [issue](https://github.com/weecology/DeepForest/issues) and tell us about the RGB data and annotations. For example, we are collecting tree annotations to create an [open-source benchmark](https://milliontrees.idtrees.org/). Please consider sharing data to make the models stronger and benefit you and other users. 
