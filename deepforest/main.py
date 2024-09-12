@@ -14,14 +14,15 @@ from PIL import Image
 from pytorch_lightning.callbacks import LearningRateMonitor
 from torch import optim
 from torchmetrics.detection import IntersectionOverUnion, MeanAveragePrecision
-
+from huggingface_hub import PyTorchModelHubMixin, hf_hub_download, snapshot_download
 from deepforest import dataset, visualize, get_data, utilities, predict
 from deepforest import evaluate as evaluate_iou
 
 from huggingface_hub import PyTorchModelHubMixin
 
 
-class deepforest(pl.LightningModule, PyTorchModelHubMixin):
+class deepforest(
+        pl.LightningModule,):  # PyTorchModelHubMixin):
     """Class for training and predicting tree crowns in RGB images."""
 
     def __init__(self,
@@ -119,46 +120,42 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
         self.save_hyperparameters()
 
-    def load_model(self, model_name="deepforest-tree", version='main'):
-        """Load DeepForest models from Hugging Face using from_pretrained().
+    def from_pretrained(self,
+                        repo_id: str,
+                        filename: str = "model.safetensors",
+                        config_file: str = "config.json"):
+        """Load a pre-trained deepforest model from the Hugging Face Hub.
 
         Args:
-            model_name (str): The name of the model to load ('deepforest-tree', 'bird', 'livestock', 'nest', 'deadtrees').
-            version (str): The model version ('main', 'v1.0.0', etc.).
-
-        Returns:
-            model (object): A trained PyTorch model.
+            repo_id (str): The Hugging Face repository where the model is stored.
+            filename (str): The model file to download.
+            config_file (str): The config file to download. Defaults to "config.json".
         """
-        # Map model names to Hugging Face Hub repository IDs
-        model_repo_dict = {
-            "deepforest-tree": "weecology/deepforest-tree",
-            "bird": "weecology/deepforest-bird",
-            "livestock": "weecology/deepforest-livestock",
-            "nest": "weecology/everglades-nest-detection",
-            "deadtrees": "weecology/cropmodel-deadtrees"
-        }
+        # Download model weights
+        model_file = hf_hub_download(repo_id=repo_id, filename=filename)
 
-        # Validate model name
-        if model_name not in model_repo_dict:
-            raise ValueError(
-                "Invalid model_name specified. Choose from 'deepforest-tree', 'bird', 'livestock', 'nest', or 'deadtrees'."
-            )
+        # Download and load the config file
+        downloaded_config_file = hf_hub_download(repo_id=repo_id, filename=config_file)
+        self.config = utilities.read_config(downloaded_config_file)
 
-        # Retrieve the repository ID for the model
-        repo_id = model_repo_dict[model_name]
+        # Initialize the model class with the downloaded config
+        self.create_model()  # Initialize the model architecture based on the config
 
-        # Load the model using from_pretrained
-        model = deepforest.from_pretrained(repo_id)
+        # Load model weights from the checkpoint
+        self.model.load_state_dict(
+            torch.load(model_file))  # Use the class method directly
 
-        # Set bird-specific settings if loading the bird model
-        if model_name == "bird":
-            model.config["score_thresh"] = 0.3
-            model.label_dict = {"Bird": 0}
-            model.numeric_to_label_dict = {v: k for k, v in model.label_dict.items()}
+    def load_model(self, repo_id: str, **kwargs):
+        """Wrapper method to load both the model and config file.
 
-        print(f"Loading model: {model_name} from version: {version}")
+        Args:
+            repo_id (str): The Hugging Face repository ID where the model is stored.
+            kwargs: Additional arguments to pass to from_pretrained method.
+        """
+        # Call from_pretrained to load the model and config
+        self.from_pretrained(repo_id, **kwargs)
 
-        return model
+        print(f"Model and configuration loaded from {repo_id}")
 
     def use_release(self, check_release=True):
         """Use the latest DeepForest model release from github and load model.
