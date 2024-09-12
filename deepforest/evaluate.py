@@ -12,7 +12,7 @@ from deepforest import visualize
 from deepforest.utilities import determine_geometry_type
 
 
-def evaluate_image_boxes(predictions, ground_df, savedir=None):
+def evaluate_image_boxes(predictions, ground_df, root_dir, savedir=None):
     """Compute intersection-over-union matching among prediction and ground
     truth boxes for one image.
 
@@ -22,6 +22,7 @@ def evaluate_image_boxes(predictions, ground_df, savedir=None):
         ground_df: a geopandas dataframe with geometry columns
         summarize: Whether to group statistics by plot and overall score
         image_coordinates: Whether the current boxes are in coordinate system of the image, e.g. origin (0,0) upper left.
+        root_dir: Where to search for image names in df
         savedir: optional directory to save image with overlaid predictions and annotations
 
     Returns:
@@ -42,7 +43,10 @@ def evaluate_image_boxes(predictions, ground_df, savedir=None):
     result["true_label"] = result.truth_id.apply(lambda x: ground_df.label.loc[x])
 
     if savedir:
-        visualize.plot_results(results=result, ground_truth=ground_df, savedir=savedir)
+        image = np.array(Image.open("{}/{}".format(root_dir, plot_name)))[:, :, ::-1]
+        image = visualize.plot_predictions(image, df=predictions)
+        image = visualize.plot_predictions(image, df=ground_df, color=(0, 165, 255))
+        cv2.imwrite("{}/{}".format(savedir, plot_name), image)
 
     return result
 

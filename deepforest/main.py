@@ -382,12 +382,12 @@ class deepforest(pl.LightningModule):
             result["label"] = result.label.apply(lambda x: self.numeric_to_label_dict[x])
 
         result = utilities.read_file(result)
-        if image is not None:
+        if path is None:
             warnings.warn(
                 "An image was passed directly to predict_image, the root_dir will be None in the output dataframe, to use visualize.plot_results, please assign results.root_dir = <directory name>"
             )
-
-        result.root_dir = os.path.dirname(path)
+        else:
+            result.root_dir = os.path.dirname(path)
 
         return result
 
@@ -524,13 +524,13 @@ class deepforest(pl.LightningModule):
                                                    augment=crop_augment)
 
         results = utilities.read_file(results)
-        # keep track of the image path
-        results.root_dir = os.path.dirname(raster_path)
 
-        if image is not None:
+        if raster_path is None:
             warnings.warn(
                 "An image was passed directly to predict_tile, the root_dir will be None in the output dataframe, to use visualize.plot_results, please assign results.root_dir = <directory name>"
             )
+        else:
+            results.root_dir = os.path.dirname(raster_path)
 
         return results
 
