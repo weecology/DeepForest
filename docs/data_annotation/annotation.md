@@ -1,4 +1,5 @@
 # Annotation
+
 Annotation is the most important part of machine learning projects.  If you aren't happy with model performance, annotating new samples is the best first step.
 
 ## How should I annotate images?
@@ -12,12 +13,13 @@ For longer term projects, we recommend [label-studio](https://labelstud.io/) as 
 ![QGISannotation](../../www/label_studio.png)
 
 ## Do I need annotate all objects in my image?
+
 Yes! Object detection models use the non-annotated areas of an image as negative data. We know that it can be difficult to annotate all objects in an image, but non-annotation will cause the model *to ignore* objects that should be treated as positive samples, leading to poor model performance. 
 
 ## How can I speed up annotation?
 
 1. Consider which images are needed. Duplicate backgrounds or objects contribute little to model generalization. Focus on gathering as wide a selection of object appearances as possible. 
-2. Do not overly split classification labels. Often a super-class can be useful for detecting objects, followed by a separate model for classification, see the [`CropModel`](CropModel.md).
+2. Do not overly split classification labels. Often a super-class can be useful for detecting objects, followed by a separate model for classification, see the [`CropModel`](../advanced_features/CropModels.md).
 3. Consider the downstream need for accurate boxes versus general detection or counting. Often, objects will be a standard size compared to the image resolution. If predicted detections can be loosely accurate, one option is to annotate using keypoints and infer a general box size.
 
 Here is a quick video on a simple way to annotate images.
@@ -99,6 +101,7 @@ As an alternative to shapefiles, DeepForest can read annotations in PASCAL VOC f
 The `read_pascal_voc` function is designed to read these XML annotations and convert them into a format suitable for use with object detection models, such as RetinaNet. This function parses the XML file, extracts the relevant information, and constructs a pandas DataFrame containing the image path and the bounding box coordinates along with the class labels.
 
 Example:
+
 ```python
 from deepforest import get_data
 from deepforest.utilities import read_pascal_voc
