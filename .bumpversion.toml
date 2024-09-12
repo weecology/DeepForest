@@ -41,9 +41,3 @@ filename = "setup.py"
 
 [[tool.bumpversion.files]]
 filename = "deepforest/_version.py"
-
-[[tool.bumpversion.files]]
-filename = "deepforest/__init__.py"
-
-[[tool.bumpversion.files]]
-filename = "docs/conf.py"

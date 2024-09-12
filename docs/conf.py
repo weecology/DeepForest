@@ -10,6 +10,7 @@ from recommonmark.transform import AutoStructify
 
 from sphinx.highlighting import lexers
 from pygments.lexers.python import PythonLexer
+from deepforest._version import __version__
 
 lexers["python"]=PythonLexer()
 
@@ -69,7 +70,7 @@ master_doc = 'index'
 project = u'DeepForest'
 copyright = u"2019, Ben Weinstein"
 author = u"Ben Weinstein"
-version = u"__version__ = '__version__ = '__version__ = '__version__ = '1.3.3''''"
+version = release = __version__
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', '**.ipynb_checkpoints']
 pygments_style = 'sphinx'
 todo_include_todos = False
