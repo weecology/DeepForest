@@ -451,8 +451,7 @@ def _plot_image_with_results(df,
                              radius=3,
                              height=None,
                              width=None):
-    """
-    Annotates an image with the given results.
+    """Annotates an image with the given results.
 
     Args:
         df (pandas.DataFrame): The DataFrame containing the results.
