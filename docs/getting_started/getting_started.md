@@ -23,7 +23,7 @@ plot_results(results, root_dir=os.path.dirname(sample_image_path))
 
 ### Predict a tile
 
-Large tiles covering wide geographic extents cannot fit into memory during prediction and would yield poor results due to the density of bounding boxes. Often provided as geospatial .tif files, remote sensing data is best suited for the ```predict_tile``` function, which splits the tile into overlapping windows, performs prediction on each of the windows, and then reassembles the resulting annotations.
+Large tiles covering wide geographic extents cannot fit into memory during prediction and would yield poor results due to the density of bounding boxes. Often provided as geospatial .tif files, remote sensing data is best suited for the `predict_tile` function, which splits the tile into overlapping windows, performs prediction on each of the windows, and then reassembles the resulting annotations.
 
 ![](../../www/getting_started1.png)
 

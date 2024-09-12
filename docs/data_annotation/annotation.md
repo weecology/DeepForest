@@ -82,7 +82,7 @@ for path in files:
         continue
     
     #View result
-    plot_results(boxes,root_dir=PATH_TO_DIR)
+    plot_results(boxes, root_dir=PATH_TO_DIR)
     
     #Create a shapefile, in this case img data was unprojected
     geo_coords = image_to_geo_coordinates(boxes, root_dir=PATH_TO_DIR)

@@ -48,7 +48,7 @@ plot_results(results, results_color=[109,50,168], thickness=2)
 ```
 from deepforest.utilities import read_file
 ground_truth = read_file(get_data(path="2019_YELL_2_528000_4978000_image_crop2.xml"))
-plot_results(results, ground_truth)
+plot_results(results, ground_truth=ground_truth)
 ```
 
 ![sample_image](../../www/Visualization3.png)
@@ -59,5 +59,5 @@ For results with more than one predicted class, the plot_results function will d
 
 ```
 color_palette = sv.ColorPalette.from_matplotlib('viridis', 6)
-plot_results(results, ground_truth, results_color=color_palette)
+plot_results(results, ground_truth=ground_truth, results_color=color_palette)
 ``

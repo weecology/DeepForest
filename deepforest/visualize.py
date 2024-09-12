@@ -369,8 +369,8 @@ def plot_results(results,
                  savedir=None,
                  height=None,
                  width=None,
-                 results_color=None,
-                 ground_truth_color=None,
+                 results_color=[245, 135, 66],
+                 ground_truth_color=[0, 165, 255],
                  thickness=2,
                  radius=3):
     """Plot the prediction results.
@@ -386,12 +386,8 @@ def plot_results(results,
         None
     """
     # Convert colors, check for multi-class labels
-    if results_color is None:
-        sv_color = sv.Color(245, 135, 66)
-    elif type(results_color) is list:
-        sv_color = sv.Color(results_color[0], results_color[1], results_color[2])
-    else:
-        sv_color = results_color
+    results_color_sv = sv.Color(results_color[0], results_color[1], results_color[2])
+    ground_truth_color_sv = sv.Color(ground_truth_color[0], ground_truth_color[1], ground_truth_color[2])
 
     num_labels = len(results.label.unique())
     if num_labels > 1 and results_color is not None:
@@ -410,24 +406,17 @@ def plot_results(results,
     fig, ax = plt.subplots()
     annotated_scene = _plot_image_with_results(df=results,
                                                image=image,
-                                               sv_color=sv_color,
+                                               sv_color=results_color_sv,
                                                height=height,
                                                width=width,
                                                thickness=thickness,
                                                radius=radius)
 
     if ground_truth is not None:
-        if ground_truth_color is None:
-            sv_color = sv.Color(0, 165, 255)
-        elif type(ground_truth_color) is list:
-            sv_color = sv.Color(ground_truth_color[0], ground_truth_color[1],
-                                ground_truth_color[2])
-        else:
-            sv_color = ground_truth_color
         # Plot the ground truth annotations
         annotated_scene = _plot_image_with_results(df=ground_truth,
                                                    image=annotated_scene,
-                                                   sv_color=sv_color,
+                                                   sv_color=ground_truth_color_sv,
                                                    height=height,
                                                    width=width,
                                                    thickness=thickness,
