@@ -3,7 +3,7 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - bumpversion
+  - bump-my-version
   - docutils<0.18
   - geopandas
   - huggingface_hub
