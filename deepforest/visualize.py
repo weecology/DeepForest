@@ -372,6 +372,7 @@ def plot_results(results,
                  results_color=[245, 135, 66],
                  ground_truth_color=[0, 165, 255],
                  thickness=2,
+                 basename=None,
                  radius=3):
     """Plot the prediction results.
 
@@ -381,6 +382,7 @@ def plot_results(results,
         savedir: optional path to save the figure. If None (default), the figure will be interactively plotted.
         height: height of the image in pixels. Required if the geometry type is 'polygon'.
         width: width of the image in pixels. Required if the geometry type is 'polygon'.
+        basename: optional basename for the saved figure. If None (default), the basename will be extracted from the image path.
         results_color (list): color of the results annotations as a tuple of RGB color, e.g. orange annotations is [245, 135, 66]
     Returns:
         None
@@ -423,7 +425,8 @@ def plot_results(results,
                                                    radius=radius)
 
     if savedir:
-        basename = os.path.splitext(os.path.basename(results.image_path.unique()[0]))[0]
+        if basename is None:
+            basename = os.path.splitext(os.path.basename(results.image_path.unique()[0]))[0]
         image_name = "{}.png".format(basename)
         plt.savefig(os.path.join(savedir, image_name), bbox_inches='tight', pad_inches=0)
     else:
