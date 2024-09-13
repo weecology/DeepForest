@@ -428,10 +428,8 @@ def plot_results(results,
         if basename is None:
             basename = os.path.splitext(os.path.basename(results.image_path.unique()[0]))[0]
         image_name = "{}.png".format(basename)
-        
-        plt.imshow(annotated_scene)
-        plt.axis('off')  # Hide axes for a cleaner look
-        plt.savefig(os.path.join(savedir, image_name), bbox_inches='tight', pad_inches=0)
+        image_path = os.path.join(savedir, image_name)
+        cv2.imwrite(image_path, annotated_scene)
     else:
         # Display the image using Matplotlib
         plt.imshow(annotated_scene)
