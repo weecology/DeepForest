@@ -389,7 +389,8 @@ def plot_results(results,
     """
     # Convert colors, check for multi-class labels
     results_color_sv = sv.Color(results_color[0], results_color[1], results_color[2])
-    ground_truth_color_sv = sv.Color(ground_truth_color[0], ground_truth_color[1], ground_truth_color[2])
+    ground_truth_color_sv = sv.Color(ground_truth_color[0], ground_truth_color[1],
+                                     ground_truth_color[2])
 
     num_labels = len(results.label.unique())
     if num_labels > 1 and results_color is not None:
@@ -426,7 +427,8 @@ def plot_results(results,
 
     if savedir:
         if basename is None:
-            basename = os.path.splitext(os.path.basename(results.image_path.unique()[0]))[0]
+            basename = os.path.splitext(os.path.basename(
+                results.image_path.unique()[0]))[0]
         image_name = "{}.png".format(basename)
         image_path = os.path.join(savedir, image_name)
         cv2.imwrite(image_path, annotated_scene)

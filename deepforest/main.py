@@ -386,7 +386,7 @@ class deepforest(pl.LightningModule):
             warnings.warn(
                 "return_plot is deprecated and will be removed in 2.0. Use visualize.plot_results on the result instead."
             )
-            
+
             return result
         else:
             #If there were no predictions, return None

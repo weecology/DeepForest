@@ -192,7 +192,7 @@ def _dataloader_wrapper_(model,
                                             savedir=savedir,
                                             color=color,
                                             thickness=thickness)
-    
+
     return results
 
 
