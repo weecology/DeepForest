@@ -345,7 +345,7 @@ class deepforest(pl.LightningModule):
             path: optional path to read image from disk instead of passing image arg
             color: color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255)
             thickness: thickness of the rectangle border line in px
-        
+
         Returns:
             result: A pandas dataframe of predictions (Default)
             img: The input with predictions overlaid (Optional)
