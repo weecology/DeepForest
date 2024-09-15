@@ -74,7 +74,7 @@ The first is the DeepForest paper, which describes the python package:
 
 Weinstein, B.G., Marconi, S., Aubry‐Kientz, M., Vincent, G., Senyondo, H. and White, E.P., 2020. DeepForest: A Python package for RGB deep learning tree crown delineation. Methods in Ecology and Evolution, 11(12), pp.1743-1751. https://doi.org/10.1111/2041-210X.13472
 
-The second is the paper describing the particular model. See `prebuilt` for citations for each model.
+The second is the paper describing the particular model. See [Prebuilt Setup](../installation_and_setup/prebuilt.md) for citations for each model.
 
 .. _issue page: https://github.com/weecology/DeepForest/issues
 
