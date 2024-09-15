@@ -118,6 +118,8 @@ Checkout the deepforest branch, update the `deepforest/meta.yaml` with the new v
    {% set version = "fill new" %}
    {% set sha256 = "fill new" %}
 
+
+
 Documentation
 -------------
 
@@ -150,6 +152,21 @@ Test documentation locally
    pip install ../ -U
    make clean  # Run
    make html  # Run
+
+Create Release
+--------------
+
+Start
+^^^^^
+
+1. **Run the tests** – seriously, run them now.
+2. Ensure `HISTORY.rst` is up to date with all changes since the last release.
+3. Use `bump-my-version show-bump` to determine the appropriate version bump.
+4. Update the version for release: `bump-my-version bump [minor | patch | pre_l | pre_n]`.
+5. Publish the release to PyPi and update the Conda package.
+6. Post-release, update the version to the next development iteration:
+   - Run `bump-my-version show-bump` to check the target version.
+   - Then, execute `bump-my-version bump [minor | patch | pre_l | pre_n]`.
 
 Note:
 Do not commit the build directory after making html.
