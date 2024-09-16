@@ -63,7 +63,6 @@ setup(name=NAME,
       license=LICENCE,
       packages=find_packages(),
       include_package_data=True,
-      hf-hub-download
       install_requires=['albumentations>=1.0.0', 'aiolimiter', 'aiohttp', 'docformatter', 'huggingface_hub',
                         'geopandas', 'matplotlib', 'nbqa', 'numpy', 'opencv-python-headless>=4.5.4', 'pandas', 'Pillow>6.2.0',
                         'progressbar2', 'pycocotools', "pydata-sphinx-theme", 'Pygments', 'pytorch-lightning>=1.5.8', 'rasterio',
