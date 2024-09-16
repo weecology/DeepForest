@@ -14,7 +14,7 @@ from PIL import Image
 from pytorch_lightning.callbacks import LearningRateMonitor
 from torch import optim
 from torchmetrics.detection import IntersectionOverUnion, MeanAveragePrecision
-from huggingface_hub import PyTorchModelHubMixin, hf_hub_download, snapshot_download
+from huggingface_hub import PyTorchModelHubMixin
 from deepforest import dataset, visualize, get_data, utilities, predict
 from deepforest import evaluate as evaluate_iou
 
@@ -120,11 +120,19 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         self.save_hyperparameters()
 
     def load_model(self, model_name="weecology/deepforest-tree", revision='main'):
-        """Load DeepForest models from Hugging Face using from_pretrained().
+        """Loads a model that has already been pretrained for a specific task,
+        like tree crown detection.
+
+        Models (technically model weights) are distributed via Hugging Face
+        and designated the Hugging Face repository ID (model_name), which
+        is in the form: 'organization/repository'. For a list of models distributed
+        by the DeepForest team (and the associated model names) see the
+        documentation:
+        https://deepforest.readthedocs.io/en/latest/installation_and_setup/prebuilt.html
 
         Args:
             model_name (str): A repository ID for huggingface in the form of organization/repository
-            version (str): The model version ('main', 'v1.0.0', etc.).
+            revision (str): The model version ('main', 'v1.0.0', etc.).
 
         Returns:
             self (object):A trained PyTorch model with its config and weights.
@@ -156,7 +164,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
         warnings.warn("use_release will be deprecated in 2.0. use load_model() instead",
                       DeprecationWarning)
-        self.load_model()
+        self.load_model('weecology/deepforest-tree')
 
     def use_bird_release(self, check_release=True):
         """Use the latest DeepForest bird model release from github and load
@@ -171,7 +179,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         warnings.warn(
             "use_bird_release will be deprecated in 2.0. use load_model('bird') instead",
             DeprecationWarning)
-        self.load_model('bird')
+        self.load_model('weecology/deepforest-bird')
 
     def create_model(self):
         """Define a deepforest architecture. This can be done in two ways.
