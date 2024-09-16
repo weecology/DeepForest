@@ -29,6 +29,7 @@ pyyaml>=5.1.0
 rasterio
 recommonmark
 rtree
+safetensors
 slidingwindow
 sphinx
 sphinx_markdown_tables
