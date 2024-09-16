@@ -138,12 +138,12 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             self (object):A trained PyTorch model with its config and weights.
         """
         # Load the model using from_pretrained
+        self.create_model()
         loaded_model = self.from_pretrained(model_name, revision=revision)
-        self.config = loaded_model.config
         self.label_dict = loaded_model.label_dict
         self.model = loaded_model.model
         self.numeric_to_label_dict = loaded_model.numeric_to_label_dict
-
+        print(loaded_model.config)
         # Set bird-specific settings if loading the bird model
         if model_name == "weecology/deepforest-bird":
             self.config['retinanet']["score_thresh"] = 0.3
