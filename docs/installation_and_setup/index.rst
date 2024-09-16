@@ -1,10 +1,11 @@
 Installation and Setup
 ======================
 
+.. include:: installation.rst
+
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
-   installation
    prebuilt
    ConfigurationFile

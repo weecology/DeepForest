@@ -1,6 +1,8 @@
 Advanced Features
 =================
 
+.. include:: CropModels.rst
+
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
