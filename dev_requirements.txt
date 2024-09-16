@@ -1,10 +1,10 @@
 albumentations>=1.0.0
 aiolimiter
 aiohttp
-bumpversion
+bump-my-version
 comet_ml
 docformatter
-furo
+pydata-sphinx-theme
 geopandas
 huggingface_hub
 h5py

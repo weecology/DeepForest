@@ -13,8 +13,8 @@ DeepForest was originally designed for bounding box annotations. As of DeepFores
 #### CSV
 
 Here the annotations are in plain csv files, with coordinates relative to image origin.
+
 ```
-(DeepForest) (base) benweinstein@Bens-MacBook-Pro data % cat OSBS_029.csv
 image_path,xmin,ymin,xmax,ymax,label
 OSBS_029.tif,203,67,227,90,Tree
 OSBS_029.tif,256,99,288,140,Tree
@@ -25,6 +25,7 @@ OSBS_029.tif,365,21,400,70,Tree
 OSBS_029.tif,278,1,312,37,Tree
 OSBS_029.tif,364,204,400,246,Tree
 ```
+
 ```
 filename = get_data("OSBS_029.csv")
 utilities.read_file(filename)
@@ -52,7 +53,7 @@ Name: 0, dtype: object
 These coordinates are made relative to the image origin when the file is read.
 
 ```
-shp = utilities.read_file(input="{}/test_read_file_boxes_projected.shp".format(tmpdir))
+shp = utilities.read_file(input="/path/to/boxes_shapefile.shp")
 shp.head()
   label    image_path                                           geometry
 0  Tree  OSBS_029.tif  POLYGON ((105.000 214.000, 95.000 214.000, 95....
@@ -71,7 +72,7 @@ x,y,label
 
 ### Shapefile
 ```
-annotations = utilities.read_file(input="{}/test_read_file_points_projected.shp".format(tmpdir))
+shp = utilities.read_file(input="/path/to/points_shapefile.shp")
 annotations.head()
   label    image_path                 geometry
 0  Tree  OSBS_029.tif  POINT (100.000 209.000)
@@ -90,8 +91,9 @@ Polygons are expressed well-known-text format. Learn more about (wkt)[https://en
 ```
 
 ## Shapefile
+
 ```
-annotations = utilities.read_file(input="{}/test_read_file_polygons_unprojected.shp".format(tmpdir))
+shp = utilities.read_file(input="/path/to/polygons_shapefile.shp")
 annotations.head()
   label    image_path                                           geometry
 0  Tree  OSBS_029.png  POLYGON ((0.00000 0.00000, 0.00000 2.00000, 1....

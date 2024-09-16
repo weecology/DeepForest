@@ -118,6 +118,7 @@ class TreeDataset(Dataset):
                 image = np.rollaxis(image, 2, 0)
                 image = torch.from_numpy(image).float()
                 targets = {"boxes": boxes, "labels": labels}
+
                 return self.image_names[idx], image, targets
 
             augmented = self.transform(image=image,

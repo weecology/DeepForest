@@ -3,9 +3,8 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - bumpversion
+  - bump-my-version
   - docutils<0.18
-  - furo
   - geopandas
   - huggingface_hub
   - h5py
@@ -18,6 +17,7 @@ dependencies:
   - pillow>6.2.0
   - pip
   - psutil
+  - pydata-sphinx-theme
   - pytest
   - pytest-profiling
   - pytorch::pytorch
