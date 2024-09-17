@@ -338,13 +338,14 @@ class deepforest(pl.LightningModule):
                       thickness: int = 1):
         """Predict a single image with a deepforest model.
 
-        Deprecation warning: The return_plot argument is deprecated and will be removed in 2.0. Use visualize.plot_results on the result instead.
+        Deprecation warning: The 'return_plot', and related 'color' and 'thickness' arguments are deprecated and will be removed in 2.0. Use visualize.plot_results on the result instead.
 
         Args:
             image: a float32 numpy array of a RGB with channels last format
             path: optional path to read image from disk instead of passing image arg
-            color: color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255)
-            thickness: thickness of the rectangle border line in px
+            (deprecated) return_plot: return a plot of the image with predictions overlaid
+            (deprecated) color: color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255)
+            (deprectaed) thickness: thickness of the rectangle border line in px
 
         Returns:
             result: A pandas dataframe of predictions (Default)
@@ -376,10 +377,10 @@ class deepforest(pl.LightningModule):
         result = predict._predict_image_(model=self.model,
                                          image=image,
                                          path=path,
-                                         color=color,
-                                         thickness=thickness,
+                                         nms_thresh=self.config["nms_thresh"],
                                          return_plot=return_plot,
-                                         nms_thresh=self.config["nms_thresh"])
+                                         thickness=thickness,
+                                         color=color)
 
         if return_plot:
             # Add deprecated warning
@@ -406,7 +407,7 @@ class deepforest(pl.LightningModule):
 
         return result
 
-    def predict_file(self, csv_file, root_dir, savedir=None, thickness=1, color=None):
+    def predict_file(self, csv_file, root_dir, savedir=None, color=None, thickness=1):
         """Create a dataset and predict entire annotation file Csv file format
         is .csv file with the columns "image_path", "xmin","ymin","xmax","ymax"
         for the image name and bounding box position. Image_path is the
@@ -418,6 +419,10 @@ class deepforest(pl.LightningModule):
         Args:
             csv_file: path to csv file
             root_dir: directory of images. If none, uses "image_dir" in config
+            (deprecated) savedir: directory to save images with bounding boxes
+            (deprecated) color: color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255)
+            (deprecated) thickness: thickness of the rectangle border line in px
+
         Returns:
             df: pandas dataframe with bounding boxes, label and scores for each image in the csv file
         """
@@ -477,6 +482,9 @@ class deepforest(pl.LightningModule):
             cropModel: a deepforest.model.CropModel object to predict on crops
             crop_transform: a torchvision.transforms object to apply to crops
             crop_augment: a boolean to apply augmentations to crops
+            (deprecated) return_plot: return a plot of the image with predictions overlaid
+            (deprecated) color: color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255)
+            (deprecated) thickness: thickness of the rectangle border line in px
 
         Deprecation: The return_plot argument is deprecated and will be removed in 2.0. Use visualize.plot_results on the result instead.
 

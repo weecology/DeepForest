@@ -32,7 +32,7 @@ Let's show an example with a small image. For larger images, patch_size should b
 ```python
 raster_path = get_data("OSBS_029.tif")
 # Window size of 300px with an overlap of 25% among windows for this small tile.
-boxes = model.predict_tile(raster_path, patch_size=300,patch_overlap=0.25)
+boxes = model.predict_tile(raster_path, patch_size=300, patch_overlap=0.25)
 plot_results(boxes)
 ```
 

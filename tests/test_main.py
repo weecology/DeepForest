@@ -209,7 +209,7 @@ def test_predict_image_fromfile(m):
 
     assert isinstance(prediction, pd.DataFrame)
     assert set(prediction.columns) == {
-        "xmin", "ymin", "xmax", "ymax", "label", "score", "image_path","geometry"
+        "xmin", "ymin", "xmax", "ymax", "label", "score", "image_path", "geometry"
     }
 
 
@@ -226,7 +226,7 @@ def test_predict_image_fromarray(m):
         prediction = m.predict_image(image=image)
 
     assert isinstance(prediction, pd.DataFrame)
-    assert set(prediction.columns) == {"xmin", "ymin", "xmax", "ymax", "label", "score","geometry"} 
+    assert set(prediction.columns) == {"xmin", "ymin", "xmax", "ymax", "label", "score", "geometry"} 
 
 
 def test_predict_big_file(m, tmpdir):
@@ -268,7 +268,7 @@ def test_predict_tile(m, raster_path):
 
     assert isinstance(prediction, pd.DataFrame)
     assert set(prediction.columns) == {
-        "xmin", "ymin", "xmax", "ymax", "label", "score", "image_path","geometry"
+        "xmin", "ymin", "xmax", "ymax", "label", "score", "image_path", "geometry"
     }
     assert not prediction.empty
 
@@ -621,6 +621,6 @@ def test_predict_tile_with_crop_model(m, config):
     # Assert the result
     assert isinstance(result, pd.DataFrame)
     assert set(result.columns) == {
-        "xmin", "ymin", "xmax", "ymax", "label", "score", "cropmodel_label","geometry",
+        "xmin", "ymin", "xmax", "ymax", "label", "score", "cropmodel_label", "geometry",
         "cropmodel_score", "image_path"
     }
