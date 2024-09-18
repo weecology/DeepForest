@@ -62,7 +62,7 @@ def m(download_release):
     m.config["train"]["epochs"] = 2
 
     m.create_trainer()
-    m.load_model()
+    m.load_model("ethanwhite/df-test")
     return m
 
 
@@ -141,7 +141,7 @@ def test_use_bird_release(m):
 
 def test_load_model(m):
     imgpath = get_data("SOAP_031.png")
-    m.load_model('weecology/deepforest-tree')
+    m.load_model('ethanwhite/df-test')
     boxes = m.predict_image(path=imgpath)
     assert not boxes.empty
 
