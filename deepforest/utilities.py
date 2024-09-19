@@ -11,7 +11,6 @@ from tqdm import tqdm
 
 from PIL import Image
 from deepforest import _ROOT
-import json
 import warnings
 import geopandas as gpd
 import rasterio
