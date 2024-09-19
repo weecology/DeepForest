@@ -11,7 +11,6 @@ from tqdm import tqdm
 
 from PIL import Image
 from deepforest import _ROOT
-import json
 import warnings
 import geopandas as gpd
 import rasterio
@@ -21,7 +20,7 @@ from deepforest import _ROOT
 import json
 import urllib.request
 from huggingface_hub import hf_hub_download
-from huggingface_hub.utils._errors import RevisionNotFoundError, HfHubHTTPError
+from huggingface_hub.errors import RevisionNotFoundError, HfHubHTTPError
 
 
 def read_config(config_path):
