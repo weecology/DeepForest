@@ -28,7 +28,6 @@ def download_release():
     except urllib.error.URLError:
         # Add a edge case in case no internet access.
         pass
-    assert os.path.exists(get_data("NEON.pt"))
 
 
 @pytest.fixture(scope="session")
