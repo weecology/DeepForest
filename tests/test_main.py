@@ -140,8 +140,8 @@ def test_use_bird_release(m):
     assert not boxes.empty
 
 def test_load_model(m):
-    imgpath = get_data("SOAP_031.png")
-    m.load_model('weecology/deepforest-tree')
+    imgpath = get_data("OSBS_029.png")
+    m.load_model('ethanwhite/df-test')
     boxes = m.predict_image(path=imgpath)
     assert not boxes.empty
 
