@@ -119,7 +119,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
         self.save_hyperparameters()
 
-    def load_model(self, model_name="ethanwhite/df-test", revision='main'):
+    def load_model(self, model_name="weecology/deepforest-tree", revision='main'):
         """Loads a model that has already been pretrained for a specific task,
         like tree crown detection.
 
@@ -163,7 +163,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
         warnings.warn("use_release will be deprecated in 2.0. use load_model() instead",
                       DeprecationWarning)
-        self.load_model('ethanwhite/df-test')
+        self.load_model('weecology/deepforest-tree')
 
     def use_bird_release(self, check_release=True):
         """Use the latest DeepForest bird model release from github and load
