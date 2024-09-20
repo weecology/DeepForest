@@ -23,7 +23,8 @@ def config():
 def download_release():
     print("running fixtures")
     try:
-        utilities.use_release()
+        # utilities.use_release()
+        main.deepforest().use_release()
     except urllib.error.URLError:
         # Add a edge case in case no internet access.
         pass
