@@ -16,7 +16,7 @@ model.use_release()
 
 sample_image_path = get_data("OSBS_029.png")
 results = model.predict_image(path=sample_image_path)
-plot_results(results, root_dir=os.path.dirname(sample_image_path))
+plot_results(results)
 ```
 
 <img src="../www/getting_started1.png" height="300px">

@@ -439,10 +439,10 @@ class deepforest(pl.LightningModule):
                                                annotations=df,
                                                dataloader=dataloader,
                                                root_dir=root_dir,
+                                               nms_thresh=self.config["nms_thresh"],
                                                color=color,
-                                               thickness=thickness,
                                                savedir=savedir,
-                                               nms_thresh=self.config["nms_thresh"])
+                                               thickness=thickness)
 
         results.root_dir = root_dir
 
@@ -454,9 +454,9 @@ class deepforest(pl.LightningModule):
                      patch_size=400,
                      patch_overlap=0.05,
                      iou_threshold=0.15,
+                     return_plot=False,
                      mosaic=True,
                      sigma=0.5,
-                     return_plot=False,
                      thresh=0.001,
                      color=None,
                      thickness=1,
@@ -770,7 +770,7 @@ class deepforest(pl.LightningModule):
         else:
             return optimizer
 
-    def evaluate(self, csv_file, root_dir, iou_threshold=None):
+    def evaluate(self, csv_file, root_dir, iou_threshold=None, savedir=None):
         """Compute intersection-over-union and precision/recall for a given
         iou_threshold.
 
@@ -778,6 +778,7 @@ class deepforest(pl.LightningModule):
             csv_file: location of a csv file with columns "name","xmin","ymin","xmax","ymax","label", each box in a row
             root_dir: location of files in the dataframe 'name' column.
             iou_threshold: float [0,1] intersection-over-union union between annotation and prediction to be scored true positive
+            savedir: location to save images with bounding boxes
         Returns:
             results: dict of ("results", "precision", "recall") for a given threshold
         """

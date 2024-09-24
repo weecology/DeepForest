@@ -263,18 +263,12 @@ def convert_to_sv_format(df, width=None, height=None):
 
     Args:
         df (pd.DataFrame): The results from `predict_image` or `predict_tile`.
-                           Expected columns: ['xmin', 'ymin', 'xmax', 'ymax', 'label', 'score', 'image_path'].
-        width (int): The width of the image in pixels. Required if the geometry type is 'polygon'.
-        height (int): The height of the image in pixels. Required if the geometry type is 'polygon'.
+                           Expected columns includes: ['geometry', 'label', 'score', 'image_path'] for bounding boxes
+        width (int): The width of the image in pixels. Only required if the geometry type is 'polygon'.
+        height (int): The height of the image in pixels. Only required if the geometry type is 'polygon'.
 
     Returns:
-        sv.Detections: A supervision Detections object containing bounding boxes, class IDs,
-                       confidence scores, and class names object mapping classes ids to corresponding
-                       class names inside of data dictionary.
-
-
-    Example:
-        detections = convert_to_sv_format(result)
+        Depending on the geometry type, the function returns either a Detections or a KeyPoints object from the supervision library.
     """
     geom_type = determine_geometry_type(df)
 
@@ -377,13 +371,16 @@ def plot_results(results,
     """Plot the prediction results.
 
     Args:
-        df: a pandas dataframe with prediction results
+        results: a pandas dataframe with prediction results
         ground_truth: an optional pandas dataframe with ground truth annotations
         savedir: optional path to save the figure. If None (default), the figure will be interactively plotted.
         height: height of the image in pixels. Required if the geometry type is 'polygon'.
         width: width of the image in pixels. Required if the geometry type is 'polygon'.
-        basename: optional basename for the saved figure. If None (default), the basename will be extracted from the image path.
         results_color (list): color of the results annotations as a tuple of RGB color, e.g. orange annotations is [245, 135, 66]
+        ground_truth_color (list): color of the ground truth annotations as a tuple of RGB color, e.g. blue annotations is [0, 165, 255]
+        thickness: thickness of the rectangle border line in px
+        basename: optional basename for the saved figure. If None (default), the basename will be extracted from the image path.
+        radius: radius of the points in px
     Returns:
         None
     """
@@ -393,12 +390,12 @@ def plot_results(results,
                                      ground_truth_color[2])
 
     num_labels = len(results.label.unique())
-    if num_labels > 1 and results_color is not None:
+    if num_labels > 1 and len(results_color) != num_labels:
         warnings.warn(
             "Multiple labels detected in the results. Each label will be plotted with a different color using a color ramp, results color argument is ignored."
         )
-    if num_labels > 1:
-        sv_color = sv.ColorPalette.from_matplotlib('viridis', 5)
+        if num_labels > 1:
+            results_color_sv = sv.ColorPalette.from_matplotlib('viridis', num_labels)
 
     # Read images
     root_dir = results.root_dir
@@ -468,7 +465,6 @@ def _plot_image_with_results(df,
             detections=detections,
         )
     elif geom_type == "polygon":
-
         polygon_annotator = sv.PolygonAnnotator(color=sv_color, thickness=thickness)
         annotated_frame = polygon_annotator.annotate(
             scene=image.copy(),
