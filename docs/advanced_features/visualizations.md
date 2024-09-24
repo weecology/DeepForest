@@ -7,7 +7,6 @@ To view the results of DeepForest models, we use Roboflow's [supervision](https:
 ```
 from deepforest import main, get_data
 from deepforest.visualize import plot_results
-import os
 
 model = main.deepforest()
 model.use_release()
