@@ -12,8 +12,7 @@ from deepforest import get_data
 import matplotlib.pyplot as plt
 
 model = main.deepforest()
-model.use_release()
-
+model.load_model(model_name="weecology/deepforest-tree", revision="main")
 sample_image_path = get_data("OSBS_029.png")
 img = model.predict_image(path=sample_image_path, return_plot=True)
 
