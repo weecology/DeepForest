@@ -209,7 +209,7 @@ def test_predict_image_fromfile(m):
 
     assert isinstance(prediction, pd.DataFrame)
     assert set(prediction.columns) == {
-        "xmin", "ymin", "xmax", "ymax", "label", "score", "image_path"
+        "xmin", "ymin", "xmax", "ymax", "label", "score", "image_path", "geometry"
     }
 
 
@@ -226,15 +226,7 @@ def test_predict_image_fromarray(m):
         prediction = m.predict_image(image=image)
 
     assert isinstance(prediction, pd.DataFrame)
-    assert set(prediction.columns) == {"xmin", "ymin", "xmax", "ymax", "label", "score"}
-
-
-def test_predict_return_plot(m):
-    image = get_data(path="2019_YELL_2_528000_4978000_image_crop2.png")
-    image = np.array(Image.open(image))
-    image = image.astype('float32')
-    plot = m.predict_image(image=image, return_plot=True)
-    assert isinstance(plot, np.ndarray)
+    assert set(prediction.columns) == {"xmin", "ymin", "xmax", "ymax", "label", "score", "geometry"} 
 
 
 def test_predict_big_file(m, tmpdir):
@@ -243,26 +235,18 @@ def test_predict_big_file(m, tmpdir):
     csv_file = big_file()
     original_file = pd.read_csv(csv_file)
     df = m.predict_file(csv_file=csv_file,
-                        root_dir=os.path.dirname(csv_file),
-                        savedir=tmpdir)
+                        root_dir=os.path.dirname(csv_file))
     assert set(df.columns) == {
         'label', 'score', 'image_path', 'geometry', "xmin", "ymin", "xmax", "ymax"
     }
-
-    printed_plots = glob.glob("{}/*.png".format(tmpdir))
-    assert len(printed_plots) == len(original_file.image_path.unique())
-
 
 def test_predict_small_file(m, tmpdir):
     csv_file = get_data("OSBS_029.csv")
     original_file = pd.read_csv(csv_file)
-    df = m.predict_file(csv_file, root_dir=os.path.dirname(csv_file), savedir=tmpdir)
+    df = m.predict_file(csv_file, root_dir=os.path.dirname(csv_file))
     assert set(df.columns) == {
         'label', 'score', 'image_path', 'geometry', "xmin", "ymin", "xmax", "ymax"
     }
-    printed_plots = glob.glob("{}/*.png".format(tmpdir))
-    assert len(printed_plots) == len(original_file.image_path.unique())
-
 
 @pytest.mark.parametrize("batch_size", [1, 2])
 def test_predict_dataloader(m, batch_size, raster_path):
@@ -280,12 +264,11 @@ def test_predict_tile(m, raster_path):
     m.create_trainer()
     prediction = m.predict_tile(raster_path=raster_path,
                                 patch_size=300,
-                                patch_overlap=0.1,
-                                return_plot=False)
+                                patch_overlap=0.1)
 
     assert isinstance(prediction, pd.DataFrame)
     assert set(prediction.columns) == {
-        "xmin", "ymin", "xmax", "ymax", "label", "score", "image_path"
+        "xmin", "ymin", "xmax", "ymax", "label", "score", "image_path", "geometry"
     }
     assert not prediction.empty
 
@@ -298,24 +281,8 @@ def test_predict_tile_from_array(m, patch_overlap, raster_path):
     m.create_trainer()
     prediction = m.predict_tile(image=image,
                                 patch_size=300,
-                                patch_overlap=patch_overlap,
-                                return_plot=False)
+                                patch_overlap=patch_overlap)
     assert not prediction.empty
-
-
-@pytest.mark.parametrize("patch_overlap", [0.1, 0])
-def test_predict_tile_from_array_with_return_plot(m, patch_overlap, raster_path):
-    # test predict numpy image
-    image = np.array(Image.open(raster_path))
-    m.config["train"]["fast_dev_run"] = False
-    m.create_trainer()
-    prediction = m.predict_tile(image=image,
-                                patch_size=300,
-                                patch_overlap=patch_overlap,
-                                return_plot=True,
-                                color=(0, 255, 0))
-    assert isinstance(prediction, np.ndarray)
-    assert prediction.size > 0
 
 
 def test_predict_tile_no_mosaic(m, raster_path):
@@ -325,7 +292,6 @@ def test_predict_tile_no_mosaic(m, raster_path):
     prediction = m.predict_tile(raster_path=raster_path,
                                 patch_size=300,
                                 patch_overlap=0,
-                                return_plot=False,
                                 mosaic=False)
     assert len(prediction) == 4
     assert len(prediction[0]) == 2
@@ -336,7 +302,7 @@ def test_evaluate(m, tmpdir):
     csv_file = get_data("OSBS_029.csv")
     root_dir = os.path.dirname(csv_file)
 
-    results = m.evaluate(csv_file, root_dir, iou_threshold=0.4, savedir=tmpdir)
+    results = m.evaluate(csv_file, root_dir, iou_threshold=0.4)
 
     # Does this make reasonable predictions, we know the model works.
     assert np.round(results["box_precision"], 2) > 0.5
@@ -638,7 +604,6 @@ def test_predict_tile_with_crop_model(m, config):
     patch_size = 400
     patch_overlap = 0.05
     iou_threshold = 0.15
-    return_plot = False
     mosaic = True
     # Set up the crop model
     crop_model = model.CropModel()
@@ -650,13 +615,12 @@ def test_predict_tile_with_crop_model(m, config):
                             patch_size=patch_size,
                             patch_overlap=patch_overlap,
                             iou_threshold=iou_threshold,
-                            return_plot=return_plot,
                             mosaic=mosaic,
                             crop_model=crop_model)
 
     # Assert the result
     assert isinstance(result, pd.DataFrame)
     assert set(result.columns) == {
-        "xmin", "ymin", "xmax", "ymax", "label", "score", "cropmodel_label",
+        "xmin", "ymin", "xmax", "ymax", "label", "score", "cropmodel_label", "geometry",
         "cropmodel_score", "image_path"
     }

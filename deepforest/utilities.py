@@ -427,6 +427,9 @@ def read_file(input, root_dir=None):
     # convert to geodataframe
     df = gpd.GeoDataFrame(df, geometry='geometry')
 
+    # If root_dir is specified, add as attribute
+    df.root_dir = root_dir
+
     return df
 
 

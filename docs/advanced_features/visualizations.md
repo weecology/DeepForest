@@ -1,104 +1,62 @@
-
 # Visualization
 
-Simple visualization can be done during inference and saved. These are intended as quick ways of looking at data.
+To view the results of DeepForest models, we use Roboflow's [supervision](https://supervision.roboflow.com/latest/) library. Thanks to this team for making a nice set of tools. After making predictions, use :func:`deepforest.visualize.plot_results`.
 
-The color and line thickness of boxes can be customized using the `color` and `thickness` arguments.
-`color` is the color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255).
-`thickness` is the thickness of the rectangle border line in pixels.
-
-```python
-image_path = get_data("OSBS_029.png")
-boxes = model.predict_image(path=image_path, return_plot = True, color=(0, 165, 255), thickness=3)
-```
-
-## Visualizations using Roboflow's supervision package
-
-The `convert_to_sv_format` function converts DeepForest prediction results into a `supervision.Detections` object. This object contains bounding boxes, class IDs, confidence scores, and class names. It is designed to facilitate the visualization and further processing of object detection results using [supervision](https://supervision.roboflow.com/latest/) library.
-
-### Arguments
-
-- `df (pd.DataFrame)`: The DataFrame containing the results from `predict_image` or `predict_tile`. The DataFrame is expected to have the following columns:
-  - `xmin`: The minimum x-coordinate of the bounding box.
-  - `ymin`: The minimum y-coordinate of the bounding box.
-  - `xmax`: The maximum x-coordinate of the bounding box.
-  - `ymax`: The maximum y-coordinate of the bounding box.
-  - `label`: The class label of the detected object.
-  - `score`: The confidence score of the detection.
-  - `image_path`: The path to the image (optional, not used in this function).
-
-### Returns
-
-- `sv.Detections`: A `supervision.Detections` object containing:
-  - `xyxy (ndarray)`: A 2D numpy array of shape (_, 4) with bounding box coordinates.
-  - `class_id (ndarray)`: A numpy array of integer class IDs.
-  - `confidence (ndarray)`: A numpy array of confidence scores.
-  - `data (Dict[str, List[str]])`: A dictionary containing additional data, including class names.
-
-### Example 1: Converting Prediction Results and Annotating an Image
-
-```python
-import supervision as sv
-from deepforest import main
-from deepforest import get_data
-from deepforest.visualize import convert_to_sv_format
-import matplotlib.pyplot as plt
-import cv2
-import numpy as np
-import pandas as pd
-
-# Initialize the DeepForest model
-m = main.deepforest()
-m.use_release()
-
-# Load image
-img_path = get_data("OSBS_029.tif")
-image = cv2.imread(img_path)
-
-# Predict using DeepForest
-result = m.predict_image(img_path)
-
-
-# Convert custom prediction results to supervision format
-sv_detections = convert_to_sv_format(result)
-
-# You can now use `sv_detections` for further processing or visualization
-```
-To show bounding boxes:
-```python
-# You can visualize predicted bounding boxes
-
-bounding_box_annotator = sv.BoundingBoxAnnotator()
-annotated_frame = bounding_box_annotator.annotate(
-    scene=image.copy(),
-    detections=sv_detections
-)
-
-
-# Display the image using Matplotlib
-plt.imshow(annotated_frame)
-plt.axis('off')  # Hide axes for a cleaner look
-plt.show()
+### Predict
 
 ```
+from deepforest import main, get_data
+from deepforest.visualize import plot_results
 
-![Bounding Boxes](../figures/tree_predicted_bounding_boxes.jpeg)
+model = main.deepforest()
+model.use_release()
 
-To show labels:
-
-``` python
-
-label_annotator = sv.LabelAnnotator(text_position=sv.Position.CENTER)
-annotated_frame = label_annotator.annotate(
-    scene=image.copy(),
-    detections=sv_detections,
-    labels=sv_detections['class_name']
-)
-
-# Display the image using Matplotlib
-plt.imshow(annotated_frame)
-plt.axis('off')  # Hide axes for a cleaner look
-plt.show()
+sample_image_path = get_data("OSBS_029.png")
+results = model.predict_image(path=sample_image_path)
+plot_results(results)
 ```
-![Labels](../figures/tree_predicted_labels.jpeg)
----
+The same works with deepforest.main.predict_tile
+
+```
+from deepforest import main, get_data
+from deepforest.visualize import plot_results
+import os
+
+model = main.deepforest()
+model.use_release()
+
+img_path = get_data(path="2019_YELL_2_528000_4978000_image_crop2.png")
+results = model.predict_tile(img_path, patch_overlap=0, patch_size=400)
+plot_results(results)
+```
+
+![sample_image](../../www/Visualization1.png)
+
+### Customizing outputs
+
+The colors and thickness of annotations can be updated.
+
+```
+# Orange boxes and thicker lines
+plot_results(results, results_color=[109,50,168], thickness=2)
+```
+![sample_image](../../www/Visualization2.png)
+
+### Overlaying predictions and ground truth
+
+```
+from deepforest.utilities import read_file
+ground_truth = read_file(get_data(path="2019_YELL_2_528000_4978000_image_crop2.xml"))
+plot_results(results, ground_truth=ground_truth)
+```
+
+![sample_image](../../www/Visualization3.png)
+
+## Multi-class visualization
+
+For results with more than one predicted class, the plot_results function will detect multiple classes and use a color palette instead of a single class. For control over the color palette see [supervision.draw.color](https://supervision.roboflow.com/draw/color/)
+
+```
+color_palette = sv.ColorPalette.from_matplotlib('viridis', 6)
+plot_results(results, ground_truth=ground_truth, results_color=color_palette)
+``
