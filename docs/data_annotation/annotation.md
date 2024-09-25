@@ -55,14 +55,13 @@ It is often useful to train new training annotations starting from current predi
 
 ```python
 from deepforest import main
-from deepforest.visualize import plot_predictions
-from deepforest.utilities import boxes_to_shapefile
+from deepforest.visualize import plot_results
+from deepforest.utilities import read_file, image_to_geo_coordinates
 
 import rasterio as rio
 import geopandas as gpd
 from glob import glob
 import os
-import matplotlib.pyplot as plt
 import numpy as np
 from shapely import geometry
 
@@ -71,9 +70,10 @@ files = glob("{}/*.JPG".format(PATH_TO_DIR))
 m = main.deepforest(label_dict={"Bird":0})
 m.use_bird_release()
 for path in files:
-    #use predict_tile if each object is a orthomosaic
+    # Use predict_tile if each object is a orthomosaic
     boxes = m.predict_image(path=path)
-    #Open each file and get the geospatial information to convert output into a shapefile
+    
+    # Open each file and get the geospatial information to convert output into a shapefile
     rio_src = rio.open(path)
     image = rio_src.read()
     
@@ -82,16 +82,14 @@ for path in files:
         continue
     
     #View result
-    image = np.rollaxis(image, 0, 3)
-    fig = plot_predictions(df=boxes, image=image)   
-    plt.imshow(fig)
+    plot_results(boxes, root_dir=PATH_TO_DIR)
     
     #Create a shapefile, in this case img data was unprojected
-    shp = boxes_to_shapefile(boxes, root_dir=PATH_TO_DIR, projected=False)
+    geo_coords = image_to_geo_coordinates(boxes, root_dir=PATH_TO_DIR)
     
     #Get name of image and save a .shp in the same folder
     basename = os.path.splitext(os.path.basename(path))[0]
-    shp.to_file("{}/{}.shp".format(PATH_TO_DIR,basename))
+    geo_coords.to_file("{}/{}.shp".format(PATH_TO_DIR,basename))
 ```
 
 ## Reading xml annotations in Pascal VOC
