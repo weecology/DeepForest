@@ -62,8 +62,7 @@ def m(download_release):
     m.config["train"]["epochs"] = 2
 
     m.create_trainer()
-    m.use_release(check_release=False)
-
+    m.load_model()
     return m
 
 
@@ -137,6 +136,12 @@ def test_tensorboard_logger(m, tmpdir):
 def test_use_bird_release(m):
     imgpath = get_data("AWPE Pigeon Lake 2020 DJI_0005.JPG")
     m.use_bird_release()
+    boxes = m.predict_image(path=imgpath)
+    assert not boxes.empty
+
+def test_load_model(m):
+    imgpath = get_data("OSBS_029.png")
+    m.load_model('ethanwhite/df-test')
     boxes = m.predict_image(path=imgpath)
     assert not boxes.empty
 

@@ -30,18 +30,7 @@ def test_read_pascal_voc():
     annotations = utilities.read_pascal_voc(xml_path=get_data("OSBS_029.xml"))
     print(annotations.shape)
     assert annotations.shape[0] == 61
-
-
-def test_use_release(download_release):
-    # Download latest model from github release
-    release_tag, state_dict = utilities.use_release(check_release=False)
-
-
-def test_use_bird_release(download_release):
-    # Download latest model from github release
-    release_tag, state_dict = utilities.use_bird_release()
-    assert os.path.exists(get_data("bird.pt"))
-
+    
 
 def test_float_warning(config):
     """Users should get a rounding warning when adding annotations with floats"""
