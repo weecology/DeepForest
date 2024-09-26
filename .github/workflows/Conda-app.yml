@@ -52,8 +52,8 @@ jobs:
       - name: Check style
         run: yapf -d --recursive deepforest/ --style=.style.yapf
         
-      - name: Check notebook style 
-        run: nbqa yapf --in-place docs/examples/*.ipynb --style=.style.yapf
+      - name: Check notebook style
+        run: nbqa yapf --in-place docs/user_guide/examples/*.ipynb --style=.style.yapf
           
       - name: Check notebook build
         run: pytest --nbmake docs/**/*_test.ipynb
