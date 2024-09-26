@@ -1,0 +1,42 @@
+How do I use a pretrained model to predict an image?
+====================================================
+
+.. code-block:: python
+
+   from deepforest import main
+   from deepforest import get_data
+   import matplotlib.pyplot as plt
+
+   # Initialize the model and load the pre-trained release model
+   model = main.deepforest()
+   model.use_release()
+
+   # Get the sample image path and predict image
+   sample_image_path = get_data("OSBS_029.png")
+   img = model.predict_image(path=sample_image_path, return_plot=True)
+
+   # predict_image returns plot in BlueGreenRed (opencv style), but matplotlib likes RedGreenBlue
+   # Switch the channel order for correct display
+   plt.imshow(img[:,:,::-1])
+   plt.show()
+
+
+.. image:: ../../../www/getting_started1.png
+   :align: center
+
+.. note::
+
+   **Please note that this video was made before the deepforest-pytorch -> deepforest name change.**
+
+.. raw:: html
+
+   <div style="position: relative; padding-bottom: 56.25%; height: 0;">
+     <iframe src="https://www.loom.com/embed/f80ed6e3c7bd48d4a20ae32167af3d8c"
+     frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen
+     style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">
+     </iframe>
+   </div>
+
+For single images, ``predict_image`` can read an image from memory or file and return predicted bounding boxes.
+
+ 

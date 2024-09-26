@@ -7,18 +7,19 @@ from typing import Any, Dict
 
 from recommonmark.parser import CommonMarkParser
 from recommonmark.transform import AutoStructify
-
 from sphinx.highlighting import lexers
 from pygments.lexers.python import PythonLexer
 from deepforest._version import __version__
 
-lexers["python"]=PythonLexer()
+# Set the lexer for Python syntax highlighting
+lexers["python"] = PythonLexer()
 
+# Set paths
 curr_path = os.path.dirname(os.path.abspath(os.path.expanduser(__file__)))
 sys.path.insert(0, os.path.join(curr_path, '..'))
 sys.path.insert(0, os.path.abspath('..'))
 
-# Create content for deepforestr.md, skip the badge section
+# Create content for deepforestr.md, skipping the badge section
 deepforestr_title = """# Using DeepForest from R
 
 An R wrapper for DeepForest is available in the [deepforestr package](https://github.com/weecology/deepforestr).
@@ -26,114 +27,106 @@ Commands are very similar with some minor differences due to how the wrapping pr
 using [reticulate](https://rstudio.github.io/reticulate/) works.
 
 """
-file_obj = open('deepforestr.md', 'w')
+
+file_path = 'user_guide/deepforestr.md'
 readme_url = 'https://raw.githubusercontent.com/weecology/deepforestr/main/README.md'
-file_obj.write(deepforestr_title)
 
-with urllib.request.urlopen(readme_url) as response:
-    lines = response.readlines()
-    badge_section = True
-    for line in lines:
-        line = line.decode("utf8")
-        if "## Installation" in line and badge_section:
-            badge_section = False
-        if not badge_section:
-            file_obj.write(line)
-file_obj.close()
+with open(file_path, 'w') as file_obj:
+    file_obj.write(deepforestr_title)
 
+    with urllib.request.urlopen(readme_url) as response:
+        lines = response.readlines()
+        badge_section = True
+        for line in lines:
+            line = line.decode("utf-8")
+            if "## Installation" in line:
+                badge_section = False
+            if not badge_section:
+                file_obj.write(line)
+
+# Sphinx configuration
 needs_sphinx = "1.8"
-
-autodoc_default_options = {
-    'members': None,
-    'show-inheritance': None,
-}
+autodoc_default_options = {'members': None, 'show-inheritance': None}
 autodoc_member_order = 'groupwise'
 autoclass_content = 'both'
 
 extensions = [
-    'nbsphinx', 'pygments.sphinxext', 'sphinx.ext.autodoc', 'sphinx.ext.autosummary',
-    'sphinx.ext.doctest', 'sphinx.ext.githubpages', 'sphinx.ext.inheritance_diagram',
-    'sphinx.ext.intersphinx', 'sphinx.ext.mathjax', 'sphinx.ext.napoleon',
-    'sphinx.ext.todo', 'sphinx.ext.viewcode', 'sphinx_markdown_tables'
+    "sphinx_design", 'nbsphinx', 'pygments.sphinxext', 'sphinx.ext.autodoc',
+    'sphinx.ext.autosummary', 'sphinx.ext.doctest', 'sphinx.ext.githubpages',
+    'sphinx.ext.inheritance_diagram', 'sphinx.ext.intersphinx', 'sphinx.ext.mathjax',
+    'sphinx.ext.napoleon', 'sphinx.ext.todo', 'sphinx.ext.viewcode',
+    'sphinx_markdown_tables'
 ]
 
 nbsphinx_execute = 'never'
 nbsphinx_allow_errors = True
 
-# Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
-
-# The master toctree document.
 master_doc = 'index'
 
-# General information about the project.
-project = u'DeepForest'
-copyright = u"2019, Ben Weinstein"
-author = u"Ben Weinstein"
-version = release = __version__
+# Project information
+project = 'DeepForest'
+copyright = "2019, Ben Weinstein"
+author = "Ben Weinstein"
+version = release = str(__version__.replace("-dev0", ""))
+
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', '**.ipynb_checkpoints']
 pygments_style = 'sphinx'
 todo_include_todos = False
 
-# -- Options for HTML output -------------------------------------------
+# HTML output options
 html_theme = 'pydata_sphinx_theme'
+json_url = 'https://raw.githubusercontent.com/henrykironde/DeepForest/refs/heads/switcher/version_switcher.json'
+
+if ".dev" in version:
+    switcher_version = "dev"
+elif "rc" in version:
+    switcher_version = version.split("rc", maxsplit=1)[0] + " (rc)"
+else:
+    switcher_version = ".".join(version.split(".")[:2])
+
 html_static_path = []
 html_theme_options = {
     "navbar_start": ["navbar-logo"],
-    "navbar_align": "content",
-    "navbar_center": ["navbar2"],
+    "navbar_align": "left",
+    "show_version_warning_banner": True,
     "header_links_before_dropdown": 5,
     "secondary_sidebar_items": ["page-toc", "searchbox", "edit-this-page", "sourcelink"],
     "github_url": "https://github.com/weecology/DeepForest",
+    "navbar_end": ["version-switcher", "theme-switcher", "navbar-icon-links"],
+    "switcher": {
+        "json_url": "https://raw.githubusercontent.com/henrykironde/DeepForest/refs/heads/switcher/version_switcher.json",
+        "version_match": switcher_version,
+    },
 }
+
 html_sidebars: Dict[str, Any] = {
     "index": [],
     "**": ["sidebar-nav-bs.html"],
 }
+html_static_path = ["_static"]
+html_css_files = [
+    "css/getting_started.css",
+    "css/pandas.css",
+]
 
-
-# -- Options for HTMLHelp output ---------------------------------------
-
-# Output file base name for HTML help builder.
+# Output file base names for builders
 htmlhelp_basename = 'deepforestdoc'
-
-# -- Options for LaTeX output ------------------------------------------
-
-latex_elements = {}
-latex_documents = [
-    (master_doc, 'deepforest.tex', u'DeepForest Documentation', u'Ben Weinstein',
-     'manual'),
-]
-
-# -- Options for manual page output ------------------------------------
-
-# One entry per manual page. List of tuples
-man_pages = [(master_doc, 'deepforest', u'DeepForest Documentation', [author], 1)]
-
-# -- Options for Texinfo output ----------------------------------------
-
-# Grouping the document tree into Texinfo files. List of tuples
-# (source start file, target name, title, author,
-#  dir menu entry, description, category)
+latex_documents = [(master_doc, 'deepforest.tex', 'DeepForest Documentation', 'Ben Weinstein', 'manual')]
+man_pages = [(master_doc, 'deepforest', 'DeepForest Documentation', [author], 1)]
 texinfo_documents = [
-    (master_doc, 'deepforest', u'DeepForest Documentation', author, 'deepforest',
-     'One line description of project.', 'Miscellaneous'),
+    (master_doc, 'deepforest', 'DeepForest Documentation', author, 'deepforest', 'One line description of project.', 'Miscellaneous'),
 ]
 
-source_suffix = {
-    '.rst': 'restructuredtext',
-    '.md': 'markdown',
-}
-
-# Temporary workaround to remove multiple build warnings caused by upstream bug
-# See https://github.com/zulip/zulip/issues/13263 for details.
+# Source suffix configuration
+source_suffix = {'.rst': 'restructuredtext', '.md': 'markdown'}
 
 # Suppress warnings due to recommonmark config not being cacheable
-suppress_warnings = ["config.cache","toc.not_readable"]
+suppress_warnings = ["config.cache", "toc.not_readable"]
 
 
+# Custom CommonMark parser
 class CustomCommonMarkParser(CommonMarkParser):
-
     def visit_document(self, node):
         pass
 
@@ -144,7 +137,6 @@ def setup(app: Any) -> None:
         'recommonmark_config',
         {
             'enable_eval_rst': True,
-            # Turn off recommonmark features we aren't using.
             'enable_auto_doc_ref': False,
             'auto_toc_tree_section': None,
             'enable_auto_toc_tree': False,
@@ -152,12 +144,7 @@ def setup(app: Any) -> None:
             'enable_inline_math': False,
             'url_resolver': lambda x: x,
         },
-        True)
-
-    # Enable `eval_rst`, and any other features enabled in recommonmark_config.
-    # Docs: http://recommonmark.readthedocs.io/en/latest/auto_structify.html
-    # (But NB those docs are for master, not latest release.)
+        True
+    )
     app.add_transform(AutoStructify)
-
-    # overrides for wide tables in RTD theme
-    app.add_css_file('theme_overrides.css')  # path relative to _static
+    app.add_css_file('theme_overrides.css')

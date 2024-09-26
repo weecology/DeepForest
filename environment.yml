@@ -30,6 +30,7 @@ dependencies:
   - setuptools
   - sphinx
   - sphinx_rtd_theme
+  - sphinx-design
   - pytorch::torchvision
   - tqdm
   - tensorboard
