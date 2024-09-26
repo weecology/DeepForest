@@ -72,6 +72,14 @@ def test_predict_and_plot(m, tmpdir):
 
     assert os.path.exists(os.path.join(tmpdir, "OSBS_029.png"))
 
+
+def test_multi_class_plot( tmpdir):
+    results = pd.read_csv(get_data("testfile_multi.csv"))
+    results = read_file(results, root_dir=os.path.dirname(get_data("SOAP_061.png")))
+    visualize.plot_results(results, savedir=tmpdir)
+
+    assert os.path.exists(os.path.join(tmpdir, "SOAP_061.png"))
+
 def test_convert_to_sv_format():
     # Create a mock DataFrame
     data = {
@@ -110,7 +118,7 @@ def test_plot_results_box(m, tmpdir):
         'label': ['Tree', 'Tree'],
         'image_path': [get_data("OSBS_029.tif"), get_data("OSBS_029.tif")],
         "score": [0.9, 0.8]
-    } 
+    }
     df = pd.DataFrame(data)
     gdf = read_file(df)
     gdf.root_dir = os.path.dirname(get_data("OSBS_029.tif"))
@@ -158,7 +166,7 @@ def test_plot_results_polygon(m, tmpdir):
     height = image.shape[0]
     width = image.shape[1]
     gdf.root_dir = os.path.dirname(get_data("OSBS_029.tif"))
-    
+
     # Call the function
     visualize.plot_results(gdf, savedir=tmpdir,height=height, width=width)
 
