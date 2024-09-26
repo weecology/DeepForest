@@ -402,7 +402,7 @@ def plot_results(results,
                                      ground_truth_color[2])
 
     num_labels = len(results.label.unique())
-    if num_labels > 1 and type(results_color_sv) == sv.ColorPalette:
+    if num_labels > 1 and not type(results_color_sv) == sv.ColorPalette:
         warnings.warn(
             """Multiple labels detected in the results and results_color argument provides a single color.
             Each label will be plotted with a different color using a built-in color ramp.
