@@ -385,10 +385,28 @@ def plot_results(results,
         None
     """
     # Convert colors, check for multi-class labels
+    num_labels = len(results.label.unique())
     if isinstance(results_color, list) and len(results_color) == 3:
-        results_color_sv = sv.Color(results_color[0], results_color[1], results_color[2])
+        if num_labels > 1:
+            warnings.warn(
+                """Multiple labels detected in the results and results_color argument provides a single color.
+                Each label will be plotted with a different color using a built-in color ramp.
+                If you want to customize colors with multiple labels pass a supervision.ColorPalette object to results_color with the appropriate number of labels"""
+            )
+            results_color_sv = sv.ColorPalette.from_matplotlib('viridis', num_labels)
+        else:
+            results_color_sv = sv.Color(results_color[0], results_color[1],
+                                        results_color[2])
     elif isinstance(results_color, sv.draw.color.ColorPalette):
-        results_color_sv = results_color
+        if num_labels > len(results_color.colors):
+            warnings.warn(
+                """The number of colors provided in results_color does not match the number number of labels.
+                Replacing the provided color palette with a built-in built-in color palette.
+                To use a custom color palette make sure the number of values matches the number of labels"""
+            )
+            results_color_sv = sv.ColorPalette.from_matplotlib('viridis', num_labels)
+        else:
+            results_color_sv = results_color
     elif isinstance(results_color, list):
         raise ValueError(
             "results_color must be either a 3 item list containing RGB values or an sv.ColorPalette instance"
@@ -400,15 +418,6 @@ def plot_results(results,
 
     ground_truth_color_sv = sv.Color(ground_truth_color[0], ground_truth_color[1],
                                      ground_truth_color[2])
-
-    num_labels = len(results.label.unique())
-    if num_labels > 1 and len(results_color_sv) != num_labels:
-        warnings.warn(
-            """Multiple labels detected in the results and results_color argument provides a single color.
-            Each label will be plotted with a different color using a built-in color ramp.
-            If you want to customize colors with multiple labels pass a supervision.ColorPalette object to results_color with the appropriate number of labels"""
-        )
-        results_color_sv = sv.ColorPalette.from_matplotlib('viridis', num_labels)
 
     # Read images
     root_dir = results.root_dir
