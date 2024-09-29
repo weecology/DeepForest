@@ -14,22 +14,22 @@ Guides
 .. toctree::
     :maxdepth: 1
 
-    Reading_Writing_data
-    prebuilt
-    cropmodels
-    extending_module
-    model_architecture
-    multi_species
-    scaling
-    visualizations
-    configuration_file
-    better
-    training
-    evaluation
-    annotation
+    01_Reading_Writing_data
+    02_prebuilt
+    03_cropmodels
+    04_extending_module
+    05_model_architecture
+    06_multi_species
+    07_scaling
+    08_visualizations
+    09_configuration_file
+    10_better
+    11_training
+    12_evaluation
+    13_annotation
     examples/simple_load_and_predict
     examples/Australia
     examples/nest_detection
     sample_test
-    cite
+    14_cite
     deepforestr

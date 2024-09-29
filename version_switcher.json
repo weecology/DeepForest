@@ -1,18 +1,18 @@
 [
-  {
-    "name": "dev",
-    "version": "dev",
-    "url": "https://deepforest.readthedocs.io/en/latest/"
-  },
-  {
-    "name": "1.3.3 (stable)",
-    "version": "v1.3.3",
-    "url": "https://deepforest.readthedocs.io/en/v1.3.3/",
-    "preferred": true
-  },
-  {
-    "name": "1.3.2",
-    "version": "v1.3.2",
-    "url": "https://deepforest.readthedocs.io/en/v1.3.2/"
-  }
+    {
+        "name": "dev",
+        "version": "dev",
+        "url": "https://deepforest.readthedocs.io/en/latest/"
+    },
+    {
+        "name": "1.3.3 (stable)",
+        "version": "1.3.3",
+        "url": "https://deepforest.readthedocs.io/en/v1.3.3/",
+        "preferred": true
+    },
+    {
+        "name": "1.3.2",
+        "version": "1.3.2",
+        "url": "https://deepforest.readthedocs.io/en/v1.3.2/"
+    }
 ]

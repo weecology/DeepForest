@@ -3,13 +3,14 @@ How do I use a pretrained model to predict an image?
 
 .. code-block:: python
 
-   from deepforest import main
-   from deepforest import get_data
+   from deepforest import main, get_data
    import matplotlib.pyplot as plt
 
-   # Initialize the model and load the pre-trained release model
+   # Initialize the model
    model = main.deepforest()
-   model.use_release()
+
+   # Load a pretrained tree detection model from Hugging Face
+   model.load_model(model_name="weecology/deepforest-tree", revision="main")
 
    # Get the sample image path and predict image
    sample_image_path = get_data("OSBS_029.png")

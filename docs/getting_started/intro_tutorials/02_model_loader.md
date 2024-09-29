@@ -1,4 +1,4 @@
-# DeepForest Model Loader
+# How do I load a pretrained model from Hugging Face?
 
 This function loads pretrained DeepForest models from Hugging Face, with support for different model revisions. Additionally, you can save the model configuration and weights using `save_pretrained` and reload it later with `from_pretrained`.
 
