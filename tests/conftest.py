@@ -23,7 +23,7 @@ def config():
 def download_release():
     print("running fixtures")
     try:
-        main.deepforest().load_model()
+        main.deepforest().load_model("weecology/deepforest-tree")
     except urllib.error.URLError:
         # Add a edge case in case no internet access.
         pass
