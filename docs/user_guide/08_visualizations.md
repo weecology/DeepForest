@@ -9,7 +9,7 @@ from deepforest import main, get_data
 from deepforest.visualize import plot_results
 
 model = main.deepforest()
-model.use_release()
+model.load_model(model_name="weecology/deepforest-tree", revision="main")
 
 sample_image_path = get_data("OSBS_029.png")
 results = model.predict_image(path=sample_image_path)
@@ -23,7 +23,7 @@ from deepforest.visualize import plot_results
 import os
 
 model = main.deepforest()
-model.use_release()
+model.load_model(model_name="weecology/deepforest-tree", revision="main")
 
 img_path = get_data(path="2019_YELL_2_528000_4978000_image_crop2.png")
 results = model.predict_tile(img_path, patch_overlap=0, patch_size=400)

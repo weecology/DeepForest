@@ -22,7 +22,10 @@ To use images other than those in the sample data directory, provide the full pa
 
    # Initialize the model and load the pre-trained release model
    model = main.deepforest()
-   model.use_release()
+
+   # Load a pretrained tree detection model from Hugging Face
+   model.load_model(model_name="weecology/deepforest-tree", revision="main")
+
    # Use predict_image to get bounding boxes from a custom image path
    image_path = get_data("OSBS_029.png")
    boxes = model.predict_image(path=image_path, return_plot=False)

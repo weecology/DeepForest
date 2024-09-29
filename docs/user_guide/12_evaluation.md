@@ -120,7 +120,7 @@ import os
 import pandas as pd
 
 m = main.deepforest()
-m.use_release()
+m.load_model(model_name="weecology/deepforest-tree", revision="main")
 
 csv_file = get_data("OSBS_029.csv")
 predictions = m.predict_file(csv_file=csv_file, root_dir=os.path.dirname(csv_file))

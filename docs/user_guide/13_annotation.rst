@@ -101,7 +101,7 @@ You can speed up new annotations by starting with model predictions. Below is an
    PATH_TO_DIR = "/path/to/directory"
    files = glob(f"{PATH_TO_DIR}/*.JPG")
    m = main.deepforest(label_dict={"Bird": 0})
-   m.use_bird_release()
+   m.load_model(model_name="weecology/deepforest-bird", revision="main")
 
    for path in files:
        boxes = m.predict_image(path=path)

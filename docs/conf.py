@@ -76,7 +76,7 @@ todo_include_todos = False
 
 # HTML output options
 html_theme = 'pydata_sphinx_theme'
-json_url = 'https://raw.githubusercontent.com/henrykironde/DeepForest/refs/heads/switcher/version_switcher.json'
+json_url = 'https://raw.githubusercontent.com/weecology/DeepForest/refs/heads/main/version_switcher.json'
 
 if ".dev" in version:
     switcher_version = "dev"
@@ -95,7 +95,7 @@ html_theme_options = {
     "github_url": "https://github.com/weecology/DeepForest",
     "navbar_end": ["version-switcher", "theme-switcher", "navbar-icon-links"],
     "switcher": {
-        "json_url": "https://raw.githubusercontent.com/henrykironde/DeepForest/refs/heads/switcher/version_switcher.json",
+        "json_url": f"{json_url}",
         "version_match": switcher_version,
     },
 }

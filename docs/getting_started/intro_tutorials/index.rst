@@ -13,6 +13,6 @@ Getting started tutorials
     :maxdepth: 1
 
     01_load_sample_data
-    02_use_pretrained_model
-    03_model_loader.md
-    03_predict_large_tile
+    02_model_loader.md
+    03_use_pretrained_model
+    04_predict_large_tile

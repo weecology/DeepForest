@@ -246,7 +246,7 @@ class CropModel(LightningModule):
                                                                min_lr=0,
                                                                eps=1e-08)
 
-        #Monitor rate is val data is used
+        # Monitor rate is val data is used
         return {'optimizer': optimizer, 'lr_scheduler': scheduler, "monitor": 'val_loss'}
 
     def dataset_confusion(self, loader):
