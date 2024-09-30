@@ -784,7 +784,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         else:
             return optimizer
 
-    def evaluate(self, csv_file, root_dir, iou_threshold=0.4, savedir=None):
+    def evaluate(self, csv_file, root_dir, iou_threshold=None, savedir=None):
         """Compute intersection-over-union and precision/recall for a given
         iou_threshold.
 
