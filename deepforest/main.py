@@ -589,7 +589,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         if results.empty:
             warnings.warn("No predictions made, returning None")
             return None
-        
+
         results = utilities.read_file(results)
 
         if raster_path is None:
