@@ -505,6 +505,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         Returns:
             boxes (array): if return_plot, an image.
             Otherwise a numpy array of predicted bounding boxes, scores and labels
+            If no predictions are made, returns None
         """
         self.model.eval()
         self.model.nms_thresh = self.config["nms_thresh"]
@@ -585,7 +586,10 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                                                    trainer=self.trainer,
                                                    transform=crop_transform,
                                                    augment=crop_augment)
-
+        if results.empty:
+            warnings.warn("No predictions made, returning None")
+            return None
+        
         results = utilities.read_file(results)
 
         if raster_path is None:

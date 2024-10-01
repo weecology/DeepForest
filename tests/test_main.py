@@ -263,6 +263,12 @@ def test_predict_dataloader(m, batch_size, raster_path):
     batch.shape[0] == batch_size
 
 
+def test_predict_tile_empty(raster_path):
+    # Random weights
+    m = main.deepforest()
+    predictions = m.predict_tile(raster_path=raster_path, patch_size=300, patch_overlap=0)
+    assert predictions is None
+
 def test_predict_tile(m, raster_path):
     m.create_model()
     m.config["train"]["fast_dev_run"] = False
