@@ -64,6 +64,6 @@ def m(download_release):
     m.config["train"]["epochs"] = 2
 
     m.create_trainer()
-    m.use_release(check_release=False)
+    m.load_model()
 
     return m
