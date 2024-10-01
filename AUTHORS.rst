@@ -21,13 +21,5 @@ Primary Authors
 Other Contributors
 ==================
 
-The incomplete list of individuals below have provided patches or otherwise
-contributed to the project.
 Check GitHub for recent `contributors <https://github.com/weecology/DeepForest/graphs/contributors>`_.
 We would like to thank everyone who has contributed to the project in any way.
-
-* `Henry Senyondo <https://github.com/henrykironde>`_
-
-* `Dingyi Fang <https://github.com/dingyif>`_
-
-* `Shawn Taylor <https://github.com/sdtaylor>`_
