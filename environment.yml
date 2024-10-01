@@ -6,7 +6,7 @@ dependencies:
   - bump-my-version
   - docutils<0.18
   - geopandas
-  - huggingface_hub
+  - huggingface_hub>=0.25.0
   - h5py
   - matplotlib
   - nbmake
