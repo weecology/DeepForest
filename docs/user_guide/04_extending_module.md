@@ -32,7 +32,7 @@ Now when we call this module, it has the changed training_step, but still has al
 
 ```
 m = mymodule()
-m.use_release() 
+m.load_model() 
 
 ```
 In this way we can make additions and changes without needing to edit the deepforest source.

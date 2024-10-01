@@ -146,7 +146,7 @@ import tempfile
 import pandas as pd
 tmpdir = tempfile.TemporaryDirectory()
 
-model.use_release()
+model.load_model()
 
 #save the prediction dataframe after training and compare with prediction after reload checkpoint
 img_path = get_data("OSBS_029.png")

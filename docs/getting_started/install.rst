@@ -85,7 +85,7 @@ pytorch.to() method.
 
    from deepforest import main
    m = main.deepforest()
-   m.use_release()
+   m.load_model()
    print("Current device is {}".format(m.device))
    m.to("cuda")
    print("Current device is {}".format(m.device))

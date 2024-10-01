@@ -25,10 +25,10 @@ The model was initially described in [Ecological Applications](https://esajourna
 
 ![image](../../www/example_predictions_small.png)
 
-```
+```python
 #Load deepforest model and set bird label
 m = main.deepforest(label_dict={"Bird":0})
-m.use_bird_release()
+m.load_model('weecology/deepforest-bird')
 ```
 
 ![](../../www/bird_panel.jpg)

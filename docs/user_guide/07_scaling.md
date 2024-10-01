@@ -37,7 +37,7 @@ Now that we have a dask client, we can send our custom function.
 ```
 def function_to_parallelize(tile):
     m = main.deepforest()
-    m.use_release() # sub in the custom logic to load your own models
+    m.load_model() # sub in the custom logic to load your own models
     boxes = m.predict_tile(raster_path=tile)
     # save the predictions using the tile pathname
     filename = "{}.csv".format(os.path.splitext(os.path.basename(tile))[0])

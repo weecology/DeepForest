@@ -5,7 +5,7 @@ from deepforest import visualize
 
 # Create an instance of the DeepForest model
 m = main.deepforest()
-m.use_release()
+m.load_model()
 
 # Perform tree detection on the image
 trees = m.predict_tile(raster_path='<path to raster>', patch_size=3000, patch_overlap=0)
