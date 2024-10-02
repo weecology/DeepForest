@@ -501,12 +501,19 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             (deprecated) color: color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255)
             (deprecated) thickness: thickness of the rectangle border line in px
 
-        Deprecation: The return_plot argument is deprecated and will be removed in 2.0. Use visualize.plot_results on the result instead.
+        Deprecated Args:
+            - return_plot: Deprecated in favor of using `visualize.plot_results` for
+              rendering predictions. Will be removed in version 2.0.
+            - color: Deprecated bounding box color for visualizations.
+            - thickness: Deprecated bounding box thickness for visualizations.
 
         Returns:
-            boxes (array): if return_plot, an image.
-            Otherwise a numpy array of predicted bounding boxes, scores and labels
-            If no predictions are made, returns None
+            - If `return_plot` is True, returns an image with predictions overlaid (deprecated).
+            - If `mosaic` is True, returns a Pandas DataFrame containing the predicted
+              bounding boxes, scores, and labels.
+            - If `mosaic` is False, returns a list of tuples where each tuple contains
+              a DataFrame of predictions and its corresponding image crop.
+            - Returns None if no predictions are made.
         """
         self.model.eval()
         self.model.nms_thresh = self.config["nms_thresh"]
@@ -553,9 +560,8 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                 results["image_path"] = os.path.basename(raster_path)
             if return_plot:
                 # Add deprecated warning
-                warnings.warn(
-                    "return_plot is deprecated and will be removed in 2.0. Use visualize.plot_results on the result instead."
-                )
+                warnings.warn("return_plot is deprecated and will be removed in 2.0. "
+                              "Use visualize.plot_results on the result instead.")
                 # Draw predictions on BGR
                 if raster_path:
                     tile = rio.open(raster_path).read()
