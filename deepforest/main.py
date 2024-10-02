@@ -161,8 +161,9 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             model (object): A trained PyTorch model
         """
 
-        warnings.warn("use_release will be deprecated in 2.0. use load_model() instead",
-                      DeprecationWarning)
+        warnings.warn(
+            "use_release will be deprecated in 2.0. use load_model('weecology/deepforest-tree') instead",
+            DeprecationWarning)
         self.load_model('weecology/deepforest-tree')
 
     def use_bird_release(self, check_release=True):

@@ -23,7 +23,7 @@ def config():
 def download_release():
     print("running fixtures")
     try:
-        main.deepforest().load_model()
+        main.deepforest().load_model("weecology/deepforest-tree")
     except urllib.error.URLError:
         # Add a edge case in case no internet access.
         pass
@@ -64,6 +64,6 @@ def m(download_release):
     m.config["train"]["epochs"] = 2
 
     m.create_trainer()
-    m.use_release(check_release=False)
+    m.load_model("weecology/deepforest-tree")
 
     return m

@@ -16,7 +16,7 @@ m = main.deepforest(config_args={"num_classes":2}, label_dict={"Alive":0,"Dead":
 
 # Inatialize Deepforest model ( the model that you will modify its regression head ) 
 deepforest_release_model = main.deepforest()
-deepforest_release_model.use_release() # or use_bird_release
+deepforest_release_model.load_model("weecology/deepforest-tree") # or load_model('weecology/deepforest-bird')
 
 # Extract single class backbone that will have useful features for multi-class classification
 m.model.backbone.load_state_dict(deepforest_release_model.model.backbone.state_dict())
