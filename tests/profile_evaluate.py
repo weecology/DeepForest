@@ -20,12 +20,12 @@ def run(m):
 
 if __name__ == "__main__":
     m = main.deepforest()
-    m.use_release()
+    m.load_model("weecology/deepforest-tree")
 
     profiler = cProfile.Profile()
     profiler.enable()
     m = main.deepforest()
-    m.use_release()
+    m.load_model("weecology/deepforest-tree")
     run(m)
     profiler.disable()
     stats = pstats.Stats(profiler).sort_stats('cumtime')

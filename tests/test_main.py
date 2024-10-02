@@ -62,7 +62,7 @@ def m(download_release):
     m.config["train"]["epochs"] = 2
 
     m.create_trainer()
-    m.load_model()
+    m.load_model("weecology/deepforest-tree")
     return m
 
 

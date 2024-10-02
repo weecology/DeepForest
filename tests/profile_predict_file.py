@@ -16,7 +16,7 @@ def run(m, csv_file, root_dir):
 
 if __name__ == "__main__":
     m = main.deepforest()
-    m.use_release()
+    m.load_model("weecology/deepforest-tree")
     m.config["workers"] = 0
     m.config["batch_size"] = 5
 

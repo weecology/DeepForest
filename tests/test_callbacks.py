@@ -25,6 +25,6 @@ def test_create_checkpoint(m, tmpdir):
         mode="max",
         every_n_epochs=1,
     )
-    m.use_release()
+    m.load_model("weecology/deepforest-tree")
     m.create_trainer(callbacks=[checkpoint_callback])
     m.trainer.fit(m)
