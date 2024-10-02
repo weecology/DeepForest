@@ -29,22 +29,28 @@ using [reticulate](https://rstudio.github.io/reticulate/) works.
 """
 
 file_path = 'user_guide/deepforestr.md'
+json_url = 'https://raw.githubusercontent.com/weecology/DeepForest/refs/heads/main/version_switcher.json'
 readme_url = 'https://raw.githubusercontent.com/weecology/deepforestr/main/README.md'
 
 with open(file_path, 'w') as file_obj:
     file_obj.write(deepforestr_title)
 
-    with urllib.request.urlopen(readme_url) as response:
-        lines = response.readlines()
-        badge_section = True
-        for line in lines:
-            line = line.decode("utf-8")
-            if "## Installation" in line:
-                badge_section = False
-            if not badge_section:
-                file_obj.write(line)
+    try:
+        with urllib.request.urlopen(readme_url) as response:
+            lines = response.readlines()
+            badge_section = True
+            for line in lines:
+                line = line.decode("utf-8")
+                if "## Installation" in line:
+                    badge_section = False
+                if not badge_section:
+                    file_obj.write(line)
+    except Exception as e:
+        print(f"Could not retrieve the deepforestr README, skipping")
+        json_url = "../version_switcher.json"
 
-# Sphinx configuration
+
+    # Sphinx configuration
 needs_sphinx = "1.8"
 autodoc_default_options = {'members': None, 'show-inheritance': None}
 autodoc_member_order = 'groupwise'
@@ -76,7 +82,6 @@ todo_include_todos = False
 
 # HTML output options
 html_theme = 'pydata_sphinx_theme'
-json_url = 'https://raw.githubusercontent.com/weecology/DeepForest/refs/heads/main/version_switcher.json'
 
 if ".dev" in version:
     switcher_version = "dev"

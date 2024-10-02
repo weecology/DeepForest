@@ -560,10 +560,8 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                 results["image_path"] = os.path.basename(raster_path)
             if return_plot:
                 # Add deprecated warning
-                warnings.warn(
-                    "return_plot is deprecated and will be removed in 2.0. "
-                    "Use visualize.plot_results on the result instead."
-                )
+                warnings.warn("return_plot is deprecated and will be removed in 2.0. "
+                              "Use visualize.plot_results on the result instead.")
                 # Draw predictions on BGR
                 if raster_path:
                     tile = rio.open(raster_path).read()
