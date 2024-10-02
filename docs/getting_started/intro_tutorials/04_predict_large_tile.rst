@@ -22,10 +22,7 @@ Let’s show an example with a small image. For larger images, patch_size should
    # Predict on large geospatial tiles using overlapping windows
    raster_path = get_data("OSBS_029.tif")
    predicted_raster = model.predict_tile(raster_path, patch_size=300, patch_overlap=0.25)
-
-   # View boxes overlaid when return_plot=True; otherwise, boxes are returned
-   plt.imshow(predicted_raster)
-   plt.show()
+   plot_results(results)
 
 .. note::
 
