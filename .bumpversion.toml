@@ -12,9 +12,10 @@ parse = """(?x)
     )?                                # pre-release section is optional
 """
 serialize = [
-    "{major}.{minor}.{patch}-{pre_l}{pre_n}",
     "{major}.{minor}.{patch}",
+    "{major}.{minor}.{patch}-{pre_l}{pre_n}"
 ]
+
 [tool.bumpversion.parts.pre_l]
 values = ["dev", "rc", "final"]
 optional_value = "final"
@@ -24,17 +25,14 @@ replace = "{new_version}"
 regex = false
 ignore_missing_version = false
 ignore_missing_files = false
-tag = false
+tag = true
 sign_tags = false
 tag_name = "v{new_version}"
 tag_message = "Bump version: {current_version} → {new_version}"
 allow_dirty = false
-commit = false
+commit = true                # Commit after bumping the version
 message = "Bump version: {current_version} → {new_version}"
 commit_args = ""
-setup_hooks = []
-pre_commit_hooks = []
-post_commit_hooks = []
 
 [[tool.bumpversion.files]]
 filename = "setup.py"
