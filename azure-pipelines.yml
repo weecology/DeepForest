@@ -3,14 +3,18 @@
 # Add steps that analyze code, save the dist with the build record, publish to a PyPI-compatible index, and more:
 # https://docs.microsoft.com/azure/devops/pipelines/languages/python
 
-#Trigger on pull requests from main
-pr:
-- main
-
+# Trigger pipeline on push to main or tag creation
 trigger:
   branches:
     include:
+    - main
     - refs/tags/*
+
+# Trigger pipeline on pull request, but only for testing (no release)
+pr:
+  branches:
+    include:
+    - main
 
 variables:
   CIBW_SKIP: 'cp27-* cp35-*'
@@ -19,24 +23,42 @@ jobs:
 - job: Testing
   pool:
     vmImage: 'ubuntu-latest'
-    
+
   steps:
   - bash: echo "##vso[task.prependpath]$CONDA/bin"
     displayName: Add conda to PATH
-  
+
   - script: |
       python -m pip install --upgrade pip
       pip install .
-    displayName: 'Create Conda environment for DeepForest'
+    displayName: 'Install Dependencies'
 
   - script: |
       pip install pytest tensorboard pytest-azurepipelines yapf
       pytest -v
-    displayName: 'Pytests'
+    displayName: 'Run Pytests'
 
+# Build and Release job
+- job: BuildAndRelease
+  pool:
+    vmImage: 'ubuntu-latest'
+
+  # Only run this job if the build is triggered by a valid release tag (e.g., 1.4.0, 1.4.1)
+  condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/'), eq(variables['Build.SourceBranch'], 'refs/tags/$(Build.SourceBranchName)'), not(contains(variables['Build.SourceBranchName'], '-')))
+
+  steps:
   - bash: |
       python3 setup.py sdist bdist_wheel
-      
+    displayName: 'Build source and wheel distribution'
+
   - task: PublishBuildArtifacts@1
-    inputs: {pathtoPublish: 'dist'}
-  displayName: 'Source distribution'
+    inputs:
+      pathtoPublish: 'dist'
+    displayName: 'Publish Source Distribution'
+
+  # Optionally publish to PyPI if required, only on tagged releases
+  - script: |
+      python -m pip install --upgrade twine
+      twine upload dist/*
+    displayName: 'Publish to PyPI'
+    condition: startsWith(variables['Build.SourceBranch'], 'refs/tags/')
