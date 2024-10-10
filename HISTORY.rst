@@ -2,11 +2,31 @@
 DeepForest Changelog
 ====================
 
-Version 1.3.5 (Date: Mar 12, 2024)
+Version 1.4.0 (Date: Oct 9, 2024)
 ----------------------------------
 
-- **New Feature:** Added support for multiple annotation types including point, box, and polygon.
+ The major innovations are
+
+1. New model loading framework using HuggingFace. DeepForest models are now available on https://huggingface.co/weecology. The models can be loaded using load_model() and used for inference.
+2. An all purpose read_file method is introduced to read annotations from various formats including CSV, JSON, and Pascal VOC.
+3. The CropModel class is introduced to classify detected objects using a trained classification model. Use when a multi-class DeepForest model is not sufficiently flexible, such as when new data sources are used for fine-grained classification and class imbalance.
+4. deepforest.visualize.plot_results is now the primary method for visualizing predictions. The function is more flexible and allows for customizing the plot using supervision package. 
+
+Additional features and enhancements include:
+
+- **New Feature:** A crop_raster function is introduced to crop a raster image using a bounding box.
+- **New Feature:** Added beta support for multiple annotation types including point, box, and polygon.
+- **New Feature:** Added support for learning rates scheduling using the ``torch.optim.lr_scheduler`` module. The learning rate scheduler can be specified in the configuration file.
 - **New Utility:** Created ``utilities.download_ArcGIS_REST`` function to download tiles from the ArcGIS REST API (e.g., NAIP imagery).
+
+- **Enhancement:** The training module better matches torchvision negative anchors format for empty frames.
+
+- **Deprecation:** ``shapefile_to_annotations`` in ``deepforest/utilities.py`` is deprecated in favor of the more general ``read_file`` method.
+- **Deprecation:** ``predict`` in ``deepforest/main.py``. The ``return_plot`` argument is deprecated and will be removed in version 2.0. Use ``visualize.plot_results`` instead.
+- **Deprecation:** ``predict_tile`` in ``deepforest/main.py``. Deprecated arguments ``return_plot``, ``color``, and ``thickness`` will be removed in version 2.0.
+- **Deprecation:** ``crop_function`` in ``deepforest/preprocess.py``. The ``base_dir`` argument is deprecated and will be removed in version 2.0. Use ``save_dir`` instead.
+- **Deprecation:** The deepforest.visualize. ``IoU_Callback`` for better alignment with the PyTorch Lightning API (see `issue <https://github.com/Lightning-AI/pytorch-lightning/issues/19101>`_).
+- **Deprecation:** ``deepforest.main.use_release`` and ``deepforest.main.use_bird_release`` are deprecated in favor of the new model loading framework, for example using deepforest.main.load_model("weecology/deepforest-bird").
 
 Version 1.3.3 (Date: Mar 12, 2024)
 ----------------------------------
