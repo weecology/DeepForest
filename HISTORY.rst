@@ -26,7 +26,7 @@ Additional features and enhancements include:
 - **Deprecation:** ``predict_tile`` in ``deepforest/main.py``. Deprecated arguments ``return_plot``, ``color``, and ``thickness`` will be removed in version 2.0.
 - **Deprecation:** ``crop_function`` in ``deepforest/preprocess.py``. The ``base_dir`` argument is deprecated and will be removed in version 2.0. Use ``save_dir`` instead.
 - **Deprecation:** The deepforest.visualize. ``IoU_Callback`` for better alignment with the PyTorch Lightning API (see `issue <https://github.com/Lightning-AI/pytorch-lightning/issues/19101>`_).
-- **Deprecation:** ``deepforest.main.use_release`` and deepforest.main.use_bird_release are deprecated in favor of the new model loading framework, for example using deepforest.main.load_model("weecology/deepforest-bird").
+- **Deprecation:** ``deepforest.main.use_release`` and ``deepforest.main.use_bird_release`` are deprecated in favor of the new model loading framework, for example using deepforest.main.load_model("weecology/deepforest-bird").
 Version 1.3.3 (Date: Mar 12, 2024)
 ----------------------------------
 
