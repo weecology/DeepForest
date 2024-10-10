@@ -38,13 +38,13 @@ jobs:
       pytest -v
     displayName: 'Run Pytests'
 
-  # Create distribution artifacts only on main branch or tag
+# Build and Release job
 - job: BuildAndRelease
   pool:
     vmImage: 'ubuntu-latest'
 
-  # Only run this job if the build is triggered by a tag or push to main
-  condition: and(succeeded(), or(eq(variables['Build.SourceBranch'], 'refs/heads/main'), startsWith(variables['Build.SourceBranch'], 'refs/tags/')))
+  # Only run this job if the build is triggered by a valid release tag (e.g., 1.4.0, 1.4.1)
+  condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/'), eq(variables['Build.SourceBranch'], 'refs/tags/$(Build.SourceBranchName)'), not(contains(variables['Build.SourceBranchName'], '-')))
 
   steps:
   - bash: |
