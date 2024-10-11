@@ -51,6 +51,7 @@ Remote sensing can transform the speed, scale, and cost of biodiversity and fore
 
 ## Citation
 
+
 Most usage of DeepForest should cite two papers.
 
 The first is the DeepForest paper, which describes the package:
