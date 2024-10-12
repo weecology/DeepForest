@@ -21,7 +21,7 @@ jobs:
         os:
           - "ubuntu-latest"
 
-    runs-on: "${{ matrix.os }}"
+    runs-on: ${{ matrix.os }}
 
     # use bash everywhere
     defaults:
@@ -30,9 +30,9 @@ jobs:
 
     steps:
       - name: "Checkout code"
-        uses: "actions/checkout@v4"
+        uses: actions/checkout@v4
 
-      - name: Install opencv dependencies
+      - name: Install OpenCV dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y libgl1-mesa-glx libegl1-mesa
@@ -47,20 +47,31 @@ jobs:
           cache-downloads: true
 
       - name: Run pytest
-        run: pytest -v
+        run: |
+          source activate DeepForest
+          pytest -v
 
       - name: Check style
-        run: yapf -d --recursive deepforest/ --style=.style.yapf
-        
+        run: |
+          source activate DeepForest
+          yapf -d --recursive deepforest/ --style=.style.yapf
+
       - name: Check notebook style
-        run: nbqa yapf --in-place docs/user_guide/examples/*.ipynb --style=.style.yapf
-          
+        run: |
+          source activate DeepForest
+          nbqa yapf --in-place docs/user_guide/examples/*.ipynb --style=.style.yapf
+
       - name: Check notebook build
-        run: pytest --nbmake docs/**/*_test.ipynb
-      
+        run: |
+          source activate DeepForest
+          pytest --nbmake docs/**/*_test.ipynb
+
       - name: Run docformatter
-        run: docformatter --check --recursive deepforest/
-        
+        run: |
+          source activate DeepForest
+          docformatter --check --recursive deepforest/
+
       - name: Test Docs
         run: |
+          source activate DeepForest
           cd docs && make clean && make html SPHINXOPTS="-W"
