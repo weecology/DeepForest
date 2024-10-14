@@ -135,7 +135,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             revision (str): The model version ('main', 'v1.0.0', etc.).
 
         Returns:
-            self (object):A trained PyTorch model with its config and weights.
+            None
         """
         # Load the model using from_pretrained
         self.create_model()
@@ -148,8 +148,6 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             self.config['retinanet']["score_thresh"] = 0.3
             self.label_dict = {"Bird": 0}
             self.numeric_to_label_dict = {v: k for k, v in self.label_dict.items()}
-
-        return self
 
     def use_release(self, check_release=True):
         """Use the latest DeepForest model release from github and load model.
