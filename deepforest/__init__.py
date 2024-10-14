@@ -4,6 +4,7 @@ __author__ = """Ben Weinstein"""
 __email__ = 'ben.weinstein@weecology.org'
 
 import os
+from ._version import __version__
 from pytorch_lightning.utilities import disable_possible_user_warnings
 
 _ROOT = os.path.abspath(os.path.dirname(__file__))
