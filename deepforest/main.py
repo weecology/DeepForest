@@ -149,8 +149,6 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             self.label_dict = {"Bird": 0}
             self.numeric_to_label_dict = {v: k for k, v in self.label_dict.items()}
 
-        return self
-
     def use_release(self, check_release=True):
         """Use the latest DeepForest model release from github and load model.
         Optionally download if release doesn't exist.
