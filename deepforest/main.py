@@ -135,7 +135,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             revision (str): The model version ('main', 'v1.0.0', etc.).
 
         Returns:
-            self (object):A trained PyTorch model with its config and weights.
+            None
         """
         # Load the model using from_pretrained
         self.create_model()
