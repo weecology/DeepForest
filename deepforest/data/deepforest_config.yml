@@ -20,57 +20,6 @@ retinanet:
 train:
     csv_file:
     root_dir:
-    augmentations:
-        - type: RandomSizedBBoxSafeCrop
-          params:
-            height: 300
-            width: 300
-            erosion_rate: 0.0
-            interpolation: 1
-            always_apply: False
-        - type: PadIfNeeded
-          params:
-            always_apply: False
-            p: 1.0
-            min_height: 1024
-            min_width: 1024
-            pad_height_divisor: None
-            pad_width_divisor: None
-            position: "center"  # Store as string and convert in code
-            border_mode: 0  # cv2.BORDER_CONSTANT as integer
-            value: 0
-        - type: ToTensorV2
-        - type: BBox
-          params:
-            format: pascal_voc
-            label_fields: [category_ids]
-
-    default_augmentations:
-        - type: HorizontalFlip
-          params: 
-            p: 0.5
-        - type: VerticalFlip
-          params:
-            p: 0.5
-        - type: RandomBrightnessContrast
-          params:
-            brightness_limit: 0.2
-            contrast_limit: 0.2
-            p: 0.5
-        - type: RandomRotate90
-          params:
-            p: 0.5
-        - type: Normalize
-          params:
-            mean: [0.485, 0.456, 0.406]
-            std: [0.229, 0.224, 0.225]
-            max_pixel_value: 255.0
-            p: 1.0
-        - type: ToTensorV2
-        - type: BBox
-          params:
-            format: pascal_voc
-            label_fields: [category_ids]
     
     # Optimizer initial learning rate
     lr: 0.001
@@ -106,13 +55,6 @@ validation:
     # callback args
     csv_file: 
     root_dir:
-    augmentations:
-    default_augmentations:
-        - type: ToTensorV2
-        - type: BBox
-          params:
-            format: pascal_voc
-            label_fields: [category_ids]
     # Intersection over union evaluation
     iou_threshold: 0.4
     val_accuracy_interval: 20
