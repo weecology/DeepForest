@@ -295,10 +295,6 @@ def split_raster(annotations_file=None,
                 else:
                     continue
 
-            # Update geometry column
-            crop_annotations.drop(columns="geometry", inplace=True)
-            crop_annotations = pd.DataFrame(crop_annotations)
-            crop_annotations = read_file(crop_annotations, root_dir=root_dir)
             annotations_files.append(crop_annotations)
 
         # Save image crop
