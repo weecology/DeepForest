@@ -294,9 +294,10 @@ def read_file(input, root_dir=None):
     This is the main entry point for reading annotations into deepforest.
     Args:
         input: a path to a file or a pandas dataframe
-        root_dir: Optional directory to prepend to the image_path column
+        root_dir (str): location of the image files, if not in the same directory as the annotations file
     Returns:
         df: a geopandas dataframe with the properly formatted geometry column
+        df.root_dir: the root directory of the image files
     """
     # read file
     if isinstance(input, str):
@@ -352,7 +353,13 @@ def read_file(input, root_dir=None):
     df = gpd.GeoDataFrame(df, geometry='geometry')
 
     # If root_dir is specified, add as attribute
-    df.root_dir = root_dir
+    if root_dir is not None:
+        df.root_dir = root_dir
+    else:
+        try:
+            df.root_dir = os.path.dirname(input)
+        except TypeError:
+            raise ValueError("root_dir argument for the location of images must be specified if input is not a path")
 
     return df
 

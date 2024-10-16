@@ -357,6 +357,98 @@ def convert_to_sv_format(df, width=None, height=None):
 
     return detections
 
+def __check_color__(color, num_labels):
+    if isinstance(color, list) and len(color) == 3:
+        if num_labels > 1:
+            warnings.warn(
+                """Multiple labels detected in the results and results_color argument provides a single color.
+                Each label will be plotted with a different color using a built-in color ramp.
+                If you want to customize colors with multiple labels pass a supervision.ColorPalette object to results_color with the appropriate number of labels"""
+            )
+            return sv.ColorPalette.from_matplotlib('viridis', num_labels)
+        else:
+            return sv.Color(color[0], color[1], color[2])
+    elif isinstance(color, sv.draw.color.ColorPalette):
+        if num_labels > len(color.colors):
+            warnings.warn(
+                """The number of colors provided in results_color does not match the number number of labels.
+                Replacing the provided color palette with a built-in built-in color palette.
+                To use a custom color palette make sure the number of values matches the number of labels"""
+            )
+            return sv.ColorPalette.from_matplotlib('viridis', num_labels)
+        else:
+            return color
+    elif isinstance(color, list):
+        raise ValueError(
+            "results_color must be either a 3 item list containing RGB values or an sv.ColorPalette instance"
+        )
+    else:
+        raise TypeError(
+            "results_color must be either a list of RGB values or an sv.ColorPalette instance"
+        )
+
+def plot_annotations(annotations,
+                 savedir=None,
+                 height=None,
+                 width=None,
+                 color=[245, 135, 66],
+                 thickness=2,
+                 basename=None,
+                 root_dir=None,
+                 radius=3):
+    """Plot the prediction results.
+
+    Args:
+        annotations: a pandas dataframe with prediction results
+        savedir: optional path to save the figure. If None (default), the figure will be interactively plotted.
+        height: height of the image in pixels. Required if the geometry type is 'polygon'.
+        width: width of the image in pixels. Required if the geometry type is 'polygon'.
+        results_color (list or sv.ColorPalette): color of the results annotations as a tuple of RGB color (if a single color), e.g. orange annotations is [245, 135, 66], or an supervision.ColorPalette if multiple labels and specifying colors for each label
+        thickness: thickness of the rectangle border line in px
+        basename: optional basename for the saved figure. If None (default), the basename will be extracted from the image path.
+        root_dir: optional path to the root directory of the images. If None (default), the root directory will be extracted from the annotations dataframe.root_dir attribute. 
+        radius: radius of the points in px
+    Returns:
+        None
+    """
+    # Convert colors, check for multi-class labels
+    num_labels = len(annotations.label.unique())
+    annotation_color = __check_color__(color, num_labels)
+
+    # Read images
+    if not hasattr(annotations, 'root_dir'):
+        if root_dir is None:
+            raise ValueError("The 'annotations.root_dir' attribute does not exist. Please specify the 'root_dir' argument.")
+        else:
+            root_dir = root_dir
+    else:
+        root_dir = annotations.root_dir
+
+    image_path = os.path.join(root_dir, annotations.image_path.unique()[0])
+    image = np.array(Image.open(image_path))
+
+    # Plot the results following https://supervision.roboflow.com/annotators/
+    fig, ax = plt.subplots()
+    annotated_scene = _plot_image_with_geometry(df=annotations,
+                                               image=image,
+                                               sv_color=annotation_color,
+                                               height=height,
+                                               width=width,
+                                               thickness=thickness,
+                                               radius=radius)
+
+    if savedir:
+        if basename is None:
+            basename = os.path.splitext(os.path.basename(
+                annotations.image_path.unique()[0]))[0]
+        image_name = "{}.png".format(basename)
+        image_path = os.path.join(savedir, image_name)
+        cv2.imwrite(image_path, annotated_scene)
+    else:
+        # Display the image using Matplotlib
+        plt.imshow(annotated_scene)
+        plt.axis('off')  # Hide axes for a cleaner look
+        plt.show()
 
 def plot_results(results,
                  ground_truth=None,
@@ -386,38 +478,8 @@ def plot_results(results,
     """
     # Convert colors, check for multi-class labels
     num_labels = len(results.label.unique())
-    if isinstance(results_color, list) and len(results_color) == 3:
-        if num_labels > 1:
-            warnings.warn(
-                """Multiple labels detected in the results and results_color argument provides a single color.
-                Each label will be plotted with a different color using a built-in color ramp.
-                If you want to customize colors with multiple labels pass a supervision.ColorPalette object to results_color with the appropriate number of labels"""
-            )
-            results_color_sv = sv.ColorPalette.from_matplotlib('viridis', num_labels)
-        else:
-            results_color_sv = sv.Color(results_color[0], results_color[1],
-                                        results_color[2])
-    elif isinstance(results_color, sv.draw.color.ColorPalette):
-        if num_labels > len(results_color.colors):
-            warnings.warn(
-                """The number of colors provided in results_color does not match the number number of labels.
-                Replacing the provided color palette with a built-in built-in color palette.
-                To use a custom color palette make sure the number of values matches the number of labels"""
-            )
-            results_color_sv = sv.ColorPalette.from_matplotlib('viridis', num_labels)
-        else:
-            results_color_sv = results_color
-    elif isinstance(results_color, list):
-        raise ValueError(
-            "results_color must be either a 3 item list containing RGB values or an sv.ColorPalette instance"
-        )
-    else:
-        raise TypeError(
-            "results_color must be either a list of RGB values or an sv.ColorPalette instance"
-        )
-
-    ground_truth_color_sv = sv.Color(ground_truth_color[0], ground_truth_color[1],
-                                     ground_truth_color[2])
+    results_color_sv = __check_color__(results_color, num_labels)
+    ground_truth_color_sv = __check_color__(ground_truth_color, num_labels)
 
     # Read images
     root_dir = results.root_dir
@@ -426,7 +488,7 @@ def plot_results(results,
 
     # Plot the results following https://supervision.roboflow.com/annotators/
     fig, ax = plt.subplots()
-    annotated_scene = _plot_image_with_results(df=results,
+    annotated_scene = _plot_image_with_geometry(df=results,
                                                image=image,
                                                sv_color=results_color_sv,
                                                height=height,
@@ -436,7 +498,7 @@ def plot_results(results,
 
     if ground_truth is not None:
         # Plot the ground truth annotations
-        annotated_scene = _plot_image_with_results(df=ground_truth,
+        annotated_scene = _plot_image_with_geometry(df=ground_truth,
                                                    image=annotated_scene,
                                                    sv_color=ground_truth_color_sv,
                                                    height=height,
@@ -458,7 +520,7 @@ def plot_results(results,
         plt.show()
 
 
-def _plot_image_with_results(df,
+def _plot_image_with_geometry(df,
                              image,
                              sv_color,
                              thickness=1,
