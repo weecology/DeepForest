@@ -410,13 +410,13 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                 result["label"] = result.label.apply(
                     lambda x: self.numeric_to_label_dict[x])
 
-        result = utilities.read_file(result, root_dir=os.path.dirname(path))
         if path is None:
+            result = utilities.read_file(result)
             warnings.warn(
                 "An image was passed directly to predict_image, the result.root_dir attribute will be None in the output dataframe, to use visualize.plot_results, please assign results.root_dir = <directory name>"
             )
         else:
-            result.root_dir = os.path.dirname(path)
+            result = utilities.read_file(result, root_dir=os.path.dirname(path))
 
         return result
 
