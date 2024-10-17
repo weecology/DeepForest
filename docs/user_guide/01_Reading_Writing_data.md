@@ -4,7 +4,12 @@ The most time-consuming part of many open-source projects is getting the data in
 
 ## Annotation Geometries and Coordinate Systems
 
-DeepForest was originally designed for bounding box annotations. As of DeepForest 1.4.0, point and polygon annotations are also supported. There are two ways to format annotations, depending on the annotation platform you are using. `read_file` can read points, polygons, and boxes, in both image coordinate systems (relative to image origin at top-left 0,0) as well as projected coordinates on the Earth's surface.
+DeepForest was originally designed for bounding box annotations. As of DeepForest 1.4.0, point and polygon annotations are also supported. There are two ways to format annotations, depending on the annotation platform you are using. `read_file` can read points, polygons, and boxes, in both image coordinate systems (relative to image origin at top-left 0,0) as well as projected coordinates on the Earth's surface. The `read_file` method also appends the location of the current image directory as an attribute. To access this attribute use
+
+```
+filename = get_data("OSBS_029.csv")
+
+```
 
 **Note:** For CSV files, coordinates are expected to be in the image coordinate system, not projected coordinates (such as latitude/longitude or UTM).
 
@@ -28,7 +33,7 @@ OSBS_029.tif,364,204,400,246,Tree
 
 ```python
 filename = get_data("OSBS_029.csv")
-utilities.read_file(filename)
+df = utilities.read_file(filename)
 ```
 
 Example output:
@@ -43,6 +48,14 @@ Example output:
 ```
 
 **Note:** To maintain continuity with versions < 1.4.0, the function for boxes continues to output `xmin`, `ymin`, `xmax`, and `ymax` columns as individual columns as well.
+
+The location of these image files is saved in the root_dir attribute
+
+```
+df.root_dir
+'/Users/benweinstein/Documents/DeepForest/deepforest/data'
+```
+
 
 #### Shapefiles
 
