@@ -416,7 +416,9 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                 "An image was passed directly to predict_image, the result.root_dir attribute will be None in the output dataframe, to use visualize.plot_results, please assign results.root_dir = <directory name>"
             )
         else:
-            result = utilities.read_file(result, root_dir=os.path.dirname(path))
+            if root_dir is None:
+                root_dir = os.path.dirname(path)
+            results = utilities.read_file(results, root_dir=root_dir)
 
         return result
 
@@ -595,14 +597,17 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             warnings.warn("No predictions made, returning None")
             return None
 
-        results = utilities.read_file(results, root_dir=os.path.dirname(raster_path))
 
         if raster_path is None:
             warnings.warn(
                 "An image was passed directly to predict_tile, the results.root_dir attribute will be None in the output dataframe, to use visualize.plot_results, please assign results.root_dir = <directory name>"
             )
+            results = utilities.read_file(results)
+
         else:
-            results.root_dir = os.path.dirname(raster_path)
+            if root_dir is None:
+                root_dir = os.path.dirname(raster_path)
+            results = utilities.read_file(results, root_dir=root_dir)
 
         return results
 
