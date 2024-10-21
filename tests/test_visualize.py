@@ -65,18 +65,19 @@ def test_plot_predictions_and_targets(m, tmpdir):
             image, prediction, target, image_name=os.path.basename(path), savedir=tmpdir)
         assert os.path.exists(save_figure_path)
 
+
 def test_predict_image_and_plot(m, tmpdir):
     sample_image_path = get_data("OSBS_029.png")
     results = m.predict_image(path=sample_image_path)
     visualize.plot_results(results, savedir=tmpdir)
-
     assert os.path.exists(os.path.join(tmpdir, "OSBS_029.png"))
+
 
 def test_predict_tile_and_plot(m, tmpdir):
     sample_image_path = get_data("OSBS_029.png")
     results = m.predict_tile(raster_path=sample_image_path)
+    results.root_dir = os.path.dirname(get_data("OSBS_029.png"))
     visualize.plot_results(results, savedir=tmpdir)
-
     assert os.path.exists(os.path.join(tmpdir, "OSBS_029.png"))
 
 
@@ -86,6 +87,7 @@ def test_multi_class_plot( tmpdir):
     visualize.plot_results(results, savedir=tmpdir)
 
     assert os.path.exists(os.path.join(tmpdir, "SOAP_061.png"))
+
 
 def test_convert_to_sv_format():
     # Create a mock DataFrame
@@ -114,6 +116,7 @@ def test_convert_to_sv_format():
     np.testing.assert_array_equal(detections.class_id, expected_labels)
     np.testing.assert_array_equal(detections.confidence, expected_scores)
     assert detections['class_name'] == ['Tree', 'Tree']
+
 
 def test_plot_annotations(tmpdir):
     # Create a mock DataFrame with box annotations
@@ -158,6 +161,7 @@ def test_plot_results_box(m, tmpdir):
     # Assertions
     assert os.path.exists(os.path.join(tmpdir, "OSBS_029.png"))
 
+
 def test_plot_results_point(m, tmpdir):
     # Create a mock DataFrame with point annotations
     data = {
@@ -190,14 +194,14 @@ def test_plot_results_polygon(m, tmpdir):
     }
     gdf = gpd.GeoDataFrame(data)
 
-    #Read in image and get height
+    # Read in image and get height
     image = cv2.imread(get_data("OSBS_029.tif"))
     height = image.shape[0]
     width = image.shape[1]
     gdf.root_dir = os.path.dirname(get_data("OSBS_029.tif"))
 
     # Call the function
-    visualize.plot_results(gdf, savedir=tmpdir,height=height, width=width)
+    visualize.plot_results(gdf, savedir=tmpdir, height=height, width=width)
 
     # Assertions
     assert os.path.exists(os.path.join(tmpdir, "OSBS_029.png"))

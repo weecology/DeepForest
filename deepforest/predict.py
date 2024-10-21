@@ -42,7 +42,9 @@ def _predict_image_(model,
 
     df = visualize.format_boxes(prediction[0])
     df = across_class_nms(df, iou_threshold=nms_thresh)
-
+    if path:
+        df["image_path"] = os.path.basename(path)
+        # df["root_dir"] = os.path.basename(path)
     if return_plot:
         # Bring to gpu
         image = image.cpu()
@@ -53,12 +55,7 @@ def _predict_image_(model,
         image = image[:, :, ::-1] * 255
         image = image.astype("uint8")
         image = visualize.plot_predictions(image, df, color=color, thickness=thickness)
-
         return image
-    else:
-        if path:
-            df["image_path"] = os.path.basename(path)
-
     return df
 
 
