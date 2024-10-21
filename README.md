@@ -5,7 +5,7 @@
 [![Version](https://img.shields.io/pypi/v/DeepForest.svg)](https://pypi.python.org/pypi/DeepForest)
 [![PyPI - Downloads](https://img.shields.io/pypi/dm/deepforest)](https://pypi.python.org/pypi/DeepForest)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.2538143.svg)](https://doi.org/10.5281/zenodo.2538143)
-
+[![Python Version](https://img.shields.io/badge/python-%3E%3D3.5%2C%20%3C3.13-blue.svg)](https://www.python.org/downloads/)
 
 ### Conda-forge build status
 
