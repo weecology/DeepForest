@@ -63,6 +63,7 @@ jobs:
   # Publish to PyPI only if this is a tagged release (no pre-release tags)
   - script: |
       python -m pip install --upgrade twine
-      twine upload dist/* --skip-existing
+      twine upload --non-interactive dist/* --skip-existing
+
     displayName: 'Publish to PyPI'
     condition: startsWith(variables['Build.SourceBranch'], 'refs/tags/')
