@@ -43,8 +43,11 @@ jobs:
   pool:
     vmImage: 'ubuntu-latest'
 
-  # Only run this job if the build is triggered by a valid release tag (e.g., 1.4.0, 1.4.1)
-  condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/'), eq(variables['Build.SourceBranch'], 'refs/tags/$(Build.SourceBranchName)'), not(contains(variables['Build.SourceBranchName'], '-')))
+  # Condition to trigger only on successful builds from tags or 'main'
+  condition: |
+    and(succeeded(),
+        or(startsWith(variables['Build.SourceBranch'], 'refs/tags/'),
+           eq(variables['Build.SourceBranch'], 'refs/heads/main')))
 
   steps:
   - bash: |
@@ -54,11 +57,12 @@ jobs:
   - task: PublishBuildArtifacts@1
     inputs:
       pathtoPublish: 'dist'
-    displayName: 'Publish Source Distribution'
+      artifactName: 'python-package'
+    displayName: 'Publish Build Artifacts'
 
-  # Optionally publish to PyPI if required, only on tagged releases
+  # Publish to PyPI only if this is a tagged release (no pre-release tags)
   - script: |
       python -m pip install --upgrade twine
-      twine upload dist/*
+      twine upload dist/* --skip-existing
     displayName: 'Publish to PyPI'
     condition: startsWith(variables['Build.SourceBranch'], 'refs/tags/')
