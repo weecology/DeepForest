@@ -1,0 +1,44 @@
+name: Publish to PyPI and Test PyPI
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        index-url: ['https://test.pypi.org/legacy/', 'https://upload.pypi.org/legacy/']
+        token: ['${{ secrets.TEST_PYPI_TOKEN }}', '${{ secrets.PYPI_TOKEN }}']
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.9
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip setuptools wheel twine
+
+      - name: Build the package
+        run: |
+          python setup.py sdist bdist_wheel
+
+      - name: Publish to Test PyPI or PyPI
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ matrix.token }}
+        run: |
+          if [[ "${{ matrix.index-url }}" == "https://upload.pypi.org/legacy/" && "${GITHUB_REF_NAME}" == *-dev* ]]; then
+            echo "Skipping publish to PyPI for dev version."
+            exit 0
+          fi
+          twine upload --repository-url ${{ matrix.index-url }} dist/*
+

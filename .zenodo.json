@@ -1,0 +1,46 @@
+{
+    "creators": [
+      {
+        "affiliation": "University of Florida",
+        "name": "Ethan P. White",
+        "orcid": "0000-0001-6728-7745"
+      },
+      {
+        "affiliation": "University of Florida",
+        "name": "Ben G. Weinstein",
+        "orcid": "0000-0002-2176-7935"
+      },
+      {
+        "affiliation": "University of Florida",
+        "name": "Henry Senyondo",
+        "orcid": "0000-0001-7105-5808"
+      },
+      {
+        "affiliation": "University of Florida",
+        "name": "Muhammed Magdy",
+        "orcid": "0009-0009-6167-7246"
+      },
+      {
+        "affiliation": "University of Mumbai",
+        "name": "Om Doiphode",
+        "orcid": "0009-0007-2592-7370"
+      }
+    ],
+    "keywords": [
+      "AI",
+      "ML",
+      "remote sensing",
+      "drone",
+      "birds",
+      "Deep Learning",
+      "Object Detection",
+      "Geospatial",
+      "Tree Detection",
+      "Environmental Monitoring",
+      "Remote Sensing",
+      "Annotation Handling",
+      "Multi-Domain Detection"
+    ],
+    "license": "MIT",
+    "upload_type": "software"
+  }
