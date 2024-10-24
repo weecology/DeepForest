@@ -232,7 +232,7 @@ def test_predict_image_fromarray(m):
 
     assert isinstance(prediction, pd.DataFrame)
     assert set(prediction.columns) == {"xmin", "ymin", "xmax", "ymax", "label", "score", "geometry"} 
-
+    assert not hasattr(prediction, 'root_dir')
 
 def test_predict_big_file(m, tmpdir):
     m.config["train"]["fast_dev_run"] = False
