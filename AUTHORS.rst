@@ -18,6 +18,14 @@ Primary Authors
 
     @ethanwhite is a PI and Author of DeepForest.
 
+* `Om Doiphode <https://github.com/Om-Doiphode>`_
+
+    @Om-Doiphode is an Author.
+
+* `Muhammed Magdy <https://github.com/Mu-Magdy>`_
+
+    @Mu-Magdy is an Author.
+
 Other Contributors
 ==================
 
