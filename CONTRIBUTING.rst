@@ -159,11 +159,16 @@ Create Release
 Start
 ^^^^^
 
-1. **Run the tests** – seriously, run them now.
+1. **Run Pytest tests** – seriously, run them now. And Test build artifacts
+   - Run `Pytest -v`
+   - Run pip install build && python -m build && twine check dist/*
 2. Ensure `HISTORY.rst` is up to date with all changes since the last release.
 3. Use `bump-my-version show-bump` to determine the appropriate version bump.
 4. Update the version for release: `bump-my-version bump [minor | patch | pre_l | pre_n]`. If show-bump does not have the right option, we can manually set it `bump-my-version bump --new-version 1.4.0`
 5. Publish the release to PyPi and update the Conda package.
+    - All releases are done on GitHub Actions when a new tag is push
+    - `git tag v1.0.0`
+    - `git push origin v1.0.0`
 6. Post-release, update the version to the next development iteration:
    - Run `bump-my-version show-bump` to check the target version.
    - Then, execute `bump-my-version bump [minor | patch | pre_l | pre_n]`.
