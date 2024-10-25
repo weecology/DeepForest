@@ -359,7 +359,9 @@ def read_file(input, root_dir=None):
         try:
             df.root_dir = os.path.dirname(input)
         except TypeError:
-            warnings.warn("root_dir argument for the location of images should be specified if input is not a path, returning without results.root_dir attribute", UserWarning)
+            warnings.warn(
+                "root_dir argument for the location of images should be specified if input is not a path, returning without results.root_dir attribute",
+                UserWarning)
 
     return df
 

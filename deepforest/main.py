@@ -596,7 +596,6 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             warnings.warn("No predictions made, returning None")
             return None
 
-
         if raster_path is None:
             warnings.warn(
                 "An image was passed directly to predict_tile, the results.root_dir attribute will be None in the output dataframe, to use visualize.plot_results, please assign results.root_dir = <directory name>"

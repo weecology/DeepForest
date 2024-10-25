@@ -357,6 +357,7 @@ def convert_to_sv_format(df, width=None, height=None):
 
     return detections
 
+
 def __check_color__(color, num_labels):
     if isinstance(color, list) and len(color) == 3:
         if num_labels > 1:
@@ -387,15 +388,16 @@ def __check_color__(color, num_labels):
             "results_color must be either a list of RGB values or an sv.ColorPalette instance"
         )
 
+
 def plot_annotations(annotations,
-                 savedir=None,
-                 height=None,
-                 width=None,
-                 color=[245, 135, 66],
-                 thickness=2,
-                 basename=None,
-                 root_dir=None,
-                 radius=3):
+                     savedir=None,
+                     height=None,
+                     width=None,
+                     color=[245, 135, 66],
+                     thickness=2,
+                     basename=None,
+                     root_dir=None,
+                     radius=3):
     """Plot the prediction results.
 
     Args:
@@ -418,7 +420,9 @@ def plot_annotations(annotations,
     # Read images
     if not hasattr(annotations, 'root_dir'):
         if root_dir is None:
-            raise ValueError("The 'annotations.root_dir' attribute does not exist. Please specify the 'root_dir' argument.")
+            raise ValueError(
+                "The 'annotations.root_dir' attribute does not exist. Please specify the 'root_dir' argument."
+            )
         else:
             root_dir = root_dir
     else:
@@ -430,17 +434,17 @@ def plot_annotations(annotations,
     # Plot the results following https://supervision.roboflow.com/annotators/
     fig, ax = plt.subplots()
     annotated_scene = _plot_image_with_geometry(df=annotations,
-                                               image=image,
-                                               sv_color=annotation_color,
-                                               height=height,
-                                               width=width,
-                                               thickness=thickness,
-                                               radius=radius)
+                                                image=image,
+                                                sv_color=annotation_color,
+                                                height=height,
+                                                width=width,
+                                                thickness=thickness,
+                                                radius=radius)
 
     if savedir:
         if basename is None:
-            basename = os.path.splitext(os.path.basename(
-                annotations.image_path.unique()[0]))[0]
+            basename = os.path.splitext(
+                os.path.basename(annotations.image_path.unique()[0]))[0]
         image_name = "{}.png".format(basename)
         image_path = os.path.join(savedir, image_name)
         cv2.imwrite(image_path, annotated_scene)
@@ -449,6 +453,7 @@ def plot_annotations(annotations,
         plt.imshow(annotated_scene)
         plt.axis('off')  # Hide axes for a cleaner look
         plt.show()
+
 
 def plot_results(results,
                  ground_truth=None,
@@ -489,22 +494,22 @@ def plot_results(results,
     # Plot the results following https://supervision.roboflow.com/annotators/
     fig, ax = plt.subplots()
     annotated_scene = _plot_image_with_geometry(df=results,
-                                               image=image,
-                                               sv_color=results_color_sv,
-                                               height=height,
-                                               width=width,
-                                               thickness=thickness,
-                                               radius=radius)
+                                                image=image,
+                                                sv_color=results_color_sv,
+                                                height=height,
+                                                width=width,
+                                                thickness=thickness,
+                                                radius=radius)
 
     if ground_truth is not None:
         # Plot the ground truth annotations
         annotated_scene = _plot_image_with_geometry(df=ground_truth,
-                                                   image=annotated_scene,
-                                                   sv_color=ground_truth_color_sv,
-                                                   height=height,
-                                                   width=width,
-                                                   thickness=thickness,
-                                                   radius=radius)
+                                                    image=annotated_scene,
+                                                    sv_color=ground_truth_color_sv,
+                                                    height=height,
+                                                    width=width,
+                                                    thickness=thickness,
+                                                    radius=radius)
 
     if savedir:
         if basename is None:
@@ -521,12 +526,12 @@ def plot_results(results,
 
 
 def _plot_image_with_geometry(df,
-                             image,
-                             sv_color,
-                             thickness=1,
-                             radius=3,
-                             height=None,
-                             width=None):
+                              image,
+                              sv_color,
+                              thickness=1,
+                              radius=3,
+                              height=None,
+                              width=None):
     """Annotates an image with the given results.
 
     Args:
