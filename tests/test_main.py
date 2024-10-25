@@ -135,7 +135,7 @@ def test_tensorboard_logger(m, tmpdir):
 
 def test_use_bird_release(m):
     imgpath = get_data("AWPE Pigeon Lake 2020 DJI_0005.JPG")
-    m.use_bird_release()
+    m.load_model("Weecology/deepforest-bird")
     boxes = m.predict_image(path=imgpath)
     assert not boxes.empty
 
