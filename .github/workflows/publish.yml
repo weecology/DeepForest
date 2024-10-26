@@ -12,11 +12,12 @@ jobs:
     strategy:
       matrix:
         index-url: ['https://test.pypi.org/legacy/', 'https://upload.pypi.org/legacy/']
-        token: ['${{ secrets.TEST_PYPI_TOKEN }}', '${{ secrets.PYPI_TOKEN }}']
 
     steps:
       - name: Check out repository
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Ensure the full repository is checked out
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -25,20 +26,22 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip setuptools wheel twine
+          python -m pip install --upgrade pip build twine
 
       - name: Build the package
         run: |
-          python setup.py sdist bdist_wheel
+          python -m build  # Automatically detects `pyproject.toml`
 
       - name: Publish to Test PyPI or PyPI
         env:
           TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ matrix.token }}
+          TWINE_PASSWORD: ${{ secrets.TEST_PYPI_TOKEN }}
         run: |
+          if [[ "${{ matrix.index-url }}" == "https://upload.pypi.org/legacy/" ]]; then
+            TWINE_PASSWORD=${{ secrets.PYPI_TOKEN }}
+          fi
           if [[ "${{ matrix.index-url }}" == "https://upload.pypi.org/legacy/" && "${GITHUB_REF_NAME}" == *-dev* ]]; then
             echo "Skipping publish to PyPI for dev version."
             exit 0
           fi
           twine upload --repository-url ${{ matrix.index-url }} dist/*
-
