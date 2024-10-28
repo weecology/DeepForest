@@ -124,7 +124,7 @@ Documentation
 
 We are using `Sphinx <http://www.sphinx-doc.org/en/stable/>`_ and `Read the Docs <https://readthedocs.org/>`_ for the documentation.
 
-We use `Docformatter https://pypi.org/project/docformatter/`_ for formatting and style checking.
+We use `Docformatter <https://pypi.org/project/docformatter/>`_ for formatting and style checking.
 
 .. code-block:: bash
 
