@@ -119,13 +119,12 @@ Checkout the deepforest branch, update the `deepforest/meta.yaml` with the new v
    {% set sha256 = "fill new" %}
 
 
-
 Documentation
 -------------
 
 We are using `Sphinx <http://www.sphinx-doc.org/en/stable/>`_ and `Read the Docs <https://readthedocs.org/>`_ for the documentation.
 
-We use `https://pypi.org/project/docformatter/`_ for formatting and style checking.
+We use `Docformatter https://pypi.org/project/docformatter/`_ for formatting and style checking.
 
 .. code-block:: bash
 
