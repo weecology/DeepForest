@@ -5,14 +5,16 @@ include deepforest/data/classes.csv
 include deepforest/data/OSBS_029*
 include deepforest/data/SOAP_031*
 include deepforest/data/SOAP_061*
-include deepforest/data/2019_YELL_2_541000_4977000_image_crop.tiff
 include deepforest/data/2019_YELL_2_541000_4977000_image_crop.xml
 include deepforest/data/2019_YELL_2_541000_4977000_image_crop.png
-include deepforest/data/2019_YELL_2_528000_4978000_image_crop2.tiff
 include deepforest/data/2019_YELL_2_528000_4978000_image_crop2.xml
 include deepforest/data/2019_YELL_2_528000_4978000_image_crop2.png
-include deepforest/data/AWPE Pigeon Lake 2020 DJI_0005.JPG
+include deepforest/data/AWPE*
 include deepforest/data/example.csv
 
 include LICENSE
-include requirements.txt
+include dev_requirements.txt
+
+# Exclude files and directories
+prune tests/
+prune docs/
