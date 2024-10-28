@@ -408,7 +408,7 @@ def plot_annotations(annotations,
         results_color (list or sv.ColorPalette): color of the results annotations as a tuple of RGB color (if a single color), e.g. orange annotations is [245, 135, 66], or an supervision.ColorPalette if multiple labels and specifying colors for each label
         thickness: thickness of the rectangle border line in px
         basename: optional basename for the saved figure. If None (default), the basename will be extracted from the image path.
-        root_dir: optional path to the root directory of the images. If None (default), the root directory will be extracted from the annotations dataframe.root_dir attribute. 
+        root_dir: optional path to the root directory of the images. If None (default), the root directory will be extracted from the annotations dataframe.root_dir attribute.
         radius: radius of the points in px
     Returns:
         None
