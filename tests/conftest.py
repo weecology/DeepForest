@@ -1,7 +1,8 @@
 # Fixtures model to only download model once
 # download latest release
 import pytest
-from deepforest import utilities, main
+from deepforest import main
+from deepforest import utilities
 from deepforest import get_data
 from deepforest import _ROOT
 import os
@@ -12,8 +13,7 @@ collect_ignore = ['setup.py']
 
 @pytest.fixture(scope="session")
 def config():
-    config = utilities.read_config("{}/deepforest_config.yml".format(
-        os.path.dirname(_ROOT)))
+    config = utilities.read_config(get_data("deepforest_config.yml"))
     config["fast_dev_run"] = True
     config["batch_size"] = True
     return config

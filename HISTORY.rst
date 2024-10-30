@@ -2,8 +2,13 @@
 DeepForest Changelog
 ====================
 
-Version 1.4.0 (Date: Oct 9, 2024)
+Version 1.4.1 (Date: Oct 26, 2024)
 ----------------------------------
+
+- **Enhancement:** Use GitHub Actions to publish the package.
+
+Version 1.4.0 (Date: Oct 9, 2024)
+---------------------------------
 
  The major innovations are
 

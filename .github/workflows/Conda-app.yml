@@ -46,11 +46,14 @@ jobs:
           cache-environment: true
           cache-downloads: true
 
+      - name: Install package
+        run: pip install . -U
+
       - name: Run pytest
         run: pytest -v
 
       - name: Check style
-        run: yapf -d --recursive deepforest/ --style=.style.yapf
+        run: yapf -d --recursive src/deepforest/ --style=.style.yapf
 
       - name: Check notebook style
         run: nbqa yapf --in-place docs/user_guide/examples/*.ipynb --style=.style.yapf
@@ -59,7 +62,7 @@ jobs:
         run: pytest --nbmake docs/**/*_test.ipynb
 
       - name: Run docformatter
-        run: docformatter --check --recursive deepforest/
+        run: docformatter --check --recursive src/deepforest/
 
       - name: Test Docs
         run: |

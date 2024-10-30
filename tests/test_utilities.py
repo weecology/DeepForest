@@ -10,7 +10,8 @@ from shapely import geometry
 import geopandas as gpd
 
 from deepforest import get_data
-from deepforest import utilities, visualize
+from deepforest import visualize
+from deepforest import utilities
 from deepforest import main
 
 # import general model fixture

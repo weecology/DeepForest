@@ -13,8 +13,6 @@ import torch
 import warnings
 import rasterio
 import geopandas as gpd
-from shapely import geometry
-import geopandas as gpd
 from deepforest.utilities import read_file, determine_geometry_type
 from shapely import geometry
 

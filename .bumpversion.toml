@@ -1,5 +1,5 @@
 [tool.bumpversion]
-current_version = "1.4.2-dev0"
+current_version = "1.4.2"
 
 parse = """(?x)
     (?P<major>0|[1-9]\\d*)\\.
@@ -38,4 +38,4 @@ commit_args = ""
 filename = "pyproject.toml"
 
 [[tool.bumpversion.files]]
-filename = "deepforest/_version.py"
+filename = "src/deepforest/_version.py"

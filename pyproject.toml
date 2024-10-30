@@ -7,7 +7,7 @@ requires = [
 
 [project]
 name = "deepforest"
-version = "1.4.2-dev0"
+version = "1.4.2"
 description = "Tree crown prediction using deep learning retinanets"
 readme = "README.md"
 license = { text = "MIT" }
@@ -73,6 +73,6 @@ dependencies = [
     "tqdm",
     "xmltodict",
 ]
-[tool.setuptools]
-packages = ["deepforest"]
-include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["src"]

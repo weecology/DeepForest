@@ -86,7 +86,7 @@ You can also run yapf from the command line to cleanup the style in your changes
 
 .. code-block:: bash
 
-   yapf -i --recursive deepforest/ --style=.style.yapf
+   yapf -i --recursive src/deepforest/ --style=.style.yapf
 
 If the style tests fail on a pull request, running the above command is the easiest way to fix this.
 
@@ -128,7 +128,7 @@ We use `Docformatter <https://pypi.org/project/docformatter/>`_ for formatting a
 
 .. code-block:: bash
 
-   $ docformatter --in-place --recursive deepforest/
+   $ docformatter --in-place --recursive src/deepforest/
 
 Update Documentation
 ^^^^^^^^^^^^^^^^^^^^
