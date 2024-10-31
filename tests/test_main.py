@@ -269,12 +269,14 @@ def test_predict_tile_empty(raster_path):
     predictions = m.predict_tile(raster_path=raster_path, patch_size=300, patch_overlap=0)
     assert predictions is None
 
-def test_predict_tile(m, raster_path):
+@pytest.mark.parametrize("in_memory", [True, False])
+def test_predict_tile(m, raster_path, in_memory):
     m.create_model()
     m.config["train"]["fast_dev_run"] = False
     m.create_trainer()
     prediction = m.predict_tile(raster_path=raster_path,
                                 patch_size=300,
+                                in_memory=in_memory,
                                 patch_overlap=0.1)
 
     assert isinstance(prediction, pd.DataFrame)
@@ -283,6 +285,11 @@ def test_predict_tile(m, raster_path):
     }
     assert not prediction.empty
 
+# test equivalence for in_memory=True and False
+def test_predict_tile_equivalence(m, raster_path):
+    in_memory_prediction = m.predict_tile(raster_path=raster_path, patch_size=300, patch_overlap=0, in_memory=True)
+    not_in_memory_prediction = m.predict_tile(raster_path=raster_path, patch_size=300, patch_overlap=0, in_memory=False)
+    assert in_memory_prediction.equals(not_in_memory_prediction)
 
 @pytest.mark.parametrize("patch_overlap", [0.1, 0])
 def test_predict_tile_from_array(m, patch_overlap, raster_path):
@@ -635,3 +642,61 @@ def test_predict_tile_with_crop_model(m, config):
         "xmin", "ymin", "xmax", "ymax", "label", "score", "cropmodel_label", "geometry",
         "cropmodel_score", "image_path"
     }
+
+
+def test_predict_tile_memory(m, raster_path):
+    """Test memory usage of predict_tile function"""
+    from memory_profiler import profile
+    
+    @profile
+    def predict_tile_wrapper():
+        # Create model and prepare it for prediction
+        m.create_model()
+        m.config["train"]["fast_dev_run"] = False
+        m.create_trainer()
+        
+        # Run prediction with standard parameters
+        prediction = m.predict_tile(
+            raster_path=raster_path,
+            patch_size=300,
+            patch_overlap=0.1
+        )
+        
+        return prediction
+
+    # Run the profiled function
+    result = predict_tile_wrapper()
+    
+    # Verify the prediction worked correctly
+    assert isinstance(result, pd.DataFrame)
+    assert not result.empty
+
+
+def test_raster_dataset(m, raster_path):
+    """Test the RasterDataset class"""
+    from deepforest.dataset import RasterDataset
+    
+    # Create dataset
+    window_size = 256
+    overlap = 0.1
+    
+    with RasterDataset(raster_path, window_size=window_size, overlap=overlap) as ds:
+        # Test length
+        assert len(ds) > 0
+        
+        # Test getting an item
+        window, bounds = ds[0]
+        
+        # Check window shape and type
+        assert window.shape == (window_size, window_size, 3)
+        assert window.dtype == np.float32
+        assert 0 <= window.min() <= window.max() <= 1.0
+        
+        # Check bounds
+        assert isinstance(bounds, tuple)
+        assert len(bounds) == 2
+        assert all(isinstance(x, int) for x in bounds)
+        
+        # Test getting last item
+        window, bounds = ds[len(ds)-1]
+        assert window.shape == (window_size, window_size, 3)

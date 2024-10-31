@@ -461,12 +461,16 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
         return results
 
+    import memory_profiler
+
+    @memory_profiler.profile
     def predict_tile(self,
                      raster_path=None,
                      image=None,
                      patch_size=400,
                      patch_overlap=0.05,
                      iou_threshold=0.15,
+                     in_memory=True,
                      return_plot=False,
                      mosaic=True,
                      sigma=0.5,
@@ -489,6 +493,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             iou_threshold: Minimum iou overlap among predictions between
                 windows to be suppressed.
                 Lower values suppress more boxes at edges.
+            in_memory: If true, the entire dataset is loaded into memory. This is useful for small datasets, but not recommended for large datasets since both the tile and the crops are stored in memory.
             mosaic: Return a single prediction dataframe (True) or a tuple of image crops and predictions (False)
             sigma: variance of Gaussian function used in Gaussian Soft NMS
             thresh: the score thresh used to filter bboxes after soft-nms performed
@@ -529,15 +534,29 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                 "Both tile and tile_path are None. Either supply a path to a tile on disk, or read one into memory!"
             )
 
-        if raster_path is None:
-            self.image = image
-        else:
-            self.image = rio.open(raster_path).read()
-            self.image = np.moveaxis(self.image, 0, 2)
 
-        ds = dataset.TileDataset(tile=self.image,
+        if in_memory:
+            if raster_path is None:
+                image = image
+            else:
+                image = rio.open(raster_path).read()
+                image = np.moveaxis(image, 0, 2)
+
+            ds = dataset.TileDataset(tile=image,
                                  patch_overlap=patch_overlap,
                                  patch_size=patch_size)
+        else:
+            if raster_path is None:
+                raise ValueError("raster_path is required if in_memory is False")
+            
+            # Check for workers config when using out of memory dataset
+            if self.config["workers"] > 0:
+                raise ValueError("workers must be 0 when using out-of-memory dataset (in_memory=False). Set config['workers']=0 and recreate trainer self.create_trainer().")
+            
+            ds = dataset.RasterDataset(raster_path=raster_path,
+                                        patch_overlap=patch_overlap,
+                                        patch_size=patch_size)
+
         batched_results = self.trainer.predict(self, self.predict_dataloader(ds))
 
         # Flatten list from batched prediction
@@ -564,7 +583,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                 if raster_path:
                     tile = rio.open(raster_path).read()
                 else:
-                    tile = self.image
+                    tile = image
                 drawn_plot = tile[:, :, ::-1]
                 drawn_plot = visualize.plot_predictions(tile,
                                                         results,
@@ -575,10 +594,16 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             for df in results:
                 df["label"] = df.label.apply(lambda x: self.numeric_to_label_dict[x])
 
-            # TODO this is the 2nd time the crops are generated? Could be more efficient.
+            # TODO this is the 2nd time the crops are generated? Could be more efficient, but memory intensive
             self.crops = []
+            if raster_path is None:
+                image = image
+            else:
+                image = rio.open(raster_path).read()
+                image = np.moveaxis(image, 0, 2)
+
             for window in ds.windows:
-                crop = self.image[window.indices()]
+                crop = image[window.indices()]
                 self.crops.append(crop)
 
             return list(zip(results, self.crops))
