@@ -20,7 +20,6 @@ from deepforest import evaluate as evaluate_iou
 
 from huggingface_hub import PyTorchModelHubMixin
 
-
 class deepforest(pl.LightningModule, PyTorchModelHubMixin):
     """Class for training and predicting tree crowns in RGB images."""
 

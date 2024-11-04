@@ -26,6 +26,8 @@ import rasterio as rio
 from deepforest import preprocess
 from rasterio.windows import Window
 from torchvision import transforms
+import slidingwindow
+import warnings
 
 def get_transform(augment):
     """Albumentations transformation of bounding boxs."""
@@ -186,6 +188,69 @@ class TileDataset(Dataset):
 
         return crop
 
+class RasterDataset:
+    """Dataset for predicting on raster windows
+    
+    Args:
+        raster_path (str): Path to raster file
+        window_size (int): Size of windows to predict on
+        overlap (float): Overlap between windows as fraction (0-1)
+    """
+    def __init__(self, raster_path, patch_size, patch_overlap):
+
+        self.raster = rio.open(raster_path)
+        self.patch_size = patch_size
+        self.patch_overlap = patch_overlap
+    
+        # Check if raster is tiled
+        if not self.raster.is_tiled:
+            warnings.warn("Raster has no internal blocks. Reading out of memory will be slower and more memory intensive since each crop requires reading the entire image.")
+        width = self.raster.shape[0]
+        height = self.raster.shape[1]
+
+        # Generate sliding windows over the raster
+        self.windows = slidingwindow.generateForSize(
+            height,
+            width,
+            dimOrder=slidingwindow.DimOrder.ChannelHeightWidth,
+            maxWindowSize=patch_size,
+            overlapPercent=patch_overlap
+        )
+        self.n_windows = len(self.windows)
+
+    def __len__(self):
+        return self.n_windows
+    
+    def __getitem__(self, idx):
+        """Get a window of the raster
+        
+        Args:
+            idx (int): Index of window to get
+            
+        Returns:
+            crop (torch.Tensor): A tensor of shape (3, height, width)
+        """
+        window = self.windows[idx]
+        
+        # Read window
+        window_data = self.raster.read(
+            window=Window(window.x, window.y, window.w, window.h)
+        )
+        
+        window_data = np.moveaxis(window_data, 0, 2)
+        crop = preprocess.preprocess_image(window_data)
+
+        return crop
+    
+    def close(self):
+        """Close the raster dataset"""
+        self.raster.close()
+        
+    def __enter__(self):
+        return self
+        
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
 
 def bounding_box_transform(augment=False):
     data_transforms = []
@@ -248,77 +313,3 @@ class BoundingBoxDataset(Dataset):
             image = box
 
         return image
-
-
-class RasterDataset:
-    """Dataset for predicting on raster windows
-    
-    Args:
-        raster_path (str): Path to raster file
-        window_size (int): Size of windows to predict on
-        overlap (float): Overlap between windows as fraction (0-1)
-    """
-    def __init__(self, raster_path, patch_size=1024, patch_overlap=0.1):
-        
-        self.raster = rio.open(raster_path)
-        self.patch_size = patch_size
-        self.patch_overlap = patch_overlap
-        
-        # Calculate step size based on overlap
-        self.step_size = int(patch_size * (1 - patch_overlap))
-        
-        # Calculate number of windows in each dimension
-        self.n_windows_height = max(1, int((self.raster.height - patch_size) / self.step_size) + 1)
-        self.n_windows_width = max(1, int((self.raster.width - patch_size) / self.step_size) + 1)
-        
-        # Store total number of windows
-        self.n_windows = self.n_windows_height * self.n_windows_width
-        
-    def __len__(self):
-        return self.n_windows
-    
-    def __getitem__(self, idx):
-        """Get a window of the raster
-        
-        Args:
-            idx (int): Index of window to get
-            
-        Returns:
-            tuple: (window_data, window_bounds)
-                window_data (np.array): Array of shape (window_size, window_size, channels)
-                window_bounds (tuple): (row_off, col_off) offset of window in original raster
-        """
-        
-        # Calculate row and column of window
-        row_idx = idx // self.n_windows_width
-        col_idx = idx % self.n_windows_width
-        
-        # Calculate window bounds
-        row_off = row_idx * self.step_size
-        col_off = col_idx * self.step_size
-        
-        # Handle edge cases - ensure window doesn't exceed raster bounds
-        if row_off + self.patch_size > self.raster.height:
-            row_off = self.raster.height - self.patch_size
-        if col_off + self.patch_size > self.raster.width:
-            col_off = self.raster.width - self.patch_size
-            
-        # Read window
-        window = self.raster.read(
-            window=Window(col_off, row_off, self.patch_size, self.patch_size)
-        )
-        
-        window = np.rollaxis(window, 0, 3)
-        crop = preprocess.preprocess_image(window)
-
-        return crop
-    
-    def close(self):
-        """Close the raster dataset"""
-        self.raster.close()
-        
-    def __enter__(self):
-        return self
-        
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.close()
