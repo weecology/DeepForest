@@ -492,7 +492,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             iou_threshold: Minimum iou overlap among predictions between
                 windows to be suppressed.
                 Lower values suppress more boxes at edges.
-            in_memory: If true, the entire dataset is loaded into memory. This is useful for small datasets, but not recommended for large datasets since both the tile and the crops are stored in memory.
+            in_memory: If true, the entire dataset is loaded into memory, which increases speed. This is useful for small datasets, but not recommended for very large datasets.
             mosaic: Return a single prediction dataframe (True) or a tuple of image crops and predictions (False)
             sigma: variance of Gaussian function used in Gaussian Soft NMS
             thresh: the score thresh used to filter bboxes after soft-nms performed
@@ -508,6 +508,10 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
               rendering predictions. Will be removed in version 2.0.
             - color: Deprecated bounding box color for visualizations.
             - thickness: Deprecated bounding box thickness for visualizations.
+
+        Raises:
+            - ValueError: If `raster_path` is None when `in_memory=False`.
+            - ValueError: If `workers` is greater than 0 when `in_memory=False`. Multiprocessing is not supported when using out-of-memory datasets, rasterio is not threadsafe.
 
         Returns:
             - If `return_plot` is True, returns an image with predictions overlaid (deprecated).

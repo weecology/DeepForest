@@ -195,6 +195,8 @@ class RasterDataset:
         raster_path (str): Path to raster file
         patch_size (int): Size of windows to predict on
         patch_overlap (float): Overlap between windows as fraction (0-1)
+    Returns:
+        A dataset of raster windows
     """
     def __init__(self, raster_path, patch_size, patch_overlap):
         self.raster_path = raster_path
@@ -206,6 +208,16 @@ class RasterDataset:
             width = src.shape[0]
             height = src.shape[1]
 
+            # Check is tiled
+            if not src.is_tiled:
+                raise ValueError(
+                    "Out-of-memory dataset is selected, but raster is not tiled, "
+                    "leading to entire raster being read into memory and defeating "
+                    "the purpose of an out-of-memory dataset. "
+                    "\nPlease run: "
+                    "\ngdal_translate -of GTiff -co TILED=YES <input> <output> "
+                    "to create a tiled raster"
+                )
         # Generate sliding windows
         self.windows = slidingwindow.generateForSize(
             height,

@@ -185,17 +185,16 @@ def test_bounding_box_dataset():
     # Check the shape of the RGB tensor
     assert item.shape == (3, 224, 224)
 
-def test_raster_dataset(raster_path):
+def test_raster_dataset():
     """Test the RasterDataset class"""
     from deepforest.dataset import RasterDataset
     import torch
     from torch.utils.data import DataLoader
     
     # Test initialization and context manager
-    ds = RasterDataset(raster_path, patch_size=256, patch_overlap=0.1)
+    ds = RasterDataset(get_data("test_tiled.tif"), patch_size=256, patch_overlap=0.1)
     
     # Test basic properties
-    assert hasattr(ds, 'raster')
     assert hasattr(ds, 'windows')
         
     # Test first window
@@ -210,7 +209,3 @@ def test_raster_dataset(raster_path):
     batch = next(iter(dataloader))
     assert batch.shape[0] == 2  # Batch size
     assert batch.shape[1] == 3  # Channels first
-                
-    # Test that context manager closed the raster
-    ds.close()
-    assert ds.raster.closed
