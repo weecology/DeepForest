@@ -193,22 +193,20 @@ class RasterDataset:
     
     Args:
         raster_path (str): Path to raster file
-        window_size (int): Size of windows to predict on
-        overlap (float): Overlap between windows as fraction (0-1)
+        patch_size (int): Size of windows to predict on
+        patch_overlap (float): Overlap between windows as fraction (0-1)
     """
     def __init__(self, raster_path, patch_size, patch_overlap):
-
-        self.raster = rio.open(raster_path)
+        self.raster_path = raster_path
         self.patch_size = patch_size
         self.patch_overlap = patch_overlap
-    
-        # Check if raster is tiled
-        if not self.raster.is_tiled:
-            warnings.warn("Raster has no internal blocks. Reading out of memory will be slower and more memory intensive since each crop requires reading the entire image.")
-        width = self.raster.shape[0]
-        height = self.raster.shape[1]
+        
+        # Get raster shape without keeping file open
+        with rio.open(raster_path) as src:
+            width = src.shape[0]
+            height = src.shape[1]
 
-        # Generate sliding windows over the raster
+        # Generate sliding windows
         self.windows = slidingwindow.generateForSize(
             height,
             width,
@@ -220,7 +218,7 @@ class RasterDataset:
 
     def __len__(self):
         return self.n_windows
-    
+
     def __getitem__(self, idx):
         """Get a window of the raster
         
@@ -232,25 +230,18 @@ class RasterDataset:
         """
         window = self.windows[idx]
         
-        # Read window
-        window_data = self.raster.read(
-            window=Window(window.x, window.y, window.w, window.h)
-        )
+        # Open, read window, and close for each operation
+        with rio.open(self.raster_path) as src:
+            window_data = src.read(
+                window=Window(window.x, window.y, window.w, window.h)
+            )
+            
+        # Convert to torch tensor and rearrange dimensions
+        window_data = torch.from_numpy(window_data).float()  # Convert to torch tensor
+        window_data = window_data / 255.0  # Normalize
         
-        window_data = np.moveaxis(window_data, 0, 2)
-        crop = preprocess.preprocess_image(window_data)
+        return window_data  # Already in (C, H, W) format from rasterio
 
-        return crop
-    
-    def close(self):
-        """Close the raster dataset"""
-        self.raster.close()
-        
-    def __enter__(self):
-        return self
-        
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.close()
 
 def bounding_box_transform(augment=False):
     data_transforms = []
