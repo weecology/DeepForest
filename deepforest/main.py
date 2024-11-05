@@ -20,6 +20,7 @@ from deepforest import evaluate as evaluate_iou
 
 from huggingface_hub import PyTorchModelHubMixin
 
+
 class deepforest(pl.LightningModule, PyTorchModelHubMixin):
     """Class for training and predicting tree crowns in RGB images."""
 
@@ -460,9 +461,6 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
         return results
 
-    import memory_profiler
-
-    @memory_profiler.profile
     def predict_tile(self,
                      raster_path=None,
                      image=None,
@@ -537,7 +535,6 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                 "Both tile and tile_path are None. Either supply a path to a tile on disk, or read one into memory!"
             )
 
-
         if in_memory:
             if raster_path is None:
                 image = image
@@ -546,19 +543,21 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                 image = np.moveaxis(image, 0, 2)
 
             ds = dataset.TileDataset(tile=image,
-                                 patch_overlap=patch_overlap,
-                                 patch_size=patch_size)
+                                     patch_overlap=patch_overlap,
+                                     patch_size=patch_size)
         else:
             if raster_path is None:
                 raise ValueError("raster_path is required if in_memory is False")
-            
+
             # Check for workers config when using out of memory dataset
             if self.config["workers"] > 0:
-                raise ValueError("workers must be 0 when using out-of-memory dataset (in_memory=False). Set config['workers']=0 and recreate trainer self.create_trainer().")
-            
+                raise ValueError(
+                    "workers must be 0 when using out-of-memory dataset (in_memory=False). Set config['workers']=0 and recreate trainer self.create_trainer()."
+                )
+
             ds = dataset.RasterDataset(raster_path=raster_path,
-                                        patch_overlap=patch_overlap,
-                                        patch_size=patch_size)
+                                       patch_overlap=patch_overlap,
+                                       patch_size=patch_size)
 
         batched_results = self.trainer.predict(self, self.predict_dataloader(ds))
 

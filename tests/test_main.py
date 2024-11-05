@@ -274,6 +274,12 @@ def test_predict_tile(m, raster_path, in_memory):
     m.create_model()
     m.config["train"]["fast_dev_run"] = False
     m.create_trainer()
+
+    if in_memory:
+        raster_path = raster_path
+    else:
+        raster_path = get_data("test_tiled.tif")
+
     prediction = m.predict_tile(raster_path=raster_path,
                                 patch_size=300,
                                 in_memory=in_memory,
@@ -286,7 +292,8 @@ def test_predict_tile(m, raster_path, in_memory):
     assert not prediction.empty
 
 # test equivalence for in_memory=True and False
-def test_predict_tile_equivalence(m, raster_path):
+def test_predict_tile_equivalence(m):
+    raster_path = get_data("test_tiled.tif")
     in_memory_prediction = m.predict_tile(raster_path=raster_path, patch_size=300, patch_overlap=0, in_memory=True)
     not_in_memory_prediction = m.predict_tile(raster_path=raster_path, patch_size=300, patch_overlap=0, in_memory=False)
     assert in_memory_prediction.equals(not_in_memory_prediction)
@@ -670,33 +677,3 @@ def test_predict_tile_memory(m, raster_path):
     # Verify the prediction worked correctly
     assert isinstance(result, pd.DataFrame)
     assert not result.empty
-
-
-def test_raster_dataset(m, raster_path):
-    """Test the RasterDataset class"""
-    from deepforest.dataset import RasterDataset
-    
-    # Create dataset
-    window_size = 256
-    overlap = 0.1
-    
-    with RasterDataset(raster_path, window_size=window_size, overlap=overlap) as ds:
-        # Test length
-        assert len(ds) > 0
-        
-        # Test getting an item
-        window, bounds = ds[0]
-        
-        # Check window shape and type
-        assert window.shape == (window_size, window_size, 3)
-        assert window.dtype == np.float32
-        assert 0 <= window.min() <= window.max() <= 1.0
-        
-        # Check bounds
-        assert isinstance(bounds, tuple)
-        assert len(bounds) == 2
-        assert all(isinstance(x, int) for x in bounds)
-        
-        # Test getting last item
-        window, bounds = ds[len(ds)-1]
-        assert window.shape == (window_size, window_size, 3)
