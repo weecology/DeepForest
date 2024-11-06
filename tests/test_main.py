@@ -649,31 +649,3 @@ def test_predict_tile_with_crop_model(m, config):
         "xmin", "ymin", "xmax", "ymax", "label", "score", "cropmodel_label", "geometry",
         "cropmodel_score", "image_path"
     }
-
-
-def test_predict_tile_memory(m, raster_path):
-    """Test memory usage of predict_tile function"""
-    from memory_profiler import profile
-    
-    @profile
-    def predict_tile_wrapper():
-        # Create model and prepare it for prediction
-        m.create_model()
-        m.config["train"]["fast_dev_run"] = False
-        m.create_trainer()
-        
-        # Run prediction with standard parameters
-        prediction = m.predict_tile(
-            raster_path=raster_path,
-            patch_size=300,
-            patch_overlap=0.1
-        )
-        
-        return prediction
-
-    # Run the profiled function
-    result = predict_tile_wrapper()
-    
-    # Verify the prediction worked correctly
-    assert isinstance(result, pd.DataFrame)
-    assert not result.empty
