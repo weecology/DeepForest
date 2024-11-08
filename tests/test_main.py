@@ -135,7 +135,7 @@ def test_tensorboard_logger(m, tmpdir):
 
 def test_use_bird_release(m):
     imgpath = get_data("AWPE Pigeon Lake 2020 DJI_0005.JPG")
-    m.use_bird_release()
+    m.load_model("Weecology/deepforest-bird")
     boxes = m.predict_image(path=imgpath)
     assert not boxes.empty
 
@@ -232,7 +232,7 @@ def test_predict_image_fromarray(m):
 
     assert isinstance(prediction, pd.DataFrame)
     assert set(prediction.columns) == {"xmin", "ymin", "xmax", "ymax", "label", "score", "geometry"} 
-
+    assert not hasattr(prediction, 'root_dir')
 
 def test_predict_big_file(m, tmpdir):
     m.config["train"]["fast_dev_run"] = False
