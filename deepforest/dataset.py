@@ -248,3 +248,49 @@ class BoundingBoxDataset(Dataset):
             image = box
 
         return image
+
+
+class PointDataset(Dataset):
+    """An in-memory dataset for point predictions (centroids).
+
+    Args:
+        df: a pandas dataframe with image_path, x_center, y_center, and label columns.
+        transform: a function to apply to the image.
+        root_dir: the directory where the image is stored.
+
+    Returns:
+        rgb: a tensor of shape (3, height, width)
+    """
+
+    def __init__(self, df, root_dir, transform=None, augment=False):
+        self.df = df
+        self.root_dir = root_dir
+        self.transform = transform
+        self.augment = augment
+
+        unique_image = self.df['image_path'].unique()
+        assert len(unique_image
+                  ) == 1, "There should be only one unique image for this class object"
+
+        # Open the image using rasterio
+        self.src = rio.open(os.path.join(root_dir, unique_image[0]))
+
+    def __len__(self):
+        return len(self.df)
+
+    def __getitem__(self, idx):
+        row = self.df.iloc[idx]
+        x_center = row['x_center']
+        y_center = row['y_center']
+
+        # Read a small window around the centroid to create a context image for the point (optional)
+        box_size = 20  # e.g., small crop around the centroid
+        window = Window(x_center - box_size // 2, y_center - box_size // 2, box_size,
+                        box_size)
+        image = self.src.read(window=window)
+        image = np.rollaxis(image, 0, 3)
+
+        if self.transform:
+            image = self.transform(image)
+
+        return image, (x_center, y_center)
