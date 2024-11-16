@@ -64,7 +64,13 @@ class TreeDataset(Dataset):
         Returns:
             If train, path, image, targets else image
         """
-        self.annotations = pd.read_csv(csv_file)
+        
+        # Check if csv_file is a DataFrame or a file path
+        if isinstance(csv_file, pd.DataFrame):
+            self.annotations = csv_file
+        else:
+            self.annotations = pd.read_csv(csv_file)
+            
         self.root_dir = root_dir
         if transforms is None:
             self.transform = get_transform(augment=train)
