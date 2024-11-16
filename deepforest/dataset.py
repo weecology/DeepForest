@@ -21,11 +21,13 @@ from albumentations import functional as F
 from albumentations.pytorch import ToTensorV2
 import torch
 import typing
-from PIL import Image
+from PIL import Image, ImageDraw
 import rasterio as rio
 from deepforest import preprocess
 from rasterio.windows import Window
 from torchvision import transforms
+import torchvision
+from torchvision.tv_tensors import BoundingBoxes, Mask
 import slidingwindow
 import warnings
 
@@ -315,3 +317,55 @@ class BoundingBoxDataset(Dataset):
             image = box
 
         return image
+
+
+class PolygonDataset(Dataset):
+
+    def __init__(self, img_keys, annotation_df, class_to_idx, transforms=None):
+        super(Dataset, self).__init__()
+        self._img_keys = img_keys
+        self._annotation_df = annotation_df
+        self._class_to_idx = class_to_idx
+        self._transforms = transforms
+
+    def __len__(self):
+        return len(self._img_keys)
+
+    def __getitem__(self, index):
+        img_key = self._img_keys[index]
+        annotation = self._annotation_df.loc[img_key]
+        image, target = self._load_image_and_target(annotation)
+
+        if self._transforms:
+            image, target = self._transforms(image, target)
+
+        return image, target
+
+    def create_polygon_mask(self, image_size, vertices):
+        mask_img = Image.new('L', image_size, 0)
+        ImageDraw.Draw(mask_img, 'L').polygon(vertices, fill=(255))
+
+        return mask_img
+
+    def _load_image_and_target(self, annotation):
+        filepath = annotation['image_path']
+        image = Image.open(filepath).convert('RGB')
+
+        labels = [shape['label'] for shape in annotation['shapes']]
+        labels = torch.Tensor([self._class_to_idx[label] for label in labels])
+        labels = labels.to(dtype=torch.int64)
+
+        shape_points = [shape['points'] for shape in annotation['shapes']]
+        xy_coords = [[tuple(p) for p in points] for points in shape_points]
+        mask_imgs = [self.create_polygon_mask(image.size, xy) for xy in xy_coords]
+        masks = Mask(
+            torch.concat([
+                Mask(transforms.PILToTensor()(mask_img), dtype=torch.bool)
+                for mask_img in mask_imgs
+            ]))
+
+        bboxes = BoundingBoxes(data=torchvision.ops.masks_to_boxes(masks),
+                               format='xyxy',
+                               canvas_size=image.size[::-1])
+
+        return image, {'masks': masks, 'boxes': bboxes, 'labels': labels}
