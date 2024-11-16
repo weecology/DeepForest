@@ -11,6 +11,7 @@ include deepforest/data/2019_YELL_2_528000_4978000_image_crop2.xml
 include deepforest/data/2019_YELL_2_528000_4978000_image_crop2.png
 include deepforest/data/AWPE*
 include deepforest/data/example.csv
+include deepforest/data/test_tiled.tif
 
 include LICENSE
 include dev_requirements.txt

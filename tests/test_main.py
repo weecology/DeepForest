@@ -269,12 +269,20 @@ def test_predict_tile_empty(raster_path):
     predictions = m.predict_tile(raster_path=raster_path, patch_size=300, patch_overlap=0)
     assert predictions is None
 
-def test_predict_tile(m, raster_path):
+@pytest.mark.parametrize("in_memory", [True, False])
+def test_predict_tile(m, raster_path, in_memory):
     m.create_model()
     m.config["train"]["fast_dev_run"] = False
     m.create_trainer()
+
+    if in_memory:
+        raster_path = raster_path
+    else:
+        raster_path = get_data("test_tiled.tif")
+
     prediction = m.predict_tile(raster_path=raster_path,
                                 patch_size=300,
+                                in_memory=in_memory,
                                 patch_overlap=0.1)
 
     assert isinstance(prediction, pd.DataFrame)
@@ -283,6 +291,12 @@ def test_predict_tile(m, raster_path):
     }
     assert not prediction.empty
 
+# test equivalence for in_memory=True and False
+def test_predict_tile_equivalence(m):
+    raster_path = get_data("test_tiled.tif")
+    in_memory_prediction = m.predict_tile(raster_path=raster_path, patch_size=300, patch_overlap=0, in_memory=True)
+    not_in_memory_prediction = m.predict_tile(raster_path=raster_path, patch_size=300, patch_overlap=0, in_memory=False)
+    assert in_memory_prediction.equals(not_in_memory_prediction)
 
 @pytest.mark.parametrize("patch_overlap", [0.1, 0])
 def test_predict_tile_from_array(m, patch_overlap, raster_path):
