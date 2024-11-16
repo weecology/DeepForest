@@ -23,6 +23,9 @@ def multi_class():
 
     return csv_file
 
+@pytest.fixture()
+def raster_path():
+    return get_data(path='OSBS_029.tif')
 
 @pytest.mark.parametrize("csv_file,label_dict", [(single_class(), {"Tree": 0}), (multi_class(), {"Alive": 0, "Dead": 1})])
 def test_tree_dataset(csv_file, label_dict):
@@ -181,3 +184,28 @@ def test_bounding_box_dataset():
 
     # Check the shape of the RGB tensor
     assert item.shape == (3, 224, 224)
+
+def test_raster_dataset():
+    """Test the RasterDataset class"""
+    from deepforest.dataset import RasterDataset
+    import torch
+    from torch.utils.data import DataLoader
+    
+    # Test initialization and context manager
+    ds = RasterDataset(get_data("test_tiled.tif"), patch_size=256, patch_overlap=0.1)
+    
+    # Test basic properties
+    assert hasattr(ds, 'windows')
+        
+    # Test first window
+    first_crop = ds[0]
+    assert isinstance(first_crop, torch.Tensor)
+    assert first_crop.dtype == torch.float32
+    assert first_crop.shape[0] == 3  # RGB channels first
+    assert 0 <= first_crop.min() <= first_crop.max() <= 1.0  # Check normalization
+        
+    # Test with DataLoader
+    dataloader = DataLoader(ds, batch_size=2, num_workers=0)
+    batch = next(iter(dataloader))
+    assert batch.shape[0] == 2  # Batch size
+    assert batch.shape[1] == 3  # Channels first
