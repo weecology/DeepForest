@@ -48,4 +48,4 @@ class Model(Model):
         # Returns a list equal to number of images with proper keys per image
         model_keys = list(predictions[1].keys())
         model_keys.sort()
-        assert model_keys == ['boxes', 'labels', 'scores', 'masks']
+        assert model_keys == ['boxes', 'masks', 'labels', 'scores']
