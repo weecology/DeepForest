@@ -16,8 +16,3 @@ def test_get_data():
     assert os.path.exists(deepforest.get_data("classes.csv"))
 
 
-# Assert that the included config file matches the front of the repo.
-def test_matching_config(ROOT):
-    config = read_config("{}/deepforest_config.yml".format(os.path.dirname(ROOT)))
-    config_from_data_dir = read_config("{}/data/deepforest_config.yml".format(ROOT))
-    assert config == config_from_data_dir

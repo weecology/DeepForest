@@ -4,7 +4,7 @@ repos:
   - id: yapf
     name: yapf
     entry: yapf
-    args: ['-i', '--style', '.style.yapf', '--recursive', 'deepforest/']
+    args: ['-i', '--style', '.style.yapf', '--recursive', 'src/deepforest/']
     language: system
     types: [python]
     pass_filenames: false
@@ -16,7 +16,7 @@ repos:
         entry: docformatter
         language: python
         types: [python]
-        args: ['--in-place', '--recursive','deepforest/']
+        args: ['--in-place', '--recursive','src/deepforest/']
         pass_filenames: false
         stages: [commit]
 
