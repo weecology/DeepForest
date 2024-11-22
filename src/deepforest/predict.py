@@ -212,6 +212,10 @@ def _predict_crop_model_(crop_model,
     Returns:
         The updated results dataframe with predicted labels and scores.
     """
+    if results.empty:
+        print("No predictions to run crop model on, returning empty dataframe")
+        return results
+
     bounding_box_dataset = dataset.BoundingBoxDataset(
         results,
         root_dir=os.path.dirname(raster_path),
