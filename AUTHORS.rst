@@ -26,6 +26,10 @@ Primary Authors
 
     @Mu-Magdy is an Author.
 
+* `Dingyi Fang <https://github.com/dingyif>`_
+
+    @dingyif is an Author.
+
 Other Contributors
 ==================
 
