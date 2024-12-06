@@ -401,7 +401,8 @@ def plot_annotations(annotations,
                      thickness=2,
                      basename=None,
                      root_dir=None,
-                     radius=3):
+                     radius=3,
+                     image=None):
     """Plot the prediction results.
 
     Args:
@@ -432,8 +433,9 @@ def plot_annotations(annotations,
     else:
         root_dir = annotations.root_dir
 
-    image_path = os.path.join(root_dir, annotations.image_path.unique()[0])
-    image = np.array(Image.open(image_path))
+    if image is None:
+        image_path = os.path.join(root_dir, annotations.image_path.unique()[0])
+        image = np.array(Image.open(image_path))
 
     # Plot the results following https://supervision.roboflow.com/annotators/
     fig, ax = plt.subplots()
@@ -468,7 +470,8 @@ def plot_results(results,
                  ground_truth_color=[0, 165, 255],
                  thickness=2,
                  basename=None,
-                 radius=3):
+                 radius=3,
+                 image=None):
     """Plot the prediction results.
 
     Args:
@@ -482,6 +485,7 @@ def plot_results(results,
         thickness: thickness of the rectangle border line in px
         basename: optional basename for the saved figure. If None (default), the basename will be extracted from the image path.
         radius: radius of the points in px
+        image: an optional numpy array of an image to annotate. If None (default), the image will be loaded from the results dataframe.
     Returns:
         None
     """
@@ -491,9 +495,10 @@ def plot_results(results,
     ground_truth_color_sv = __check_color__(ground_truth_color, num_labels)
 
     # Read images
-    root_dir = results.root_dir
-    image_path = os.path.join(root_dir, results.image_path.unique()[0])
-    image = np.array(Image.open(image_path))
+    if image is None:
+        root_dir = results.root_dir
+        image_path = os.path.join(root_dir, results.image_path.unique()[0])
+        image = np.array(Image.open(image_path))
 
     # Plot the results following https://supervision.roboflow.com/annotators/
     fig, ax = plt.subplots()
