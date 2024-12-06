@@ -231,7 +231,7 @@ def test_predict_image_fromarray(m):
         prediction = m.predict_image(image=image)
 
     assert isinstance(prediction, pd.DataFrame)
-    assert set(prediction.columns) == {"xmin", "ymin", "xmax", "ymax", "label", "score", "geometry"} 
+    assert set(prediction.columns) == {"xmin", "ymin", "xmax", "ymax", "label", "score", "geometry"}
     assert not hasattr(prediction, 'root_dir')
 
 def test_predict_big_file(m, tmpdir):
@@ -649,3 +649,28 @@ def test_predict_tile_with_crop_model(m, config):
         "xmin", "ymin", "xmax", "ymax", "label", "score", "cropmodel_label", "geometry",
         "cropmodel_score", "image_path"
     }
+
+
+def test_predict_tile_with_crop_model_empty():
+    """If the model return is empty, the crop model should return an empty dataframe"""
+    raster_path = get_data("SOAP_061.png")
+    m = main.deepforest()
+    patch_size = 400
+    patch_overlap = 0.05
+    iou_threshold = 0.15
+    mosaic = True
+    # Set up the crop model
+    crop_model = model.CropModel()
+
+    # Call the predict_tile method with the crop_model
+    m.config["train"]["fast_dev_run"] = False
+    m.create_trainer()
+    result = m.predict_tile(raster_path=raster_path,
+                            patch_size=patch_size,
+                            patch_overlap=patch_overlap,
+                            iou_threshold=iou_threshold,
+                            mosaic=mosaic,
+                            crop_model=crop_model)
+
+    # Assert the result
+    assert result is None
