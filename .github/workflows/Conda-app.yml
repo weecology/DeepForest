@@ -8,7 +8,7 @@ on:
 
 jobs:
   ci:
-    name: "CI setup"
+    name: CI setup
 
     strategy:
       fail-fast: false
@@ -19,25 +19,26 @@ jobs:
           - "3.10"
 
         os:
-          - "ubuntu-latest"
+          - "ubuntu-20.04" 
 
     runs-on: "${{ matrix.os }}"
 
-    # use bash everywhere
+    # Use bash everywhere
     defaults:
       run:
         shell: "bash -l {0}"
 
     steps:
-      - name: "Checkout code"
-        uses: "actions/checkout@v4"
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Install opencv dependencies
         run: |
           sudo apt-get update
+          sudo apt-get install -y software-properties-common
           sudo add-apt-repository ppa:ubuntu-x-swat/updates -y
           sudo apt-get update
-          sudo apt-get install -y libgl1-mesa-glx libegl1-mesa
+          sudo apt-get install -y libgl1-mesa-glx libegl1-mesa mesa-utils
 
       - name: Install Conda environment with Micromamba
         uses: mamba-org/setup-micromamba@v1
