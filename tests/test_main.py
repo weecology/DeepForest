@@ -322,6 +322,25 @@ def test_predict_tile_no_mosaic(m, raster_path):
     assert len(prediction[0]) == 2
     assert prediction[0][1].shape == (300, 300, 3)
 
+@pytest.mark.parametrize("verbose", [True, False])
+def test_predict_tile_verbose(m, raster_path, capsys, verbose):
+    m.config["train"]["fast_dev_run"] = False
+    m.create_trainer()
+    prediction = m.predict_tile(raster_path=raster_path,
+                                patch_size=300,
+                                patch_overlap=0,
+                                mosaic=True,
+                                verbose=verbose)
+    
+    # Check no output was printed
+    if not verbose:
+        captured = capsys.readouterr()
+        print(captured.out)
+        assert not captured.out
+    else:
+        captured = capsys.readouterr()
+        print(captured.out)
+        assert captured.out
 
 def test_evaluate(m, tmpdir):
     csv_file = get_data("OSBS_029.csv")
