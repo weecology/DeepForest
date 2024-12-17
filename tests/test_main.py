@@ -15,6 +15,8 @@ import albumentations as A
 from albumentations.pytorch import ToTensorV2
 
 from deepforest import main, get_data, dataset, model
+from deepforest.visualize import format_geometry
+
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import Callback
 from pytorch_lightning.loggers import TensorBoardLogger
@@ -163,6 +165,28 @@ def test_train_empty(m, tmpdir):
 
 
 def test_validation_step(m):
+    val_dataloader = m.val_dataloader()
+    batch = next(iter(val_dataloader))
+    m.predictions = []
+    val_loss = m.validation_step(batch, 0)
+    assert val_loss != 0
+
+def test_validation_step_empty():
+    """If the model returns an empty prediction, the metrics should not fail"""
+    m = main.deepforest()
+    m.config["validation"]["csv_file"] = get_data("example.csv")
+    m.config["validation"]["root_dir"] = os.path.dirname(get_data("example.csv"))
+    m.create_trainer()
+
+    val_dataloader = m.val_dataloader()
+    batch = next(iter(val_dataloader))
+    m.predictions = []
+    val_loss = m.validation_step(batch, 0)
+    assert len(m.predictions) == 1
+    assert m.predictions[0].xmin.isna().all()
+    assert m.iou_metric.compute()["iou"] == 0
+
+def test_validate(m):
     m.trainer = None
     # Turn off trainer to test copying on some linux devices.
     before = copy.deepcopy(m)
@@ -674,3 +698,107 @@ def test_predict_tile_with_crop_model_empty():
 
     # Assert the result
     assert result is None
+
+def test_evaluate_on_epoch_interval(m):
+    m.config["val_accuracy_interval"] = 1
+    m.config["train"]["epochs"] = 1
+    m.trainer.fit(m)
+    assert m.trainer.logged_metrics["box_precision"]
+    assert m.trainer.logged_metrics["box_recall"]
+
+def test_epoch_evaluation_end(m):
+    preds = [{
+        'boxes': torch.tensor([
+            [690.3572, 902.9113, 781.1031, 996.5151],
+            [998.1990, 655.7919, 172.4619, 321.8518]
+        ]),
+        'scores': torch.tensor([
+            0.6740, 0.6625
+        ]),
+        'labels': torch.tensor([
+            0, 0
+        ])
+    }]
+    targets = preds
+
+    m.iou_metric.update(preds, targets)
+    m.mAP_metric.update(preds, targets)
+
+    boxes = format_geometry(preds[0])
+    boxes["image_path"] = "test"
+    m.predictions = [boxes]
+    m.on_validation_epoch_end()
+
+def test_epoch_evaluation_end_empty(m):
+    """If the model returns an empty prediction, the metrics should not fail"""
+    preds = [{
+        'boxes': torch.zeros((1, 4)),
+        'scores': torch.zeros(1),
+        'labels': torch.zeros(1, dtype=torch.int64)
+    }]
+    targets = preds
+
+    m.iou_metric.update(preds, targets)
+    m.mAP_metric.update(preds, targets)
+
+    boxes = format_geometry(preds[0])
+    boxes["image_path"] = "test"
+    m.predictions = [boxes]
+    m.on_validation_epoch_end()
+
+def test_empty_frame_accuracy_with_predictions(m, tmpdir):
+    """Create a ground truth with empty frames, the accuracy should be 1 with a random model"""
+    # Create ground truth with empty frames
+    ground_df = pd.read_csv(get_data("testfile_deepforest.csv"))
+    # Set all xmin, ymin, xmax, ymax to 0
+    ground_df.loc[:, ["xmin", "ymin", "xmax", "ymax"]] = 0
+    ground_df.drop_duplicates(subset=["image_path"], keep="first", inplace=True)
+
+    # Save the ground truth to a temporary file
+    ground_df.to_csv(tmpdir.strpath + "/ground_truth.csv", index=False)
+    m.config["validation"]["csv_file"] = tmpdir.strpath + "/ground_truth.csv"
+    m.config["validation"]["root_dir"] = os.path.dirname(get_data("testfile_deepforest.csv"))
+
+    m.create_trainer()
+    results = m.trainer.validate(m)
+    assert results[0]["empty_frame_accuracy"] == 0
+
+def test_empty_frame_accuracy_without_predictions(tmpdir):
+    """Create a ground truth with empty frames, the accuracy should be 1 with a random model"""
+    m = main.deepforest()
+    # Create ground truth with empty frames
+    ground_df = pd.read_csv(get_data("testfile_deepforest.csv"))
+    # Set all xmin, ymin, xmax, ymax to 0
+    ground_df.loc[:, ["xmin", "ymin", "xmax", "ymax"]] = 0
+    ground_df.drop_duplicates(subset=["image_path"], keep="first", inplace=True)
+
+    # Save the ground truth to a temporary file
+    ground_df.to_csv(tmpdir.strpath + "/ground_truth.csv", index=False)
+    m.config["validation"]["csv_file"] = tmpdir.strpath + "/ground_truth.csv"
+    m.config["validation"]["root_dir"] = os.path.dirname(get_data("testfile_deepforest.csv"))
+
+    m.create_trainer()
+    results = m.trainer.validate(m)
+    assert results[0]["empty_frame_accuracy"] == 1
+
+def test_mulit_class_with_empty_frame_accuracy_without_predictions(two_class_m, tmpdir):
+    """Create a ground truth with empty frames, the accuracy should be 1 with a random model"""
+    # Create ground truth with empty frames
+    ground_df = pd.read_csv(get_data("testfile_deepforest.csv"))
+    # Set all xmin, ymin, xmax, ymax to 0
+    ground_df.loc[:, ["xmin", "ymin", "xmax", "ymax"]] = 0
+    ground_df.drop_duplicates(subset=["image_path"], keep="first", inplace=True)
+    ground_df.loc[:, "label"] = "Alive"
+
+    # Merge with a multi class ground truth
+    multi_class_df = pd.read_csv(get_data("testfile_multi.csv"))
+    ground_df = pd.concat([ground_df, multi_class_df])
+
+    # Save the ground truth to a temporary file
+    ground_df.to_csv(tmpdir.strpath + "/ground_truth.csv", index=False)
+    two_class_m.config["validation"]["csv_file"] = tmpdir.strpath + "/ground_truth.csv"
+    two_class_m.config["validation"]["root_dir"] = os.path.dirname(get_data("testfile_deepforest.csv"))
+
+    two_class_m.create_trainer()
+    results = two_class_m.trainer.validate(two_class_m)
+    assert results[0]["empty_frame_accuracy"] == 1
