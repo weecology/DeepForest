@@ -15,6 +15,8 @@ import albumentations as A
 from albumentations.pytorch import ToTensorV2
 
 from deepforest import main, get_data, dataset, model
+from deepforest.visualize import format_geometry
+
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import Callback
 from pytorch_lightning.loggers import TensorBoardLogger
@@ -165,6 +167,26 @@ def test_train_empty(m, tmpdir):
 
 
 def test_validation_step(m):
+    val_dataloader = m.val_dataloader()
+    batch = next(iter(val_dataloader))
+    m.predictions = []
+    val_loss = m.validation_step(batch, 0)
+    assert val_loss != 0
+
+def test_validation_step_empty():
+    """If the model returns an empty prediction, the metrics should not fail"""
+    m = main.deepforest()
+    m.config["validation"]["csv_file"] = get_data("example.csv")
+    m.config["validation"]["root_dir"] = os.path.dirname(get_data("example.csv"))
+    m.create_trainer()
+
+    val_dataloader = m.val_dataloader()
+    batch = next(iter(val_dataloader))
+    m.predictions = []
+    val_loss = m.validation_step(batch, 0)
+    assert len(m.predictions) == 0
+
+def test_validate(m):
     m.trainer = None
     # Turn off trainer to test copying on some linux devices.
     before = copy.deepcopy(m)
@@ -677,6 +699,7 @@ def test_predict_tile_with_crop_model_empty():
     # Assert the result
     assert result is None
 
+<<<<<<< HEAD
 
 # @pytest.mark.parametrize("batch_size", [1, 4, 8])
 # def test_batch_prediction(m, batch_size, raster_path):
@@ -779,3 +802,44 @@ def test_predict_tile_with_crop_model_empty():
 #             "xmin", "ymin", "xmax", "ymax", "label", "score", "geometry"
 #         }
 #         assert not batch_pred.empty
+=======
+def test_epoch_evaluation_end(m):
+    preds = [{
+        'boxes': torch.tensor([
+            [690.3572, 902.9113, 781.1031, 996.5151],
+            [998.1990, 655.7919, 172.4619, 321.8518]
+        ]),
+        'scores': torch.tensor([
+            0.6740, 0.6625
+        ]),
+        'labels': torch.tensor([
+            0, 0
+        ])
+    }]
+    targets = preds
+
+    m.iou_metric.update(preds, targets)
+    m.mAP_metric.update(preds, targets)
+
+    boxes = format_geometry(preds[0])
+    boxes["image_path"] = "test"
+    m.predictions = [boxes]
+    m.on_validation_epoch_end()
+
+def test_epoch_evaluation_end_empty(m):
+    """If the model returns an empty prediction, the metrics should not fail"""
+    preds = [{
+        'boxes': torch.zeros((1, 4)),
+        'scores': torch.zeros(1),
+        'labels': torch.zeros(1, dtype=torch.int64)
+    }]
+    targets = preds
+
+    m.iou_metric.update(preds, targets)
+    m.mAP_metric.update(preds, targets)
+
+    boxes = format_geometry(preds[0])
+    boxes["image_path"] = "test"
+    m.predictions = [boxes]
+    m.on_validation_epoch_end()
+>>>>>>> Work in progress to refactor evaluation epoch end with attention paid to empty frames
