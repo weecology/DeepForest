@@ -702,7 +702,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         self.predictions = []
 
     def on_validation_epoch_end(self):
-        """Compute metrics"""
+        """Compute metrics."""
 
         output = self.iou_metric.compute()
         try:
