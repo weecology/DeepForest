@@ -763,7 +763,43 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         for result in batch_results:
             boxes = visualize.format_boxes(result)
             results.append(boxes)
+        return results
 
+    def predict_batch(self, images, preprocess_fn=None):
+        """Predict a batch of images with the deepforest model.
+
+        Args:
+            images (torch.Tensor or np.ndarray): A batch of images with shape (B, C, H, W) or (B, H, W, C).
+            preprocess_fn (callable, optional): A function to preprocess images before prediction.
+                If None, assumes images are preprocessed.
+
+        Returns:
+            List[pd.DataFrame]: A list of dataframes with predictions for each image.
+        """
+
+        self.model.eval()
+
+        #conver to tensor if input is array
+        if isinstance(images, np.ndarray):
+            images = torch.tensor(images, device=self.device)
+
+        #check input format
+        if images.dim() == 4 and images.shape[-1] == 3:
+            #Convert channels_last (B, H, W, C) to channels_first (B, C, H, W)
+            images = images.permute(0, 3, 1, 2)
+
+        #appy preprocessing if available
+        if preprocess_fn:
+            images = preprocess_fn(images)
+
+        #using Pytorch Ligthning's predict_step
+        with torch.no_grad():
+            predictions = []
+            for idx, image in enumerate(images):
+                predictions = self.predict_step(image.unsqueeze(0), idx)
+                predictions.extend(predictions)
+        #convert predictions to dataframes
+        results = [pd.DataFrame(pred) for pred in predictions if pred is not None]
         return results
 
     def configure_optimizers(self):

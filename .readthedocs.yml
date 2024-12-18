@@ -11,4 +11,5 @@ python:
       path: .
 
 submodules:
-  include: all
+  fetch: true
+
