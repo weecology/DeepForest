@@ -173,7 +173,6 @@ def test_validation_step(m):
     val_loss = m.validation_step(batch, 0)
     assert val_loss != 0
 
-"
 def test_validation_step_empty():
     """If the model returns an empty prediction, the metrics should not fail"""
     m = main.deepforest()
@@ -186,7 +185,6 @@ def test_validation_step_empty():
     m.predictions = []
     val_loss = m.validation_step(batch, 0)
     assert len(m.predictions) == 0
-
     assert m.iou_metric.compute()["iou"] is None
 
 def test_validate(m):
