@@ -4,6 +4,7 @@ build:
   os: ubuntu-22.04
   tools:
     python: "3.12"
+
 python:
   install:
     - requirements: dev_requirements.txt
@@ -11,5 +12,5 @@ python:
       path: .
 
 submodules:
-  fetch: true
+  include: true  
 
