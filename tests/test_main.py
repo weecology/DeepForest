@@ -185,7 +185,7 @@ def test_validation_step_empty():
     m.predictions = []
     val_loss = m.validation_step(batch, 0)
     assert len(m.predictions) == 0
-    assert m.iou_metric.compute()["iou"] is None
+    assert torch.isnan(m.iou_metric.compute()["iou"])
 
 def test_validate(m):
     m.trainer = None
