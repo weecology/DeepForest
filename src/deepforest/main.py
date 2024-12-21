@@ -4,7 +4,6 @@ import os
 import typing
 import warnings
 
-import geopandas as gpd
 import numpy as np
 import pandas as pd
 import pytorch_lightning as pl
@@ -14,6 +13,8 @@ from PIL import Image
 from pytorch_lightning.callbacks import LearningRateMonitor
 from torch import optim
 from torchmetrics.detection import IntersectionOverUnion, MeanAveragePrecision
+from torchmetrics.classification import BinaryAccuracy
+
 from huggingface_hub import PyTorchModelHubMixin
 from deepforest import dataset, visualize, get_data, utilities, predict
 from deepforest import evaluate as evaluate_iou
@@ -96,6 +97,9 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         self.iou_metric = IntersectionOverUnion(
             class_metrics=True, iou_threshold=self.config["validation"]["iou_threshold"])
         self.mAP_metric = MeanAveragePrecision()
+
+        # Empty frame accuracy
+        self.empty_frame_accuracy = BinaryAccuracy()
 
         # Create a default trainer.
         self.create_trainer()
@@ -642,7 +646,6 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
         # allow for empty data if data augmentation is generated
         path, images, targets = batch
-
         loss_dict = self.model.forward(images, targets)
 
         # sum of regression and classification loss
@@ -665,7 +668,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             print("Empty batch encountered, skipping")
             return None
 
-        # Get loss from "train" mode, but don't allow optimization
+        # Get loss from "train" mode, but don't allow optimization. Torchvision has a 'train' mode that returns a loss and a 'eval' mode that returns predictions. The names are confusing, but this is the correct way to get the loss.
         self.model.train()
         with torch.no_grad():
             loss_dict = self.model.forward(images, targets)
@@ -674,6 +677,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         losses = sum([loss for loss in loss_dict.values()])
 
         self.model.eval()
+        # Can we avoid another forward pass here? https://discuss.pytorch.org/t/how-to-get-losses-and-predictions-at-the-same-time/167223
         preds = self.model.forward(images)
 
         # Calculate intersection-over-union
@@ -682,31 +686,103 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
         # Log loss
         for key, value in loss_dict.items():
-            self.log("val_{}".format(key), value, on_epoch=True)
+            try:
+                self.log("val_{}".format(key), value, on_epoch=True)
+            except:
+                pass
 
         for index, result in enumerate(preds):
             # Skip empty predictions
             if result["boxes"].shape[0] == 0:
-                continue
-            boxes = visualize.format_geometry(result)
-            boxes["image_path"] = path[index]
-            self.predictions.append(boxes)
+                self.predictions.append(
+                    pd.DataFrame(
+                        {
+                            "image_path": [path[index]],
+                            "xmin": [None],
+                            "ymin": [None],
+                            "xmax": [None],
+                            "ymax": [None],
+                            "label": [None],
+                            "score": [None]
+                        }
+                    )
+                )
+            else:
+                boxes = visualize.format_geometry(result)
+                boxes["image_path"] = path[index]
+                self.predictions.append(boxes)
 
         return losses
 
     def on_validation_epoch_start(self):
         self.predictions = []
 
-    def on_validation_epoch_end(self):
-        output = self.iou_metric.compute()
-        self.log_dict(output)
-        self.iou_metric.reset()
+    def calculate_empty_frame_accuracy(self, ground_df, predictions_df):
+        """Calculate accuracy for empty frames (frames with no objects).
 
+        Args:
+            ground_df (pd.DataFrame): Ground truth dataframe containing image paths and bounding boxes.
+                Must have columns 'image_path', 'xmin', 'ymin', 'xmax', 'ymax'.
+            predictions_df (pd.DataFrame): Model predictions dataframe containing image paths and predicted boxes.
+                Must have column 'image_path'.
+
+        Returns:
+            float: Accuracy score for empty frame detection. A score of 1.0 means the model correctly
+                identified all empty frames (no false positives), while 0.0 means it predicted objects
+                in all empty frames (all false positives).
+            None: If there are no empty frames, return None
+        """
+        # Find images that are marked as empty in ground truth (all coordinates are 0)
+        empty_images = ground_df.loc[
+            (ground_df.xmin == 0) & 
+            (ground_df.ymin == 0) & 
+            (ground_df.xmax == 0) & 
+            (ground_df.ymax == 0), 
+            "image_path"
+        ].unique()
+
+        if len(empty_images) == 0:
+            return None
+
+        # Get non-empty predictions for empty images
+        non_empty_predictions = predictions_df.loc[predictions_df.xmin.notnull()]
+        predictions_for_empty_images = non_empty_predictions.loc[non_empty_predictions.image_path.isin(empty_images)]
+
+        # Create prediction tensor - 1 if model predicted objects, 0 if predicted empty
+        predictions = torch.zeros(len(empty_images))
+        for index, image in enumerate(empty_images):
+            if len(predictions_for_empty_images.loc[predictions_for_empty_images.image_path == image]) > 0:
+                predictions[index] = 1
+
+        # Ground truth tensor - all zeros since these are empty frames
+        gt = torch.zeros(len(empty_images))
+        predictions = torch.tensor(predictions)
+
+        # Calculate accuracy using metric
+        self.empty_frame_accuracy.update(predictions, gt)
+        empty_accuracy = self.empty_frame_accuracy.compute()
+
+        return empty_accuracy
+
+    def on_validation_epoch_end(self):
+        """Compute metrics."""
+
+        output = self.iou_metric.compute()
+        try:
+            # This is a bug in lightning, it claims this is a warning but it is not. https://github.com/Lightning-AI/pytorch-lightning/pull/9733/files
+            self.log_dict(output)
+        except:
+            pass
+
+        self.iou_metric.reset()
         output = self.mAP_metric.compute()
 
         # Remove classes from output dict
         output = {key: value for key, value in output.items() if not key == "classes"}
-        self.log_dict(output)
+        try:
+            self.log_dict(output)
+        except:
+            pass
         self.mAP_metric.reset()
 
         if len(self.predictions) == 0:
@@ -720,8 +796,18 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             ground_df = utilities.read_file(self.config["validation"]["csv_file"])
             ground_df["label"] = ground_df.label.apply(lambda x: self.label_dict[x])
 
+            # If there are empty frames, evaluate empty frame accuracy separately
+            empty_accuracy = self.calculate_empty_frame_accuracy(ground_df, self.predictions_df)
+            
+            try:
+                self.log("empty_frame_accuracy", empty_accuracy)
+            except:
+                pass
+        else:      
+            empty_accuracy = None
+
             if self.predictions_df.empty:
-                warnings.warn("No predictions made, skipping evaluation")
+                warnings.warn("No predictions made, skipping detection evaluation")
                 geom_type = utilities.determine_geometry_type(ground_df)
                 if geom_type == "box":
                     result = {
@@ -738,23 +824,30 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                     savedir=None,
                     numeric_to_label_dict=self.numeric_to_label_dict)
 
+                if empty_accuracy is not None:
+                    results["empty_frame_accuracy"] = empty_accuracy
+
                 # Log each key value pair of the results dict
-                for key, value in results.items():
-                    if key in ["class_recall"]:
-                        for index, row in value.iterrows():
-                            self.log(
-                                "{}_Recall".format(
-                                    self.numeric_to_label_dict[row["label"]]),
-                                row["recall"])
-                            self.log(
-                                "{}_Precision".format(
-                                    self.numeric_to_label_dict[row["label"]]),
-                                row["precision"])
-                    else:
-                        try:
-                            self.log(key, value)
-                        except:
-                            pass
+                if not results["class_recall"] is None:
+                    for key, value in results.items():
+                        if key in ["class_recall"]:
+                            for index, row in value.iterrows():
+                                try:
+                                    self.log(
+                                        "{}_Recall".format(
+                                            self.numeric_to_label_dict[row["label"]]),
+                                        row["recall"])
+                                    self.log(
+                                        "{}_Precision".format(
+                                            self.numeric_to_label_dict[row["label"]]),
+                                        row["precision"])
+                                except:
+                                    pass
+                        else:
+                            try:
+                                self.log(key, value)
+                            except:
+                                pass
 
     def predict_step(self, batch, batch_idx):
         batch_results = self.model(batch)
