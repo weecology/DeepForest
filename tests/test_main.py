@@ -700,8 +700,6 @@ def test_predict_tile_with_crop_model_empty():
     # Assert the result
     assert result is None
 
-<<<<<<< HEAD
-
 # @pytest.mark.parametrize("batch_size", [1, 4, 8])
 # def test_batch_prediction(m, batch_size, raster_path):
 #    
@@ -803,7 +801,7 @@ def test_predict_tile_with_crop_model_empty():
 #             "xmin", "ymin", "xmax", "ymax", "label", "score", "geometry"
 #         }
 #         assert not batch_pred.empty
-=======
+
 def test_epoch_evaluation_end(m):
     preds = [{
         'boxes': torch.tensor([
@@ -843,4 +841,38 @@ def test_epoch_evaluation_end_empty(m):
     boxes["image_path"] = "test"
     m.predictions = [boxes]
     m.on_validation_epoch_end()
->>>>>>> Work in progress to refactor evaluation epoch end with attention paid to empty frames
+
+def test_empty_frame_accuracy_with_predictions(m, tmpdir):
+    """Create a ground truth with empty frames, the accuracy should be 1 with a random model"""
+    # Create ground truth with empty frames
+    ground_df = pd.read_csv(get_data("testfile_deepforest.csv"))
+    # Set all xmin, ymin, xmax, ymax to 0
+    ground_df.loc[:, ["xmin", "ymin", "xmax", "ymax"]] = 0
+    ground_df.drop_duplicates(subset=["image_path"], keep="first", inplace=True)
+    
+    # Save the ground truth to a temporary file
+    ground_df.to_csv(tmpdir.strpath + "/ground_truth.csv", index=False)
+    m.config["validation"]["csv_file"] = tmpdir.strpath + "/ground_truth.csv"
+    m.config["validation"]["root_dir"] = os.path.dirname(get_data("testfile_deepforest.csv"))
+
+    m.create_trainer()
+    results = m.trainer.validate(m)
+    assert results[0]["empty_frame_accuracy"] == 0
+
+def test_empty_frame_accuracy_without_predictions(tmpdir):
+    """Create a ground truth with empty frames, the accuracy should be 1 with a random model"""
+    m = main.deepforest()
+    # Create ground truth with empty frames
+    ground_df = pd.read_csv(get_data("testfile_deepforest.csv"))
+    # Set all xmin, ymin, xmax, ymax to 0
+    ground_df.loc[:, ["xmin", "ymin", "xmax", "ymax"]] = 0
+    ground_df.drop_duplicates(subset=["image_path"], keep="first", inplace=True)
+    
+    # Save the ground truth to a temporary file
+    ground_df.to_csv(tmpdir.strpath + "/ground_truth.csv", index=False)
+    m.config["validation"]["csv_file"] = tmpdir.strpath + "/ground_truth.csv"
+    m.config["validation"]["root_dir"] = os.path.dirname(get_data("testfile_deepforest.csv"))
+
+    m.create_trainer()
+    results = m.trainer.validate(m)
+    assert results[0]["empty_frame_accuracy"] == 1
