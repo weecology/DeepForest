@@ -803,9 +803,9 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                 self.log("empty_frame_accuracy", empty_accuracy)
             except:
                 pass
-        else:      
-            empty_accuracy = None
-
+            
+            # Remove empty predictions from the rest of the evaluation
+            self.predictions_df = self.predictions_df.loc[self.predictions_df.xmin.notnull()]
             if self.predictions_df.empty:
                 warnings.warn("No predictions made, skipping detection evaluation")
                 geom_type = utilities.determine_geometry_type(ground_df)
