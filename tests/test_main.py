@@ -876,3 +876,25 @@ def test_empty_frame_accuracy_without_predictions(tmpdir):
     m.create_trainer()
     results = m.trainer.validate(m)
     assert results[0]["empty_frame_accuracy"] == 1
+
+def test_mulit_class_with_empty_frame_accuracy_without_predictions(two_class_m, tmpdir):
+    """Create a ground truth with empty frames, the accuracy should be 1 with a random model"""
+    # Create ground truth with empty frames
+    ground_df = pd.read_csv(get_data("testfile_deepforest.csv"))
+    # Set all xmin, ymin, xmax, ymax to 0
+    ground_df.loc[:, ["xmin", "ymin", "xmax", "ymax"]] = 0
+    ground_df.drop_duplicates(subset=["image_path"], keep="first", inplace=True)
+    ground_df.loc[:, "label"] = "Alive"
+
+    # Merge with a multi class ground truth
+    multi_class_df = pd.read_csv(get_data("testfile_multi.csv"))
+    ground_df = pd.concat([ground_df, multi_class_df])
+
+    # Save the ground truth to a temporary file
+    ground_df.to_csv(tmpdir.strpath + "/ground_truth.csv", index=False)
+    two_class_m.config["validation"]["csv_file"] = tmpdir.strpath + "/ground_truth.csv"
+    two_class_m.config["validation"]["root_dir"] = os.path.dirname(get_data("testfile_deepforest.csv"))
+
+    two_class_m.create_trainer()
+    results = two_class_m.trainer.validate(two_class_m)
+    assert results[0]["empty_frame_accuracy"] == 1
