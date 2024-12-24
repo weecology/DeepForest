@@ -420,7 +420,8 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             result = utilities.read_file(result, root_dir=root_dir)
 
         return result
-
+    
+    label_dict: dict = {"Tree": 0}
     def predict_file(self, csv_file, root_dir, savedir=None, color=None, thickness=1):
         """Create a dataset and predict entire annotation file Csv file format
         is .csv file with the columns "image_path", "xmin","ymin","xmax","ymax"
@@ -442,6 +443,10 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         """
 
         df = utilities.read_file(csv_file)
+        
+        # Map cropmodel_label to string labels using label_dict
+        df['label'] = df['label'].map({v: k for k, v in self.label_dict.items()})
+
         ds = dataset.TreeDataset(csv_file=csv_file,
                                  root_dir=root_dir,
                                  transforms=None,
