@@ -28,6 +28,10 @@ There is an additional difference between ecological object detection methods li
 
 DeepForest uses the [hungarian matching algorithm](https://thinkautonomous.medium.com/computer-vision-for-tracking-8220759eee85) to assign predictions to ground truth based on maximum IoU overlap. This is slow compared to the methods above, and so isn't a good choice for running hundreds of times during model training see config["validation"]["val_accuracy_interval"] for setting the frequency of the evaluate callback for this metric.
 
+### Empty Frame Accuracy
+
+DeepForest allows the user to pass empty frames to evaluation by setting xmin, ymin, xmax, ymax to 0. This is useful for evaluating models on data that has empty frames. The empty frame accuracy is the proportion of empty frames that are contain no predictions. The 'label' column in this case is ignored, but must be one of the labels in the model to be included in the evaluation.
+
 # Calculating Evaluation Metrics 
 
 ## Torchmetrics and loss scores
