@@ -420,8 +420,6 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             result = utilities.read_file(result, root_dir=root_dir)
 
         return result
-    
-    label_dict: dict = {"Tree": 0}
     def predict_file(self, csv_file, root_dir, savedir=None, color=None, thickness=1):
         """Create a dataset and predict entire annotation file Csv file format
         is .csv file with the columns "image_path", "xmin","ymin","xmax","ymax"

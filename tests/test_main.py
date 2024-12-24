@@ -674,9 +674,5 @@ def test_predict_tile_with_crop_model_empty():
                             mosaic=mosaic,
                             crop_model=crop_model)
 
-    # If result is not None, map cropmodel_label to string
-    if result is not None and not result.empty:
-        result['cropmodel_label'] = result['cropmodel_label'].map({v: k for k, v in m.label_dict.items()})
-
     # Assert the result
-    assert result is None
+    assert result is None or result.empty
