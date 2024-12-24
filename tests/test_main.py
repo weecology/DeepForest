@@ -649,7 +649,7 @@ def test_predict_tile_with_crop_model(m, config):
         "xmin", "ymin", "xmax", "ymax", "label", "score", "cropmodel_label", "geometry",
         "cropmodel_score", "image_path"
     }
-
+    
 def test_predict_tile_with_crop_model_empty():
     """If the model return is empty, the crop model should return an empty dataframe"""
     raster_path = get_data("SOAP_061.png")
@@ -658,10 +658,8 @@ def test_predict_tile_with_crop_model_empty():
     patch_overlap = 0.05
     iou_threshold = 0.15
     mosaic = True
+    # Set up the crop model
     crop_model = model.CropModel()
-
-    # Configure the label dictionary
-    m.label_dict = {"Tree": 0, "Bush": 1}
 
     # Call the predict_tile method with the crop_model
     m.config["train"]["fast_dev_run"] = False
@@ -673,8 +671,5 @@ def test_predict_tile_with_crop_model_empty():
                             mosaic=mosaic,
                             crop_model=crop_model)
 
-    # If result is not None, map cropmodel_label to string
-    if result is not None and not result.empty:
-        result['cropmodel_label'] = result['cropmodel_label'].map({v: k for k, v in m.label_dict.items()})
-
+    # Assert the result
     assert result is None
