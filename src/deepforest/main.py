@@ -816,6 +816,13 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                         "class_recall": pd.DataFrame()
                     }
             else:
+                # Remove empty ground truth
+                ground_df = ground_df.loc[~ground_df.xmin==0]
+                if ground_df.empty:
+                    results = {}
+                    results["empty_frame_accuracy"] = empty_accuracy
+                    return results
+                
                 results = evaluate_iou.__evaluate_wrapper__(
                     predictions=self.predictions_df,
                     ground_df=ground_df,

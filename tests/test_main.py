@@ -184,7 +184,8 @@ def test_validation_step_empty():
     batch = next(iter(val_dataloader))
     m.predictions = []
     val_loss = m.validation_step(batch, 0)
-    assert len(m.predictions) == 0
+    assert len(m.predictions) == 1
+    assert m.predictions[0].xmin.isna().all()
     assert m.iou_metric.compute()["iou"] == 0
 
 def test_validate(m):
