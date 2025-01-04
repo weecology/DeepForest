@@ -818,7 +818,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                     }
             else:
                 # Remove empty ground truth
-                ground_df = ground_df.loc[~ground_df.xmin==0]
+                ground_df = ground_df.loc[~(ground_df.xmin==0)]
                 if ground_df.empty:
                     results = {}
                     results["empty_frame_accuracy"] = empty_accuracy
