@@ -680,9 +680,7 @@ def test_predict_tile_with_crop_model_empty():
 
 # @pytest.mark.parametrize("batch_size", [1, 4, 8])
 # def test_batch_prediction(m, batch_size, raster_path):
-#     """
-#     Test batch prediction using a DataLoader.
-#     """
+#    
 #     # Prepare input data
 #     tile = np.array(Image.open(raster_path))
 #     ds = dataset.TileDataset(tile=tile, patch_overlap=0.1, patch_size=100)
@@ -704,9 +702,7 @@ def test_predict_tile_with_crop_model_empty():
 
 # @pytest.mark.parametrize("batch_size", [1, 4])
 # def test_batch_training(m, batch_size, tmpdir):
-#     """
-#     Test batch training with a DataLoader.
-#     """
+#     
 #     # Generate synthetic training data
 #     csv_file = get_data("example.csv")
 #     root_dir = os.path.dirname(csv_file)
@@ -727,9 +723,7 @@ def test_predict_tile_with_crop_model_empty():
 
 # @pytest.mark.parametrize("batch_size", [2, 4])
 # def test_batch_data_augmentation(m, batch_size, raster_path):
-#     """
-#     Test batch prediction with data augmentation.
-#     """
+#     
 #     tile = np.array(Image.open(raster_path))
 #     ds = dataset.TileDataset(tile=tile, patch_overlap=0.1, patch_size=100, augment=True)
 #     dl = DataLoader(ds, batch_size=batch_size)
@@ -747,9 +741,7 @@ def test_predict_tile_with_crop_model_empty():
 #         }
 
 # def test_batch_inference_consistency(m, raster_path):
-#     """
-#     Test that batch inference produces consistent results with single image predictions.
-#     """
+#     
 #     tile = np.array(Image.open(raster_path))
 #     ds = dataset.TileDataset(tile=tile, patch_overlap=0.1, patch_size=100)
 #     dl = DataLoader(ds, batch_size=4)
@@ -770,9 +762,7 @@ def test_predict_tile_with_crop_model_empty():
 #     pd.testing.assert_frame_equal(batch_df, single_df)
 
 # def test_large_batch_handling(m, raster_path):
-#     """
-#     Test model's ability to handle large batch sizes.
-#     """
+#    
 #     tile = np.array(Image.open(raster_path))
 #     ds = dataset.TileDataset(tile=tile, patch_overlap=0.1, patch_size=100)
 #     dl = DataLoader(ds, batch_size=16)
