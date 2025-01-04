@@ -799,10 +799,11 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             # If there are empty frames, evaluate empty frame accuracy separately
             empty_accuracy = self.calculate_empty_frame_accuracy(ground_df, self.predictions_df)
             
-            try:
-                self.log("empty_frame_accuracy", empty_accuracy)
-            except:
-                pass
+            if empty_accuracy is not None:
+                try:
+                    self.log("empty_frame_accuracy", empty_accuracy)
+                except:
+                        pass
             
             # Remove empty predictions from the rest of the evaluation
             self.predictions_df = self.predictions_df.loc[self.predictions_df.xmin.notnull()]
