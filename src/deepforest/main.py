@@ -695,18 +695,15 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             # Skip empty predictions
             if result["boxes"].shape[0] == 0:
                 self.predictions.append(
-                    pd.DataFrame(
-                        {
-                            "image_path": [path[index]],
-                            "xmin": [None],
-                            "ymin": [None],
-                            "xmax": [None],
-                            "ymax": [None],
-                            "label": [None],
-                            "score": [None]
-                        }
-                    )
-                )
+                    pd.DataFrame({
+                        "image_path": [path[index]],
+                        "xmin": [None],
+                        "ymin": [None],
+                        "xmax": [None],
+                        "ymax": [None],
+                        "label": [None],
+                        "score": [None]
+                    }))
             else:
                 boxes = visualize.format_geometry(result)
                 boxes["image_path"] = path[index]
@@ -733,25 +730,23 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             None: If there are no empty frames, return None
         """
         # Find images that are marked as empty in ground truth (all coordinates are 0)
-        empty_images = ground_df.loc[
-            (ground_df.xmin == 0) & 
-            (ground_df.ymin == 0) & 
-            (ground_df.xmax == 0) & 
-            (ground_df.ymax == 0), 
-            "image_path"
-        ].unique()
+        empty_images = ground_df.loc[(ground_df.xmin == 0) & (ground_df.ymin == 0) &
+                                     (ground_df.xmax == 0) & (ground_df.ymax == 0),
+                                     "image_path"].unique()
 
         if len(empty_images) == 0:
             return None
 
         # Get non-empty predictions for empty images
         non_empty_predictions = predictions_df.loc[predictions_df.xmin.notnull()]
-        predictions_for_empty_images = non_empty_predictions.loc[non_empty_predictions.image_path.isin(empty_images)]
+        predictions_for_empty_images = non_empty_predictions.loc[
+            non_empty_predictions.image_path.isin(empty_images)]
 
         # Create prediction tensor - 1 if model predicted objects, 0 if predicted empty
         predictions = torch.zeros(len(empty_images))
         for index, image in enumerate(empty_images):
-            if len(predictions_for_empty_images.loc[predictions_for_empty_images.image_path == image]) > 0:
+            if len(predictions_for_empty_images.loc[
+                    predictions_for_empty_images.image_path == image]) > 0:
                 predictions[index] = 1
 
         # Ground truth tensor - all zeros since these are empty frames
@@ -797,16 +792,18 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             ground_df["label"] = ground_df.label.apply(lambda x: self.label_dict[x])
 
             # If there are empty frames, evaluate empty frame accuracy separately
-            empty_accuracy = self.calculate_empty_frame_accuracy(ground_df, self.predictions_df)
-            
+            empty_accuracy = self.calculate_empty_frame_accuracy(
+                ground_df, self.predictions_df)
+
             if empty_accuracy is not None:
                 try:
                     self.log("empty_frame_accuracy", empty_accuracy)
                 except:
-                        pass
-            
+                    pass
+
             # Remove empty predictions from the rest of the evaluation
-            self.predictions_df = self.predictions_df.loc[self.predictions_df.xmin.notnull()]
+            self.predictions_df = self.predictions_df.loc[
+                self.predictions_df.xmin.notnull()]
             if self.predictions_df.empty:
                 warnings.warn("No predictions made, skipping detection evaluation")
                 geom_type = utilities.determine_geometry_type(ground_df)
@@ -818,12 +815,12 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                     }
             else:
                 # Remove empty ground truth
-                ground_df = ground_df.loc[~(ground_df.xmin==0)]
+                ground_df = ground_df.loc[~(ground_df.xmin == 0)]
                 if ground_df.empty:
                     results = {}
                     results["empty_frame_accuracy"] = empty_accuracy
                     return results
-                
+
                 results = evaluate_iou.__evaluate_wrapper__(
                     predictions=self.predictions_df,
                     ground_df=ground_df,
