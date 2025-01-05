@@ -24,7 +24,7 @@ from huggingface_hub import PyTorchModelHubMixin
 
 class deepforest(pl.LightningModule, PyTorchModelHubMixin):
     """Class for training and predicting tree crowns in RGB images.
-    
+
     Args:
         num_classes (int): number of classes in the model
         config_file (str): path to deepforest config file
