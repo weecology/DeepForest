@@ -28,12 +28,12 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
     Args:
         num_classes (int): number of classes in the model
         config_file (str): path to deepforest config file
-        model (model.Model()): a deepforest model object, see model.Model().
-        config_args (dict): a dictionary of key->value to update
-        config file at run time. e.g. {"batch_size":10}
-        This is useful for iterating over arguments during model testing.
-            existing_train_dataloader: a Pytorch dataloader that yields a tuple path, images, targets
-            existing_val_dataloader: a Pytorch dataloader that yields a tuple path, images, targets
+        model (model.Model()): a deepforest model object, see model.Model()
+        config_args (dict): a dictionary of key->value to update config file at run time. 
+            e.g. {"batch_size":10}. This is useful for iterating over arguments during model testing.
+        existing_train_dataloader: a Pytorch dataloader that yields a tuple path, images, targets
+        existing_val_dataloader: a Pytorch dataloader that yields a tuple path, images, targets
+
     Returns:
         self: a deepforest pytorch lightning module
     """
