@@ -36,6 +36,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
     Returns:
         self: a deepforest pytorch lightning module
+
     """
 
     def __init__(self,
@@ -142,6 +143,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
         Returns:
             None
+
         """
         # Load the model using from_pretrained
         self.create_model()
@@ -192,12 +194,9 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         models/, as is a subclass of model.Model(). The config args in the
         .yaml are specified.
 
-        >>> # retinanet:
-        >>> #   ms_thresh: 0.1
-        >>> #   score_thresh: 0.2
-        >>> # RCNN:
-        >>> #   nms_thresh: 0.1
-        >>> # etc.
+        Returns:
+            None
+
         """
         if self.model is None:
             model_name = importlib.import_module("deepforest.models.{}".format(
@@ -208,7 +207,13 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         """Create a pytorch lightning training by reading config files.
 
         Args:
+            logger: A pytorch lightning logger
             callbacks (list): a list of pytorch-lightning callback classes
+            **kwargs: Additional arguments to pass to the trainer
+
+        Returns:
+            None
+
         """
         # If val data is passed, monitor learning rate and setup classification metrics
         if not self.config["validation"]["csv_file"] is None:
@@ -357,18 +362,20 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                       thickness: int = 1):
         """Predict a single image with a deepforest model.
 
-        Deprecation warning: The 'return_plot', and related 'color' and 'thickness' arguments are deprecated and will be removed in 2.0. Use visualize.plot_results on the result instead.
+        Deprecation warning: The 'return_plot', and related 'color' and 'thickness' arguments 
+        are deprecated and will be removed in 2.0. Use visualize.plot_results on the result instead.
 
         Args:
             image: a float32 numpy array of a RGB with channels last format
             path: optional path to read image from disk instead of passing image arg
-            (deprecated) return_plot: return a plot of the image with predictions overlaid
-            (deprecated) color: color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255)
-            (deprectaed) thickness: thickness of the rectangle border line in px
+            return_plot: return a plot of the image with predictions overlaid (deprecated)
+            color: color of the bounding box as a tuple of BGR color (deprecated)
+            thickness: thickness of the rectangle border line in px (deprecated)
 
         Returns:
             result: A pandas dataframe of predictions (Default)
             img: The input with predictions overlaid (Optional)
+
         """
 
         # Ensure we are in eval mode
@@ -490,41 +497,24 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
         Args:
             raster_path: Path to image on disk
-            image (array): Numpy image array in BGR channel order
-                following openCV convention
-            patch_size: patch size for each window.
-            patch_overlap: patch overlap among windows.
-            iou_threshold: Minimum iou overlap among predictions between
-                windows to be suppressed.
-                Lower values suppress more boxes at edges.
-            in_memory: If true, the entire dataset is loaded into memory, which increases speed. This is useful for small datasets, but not recommended for very large datasets.
+            image (array): Numpy image array in BGR channel order following openCV convention
+            patch_size: patch size for each window
+            patch_overlap: patch overlap among windows
+            iou_threshold: Minimum iou overlap among predictions between windows to be suppressed
+            in_memory: If true, the entire dataset is loaded into memory
             mosaic: Return a single prediction dataframe (True) or a tuple of image crops and predictions (False)
             sigma: variance of Gaussian function used in Gaussian Soft NMS
             thresh: the score thresh used to filter bboxes after soft-nms performed
-            cropModel: a deepforest.model.CropModel object to predict on crops
+            crop_model: a deepforest.model.CropModel object to predict on crops
             crop_transform: a torchvision.transforms object to apply to crops
             crop_augment: a boolean to apply augmentations to crops
-            (deprecated) return_plot: return a plot of the image with predictions overlaid
-            (deprecated) color: color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255)
-            (deprecated) thickness: thickness of the rectangle border line in px
-
-        Deprecated Args:
-            - return_plot: Deprecated in favor of using `visualize.plot_results` for
-              rendering predictions. Will be removed in version 2.0.
-            - color: Deprecated bounding box color for visualizations.
-            - thickness: Deprecated bounding box thickness for visualizations.
-
-        Raises:
-            - ValueError: If `raster_path` is None when `in_memory=False`.
-            - ValueError: If `workers` is greater than 0 when `in_memory=False`. Multiprocessing is not supported when using out-of-memory datasets, rasterio is not threadsafe.
+            return_plot: return a plot of the image with predictions overlaid (deprecated)
+            color: color of the bounding box as a tuple of BGR color (deprecated)
+            thickness: thickness of the rectangle border line in px (deprecated)
 
         Returns:
-            - If `return_plot` is True, returns an image with predictions overlaid (deprecated).
-            - If `mosaic` is True, returns a Pandas DataFrame containing the predicted
-              bounding boxes, scores, and labels.
-            - If `mosaic` is False, returns a list of tuples where each tuple contains
-              a DataFrame of predictions and its corresponding image crop.
-            - Returns None if no predictions are made.
+            pd.DataFrame or tuple: Predictions dataframe or (predictions, crops) tuple
+
         """
         self.model.eval()
         self.model.nms_thresh = self.config["nms_thresh"]
@@ -726,10 +716,10 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                 Must have column 'image_path'.
 
         Returns:
-            float: Accuracy score for empty frame detection. A score of 1.0 means the model correctly
+            float or None: Accuracy score for empty frame detection. A score of 1.0 means the model correctly
                 identified all empty frames (no false positives), while 0.0 means it predicted objects
-                in all empty frames (all false positives).
-            None: If there are no empty frames, return None
+                in all empty frames (all false positives). Returns None if there are no empty frames.
+
         """
         # Find images that are marked as empty in ground truth (all coordinates are 0)
         empty_images = ground_df.loc[(ground_df.xmin == 0) & (ground_df.ymin == 0) &
@@ -959,16 +949,17 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             return optimizer
 
     def evaluate(self, csv_file, root_dir, iou_threshold=None, savedir=None):
-        """Compute intersection-over-union and precision/recall for a given
-        iou_threshold.
+        """Compute intersection-over-union and precision/recall for a given iou_threshold.
 
         Args:
-            csv_file: location of a csv file with columns "name","xmin","ymin","xmax","ymax","label", each box in a row
-            root_dir: location of files in the dataframe 'name' column.
-            iou_threshold: float [0,1] intersection-over-union union between annotation and prediction to be scored true positive
+            csv_file: location of a csv file with columns "name","xmin","ymin","xmax","ymax","label"
+            root_dir: location of files in the dataframe 'name' column
+            iou_threshold: float [0,1] intersection-over-union threshold for true positive
             savedir: location to save images with bounding boxes
+
         Returns:
-            results: dict of ("results", "precision", "recall") for a given threshold
+            dict: Results dictionary containing precision, recall and other metrics
+
         """
         ground_df = utilities.read_file(csv_file)
         ground_df["label"] = ground_df.label.apply(lambda x: self.label_dict[x])
