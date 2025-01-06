@@ -19,6 +19,7 @@ from deepforest import dataset, visualize, get_data, utilities, predict
 from deepforest import evaluate as evaluate_iou
 
 from huggingface_hub import PyTorchModelHubMixin
+from pytorch_lightning.callbacks.progress.tqdm_progress import TQDMProgressBar
 
 
 class deepforest(pl.LightningModule, PyTorchModelHubMixin):
@@ -561,10 +562,12 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             ds = dataset.RasterDataset(raster_path=raster_path,
                                        patch_overlap=patch_overlap,
                                        patch_size=patch_size)
-        
+
         if not verbose:
             self.create_trainer(enable_progress_bar=False)
-        
+            # If <pytorch_lightning.callbacks.progress.tqdm_progress.TQDMProgressBar> is used, disable it
+            if isinstance(self.trainer.callbacks[0], TQDMProgressBar):
+                self.trainer.callbacks = self.trainer.callbacks[1:]
         batched_results = self.trainer.predict(self, self.predict_dataloader(ds))
 
         # Flatten list from batched prediction
