@@ -36,7 +36,6 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
     Returns:
         self: a deepforest pytorch lightning module
-
     """
 
     def __init__(self,
@@ -143,7 +142,6 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
         Returns:
             None
-
         """
         # Load the model using from_pretrained
         self.create_model()
@@ -196,7 +194,6 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
         Returns:
             None
-
         """
         if self.model is None:
             model_name = importlib.import_module("deepforest.models.{}".format(
@@ -213,7 +210,6 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
         Returns:
             None
-
         """
         # If val data is passed, monitor learning rate and setup classification metrics
         if not self.config["validation"]["csv_file"] is None:
@@ -362,7 +358,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                       thickness: int = 1):
         """Predict a single image with a deepforest model.
 
-        Deprecation warning: The 'return_plot', and related 'color' and 'thickness' arguments 
+        Deprecation warning: The 'return_plot', and related 'color' and 'thickness' arguments
         are deprecated and will be removed in 2.0. Use visualize.plot_results on the result instead.
 
         Args:
@@ -375,7 +371,6 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         Returns:
             result: A pandas dataframe of predictions (Default)
             img: The input with predictions overlaid (Optional)
-
         """
 
         # Ensure we are in eval mode
@@ -514,7 +509,6 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
         Returns:
             pd.DataFrame or tuple: Predictions dataframe or (predictions, crops) tuple
-
         """
         self.model.eval()
         self.model.nms_thresh = self.config["nms_thresh"]
@@ -719,7 +713,6 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             float or None: Accuracy score for empty frame detection. A score of 1.0 means the model correctly
                 identified all empty frames (no false positives), while 0.0 means it predicted objects
                 in all empty frames (all false positives). Returns None if there are no empty frames.
-
         """
         # Find images that are marked as empty in ground truth (all coordinates are 0)
         empty_images = ground_df.loc[(ground_df.xmin == 0) & (ground_df.ymin == 0) &
@@ -949,7 +942,8 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             return optimizer
 
     def evaluate(self, csv_file, root_dir, iou_threshold=None, savedir=None):
-        """Compute intersection-over-union and precision/recall for a given iou_threshold.
+        """Compute intersection-over-union and precision/recall for a given
+        iou_threshold.
 
         Args:
             csv_file: location of a csv file with columns "name","xmin","ymin","xmax","ymax","label"
@@ -959,7 +953,6 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
         Returns:
             dict: Results dictionary containing precision, recall and other metrics
-
         """
         ground_df = utilities.read_file(csv_file)
         ground_df["label"] = ground_df.label.apply(lambda x: self.label_dict[x])
