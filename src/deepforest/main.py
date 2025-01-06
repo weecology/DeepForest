@@ -665,7 +665,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             print("Empty batch encountered, skipping")
             return None
 
-        # Get loss from "train" mode, but don't allow optimization. Torchvision has a 'train' mode that returns a loss and a 'eval' mode that returns predictions. The names are confusing, but this is the correct way to get the loss.
+        # Get loss from "train" mode, but don't allow optimization
         self.model.train()
         with torch.no_grad():
             loss_dict = self.model.forward(images, targets)
@@ -674,7 +674,6 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         losses = sum([loss for loss in loss_dict.values()])
 
         self.model.eval()
-        # Can we avoid another forward pass here? https://discuss.pytorch.org/t/how-to-get-losses-and-predictions-at-the-same-time/167223
         preds = self.model.forward(images)
 
         # Calculate intersection-over-union
@@ -683,10 +682,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
         # Log loss
         for key, value in loss_dict.items():
-            try:
-                self.log("val_{}".format(key), value, on_epoch=True)
-            except:
-                pass
+            self.log("val_{}".format(key), value, on_epoch=True)
 
         for index, result in enumerate(preds):
             # Skip empty predictions
@@ -702,24 +698,15 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         self.predictions = []
 
     def on_validation_epoch_end(self):
-        """Compute metrics"""
-
         output = self.iou_metric.compute()
-        try:
-            # This is a bug in lightning, it claims this is a warning but it is not. https://github.com/Lightning-AI/pytorch-lightning/pull/9733/files
-            self.log_dict(output)
-        except:
-            pass
-
+        self.log_dict(output)
         self.iou_metric.reset()
+
         output = self.mAP_metric.compute()
 
         # Remove classes from output dict
         output = {key: value for key, value in output.items() if not key == "classes"}
-        try:
-            self.log_dict(output)
-        except:
-            pass
+        self.log_dict(output)
         self.mAP_metric.reset()
 
         if len(self.predictions) == 0:
@@ -752,26 +739,22 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                     numeric_to_label_dict=self.numeric_to_label_dict)
 
                 # Log each key value pair of the results dict
-                if not results["class_recall"] is None:
-                    for key, value in results.items():
-                        if key in ["class_recall"]:
-                            for index, row in value.iterrows():
-                                try:
-                                    self.log(
-                                        "{}_Recall".format(
-                                            self.numeric_to_label_dict[row["label"]]),
-                                        row["recall"])
-                                    self.log(
-                                        "{}_Precision".format(
-                                            self.numeric_to_label_dict[row["label"]]),
-                                        row["precision"])
-                                except:
-                                    pass
-                        else:
-                            try:
-                                self.log(key, value)
-                            except:
-                                pass
+                for key, value in results.items():
+                    if key in ["class_recall"]:
+                        for index, row in value.iterrows():
+                            self.log(
+                                "{}_Recall".format(
+                                    self.numeric_to_label_dict[row["label"]]),
+                                row["recall"])
+                            self.log(
+                                "{}_Precision".format(
+                                    self.numeric_to_label_dict[row["label"]]),
+                                row["precision"])
+                    else:
+                        try:
+                            self.log(key, value)
+                        except:
+                            pass
 
     def predict_step(self, batch, batch_idx):
         batch_results = self.model(batch)
