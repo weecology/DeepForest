@@ -566,8 +566,9 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         if not verbose:
             self.create_trainer(enable_progress_bar=False)
             # If <pytorch_lightning.callbacks.progress.tqdm_progress.TQDMProgressBar> is used, disable it
-            if isinstance(self.trainer.callbacks[0], TQDMProgressBar):
-                self.trainer.callbacks = self.trainer.callbacks[1:]
+            for callback in self.trainer.callbacks:
+                if isinstance(callback, TQDMProgressBar):
+                    callback.disable()
         batched_results = self.trainer.predict(self, self.predict_dataloader(ds))
 
         # Flatten list from batched prediction
