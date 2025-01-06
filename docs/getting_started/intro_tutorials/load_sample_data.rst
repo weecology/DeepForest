@@ -1,4 +1,4 @@
-How do I use the package Sample data?
+How do I use the package sample data?
 =====================================
 
 Sample data

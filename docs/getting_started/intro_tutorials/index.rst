@@ -12,7 +12,7 @@ Getting started tutorials
 .. toctree::
     :maxdepth: 1
 
-    01_load_sample_data
     02_model_loader.md
     03_use_pretrained_model
     04_predict_large_tile
+    load_sample_data

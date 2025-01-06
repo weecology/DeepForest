@@ -4,11 +4,12 @@ The most time-consuming part of many open-source projects is getting the data in
 
 ## Annotation Geometries and Coordinate Systems
 
-DeepForest was originally designed for bounding box annotations. As of DeepForest 1.4.0, point and polygon annotations are also supported. There are two ways to format annotations, depending on the annotation platform you are using. `read_file` can read points, polygons, and boxes, in both image coordinate systems (relative to image origin at top-left 0,0) as well as projected coordinates on the Earth's surface. The `read_file` method also appends the location of the current image directory as an attribute. To access this attribute use
+DeepForest was originally designed for bounding box annotations. As of DeepForest 1.4.0, point and polygon annotations are also supported. There are two ways to format annotations, depending on the annotation platform you are using. `read_file` can read points, polygons, and boxes, in both image coordinate systems (relative to image origin at top-left 0,0) as well as projected coordinates on the Earth's surface. The `read_file` method also appends the location of the current image directory as an attribute. To access this attribute use the `root_dir` attribute.
 
 ```
 filename = get_data("OSBS_029.csv")
-
+df = utilities.read_file(filename)
+df.root_dir
 ```
 
 **Note:** For CSV files, coordinates are expected to be in the image coordinate system, not projected coordinates (such as latitude/longitude or UTM).

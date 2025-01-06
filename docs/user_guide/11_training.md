@@ -1,6 +1,6 @@
 # Training
 
-The prebuilt models will always be improved by adding data from the target area. In our work, we have found that even an hour's worth of carefully chosen hand-annotation can yield enormous improvements in accuracy and precision. 5-10 epochs of fine-tuning with the prebuilt model are often adequate.
+The prebuilt models will always be improved by adding data from the target area. In our work, we have found that even an hour's worth of carefully chosen hand-annotation can yield enormous improvements in accuracy and precision. 5-10 epochs of fine-tuning with the prebuilt model are often adequate at a low learning rate.
 
 Consider an annotations.csv file in the following format
 
