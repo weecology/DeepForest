@@ -61,7 +61,7 @@ def _predict_image_(model,
     return df
 
 
-def mosiac(boxes, windows, sigma=0.5, thresh=0.001, iou_threshold=0.1):
+def mosiac(boxes, windows, sigma=0.5, thresh=0.001, iou_threshold=0.1, verbose=True):
     # transform the coordinates to original system
     for index, _ in enumerate(boxes):
         xmin, ymin, xmax, ymax = windows[index].getRect()
@@ -71,9 +71,10 @@ def mosiac(boxes, windows, sigma=0.5, thresh=0.001, iou_threshold=0.1):
         boxes[index].ymax += ymin
 
     predicted_boxes = pd.concat(boxes)
-    print(
-        f"{predicted_boxes.shape[0]} predictions in overlapping windows, applying non-max supression"
-    )
+    if verbose:
+        print(
+            f"{predicted_boxes.shape[0]} predictions in overlapping windows, applying non-max supression"
+        )
     # move prediciton to tensor
     boxes = torch.tensor(predicted_boxes[["xmin", "ymin", "xmax", "ymax"]].values,
                          dtype=torch.float32)
@@ -98,7 +99,8 @@ def mosiac(boxes, windows, sigma=0.5, thresh=0.001, iou_threshold=0.1):
     mosaic_df = pd.DataFrame(image_detections,
                              columns=["xmin", "ymin", "xmax", "ymax", "label", "score"])
 
-    print(f"{mosaic_df.shape[0]} predictions kept after non-max suppression")
+    if verbose:
+        print(f"{mosaic_df.shape[0]} predictions kept after non-max suppression")
 
     return mosaic_df
 
