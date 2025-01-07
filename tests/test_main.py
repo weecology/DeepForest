@@ -661,9 +661,6 @@ def test_predict_tile_with_crop_model_empty():
     mosaic = True
     crop_model = model.CropModel()
 
-    # Configure the label dictionary
-    m.label_dict = {"Tree": 0, "Bush": 1}
-
     # Call the predict_tile method with the crop_model
     m.config["train"]["fast_dev_run"] = False
     m.create_trainer()
