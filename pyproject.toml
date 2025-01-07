@@ -72,5 +72,26 @@ dependencies = [
     "xmltodict",
 ]
 
+[project.optional-dependencies]
+dev = [
+    "black",
+    "bump-my-version",
+    "docformatter",
+    "flake8",
+    "mypy",
+    "nbmake",
+    "nbsphinx",
+    "nbqa",
+    "pytest",
+    "pytest-cov",
+    "pytest-mock",
+    "pytest-xdist",
+    "sphinx_design",
+    "sphinx_markdown_tables",
+    "sphinx_rtd_theme",
+    "twine",
+    "yapf",
+]
+
 [tool.setuptools.packages.find]
 where = ["src"]
