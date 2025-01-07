@@ -19,7 +19,7 @@ jobs:
           - "3.10"
 
         os:
-          - "ubuntu-latest"
+          - "ubuntu-22.04"
 
     runs-on: "${{ matrix.os }}"
 
@@ -50,7 +50,7 @@ jobs:
         run: pip install . -U
 
       - name: Run pytest
-        run: pytest -v -k test_predict_tile_verbose
+        run: pytest -v
 
       - name: Check style
         run: yapf -d --recursive src/deepforest/ --style=.style.yapf
