@@ -20,6 +20,7 @@ from deepforest import dataset, visualize, get_data, utilities, predict
 from deepforest import evaluate as evaluate_iou
 
 from huggingface_hub import PyTorchModelHubMixin
+from lightning_fabric.utilities.exceptions import MisconfigurationException
 
 
 class deepforest(pl.LightningModule, PyTorchModelHubMixin):
@@ -674,7 +675,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         for key, value in loss_dict.items():
             try:
                 self.log("val_{}".format(key), value, on_epoch=True)
-            except:
+            except MisconfigurationException:
                 pass
 
         for index, result in enumerate(preds):
@@ -761,7 +762,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         output = {key: value for key, value in output.items() if not key == "classes"}
         try:
             self.log_dict(output)
-        except:
+        except MisconfigurationException:
             pass
         self.mAP_metric.reset()
 
@@ -831,12 +832,12 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                                         "{}_Precision".format(
                                             self.numeric_to_label_dict[row["label"]]),
                                         row["precision"])
-                                except:
+                                except MisconfigurationException:
                                     pass
                         else:
                             try:
                                 self.log(key, value)
-                            except:
+                            except MisconfigurationException:
                                 pass
 
     def predict_step(self, batch, batch_idx):
