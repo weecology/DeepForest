@@ -61,6 +61,12 @@ Table S1 Confusion matrix for the Alive/Dead model in Weinstein et al. 2023
 
 Citation: Weinstein, Ben G., et al. "Capturing long‐tailed individual tree diversity using an airborne imaging and a multi‐temporal hierarchical model." Remote Sensing in Ecology and Conservation 9.5 (2023): 656-670.
 
+## Livestock Detectors model
+
+This model has a single label 'cattle' trained on drone imagery of cows, sheep and other large mammals in agricultural settings.
+
+![image](../../www/livestock-example.png)
+
 ## Want more pretrained models?
 
 Please consider contributing your data to open source repositories, such as zenodo or lila.science. The more data we gather, the more we can combine the annotation and data collection efforts of hundreds of researchers to built models available to everyone. We welcome suggestions on what models and data are most urgently [needed](https://github.com/weecology/DeepForest/discussions). 
