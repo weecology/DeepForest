@@ -477,7 +477,8 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                      thickness=1,
                      crop_model=None,
                      crop_transform=None,
-                     crop_augment=False):
+                     crop_augment=False,
+                     verbose=True):
         """For images too large to input into the model, predict_tile cuts the
         image into overlapping windows, predicts trees on each window and
         reassambles into a single array.
@@ -498,6 +499,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             cropModel: a deepforest.model.CropModel object to predict on crops
             crop_transform: a torchvision.transforms object to apply to crops
             crop_augment: a boolean to apply augmentations to crops
+            verbose: a boolean to print the number of predictions in overlapping windows
             (deprecated) return_plot: return a plot of the image with predictions overlaid
             (deprecated) color: color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255)
             (deprecated) thickness: thickness of the rectangle border line in px
@@ -523,13 +525,21 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         self.model.eval()
         self.model.nms_thresh = self.config["nms_thresh"]
 
-        # if more than one GPU present, use only a the first available gpu
+        # if more than one GPU present, use only the first available gpu
         if torch.cuda.device_count() > 1:
-            # Get available gpus and regenerate trainer
             warnings.warn(
                 "More than one GPU detected. Using only the first GPU for predict_tile.")
             self.config["devices"] = 1
-            self.create_trainer()
+
+        # Create a new trainer with appropriate progress bar setting
+        # Remove any existing progress bar callbacks
+        callbacks = [
+            cb for cb in self.trainer.callbacks
+            if not isinstance(cb, pl.callbacks.ProgressBar)
+        ]
+
+        # Create new trainer with updated settings
+        self.create_trainer(enable_progress_bar=verbose, callbacks=callbacks)
 
         if (raster_path is None) and (image is None):
             raise ValueError(
@@ -560,6 +570,9 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                                        patch_overlap=patch_overlap,
                                        patch_size=patch_size)
 
+        if not verbose:
+            self.create_trainer(enable_progress_bar=False)
+
         batched_results = self.trainer.predict(self, self.predict_dataloader(ds))
 
         # Flatten list from batched prediction
@@ -573,7 +586,8 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                                      ds.windows,
                                      sigma=sigma,
                                      thresh=thresh,
-                                     iou_threshold=iou_threshold)
+                                     iou_threshold=iou_threshold,
+                                     verbose=verbose)
             results["label"] = results.label.apply(
                 lambda x: self.numeric_to_label_dict[x])
             if raster_path:
