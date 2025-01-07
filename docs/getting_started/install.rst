@@ -13,6 +13,7 @@ For example
 
    conda create -n DeepForest python=3.11
    conda activate DeepForest
+   
 ::
 
    pip install DeepForest
