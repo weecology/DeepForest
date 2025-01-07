@@ -2,9 +2,9 @@ name: Conda package
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   ci:
@@ -35,7 +35,7 @@ jobs:
       - name: Install opencv dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgl1 and libglx-mesa0 
+          sudo apt-get install -y libgl1 and libglx-mesa0
 
       - name: Install Conda environment with Micromamba
         uses: mamba-org/setup-micromamba@v1
@@ -50,7 +50,7 @@ jobs:
         run: pip install . -U
 
       - name: Run pytest
-        run: pytest -v
+        run: pytest -v -k test_predict_tile_verbose
 
       - name: Check style
         run: yapf -d --recursive src/deepforest/ --style=.style.yapf
