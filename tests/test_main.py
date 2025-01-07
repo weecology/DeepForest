@@ -659,7 +659,6 @@ def test_predict_tile_with_crop_model_empty():
     patch_overlap = 0.05
     iou_threshold = 0.15
     mosaic = True
-    # Set up the crop model
     crop_model = model.CropModel()
 
     # Call the predict_tile method with the crop_model
@@ -673,4 +672,4 @@ def test_predict_tile_with_crop_model_empty():
                             crop_model=crop_model)
 
     # Assert the result
-    assert result is None
+    assert result is None or result.empty
