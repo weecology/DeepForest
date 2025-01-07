@@ -14,7 +14,8 @@ Guides
 .. toctree::
     :maxdepth: 1
 
-    01_Reading_Writing_data
+    01_Reading_data
+    15_Writing_data
     02_prebuilt
     03_cropmodels
     04_extending_module
