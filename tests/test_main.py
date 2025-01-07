@@ -649,8 +649,7 @@ def test_predict_tile_with_crop_model(m, config):
         "xmin", "ymin", "xmax", "ymax", "label", "score", "cropmodel_label", "geometry",
         "cropmodel_score", "image_path"
     }
-
-
+    
 def test_predict_tile_with_crop_model_empty():
     """If the model return is empty, the crop model should return an empty dataframe"""
     raster_path = get_data("SOAP_061.png")

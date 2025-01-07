@@ -420,6 +420,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             result = utilities.read_file(result, root_dir=root_dir)
 
         return result
+    
 
     def predict_file(self, csv_file, root_dir, savedir=None, color=None, thickness=1):
         """Create a dataset and predict entire annotation file Csv file format
@@ -431,7 +432,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         Deprecation warning: The return_plot argument is deprecated and will be removed in 2.0. Use visualize.plot_results on the result instead.
 
         Args:
-            csv_file: path to csv file
+            csv_file (str or pd.DataFrame): Path to a CSV file or a DataFrame with annotations.
             root_dir: directory of images. If none, uses "image_dir" in config
             (deprecated) savedir: directory to save images with bounding boxes
             (deprecated) color: color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255)
@@ -441,11 +442,17 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             df: pandas dataframe with bounding boxes, label and scores for each image in the csv file
         """
 
-        df = utilities.read_file(csv_file)
-        ds = dataset.TreeDataset(csv_file=csv_file,
+        # Use DataFrame directly if provided, otherwise treat as file path
+        if isinstance(csv_file, pd.DataFrame):
+            df = csv_file
+        else:
+            df = utilities.read_file(csv_file)
+
+        ds = dataset.TreeDataset(csv_file=df,
                                  root_dir=root_dir,
                                  transforms=None,
                                  train=False)
+
         dataloader = self.predict_dataloader(ds)
 
         results = predict._dataloader_wrapper_(model=self,
