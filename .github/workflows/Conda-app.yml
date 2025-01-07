@@ -2,9 +2,9 @@ name: Conda package
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   ci:
@@ -19,7 +19,7 @@ jobs:
           - "3.10"
 
         os:
-          - "ubuntu-latest"
+          - "ubuntu-22.04"
 
     runs-on: "${{ matrix.os }}"
 
@@ -35,7 +35,7 @@ jobs:
       - name: Install opencv dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgl1 and libglx-mesa0 
+          sudo apt-get install -y libgl1 and libglx-mesa0
 
       - name: Install Conda environment with Micromamba
         uses: mamba-org/setup-micromamba@v1
