@@ -32,6 +32,7 @@ Guides
     examples/simple_load_and_predict
     examples/Australia
     examples/nest_detection
+    examples/Bird_FineTuning
     sample_test
     14_cite
     deepforestr
