@@ -126,34 +126,28 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         self.save_hyperparameters()
 
     def load_model(self, model_name="weecology/deepforest-tree", revision='main'):
-        """Loads a model that has already been pretrained for a specific task,
-        like tree crown detection.
-
-        Models (technically model weights) are distributed via Hugging Face
-        and designated the Hugging Face repository ID (model_name), which
-        is in the form: 'organization/repository'. For a list of models distributed
-        by the DeepForest team (and the associated model names) see the
-        documentation:
-        https://deepforest.readthedocs.io/en/latest/installation_and_setup/prebuilt.html
-
-        Args:
-            model_name (str): A repository ID for huggingface in the form of organization/repository
-            revision (str): The model version ('main', 'v1.0.0', etc.).
-
-        Returns:
-            None
-        """
-        # Load the model using from_pretrained
+        """Loads a pretrained model from Hugging Face."""
         self.create_model()
         loaded_model = self.from_pretrained(model_name, revision=revision)
+        
+        # Extract model attributes
+        self._set_model_attributes(loaded_model)
+        
+        # Handle special cases
+        if model_name == "weecology/deepforest-bird":
+            self._configure_bird_model()
+
+    def _set_model_attributes(self, loaded_model):
+        """Helper to set model attributes from loaded model."""
         self.label_dict = loaded_model.label_dict
         self.model = loaded_model.model
         self.numeric_to_label_dict = loaded_model.numeric_to_label_dict
-        # Set bird-specific settings if loading the bird model
-        if model_name == "weecology/deepforest-bird":
-            self.config['retinanet']["score_thresh"] = 0.3
-            self.label_dict = {"Bird": 0}
-            self.numeric_to_label_dict = {v: k for k, v in self.label_dict.items()}
+
+    def _configure_bird_model(self):
+        """Configure settings specific to bird model."""
+        self.config['retinanet']["score_thresh"] = 0.3
+        self.label_dict = {"Bird": 0}
+        self.numeric_to_label_dict = {v: k for k, v in self.label_dict.items()}
 
     def use_release(self, check_release=True):
         """Use the latest DeepForest model release from github and load model.
@@ -745,99 +739,39 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         return empty_accuracy
 
     def on_validation_epoch_end(self):
-        """Compute metrics."""
-
-        output = self.iou_metric.compute()
-        try:
-            # This is a bug in lightning, it claims this is a warning but it is not. https://github.com/Lightning-AI/pytorch-lightning/pull/9733/files
-            self.log_dict(output)
-        except:
-            pass
-
-        self.iou_metric.reset()
-        output = self.mAP_metric.compute()
-
-        # Remove classes from output dict
-        output = {key: value for key, value in output.items() if not key == "classes"}
-        try:
-            self.log_dict(output)
-        except:
-            pass
-        self.mAP_metric.reset()
-
+        """Compute metrics at end of validation epoch."""
+        self._compute_and_log_metrics()
+        
         if len(self.predictions) == 0:
             return None
-        else:
-            self.predictions_df = pd.concat(self.predictions)
+        
+        self.predictions_df = pd.concat(self.predictions)
+        
+        # Only evaluate every n epochs
+        if self.current_epoch % self.config["validation"]["val_accuracy_interval"] != 0:
+            return
+        
+        self._run_validation_evaluation()
 
-        #Evaluate every n epochs
-        if self.current_epoch % self.config["validation"]["val_accuracy_interval"] == 0:
-            #Create a geospatial column
-            ground_df = utilities.read_file(self.config["validation"]["csv_file"])
-            ground_df["label"] = ground_df.label.apply(lambda x: self.label_dict[x])
+    def _compute_and_log_metrics(self):
+        """Compute and log IOU and mAP metrics."""
+        # Handle IOU metrics
+        iou_output = self.iou_metric.compute()
+        self._try_log_dict(iou_output)
+        self.iou_metric.reset()
+        
+        # Handle mAP metrics
+        map_output = self.mAP_metric.compute()
+        map_output = {k:v for k,v in map_output.items() if k != "classes"}
+        self._try_log_dict(map_output) 
+        self.mAP_metric.reset()
 
-            # If there are empty frames, evaluate empty frame accuracy separately
-            empty_accuracy = self.calculate_empty_frame_accuracy(
-                ground_df, self.predictions_df)
-
-            if empty_accuracy is not None:
-                try:
-                    self.log("empty_frame_accuracy", empty_accuracy)
-                except:
-                    pass
-
-            # Remove empty predictions from the rest of the evaluation
-            self.predictions_df = self.predictions_df.loc[
-                self.predictions_df.xmin.notnull()]
-            if self.predictions_df.empty:
-                warnings.warn("No predictions made, skipping detection evaluation")
-                geom_type = utilities.determine_geometry_type(ground_df)
-                if geom_type == "box":
-                    result = {
-                        "box_recall": 0,
-                        "box_precision": 0,
-                        "class_recall": pd.DataFrame()
-                    }
-            else:
-                # Remove empty ground truth
-                ground_df = ground_df.loc[~(ground_df.xmin == 0)]
-                if ground_df.empty:
-                    results = {}
-                    results["empty_frame_accuracy"] = empty_accuracy
-                    return results
-
-                results = evaluate_iou.__evaluate_wrapper__(
-                    predictions=self.predictions_df,
-                    ground_df=ground_df,
-                    root_dir=self.config["validation"]["root_dir"],
-                    iou_threshold=self.config["validation"]["iou_threshold"],
-                    savedir=None,
-                    numeric_to_label_dict=self.numeric_to_label_dict)
-
-                if empty_accuracy is not None:
-                    results["empty_frame_accuracy"] = empty_accuracy
-
-                # Log each key value pair of the results dict
-                if not results["class_recall"] is None:
-                    for key, value in results.items():
-                        if key in ["class_recall"]:
-                            for index, row in value.iterrows():
-                                try:
-                                    self.log(
-                                        "{}_Recall".format(
-                                            self.numeric_to_label_dict[row["label"]]),
-                                        row["recall"])
-                                    self.log(
-                                        "{}_Precision".format(
-                                            self.numeric_to_label_dict[row["label"]]),
-                                        row["precision"])
-                                except:
-                                    pass
-                        else:
-                            try:
-                                self.log(key, value)
-                            except:
-                                pass
+    def _try_log_dict(self, metrics_dict):
+        """Safely try to log metrics dictionary."""
+        try:
+            self.log_dict(metrics_dict)
+        except:
+            pass
 
     def predict_step(self, batch, batch_idx):
         batch_results = self.model(batch)
@@ -850,51 +784,84 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         return results
 
     def configure_optimizers(self):
-        optimizer = optim.SGD(self.model.parameters(),
-                              lr=self.config["train"]["lr"],
-                              momentum=0.9)
+        """Configure optimizers and learning rate schedulers."""
+        optimizer = self._create_optimizer()
+        scheduler = self._create_scheduler(optimizer)
+        
+        return self._get_optimizer_config(optimizer, scheduler)
 
+    def _create_optimizer(self):
+        """Create SGD optimizer."""
+        return optim.SGD(
+            self.model.parameters(),
+            lr=self.config["train"]["lr"],
+            momentum=0.9
+        )
+
+    def _create_scheduler(self, optimizer):
+        """Create learning rate scheduler based on config."""
         scheduler_config = self.config["train"]["scheduler"]
         scheduler_type = scheduler_config["type"]
         params = scheduler_config["params"]
+        
+        scheduler_map = {
+            "cosine": self._create_cosine_scheduler,
+            "lambdaLR": self._create_lambda_scheduler,
+            "multiplicativeLR": self._create_multiplicative_scheduler,
+            "stepLR": self._create_step_scheduler,
+            "multistepLR": self._create_multistep_scheduler,
+            "exponentialLR": self._create_exponential_scheduler
+        }
+        
+        scheduler_fn = scheduler_map.get(scheduler_type, self._create_plateau_scheduler)
+        return scheduler_fn(optimizer, params)
 
-        if scheduler_type == "cosine":
-            scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-                optimizer, T_max=params["T_max"], eta_min=params["eta_min"])
+    def _create_cosine_scheduler(self, optimizer, params):
+        """Create cosine learning rate scheduler."""
+        return torch.optim.lr_scheduler.CosineAnnealingLR(
+            optimizer, T_max=params["T_max"], eta_min=params["eta_min"])
 
-        elif scheduler_type == "lambdaLR":
-            scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer,
-                                                          lr_lambda=params["lr_lambda"])
+    def _create_lambda_scheduler(self, optimizer, params):
+        """Create lambda learning rate scheduler."""
+        return torch.optim.lr_scheduler.LambdaLR(optimizer,
+                                              lr_lambda=params["lr_lambda"])
 
-        elif scheduler_type == "multiplicativeLR":
-            scheduler = torch.optim.lr_scheduler.MultiplicativeLR(
-                optimizer, lr_lambda=params["lr_lambda"])
+    def _create_multiplicative_scheduler(self, optimizer, params):
+        """Create multiplicative learning rate scheduler."""
+        return torch.optim.lr_scheduler.MultiplicativeLR(
+            optimizer, lr_lambda=params["lr_lambda"])
 
-        elif scheduler_type == "stepLR":
-            scheduler = torch.optim.lr_scheduler.StepLR(optimizer,
-                                                        step_size=params["step_size"],
-                                                        gamma=params["gamma"])
+    def _create_step_scheduler(self, optimizer, params):
+        """Create step learning rate scheduler."""
+        return torch.optim.lr_scheduler.StepLR(optimizer,
+                                              step_size=params["step_size"],
+                                              gamma=params["gamma"])
 
-        elif scheduler_type == "multistepLR":
-            scheduler = torch.optim.lr_scheduler.MultiStepLR(
-                optimizer, milestones=params["milestones"], gamma=params["gamma"])
+    def _create_multistep_scheduler(self, optimizer, params):
+        """Create multistep learning rate scheduler."""
+        return torch.optim.lr_scheduler.MultiStepLR(
+            optimizer, milestones=params["milestones"], gamma=params["gamma"])
 
-        elif scheduler_type == "exponentialLR":
-            scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer,
-                                                               gamma=params["gamma"])
+    def _create_exponential_scheduler(self, optimizer, params):
+        """Create exponential learning rate scheduler."""
+        return torch.optim.lr_scheduler.ExponentialLR(optimizer,
+                                                   gamma=params["gamma"])
 
-        else:
-            scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-                optimizer,
-                mode=params["mode"],
-                factor=params["factor"],
-                patience=params["patience"],
-                threshold=params["threshold"],
-                threshold_mode=params["threshold_mode"],
-                cooldown=params["cooldown"],
-                min_lr=params["min_lr"],
-                eps=params["eps"])
+    def _create_plateau_scheduler(self, optimizer, params):
+        """Create plateau learning rate scheduler."""
+        return torch.optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer,
+            mode=params["mode"],
+            factor=params["factor"],
+            patience=params["patience"],
+            threshold=params["threshold"],
+            threshold_mode=params["threshold_mode"],
+            cooldown=params["cooldown"],
+            min_lr=params["min_lr"],
+            eps=params["eps"])
 
+    def _get_optimizer_config(self, optimizer, scheduler):
+        """Get optimizer configuration."""
         # Monitor rate is val data is used
         if self.config["validation"]["csv_file"] is not None:
             return {
