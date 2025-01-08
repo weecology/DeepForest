@@ -1,42 +1,77 @@
 .. _comparison:
 
-===========================
-Comparison with other tools
-===========================
+***************************
+Comparison with Other Tools
+***************************
 
-Similar tools
+There are many open-source projects for training machine learning models. 
+DeepForest aims to complement these existing tools by providing a specialized, streamlined approach tailored to ecological and environmental monitoring tasks. 
+Below, we compare DeepForest with other notable tools in this space, highlighting similarities, differences, and areas of potential collaboration.
+
+-------------
+Similar Tools
 -------------
 
-There are many open-source projects for training machine learning models. We see DeepForest as a complement to many existing and excellent packages.
+`Roboflow <https://roboflow.com>`_ offers a comprehensive ecosystem for computer vision tasks, including tools for:
 
-* Roboflow
+- **Supervision:** Efficient dataset annotation and augmentation.
+- **Inference:** API-driven deployment of machine learning models.
 
-  The `supervision <https://supervision.roboflow.com/latest/>`_, `inference <https://inference.roboflow.com/>`_ and related packages within Roboflow's ecosystem are well executed and used throughout DeepForest. The inference machine underlying Roboflow requires connection to Roboflow, a computer vision software company which requires an API key, and has a range of commercial and license structures. We think of DeepForest as a small set of curated models that are targeted towards the ecological and environmental monitoring community. Finding robust models is challenging amongst the thousands of Roboflow projects. Roboflow is designed to be an all-encompassing ecosystem, whereas DeepForest is intentionally small and aimed at existing pipelines.
+The ecosystem is well-executed and widely used within DeepForest.
+However, Roboflow operates as a commercial platform requiring an API key and has a range of licensing structures. 
+Its broad scope makes it challenging to identify robust models among thousands of projects.
 
-* Torchgeo
+**Key Differences:**
+           
+1. Roboflow is designed as an all-encompassing platform for general computer vision applications.
+2. DeepForest focuses on a curated set of models tailored to ecological and environmental monitoring, offering simplicity and specificity for existing workflows.
 
-  `Torchgeo <https://github.com/microsoft/torchgeo>`_ is a Python library written by developers at Microsoft to help automate remote sensing machine learning. Torchgeo has general structures, but the documents and general structure are focused on raster-based remote sensing, especially using earth-facing satellite data. Torchgeo has a number of useful datasets and curates pretrained models for remote sensing applications. The Torchgeo audience is generally more experienced with machine learning than the average DeepForest user.
+`Torchgeo <https://github.com/microsoft/torchgeo>`_, developed by Microsoft, is a Python library for automating remote sensing machine learning. It emphasizes:
 
-We hope to continue to connect with both Roboflow and Torchgeo to improve interoperability among all model types and training. The future of open-source depends on collaboration, and we welcome users from all packages to submit ideas on how best to serve the community and reduce any duplication and wasted effort. There are many packages that hold useful individual models (e.g., `DetectTree2 <https://github.com/PatBall1/detectree2>`_) related to individual scientific publications. Our hope with DeepForest is to wrap general routines beyond individual research projects to make machine learning applications to environmental monitoring easier.
+- **Raster-based Remote Sensing:** Primarily focused on earth-facing satellite data.
+- **Pretrained Models and Datasets:** Provides curated resources for remote sensing tasks.
 
-Similar tools
--------------
+Torchgeo caters to an audience with significant machine learning expertise and is particularly suited for satellite and aerial imagery analysis.
 
-There are many open-source projects for training machine learning models. We see DeepForest as a complement to many existing and excellent packages.
+**Key Features:**
 
-* Roboflow
+1. Modular design for flexibility and scalability.
+2. Extensive support for raster data processing.
 
-  The `supervision <https://supervision.roboflow.com/latest/>`_, `inference <https://inference.roboflow.com/>`_ and related packages within Roboflow's ecosystem are well executed and used throughout DeepForest. The inference machine underlying Roboflow requires connection to Roboflow, a computer vision software company which requires an API key, and has a range of commercial and license structures. We think of DeepForest as a small set of curated models that are targeted towards the ecological and environmental monitoring community. Finding robust models is challenging amongst the thousands of Roboflow projects. Roboflow is designed to be an all-encompassing ecosystem, whereas DeepForest is intentionally small and aimed at existing pipelines.
+**Collaboration Opportunities:**
 
-* Torchgeo
+DeepForest and Torchgeo share common goals in environmental monitoring. By enhancing interoperability, both tools could enable unified workflows and reduce redundant efforts.
 
-  `Torchgeo <https://github.com/microsoft/torchgeo>`_ is a Python library written by developers at Microsoft to help automate remote sensing machine learning. Torchgeo has general structures, but the documents and general structure are focused on raster-based remote sensing, especially using earth-facing satellite data. Torchgeo has a number of useful datasets and curates pretrained models for remote sensing applications. The Torchgeo audience is generally more experienced with machine learning than the average DeepForest user.
+`AIDE <https://github.com/microsoft/aerial_wildlife_detection>`_ is a modular web framework for annotating image datasets and training deep learning models. It integrates manual annotation and machine learning into an active learning loop:
 
-We hope to continue to connect with both Roboflow and Torchgeo to improve interoperability among all model types and training. The future of open-source depends on collaboration, and we welcome users from all packages to submit ideas on how best to serve the community and reduce any duplication and wasted effort. There are many packages that hold useful individual models (e.g., `DetectTree2 <https://github.com/PatBall1/detectree2>`_) related to individual scientific publications. Our hope with DeepForest is to wrap general routines beyond individual research projects to make machine learning applications to environmental monitoring easier.
+- Humans annotate initial images.
+- The system trains a model.
+- The model predicts and selects additional images for annotation.
 
-* AIDE
-  `AIDE <https://github.com/microsoft/aerial_wildlife_detection>`_ is two things in one: a tool for manually annotating images and a tool for training and running machine (deep) learning models. Those two things are coupled in an active learning loop: the human annotates a few images, the system trains a model, that model is used to make predictions and to select more images for the human to annotate, etc.
+This approach accelerates tasks like wildlife surveys using aerial imagery.
 
-  More generally, AIDE is a modular Web framework for labeling image datasets with AI assistance. AIDE is configurable for a variety of tasks, but it is particularly intended for ecological applications, such as accelerating wildlife surveys that use aerial images.
+**Key Features:**
 
-  AIDE was developed by B. Kellenberger, and while it hasn't been updated in a while, it's still a great tool.
+- **Dual functionality**: Annotation and AI-assisted training.
+- **Configurable** for various tasks, particularly ecological applications.
+- **Active learning** loop for iterative model improvement.
+
+Although AIDE has not been updated recently, it remains a powerful tool for ecological monitoring.
+
+------------------------
+Vision for Collaboration
+------------------------
+
+DeepForest emphasizes the importance of collaboration in the open-source community. By connecting with tools like Roboflow, Torchgeo, and AIDE, we can:
+
+- Standardize data formats for seamless integration.
+- Share best practices for model training and deployment.
+- Minimize duplication of effort and maximize community impact.
+
+We invite users and contributors from all packages to share ideas and propose improvements to serve the community better.
+
+**Conclusion**
+
+The future of open-source machine learning in environmental monitoring relies on collaboration and interoperability. 
+Tools like DeepForest, Torchgeo, Roboflow, and AIDE complement each other, each addressing specific needs within the field.
+By fostering connections between these tools, we can build a more cohesive and efficient ecosystem for solving critical environmental challenges.
