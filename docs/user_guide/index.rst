@@ -17,6 +17,7 @@ Guides
     01_Reading_data
     15_Writing_data
     02_prebuilt
+    16_prediction
     03_cropmodels
     04_extending_module
     05_model_architecture
@@ -31,6 +32,7 @@ Guides
     examples/simple_load_and_predict
     examples/Australia
     examples/nest_detection
+    examples/Bird_FineTuning
     sample_test
     14_cite
     deepforestr

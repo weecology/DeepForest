@@ -26,13 +26,12 @@ The `load_model` function loads a pretrained model from Hugging Face using the r
 
 ### Example Usage
 
-#### Load a Model
+#### Load a Model and Predict an Image
 
 ```python
 from deepforest import main
 from deepforest import get_data
-import matplotlib.pyplot as plt
-
+from deepforest.visualize import plot_results
 # Initialize the model class
 model = main.deepforest()
 
@@ -40,9 +39,6 @@ model = main.deepforest()
 model.load_model(model_name="weecology/deepforest-tree", revision="main")
 
 sample_image_path = get_data("OSBS_029.png")
-img = model.predict_image(path=sample_image_path, return_plot=True)
-
-plt.imshow(img[:,:,::-1])
-plt.show()
-
+img = model.predict_image(path=sample_image_path)
+plot_results(img)
 ```

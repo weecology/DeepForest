@@ -3,24 +3,18 @@ How do I use a pretrained model to predict an image?
 
 .. code-block:: python
 
-   from deepforest import main, get_data
-   import matplotlib.pyplot as plt
-
-   # Initialize the model
+   from deepforest import main
+   from deepforest import get_data
+   from deepforest.visualize import plot_results
+   # Initialize the model class
    model = main.deepforest()
 
    # Load a pretrained tree detection model from Hugging Face
    model.load_model(model_name="weecology/deepforest-tree", revision="main")
 
-   # Get the sample image path and predict image
    sample_image_path = get_data("OSBS_029.png")
-   img = model.predict_image(path=sample_image_path, return_plot=True)
-
-   # predict_image returns plot in BlueGreenRed (opencv style), but matplotlib likes RedGreenBlue
-   # Switch the channel order for correct display
-   plt.imshow(img[:,:,::-1])
-   plt.show()
-
+   img = model.predict_image(path=sample_image_path)
+   plot_results(img)
 
 .. image:: ../../../www/getting_started1.png
    :align: center

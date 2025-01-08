@@ -7,7 +7,7 @@ Package overview
 What is DeepForest?
 *******************
 
-DeepForest is a python package for training and predicting ecological objects in airborne imagery. DeepForest comes with prebuilt models for immediate use and fine-tuning by annotating and training custom models on your own data. DeepForest models can also be extended to species classification based on new data. DeepForest is designed for:
+DeepForest is a python package for training and predicting ecological objects in airborne imagery. DeepForest comes with prebuilt models for immediate use and fine-tuning by annotating and training custom models on your own data. DeepForest models can also be extended to classification (e.g., species) based on new data. DeepForest is designed for:
 
 1. Applied researchers with limited machine learning experience
 2. Applications with limited data that can be supported by prebuilt models
@@ -38,7 +38,7 @@ Practical Intro to Computer Vision in Ecology Research
 
 Where can I get help, learn from others, and report bugs?
 ---------------------------------------------------------
-Given the enormous array of forest types and image acquisition environments, it is unlikely that your image will be perfectly predicted by a prebuilt model. Below are some tips and general guidelines to improve predictions.
+Given the enormous array of taxa, background and image acquisition environments, it is unlikely that your image will be perfectly predicted by a prebuilt model. Check out the 'training', 'annotation', and 'predicting' sections of the documentation for more information on how to improve predictions using your own data.
 
 Get suggestions on how to improve a model by using the `discussion board <https://github.com/weecology/DeepForest/discussions>`_. Please be aware that only feature requests or bug reports should be posted on the issues page. The most helpful thing you can do is leave feedback on the DeepForest `issue page`_. No feature, issue, or positive affirmation is too small. Please do it now!
 
@@ -64,7 +64,7 @@ DeepForest is an open-source python project that depends on user contributions. 
 
 * Making recommendations to the API and workflow. Please open an issue for anything that could help reduce friction and improve user experience.
 * Leading implementations of new features. Check out the 'good first issue' tag on the repo and get in touch with the maintainers and tell us about your skills.
-* Data contributions! The DeepForest backbone tree and bird models are not perfect. Please consider posting any annotations you make on Zenodo, or sharing them with DeepForest maintainers. Open an `issue <https://github.com/weecology/DeepForest/issues>`_ and tell us about the RGB data and annotations. For example, we are collecting tree annotations to create an `open-source benchmark <https://milliontrees.idtrees.org/>`_. Please consider sharing data to make the models stronger and benefit you and other users.
+* Data contributions! The DeepForest backbone models are not perfect. Please consider posting any annotations you make on Zenodo, or sharing them with DeepForest maintainers. Open an `issue <https://github.com/weecology/DeepForest/issues>`_ and tell us about the RGB data and annotations. For example, we are collecting tree annotations to create an `open-source benchmark <https://milliontrees.idtrees.org/>`_. Please consider sharing data to make the models stronger and benefit you and other users.
 
 Citation
 --------
@@ -79,22 +79,6 @@ The first is the DeepForest paper, which describes the Python package:
 The second is the paper describing the particular model. See `Prebuilt Setup <../user_guide/prebuilt.html>`_ for citations for each model.
 
 .. _issue page: https://github.com/weecology/DeepForest/issues
-
-Similar tools
--------------
-
-There are many open-source projects for training machine learning models. We see DeepForest as a complement to many existing and excellent packages.
-
-* Roboflow
-
-  The `supervision <https://supervision.roboflow.com/latest/>`_, `inference <https://inference.roboflow.com/>`_ and related packages within Roboflow's ecosystem are well executed and used throughout DeepForest. The inference machine underlying Roboflow requires connection to Roboflow, a computer vision software company which requires an API key, and has a range of commercial and license structures. We think of DeepForest as a small set of curated models that are targeted towards the ecological and environmental monitoring community. Finding robust models is challenging amongst the thousands of Roboflow projects. Roboflow is designed to be an all-encompassing ecosystem, whereas DeepForest is intentionally small and aimed at existing pipelines.
-
-* Torchgeo
-
-  `Torchgeo <https://github.com/microsoft/torchgeo>`_ is a Python library written by developers at Microsoft to help automate remote sensing machine learning. Torchgeo has general structures, but the documents and general structure are focused on raster-based remote sensing, especially using earth-facing satellite data. Torchgeo has a number of useful datasets and curates pretrained models for remote sensing applications. The Torchgeo audience is generally more experienced with machine learning than the average DeepForest user.
-
-We hope to continue to connect with both Roboflow and Torchgeo to improve interoperability among all model types and training. The future of open-source depends on collaboration, and we welcome users from all packages to submit ideas on how best to serve the community and reduce any duplication and wasted effort. There are many packages that hold useful individual models (e.g., `DetectTree2 <https://github.com/PatBall1/detectree2>`_) related to individual scientific publications. Our hope with DeepForest is to wrap general routines beyond individual research projects to make machine learning applications to environmental monitoring easier.
-
 
 License
 -------

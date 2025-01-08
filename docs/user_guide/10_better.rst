@@ -1,7 +1,7 @@
 How do I make the predictions better?
 -------------------------------------
 
-Given the enormous array of forest types and image acquisition
+Given the enormous array of background types and image acquisition
 environments, it is unlikely that your image will be perfectly predicted
 by the prebuilt model. Below are some tips and some general guidelines
 to improve predictions.

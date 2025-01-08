@@ -1,6 +1,6 @@
 # Prebuilt models
 
-DeepForest has a few prebuilt models.
+DeepForest comes with prebuilt models to help you get started. These models are available on Hugging Face and are loaded using the `load_model` function, they always are seen as the starting point for further training, rather than a general purpose tool for new imagery.
 
 ## Tree Crown Detection model
 
@@ -37,6 +37,12 @@ We have created a [GPU colab tutorial](https://colab.research.google.com/drive/1
 ) to demonstrate the workflow for using the bird model.
 
 For more information, or specific questions about the bird detection, please create issues on the [BirdDetector repo](https://github.com/weecology/BirdDetector)
+
+## Livestock Detectors model
+
+This model has a single label 'cattle' trained on drone imagery of cows, sheep and other large mammals in agricultural settings. The model was trained on data from [insert countries and other metadata about landscapes].
+
+![image](../../www/livestock-example.png)
 
 ## Crop Classifiers model
 
