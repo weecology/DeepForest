@@ -882,7 +882,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         #using Pytorch Ligthning's predict_step
         with torch.no_grad():
             predictions = self.predict_step(images, 0)
-        
+
         #convert predictions to dataframes
         results = [utilities.read_file(pred) for pred in predictions if pred is not None]
 
