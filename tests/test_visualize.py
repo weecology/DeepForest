@@ -165,8 +165,7 @@ def test_plot_results_point(m, tmpdir):
         'y': [15, 25],
         'label': ['Tree', 'Tree'],
         'image_path': [get_data("OSBS_029.tif"), get_data("OSBS_029.tif")],
-        'score': [0.9, 0.8],
-        'label': ['Tree', 'Tree']
+        'score': [0.9, 0.8]
     }
     df = pd.DataFrame(data)
     gdf = read_file(df, root_dir=os.path.dirname(get_data("OSBS_029.tif")))
@@ -178,6 +177,23 @@ def test_plot_results_point(m, tmpdir):
     # Assertions
     assert os.path.exists(os.path.join(tmpdir, "OSBS_029.png"))
 
+def test_plot_results_point_no_label(m, tmpdir):
+    # Create a mock DataFrame with point annotations
+    data = {
+        'x': [15, 25],
+        'y': [15, 25],
+        'label': ['Tree', 'Tree'],
+        'image_path': [get_data("OSBS_029.tif"), get_data("OSBS_029.tif")],
+    }
+    df = pd.DataFrame(data)
+    gdf = read_file(df, root_dir=os.path.dirname(get_data("OSBS_029.tif")))
+    gdf.root_dir = os.path.dirname(get_data("OSBS_029.tif"))
+
+    # Call the function
+    visualize.plot_results(gdf, savedir=tmpdir)
+
+    # Assertions
+    assert os.path.exists(os.path.join(tmpdir, "OSBS_029.png"))
 
 def test_plot_results_polygon(m, tmpdir):
     # Create a mock DataFrame with polygon annotations
