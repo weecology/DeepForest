@@ -1,6 +1,8 @@
 # entry point for deepforest model
 import importlib
 import os
+import contextlib
+import io
 import typing
 import warnings
 
@@ -515,18 +517,19 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         self.model.eval()
         self.model.nms_thresh = self.config["nms_thresh"]
 
-        # if more than one GPU present, use only a the first available gpu
+        # if more than one GPU present, use only the first available gpu
         if torch.cuda.device_count() > 1:
-            # Get available gpus and regenerate trainer
             warnings.warn(
                 "More than one GPU detected. Using only the first GPU for predict_tile.")
             self.config["devices"] = 1
+
+        # Configure trainer based on verbose setting
         if not verbose:
             callbacks = [
                 cb for cb in self.trainer.callbacks
                 if not isinstance(cb, pl.callbacks.ProgressBar)
             ]
-            self.create_trainer(enable_progress_bar=verbose, callbacks=callbacks)
+            self.create_trainer(enable_progress_bar=False, callbacks=callbacks)
         else:
             self.create_trainer()
 
@@ -559,6 +562,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                                        patch_overlap=patch_overlap,
                                        patch_size=patch_size)
 
+        # Predict using trainer
         batched_results = self.trainer.predict(self, self.predict_dataloader(ds))
 
         # Flatten list from batched prediction
@@ -568,11 +572,21 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                 results.append(boxes)
 
         if mosaic:
-            results = predict.mosiac(results,
-                                     ds.windows,
-                                     sigma=sigma,
-                                     thresh=thresh,
-                                     iou_threshold=iou_threshold)
+            # Suppress output if not verbose
+            if not verbose:
+                f = io.StringIO()
+                with contextlib.redirect_stdout(f):
+                    results = predict.mosiac(results,
+                                             ds.windows,
+                                             sigma=sigma,
+                                             thresh=thresh,
+                                             iou_threshold=iou_threshold)
+            else:
+                results = predict.mosiac(results,
+                                         ds.windows,
+                                         sigma=sigma,
+                                         thresh=thresh,
+                                         iou_threshold=iou_threshold)
             results["label"] = results.label.apply(
                 lambda x: self.numeric_to_label_dict[x])
             if raster_path:
