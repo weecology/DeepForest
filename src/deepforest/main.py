@@ -881,12 +881,11 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
         #using Pytorch Ligthning's predict_step
         with torch.no_grad():
-            predictions = []
-            for idx, image in enumerate(images):
-                predictions = self.predict_step(image.unsqueeze(0), idx)
-                predictions.extend(predictions)
+            predictions = self.predict_step(images, 0)
+
         #convert predictions to dataframes
-        results = [pd.DataFrame(pred) for pred in predictions if pred is not None]
+        results = [utilities.read_file(pred) for pred in predictions if pred is not None]
+
         return results
 
     def configure_optimizers(self):
