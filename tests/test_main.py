@@ -907,3 +907,23 @@ def test_evaluate_on_epoch_interval(m):
     m.trainer.fit(m)
     assert m.trainer.logged_metrics["box_precision"]
     assert m.trainer.logged_metrics["box_recall"]
+
+@pytest.mark.parametrize("verbose", [True, False])
+def test_predict_tile_verbose(m, raster_path, capsys, verbose):
+    """Test that verbose output can be controlled in predict_tile"""
+    m.config["train"]["fast_dev_run"] = False
+    m.create_trainer()
+
+    m.predict_tile(
+        raster_path=raster_path,
+        patch_size=300,
+        patch_overlap=0,
+        mosaic=True,
+        verbose=verbose
+    )
+
+    captured = capsys.readouterr()
+    if verbose:
+        assert captured.out.strip()
+    else:
+        assert not captured.out.strip()

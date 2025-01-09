@@ -486,7 +486,8 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                      thickness=1,
                      crop_model=None,
                      crop_transform=None,
-                     crop_augment=False):
+                     crop_augment=False,
+                     verbose=True):
         """For images too large to input into the model, predict_tile cuts the
         image into overlapping windows, predicts trees on each window and
         reassambles into a single array.
@@ -507,7 +508,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             return_plot: return a plot of the image with predictions overlaid (deprecated)
             color: color of the bounding box as a tuple of BGR color (deprecated)
             thickness: thickness of the rectangle border line in px (deprecated)
-
+            verbose: whether to show progress bar
         Returns:
             pd.DataFrame or tuple: Predictions dataframe or (predictions, crops) tuple
         """
@@ -520,6 +521,13 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             warnings.warn(
                 "More than one GPU detected. Using only the first GPU for predict_tile.")
             self.config["devices"] = 1
+        if not verbose:
+            callbacks = [
+                cb for cb in self.trainer.callbacks
+                if not isinstance(cb, pl.callbacks.ProgressBar)
+            ]
+            self.create_trainer(enable_progress_bar=verbose, callbacks=callbacks)
+        else:
             self.create_trainer()
 
         if (raster_path is None) and (image is None):
