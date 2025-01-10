@@ -472,7 +472,7 @@ def plot_results(results,
                  basename=None,
                  radius=3,
                  image=None,
-                 axes=True):
+                 axes=False):
     """Plot the prediction results.
 
     Args:
