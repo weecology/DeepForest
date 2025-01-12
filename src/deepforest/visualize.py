@@ -471,7 +471,8 @@ def plot_results(results,
                  thickness=2,
                  basename=None,
                  radius=3,
-                 image=None):
+                 image=None,
+                 axes=False):
     """Plot the prediction results.
 
     Args:
@@ -486,8 +487,9 @@ def plot_results(results,
         basename: optional basename for the saved figure. If None (default), the basename will be extracted from the image path.
         radius: radius of the points in px
         image: an optional numpy array of an image to annotate. If None (default), the image will be loaded from the results dataframe.
+        axes: returns matplotlib axes object if True
     Returns:
-        None
+        Matplotlib axes object if axes=True, otherwise None
     """
     # Convert colors, check for multi-class labels
     num_labels = len(results.label.unique())
@@ -530,6 +532,8 @@ def plot_results(results,
     else:
         # Display the image using Matplotlib
         plt.imshow(annotated_scene)
+        if axes:
+            return ax
         plt.axis('off')  # Hide axes for a cleaner look
         plt.show()
 
