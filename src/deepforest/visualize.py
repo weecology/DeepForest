@@ -347,7 +347,11 @@ def convert_to_sv_format(df, width=None, height=None):
         labels = df['label'].map(label_mapping).values.astype(int)
 
         # Extract scores as a numpy array
-        scores = np.array(df['score'].tolist())
+        try:
+            scores = np.array(df['score'].tolist())
+        except KeyError:
+            scores = np.ones(len(labels))
+
         scores = np.expand_dims(np.stack(scores), 1)
 
         # Create a reverse mapping from integer to string labels
