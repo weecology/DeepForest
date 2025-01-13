@@ -351,7 +351,7 @@ def convert_to_sv_format(df, width=None, height=None):
             scores = np.array(df['score'].tolist())
         except KeyError:
             scores = np.ones(len(labels))
-        
+
         scores = np.expand_dims(np.stack(scores), 1)
 
         # Create a reverse mapping from integer to string labels
