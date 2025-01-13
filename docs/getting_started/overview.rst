@@ -20,8 +20,13 @@ DeepForest uses deep learning object detection networks to predict the location 
 
 For more about the motivation behind DeepForest, see some recent talks we have given on computer vision for ecology and practical applications to machine learning in environmental monitoring.
 
-Airborne Ecology
+DeepForest Walkthroughs and Presentations
 ----------------
+Ecological Society of America Statistical Seminar. This video provides an overview of fine-tuning a prebuilt model. The accompanying notebook is also available (https://github.com/weecology/DeepForest/blob/main/docs/user_guide/examples/Bird_FineTuning.ipynb).
+
+.. raw:: html
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/fhlC0W2kDMQ?si=fwrc9Lpoi1L-sGyl" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 .. raw:: html
 
