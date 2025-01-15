@@ -532,6 +532,8 @@ def plot_results(results,
                 results.image_path.unique()[0]))[0]
         image_name = "{}.png".format(basename)
         image_path = os.path.join(savedir, image_name)
+        # Flip RGB to BGR
+        annotated_scene = annotated_scene[:, :, ::-1]
         cv2.imwrite(image_path, annotated_scene)
     else:
         # Display the image using Matplotlib
