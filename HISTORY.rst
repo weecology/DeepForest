@@ -2,6 +2,26 @@
 DeepForest Changelog
 ====================
 
+Version 1.5.0 (Date: Jan 15, 2024)
+----------------------------------
+
+The major innovations are:
+
+1. Restructured package layout by moving code into src/ directory for better organization
+2. Added batch prediction capabilities for improved processing of multiple images
+3. Implemented support for image dataframes to allow more flexible input formats
+4. Created plot_annotations method for better visualization of predictions
+5. Added out-of-memory dataset sample for handling large datasets efficiently
+
+Additional features and enhancements include:
+
+- **Enhancement:** Reorganized package structure to follow modern Python packaging standards
+- **Enhancement:** Enhanced test coverage for new features
+- **Enhancement:** Improved code organization and maintainability
+- **Documentation:** Added docformatter for consistent docstring formatting
+- **Documentation:** Improved documentation clarity and organization
+- **Documentation:** Added new contributor: Dingyi Fang
+
 Version 1.4.1 (Date: Oct 26, 2024)
 ----------------------------------
 
