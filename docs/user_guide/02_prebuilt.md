@@ -14,6 +14,12 @@ The model was initially described in [Remote Sensing](https://www.mdpi.com/2072-
 
 ![image](../../www/MEE_Figure4.png)
 
+```
+# Load deepforest model and set bird label
+m = main.deepforest()
+m.load_model(model_name="weecology/deepforest-tree")
+```
+
 ### Citation
 > Weinstein, B.G.; Marconi, S.; Bohlman, S.; Zare, A.; White, E. Individual Tree-Crown Detection in RGB Imagery Using Semi-Supervised Deep Learning Neural Networks. Remote Sens. 2019, 11, 1309
 
@@ -32,9 +38,9 @@ The model was initially described in [Ecological Applications](https://esajourna
 ![image](../../www/example_predictions_small.png)
 
 ```
-#Load deepforest model and set bird label
-m = main.deepforest(label_dict={"Bird":0})
-m.use_bird_release()
+# Load deepforest model and set bird label
+m = main.deepforest()
+m.load_model(model_name="weecology/deepforest-bird")
 ```
 
 ![](../../www/bird_panel.jpg)
@@ -49,6 +55,12 @@ For more information, or specific questions about the bird detection, please cre
 This model has a single label 'cattle' trained on drone imagery of cows, sheep and other large mammals in agricultural settings. The model was trained on data from [insert countries and other metadata about landscapes].
 
 ![image](../../www/livestock-example.png)
+
+```
+# Load deepforest model and set bird label
+m = main.deepforest()
+m.load_model(model_name="weecology/deepforest-livestock")
+```
 
 ## Crop Classifiers model
 
@@ -66,12 +78,6 @@ Table S1 Confusion matrix for the Alive/Dead model in Weinstein et al. 2023
 
 
 Citation: Weinstein, Ben G., et al. "Capturing long‐tailed individual tree diversity using an airborne imaging and a multi‐temporal hierarchical model." Remote Sensing in Ecology and Conservation 9.5 (2023): 656-670.
-
-## Livestock Detectors model
-
-This model has a single label 'cattle' trained on drone imagery of cows, sheep and other large mammals in agricultural settings.
-
-![image](../../www/livestock-example.png)
 
 ## Want more pretrained models?
 
