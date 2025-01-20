@@ -647,7 +647,7 @@ def test_configure_optimizers(scheduler, expected):
 
 @pytest.fixture()
 def crop_model():
-    return model.CropModel()
+    return model.CropModel(num_classes=2)
 
 
 def test_predict_tile_with_crop_model(m, config):
@@ -657,7 +657,7 @@ def test_predict_tile_with_crop_model(m, config):
     iou_threshold = 0.15
     mosaic = True
     # Set up the crop model
-    crop_model = model.CropModel()
+    crop_model = model.CropModel(num_classes=2)
 
     # Call the predict_tile method with the crop_model
     m.config["train"]["fast_dev_run"] = False
