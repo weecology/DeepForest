@@ -686,7 +686,7 @@ def test_predict_tile_with_crop_model_empty():
     iou_threshold = 0.15
     mosaic = True
     # Set up the crop model
-    crop_model = model.CropModel()
+    crop_model = model.CropModel(num_classes=2)
 
     # Call the predict_tile method with the crop_model
     m.config["train"]["fast_dev_run"] = False
