@@ -82,7 +82,7 @@ class CropModel(LightningModule):
     """An architecture agnostic class for classification based on crops coming
     from the core detection models."""
 
-    def __init__(self, num_classes=2, batch_size=4, num_workers=0, lr=0.0001, model=None):
+    def __init__(self, num_classes, batch_size=4, num_workers=0, lr=0.0001, model=None):
         super().__init__()
 
         # Model
