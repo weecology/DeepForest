@@ -225,10 +225,10 @@ def _predict_crop_model_(crop_model,
         root_dir=os.path.dirname(raster_path),
         transform=transform,
         augment=augment)
-    
+
     crop_dataloader = crop_model.predict_dataloader(bounding_box_dataset)
     crop_results = trainer.predict(crop_model, crop_dataloader)
-    
+
     stacked_outputs = np.vstack(np.concatenate(crop_results))
     label = np.argmax(stacked_outputs, 1)
     score = np.max(stacked_outputs, 1)
