@@ -70,7 +70,7 @@ dependencies = [
     "sphinx",
     "supervision",
     "torch",
-    "torchvision>=0.13",
+    "torchvision=0.19",
     "tqdm",
     "xmltodict",
 ]
