@@ -42,6 +42,7 @@ def test_tree_dataset(csv_file, label_dict):
         assert image.min() >= 0
         assert targets["boxes"].shape == (raw_data.shape[0], 4)
         assert targets["labels"].shape == (raw_data.shape[0],)
+        assert targets["labels"].dtype == torch.int64
         assert len(np.unique(targets["labels"])) == len(raw_data.label.unique())
 
 
@@ -90,6 +91,7 @@ def test_tree_dataset_transform(augment):
 
         assert torch.is_tensor(targets["boxes"])
         assert torch.is_tensor(targets["labels"])
+        assert targets["labels"].dtype == torch.int64
         assert torch.is_tensor(image)
 
 
