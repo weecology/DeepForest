@@ -119,7 +119,7 @@ class TreeDataset(Dataset):
                 # channels last
                 image = np.rollaxis(image, 2, 0)
                 image = torch.from_numpy(image).float()
-                targets = {"boxes": boxes, "labels": labels.astype(np.int64)}
+                targets = {"boxes": boxes, "labels": labels}
 
                 return self.image_names[idx], image, targets
 
