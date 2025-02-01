@@ -125,13 +125,13 @@ class TreeDataset(Dataset):
 
             augmented = self.transform(image=image,
                                        bboxes=targets["boxes"],
-                                       category_ids=targets["labels"])
+                                       category_ids=targets["labels"].astype(np.int64))
             image = augmented["image"]
 
             boxes = np.array(augmented["bboxes"])
             boxes = torch.from_numpy(boxes).float()
             labels = np.array(augmented["category_ids"])
-            labels = torch.from_numpy(labels)
+            labels = torch.from_numpy(labels.astype(np.int64))
             targets = {"boxes": boxes, "labels": labels}
 
             return self.image_names[idx], image, targets

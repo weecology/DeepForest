@@ -157,8 +157,8 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             self.numeric_to_label_dict = {v: k for k, v in self.label_dict.items()}
 
     def use_release(self, check_release=True):
-        """Use the latest DeepForest model release from Hugging Face, downloading if necessary.
-        Optionally download if release doesn't exist.
+        """Use the latest DeepForest model release from Hugging Face,
+        downloading if necessary. Optionally download if release doesn't exist.
 
         Args:
             check_release (logical): Deprecated, not in use.
@@ -172,8 +172,9 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         self.load_model('weecology/deepforest-tree')
 
     def use_bird_release(self, check_release=True):
-        """Use the latest DeepForest bird model release from Hugging Face, downloading if necessary.
-        model. Optionally download if release doesn't exist.
+        """Use the latest DeepForest bird model release from Hugging Face,
+        downloading if necessary. model. Optionally download if release doesn't
+        exist.
 
         Args:
             check_release (logical): Deprecated, not in use.
