@@ -33,5 +33,9 @@ Primary Authors
 Other Contributors
 ==================
 
+Special thanks to:
+
+* `Cameron Appel <https://github.com/camappel >`_ for help improving the livestock model.
+
 Check GitHub for recent `contributors <https://github.com/weecology/DeepForest/graphs/contributors>`_.
 We would like to thank everyone who has contributed to the project in any way.

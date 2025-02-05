@@ -182,3 +182,32 @@ Note:
 Do not commit the build directory after making html.
 
 This version correctly follows reStructuredText (reST) conventions and includes code blocks, inline literals, and proper linking. Let me know if you need further adjustments!
+
+
+Upload to Hugging Face Hub
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To upload a trained model to the weecology organization space on Hugging Face Hub:
+
+1. Train or load your model checkpoint
+2. Set the label dictionary to match your classes
+3. Use push_to_hub with the weecology organization name
+
+For example:
+
+.. code-block:: python
+
+   from deepforest import main
+   
+   # Load model from checkpoint
+   model = main.deepforest.load_from_checkpoint("path/to/checkpoint.ckpt")
+   
+   # Set label dictionary mapping class names to indices
+   model.label_dict = {"Livestock": 0}
+   
+   # Push to weecology organization space
+   model.push_to_hub("weecology/deepforest-livestock")
+
+The model will be uploaded to https://huggingface.co/weecology/[model-name]
+
+Note: You must have appropriate permissions in the weecology organization to upload models.

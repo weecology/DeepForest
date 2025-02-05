@@ -52,9 +52,13 @@ For more information, or specific questions about the bird detection, please cre
 
 ## Livestock Detectors model
 
-This model has a single label 'cattle' trained on drone imagery of cows, sheep and other large mammals in agricultural settings. The model was trained on data from [insert countries and other metadata about landscapes].
+This model has a single label 'cattle' trained on drone imagery of cows, sheep and other large mammals in agricultural settings. 
 
 ![image](../../www/livestock-example.png)
+
+The model was improved by @camappel and a nice notebook illustrates its improvement here: https://edsbook.org/notebooks/gallery/95199651-9e81-4cae-a3a7-66398a9a5f62/notebook.
+
+![alt text](../../www/finetune_cattle_predictions.png)
 
 ```
 # Load deepforest model and set bird label

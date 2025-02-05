@@ -68,7 +68,8 @@ Annotate local training data
 Ultimately, training a proper model with local data is the best chance
 at getting good performance. See ``DeepForest.train()``
 
-Issues
+Here is a nice example of training a model on local data from a user in [cattle detection](https://edsbook.org/notebooks/gallery/95199651-9e81-4cae-a3a7-66398a9a5f62/notebook).
+
 ------
 
 We welcome feedback on both the python package as well as the algorithm
