@@ -8,7 +8,11 @@ Version 1.5.1-dev0 (Date: )
 
 The major innovations are:
 
+1. Improve Tests on edge cases
+
 Additional features and enhancements include:
+
+- **Documentation:** Improved documentation workflow and version available
 
 Version 1.5.0 (Date: Jan 15, 2024)
 ----------------------------------
