@@ -185,7 +185,7 @@ This version correctly follows reStructuredText (reST) conventions and includes 
 
 
 Upload to Hugging Face Hub
-^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 To upload a trained model to the weecology organization space on Hugging Face Hub:
 
