@@ -3,8 +3,8 @@ DeepForest Changelog
 ====================
 
 
-Version 1.5.1-dev0 (Date: )
----------------------------
+Version 1.5.2 (Date: Feb 7, 2025)
+---------------------------------
 
 The major innovations are:
 
