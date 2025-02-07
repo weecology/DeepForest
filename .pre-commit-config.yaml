@@ -1,22 +1,46 @@
 repos:
 - repo: local
   hooks:
-  - id: yapf
-    name: yapf
-    entry: yapf
-    args: ['-i', '--style', '.style.yapf', '--recursive', 'src/deepforest/']
-    language: system
-    types: [python]
-    pass_filenames: false
-    stages: [pre-commit]
--   repo: local
-    hooks:
-    -   id: docformatter
-        name: docformatter
-        entry: docformatter
-        language: python
-        types: [python]
-        args: ['--in-place', '--recursive','src/deepforest/']
-        pass_filenames: false
-        stages: [pre-commit]
+    - id: update-citations
+      name: Update citation count
+      entry: bash -c 'python fetch_google_scholar.py && git add citation_count.json'
+      language: system
+      pass_filenames: false
+      always_run: true
+      stages: [pre-commit]
 
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v4.4.0
+  hooks:
+    - id: trailing-whitespace
+    - id: end-of-file-fixer
+    - id: check-yaml
+    - id: check-added-large-files
+    - id: check-json
+      files: citation_count.json
+
+- repo: https://github.com/google/yapf
+  rev: v0.40.1
+  hooks:
+    - id: yapf
+      language: python
+      additional_dependencies: [toml]
+      args: ['-i', '--style', '.style.yapf']
+      files: |
+        (?x)^(
+          src/deepforest.*\.py|
+          fetch_google_scholar\.py
+        )$
+
+- repo: local
+  hooks:
+    - id: docformatter
+      name: docformatter
+      entry: docformatter
+      language: system
+      types: [python]
+      args: ['--in-place']
+      files: |
+        (?x)^(
+          src/deepforest.*\.py
+        )$
