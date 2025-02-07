@@ -58,7 +58,13 @@ Conda-based installs can be slow. We recommend using
    $ conda activate deepforest
    $ pip install . -U
 
-7. Check if the package was installed; please test using the `sample code <https://deepforest.readthedocs.io/en/latest/getting_started.html>`_.
+7. Verify the installation by running this simple test:
+
+.. code-block:: python
+
+   from deepforest import main
+   model = main.deepforest()
+   print("DeepForest successfully installed!")
 
 Testing
 -------
