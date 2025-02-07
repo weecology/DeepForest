@@ -123,7 +123,7 @@ html_theme_options = {
         "sourcelink",
     ],
     "github_url": "https://github.com/weecology/DeepForest",
-    "navbar_end": ["version-switcher", "theme-switcher", "navbar-icon-links"],
+    "navbar_end": ["theme-switcher", "navbar-icon-links"],
 }
 
 html_sidebars: Dict[str, Any] = {
