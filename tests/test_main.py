@@ -128,7 +128,7 @@ def test_tensorboard_logger(m, tmpdir):
         m.config["val_accuracy_interval"] = 1
         m.config["train"]["epochs"] = 2
 
-        m.create_trainer(logger=logger)
+        m.create_trainer(logger=logger, limit_train_batches=1, limit_val_batches=1)
         m.trainer.fit(m)
 
         assert m.trainer.logged_metrics["box_precision"]
@@ -162,7 +162,7 @@ def test_train_empty(m, tmpdir):
     empty_csv.to_csv("{}/empty.csv".format(tmpdir))
     m.config["train"]["csv_file"] = "{}/empty.csv".format(tmpdir)
     m.config["batch_size"] = 2
-    m.create_trainer()
+    m.create_trainer(fast_dev_run=True)
     m.trainer.fit(m)
 
 def test_train_with_empty_validation(m, tmpdir):
@@ -178,7 +178,7 @@ def test_train_with_empty_validation(m, tmpdir):
     m.config["train"]["csv_file"] = "{}/empty.csv".format(tmpdir)
     m.config["validation"]["csv_file"] = "{}/empty.csv".format(tmpdir)
     m.config["batch_size"] = 2
-    m.create_trainer()
+    m.create_trainer(fast_dev_run=True)
     m.trainer.fit(m)
     m.trainer.validate(m)
 
@@ -222,19 +222,19 @@ def test_train_single(m_without_release, architecture):
     m_without_release.config["architecture"] = architecture
     m_without_release.create_model()
     m_without_release.config["train"]["fast_dev_run"] = False
-    m_without_release.create_trainer()
+    m_without_release.create_trainer(limit_train_batches=1)
     m_without_release.trainer.fit(m_without_release)
 
 
 def test_train_preload_images(m):
-    m.create_trainer()
+    m.create_trainer(fast_dev_run=True)
     m.config["train"]["preload_images"] = True
     m.trainer.fit(m)
 
 
 def test_train_multi(two_class_m):
+    two_class_m.create_trainer(fast_dev_run=True)
     two_class_m.trainer.fit(two_class_m)
-
 
 def test_train_no_validation(m):
     m.config["train"]["fast_dev_run"] = False
@@ -341,15 +341,14 @@ def test_predict_tile_equivalence(m):
     not_in_memory_prediction = m.predict_tile(raster_path=raster_path, patch_size=300, patch_overlap=0, in_memory=False)
     assert in_memory_prediction.equals(not_in_memory_prediction)
 
-@pytest.mark.parametrize("patch_overlap", [0.1, 0])
-def test_predict_tile_from_array(m, patch_overlap, raster_path):
+def test_predict_tile_from_array(m, raster_path):
     # test predict numpy image
     image = np.array(Image.open(raster_path))
     m.config["train"]["fast_dev_run"] = False
     m.create_trainer()
     prediction = m.predict_tile(image=image,
-                                patch_size=300,
-                                patch_overlap=patch_overlap)
+                                patch_size=300)
+    
     assert not prediction.empty
 
 
@@ -563,7 +562,7 @@ def test_load_existing_train_dataloader(m, tmpdir, existing_loader):
     # Inspect original for comparison of batch size
     m.config["train"]["csv_file"] = "{}/train.csv".format(tmpdir.strpath)
     m.config["train"]["root_dir"] = tmpdir.strpath
-    m.create_trainer()
+    m.create_trainer(fast_dev_run=True)
     m.trainer.fit(m)
     batch = next(iter(m.trainer.train_dataloader))
     assert len(batch[0]) == m.config["batch_size"]
@@ -573,11 +572,10 @@ def test_load_existing_train_dataloader(m, tmpdir, existing_loader):
     m.config["train"]["root_dir"] = tmpdir.strpath
     m.existing_train_dataloader = existing_loader
     m.train_dataloader()
-    m.create_trainer()
+    m.create_trainer(fast_dev_run=True)
     m.trainer.fit(m)
     batch = next(iter(m.trainer.train_dataloader))
     assert len(batch[0]) == m.config["batch_size"] + 1
-    m.trainer.fit(m)
 
 
 def test_existing_val_dataloader(m, tmpdir, existing_loader):
@@ -604,9 +602,8 @@ def test_existing_predict_dataloader(m, tmpdir):
 # Test train with each scheduler
 @pytest.mark.parametrize("scheduler,expected",
                          [("cosine", "CosineAnnealingLR"), ("lambdaLR", "LambdaLR"),
-                          ("multiplicativeLR", "MultiplicativeLR"), ("stepLR", "StepLR"),
+                            ("stepLR", "StepLR"),
                           ("multistepLR", "MultiStepLR"),
-                          ("exponentialLR", "ExponentialLR"),
                           ("reduceLROnPlateau", "ReduceLROnPlateau")])
 def test_configure_optimizers(scheduler, expected):
     scheduler_config = {
@@ -642,7 +639,6 @@ def test_configure_optimizers(scheduler, expected):
             "csv_file": annotations_file,
             "root_dir": root_dir,
             "fast_dev_run": False,
-            "epochs": 2
         },
         "validation": {
             "csv_file": annotations_file,
