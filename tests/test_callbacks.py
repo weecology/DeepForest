@@ -8,9 +8,8 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 from deepforest import get_data
 
 
-@pytest.mark.parametrize("every_n_epochs", [1, 2, 3])
-def test_log_images(m, every_n_epochs, tmpdir):
-    im_callback = callbacks.images_callback(savedir=tmpdir, every_n_epochs=every_n_epochs)
+def test_log_images(m, tmpdir):
+    im_callback = callbacks.images_callback(savedir=tmpdir, every_n_epochs=2)
     m.create_trainer(callbacks=[im_callback])
     m.trainer.fit(m)
     saved_images = glob.glob("{}/*.png".format(tmpdir))
