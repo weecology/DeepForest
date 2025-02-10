@@ -290,7 +290,7 @@ def determine_geometry_type(df):
 
 def read_coco(json_file):
     """Read a COCO format JSON file and return a pandas dataframe.
-    
+
     Args:
         json_file: Path to the COCO segmentation JSON file
     Returns:
@@ -298,26 +298,26 @@ def read_coco(json_file):
     """
     with open(json_file, "r") as f:
         coco_data = json.load(f)
-        
+
         polygons = []
         filenames = []
         image_ids = {image["id"]: image["file_name"] for image in coco_data["images"]}
-        
+
         for annotation in coco_data["annotations"]:
             segmentation_mask = annotation["segmentation"][0]
             # Convert flat list to coordinate pairs
-            pairs = [(segmentation_mask[i], segmentation_mask[i+1]) 
-                    for i in range(0, len(segmentation_mask), 2)]
+            pairs = [(segmentation_mask[i], segmentation_mask[i + 1])
+                     for i in range(0, len(segmentation_mask), 2)]
             polygon = shapely.geometry.Polygon(pairs)
             filenames.append(image_ids[annotation["image_id"]])
             polygons.append(polygon.wkt)
-        
+
         return pd.DataFrame({"image_path": filenames, "geometry": polygons})
 
 
 def read_file(input, root_dir=None):
     """Read a file and return a geopandas dataframe.
-    
+
     This is the main entry point for reading annotations into deepforest.
     Args:
         input: a path to a file or a pandas dataframe
