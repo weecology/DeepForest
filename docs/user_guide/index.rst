@@ -29,6 +29,7 @@ Guides
     11_training
     12_evaluation
     13_annotation
+    17_airborne
     examples/simple_load_and_predict
     examples/Australia
     examples/nest_detection
