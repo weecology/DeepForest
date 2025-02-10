@@ -4,19 +4,18 @@ import os
 import pytest
 import pandas as pd
 import rasterio as rio
-from rasterio.plot import show
-from rasterio import warp
 from shapely import geometry
 import geopandas as gpd
+import json
 
 from deepforest import get_data
 from deepforest import visualize
 from deepforest import utilities
-from deepforest import main
 
 # import general model fixture
 from .conftest import download_release
 import pytest
+import shapely
 
 from PIL import Image
 
@@ -493,3 +492,46 @@ def test_boxes_to_shapefile_projected(m):
     # Edge case, only one row in predictions
     gdf = utilities.boxes_to_shapefile(df.iloc[:1, ], root_dir=os.path.dirname(img), projected=True)
     assert gdf.shape[0] == 1
+
+
+def test_read_coco_json(tmpdir):
+    """Test reading a COCO format JSON file"""
+    # Create a sample COCO JSON structure
+    coco_data = {
+        "images": [
+            {"id": 1, "file_name": "OSBS_029.png"},
+            {"id": 2, "file_name": "OSBS_029.tif"}
+        ],
+        "annotations": [
+            {
+                "image_id": 1,
+                "segmentation": [[0, 0, 0, 10, 10, 10, 10, 0]]  # Simple square
+            },
+            {
+                "image_id": 2,
+                "segmentation": [[5, 5, 5, 15, 15, 15, 15, 5]]  # Another square
+            }
+        ]
+    }
+    
+    # Write the sample JSON to a temporary file
+    json_path = tmpdir.join("test_coco.json")
+    with open(json_path, "w") as f:
+        json.dump(coco_data, f)
+    
+    # Read the file using our utility
+    df = utilities.read_file(str(json_path))
+    
+    # Assert the dataframe has the expected structure
+    assert df.shape[0] == 2  # Two annotations
+    assert "image_path" in df.columns
+    assert "geometry" in df.columns
+    
+    # Check the image paths are correct
+    assert "OSBS_029.png" in df.image_path.values
+    assert "OSBS_029.tif" in df.image_path.values
+    
+    # Verify the geometries are valid polygons
+    for geom in df.geometry:
+        assert geom.is_valid
+        assert isinstance(geom, shapely.geometry.Polygon)

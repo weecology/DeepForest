@@ -288,9 +288,36 @@ def determine_geometry_type(df):
     return geometry_type
 
 
+def read_coco(json_file):
+    """Read a COCO format JSON file and return a pandas dataframe.
+    
+    Args:
+        json_file: Path to the COCO segmentation JSON file
+    Returns:
+        df: A pandas dataframe with image_path and geometry columns
+    """
+    with open(json_file, "r") as f:
+        coco_data = json.load(f)
+        
+        polygons = []
+        filenames = []
+        image_ids = {image["id"]: image["file_name"] for image in coco_data["images"]}
+        
+        for annotation in coco_data["annotations"]:
+            segmentation_mask = annotation["segmentation"][0]
+            # Convert flat list to coordinate pairs
+            pairs = [(segmentation_mask[i], segmentation_mask[i+1]) 
+                    for i in range(0, len(segmentation_mask), 2)]
+            polygon = shapely.geometry.Polygon(pairs)
+            filenames.append(image_ids[annotation["image_id"]])
+            polygons.append(polygon.wkt)
+        
+        return pd.DataFrame({"image_path": filenames, "geometry": polygons})
+
+
 def read_file(input, root_dir=None):
     """Read a file and return a geopandas dataframe.
-
+    
     This is the main entry point for reading annotations into deepforest.
     Args:
         input: a path to a file or a pandas dataframe
@@ -303,13 +330,15 @@ def read_file(input, root_dir=None):
     if isinstance(input, str):
         if input.endswith(".csv"):
             df = pd.read_csv(input)
+        elif input.endswith(".json"):
+            df = read_coco(input)
         elif input.endswith((".shp", ".gpkg")):
             df = shapefile_to_annotations(input, root_dir=root_dir)
         elif input.endswith(".xml"):
             df = read_pascal_voc(input)
         else:
             raise ValueError(
-                "File type {} not supported. DeepForest currently supports .csv, .shp or .xml files. See https://deepforest.readthedocs.io/en/latest/annotation.html "
+                "File type {} not supported. DeepForest currently supports .csv, .shp, .gpkg, .xml, and .json files. See https://deepforest.readthedocs.io/en/latest/annotation.html "
                 .format(df))
     else:
         if type(input) == pd.DataFrame:

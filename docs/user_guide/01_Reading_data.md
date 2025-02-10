@@ -2,6 +2,20 @@
 
 The most time-consuming part of many open-source projects is getting the data in and out. This is because there are so many formats and ways a user might interact with the package. DeepForest has collated many use cases into a single `read_file` function that will attempt to read many common data formats, both projected and unprojected, and create a dataframe ready for DeepForest functions.
 
+At a high level, `read_file` will:
+
+1. Check the file extension to determine the format.
+2. Read the file into a pandas dataframe.
+3. Append the location of the image directory as an attribute.
+
+Allows for the following formats:
+
+- CSV (`.csv`)
+- Shapefile (`.shp`)
+- GeoPackage (`.gpkg`)
+- COCO (`.json`)
+- Pascal VOC (`.xml`)
+
 ## Annotation Geometries and Coordinate Systems
 
 DeepForest was originally designed for bounding box annotations. As of DeepForest 1.4.0, point and polygon annotations are also supported. There are two ways to format annotations, depending on the annotation platform you are using. `read_file` can read points, polygons, and boxes, in both image coordinate systems (relative to image origin at top-left 0,0) as well as projected coordinates on the Earth's surface. The `read_file` method also appends the location of the current image directory as an attribute. To access this attribute use the `root_dir` attribute.
@@ -57,6 +71,23 @@ df.root_dir
 '/Users/benweinstein/Documents/DeepForest/deepforest/data'
 ```
 
+#### COCO
+
+COCO format is a popular format for object detection tasks. It is a JSON file that contains information about the images and annotations.
+
+```python
+df = utilities.read_file(input="/path/to/coco_annotations.json")
+df.head()
+```
+
+#### Pascal VOC
+
+Pascal VOC format is a popular format for object detection tasks. It is a XML file that contains information about the images and annotations.
+
+```python
+df = utilities.read_file(input="/path/to/pascal_voc_annotations.xml")
+df.head()
+```
 
 #### Shapefiles
 
