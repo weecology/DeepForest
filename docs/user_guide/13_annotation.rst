@@ -3,10 +3,36 @@ Annotation
 
 Annotations play a crucial role in machine learning projects. If you're unhappy with your model's performance, annotating new samples is the best first step to improving it.
 
-How Should I Annotate Images?
+*Note: DeepForest >1.4.0 supports annotations in COCO and Pascal VOC format.* 
+
+The machine learning annotation space is moving very quickly, there are dozens of annotation tools and formats. DeepForest supports the following formats:
+
+- CSV (`.csv`)
+- Shapefile (`.shp`)
+- GeoPackage (`.gpkg`)
+- COCO (`.json`)
+- Pascal VOC (`.xml`)
+
+using the `read_file` function.
+
+An incomplete list of annotation tools DeepForest users have reported success with:
+
+- QGIS
+- Label Studio
+- CVAT
+- Labelme
+- Agentic
+- AWS Ground Truth
+- LabelBox
+- Roboflow
+- and many more 
+
+We intentionally do not create our own annotation tools, but rather focus on supporting the community created tools. Look for exports in .xml, .json or .csv formats, which are all common in the above tools.
+
+How do we annotate images?
 -----------------------------
 
-For quick annotations of a few images, we recommend using QGIS or ArcGIS, either as projected or unprojected data. You can create a shapefile for each image.
+For quick annotations of a few images, we use QGIS either as projected or unprojected data. You can create a shapefile for each image.
 
 .. figure:: ../../www/QGIS_annotation.png
    :alt: QGIS annotation
@@ -155,70 +181,3 @@ Please Make Your Annotations Open-Source!
 =========================================
 
 DeepForest's models are not perfect. Please consider sharing your annotations with the community to make the models stronger. You can post your annotations on Zenodo or open an `issue <https://github.com/weecology/DeepForest/issues>`_ to share your data with the maintainers.
-
-How Can I Get New Airborne Data?
-================================
-
-Many remote sensing assets are available via ArcGIS REST protocol. DeepForest provides tools to work with these assets, such as `California NAIP data <https://map.dfg.ca.gov/arcgis/rest/services/Base_Remote_Sensing/NAIP_2020_CIR/ImageServer>`_.
-
-Specify a Lat-Long Box and Crop an ImageServer Asset
-----------------------------------------------------
-
-.. code-block:: python
-
-   from deepforest import utilities
-   import matplotlib.pyplot as plt
-   import rasterio as rio
-   import os
-   import asyncio
-   from aiolimiter import AsyncLimiter
-
-   async def main():
-       url = "https://map.dfg.ca.gov/arcgis/rest/services/Base_Remote_Sensing/NAIP_2020_CIR/ImageServer/"
-       xmin, ymin, xmax, ymax = -124.112622, 40.493891, -124.111536, 40.49457
-       tmpdir = "<download_location>"
-       image_name = "example_crop.tif"
-
-       semaphore = asyncio.Semaphore(1)
-       limiter = AsyncLimiter(1, 0.05)
-
-       os.makedirs(tmpdir, exist_ok=True)
-
-       filename = await utilities.download_ArcGIS_REST(
-           semaphore, limiter, url, xmin, ymin, xmax, ymax, "EPSG:4326", savedir=tmpdir, image_name=image_name
-       )
-
-       assert os.path.exists(os.path.join(tmpdir, image_name))
-
-       with rio.open(os.path.join(tmpdir, image_name)) as src:
-           assert src.crs is not None
-           plt.imshow(src.read().transpose(1, 2, 0))
-           plt.show()
-
-   asyncio.run(main())
-
-Downloading a Batch of Images
------------------------------
-
-.. code-block:: python
-
-   import asyncio
-   import pandas as pd
-   from aiolimiter import AsyncLimiter
-   from deepforest import utilities
-
-   async def download_crops(result_df, tmp_dir):
-       url = 'https://map.dfg.ca.gov/arcgis/rest/services/Base_Remote_Sensing/NAIP_2022/ImageServer'
-
-       semaphore = asyncio.Semaphore(20)
-       limiter = AsyncLimiter(1, 0.05)
-       tasks = []
-
-       for idx, row in result_df.iterrows():
-           xmin, ymin, xmax, ymax = row['xmin'], row['ymin'], row['xmax'], row['ymax']
-           os.makedirs(tmp_dir, exist_ok=True)
-           image_name = f"image_{idx}.tif"
-           task = utilities.download_ArcGIS_REST(semaphore, limiter, url, xmin, ymin, xmax, ymax, "EPSG:4326", savedir=tmp_dir, image_name=image_name)
-           tasks.append(task)
-
-       await asyncio.gather(*tasks)
