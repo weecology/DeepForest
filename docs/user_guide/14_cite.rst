@@ -13,12 +13,28 @@ Software
    updated <https://doc.arcgis.com/en/pretrained-models/latest/imagery/introduction-to-tree-detection.htm>`__
 -  `Agisoft - Automatic detection of objects on
    orthomosaics <https://agisoft.freshdesk.com/support/solutions/articles/31000162552-automatic-detection-of-objects-on-orthomosaic>`__
+-  `TreeEyed: A QGIS plugin for tree monitoring in silvopastoral systems using state of the art AI models <https://www.sciencedirect.com/science/article/pii/S235271102500038X>`__, `GitHub <https://github.com/afruizh/TreeEyed>`__
 
 Research
 --------
 
+2025
+~~~~
+
+Xu, T., Wang, T., & Skidmore, A. K. (2025). Fusing aerial photographs and
+airborne LiDAR data to improve the accuracy of detecting individual trees
+in urban and peri-urban areas. Urban Forestry & Urban Greening, 105, 128696.
+https://doi.org/10.1016/j.ufug.2025.128696
+
+
 2024
 ~~~~
+
+Kurbanov, R. K., Dalevich, A. N., Dorokhov, A. S., Zakharova, N. I.,
+Rebouh, N. Y., Kucher, D. E., Litvinov, M. A., & Ali, A. M. (2024).
+Monitoring of Heracleum sosnowskyi Manden Using UAV Multisensors: Case Study
+in Moscow Region, Russia. Agronomy, 14(10), 2451.
+https://doi.org/10.3390/agronomy14102451
 
 Afsar, M.M., Bakhshi, A.D., Hussain, E. et al. A deep learning-based
 framework for object recognition in ecological environments with dense
