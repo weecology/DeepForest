@@ -211,9 +211,9 @@ def test_crop_raster_valid_crop(tmpdir):
     # Call the function under test
     result = utilities.crop_raster(bounds, rgb_path=rgb_path, savedir=tmpdir, filename="crop")
 
-    # Assert the output filename
+    # Assert the output filename (normalize both paths)
     expected_filename = str(tmpdir.join("crop.tif"))
-    assert result == expected_filename
+    assert os.path.normpath(result) == os.path.normpath(expected_filename)
 
     # Assert the saved crop
     with rio.open(result) as src:
@@ -263,9 +263,9 @@ def test_crop_raster_png_unprojected(tmpdir):
     # Call the function under test
     result = utilities.crop_raster(bounds, rgb_path=rgb_path, savedir=savedir, filename=filename, driver="PNG")
 
-    # Assert the output filename
+    # Assert the output filename (normalize both paths)
     expected_filename = os.path.join(savedir, "crop.png")
-    assert result == expected_filename
+    assert os.path.normpath(result) == os.path.normpath(expected_filename)
 
     # Assert the saved crop
     with rio.open(result) as src:
