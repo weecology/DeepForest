@@ -41,7 +41,7 @@ Get suggestions on how to improve a model by using the [discussion board](https:
 
 # Developer Guidelines
 
-We welcome pull requests for any issue or extension of the models. Please follow the [developers guide](https://deepforest.readthedocs.io/en/latest/CONTRIBUTING.html).
+We welcome pull requests for any issue or extension of the models. Please follow the [developer's guide](https://deepforest.readthedocs.io/en/latest/development/contributing.html).
 
 ## License
 
