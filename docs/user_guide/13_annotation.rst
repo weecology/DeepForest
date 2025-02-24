@@ -64,7 +64,7 @@ Steps to Export in Pascal VOC Format:
 3. Select Pascal VOC XML as the export format.
 4. Save the exported XML file.
 
-For more details on reading Pascal VOC annotations in DeepForest, see: `Reading XML Annotations in Pascal VOC Format <https://deepforest.readthedocs.io/en/v1.4.1/user_guide/13_annotation.html#reading-xml-annotations-in-pascal-voc-format>`_
+For more details on reading Pascal VOC annotations in DeepForest, see: :ref:`reading-xml-annotations-in-pascal-voc-format`
 
 Do I Need to Annotate All Objects in My Image?
 ----------------------------------------------
@@ -157,6 +157,8 @@ You can speed up new annotations by starting with model predictions. Below is an
        basename = os.path.splitext(os.path.basename(path))[0]
        shp = boxes_to_shapefile(boxes, root_dir=PATH_TO_DIR, projected=False)
        shp.to_file(f"{PATH_TO_DIR}/{basename}.shp")
+
+.. _reading-xml-annotations-in-pascal-voc-format:
 
 Reading XML Annotations in Pascal VOC Format
 --------------------------------------------
