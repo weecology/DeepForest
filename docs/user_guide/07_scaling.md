@@ -7,6 +7,7 @@ It is more efficient to run a larger batch size on a single GPU. This is because
 ```
 m.config["batch_size"] = 16
 ```
+
 ## Training
 
 DeepForest's create_trainer argument passes any argument to pytorch lightning. This means we can use pytorch lightnings amazing distributed training specifications. There is a large amount of documentation, but we find the most helpful section is
@@ -33,7 +34,7 @@ https://lightning.ai/docs/pytorch/latest/clouds/cluster_advanced.html#troublesho
 
 ## Prediction
 
-Often we have a large number of tiles we want to predict. DeepForest uses [PyTorch Lightning](https://lightning.ai/docs/pytorch/stable/) to scale inference. This gives us access to powerful tools for scaling without any changes to user code. DeepForest automatically detects whether you are running on GPU or CPU. Within a single GPU node, you can scale training without needing to specify any additional arguments, since we use the ['auto' devices](https://lightning.ai/docs/pytorch/stable/common/trainer.html#devices) detection within PyTorch Lightning. For advanced users, DeepForest can [run across multiple SLURM nodes](https://lightning.ai/docs/pytorch/stable/clouds/cluster_advanced.html), each with multiple GPUs. 
+Often we have a large number of tiles we want to predict. DeepForest uses [PyTorch Lightning](https://lightning.ai/docs/pytorch/stable/) to scale inference. This gives us access to powerful tools for scaling without any changes to user code. DeepForest automatically detects whether you are running on GPU or CPU. The parallelization strategy is to run each tile on a separate GPU, we cannot parallelize crops from within the same tile across GPUs inside of main.predict_tile(). If you set m.create_trainer(accelerator="gpu", devices=4), and run predict_tile, you will only use 1 GPU per tile. This is because we need access to all crops to create a mosiac of the predictions.
 
 ### Scaling prediction across multiple GPUs
 
