@@ -79,10 +79,42 @@ def simple_resnet_50(num_classes=2):
 
 
 class CropModel(LightningModule):
-    """An architecture agnostic class for classification based on crops coming
-    from the core detection models."""
+    """A PyTorch Lightning module for classifying image crops from object
+    detection models.
 
-    def __init__(self, num_classes, batch_size=4, num_workers=0, lr=0.0001, model=None):
+    This class provides a flexible architecture for training classification models on cropped
+    regions identified by object detection models. It supports using either a default ResNet-50
+    model or a custom provided model.
+
+    Args:
+        num_classes (int): Number of classes for classification
+        batch_size (int, optional): Batch size for training. Defaults to 4.
+        num_workers (int, optional): Number of worker processes for data loading. Defaults to 0.
+        lr (float, optional): Learning rate for optimization. Defaults to 0.0001.
+        model (nn.Module, optional): Custom PyTorch model to use. If None, uses ResNet-50. Defaults to None.
+        label_dict (dict, optional): Mapping of class labels to numeric indices. Defaults to None.
+
+    Attributes:
+        model (nn.Module): The classification model (ResNet-50 or custom)
+        accuracy (torchmetrics.Accuracy): Per-class accuracy metric
+        total_accuracy (torchmetrics.Accuracy): Overall accuracy metric
+        precision_metric (torchmetrics.Precision): Precision metric
+        metrics (torchmetrics.MetricCollection): Collection of all metrics
+        batch_size (int): Batch size for training
+        num_workers (int): Number of data loading workers
+        lr (float): Learning rate
+        label_dict (dict): Label to index mapping {"Bird": 0, "Mammal": 1}
+        numeric_to_label_dict (dict): Index to label mapping {0: "Bird", 1: "Mammal"}
+    """
+
+    def __init__(self,
+                 num_classes,
+                 batch_size=4,
+                 num_workers=0,
+                 lr=0.0001,
+                 model=None,
+                 label_dict=None):
+
         super().__init__()
 
         # Model
@@ -110,6 +142,11 @@ class CropModel(LightningModule):
         self.batch_size = batch_size
         self.num_workers = num_workers
         self.lr = lr
+
+        # Label dict
+        self.label_dict = label_dict
+        if label_dict is not None:
+            self.numeric_to_label_dict = {v: k for k, v in label_dict.items()}
 
     def create_trainer(self, **kwargs):
         """Create a pytorch lightning trainer object."""
