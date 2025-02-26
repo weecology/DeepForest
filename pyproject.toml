@@ -1,9 +1,6 @@
 [build-system]
 build-backend = "setuptools.build_meta"
-requires = [
-    "setuptools>=61",
-    "setuptools-scm[toml]>=6.2.3",
-]
+requires = ["setuptools>=61", "setuptools-scm[toml]>=6.2.3"]
 
 [project]
 name = "deepforest"
@@ -26,7 +23,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering :: Image Processing",
-    "Topic :: Scientific/Engineering :: Image Recognition"
+    "Topic :: Scientific/Engineering :: Image Recognition",
 ]
 
 authors = [
@@ -34,8 +31,8 @@ authors = [
     { name = "Henry Senyondo", email = "henrykironde@gmail.com" },
     { name = "Muhammed Magdy", email = "muhammedmagdy1015@gmail.com" },
     { name = "Om Doiphode", email = "omdoiphode161@gmail.com" },
-    { name = "Dingyi Fang", email = "imfangdingyi@gmail.com" }, 
-    { name = "Ethan White", email = "ethan@weecology.org" }
+    { name = "Dingyi Fang", email = "imfangdingyi@gmail.com" },
+    { name = "Ethan White", email = "ethan@weecology.org" },
 ]
 
 urls.Documentation = "http://deepforest.readthedocs.io/en/latest/"
@@ -67,7 +64,7 @@ dependencies = [
     "scipy>1.5",
     "six",
     "slidingwindow",
-    "sphinx",
+    "sphinx<8.2.0",
     "supervision",
     "torch",
     "torchvision>=0.13",
