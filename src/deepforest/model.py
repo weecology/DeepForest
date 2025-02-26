@@ -79,7 +79,8 @@ def simple_resnet_50(num_classes=2):
 
 
 class CropModel(LightningModule):
-    """A PyTorch Lightning module for classifying image crops from object detection models.
+    """A PyTorch Lightning module for classifying image crops from object
+    detection models.
 
     This class provides a flexible architecture for training classification models on cropped
     regions identified by object detection models. It supports using either a default ResNet-50
@@ -96,7 +97,7 @@ class CropModel(LightningModule):
     Attributes:
         model (nn.Module): The classification model (ResNet-50 or custom)
         accuracy (torchmetrics.Accuracy): Per-class accuracy metric
-        total_accuracy (torchmetrics.Accuracy): Overall accuracy metric  
+        total_accuracy (torchmetrics.Accuracy): Overall accuracy metric
         precision_metric (torchmetrics.Precision): Precision metric
         metrics (torchmetrics.MetricCollection): Collection of all metrics
         batch_size (int): Batch size for training
