@@ -106,8 +106,14 @@ class CropModel(LightningModule):
         numeric_to_label_dict (dict): Index to label mapping {0: "Bird", 1: "Mammal"}
     """
 
-    def __init__(self, num_classes, batch_size=4, num_workers=0, lr=0.0001, model=None, label_dict=None):
-        
+    def __init__(self,
+                 num_classes,
+                 batch_size=4,
+                 num_workers=0,
+                 lr=0.0001,
+                 model=None,
+                 label_dict=None):
+
         super().__init__()
 
         # Model
