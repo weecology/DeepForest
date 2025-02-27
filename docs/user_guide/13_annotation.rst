@@ -53,6 +53,19 @@ For long-term projects, we recommend using `Label Studio <https://labelstud.io/>
 
    Label Studio annotation platform.
 
+Exporting Annotations for DeepForest
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+To ensure compatibility with DeepForest, export your annotations from Label Studio in Pascal VOC XML format. This format is widely used for object detection tasks and can be directly read by DeepForest's ``read_pascal_voc`` function.
+
+Steps to Export in Pascal VOC Format:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+1. Navigate to your project in Label Studio.
+2. Click on the Export button.
+3. Select Pascal VOC XML as the export format.
+4. Save the exported XML file.
+
+For more details on reading Pascal VOC annotations in DeepForest, see: :ref:`reading-xml-annotations-in-pascal-voc-format`
+
 Do I Need to Annotate All Objects in My Image?
 ----------------------------------------------
 
@@ -144,6 +157,8 @@ You can speed up new annotations by starting with model predictions. Below is an
        basename = os.path.splitext(os.path.basename(path))[0]
        shp = boxes_to_shapefile(boxes, root_dir=PATH_TO_DIR, projected=False)
        shp.to_file(f"{PATH_TO_DIR}/{basename}.shp")
+
+.. _reading-xml-annotations-in-pascal-voc-format:
 
 Reading XML Annotations in Pascal VOC Format
 --------------------------------------------
