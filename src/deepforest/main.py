@@ -157,9 +157,9 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             self.numeric_to_label_dict = {v: k for k, v in self.label_dict.items()}
 
     def set_labels(self, label_dict):
-        """
-        Set new label mapping, updating both the label dictionary (str -> int) and its inverse (int -> str).
-        
+        """Set new label mapping, updating both the label dictionary (str ->
+        int) and its inverse (int -> str).
+
         Args:
             label_dict (dict): Dictionary mapping class names to numeric IDs.
         """
