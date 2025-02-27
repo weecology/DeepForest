@@ -8,6 +8,7 @@ import pandas as pd
 import numpy as np
 import glob
 import tempfile
+from deepforest.visualize import plot_results
 
 from pytorch_lightning import Callback
 from deepforest import dataset
@@ -58,12 +59,10 @@ class images_callback(Callback):
             selected_images = df.image_path.unique()[:self.n]
         df = df[df.image_path.isin(selected_images)]
 
-        visualize.plot_prediction_dataframe(
-            df,
-            root_dir=pl_module.config["validation"]["root_dir"],
-            savedir=self.savedir,
-            color=self.color,
-            thickness=self.thickness)
+        plot_results(results=df,
+                     savedir=self.savedir,
+                     results_color=self.color,
+                     thickness=self.thickness)
 
         try:
             saved_plots = glob.glob("{}/*.png".format(self.savedir))
