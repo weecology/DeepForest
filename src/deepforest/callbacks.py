@@ -9,6 +9,7 @@ import numpy as np
 import glob
 import tempfile
 from deepforest.visualize import plot_results
+from deepforest.utilities import ColorPalette
 
 from pytorch_lightning import Callback
 from deepforest import dataset
@@ -58,6 +59,14 @@ class images_callback(Callback):
         else:
             selected_images = df.image_path.unique()[:self.n]
         df = df[df.image_path.isin(selected_images)]
+
+        # Ensure color is correctly assigned
+        if self.color is None:
+            num_classes = len(df["label"].unique())  # Determine number of classes
+            results_color = ColorPalette(
+                num_classes)  # Generate appropriate color palette
+        else:
+            results_color = self.color
 
         plot_results(results=df,
                      savedir=self.savedir,
