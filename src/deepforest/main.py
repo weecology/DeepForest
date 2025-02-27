@@ -165,10 +165,9 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         """
         if len(label_dict) != self.config["num_classes"]:
             raise ValueError("The length of label_dict must match the number of classes.")
-        
+
         self.label_dict = label_dict
         self.numeric_to_label_dict = {v: k for k, v in label_dict.items()}
-
 
     def use_release(self, check_release=True):
         """Use the latest DeepForest model release from Hugging Face,
