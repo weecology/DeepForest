@@ -5,7 +5,8 @@
 workers: 0
 devices: auto
 accelerator: auto
-batch_size: 1
+train_batch_size: 2
+predict_batch_size: 8
 
 # Model Architecture
 architecture: 'retinanet'
