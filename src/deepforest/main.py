@@ -486,19 +486,21 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                                              num_workers=self.config["workers"])
 
         if visualize_with == "kangas":
-            # Generate predictions and visualize
-            predictions = self.trainer.predict(self, loader)
+            self.model.eval()  # Ensure evaluation mode
+            predictions = []
+            for batch_idx, batch in enumerate(loader):
+                if isinstance(batch, (tuple, list)) and len(batch) > 1:
+                    images, _, paths = batch
+                else:
+                    images = batch if isinstance(batch, (tuple, list)) else batch
+                    paths = [ds.paths[i] for i in range(batch_idx * self.config["batch_size"], 
+                                                        min((batch_idx + 1) * self.config["batch_size"], len(ds.paths)))]
+                batch_predictions = self.predict_step(images, batch_idx)
+                for pred, path in zip(batch_predictions, paths):
+                    pred['image_path'] = path
+                    predictions.append(pred)
             if predictions:
-                flattened_predictions = [item for batch in predictions for item in batch]
-                # Extract image paths from dataset if available, else use placeholder
-                image_paths = [
-                    getattr(ds, "paths",
-                            [f"image_{i}"
-                             for i in range(len(flattened_predictions))])[i]
-                    for i in range(len(flattened_predictions))
-                ]
-                self.visualize_kangas(flattened_predictions, image_paths)
-
+                self.visualize_kangas(predictions)
         return loader
 
     def predict_image(self,
@@ -1028,15 +1030,28 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         image_paths: typing.Optional[typing.List[str]] = None
     ) -> typing.List[pd.DataFrame]:
 
-        batch_results = self.model(batch)
+        self.model.eval()  # Ensure evaluation mode
+        with torch.no_grad():
+            batch_results = self.model(batch)  # Returns list of dicts: [{"boxes": tensor, "labels": tensor, "scores": tensor}, ...]
 
         results = []
         for result in batch_results:
-            boxes = visualize.format_boxes(result)
-            results.append(boxes)
+            # Ensure result is a dict from RetinaNet
+            if isinstance(result, dict):
+                boxes = visualize.format_boxes(result)
+                results.append(boxes)
+            else:
+                # Handle unexpected format (e.g., empty or malformed output)
+                empty_df = pd.DataFrame(columns=["xmin", "ymin", "xmax", "ymax", "label", "score"])
+                results.append(empty_df)
 
-        if visualize_with == "kangas":
-            self.visualize_kangas(results, image_paths)
+        if visualize_with == "kangas" and image_paths:
+            if len(image_paths) != len(results):
+                raise ValueError(f"Length of image_paths ({len(image_paths)}) must match predictions ({len(results)})")
+            for pred, path in zip(results, image_paths):
+                pred['image_path'] = path
+            self.visualize_kangas(results)
+
         return results
 
     def predict_batch(
@@ -1076,12 +1091,23 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         with torch.no_grad():
             predictions = self.predict_step(images, 0)
 
-        #convert predictions to dataframes
-        results = [utilities.read_file(pred) for pred in predictions if pred is not None]
+        # Handle predictions, including empty ones
+        results = []
+        for i, pred in enumerate(predictions):
+            if pred is None or pred.empty:
+                # Create an empty DataFrame with expected columns
+                empty_df = pd.DataFrame(columns=["xmin", "ymin", "xmax", "ymax", "label", "score", "image_path"])
+                if image_paths and i < len(image_paths):
+                    empty_df["image_path"] = [image_paths[i]]
+                results.append(empty_df)
+            else:
+                pred_df = utilities.read_file(pred)
+                if image_paths and i < len(image_paths):
+                    pred_df["image_path"] = image_paths[i]
+                results.append(pred_df)
 
         if visualize_with == "kangas":
-            self.visualize_kangas(results, image_paths=image_paths)
-
+            self.visualize_kangas(results)
         return results
 
     def configure_optimizers(self):
