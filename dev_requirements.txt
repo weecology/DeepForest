@@ -31,7 +31,7 @@ recommonmark
 rtree
 safetensors
 slidingwindow
-sphinx<8.2.0
+sphinx
 sphinx_markdown_tables
 sphinx_rtd_theme
 sphinx-design
