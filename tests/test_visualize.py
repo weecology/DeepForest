@@ -7,7 +7,6 @@ import pytest
 import numpy as np
 import pandas as pd
 
-import pandas as pd
 import geopandas as gpd
 from shapely import geometry
 import cv2

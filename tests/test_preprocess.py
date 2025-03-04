@@ -14,7 +14,6 @@ from deepforest import visualize
 
 import rasterio
 from shapely import geometry
-from shapely import geometry
 
 
 @pytest.fixture()
