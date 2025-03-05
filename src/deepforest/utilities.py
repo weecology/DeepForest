@@ -349,8 +349,8 @@ def read_file(input, root_dir=None):
             raise ValueError("No annotations in dataframe")
         # If the geometry column is present, convert to geodataframe directly
         if "geometry" in df.columns:
-            df['geometry'] = gpd.GeoSeries.from_wkt(df['geometry'])
-            df.crs = None
+            if pd.api.types.infer_dtype(df['geometry']) == 'string':
+                df['geometry'] = gpd.GeoSeries.from_wkt(df['geometry'])
         else:
             # Detect geometry type
             geom_type = determine_geometry_type(df)
