@@ -8,6 +8,7 @@ pydata-sphinx-theme
 geopandas
 huggingface_hub>=0.25.0
 h5py
+kangas
 matplotlib
 nbmake
 nbsphinx
