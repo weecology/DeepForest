@@ -19,7 +19,6 @@ from huggingface_hub import PyTorchModelHubMixin
 from deepforest import dataset, visualize, get_data, utilities, predict
 from deepforest import evaluate as evaluate_iou
 
-from huggingface_hub import PyTorchModelHubMixin
 from lightning_fabric.utilities.exceptions import MisconfigurationException
 
 

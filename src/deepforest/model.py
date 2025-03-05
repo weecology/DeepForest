@@ -3,14 +3,11 @@ from deepforest.models import *
 import torch
 from pytorch_lightning import LightningModule, Trainer
 import os
-import torch
 import torchmetrics
 from torchvision import models, transforms
 from torchvision.datasets import ImageFolder
 import numpy as np
 import rasterio
-import numpy as np
-import torch
 from torch.utils.data import Dataset
 import torch.nn.functional as F
 import cv2
