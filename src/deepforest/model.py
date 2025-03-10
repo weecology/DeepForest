@@ -84,7 +84,7 @@ class CropModel(LightningModule):
     model or a custom provided model.
 
     Args:
-        num_classes (int): Number of classes for classification
+        num_classes (int, optional): Number of classes for classification. If None, it will be inferred from the checkpoint during loading.
         batch_size (int, optional): Batch size for training. Defaults to 4.
         num_workers (int, optional): Number of worker processes for data loading. Defaults to 0.
         lr (float, optional): Learning rate for optimization. Defaults to 0.0001.
@@ -105,35 +105,38 @@ class CropModel(LightningModule):
     """
 
     def __init__(self,
-                 num_classes,
+                 num_classes=None,
                  batch_size=4,
                  num_workers=0,
                  lr=0.0001,
                  model=None,
                  label_dict=None):
-
         super().__init__()
-
-        # Model
+        self.save_hyperparameters(ignore=["model"])
+        # Always set self.num_classes so it exists on the instance
         self.num_classes = num_classes
-        if model == None:
-            self.model = simple_resnet_50(num_classes=num_classes)
-        else:
-            self.model = model
 
-        # Metrics
-        self.accuracy = torchmetrics.Accuracy(average='none',
-                                              num_classes=num_classes,
-                                              task="multiclass")
-        self.total_accuracy = torchmetrics.Accuracy(num_classes=num_classes,
-                                                    task="multiclass")
-        self.precision_metric = torchmetrics.Precision(num_classes=num_classes,
-                                                       task="multiclass")
-        self.metrics = torchmetrics.MetricCollection({
-            "Class Accuracy": self.accuracy,
-            "Accuracy": self.total_accuracy,
-            "Precision": self.precision_metric
-        })
+        if num_classes is not None:
+            if model is None:
+                self.model = simple_resnet_50(num_classes=num_classes)
+            else:
+                self.model = model
+
+            self.accuracy = torchmetrics.Accuracy(average='none',
+                                                  num_classes=num_classes,
+                                                  task="multiclass")
+            self.total_accuracy = torchmetrics.Accuracy(num_classes=num_classes,
+                                                        task="multiclass")
+            self.precision_metric = torchmetrics.Precision(num_classes=num_classes,
+                                                           task="multiclass")
+            self.metrics = torchmetrics.MetricCollection({
+                "Class Accuracy": self.accuracy,
+                "Accuracy": self.total_accuracy,
+                "Precision": self.precision_metric
+            })
+        else:
+            # Defer model/metric initialization until loading from checkpoint
+            self.model = model
 
         # Training Hyperparameters
         self.batch_size = batch_size
@@ -148,6 +151,25 @@ class CropModel(LightningModule):
     def create_trainer(self, **kwargs):
         """Create a pytorch lightning trainer object."""
         self.trainer = Trainer(**kwargs)
+
+    def on_load_checkpoint(self, checkpoint):
+        # Now that self.num_classes always exists, this check won't error
+        if self.num_classes is None:
+            self.num_classes = checkpoint['hyper_parameters']['num_classes']
+            if self.model is None:
+                self.model = simple_resnet_50(num_classes=self.num_classes)
+            self.accuracy = torchmetrics.Accuracy(average='none',
+                                                  num_classes=self.num_classes,
+                                                  task="multiclass")
+            self.total_accuracy = torchmetrics.Accuracy(num_classes=self.num_classes,
+                                                        task="multiclass")
+            self.precision_metric = torchmetrics.Precision(num_classes=self.num_classes,
+                                                           task="multiclass")
+            self.metrics = torchmetrics.MetricCollection({
+                "Class Accuracy": self.accuracy,
+                "Accuracy": self.total_accuracy,
+                "Precision": self.precision_metric
+            })
 
     def load_from_disk(self, train_dir, val_dir):
         self.train_ds = ImageFolder(root=train_dir,
@@ -207,6 +229,10 @@ class CropModel(LightningModule):
         return transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 
     def forward(self, x):
+        if self.model is None:
+            raise AttributeError(
+                "CropModel is not initialized. Provide 'num_classes' or load from a checkpoint."
+            )
         output = self.model(x)
         output = F.sigmoid(output)
 
