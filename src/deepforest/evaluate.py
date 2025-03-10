@@ -121,7 +121,6 @@ def __evaluate_wrapper__(predictions,
     elif prediction_geometry == "box":
         results = evaluate_boxes(predictions=predictions,
                                  ground_df=ground_df,
-                                 root_dir=root_dir,
                                  iou_threshold=iou_threshold,
                                  savedir=savedir)
     else:
