@@ -12,7 +12,7 @@ from deepforest import visualize
 from deepforest.utilities import determine_geometry_type
 
 
-def evaluate_image_boxes(predictions, ground_df, root_dir, savedir=None):
+def evaluate_image_boxes(predictions, ground_df, savedir=None):
     """Compute intersection-over-union matching among prediction and ground
     truth boxes for one image.
 
@@ -22,7 +22,6 @@ def evaluate_image_boxes(predictions, ground_df, root_dir, savedir=None):
         ground_df: a geopandas dataframe with geometry columns
         summarize: Whether to group statistics by plot and overall score
         image_coordinates: Whether the current boxes are in coordinate system of the image, e.g. origin (0,0) upper left.
-        root_dir: Where to search for image names in df
         savedir: optional directory to save image with overlaid predictions and annotations
 
     Returns:
@@ -41,12 +40,6 @@ def evaluate_image_boxes(predictions, ground_df, root_dir, savedir=None):
     result["predicted_label"] = result.prediction_id.apply(
         lambda x: predictions.label.loc[x] if pd.notnull(x) else x)
     result["true_label"] = result.truth_id.apply(lambda x: ground_df.label.loc[x])
-
-    if savedir:
-        image = np.array(Image.open("{}/{}".format(root_dir, plot_name)))[:, :, ::-1]
-        image = visualize.plot_predictions(image, df=predictions)
-        image = visualize.plot_predictions(image, df=ground_df, color=(0, 165, 255))
-        cv2.imwrite("{}/{}".format(savedir, plot_name), image)
 
     return result
 
@@ -96,7 +89,7 @@ def __evaluate_wrapper__(predictions,
                          numeric_to_label_dict,
                          savedir=None):
     """Evaluate a set of predictions against a ground truth csv file
-        Args:   
+        Args:
             predictions: a pandas dataframe, if supplied a root dir is needed to give the relative path of files in df.name. The labels in ground truth and predictions must match. If one is numeric, the other must be numeric.
             root_dir: location of files in the dataframe 'name' column.
             iou_threshold: intersection-over-union threshold, see deepforest.evaluate
@@ -149,14 +142,13 @@ def __evaluate_wrapper__(predictions,
     return results
 
 
-def evaluate_boxes(predictions, ground_df, root_dir, iou_threshold=0.4, savedir=None):
+def evaluate_boxes(predictions, ground_df, iou_threshold=0.4, savedir=None):
     """Image annotated crown evaluation routine submission can be submitted as
     a .shp, existing pandas dataframe or .csv path.
 
     Args:
         predictions: a pandas dataframe, if supplied a root dir is needed to give the relative path of files in df.name. The labels in ground truth and predictions must match. If one is numeric, the other must be numeric.
         ground_df: a pandas dataframe, if supplied a root dir is needed to give the relative path of files in df.name
-        root_dir: location of files in the dataframe 'name' column.
         savedir: optional directory to save image with overlaid predictions and annotations
 
     Returns:
@@ -193,7 +185,6 @@ def evaluate_boxes(predictions, ground_df, root_dir, iou_threshold=0.4, savedir=
             group = group.reset_index(drop=True)
             result = evaluate_image_boxes(predictions=image_predictions,
                                           ground_df=group,
-                                          root_dir=root_dir,
                                           savedir=savedir)
 
         result["image_path"] = image_path
