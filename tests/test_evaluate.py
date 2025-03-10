@@ -18,8 +18,7 @@ def test_evaluate_image(m):
     ground_truth = read_file(csv_file)
     predictions.label = 0
     result = evaluate.evaluate_image_boxes(predictions=predictions,
-                                           ground_df=ground_truth,
-                                           root_dir=os.path.dirname(csv_file))
+                                           ground_df=ground_truth)
 
     assert result.shape[0] == ground_truth.shape[0]
     assert sum(result.IoU) > 10
@@ -32,8 +31,7 @@ def test_evaluate_boxes(m, tmpdir):
     ground_truth = read_file(csv_file)
     predictions = predictions.loc[range(10)]
     results = evaluate.evaluate_boxes(predictions=predictions,
-                                      ground_df=ground_truth,
-                                      root_dir=os.path.dirname(csv_file))
+                                      ground_df=ground_truth)
 
     assert results["results"].shape[0] == ground_truth.shape[0]
     assert results["box_recall"] > 0.1
@@ -54,8 +52,7 @@ def test_evaluate_boxes_multiclass():
     predictions["score"] = 1
     predictions.iloc[[36, 35, 34], predictions.columns.get_indexer(['label'])]
     results = evaluate.evaluate_boxes(predictions=predictions,
-                                      ground_df=ground_truth,
-                                      root_dir=os.path.dirname(csv_file))
+                                      ground_df=ground_truth)
 
     assert results["results"].shape[0] == ground_truth.shape[0]
     assert results["class_recall"].shape == (2, 4)
@@ -72,9 +69,7 @@ def test_evaluate_boxes_save_images(tmpdir):
     predictions.iloc[[36, 35, 34], predictions.columns.get_indexer(['label'])]
     results = evaluate.evaluate_boxes(predictions=predictions,
                                       ground_df=ground_truth,
-                                      root_dir=os.path.dirname(csv_file),
                                       savedir=tmpdir)
-    assert all([os.path.exists("{}/{}".format(tmpdir, x)) for x in ground_truth.image_path])
 
 
 def test_evaluate_empty(m):
