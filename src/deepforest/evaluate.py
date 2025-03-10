@@ -22,7 +22,7 @@ def evaluate_image_boxes(predictions, ground_df):
     """
     plot_names = predictions["image_path"].unique()
     if len(plot_names) > 1:
-        raise ValueError("More than one plot passed to image crown: {}".format(plot_name))
+        raise ValueError("More than one plot passed to image crown: {}".format(plot_names))
 
     # match
     result = IoU.compute_IoU(ground_df, predictions)
