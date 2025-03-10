@@ -12,11 +12,6 @@ from tqdm import tqdm
 from PIL import Image
 from deepforest import _ROOT
 import warnings
-import geopandas as gpd
-import rasterio
-import shapely
-from tqdm import tqdm
-from deepforest import _ROOT
 import json
 import urllib.request
 from huggingface_hub import hf_hub_download

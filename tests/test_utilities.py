@@ -14,7 +14,6 @@ from deepforest import utilities
 
 # import general model fixture
 from .conftest import download_release
-import pytest
 import shapely
 
 from PIL import Image
@@ -30,7 +29,7 @@ def test_read_pascal_voc():
     annotations = utilities.read_pascal_voc(xml_path=get_data("OSBS_029.xml"))
     print(annotations.shape)
     assert annotations.shape[0] == 61
-    
+
 
 def test_float_warning(config):
     """Users should get a rounding warning when adding annotations with floats"""
@@ -513,24 +512,24 @@ def test_read_coco_json(tmpdir):
             }
         ]
     }
-    
+
     # Write the sample JSON to a temporary file
     json_path = tmpdir.join("test_coco.json")
     with open(json_path, "w") as f:
         json.dump(coco_data, f)
-    
+
     # Read the file using our utility
     df = utilities.read_file(str(json_path))
-    
+
     # Assert the dataframe has the expected structure
     assert df.shape[0] == 2  # Two annotations
     assert "image_path" in df.columns
     assert "geometry" in df.columns
-    
+
     # Check the image paths are correct
     assert "OSBS_029.png" in df.image_path.values
     assert "OSBS_029.tif" in df.image_path.values
-    
+
     # Verify the geometries are valid polygons
     for geom in df.geometry:
         assert geom.is_valid

@@ -64,7 +64,7 @@ dependencies = [
     "scipy>1.5",
     "six",
     "slidingwindow",
-    "sphinx<8.2.0",
+    "sphinx",
     "supervision",
     "torch",
     "torchvision>=0.13",
