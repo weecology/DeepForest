@@ -823,9 +823,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                 results = evaluate_iou.__evaluate_wrapper__(
                     predictions=self.predictions_df,
                     ground_df=ground_df,
-                    root_dir=self.config["validation"]["root_dir"],
                     iou_threshold=self.config["validation"]["iou_threshold"],
-                    savedir=None,
                     numeric_to_label_dict=self.numeric_to_label_dict)
 
                 if empty_accuracy is not None:
@@ -957,22 +955,20 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         else:
             return optimizer
 
-    def evaluate(self, csv_file, root_dir, iou_threshold=None, savedir=None):
+    def evaluate(self, csv_file, iou_threshold=None):
         """Compute intersection-over-union and precision/recall for a given
         iou_threshold.
 
         Args:
             csv_file: location of a csv file with columns "name","xmin","ymin","xmax","ymax","label"
-            root_dir: location of files in the dataframe 'name' column
             iou_threshold: float [0,1] intersection-over-union threshold for true positive
-            savedir: location to save images with bounding boxes
 
         Returns:
             dict: Results dictionary containing precision, recall and other metrics
         """
         ground_df = utilities.read_file(csv_file)
         ground_df["label"] = ground_df.label.apply(lambda x: self.label_dict[x])
-        predictions = self.predict_file(csv_file=csv_file, root_dir=root_dir)
+        predictions = self.predict_file(csv_file=csv_file, root_dir=os.path.dirname(csv_file))
 
         if iou_threshold is None:
             iou_threshold = self.config["validation"]["iou_threshold"]
@@ -980,7 +976,6 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         results = evaluate_iou.__evaluate_wrapper__(
             predictions=predictions,
             ground_df=ground_df,
-            root_dir=root_dir,
             iou_threshold=iou_threshold,
             numeric_to_label_dict=self.numeric_to_label_dict)
 
