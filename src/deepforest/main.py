@@ -311,7 +311,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                                    root_dir=self.config["train"]["root_dir"],
                                    augment=True,
                                    shuffle=True,
-                                   batch_size=self.config["batch_size"])
+                                   batch_size=self.config["train_batch_size"])
 
         return loader
 
@@ -332,7 +332,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                                        root_dir=self.config["validation"]["root_dir"],
                                        augment=False,
                                        shuffle=False,
-                                       batch_size=self.config["batch_size"])
+                                       batch_size=self.config["predict_batch_size"])  #to_be_confirmed
         return loader
 
     def predict_dataloader(self, ds):
@@ -345,7 +345,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             torch.utils.data.DataLoader: A dataloader object that can be used for prediction.
         """
         loader = torch.utils.data.DataLoader(ds,
-                                             batch_size=self.config["batch_size"],
+                                             batch_size=self.config["predict_batch_size"],
                                              shuffle=False,
                                              num_workers=self.config["workers"])
 
