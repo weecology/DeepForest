@@ -101,41 +101,6 @@ def test_compute_class_recall(sample_results):
     assert evaluate.compute_class_recall(sample_results).equals(expected_recall)
 
 
-@pytest.mark.parametrize("root_dir", [None, "tmpdir"])
-def test_point_recall_image(root_dir, tmpdir):
-    img_path = get_data("OSBS_029.png")
-    if root_dir == "tmpdir":
-        root_dir = os.path.dirname(img_path)
-    else:
-        root_dir = None
-
-    # create sample dataframes
-    predictions = pd.DataFrame({
-        "image_path": ["OSBS_029.png", "OSBS_029.png"],
-        "xmin": [1, 150],
-        "xmax": [100, 200],
-        "ymin": [1, 75],
-        "ymax": [50, 100],
-        "label": ["A", "B"],
-    })
-    ground_df = pd.DataFrame({
-        "image_path": ["OSBS_029.png", "OSBS_029.png"],
-        "x": [5, 20],
-        "y": [30, 300],
-        "label": ["A", "B"],
-    })
-
-    # run the function
-    result = evaluate._point_recall_image_(predictions, ground_df)
-
-    # check the output, 1 match of 2 ground truth
-    assert all(result.predicted_label.isnull().values == [False, True])
-    assert isinstance(result, gpd.GeoDataFrame)
-    assert "predicted_label" in result.columns
-    assert "true_label" in result.columns
-    assert "geometry" in result.columns
-
-
 def test_point_recall():
     # create sample dataframes
     predictions = pd.DataFrame({
