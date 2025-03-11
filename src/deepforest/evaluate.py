@@ -22,7 +22,8 @@ def evaluate_image_boxes(predictions, ground_df):
     """
     plot_names = predictions["image_path"].unique()
     if len(plot_names) > 1:
-        raise ValueError("More than one plot passed to image crown: {}".format(plot_names))
+        raise ValueError(
+            "More than one plot passed to image crown: {}".format(plot_names))
 
     # match
     result = IoU.compute_IoU(ground_df, predictions)
@@ -73,10 +74,7 @@ def compute_class_recall(results):
     return class_recall
 
 
-def __evaluate_wrapper__(predictions,
-                         ground_df,
-                         iou_threshold,
-                         numeric_to_label_dict):
+def __evaluate_wrapper__(predictions, ground_df, iou_threshold, numeric_to_label_dict):
     """Evaluate a set of predictions against a ground truth csv file
         Args:   
             predictions: a pandas dataframe, if supplied a root dir is needed to give the relative path of files in df.name. The labels in ground truth and predictions must match. If one is numeric, the other must be numeric.
@@ -169,8 +167,7 @@ def evaluate_boxes(predictions, ground_df, iou_threshold=0.4):
             continue
         else:
             group = group.reset_index(drop=True)
-            result = evaluate_image_boxes(predictions=image_predictions,
-                                          ground_df=group)
+            result = evaluate_image_boxes(predictions=image_predictions, ground_df=group)
 
         result["image_path"] = image_path
         result["match"] = result.IoU > iou_threshold
@@ -271,8 +268,7 @@ def point_recall(predictions, ground_df):
             continue
         else:
             group = group.reset_index(drop=True)
-            result = _point_recall_image_(predictions=image_predictions,
-                                          ground_df=group)
+            result = _point_recall_image_(predictions=image_predictions, ground_df=group)
 
         result["image_path"] = image_path
 

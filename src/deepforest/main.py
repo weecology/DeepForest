@@ -968,7 +968,8 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         """
         ground_df = utilities.read_file(csv_file)
         ground_df["label"] = ground_df.label.apply(lambda x: self.label_dict[x])
-        predictions = self.predict_file(csv_file=csv_file, root_dir=os.path.dirname(csv_file))
+        predictions = self.predict_file(csv_file=csv_file,
+                                        root_dir=os.path.dirname(csv_file))
 
         if iou_threshold is None:
             iou_threshold = self.config["validation"]["iou_threshold"]
