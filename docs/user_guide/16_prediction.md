@@ -9,19 +9,19 @@ There are atleast four ways to make predictions with DeepForest.
 ## Predict an image using model.predict_image
 
 ```python
-   from deepforest import main
-   from deepforest import get_data
-   from deepforest.visualize import plot_results
+from deepforest import main
+from deepforest import get_data
+from deepforest.visualize import plot_results
 
-   # Initialize the model class
-   model = main.deepforest()
+# Initialize the model class
+model = main.deepforest()
 
-   # Load a pretrained tree detection model from Hugging Face 
-   model.load_model(model_name="weecology/deepforest-tree", revision="main")
+# Load a pretrained tree detection model from Hugging Face 
+model.load_model(model_name="weecology/deepforest-tree", revision="main")
 
-   sample_image_path = get_data("OSBS_029.png")
-   img = model.predict_image(path=sample_image_path)
-   plot_results(img)
+sample_image_path = get_data("OSBS_029.png")
+img = model.predict_image(path=sample_image_path)
+plot_results(img)
 ```
 
 ## Predict a tile using model.predict_tile
@@ -32,20 +32,21 @@ Let's show an example with a small image. For larger images, patch_size should b
 
 ```python
 
-   from deepforest import main
-   from deepforest import get_data
-   import matplotlib.pyplot as plt
+from deepforest import main
+from deepforest import get_data
+from deepforest.visualize import plot_results
+import matplotlib.pyplot as plt
 
-   # Initialize the model class
-   model = main.deepforest()
+# Initialize the model class
+model = main.deepforest()
 
-   # Load a pretrained tree detection model from Hugging Face
-   model.load_model(model_name="weecology/deepforest-tree", revision="main")
-   
-   # Predict on large geospatial tiles using overlapping windows
-   raster_path = get_data("OSBS_029.tif")
-   predicted_raster = model.predict_tile(raster_path, patch_size=300, patch_overlap=0.25)
-   plot_results(results)
+# Load a pretrained tree detection model from Hugging Face
+model.load_model(model_name="weecology/deepforest-tree", revision="main")
+
+# Predict on large geospatial tiles using overlapping windows
+raster_path = get_data("OSBS_029.tif")
+predicted_raster = model.predict_tile(raster_path, patch_size=300, patch_overlap=0.25)
+plot_results(predicted_raster)
 ```
 
 ### Patch Size

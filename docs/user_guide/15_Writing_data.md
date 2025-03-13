@@ -13,9 +13,12 @@ Standard computer vision models have no concept of geographic information, which
 
 ```python
 from deepforest import get_data
+from deepforest import utilities
 import rasterio as rio
 import geopandas as gpd
 from matplotlib import pyplot as plt
+from shapely import geometry
+import os
 
 annotations = get_data("2018_SJER_3_252000_4107000_image_477.csv")
 path_to_raster = get_data("2018_SJER_3_252000_4107000_image_477.tif")
