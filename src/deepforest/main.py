@@ -155,6 +155,19 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             self.label_dict = {"Bird": 0}
             self.numeric_to_label_dict = {v: k for k, v in self.label_dict.items()}
 
+    def set_labels(self, label_dict):
+        """Set new label mapping, updating both the label dictionary (str ->
+        int) and its inverse (int -> str).
+
+        Args:
+            label_dict (dict): Dictionary mapping class names to numeric IDs.
+        """
+        if len(label_dict) != self.config["num_classes"]:
+            raise ValueError("The length of label_dict must match the number of classes.")
+
+        self.label_dict = label_dict
+        self.numeric_to_label_dict = {v: k for k, v in label_dict.items()}
+
     def use_release(self, check_release=True):
         """Use the latest DeepForest model release from Hugging Face,
         downloading if necessary. Optionally download if release doesn't exist.

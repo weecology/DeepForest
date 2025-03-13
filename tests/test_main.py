@@ -865,3 +865,20 @@ def test_evaluate_on_epoch_interval(m):
     m.trainer.fit(m)
     assert m.trainer.logged_metrics["box_precision"]
     assert m.trainer.logged_metrics["box_recall"]
+
+def test_set_labels_updates_mapping(m):
+    new_mapping = {"Object": 0}
+    m.set_labels(new_mapping)
+    
+    # Verify that the label dictionary has been updated.
+    assert m.label_dict == new_mapping
+    
+    # Verify that the inverse mapping is correctly computed.
+    expected_inverse = {0: "Object"}
+    assert m.numeric_to_label_dict == expected_inverse
+
+def test_set_labels_invalid_length(m): # Expect a ValueError when setting an invalid label mapping.
+    # This mapping has two entries, which should be invalid since m.config["num_classes"] is 1.
+    invalid_mapping = {"Object": 0, "Extra": 1}
+    with pytest.raises(ValueError):
+        m.set_labels(invalid_mapping)
