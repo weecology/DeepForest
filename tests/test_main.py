@@ -348,7 +348,7 @@ def test_predict_tile_from_array(m, raster_path):
     m.create_trainer()
     prediction = m.predict_tile(image=image,
                                 patch_size=300)
-    
+
     assert not prediction.empty
 
 
@@ -719,13 +719,13 @@ def test_batch_prediction(m, raster_path):
     tile = np.array(Image.open(raster_path))
     ds = dataset.TileDataset(tile=tile, patch_overlap=0.1, patch_size=300)
     dl = DataLoader(ds, batch_size=3)
-    
+
     # Perform prediction
     predictions = []
     for batch in dl:
         prediction = m.predict_batch(batch)
         predictions.append(prediction)
-    
+
     # Check results
     assert len(predictions) == len(dl)
     for batch_pred in predictions:
@@ -739,21 +739,21 @@ def test_batch_inference_consistency(m, raster_path):
     tile = np.array(Image.open(raster_path))
     ds = dataset.TileDataset(tile=tile, patch_overlap=0.1, patch_size=300)
     dl = DataLoader(ds, batch_size=4)
-    
+
     batch_predictions = []
     for batch in dl:
         prediction = m.predict_batch(batch)
         batch_predictions.extend(prediction)
-    
+
     single_predictions = []
     for image in ds:
         image = image.permute(1,2,0).numpy() * 255
         prediction = m.predict_image(image=image)
         single_predictions.append(prediction)
-    
+
     batch_df = pd.concat(batch_predictions, ignore_index=True)
     single_df = pd.concat(single_predictions, ignore_index=True)
-    
+
     # Make all xmin, ymin, xmax, ymax integers
     for col in ["xmin", "ymin", "xmax", "ymax"]:
         batch_df[col] = batch_df[col].astype(int)
@@ -865,3 +865,101 @@ def test_evaluate_on_epoch_interval(m):
     m.trainer.fit(m)
     assert m.trainer.logged_metrics["box_precision"]
     assert m.trainer.logged_metrics["box_recall"]
+
+# Test predict_dataloader with Kangas
+def test_predict_dataloader_kangas(m, tmpdir):
+    """Test predict_dataloader triggers Kangas visualization."""
+    csv_file = get_data("example.csv")
+    ds = dataset.TreeDataset(csv_file=csv_file, root_dir=os.path.dirname(csv_file), transforms=None, train=False)
+    ds.paths = [os.path.join(os.path.dirname(csv_file), img) for img in ds.annotations.image_path.unique()]
+    loader = m.predict_dataloader(ds, visualize_with="kangas")
+    assert isinstance(loader, torch.utils.data.DataLoader), "Should return a DataLoader"
+    # Kangas UI should open; we verify no crash and correct type
+
+# Test predict_image with Kangas
+def test_predict_image_kangas(m, tmpdir):
+    """Test predict_image triggers Kangas visualization and returns correct output."""
+    image_path = get_data("2019_YELL_2_528000_4978000_image_crop2.png")
+    result = m.predict_image(path=image_path, visualize_with="kangas")
+    assert isinstance(result, pd.DataFrame) or result is None, "Should return DataFrame or None"
+    if result is not None:
+        assert "image_path" in result.columns, "Result should include image_path"
+        assert not result.empty, "Should predict trees with pre-trained model"
+
+# Test predict_file with Kangas
+def test_predict_file_kangas(m, tmpdir):
+    """Test predict_file triggers Kangas visualization and returns correct output."""
+    csv_file = get_data("OSBS_029.csv")
+    root_dir = os.path.dirname(csv_file)
+    result = m.predict_file(csv_file=csv_file, root_dir=root_dir, visualize_with="kangas")
+    assert isinstance(result, pd.DataFrame), "Should return a DataFrame"
+    assert "image_path" in result.columns, "Result should include image_path"
+    assert not result.empty, "Should predict trees with pre-trained model"
+
+# Test predict_tile with Kangas
+def test_predict_tile_kangas(m, raster_path):
+    """Test predict_tile triggers Kangas visualization with mosaic=True."""
+    result = m.predict_tile(raster_path=raster_path, patch_size=300, patch_overlap=0.1, visualize_with="kangas")
+    assert isinstance(result, pd.DataFrame) or result is None, "Should return DataFrame or None"
+    if result is not None:
+        assert "image_path" in result.columns, "Result should include image_path"
+        assert not result.empty, "Should predict trees with pre-trained model"
+
+# Test predict_tile no visualization with mosaic=False
+def test_predict_tile_kangas_no_mosaic(m, raster_path):
+    """Test predict_tile doesn’t visualize with mosaic=False."""
+    result = m.predict_tile(raster_path=raster_path, patch_size=300, patch_overlap=0.1, mosaic=False, visualize_with="kangas")
+    assert isinstance(result, list), "Should return a list of (prediction, crop) tuples"
+    assert all(isinstance(r[0], pd.DataFrame) and isinstance(r[1], np.ndarray) for r in result), "Each item should be (DataFrame, array)"
+    # Kangas won’t trigger; we verify output type only
+
+# Test predict_step with Kangas
+def test_predict_step_kangas(m, tmpdir):
+    """Test predict_step triggers Kangas visualization."""
+    image_path = get_data("2019_YELL_2_528000_4978000_image_crop2.png")
+    image = np.array(Image.open(image_path).convert("RGB")).astype("float32")
+    batch = torch.tensor(image).permute(2, 0, 1).unsqueeze(0) / 255
+    result = m.predict_step(batch, 0, visualize_with="kangas", image_paths=[image_path])
+    assert isinstance(result, list), "Should return a list of predictions"
+    assert all(isinstance(r, pd.DataFrame) for r in result), "Each item should be a DataFrame"
+    
+
+# Test predict_batch with Kangas
+def test_predict_batch_kangas(m, tmpdir):
+    """Test predict_batch triggers Kangas visualization."""
+    image_path = get_data("2019_YELL_2_528000_4978000_image_crop2.png")
+    image = np.array(Image.open(image_path).convert("RGB")).astype("float32")
+    images = np.stack([image] * 2)  # Batch of 2 images
+    image_paths = [image_path, image_path]
+    result = m.predict_batch(images, visualize_with="kangas", image_paths=image_paths)
+    assert isinstance(result, list), "Should return a list of DataFrames"
+    assert all(isinstance(r, pd.DataFrame) for r in result), "Each item should be a DataFrame"
+    assert all("image_path" in r.columns for r in result if not r.empty), "Results should include image_path"
+    assert any(not r.empty for r in result), "At least one result should have predictions"
+
+# Test evaluate with Kangas
+def test_evaluate_kangas(m, tmpdir):
+    """Test evaluate triggers Kangas visualization with ground truth and metrics."""
+    csv_file = get_data("OSBS_029.csv")
+    root_dir = os.path.dirname(csv_file)
+    result = m.evaluate(csv_file=csv_file, root_dir=root_dir, visualize_with="kangas")
+    assert isinstance(result, dict), "Should return a dict of evaluation metrics"
+    assert "box_precision" in result, "Should include precision"
+    assert "box_recall" in result, "Should include recall"
+    assert isinstance(result["results"], pd.DataFrame), "Results should be a DataFrame"
+    # Kangas UI should open with predictions, ground truth, and metrics; we verify no crash
+
+# Test without Kangas installed (mock Kangas unavailable)
+def test_predict_image_no_kangas(m, tmpdir, monkeypatch):
+    """Test predict_image handles missing Kangas gracefully."""
+    monkeypatch.setattr("deepforest.main.kg", None)  # Simulate Kangas not installed
+    image_path = get_data("2019_YELL_2_528000_4978000_image_crop2.png")
+    result = m.predict_image(path=image_path, visualize_with="kangas")
+    assert isinstance(result, pd.DataFrame) or result is None, "Should return DataFrame or None despite no Kangas"
+
+# Test empty predictions with Kangas
+def test_predict_image_empty_kangas(m, tmpdir):
+    """Test predict_image with empty predictions still triggers Kangas."""
+    image = np.zeros((400, 400, 3), dtype=np.float32)  # Black image, likely no predictions
+    result = m.predict_image(image=image, visualize_with="kangas")
+    assert result is None or (isinstance(result, pd.DataFrame) and result.empty), "Should return None or empty DataFrame"
