@@ -367,11 +367,8 @@ def test_predict_tile_no_mosaic(m, raster_path):
 
 def test_evaluate(m, tmpdir):
     csv_file = get_data("OSBS_029.csv")
-    root_dir = os.path.dirname(csv_file)
+    results = m.evaluate(csv_file, iou_threshold=0.4)
 
-    results = m.evaluate(csv_file, root_dir, iou_threshold=0.4)
-
-    # Does this make reasonable predictions, we know the model works.
     assert np.round(results["box_precision"], 2) > 0.5
     assert np.round(results["box_recall"], 2) > 0.5
     assert len(results["results"].predicted_label.dropna().unique()) == 1
