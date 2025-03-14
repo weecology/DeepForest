@@ -89,7 +89,7 @@ def m_without_release():
 
 
 @pytest.fixture()
-def raster_path():
+def path():
     return get_data(path='OSBS_029.tif')
 
 
@@ -297,33 +297,33 @@ def test_predict_small_file(m, tmpdir):
     }
 
 @pytest.mark.parametrize("batch_size", [1, 2])
-def test_predict_dataloader(m, batch_size, raster_path):
+def test_predict_dataloader(m, batch_size, path):
     m.config["batch_size"] = batch_size
-    tile = np.array(Image.open(raster_path))
+    tile = np.array(Image.open(path))
     ds = dataset.TileDataset(tile=tile, patch_overlap=0.1, patch_size=100)
     dl = m.predict_dataloader(ds)
     batch = next(iter(dl))
     batch.shape[0] == batch_size
 
 
-def test_predict_tile_empty(raster_path):
+def test_predict_tile_empty(path):
     # Random weights
     m = main.deepforest()
-    predictions = m.predict_tile(raster_path=raster_path, patch_size=300, patch_overlap=0)
+    predictions = m.predict_tile(path=path, patch_size=300, patch_overlap=0)
     assert predictions is None
 
 @pytest.mark.parametrize("in_memory", [True, False])
-def test_predict_tile(m, raster_path, in_memory):
+def test_predict_tile(m, path, in_memory):
     m.create_model()
     m.config["train"]["fast_dev_run"] = False
     m.create_trainer()
 
     if in_memory:
-        raster_path = raster_path
+        path = path
     else:
-        raster_path = get_data("test_tiled.tif")
+        path = get_data("test_tiled.tif")
 
-    prediction = m.predict_tile(raster_path=raster_path,
+    prediction = m.predict_tile(path=path,
                                 patch_size=300,
                                 in_memory=in_memory,
                                 patch_overlap=0.1)
@@ -336,27 +336,27 @@ def test_predict_tile(m, raster_path, in_memory):
 
 # test equivalence for in_memory=True and False
 def test_predict_tile_equivalence(m):
-    raster_path = get_data("test_tiled.tif")
-    in_memory_prediction = m.predict_tile(raster_path=raster_path, patch_size=300, patch_overlap=0, in_memory=True)
-    not_in_memory_prediction = m.predict_tile(raster_path=raster_path, patch_size=300, patch_overlap=0, in_memory=False)
+    path = get_data("test_tiled.tif")
+    in_memory_prediction = m.predict_tile(path=path, patch_size=300, patch_overlap=0, in_memory=True)
+    not_in_memory_prediction = m.predict_tile(path=path, patch_size=300, patch_overlap=0, in_memory=False)
     assert in_memory_prediction.equals(not_in_memory_prediction)
 
-def test_predict_tile_from_array(m, raster_path):
+def test_predict_tile_from_array(m, path):
     # test predict numpy image
-    image = np.array(Image.open(raster_path))
+    image = np.array(Image.open(path))
     m.config["train"]["fast_dev_run"] = False
     m.create_trainer()
     prediction = m.predict_tile(image=image,
                                 patch_size=300)
-    
+
     assert not prediction.empty
 
 
-def test_predict_tile_no_mosaic(m, raster_path):
+def test_predict_tile_no_mosaic(m, path):
     # test no mosaic, return a tuple of crop and prediction
     m.config["train"]["fast_dev_run"] = False
     m.create_trainer()
-    prediction = m.predict_tile(raster_path=raster_path,
+    prediction = m.predict_tile(path=path,
                                 patch_size=300,
                                 patch_overlap=0,
                                 mosaic=False)
@@ -664,7 +664,7 @@ def crop_model():
 
 
 def test_predict_tile_with_crop_model(m, config):
-    raster_path = get_data("SOAP_061.png")
+    path = get_data("SOAP_061.png")
     patch_size = 400
     patch_overlap = 0.05
     iou_threshold = 0.15
@@ -675,7 +675,7 @@ def test_predict_tile_with_crop_model(m, config):
     # Call the predict_tile method with the crop_model
     m.config["train"]["fast_dev_run"] = False
     m.create_trainer()
-    result = m.predict_tile(raster_path=raster_path,
+    result = m.predict_tile(path=path,
                             patch_size=patch_size,
                             patch_overlap=patch_overlap,
                             iou_threshold=iou_threshold,
@@ -692,7 +692,7 @@ def test_predict_tile_with_crop_model(m, config):
 
 def test_predict_tile_with_crop_model_empty():
     """If the model return is empty, the crop model should return an empty dataframe"""
-    raster_path = get_data("SOAP_061.png")
+    path = get_data("SOAP_061.png")
     m = main.deepforest()
     patch_size = 400
     patch_overlap = 0.05
@@ -704,7 +704,7 @@ def test_predict_tile_with_crop_model_empty():
     # Call the predict_tile method with the crop_model
     m.config["train"]["fast_dev_run"] = False
     m.create_trainer()
-    result = m.predict_tile(raster_path=raster_path,
+    result = m.predict_tile(path=path,
                             patch_size=patch_size,
                             patch_overlap=patch_overlap,
                             iou_threshold=iou_threshold,
@@ -714,18 +714,18 @@ def test_predict_tile_with_crop_model_empty():
     # Assert the result
     assert result is None
 
-def test_batch_prediction(m, raster_path):
+def test_batch_prediction(m, path):
     # Prepare input data
-    tile = np.array(Image.open(raster_path))
+    tile = np.array(Image.open(path))
     ds = dataset.TileDataset(tile=tile, patch_overlap=0.1, patch_size=300)
     dl = DataLoader(ds, batch_size=3)
-    
+
     # Perform prediction
     predictions = []
     for batch in dl:
         prediction = m.predict_batch(batch)
         predictions.append(prediction)
-    
+
     # Check results
     assert len(predictions) == len(dl)
     for batch_pred in predictions:
@@ -735,25 +735,25 @@ def test_batch_prediction(m, raster_path):
             assert "score" in image_pred.columns
             assert "geometry" in image_pred.columns
 
-def test_batch_inference_consistency(m, raster_path):
-    tile = np.array(Image.open(raster_path))
+def test_batch_inference_consistency(m, path):
+    tile = np.array(Image.open(path))
     ds = dataset.TileDataset(tile=tile, patch_overlap=0.1, patch_size=300)
     dl = DataLoader(ds, batch_size=4)
-    
+
     batch_predictions = []
     for batch in dl:
         prediction = m.predict_batch(batch)
         batch_predictions.extend(prediction)
-    
+
     single_predictions = []
     for image in ds:
         image = image.permute(1,2,0).numpy() * 255
         prediction = m.predict_image(image=image)
         single_predictions.append(prediction)
-    
+
     batch_df = pd.concat(batch_predictions, ignore_index=True)
     single_df = pd.concat(single_predictions, ignore_index=True)
-    
+
     # Make all xmin, ymin, xmax, ymax integers
     for col in ["xmin", "ymin", "xmax", "ymax"]:
         batch_df[col] = batch_df[col].astype(int)
@@ -869,10 +869,10 @@ def test_evaluate_on_epoch_interval(m):
 def test_set_labels_updates_mapping(m):
     new_mapping = {"Object": 0}
     m.set_labels(new_mapping)
-    
+
     # Verify that the label dictionary has been updated.
     assert m.label_dict == new_mapping
-    
+
     # Verify that the inverse mapping is correctly computed.
     expected_inverse = {0: "Object"}
     assert m.numeric_to_label_dict == expected_inverse

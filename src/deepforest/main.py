@@ -486,6 +486,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
     def predict_tile(self,
                      raster_path=None,
+                     path=None,
                      image=None,
                      patch_size=400,
                      patch_overlap=0.05,
@@ -505,7 +506,8 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         reassambles into a single array.
 
         Args:
-            raster_path: Path to image on disk
+            raster_path: [Deprecated] Use 'path' instead
+            path: Path to image on disk
             image (array): Numpy image array in BGR channel order following openCV convention
             patch_size: patch size for each window
             patch_overlap: patch overlap among windows
@@ -527,6 +529,13 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         self.model.eval()
         self.model.nms_thresh = self.config["nms_thresh"]
 
+        # if 'raster_path' is used, give a deprecation warning and use 'path' instead
+        if raster_path is not None:
+            warnings.warn(
+                "The 'raster_path' argument is deprecated and will be removed in a future version. Use 'path' instead.",
+                DeprecationWarning)
+            path = raster_path
+
         # if more than one GPU present, use only a the first available gpu
         if torch.cuda.device_count() > 1:
             # Get available gpus and regenerate trainer
@@ -535,24 +544,24 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             self.config["devices"] = 1
             self.create_trainer()
 
-        if (raster_path is None) and (image is None):
+        if (path is None) and (image is None):
             raise ValueError(
                 "Both tile and tile_path are None. Either supply a path to a tile on disk, or read one into memory!"
             )
 
         if in_memory:
-            if raster_path is None:
+            if path is None:
                 image = image
             else:
-                image = rio.open(raster_path).read()
+                image = rio.open(path).read()
                 image = np.moveaxis(image, 0, 2)
 
             ds = dataset.TileDataset(tile=image,
                                      patch_overlap=patch_overlap,
                                      patch_size=patch_size)
         else:
-            if raster_path is None:
-                raise ValueError("raster_path is required if in_memory is False")
+            if path is None:
+                raise ValueError("path is required if in_memory is False")
 
             # Check for workers config when using out of memory dataset
             if self.config["workers"] > 0:
@@ -560,7 +569,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                     "workers must be 0 when using out-of-memory dataset (in_memory=False). Set config['workers']=0 and recreate trainer self.create_trainer()."
                 )
 
-            ds = dataset.RasterDataset(raster_path=raster_path,
+            ds = dataset.RasterDataset(raster_path=path,
                                        patch_overlap=patch_overlap,
                                        patch_size=patch_size)
 
@@ -580,15 +589,15 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                                      iou_threshold=iou_threshold)
             results["label"] = results.label.apply(
                 lambda x: self.numeric_to_label_dict[x])
-            if raster_path:
-                results["image_path"] = os.path.basename(raster_path)
+            if path:
+                results["image_path"] = os.path.basename(path)
             if return_plot:
                 # Add deprecated warning
                 warnings.warn("return_plot is deprecated and will be removed in 2.0. "
                               "Use visualize.plot_results on the result instead.")
                 # Draw predictions on BGR
-                if raster_path:
-                    tile = rio.open(raster_path).read()
+                if path:
+                    tile = rio.open(path).read()
                 else:
                     tile = image
                 drawn_plot = tile[:, :, ::-1]
@@ -603,10 +612,10 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
             # TODO this is the 2nd time the crops are generated? Could be more efficient, but memory intensive
             self.crops = []
-            if raster_path is None:
+            if path is None:
                 image = image
             else:
-                image = rio.open(raster_path).read()
+                image = rio.open(path).read()
                 image = np.moveaxis(image, 0, 2)
 
             for window in ds.windows:
@@ -619,7 +628,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             # If a crop model is provided, predict on each crop
             results = predict._predict_crop_model_(crop_model=crop_model,
                                                    results=results,
-                                                   raster_path=raster_path,
+                                                   raster_path=path,
                                                    trainer=self.trainer,
                                                    transform=crop_transform,
                                                    augment=crop_augment)
@@ -627,14 +636,14 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             warnings.warn("No predictions made, returning None")
             return None
 
-        if raster_path is None:
+        if path is None:
             warnings.warn(
                 "An image was passed directly to predict_tile, the results.root_dir attribute will be None in the output dataframe, to use visualize.plot_results, please assign results.root_dir = <directory name>"
             )
             results = utilities.read_file(results)
 
         else:
-            root_dir = os.path.dirname(raster_path)
+            root_dir = os.path.dirname(path)
             results = utilities.read_file(results, root_dir=root_dir)
 
         return results
