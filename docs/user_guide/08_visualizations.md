@@ -59,4 +59,4 @@ For results with more than one predicted class, the plot_results function will d
 ```
 color_palette = sv.ColorPalette.from_matplotlib('viridis', 6)
 plot_results(results, ground_truth=ground_truth, results_color=color_palette)
-``
+```

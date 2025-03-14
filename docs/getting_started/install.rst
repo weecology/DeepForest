@@ -99,6 +99,7 @@ pytorch.to() method.
 
 ::
 
+   Current device is cpu
    Current device is cuda:0
 
 Distributed multi-gpu prediction outside of the training module is not

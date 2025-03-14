@@ -43,7 +43,7 @@ These metrics are largely used during training to keep track of model performanc
     csv_file = get_data("OSBS_029.csv")
     root_dir = os.path.dirname(csv_file)
     m.config["validation"]["csv_file"] = csv_file
-    m.config["validation"]["root_dir] = root_dir
+    m.config["validation"]["root_dir"] = root_dir
     results = m.trainer.validate(m)
 ```
 This creates a dictionary of the average IoU ('iou') as well as 'iou' for each class. Here there is just one class, 'Tree'. Then the COCO mAP scores. See Further Reading above for an explanation of mAP level scores. The val_bbox_regression is the loss function of the object detection box head, and the loss_classification is the loss function of the object classification head.
