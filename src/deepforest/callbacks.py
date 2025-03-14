@@ -8,6 +8,8 @@ import pandas as pd
 import numpy as np
 import glob
 import tempfile
+import os
+import supervision as sv
 
 from pytorch_lightning import Callback
 from deepforest import dataset
@@ -51,18 +53,30 @@ class images_callback(Callback):
         # It is not clear if this is per device, or per batch. If per batch, then this will not work.
         df = pl_module.predictions[0]
 
-        # limit to n images, potentially randomly selected
+        # Limit to n images, potentially randomly selected
         if self.select_random:
             selected_images = np.random.choice(df.image_path.unique(), self.n)
         else:
             selected_images = df.image_path.unique()[:self.n]
         df = df[df.image_path.isin(selected_images)]
 
-        visualize.plot_prediction_dataframe(
-            df,
-            root_dir=pl_module.config["validation"]["root_dir"],
+        # Add root_dir to the dataframe
+        if "root_dir" not in df.columns:
+            df["root_dir"] = pl_module.config["validation"]["root_dir"]
+
+        # Ensure color is correctly assigned
+        if self.color is None:
+            num_classes = len(df["label"].unique())  # Determine number of classes
+            results_color = sv.ColorPalette.from_matplotlib(
+                'viridis', num_classes)  # Generate color palette
+        else:
+            results_color = self.color
+
+        # Plot results
+        visualize.plot_results(
+            results=df,
             savedir=self.savedir,
-            color=self.color,
+            results_color=results_color,  # Use ColorPalette for multi-class labels
             thickness=self.thickness)
 
         try:
@@ -72,7 +86,7 @@ class images_callback(Callback):
         except Exception as e:
             print("Could not find comet logger in lightning module, "
                   "skipping upload, images were saved to {}, "
-                  "error was rasied {}".format(self.savedir, e))
+                  "error was raised {}".format(self.savedir, e))
 
     def on_validation_epoch_end(self, trainer, pl_module):
         if trainer.sanity_checking:  # optional skip
