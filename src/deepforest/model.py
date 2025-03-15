@@ -109,10 +109,9 @@ class CropModel(LightningModule):
                  batch_size=4,
                  num_workers=0,
                  lr=0.0001,
-                 model=None,
-                 label_dict=None):
+                 model=None):
         super().__init__()
-        self.save_hyperparameters(ignore=["model"])
+        self.save_hyperparameters()
         # Always set self.num_classes so it exists on the instance
         self.num_classes = num_classes
 
@@ -135,18 +134,12 @@ class CropModel(LightningModule):
                 "Precision": self.precision_metric
             })
         else:
-            # Defer model/metric initialization until loading from checkpoint
             self.model = model
 
         # Training Hyperparameters
         self.batch_size = batch_size
         self.num_workers = num_workers
         self.lr = lr
-
-        # Label dict
-        self.label_dict = label_dict
-        if label_dict is not None:
-            self.numeric_to_label_dict = {v: k for k, v in label_dict.items()}
 
     def create_trainer(self, **kwargs):
         """Create a pytorch lightning trainer object."""
@@ -176,6 +169,7 @@ class CropModel(LightningModule):
                                     transform=self.get_transform(augment=True))
         self.val_ds = ImageFolder(root=val_dir,
                                   transform=self.get_transform(augment=False))
+        self.label_dict = self.train_ds.class_to_idx
 
     def get_transform(self, augment):
         """Returns the data transformation pipeline for the model.
