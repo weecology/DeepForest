@@ -18,8 +18,7 @@ def test_evaluate_image(m):
     ground_truth = read_file(csv_file)
     predictions.label = 0
     result = evaluate.evaluate_image_boxes(predictions=predictions,
-                                           ground_df=ground_truth,
-                                           root_dir=os.path.dirname(csv_file))
+                                           ground_df=ground_truth)
 
     assert result.shape[0] == ground_truth.shape[0]
     assert sum(result.IoU) > 10
@@ -32,8 +31,7 @@ def test_evaluate_boxes(m, tmpdir):
     ground_truth = read_file(csv_file)
     predictions = predictions.loc[range(10)]
     results = evaluate.evaluate_boxes(predictions=predictions,
-                                      ground_df=ground_truth,
-                                      root_dir=os.path.dirname(csv_file))
+                                      ground_df=ground_truth)
 
     assert results["results"].shape[0] == ground_truth.shape[0]
     assert results["box_recall"] > 0.1
@@ -54,8 +52,7 @@ def test_evaluate_boxes_multiclass():
     predictions["score"] = 1
     predictions.iloc[[36, 35, 34], predictions.columns.get_indexer(['label'])]
     results = evaluate.evaluate_boxes(predictions=predictions,
-                                      ground_df=ground_truth,
-                                      root_dir=os.path.dirname(csv_file))
+                                      ground_df=ground_truth)
 
     assert results["results"].shape[0] == ground_truth.shape[0]
     assert results["class_recall"].shape == (2, 4)
@@ -71,18 +68,14 @@ def test_evaluate_boxes_save_images(tmpdir):
     predictions["score"] = 1
     predictions.iloc[[36, 35, 34], predictions.columns.get_indexer(['label'])]
     results = evaluate.evaluate_boxes(predictions=predictions,
-                                      ground_df=ground_truth,
-                                      root_dir=os.path.dirname(csv_file),
-                                      savedir=tmpdir)
-    assert all([os.path.exists("{}/{}".format(tmpdir, x)) for x in ground_truth.image_path])
+                                      ground_df=ground_truth)
 
 
 def test_evaluate_empty(m):
     m = main.deepforest()
     m.config["score_thresh"] = 0.8
     csv_file = get_data("OSBS_029.csv")
-    root_dir = os.path.dirname(csv_file)
-    results = m.evaluate(csv_file, root_dir, iou_threshold=0.4)
+    results = m.evaluate(csv_file, iou_threshold=0.4)
 
     # Does this make reasonable predictions, we know the model works.
     assert np.isnan(results["box_precision"])
@@ -108,15 +101,7 @@ def test_compute_class_recall(sample_results):
     assert evaluate.compute_class_recall(sample_results).equals(expected_recall)
 
 
-@pytest.mark.parametrize("root_dir", [None, "tmpdir"])
-def test_point_recall_image(root_dir, tmpdir):
-    img_path = get_data("OSBS_029.png")
-    if root_dir == "tmpdir":
-        root_dir = os.path.dirname(img_path)
-        savedir = tmpdir
-    else:
-        savedir = None
-
+def test_point_recall_image():
     # create sample dataframes
     predictions = pd.DataFrame({
         "image_path": ["OSBS_029.png", "OSBS_029.png"],
@@ -134,10 +119,10 @@ def test_point_recall_image(root_dir, tmpdir):
     })
 
     # run the function
-    result = evaluate._point_recall_image_(predictions, ground_df, root_dir=root_dir, savedir=savedir)
+    result = evaluate._point_recall_image_(predictions, ground_df)
 
     # check the output, 1 match of 2 ground truth
-    assert all(result.predicted_label.isnull().values == [False, True])
+    assert all(result.predicted_label.isnull().values == [False, True])  # First point inside box, second point outside
     assert isinstance(result, gpd.GeoDataFrame)
     assert "predicted_label" in result.columns
     assert "true_label" in result.columns
