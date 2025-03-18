@@ -101,7 +101,6 @@ class CropModel(LightningModule):
         num_workers (int): Number of data loading workers
         lr (float): Learning rate
         label_dict (dict): Label to index mapping {"Bird": 0, "Mammal": 1}
-        numeric_to_label_dict (dict): Index to label mapping {0: "Bird", 1: "Mammal"}
     """
 
     def __init__(self,
@@ -111,9 +110,10 @@ class CropModel(LightningModule):
                  lr=0.0001,
                  model=None):
         super().__init__()
-        self.save_hyperparameters()
-        # Always set self.num_classes so it exists on the instance
         self.num_classes = num_classes
+        self.num_workers = num_workers
+        self.numeric_to_label_dict = None
+        self.save_hyperparameters()
 
         if num_classes is not None:
             if model is None:
@@ -138,7 +138,6 @@ class CropModel(LightningModule):
 
         # Training Hyperparameters
         self.batch_size = batch_size
-        self.num_workers = num_workers
         self.lr = lr
 
     def create_trainer(self, **kwargs):
@@ -149,20 +148,20 @@ class CropModel(LightningModule):
         # Now that self.num_classes always exists, this check won't error
         if self.num_classes is None:
             self.num_classes = checkpoint['hyper_parameters']['num_classes']
-            if self.model is None:
-                self.model = simple_resnet_50(num_classes=self.num_classes)
-            self.accuracy = torchmetrics.Accuracy(average='none',
-                                                  num_classes=self.num_classes,
-                                                  task="multiclass")
-            self.total_accuracy = torchmetrics.Accuracy(num_classes=self.num_classes,
-                                                        task="multiclass")
-            self.precision_metric = torchmetrics.Precision(num_classes=self.num_classes,
-                                                           task="multiclass")
-            self.metrics = torchmetrics.MetricCollection({
-                "Class Accuracy": self.accuracy,
-                "Accuracy": self.total_accuracy,
-                "Precision": self.precision_metric
-            })
+        if self.model is None:
+            self.model = simple_resnet_50(num_classes=self.num_classes)
+        self.accuracy = torchmetrics.Accuracy(average='none',
+                                              num_classes=self.num_classes,
+                                              task="multiclass")
+        self.total_accuracy = torchmetrics.Accuracy(num_classes=self.num_classes,
+                                                    task="multiclass")
+        self.precision_metric = torchmetrics.Precision(num_classes=self.num_classes,
+                                                       task="multiclass")
+        self.metrics = torchmetrics.MetricCollection({
+            "Class Accuracy": self.accuracy,
+            "Accuracy": self.total_accuracy,
+            "Precision": self.precision_metric
+        })
 
     def load_from_disk(self, train_dir, val_dir):
         self.train_ds = ImageFolder(root=train_dir,
@@ -170,6 +169,8 @@ class CropModel(LightningModule):
         self.val_ds = ImageFolder(root=val_dir,
                                   transform=self.get_transform(augment=False))
         self.label_dict = self.train_ds.class_to_idx
+        # Create a reverse mapping from numeric indices to class labels
+        self.numeric_to_label_dict = {v: k for k, v in self.label_dict.items()}
 
     def get_transform(self, augment):
         """Returns the data transformation pipeline for the model.
@@ -215,7 +216,8 @@ class CropModel(LightningModule):
                 # Crop the image using the bounding box coordinates
                 img = src.read(window=((ymin, ymax), (xmin, xmax)))
                 # Save the cropped image as a PNG file using opencv
-                img_path = os.path.join(savedir, label, f"crop_{index}.png")
+                image_basename = os.path.splitext(os.path.basename(image))[0]
+                img_path = os.path.join(savedir, label, f"{image_basename}_{index}.png")
                 img = np.rollaxis(img, 0, 3)
                 cv2.imwrite(img_path, img)
 
@@ -228,7 +230,6 @@ class CropModel(LightningModule):
                 "CropModel is not initialized. Provide 'num_classes' or load from a checkpoint."
             )
         output = self.model(x)
-        output = F.sigmoid(output)
 
         return output
 
@@ -254,7 +255,6 @@ class CropModel(LightningModule):
         """Validation data loader."""
         val_loader = torch.utils.data.DataLoader(self.val_ds,
                                                  batch_size=self.batch_size,
-                                                 shuffle=True,
                                                  num_workers=self.num_workers)
 
         return val_loader
