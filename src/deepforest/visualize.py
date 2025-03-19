@@ -503,6 +503,8 @@ def plot_results(results,
     # Read images
     if image is None:
         root_dir = results.root_dir
+        # expected str, bytes or os.PathLike object, not Series
+        root_dir = root_dir.iloc[0] if isinstance(root_dir, pd.Series) else root_dir
         image_path = os.path.join(root_dir, results.image_path.unique()[0])
         image = np.array(Image.open(image_path))
 
