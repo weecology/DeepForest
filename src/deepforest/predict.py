@@ -233,8 +233,8 @@ def _predict_crop_model_(crop_model,
     label = np.argmax(stacked_outputs, 1)
     score = np.max(stacked_outputs, 1)
 
-    if crop_model.label_dict is not None:
-        results["cropmodel_label"] = crop_model.numeric_to_label_dict[label]
+    if crop_model.numeric_to_label_dict is not None:
+        results["cropmodel_label"] = [crop_model.numeric_to_label_dict[x] for x in label]
     else:
         results["cropmodel_label"] = label
 
