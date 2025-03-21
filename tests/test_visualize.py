@@ -73,7 +73,7 @@ def test_predict_image_and_plot(m, tmpdir):
 
 def test_predict_tile_and_plot(m, tmpdir):
     sample_image_path = get_data("OSBS_029.png")
-    results = m.predict_tile(raster_path=sample_image_path)
+    results = m.predict_tile(path=sample_image_path)
     visualize.plot_results(results, savedir=tmpdir)
 
     assert os.path.exists(os.path.join(tmpdir, "OSBS_029.png"))
