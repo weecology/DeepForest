@@ -660,16 +660,18 @@ def crop_model():
     return model.CropModel(num_classes=2)
 
 
-def test_predict_tile_with_crop_model(m, config):
+def test_predict_tile_with_multiple_crop_models(m, config):
     raster_path = get_data("SOAP_061.png")
     patch_size = 400
     patch_overlap = 0.05
     iou_threshold = 0.15
     mosaic = True
-    # Set up the crop model
-    crop_model = model.CropModel(num_classes=2)
 
-    # Call the predict_tile method with the crop_model
+    # Create multiple crop models
+    crop_model_1 = model.CropModel(num_classes=2)
+    crop_model_2 = model.CropModel(num_classes=3)
+
+    # Call predict_tile with multiple crop models
     m.config["train"]["fast_dev_run"] = False
     m.create_trainer()
     result = m.predict_tile(raster_path=raster_path,
@@ -677,28 +679,34 @@ def test_predict_tile_with_crop_model(m, config):
                             patch_overlap=patch_overlap,
                             iou_threshold=iou_threshold,
                             mosaic=mosaic,
-                            crop_model=crop_model)
+                            crop_models=[crop_model_1, crop_model_2])
 
-    # Assert the result
+    # Assert result type
     assert isinstance(result, pd.DataFrame)
-    assert set(result.columns) == {
-        "xmin", "ymin", "xmax", "ymax", "label", "score", "cropmodel_label", "geometry",
-        "cropmodel_score", "image_path"
-    }
+
+    # Check column names dynamically for multiple crop models
+    expected_cols = {"xmin", "ymin", "xmax", "ymax", "label", "score", "geometry", "image_path"}
+    for i in range(2):  # We have 2 crop models
+        expected_cols.add(f"cropmodel_label_{i}")
+        expected_cols.add(f"cropmodel_score_{i}")
+
+    assert set(result.columns) == expected_cols
+    assert not result.empty
 
 
-def test_predict_tile_with_crop_model_empty():
-    """If the model return is empty, the crop model should return an empty dataframe"""
+def test_predict_tile_with_multiple_crop_models_empty():
+    """If no predictions are made, result should be empty"""
     raster_path = get_data("SOAP_061.png")
     m = main.deepforest()
     patch_size = 400
     patch_overlap = 0.05
     iou_threshold = 0.15
     mosaic = True
-    # Set up the crop model
-    crop_model = model.CropModel(num_classes=2)
 
-    # Call the predict_tile method with the crop_model
+    # Create multiple crop models
+    crop_model_1 = model.CropModel(num_classes=2)
+    crop_model_2 = model.CropModel(num_classes=3)
+
     m.config["train"]["fast_dev_run"] = False
     m.create_trainer()
     result = m.predict_tile(raster_path=raster_path,
@@ -706,10 +714,9 @@ def test_predict_tile_with_crop_model_empty():
                             patch_overlap=patch_overlap,
                             iou_threshold=iou_threshold,
                             mosaic=mosaic,
-                            crop_model=crop_model)
+                            crop_models=[crop_model_1, crop_model_2])
 
-    # Assert the result
-    assert result is None
+    assert result is None or result.empty  # Ensure empty result is handled properly
 
 def test_batch_prediction(m, raster_path):
     # Prepare input data
