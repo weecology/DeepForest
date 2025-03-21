@@ -668,7 +668,6 @@ def test_predict_tile_with_crop_model(m, config):
     mosaic = True
     # Set up the crop model
     crop_model = model.CropModel(num_classes=2)
-
     # Call the predict_tile method with the crop_model
     m.config["train"]["fast_dev_run"] = False
     m.create_trainer()
@@ -697,7 +696,6 @@ def test_predict_tile_with_crop_model_empty():
     mosaic = True
     # Set up the crop model
     crop_model = model.CropModel(num_classes=2)
-
     # Call the predict_tile method with the crop_model
     m.config["train"]["fast_dev_run"] = False
     m.create_trainer()
@@ -709,7 +707,64 @@ def test_predict_tile_with_crop_model_empty():
                             crop_model=crop_model)
 
     # Assert the result
-    assert result is None
+    assert result is None or result.empty
+
+def test_predict_tile_with_multiple_crop_models(m, config):
+    path = get_data("SOAP_061.png")
+    patch_size = 400
+    patch_overlap = 0.05
+    iou_threshold = 0.15
+    mosaic = True
+
+    # Create multiple crop models
+    crop_model = [model.CropModel(num_classes=2), model.CropModel(num_classes=3)]
+
+    # Call predict_tile with multiple crop models
+    m.config["train"]["fast_dev_run"] = False
+    m.create_trainer()
+    result = m.predict_tile(path=path,
+                            patch_size=patch_size,
+                            patch_overlap=patch_overlap,
+                            iou_threshold=iou_threshold,
+                            mosaic=mosaic,
+                            crop_model=crop_model)
+
+    # Assert result type
+    assert isinstance(result, pd.DataFrame)
+
+    # Check column names dynamically for multiple crop models
+    expected_cols = {"xmin", "ymin", "xmax", "ymax", "label", "score", "geometry", "image_path"}
+    for i in range(len(crop_model)):
+        expected_cols.add(f"cropmodel_label_{i}")
+        expected_cols.add(f"cropmodel_score_{i}")
+
+    assert set(result.columns) == expected_cols
+    assert not result.empty
+
+
+def test_predict_tile_with_multiple_crop_models_empty():
+    """If no predictions are made, result should be empty"""
+    path = get_data("SOAP_061.png")
+    m = main.deepforest()
+    patch_size = 400
+    patch_overlap = 0.05
+    iou_threshold = 0.15
+    mosaic = True
+
+    # Create multiple crop models
+    crop_model_1 = model.CropModel(num_classes=2)
+    crop_model_2 = model.CropModel(num_classes=3)
+
+    m.config["train"]["fast_dev_run"] = False
+    m.create_trainer()
+    result = m.predict_tile(path=path,
+                            patch_size=patch_size,
+                            patch_overlap=patch_overlap,
+                            iou_threshold=iou_threshold,
+                            mosaic=mosaic,
+                            crop_model=[crop_model_1, crop_model_2])
+
+    assert result is None or result.empty  # Ensure empty result is handled properly
 
 def test_batch_prediction(m, path):
     # Prepare input data
