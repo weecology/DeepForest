@@ -497,7 +497,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                      thresh=0.001,
                      color=None,
                      thickness=1,
-                     crop_model=None,
+                     crop_models=None,
                      crop_transform=None,
                      crop_augment=False):
         """For images too large to input into the model, predict_tile cuts the
@@ -615,14 +615,19 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
             return list(zip(results, self.crops))
 
-        if crop_model:
-            # If a crop model is provided, predict on each crop
-            results = predict._predict_crop_model_(crop_model=crop_model,
-                                                   results=results,
-                                                   raster_path=raster_path,
-                                                   trainer=self.trainer,
-                                                   transform=crop_transform,
-                                                   augment=crop_augment)
+        if crop_models is not None and not isinstance(crop_models, list):
+            crop_models = [crop_models]
+
+        if crop_models:
+            for i, crop_model in enumerate(crop_models):
+                results = predict._predict_crop_model_(crop_model=crop_model,
+                                                       results=results,
+                                                       raster_path=raster_path,
+                                                       trainer=self.trainer,
+                                                       transform=crop_transform,
+                                                       augment=crop_augment,
+                                                       model_index=i)
+
         if results.empty:
             warnings.warn("No predictions made, returning None")
             return None
