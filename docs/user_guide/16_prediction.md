@@ -2,7 +2,7 @@
 
 There are atleast four ways to make predictions with DeepForest.
 1. Predict an image using [model.predict_image](https://deepforest.readthedocs.io/en/latest/source/deepforest.html#deepforest.main.deepforest.predict_image)
-2. Predict a tile using [model.predict_tile](https://deepforest.readthedocs.io/en/latest/source/deepforest.html#deepforest.main.deepforest.predict_tile) 
+2. Predict a tile using [model.predict_tile](https://deepforest.readthedocs.io/en/latest/source/deepforest.html#deepforest.main.deepforest.predict_tile)
 3. Predict a directory of using a csv file using [model.predict_file](https://deepforest.readthedocs.io/en/latest/source/deepforest.html#deepforest.main.deepforest.predict_file)
 4. Predict a batch of images using [model.predict_batch](https://deepforest.readthedocs.io/en/latest/source/deepforest.html#deepforest.main.deepforest.predict_batch)
 
@@ -16,7 +16,7 @@ from deepforest.visualize import plot_results
 # Initialize the model class
 model = main.deepforest()
 
-# Load a pretrained tree detection model from Hugging Face 
+# Load a pretrained tree detection model from Hugging Face
 model.load_model(model_name="weecology/deepforest-tree", revision="main")
 
 sample_image_path = get_data("OSBS_029.png")
@@ -44,9 +44,9 @@ model = main.deepforest()
 model.load_model(model_name="weecology/deepforest-tree", revision="main")
 
 # Predict on large geospatial tiles using overlapping windows
-raster_path = get_data("OSBS_029.tif")
-predicted_raster = model.predict_tile(raster_path, patch_size=300, patch_overlap=0.25)
-plot_results(predicted_raster)
+path = get_data("OSBS_029.tif")
+predicted_image = model.predict_tile(path=path, patch_size=300, patch_overlap=0.25)
+plot_results(predicted_image)
 ```
 
 ### Patch Size
@@ -89,7 +89,7 @@ raster_path = get_data("OSBS_029.tif")
 tile = np.array(Image.open(raster_path))
 ds = dataset.TileDataset(tile=tile, patch_overlap=0.1, patch_size=100)
 dl = DataLoader(ds, batch_size=3)
-    
+
 # Perform prediction
 predictions = []
 for batch in dl:

@@ -21,9 +21,9 @@ Let’s show an example with a small image. For larger images, patch_size should
    # Load a pretrained tree detection model from Hugging Face
    model.load_model(model_name="weecology/deepforest-tree", revision="main")
    # Predict on large geospatial tiles using overlapping windows
-   raster_path = get_data("OSBS_029.tif")
-   predicted_raster = model.predict_tile(raster_path, patch_size=300, patch_overlap=0.25)
-   plot_results(predicted_raster)
+   path = get_data("OSBS_029.tif")
+   predicted_image = model.predict_tile(path=path, patch_size=300, patch_overlap=0.25)
+   plot_results(predicted_image)
 
 .. note::
 

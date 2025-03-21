@@ -26,7 +26,7 @@ model = main.deepforest()
 model.load_model(model_name="weecology/deepforest-tree", revision="main")
 
 img_path = get_data(path="2019_YELL_2_528000_4978000_image_crop2.png")
-results = model.predict_tile(img_path, patch_overlap=0, patch_size=400)
+results = model.predict_tile(path=img_path, patch_overlap=0, patch_size=400)
 plot_results(results)
 ```
 
