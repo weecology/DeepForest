@@ -615,14 +615,19 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
             return list(zip(results, self.crops))
 
+        if crop_model is not None and not isinstance(crop_model, list):
+            crop_model = [crop_model]
+
         if crop_model:
-            # If a crop model is provided, predict on each crop
-            results = predict._predict_crop_model_(crop_model=crop_model,
-                                                   results=results,
-                                                   raster_path=raster_path,
-                                                   trainer=self.trainer,
-                                                   transform=crop_transform,
-                                                   augment=crop_augment)
+            for i, crop_model in enumerate(crop_model):
+                results = predict._predict_crop_model_(crop_model=crop_model,
+                                                       results=results,
+                                                       raster_path=raster_path,
+                                                       trainer=self.trainer,
+                                                       transform=crop_transform,
+                                                       augment=crop_augment,
+                                                       model_index=i)
+
         if results.empty:
             warnings.warn("No predictions made, returning None")
             return None

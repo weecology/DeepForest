@@ -17,6 +17,8 @@ Why would you want to apply a model directly to each crop? Why not train a multi
 
 - **New Data and Multi-sensor Learning**: In many applications, the data needed for detection and classification may differ. The CropModel concept provides an extendable piece that allows for advanced pipelines.
 
+- **Support for Multiple Models**: You can pass a list of CropModel instances to `predict_tile`. This enables comparing predictions from multiple models, such as species classification and health assessment, in a single pass. Results include separate columns for each model's predictions and confidence scores (cropmodel_label_<i> and cropmodel_score_<i>).
+
 Considerations
 --------------
 
@@ -26,6 +28,9 @@ Considerations
 
 Usage
 -----
+
+Single Crop Model
+~~~~~~~~~~~~~~~~~
 
 Consider a test file with tree boxes and an 'Alive/Dead' label that comes with all DeepForest installations:
 
@@ -48,6 +53,28 @@ Consider a test file with tree boxes and an 'Alive/Dead' label that comes with a
     # 2    0.0   72.0   34.0  ...  SOAP_061.png               1         0.505258
     # 3  341.0   40.0  374.0  ...  SOAP_061.png               1         0.517231
     # 4    0.0  183.0   26.0  ...  SOAP_061.png               1         0.513122
+
+Multiple Crop Models
+~~~~~~~~~~~~~~~~~~~~~
+
+You can also pass multiple crop models to `predict_tile`. Each model's predictions and confidence scores will be stored in separate columns.
+
+.. code-block:: python
+
+    crop_model1 = model.CropModel(num_classes=2)
+    crop_model2 = model.CropModel(num_classes=3)
+    result = m.predict_tile(raster_path=raster_path, crop_model=[crop_model1, crop_model2])
+
+.. code-block:: python
+
+    result.head()
+    # Output:
+    #     xmin   ymin   xmax   ymax label     score    image_path  cropmodel_label_0  cropmodel_score_0  cropmodel_label_1  cropmodel_score_1  \
+    # 0  273.0  230.0  313.0  275.0  Tree  0.882591  SOAP_061.png                   0           0.650223                  1           0.383726   
+    # 1   47.0   82.0   81.0  120.0  Tree  0.740889  SOAP_061.png                   0           0.621586                  1           0.376401   
+    # 2    0.0   72.0   34.0  116.0  Tree  0.735777  SOAP_061.png                   0           0.614928                  1           0.394649  
+    # 3  341.0   40.0  374.0   77.0  Tree  0.668367  SOAP_061.png                   0           0.598883                  1           0.386490  
+    # 4    0.0  183.0   26.0  235.0  Tree  0.664668  SOAP_061.png                   0           0.538162                  1           0.439823  
 
 A `CropModel` is a PyTorch Lightning object and can also be used like any other model.
 
