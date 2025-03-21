@@ -660,7 +660,7 @@ def crop_model():
     return model.CropModel(num_classes=2)
 
 
-def test_predict_tile_with_multiple_crop_models(m, config):
+def test_predict_tile_with_crop_model(m, config):
     raster_path = get_data("SOAP_061.png")
     patch_size = 400
     patch_overlap = 0.05
@@ -679,7 +679,7 @@ def test_predict_tile_with_multiple_crop_models(m, config):
                             patch_overlap=patch_overlap,
                             iou_threshold=iou_threshold,
                             mosaic=mosaic,
-                            crop_models=[crop_model_1, crop_model_2])
+                            crop_model=[crop_model_1, crop_model_2])
 
     # Assert result type
     assert isinstance(result, pd.DataFrame)
@@ -694,7 +694,7 @@ def test_predict_tile_with_multiple_crop_models(m, config):
     assert not result.empty
 
 
-def test_predict_tile_with_multiple_crop_models_empty():
+def test_predict_tile_with_crop_model_empty():
     """If no predictions are made, result should be empty"""
     raster_path = get_data("SOAP_061.png")
     m = main.deepforest()
@@ -714,7 +714,7 @@ def test_predict_tile_with_multiple_crop_models_empty():
                             patch_overlap=patch_overlap,
                             iou_threshold=iou_threshold,
                             mosaic=mosaic,
-                            crop_models=[crop_model_1, crop_model_2])
+                            crop_model=[crop_model_1, crop_model_2])
 
     assert result is None or result.empty  # Ensure empty result is handled properly
 
