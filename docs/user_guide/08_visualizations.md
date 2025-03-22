@@ -4,7 +4,7 @@ To view the results of DeepForest models, we use Roboflow's [supervision](https:
 
 ### Predict
 
-```
+```python
 from deepforest import main, get_data
 from deepforest.visualize import plot_results
 
@@ -17,7 +17,7 @@ plot_results(results)
 ```
 The same works with deepforest.main.predict_tile
 
-```
+```python
 from deepforest import main, get_data
 from deepforest.visualize import plot_results
 import os
@@ -36,7 +36,7 @@ plot_results(results)
 
 The colors and thickness of annotations can be updated.
 
-```
+```python
 # Orange boxes and thicker lines
 plot_results(results, results_color=[109,50,168], thickness=2)
 ```
@@ -44,7 +44,7 @@ plot_results(results, results_color=[109,50,168], thickness=2)
 
 ### Overlaying predictions and ground truth
 
-```
+```python 
 from deepforest.utilities import read_file
 ground_truth = read_file(get_data(path="2019_YELL_2_528000_4978000_image_crop2.xml"))
 plot_results(results, ground_truth=ground_truth)
@@ -56,7 +56,10 @@ plot_results(results, ground_truth=ground_truth)
 
 For results with more than one predicted class, the plot_results function will detect multiple classes and use a color palette instead of a single class. For control over the color palette see [supervision.draw.color](https://supervision.roboflow.com/draw/color/)
 
-```
+```python
+from supervision.draw.color import ColorPalette
+import supervision as sv
+
 color_palette = sv.ColorPalette.from_matplotlib('viridis', 6)
 plot_results(results, ground_truth=ground_truth, results_color=color_palette)
 ```

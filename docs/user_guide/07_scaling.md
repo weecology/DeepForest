@@ -45,7 +45,7 @@ There are a few situations in which it is useful to replicate the DeepForest mod
 Imagine we have a list of images we want to predict using `deepforest.main.predict_tile()`. DeepForest does not allow multi-GPU inference within each tile, as it is too much of a headache to make sure the threads return the correct overlapping window. Instead, we can parallelize across tiles, such that each GPU takes a tile and performs an action. The general structure is to create a Dask client across multiple GPUs, submit each DeepForest `predict_tile()` instance, and monitor the results. In this example, we are using a SLURMCluster, a common job scheduler for large clusters. There are many similar ways to create a Dask client object that will be specific to a particular organization. The following arguments are specific to the University of Florida cluster, but will be largely similar to other SLURM naming conventions. We use the extra Dask package, `dask-jobqueue`, which helps format the call.
 
 
-```
+```python
 from dask_jobqueue import SLURMCluster
 from dask.distributed import Client
 
@@ -68,7 +68,10 @@ dask_client = Client(cluster)
 This job script gets a single GPUs with "40GB" of memory with 10 cpus. We then ask for 10 instances of this setup.
 Now that we have a dask client, we can send our custom function. 
 
-```
+```python 
+import os
+from deepforest import main
+
 def function_to_parallelize(tile):
     m = main.deepforest()
     m.load_model("weecology/deepforest-tree") # sub in the custom logic to load your own models
