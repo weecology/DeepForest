@@ -6,8 +6,12 @@ Here is a quick example. Suppose you want to log the training metrics, which is 
 
 We can subclass the main deepforest module, use super() to init all the normal class methods, and then just overwrite the method we would like to change.
 
-```
-#Overwrite default training logs and lr
+```python
+# Necessary imports
+from deepforest import main
+import torch
+
+# Overwrite default training logs and lr
 class mymodule(main.deepforest):
     def __init__(self):
         super().__init__()

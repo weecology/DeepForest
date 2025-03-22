@@ -7,7 +7,7 @@ To create a compliant format, follow the recipe below.
 
 A subclass is a class instance that inherits the methods and function of super classes. In this cases, model.Model() is defined as:
 
-```
+```python
 # Model - common class
 from deepforest.models import *
 import torch
@@ -70,13 +70,16 @@ The second requirement is that the model ouputs a dictionary with keys ["boxes",
    boxes (FloatTensor[N, 4]): the predicted boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
    labels (Int64Tensor[N]): the predicted labels for each detection
    scores (Tensor[N]): the scores of each detection
-```
+
 
 # Custom Dataloaders
 
 For model training, evaluation, and prediction, we usually let DeepForest create dataloaders with augmentations and formatting starting from a CSV of annotations for training and evaluation or image paths for prediction. That works well, but what happens if your data is already in the form of a PyTorch dataloader? There are a number of emerging benchmarks (e.g., [WILDS](https://github.com/p-lambda/wilds)) that skip the finicky steps of data preprocessing and just yield data directly. We can pass dataloaders directly to DeepForest functions. Because this is a custom route, we leave the responsibility of formatting the data properly to users; see [dataset.TreeDataset](https://deepforest.readthedocs.io/en/latest/source/deepforest.html#deepforest.dataset.TreeDataset) for an example. Any dataloader that meets the needed requirements could be used. It's important to note that every time a dataloader is updated, the `create_trainer()` method needs to be called to update the rest of the object.
 For train/test
-```
+```python
+from deepforest import main
+from deepforest import dataset
+
 m = main.deepforest()
 existing_loader = m.load_dataset(csv_file=m.config["train"]["csv_file"],
                                 root_dir=m.config["train"]["root_dir"],
@@ -90,7 +93,10 @@ m.trainer.fit()
 
 For prediction directly on a dataloader, we need a dataloader that yields images, see [TileDataset](https://deepforest.readthedocs.io/en/latest/source/deepforest.html#deepforest.dataset.TileDataset) for an example. Any dataloader could be supplied to m.trainer.predict as long as it meets this specification.  
 
-```
+```python
+import numpy as np
+from deepforest import dataset
+
 ds = dataset.TileDataset(tile=np.random.random((400,400,3)).astype("float32"), patch_overlap=0.1, patch_size=100)
 existing_loader = m.predict_dataloader(ds)
 
