@@ -21,7 +21,7 @@ example, here is a drone collected data at the standard 400px.
 
 .. code:: python
 
-   tile = model.predict_tile("/Users/ben/Desktop/test.jpg",return_plot=True,patch_overlap=0,iou_threshold=0.05,patch_size=400)
+   tile = model.predict_tile(path="/Users/ben/Desktop/test.jpg",return_plot=True,patch_overlap=0,iou_threshold=0.05,patch_size=400)
 
 |image1|
 

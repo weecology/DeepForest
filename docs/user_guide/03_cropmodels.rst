@@ -36,7 +36,7 @@ Consider a test file with tree boxes and an 'Alive/Dead' label that comes with a
     # Or set up the crop model or load weights model.CropModel.load_from_checkpoint(<path>)
 
     m.create_trainer()
-    result = m.predict_tile(raster_path=raster_path, crop_model=crop_model)
+    result = m.predict_tile(path=path, crop_model=crop_model)
 
 .. code-block:: python
 
