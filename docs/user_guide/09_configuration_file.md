@@ -107,7 +107,9 @@ Most commonly, `cpu`, `gpu` or `tpu` as well as other [options](https://pytorch-
 If `gpu`, it can be helpful to specify the data parallelization strategy. This can be done using the `strategy` arg in `main.create_trainer()`
 
 ```python
-model.create_trainer(logger=comet_logger, strategy="ddp")
+from deepforest import model as m
+
+m.create_trainer(logger=comet_logger, strategy="ddp")
 ```
 
 This is passed to the pytorch-lightning trainer, documented in the link above for multi-gpu training.
@@ -147,12 +149,16 @@ Directory to search for images in the csv_file image_path column
 Learning rate for the training optimization. By default the optimizer is stochastic gradient descent with momentum. A learning rate scheduler is used based on validation loss
 
 ```python
+from torch import optim
+
 optim.SGD(self.model.parameters(), lr=self.config["train"]["lr"], momentum=0.9)
 ```
 
 A learning rate scheduler is used to adjust the learning rate based on validation loss. The default scheduler is ReduceLROnPlateau:
 
 ```python
+import torch 
+
 self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, mode='min', 
                                                    factor=0.1, patience=10, 
                                                    verbose=True, threshold=0.0001, 

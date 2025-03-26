@@ -22,7 +22,7 @@ DeepForest was originally designed for bounding box annotations. As of DeepFores
 
 ```python
 from deepforest import get_data
-from deepforest.utilities import read_file
+from deepforest import utilities
 
 filename = get_data("OSBS_029.csv")
 df = utilities.read_file(filename)
@@ -82,9 +82,9 @@ df.root_dir
 COCO format is a popular format for object detection tasks. It is a JSON file that contains information about the images and annotations.
 
 ```python
-from deepforest.utilities import read_file
+from deepforest import utilities
 
-df = read_file(input="/path/to/coco_annotations.json")
+df = utilities.read_file(input="/path/to/coco_annotations.json")
 df.head()
 ```
 
@@ -93,9 +93,9 @@ df.head()
 Pascal VOC format is a popular format for object detection tasks. It is a XML file that contains information about the images and annotations.
 
 ```python
-from deepforest.utilities import read_file
+from deepforest import utilities
 
-df = read_file(input="/path/to/pascal_voc_annotations.xml")
+df = utilities.read_file(input="/path/to/pascal_voc_annotations.xml")
 df.head()
 ```
 
@@ -116,9 +116,9 @@ Name: 0, dtype: object
 These coordinates are made relative to the image origin when the file is read.
 
 ```python
-from deepforest.utilities import read_file
+from deepforest import utilities
 
-shp = read_file(input="/path/to/boxes_shapefile.shp")
+shp = utilities.read_file(input="/path/to/boxes_shapefile.shp")
 shp.head()
 ```
 
@@ -145,9 +145,9 @@ x,y,label
 #### Shapefile
 
 ```python
-from deepforest.utilities import read_file
+from deepforest import utilities
 
-shp = read_file(input="/path/to/points_shapefile.shp")
+shp = utilities.read_file(input="/path/to/points_shapefile.shp")
 annotations.head()
 ```
 
@@ -173,9 +173,9 @@ Polygons are expressed in well-known-text (WKT) format. Learn more about [WKT](h
 #### Shapefile
 
 ```python
-from deepforest.utilities import read_file
+from deepforest import utilities
 
-shp = read_file(input="/path/to/polygons_shapefile.shp")
+shp = utilities.read_file(input="/path/to/polygons_shapefile.shp")
 annotations.head()
 ```
 

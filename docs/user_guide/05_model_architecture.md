@@ -60,7 +60,7 @@ class Model():
 ## Match torchvision formats
 
 From this definition we can see three format requirements. The model must be able to take in a batch of images in the order [channels, height, width]. The current model weights are trained on 3 band images, but you can update the check_model function if you have other image dimensions.
-The second requirement is that the model ouputs a dictionary with keys ["boxes","labels","scores"], the boxes are formatted following torchvision object detection format. From the [docs](https://pytorch.org/vision/main/models/generated/torchvision.models.detection.retinanet_resnet50_fpn.html#torchvision.models.detection.retinanet_resnet50_fpn)
+The second requirement is that the model outputs a dictionary with keys ["boxes","labels","scores"], the boxes are formatted following torchvision object detection format. From the [docs](https://pytorch.org/vision/main/models/generated/torchvision.models.detection.retinanet_resnet50_fpn.html#torchvision.models.detection.retinanet_resnet50_fpn)
 
 .. note::
    During training, the model expects both the input tensors and targets (list of dictionary), containing:
@@ -78,7 +78,6 @@ For model training, evaluation, and prediction, we usually let DeepForest create
 For train/test
 ```python
 from deepforest import main
-from deepforest import dataset
 
 m = main.deepforest()
 existing_loader = m.load_dataset(csv_file=m.config["train"]["csv_file"],
@@ -96,10 +95,11 @@ For prediction directly on a dataloader, we need a dataloader that yields images
 ```python
 import numpy as np
 from deepforest import dataset
+from deepforest import main as m
 
 ds = dataset.TileDataset(tile=np.random.random((400,400,3)).astype("float32"), patch_overlap=0.1, patch_size=100)
 existing_loader = m.predict_dataloader(ds)
 
 batches = m.trainer.predict(m, existing_loader)
-len(batches[0]) == m.config["batch_size"] + 1
+print(len(batches[0]) == m.config["batch_size"] + 1)
 ```

@@ -24,24 +24,24 @@ The config file specifies the path to the CSV file that we want to use when trai
 
 ```python
 import os
-from deepforest import main
+from deepforest import model as m
 from deepforest import get_data
 
 # Example run with short training
 annotations_file = get_data("testfile_deepforest.csv")
 
-model.config["epochs"] = 1
-model.config["save-snapshot"] = False
-model.config["train"]["csv_file"] = annotations_file
-model.config["train"]["root_dir"] = os.path.dirname(annotations_file)
+m.config["epochs"] = 1
+m.config["save-snapshot"] = False
+m.config["train"]["csv_file"] = annotations_file
+m.config["train"]["root_dir"] = os.path.dirname(annotations_file)
 
-model.create_trainer()
+m.create_trainer()
 ```
 
 For debugging, its often useful to use the [fast_dev_run = True from pytorch lightning](https://pytorch-lightning.readthedocs.io/en/latest/common/trainer.html#fast-dev-run)
 
 ```python
-model.config["train"]["fast_dev_run"] = True
+m.config["train"]["fast_dev_run"] = True
 ```
 
 See [config](https://deepforest.readthedocs.io/en/latest/ConfigurationFile.html) for full set of available arguments. You can also pass any [additional](https://pytorch-lightning.readthedocs.io/en/latest/common/trainer.html) pytorch lightning argument to trainer.
@@ -50,7 +50,7 @@ To begin training, we create a pytorch-lightning trainer and call trainer.fit on
 While this might look a touch awkward, it is useful for exposing the pytorch lightning functionality.
 
 ```python
-model.trainer.fit(model)
+m.trainer.fit(model)
 ```
 
 [For more, see Google colab demo on model training](https://colab.research.google.com/drive/1gKUiocwfCvcvVfiKzAaf6voiUVL2KK_r?usp=sharing)
@@ -60,6 +60,8 @@ model.trainer.fit(model)
 If you want to disable the progress bar while training change the `create_trainer` call to:
 
 ```python
+from deepforest import model 
+
  model.create_trainer(enable_progress_bar=False)
 ```
 
@@ -69,6 +71,7 @@ DeepForest logs the training loss, validation loss and class metrics (for multi-
 
 ```python
 from deepforest import main
+
 m = main.deepforest()
 logger = <any supported pytorch lightning logger>
 m.create_trainer(logger=logger)
@@ -157,6 +160,8 @@ model.trainer.fit(model)
 ```python
 import tempfile
 import pandas as pd
+from deepforest import model
+
 tmpdir = tempfile.TemporaryDirectory()
 
 model.load_model("weecology/deepforest-tree")

@@ -9,7 +9,6 @@ We can subclass the main deepforest module, use super() to init all the normal c
 ```python
 # Necessary imports
 from deepforest import main
-import torch
 
 # Overwrite default training logs and lr
 class mymodule(main.deepforest):
@@ -34,7 +33,7 @@ class mymodule(main.deepforest):
 
 Now when we call this module, it has the changed training_step, but still has all the other methods we would like, such as downloading the release model.
 
-```
+```python
 m = mymodule()
 m.load_model("weecology/deepforest-tree") 
 

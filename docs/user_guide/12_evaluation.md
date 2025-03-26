@@ -235,10 +235,6 @@ The evaluation method uses deepforest.predict_image for each of the paths suppli
 psuedo_code:
 
 ```python 
-from deepforest import preprocess
-from deepforest import main
-import os
-
 output_annotations = deepforest.preprocess.split_raster(
     path_to_raster = <path>,
     annotations_file = <original_annotation_path>,

@@ -15,7 +15,7 @@ DeepForest's create_trainer argument passes any argument to pytorch lightning. T
 https://lightning.ai/docs/pytorch/stable/accelerators/gpu_intermediate.html
 
 For example on a SLURM cluster, we use the following line to get 5 gpus on a single node.
-```
+```python
 m.create_trainer(logger=comet_logger, accelerator="gpu", strategy="ddp", num_nodes=1, devices=devices)
 ```
 
@@ -84,7 +84,7 @@ def function_to_parallelize(tile):
     return filename
 ```
 
-```
+```python
 tiles = [<list of tiles to predict>]
 futures = []
 for tile in tiles:
@@ -94,7 +94,7 @@ for tile in tiles:
 
 We can wait to see the futures as they complete! Dask also has a beautiful visualization tool using bokeh. 
 
-```
+```python
 for x in futures:
     completed_filename = x.result()
     print(completed_filename)
