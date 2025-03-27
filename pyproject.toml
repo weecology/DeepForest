@@ -70,6 +70,7 @@ dependencies = [
     "torchvision>=0.13",
     "tqdm",
     "xmltodict",
+    "myst-parser",
 ]
 
 [project.optional-dependencies]

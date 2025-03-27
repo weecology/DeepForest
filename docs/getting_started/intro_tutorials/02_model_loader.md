@@ -22,7 +22,7 @@ The `load_model` function loads a pretrained model from Hugging Face using the r
 
 ### Returns
 
-- `` (object): A trained PyTorch model with its configuration and weights.
+- `object`: A trained PyTorch model with its configuration and weights.
 
 ### Example Usage
 
