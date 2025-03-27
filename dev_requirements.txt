@@ -43,3 +43,4 @@ tqdm
 twine
 xmltodict
 yapf
+myst-parser
