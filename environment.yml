@@ -51,4 +51,6 @@ dependencies:
     - docformatter
     - opencv-python-headless
     - safetensors
+    - myst-parser
+
 

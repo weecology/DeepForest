@@ -1,6 +1,6 @@
 # Scaling DeepForest using PyTorch Lightning
 
-### Increase batch size
+## Increase batch size
 
 It is more efficient to run a larger batch size on a single GPU. This is because the overhead of loading data and moving data between the CPU and GPU is relatively large. By running a larger batch size, we can reduce the overhead of these operations.
 

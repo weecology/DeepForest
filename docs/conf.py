@@ -6,8 +6,6 @@ import sys
 import urllib.request
 from typing import Any, Dict
 
-from recommonmark.parser import CommonMarkParser
-from recommonmark.transform import AutoStructify
 from sphinx.highlighting import lexers
 from pygments.lexers.python import PythonLexer
 from deepforest._version import __version__
@@ -63,6 +61,7 @@ autodoc_member_order = "groupwise"
 autoclass_content = "both"
 
 extensions = [
+    "myst_parser",  # Switched from recommonmark to MyST-Parser
     "sphinx_design",
     "nbsphinx",
     "pygments.sphinxext",
@@ -167,32 +166,27 @@ txinfo_documents = [
 # ----------------------------------
 # Source Suffix Configuration
 # ----------------------------------
-source_suffix = {".rst": "restructuredtext", ".md": "markdown"}
+source_suffix = {".md": "myst", ".rst": "restructuredtext"}
 
 # Suppress Warnings
 suppress_warnings = ["config.cache", "toc.not_readable"]
 
 # ----------------------------------
-# Custom CommonMark Parser
+# MyST Configuration
 # ----------------------------------
-class CustomCommonMarkParser(CommonMarkParser):
-    def visit_document(self, node):
-        pass
+myst_enable_extensions = [
+    "colon_fence", 
+    "deflist",
+    "dollarmath",
+    "html_admonition",
+    "html_image",
+    "replacements",
+    "smartquotes",
+    "substitution",
+]
 
+# ----------------------------------
+# Custom Setup Function
+# ----------------------------------
 def setup(app: Any) -> None:
-    app.add_source_parser(CustomCommonMarkParser)
-    app.add_config_value(
-        "recommonmark_config",
-        {
-            "enable_eval_rst": True,
-            "enable_auto_doc_ref": False,
-            "auto_toc_tree_section": None,
-            "enable_auto_toc_tree": False,
-            "enable_math": False,
-            "enable_inline_math": False,
-            "url_resolver": lambda x: x,
-        },
-        True,
-    )
-    app.add_transform(AutoStructify)
     app.add_css_file("theme_overrides.css")
