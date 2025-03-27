@@ -200,14 +200,17 @@ def _predict_crop_model_(crop_model,
                          results,
                          raster_path,
                          transform=None,
-                         augment=False):
+                         augment=False,
+                         model_index=0,
+                         is_single_model=False):
     """Predicts crop model on a raster file.
 
     Args:
         crop_model: The crop model to be used for prediction.
-        trainer: The pytorch lightning trainer object for prediction.
+        trainer: The PyTorch Lightning trainer object for prediction.
         results: The results dataframe to store the predicted labels and scores.
         raster_path: The path to the raster file.
+        is_single_model: Boolean flag to determine column naming.
 
     Returns:
         The updated results dataframe with predicted labels and scores.
@@ -216,28 +219,41 @@ def _predict_crop_model_(crop_model,
         print("No predictions to run crop model on, returning empty dataframe")
         return results
 
-    # Remove any boxes where xmin = xmax or ymin = ymax
+    # Remove invalid boxes
     results = results[results.xmin != results.xmax]
     results = results[results.ymin != results.ymax]
 
+    # Create dataset
     bounding_box_dataset = dataset.BoundingBoxDataset(
         results,
         root_dir=os.path.dirname(raster_path),
         transform=transform,
         augment=augment)
 
+    # Create dataloader
     crop_dataloader = crop_model.predict_dataloader(bounding_box_dataset)
+
+    # Run prediction
     crop_results = trainer.predict(crop_model, crop_dataloader)
 
+    # Process results
     stacked_outputs = np.vstack(np.concatenate(crop_results))
-    label = np.argmax(stacked_outputs, 1)
-    score = np.max(stacked_outputs, 1)
+    label = np.argmax(stacked_outputs, axis=1)  # Get class with highest probability
+    score = np.max(stacked_outputs, axis=1)  # Get confidence score
+
+    # Determine column names
+    if is_single_model:
+        label_column = "cropmodel_label"
+        score_column = "cropmodel_score"
+    else:
+        label_column = f"cropmodel_label_{model_index}"
+        score_column = f"cropmodel_score_{model_index}"
 
     if crop_model.numeric_to_label_dict is not None:
-        results["cropmodel_label"] = [crop_model.numeric_to_label_dict[x] for x in label]
+        results[label_column] = [crop_model.numeric_to_label_dict[x] for x in label]
     else:
-        results["cropmodel_label"] = label
+        results[label_column] = label
 
-    results["cropmodel_score"] = score
+    results[score_column] = score
 
     return results
