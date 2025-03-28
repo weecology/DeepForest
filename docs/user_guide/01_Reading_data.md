@@ -20,7 +20,10 @@ Allows for the following formats:
 
 DeepForest was originally designed for bounding box annotations. As of DeepForest 1.4.0, point and polygon annotations are also supported. There are two ways to format annotations, depending on the annotation platform you are using. `read_file` can read points, polygons, and boxes, in both image coordinate systems (relative to image origin at top-left 0,0) as well as projected coordinates on the Earth's surface. The `read_file` method also appends the location of the current image directory as an attribute. To access this attribute use the `root_dir` attribute.
 
-```
+```python
+from deepforest import get_data
+from deepforest import utilities
+
 filename = get_data("OSBS_029.csv")
 df = utilities.read_file(filename)
 df.root_dir
@@ -47,6 +50,9 @@ OSBS_029.tif,364,204,400,246,Tree
 ```
 
 ```python
+from deepforest import get_data
+from deepforest.utilities import read_file
+
 filename = get_data("OSBS_029.csv")
 df = utilities.read_file(filename)
 ```
@@ -76,6 +82,8 @@ df.root_dir
 COCO format is a popular format for object detection tasks. It is a JSON file that contains information about the images and annotations.
 
 ```python
+from deepforest import utilities
+
 df = utilities.read_file(input="/path/to/coco_annotations.json")
 df.head()
 ```
@@ -85,6 +93,8 @@ df.head()
 Pascal VOC format is a popular format for object detection tasks. It is a XML file that contains information about the images and annotations.
 
 ```python
+from deepforest import utilities
+
 df = utilities.read_file(input="/path/to/pascal_voc_annotations.xml")
 df.head()
 ```
@@ -106,6 +116,8 @@ Name: 0, dtype: object
 These coordinates are made relative to the image origin when the file is read.
 
 ```python
+from deepforest import utilities
+
 shp = utilities.read_file(input="/path/to/boxes_shapefile.shp")
 shp.head()
 ```
@@ -133,6 +145,8 @@ x,y,label
 #### Shapefile
 
 ```python
+from deepforest import utilities
+
 shp = utilities.read_file(input="/path/to/points_shapefile.shp")
 annotations.head()
 ```
@@ -159,6 +173,8 @@ Polygons are expressed in well-known-text (WKT) format. Learn more about [WKT](h
 #### Shapefile
 
 ```python
+from deepforest import utilities
+
 shp = utilities.read_file(input="/path/to/polygons_shapefile.shp")
 annotations.head()
 ```

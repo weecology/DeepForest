@@ -74,7 +74,9 @@ validation:
 
 It can often be useful to pass config args directly to a model instead of editing the config file. By using a dict containing the config keys and their values. Values provided in this dict will override values provided in deepforest_config.yml.
 
-```
+```python
+from deepforest import main
+
 # Default model has 1 class
 m = main.deepforest()
 print(m.config["num_classes"])
@@ -104,8 +106,10 @@ Most commonly, `cpu`, `gpu` or `tpu` as well as other [options](https://pytorch-
 
 If `gpu`, it can be helpful to specify the data parallelization strategy. This can be done using the `strategy` arg in `main.create_trainer()`
 
-```
-model.create_trainer(logger=comet_logger, strategy="ddp")
+```python
+from deepforest import model as m
+
+m.create_trainer(logger=comet_logger, strategy="ddp")
 ```
 
 This is passed to the pytorch-lightning trainer, documented in the link above for multi-gpu training.
@@ -123,7 +127,7 @@ Non-max suppression threshold. The higher scoring predicted box is kept when pre
 Score threshold of predictions to keep. Predictions with less than this threshold are removed from output.
 The score threshold can be updated anytime by modifying the config. For example, if you want predictions with boxes greater than 0.3, update the config
 
-```
+```python
 m.config["score_thresh"] = 0.3
 ```
 
@@ -144,13 +148,17 @@ Directory to search for images in the csv_file image_path column
 
 Learning rate for the training optimization. By default the optimizer is stochastic gradient descent with momentum. A learning rate scheduler is used based on validation loss
 
-```
+```python
+from torch import optim
+
 optim.SGD(self.model.parameters(), lr=self.config["train"]["lr"], momentum=0.9)
 ```
 
 A learning rate scheduler is used to adjust the learning rate based on validation loss. The default scheduler is ReduceLROnPlateau:
 
-```
+```python
+import torch 
+
 self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, mode='min', 
                                                    factor=0.1, patience=10, 
                                                    verbose=True, threshold=0.0001, 

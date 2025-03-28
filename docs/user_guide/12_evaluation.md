@@ -38,7 +38,11 @@ DeepForest allows the user to pass empty frames to evaluation by setting xmin, y
 
 These metrics are largely used during training to keep track of model performance. They are relatively fast and will be automatically run during training. 
 
-```    
+```python 
+    from deepforest import main
+    from deepforest import get_data
+    import os
+
     m = main.deepforest()
     csv_file = get_data("OSBS_029.csv")
     root_dir = os.path.dirname(csv_file)
@@ -74,7 +78,7 @@ This creates a dictionary of the average IoU ('iou') as well as 'iou' for each c
 ## Recall and Precision at a fixed IoU Score
 To get a recall and precision at a set IoU evaluation score, specify an annotations' file using the m.evaluate method.
 
-```
+```python
 m = main.deepforest()
 csv_file = get_data("OSBS_029.csv")
 root_dir = os.path.dirname(csv_file)
@@ -115,7 +119,7 @@ IoU is the ratio between the area of the overlap between the predicted polygon b
 
 Let's start by getting some sample data and predictions
 
-```
+```python
 from deepforest import evaluate
 from deepforest import main
 from deepforest import get_data
@@ -230,7 +234,7 @@ The evaluation method uses deepforest.predict_image for each of the paths suppli
 
 psuedo_code:
 
-```
+```python 
 output_annotations = deepforest.preprocess.split_raster(
     path_to_raster = <path>,
     annotations_file = <original_annotation_path>,

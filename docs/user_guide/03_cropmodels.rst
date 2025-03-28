@@ -35,6 +35,11 @@ Single Crop Model
 Consider a test file with tree boxes and an 'Alive/Dead' label that comes with all DeepForest installations:
 
 .. code-block:: python
+    import pandas as pd
+    from deepforest import model
+    from deepforest import main as m
+    from deepforest.utilities import get_data
+
 
     df = pd.read_csv(get_data("testfile_multi.csv"))
     crop_model = model.CropModel(num_classes=2)
@@ -80,6 +85,9 @@ A `CropModel` is a PyTorch Lightning object and can also be used like any other 
 
 .. code-block:: python
 
+    import torch
+    from deepforest.model import CropModel
+
     # Test forward pass
     x = torch.rand(4, 3, 224, 224)
     output = crop_model.forward(x)
@@ -88,6 +96,8 @@ A `CropModel` is a PyTorch Lightning object and can also be used like any other 
 Here, we don't have boxes; we are classifying entire crops. We can do this in memory or by writing crops to disk. Let’s start by writing them to disk.
 
 .. code-block:: python
+
+    import os
 
     boxes = df[['xmin', 'ymin', 'xmax', 'ymax']].values.tolist()
     image_path = os.path.join(os.path.dirname(get_data("SOAP_061.png")), df["image_path"].iloc[0])
@@ -101,6 +111,7 @@ Training
 You can train a new model from here using typical PyTorch Lightning syntax.
 
 .. code-block:: python
+    from deepforest.model import CropModel
 
     crop_model.create_trainer(fast_dev_run=True)
     # Get the data stored from the write_crops step above.
@@ -117,6 +128,7 @@ The `CropModel` makes very few assumptions about the architecture and simply pro
 
     from deepforest.model import CropModel
     from torchvision.models import resnet101
+
     backbone = resnet101(weights='DEFAULT')
     crop_model = CropModel(num_classes=2, model=backbone)
 
@@ -134,6 +146,8 @@ To see the `torchvision` `transform.Compose` statement, you can overwrite this i
 
 .. code-block:: python
 
+    from torchvision import transforms
+
     def custom_transform(self, augment):
         data_transforms = []
         data_transforms.append(transforms.ToTensor())
@@ -148,6 +162,7 @@ To see the `torchvision` `transform.Compose` statement, you can overwrite this i
 Or, when running from memory crops during prediction, you can pass the transform and augment flag to the predict methods.
 
 .. code-block:: python
+    from deepforest import main as m
 
     m.predict_tile(..., crop_transform=custom_transform, augment=False)
 
