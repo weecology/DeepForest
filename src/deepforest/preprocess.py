@@ -239,6 +239,36 @@ def split_raster(annotations_file=None,
             "Annotations file must either be None, a path, Pandas Dataframe, or Geopandas GeoDataFrame, found {}"
             .format(type(annotations_file)))
 
+
+# Check for geographic coordinates in annotations
+    if annotations_file is not None and hasattr(annotations, 'crs'):
+        if annotations.crs is not None and annotations.crs.is_geographic:
+            raise ValueError(
+                "Annotations appear to be in geographic coordinates (latitude/longitude). "
+                "Please convert your annotations to the same projected coordinate system as your raster."
+            )
+
+    # Check if annotation bounds are reasonable compared to raster
+    if annotations_file is not None and path_to_raster is not None:
+        if hasattr(annotations, 'total_bounds'):
+            # Get raster bounds in pixel coordinates
+            raster_height, raster_width = numpy_image.shape[0], numpy_image.shape[1]
+            
+            # Get annotation bounds (assuming they're in pixel coordinates)
+            ann_bounds = annotations.total_bounds
+            
+            # Check if any annotation coordinates are significantly larger than raster dimensions
+            if (ann_bounds[0] < -raster_width * 0.1 or  # xmin
+                ann_bounds[2] > raster_width * 1.1 or   # xmax
+                ann_bounds[1] < -raster_height * 0.1 or  # ymin
+                ann_bounds[3] > raster_height * 1.1):    # ymax
+                raise ValueError(
+                    f"Annotation bounds {ann_bounds} appear to be outside reasonable range for "
+                    f"raster dimensions ({raster_width}, {raster_height}). "
+                    "This might indicate your annotations are in a different coordinate system."
+                )
+
+
     # Select matching annotations
     if annotations_file is not None:
         image_annotations = annotations[annotations.image_path == image_name]
