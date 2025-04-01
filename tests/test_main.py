@@ -16,14 +16,16 @@ from albumentations.pytorch import ToTensorV2
 
 from deepforest import main, get_data, dataset, model
 from deepforest.visualize import format_geometry
+from deepforest.utilities import read_file
 
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import Callback
 from pytorch_lightning.loggers import TensorBoardLogger
 from torch.utils.data import DataLoader
 
-
+import geopandas as gpd
 from PIL import Image
+import shapely
 
 # Import release model from global script to avoid thrasing github during testing.
 # Just download once.
@@ -231,6 +233,40 @@ def test_train_preload_images(m):
     m.config["train"]["preload_images"] = True
     m.trainer.fit(m)
 
+
+def test_train_geometry_column(m, tmpdir):
+    """Test that training works with a geometry column from a shapefile"""
+
+    # Get the source data
+    df = read_file(get_data("OSBS_029.csv"))
+    df["label"] = "Tree"
+
+    # Create geodataframe with box geometries
+    gdf = gpd.GeoDataFrame(
+        df,
+        geometry=[
+            shapely.geometry.box(xmin, ymin, xmax, ymax)
+            for xmin, ymin, xmax, ymax in zip(df.xmin, df.ymin, df.xmax, df.ymax)
+        ])
+
+    # Add image path
+    gdf["image_path"] = "OSBS_029.tif"
+
+    gdf = gdf[["label", "geometry", "image_path"]]
+
+    # Save to temporary shapefile with only a geometry and label column
+    temp_shp = os.path.join(tmpdir, "temp_trees.shp")
+    gdf.to_file(temp_shp)
+
+    # Read shapefile using utilities
+    df = read_file(temp_shp, root_dir=os.path.dirname(get_data("OSBS_029.tif")))
+    df.to_csv(os.path.join(tmpdir, "OSBS_029.csv"), index=False)
+
+    # Train model
+    m.config["train"]["csv_file"] = os.path.join(tmpdir, "OSBS_029.csv")
+    m.config["train"]["root_dir"] = os.path.dirname(get_data("OSBS_029.tif"))
+    m.create_trainer(fast_dev_run=True)
+    m.trainer.fit(m)
 
 def test_train_multi(two_class_m):
     two_class_m.create_trainer(fast_dev_run=True)

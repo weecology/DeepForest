@@ -28,6 +28,7 @@ from rasterio.windows import Window
 from torchvision import transforms
 import slidingwindow
 import warnings
+import shapely
 
 
 def get_transform(augment):
@@ -105,8 +106,12 @@ class TreeDataset(Dataset):
             image_annotations = self.annotations[self.annotations.image_path ==
                                                  self.image_names[idx]]
             targets = {}
-            targets["boxes"] = image_annotations[["xmin", "ymin", "xmax",
-                                                  "ymax"]].values.astype("float32")
+
+            if "geometry" in image_annotations.columns:
+                targets["boxes"] = np.array([shapely.wkt.loads(x).bounds for x in image_annotations.geometry]).astype("float32")
+            else:
+                targets["boxes"] = image_annotations[["xmin", "ymin", "xmax",
+                                                      "ymax"]].values.astype("float32")
 
             # Labels need to be encoded
             targets["labels"] = image_annotations.label.apply(
