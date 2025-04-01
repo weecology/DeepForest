@@ -310,7 +310,7 @@ def read_coco(json_file):
         return pd.DataFrame({"image_path": filenames, "geometry": polygons})
 
 
-def read_file(input, root_dir=None):
+def read_file(input, root_dir=None, image_path=None, label=None):
     """Read a file and return a geopandas dataframe.
 
     This is the main entry point for reading annotations into deepforest.
@@ -336,15 +336,15 @@ def read_file(input, root_dir=None):
                 "File type {} not supported. DeepForest currently supports .csv, .shp, .gpkg, .xml, and .json files. See https://deepforest.readthedocs.io/en/latest/annotation.html "
                 .format(df))
     else:
-        if type(input) == pd.DataFrame:
+        if isinstance(input, pd.DataFrame):
             df = input.copy(deep=True)
-        elif type(input) == gpd.GeoDataFrame:
+        elif isinstance(input, gpd.GeoDataFrame):
             return shapefile_to_annotations(input, root_dir=root_dir)
         else:
             raise ValueError(
                 "Input must be a path to a file, geopandas or a pandas dataframe")
 
-    if type(df) == pd.DataFrame:
+    if isinstance(df, pd.DataFrame):
         if df.empty:
             raise ValueError("No annotations in dataframe")
         # If the geometry column is present, convert to geodataframe directly
@@ -375,6 +375,24 @@ def read_file(input, root_dir=None):
 
     # convert to geodataframe
     df = gpd.GeoDataFrame(df, geometry='geometry')
+
+    # Handle missing 'image_path' and 'label' columns if not provided in the shapefile
+    if "image_path" not in df.columns and image_path is not None:
+        df["image_path"] = image_path
+    elif "image_path" not in df.columns:
+        warnings.warn(
+            "'image_path' column is missing from shapefile, please specify the image path",
+            UserWarning
+        )
+
+    if "label" not in df.columns and label is not None:
+        df["label"] = label
+    elif "label" not in df.columns:
+        warnings.warn(
+            "'label' column is missing from shapefile, using default label",
+            UserWarning
+        )
+        df["label"] = "Unknown"  # Set default label if not provided
 
     # If root_dir is specified, add as attribute
     if root_dir is not None:
