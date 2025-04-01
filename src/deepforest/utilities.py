@@ -542,7 +542,7 @@ def check_image(image):
                          "found image with shape {}".format(image.shape))
 
 
-def image_to_geo_coordinates(gdf, root_dir, flip_y_axis=False):
+def image_to_geo_coordinates(gdf, flip_y_axis=False):
     """Convert from image coordinates to geographic coordinates.
 
     Args:
@@ -561,6 +561,13 @@ def image_to_geo_coordinates(gdf, root_dir, flip_y_axis=False):
             .format(plot_names))
     else:
         plot_name = plot_names[0]
+
+    # Automatically use root_dir if it exists in the 'predictions' object (passed as gdf)
+    if hasattr(gdf, 'root_dir') and gdf.root_dir:
+        root_dir = gdf.root_dir
+    else:
+        raise ValueError("root_dir is missing from the prediction object.")
+    
 
     rgb_path = "{}/{}".format(root_dir, plot_name)
     with rasterio.open(rgb_path) as dataset:
