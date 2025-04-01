@@ -108,7 +108,9 @@ class TreeDataset(Dataset):
             targets = {}
 
             if "geometry" in image_annotations.columns:
-                targets["boxes"] = np.array([shapely.wkt.loads(x).bounds for x in image_annotations.geometry]).astype("float32")
+                targets["boxes"] = np.array([
+                    shapely.wkt.loads(x).bounds for x in image_annotations.geometry
+                ]).astype("float32")
             else:
                 targets["boxes"] = image_annotations[["xmin", "ymin", "xmax",
                                                       "ymax"]].values.astype("float32")
