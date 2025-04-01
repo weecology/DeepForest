@@ -553,8 +553,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             if path is None:
                 image = image
             else:
-                image = rio.open(path).read()
-                image = np.moveaxis(image, 0, 2)
+                image = utilities.read_tile(path)
 
             ds = dataset.TileDataset(tile=image,
                                      patch_overlap=patch_overlap,
@@ -597,7 +596,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                               "Use visualize.plot_results on the result instead.")
                 # Draw predictions on BGR
                 if path:
-                    tile = rio.open(path).read()
+                    tile = utilities.read_tile(path)
                 else:
                     tile = image
                 drawn_plot = tile[:, :, ::-1]
@@ -615,8 +614,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             if path is None:
                 image = image
             else:
-                image = rio.open(path).read()
-                image = np.moveaxis(image, 0, 2)
+                image = utilities.read_tile(path)
 
             for window in ds.windows:
                 crop = image[window.indices()]

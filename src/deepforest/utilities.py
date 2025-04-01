@@ -742,3 +742,17 @@ def project_boxes(df, root_dir, transform=True):
         "This function is deprecated. Please use image_to_geo_coordinates instead.")
 
     return df
+
+    def read_tile(raster_path):
+        """Reads a raster tile and ensures it has 3 bands with channel-last format."""
+        with rio.open(raster_path) as src:
+            image = src.read()  # Read image (channel-first format)
+
+            # Remove alpha channel if present
+            if image.shape[0] == 4:
+                image = image[:3]
+
+            # Convert to channel-last format
+            image = np.moveaxis(image, 0, -1)
+
+        return image
