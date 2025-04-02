@@ -382,16 +382,13 @@ def read_file(input, root_dir=None, image_path=None, label=None):
     elif "image_path" not in df.columns:
         warnings.warn(
             "'image_path' column is missing from shapefile, please specify the image path",
-            UserWarning
-        )
+            UserWarning)
 
     if "label" not in df.columns and label is not None:
         df["label"] = label
     elif "label" not in df.columns:
-        warnings.warn(
-            "'label' column is missing from shapefile, using default label",
-            UserWarning
-        )
+        warnings.warn("'label' column is missing from shapefile, using default label",
+                      UserWarning)
         df["label"] = "Unknown"  # Set default label if not provided
 
     # If root_dir is specified, add as attribute
