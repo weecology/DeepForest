@@ -2,7 +2,7 @@
 
 To view the results of DeepForest models, we use Roboflow's [supervision](https://supervision.roboflow.com/latest/) library. Thanks to this team for making a nice set of tools. After making predictions, use :func:`deepforest.visualize.plot_results`.
 
-### Predict
+## Predict
 
 ```
 from deepforest import main, get_data
@@ -32,7 +32,7 @@ plot_results(results)
 
 ![sample_image](../../www/Visualization1.png)
 
-### Customizing outputs
+## Customizing outputs
 
 The colors and thickness of annotations can be updated.
 
@@ -42,7 +42,7 @@ plot_results(results, results_color=[109,50,168], thickness=2)
 ```
 ![sample_image](../../www/Visualization2.png)
 
-### Overlaying predictions and ground truth
+## Overlaying predictions and ground truth
 
 ```
 from deepforest.utilities import read_file

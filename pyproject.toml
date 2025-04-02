@@ -91,6 +91,7 @@ dev = [
     "sphinx_rtd_theme",
     "twine",
     "yapf",
+    "myst-parser",
 ]
 
 [tool.setuptools.packages.find]

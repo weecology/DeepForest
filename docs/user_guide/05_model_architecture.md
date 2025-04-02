@@ -62,7 +62,7 @@ class Model():
 From this definition we can see three format requirements. The model must be able to take in a batch of images in the order [channels, height, width]. The current model weights are trained on 3 band images, but you can update the check_model function if you have other image dimensions.
 The second requirement is that the model ouputs a dictionary with keys ["boxes","labels","scores"], the boxes are formatted following torchvision object detection format. From the [docs](https://pytorch.org/vision/main/models/generated/torchvision.models.detection.retinanet_resnet50_fpn.html#torchvision.models.detection.retinanet_resnet50_fpn)
 
-.. note::
+```{note}
    During training, the model expects both the input tensors and targets (list of dictionary), containing:
    boxes (FloatTensor[N, 4]): the ground-truth boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
    labels (Int64Tensor[N]): the class label for each ground-truth box
@@ -76,7 +76,7 @@ The second requirement is that the model ouputs a dictionary with keys ["boxes",
 
 For model training, evaluation, and prediction, we usually let DeepForest create dataloaders with augmentations and formatting starting from a CSV of annotations for training and evaluation or image paths for prediction. That works well, but what happens if your data is already in the form of a PyTorch dataloader? There are a number of emerging benchmarks (e.g., [WILDS](https://github.com/p-lambda/wilds)) that skip the finicky steps of data preprocessing and just yield data directly. We can pass dataloaders directly to DeepForest functions. Because this is a custom route, we leave the responsibility of formatting the data properly to users; see [dataset.TreeDataset](https://deepforest.readthedocs.io/en/latest/source/deepforest.html#deepforest.dataset.TreeDataset) for an example. Any dataloader that meets the needed requirements could be used. It's important to note that every time a dataloader is updated, the `create_trainer()` method needs to be called to update the rest of the object.
 For train/test
-```
+```python
 m = main.deepforest()
 existing_loader = m.load_dataset(csv_file=m.config["train"]["csv_file"],
                                 root_dir=m.config["train"]["root_dir"],
@@ -90,7 +90,7 @@ m.trainer.fit()
 
 For prediction directly on a dataloader, we need a dataloader that yields images, see [TileDataset](https://deepforest.readthedocs.io/en/latest/source/deepforest.html#deepforest.dataset.TileDataset) for an example. Any dataloader could be supplied to m.trainer.predict as long as it meets this specification.  
 
-```
+```python
 ds = dataset.TileDataset(tile=np.random.random((400,400,3)).astype("float32"), patch_overlap=0.1, patch_size=100)
 existing_loader = m.predict_dataloader(ds)
 
