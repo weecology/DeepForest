@@ -567,7 +567,6 @@ def image_to_geo_coordinates(gdf, flip_y_axis=False):
         root_dir = gdf.root_dir
     else:
         raise ValueError("root_dir is missing from the prediction object.")
-    
 
     rgb_path = "{}/{}".format(root_dir, plot_name)
     with rasterio.open(rgb_path) as dataset:
