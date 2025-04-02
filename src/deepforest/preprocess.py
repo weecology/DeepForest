@@ -230,7 +230,7 @@ def split_raster(annotations_file=None,
     validate_annotations(annotations, numpy_image, path_to_raster)
 
     image_annotations = annotations[annotations.image_path == image_name]
-    
+
     if not allow_empty and image_annotations.empty:
         raise ValueError(
             "No image names match between the file:{} and the image_path: {}. "
@@ -238,14 +238,13 @@ def split_raster(annotations_file=None,
             "path (e.g. 'image_name.tif'), not the full path "
             "(e.g. path/to/dir/image_name.tif)".format(annotations_file, image_name))
 
-    return process_with_annotations(
-        numpy_image=numpy_image,
-        windows=windows,
-        image_annotations=image_annotations,
-        image_name=image_name,
-        save_dir=save_dir,
-        allow_empty=allow_empty
-    )
+    return process_with_annotations(numpy_image=numpy_image,
+                                    windows=windows,
+                                    image_annotations=image_annotations,
+                                    image_name=image_name,
+                                    save_dir=save_dir,
+                                    allow_empty=allow_empty)
+
 
 def load_annotations(annotations_file, root_dir):
     """Load and validate annotations file."""
@@ -264,6 +263,7 @@ def load_annotations(annotations_file, root_dir):
             "Annotations file must either be a path, Pandas Dataframe, or Geopandas GeoDataFrame, found {}"
             .format(type(annotations_file)))
 
+
 def validate_annotations(annotations, numpy_image, path_to_raster):
     """Validate annotation coordinate systems and bounds."""
     if hasattr(annotations, 'crs'):
@@ -276,16 +276,17 @@ def validate_annotations(annotations, numpy_image, path_to_raster):
     if hasattr(annotations, 'total_bounds'):
         raster_height, raster_width = numpy_image.shape[0], numpy_image.shape[1]
         ann_bounds = annotations.total_bounds
-        
+
         if (ann_bounds[0] < -raster_width * 0.1 or  # xmin
-            ann_bounds[2] > raster_width * 1.1 or    # xmax
-            ann_bounds[1] < -raster_height * 0.1 or  # ymin
-            ann_bounds[3] > raster_height * 1.1):    # ymax
+                ann_bounds[2] > raster_width * 1.1 or  # xmax
+                ann_bounds[1] < -raster_height * 0.1 or  # ymin
+                ann_bounds[3] > raster_height * 1.1):  # ymax
             raise ValueError(
                 f"Annotation bounds {ann_bounds} appear to be outside reasonable range for "
                 f"raster dimensions ({raster_width}, {raster_height}). "
                 "This might indicate your annotations are in a different coordinate system."
             )
+
 
 def process_without_annotations(numpy_image, windows, image_name, save_dir):
     """Process raster without annotations."""
@@ -298,13 +299,14 @@ def process_without_annotations(numpy_image, windows, image_name, save_dir):
         crop_filenames.append(crop_filename)
     return crop_filenames
 
-def process_with_annotations(numpy_image, windows, image_annotations, 
-                            image_name, save_dir, allow_empty):
+
+def process_with_annotations(numpy_image, windows, image_annotations, image_name,
+                             save_dir, allow_empty):
     """Process raster with annotations."""
     annotations_files = []
     crop_filenames = []
     image_basename = os.path.splitext(image_name)[0]
-    
+
     for index, window in enumerate(windows):
         crop = numpy_image[window.indices()]
         if crop.size == 0:
@@ -312,10 +314,11 @@ def process_with_annotations(numpy_image, windows, image_annotations,
 
         crop_annotations = select_annotations(image_annotations, window=window)
         crop_annotations["image_path"] = f"{image_basename}_{index}.png"
-        
+
         if crop_annotations.empty:
             if allow_empty:
-                crop_annotations = create_empty_annotation(image_annotations, image_basename, index)
+                crop_annotations = create_empty_annotation(image_annotations,
+                                                           image_basename, index)
             else:
                 continue
 
@@ -327,11 +330,12 @@ def process_with_annotations(numpy_image, windows, image_annotations,
         raise ValueError(
             "Input file has no overlapping annotations and allow_empty is {}".format(
                 allow_empty))
-    
+
     annotations_files = pd.concat(annotations_files)
     file_path = os.path.join(save_dir, f"{image_basename}.csv")
     annotations_files.to_csv(file_path, index=False, header=True)
     return annotations_files
+
 
 def create_empty_annotation(image_annotations, image_basename, index):
     """Create empty annotation record when allow_empty=True."""
@@ -339,7 +343,7 @@ def create_empty_annotation(image_annotations, image_basename, index):
     crop_annotations = pd.DataFrame(columns=image_annotations.columns)
     crop_annotations.loc[0, "label"] = image_annotations.label.unique()[0]
     crop_annotations.loc[0, "image_path"] = f"{image_basename}_{index}.png"
-    
+
     if geom_type == "box":
         crop_annotations.loc[0, "xmin"] = 0
         crop_annotations.loc[0, "ymin"] = 0
@@ -352,5 +356,5 @@ def create_empty_annotation(image_annotations, image_basename, index):
     elif geom_type == "polygon":
         crop_annotations.loc[0, "geometry"] = geometry.Polygon([(0, 0), (0, 0), (0, 0)])
         crop_annotations.loc[0, "polygon"] = 0
-    
+
     return crop_annotations
