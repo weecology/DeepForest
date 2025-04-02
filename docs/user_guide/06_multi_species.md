@@ -4,6 +4,7 @@ DeepForest allows training on multiple species annotations.
 When creating a deepforest model object, pass the designed number of classes and a label dictionary that maps each numeric class to a character label. The number of classes can be either be specified in the config, or using config_args during creation.
 
 ``` python
+from deepforest import main
 m = main.deepforest(config_args={"num_classes":2},label_dict={"Alive":0,"Dead":1})
 ```
 
@@ -11,6 +12,10 @@ It is often, but not always, useful to start with a prebuilt model when trying t
 Here is an example using the alive/dead tree data stored in the package, but the same logic applies to other detectiors. 
 
 ``` python
+import os
+from deepforest import main
+from deepforest import get_data
+
 # Initialize new Deepforest model ( the model that you will train ) with your classes
 m = main.deepforest(config_args={"num_classes":2}, label_dict={"Alive":0,"Dead":1})
 

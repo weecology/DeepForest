@@ -1,4 +1,4 @@
-# Evaluation 
+# Evaluation
 
  We stress that evaluation data must be different from training data, as neural networks have millions of parameters and can easily memorize thousands of samples. Avoid random train-test splits, try to create test datasets that mimic downstream tasks. If you are predicting among temporal surveys or across imaging platforms, your train-test data should reflect these partitions. Random sampling is almost never the right choice, biological data often has high spatial, temporal or taxonomic correlation that makes it easier for your model to generalize, but will fail when pushed into new situations.
 
@@ -16,9 +16,9 @@ DeepForest provides several evaluation metrics. There is no one-size-fits all ev
 DeepForest modules use torchmetric's [IntersectionOverUnion](https://torchmetrics.readthedocs.io/en/stable/detection/intersection_over_union.html) metric. This calculates the average overlap between predictions and ground truth boxes. This can be considered a general indicator of model performance but is not sufficient on its own for model evaluation. There are lots of reasons predictions might overlap with ground truth; for example, consider a model that covers an entire image with boxes. This would have a high IoU but a low value for model utility.
 
 ## Mean-Average-Precision (mAP)
-mAP is the standard COCO evaluation metric and the most common for comparing computer vision models. It is useful as a summary statistic. However, it has several limitations for an ecological use case. 
+mAP is the standard COCO evaluation metric and the most common for comparing computer vision models. It is useful as a summary statistic. However, it has several limitations for an ecological use case.
 
-1. Not intuitive and difficult to translate to ecological applications. Read the sections above and visualize the mAP metric, which is essentially the area under the precision-recall curve at a range of IoU values. 
+1. Not intuitive and difficult to translate to ecological applications. Read the sections above and visualize the mAP metric, which is essentially the area under the precision-recall curve at a range of IoU values.
 2. The vast majority of biological applications use a fixed cutoff to determine an object of interest in an image. Perhaps in the future we will weight tree boxes by their confidence score, but currently we do things like, "All predictions > 0.4 score are considered positive detections". This does not connect well with the mAP metric.
 
 ## Precision and Recall at a set IoU threshold.
@@ -32,13 +32,17 @@ DeepForest uses the [hungarian matching algorithm](https://thinkautonomous.mediu
 
 DeepForest allows the user to pass empty frames to evaluation by setting xmin, ymin, xmax, ymax to 0. This is useful for evaluating models on data that has empty frames. The empty frame accuracy is the proportion of empty frames that are contain no predictions. The 'label' column in this case is ignored, but must be one of the labels in the model to be included in the evaluation.
 
-# Calculating Evaluation Metrics 
+# Calculating Evaluation Metrics
 
 ## Torchmetrics and loss scores
 
-These metrics are largely used during training to keep track of model performance. They are relatively fast and will be automatically run during training. 
+These metrics are largely used during training to keep track of model performance. They are relatively fast and will be automatically run during training.
 
-```    
+```python
+    from deepforest import main
+    from deepforest import get_data
+    import os
+
     m = main.deepforest()
     csv_file = get_data("OSBS_029.csv")
     root_dir = os.path.dirname(csv_file)
@@ -74,7 +78,7 @@ This creates a dictionary of the average IoU ('iou') as well as 'iou' for each c
 ## Recall and Precision at a fixed IoU Score
 To get a recall and precision at a set IoU evaluation score, specify an annotations' file using the m.evaluate method.
 
-```
+```python
 m = main.deepforest()
 csv_file = get_data("OSBS_029.csv")
 root_dir = os.path.dirname(csv_file)
@@ -115,7 +119,7 @@ IoU is the ratio between the area of the overlap between the predicted polygon b
 
 Let's start by getting some sample data and predictions
 
-```
+```python
 from deepforest import evaluate
 from deepforest import main
 from deepforest import get_data
@@ -154,7 +158,7 @@ visualize.plot_prediction_dataframe(predictions, ground_truth, root_dir = os.pat
 
 ![](../figures/Figure_1.png)
 
-The IoU metric ranges between 0 (no overlap) to 1 (perfect overlap). In the wider computer vision literature, the conventional threshold value for overlap is 0.5, but this value is arbitrary and does not ultimately relate to any particular ecological question. 
+The IoU metric ranges between 0 (no overlap) to 1 (perfect overlap). In the wider computer vision literature, the conventional threshold value for overlap is 0.5, but this value is arbitrary and does not ultimately relate to any particular ecological question.
 We considered boxes which have an IoU score of greater than 0.4 as true positive, and scores less than 0.4 as false negatives. The 0.4 value was chosen based on visual evaluation of the threshold that indicated a good visual match between the predicted and observed crown.
 We tested a range of overlap thresholds from 0.3 (less overlap among matching crowns) to 0.6 (more overlap among matching crowns) and found that 0.4 balanced a rigorous cutoff without spuriously removing trees that would be useful for downstream analysis.
 
@@ -163,7 +167,7 @@ We tested a range of overlap thresholds from 0.3 (less overlap among matching cr
 After computing the IoU for the ground truth data, we get the resulting dataframe.
 
 ```
-result = evaluate.evaluate_image(predictions=predictions, ground_df=ground_truth, root_dir=os.path.dirname(csv_file), savedir=None)     
+result = evaluate.evaluate_image(predictions=predictions, ground_df=ground_truth, root_dir=os.path.dirname(csv_file), savedir=None)
 result.head()
     prediction_id  truth_id       IoU predicted_label true_label
 90             90         0  0.059406            Tree       Tree
@@ -174,7 +178,7 @@ result.head()
 ```
 
 Where prediction_id is a unique ID to each predicted tree box. truth is a unique ID to each ground truth box. The predicted and true labels are tree in this, case but could generalize to multi-class problems.
-From here we can calculate precision and recall at a given IoU metric. 
+From here we can calculate precision and recall at a given IoU metric.
 
 ```
 result["match"] = result.IoU > 0.4
@@ -187,13 +191,13 @@ precision
 0.5494505494505495
 ```
 
-This can be stated as 81.97% of the ground truth boxes are correctly matched to a predicted box at IoU threshold of 0.4, and 54.94% of predicted boxes match a ground truth box. 
+This can be stated as 81.97% of the ground truth boxes are correctly matched to a predicted box at IoU threshold of 0.4, and 54.94% of predicted boxes match a ground truth box.
 Optimally we want a model that is both precise and accurate.
 
 The above logic is wrapped into the evaluate.evaluate() function
 
 ```
-result = evaluate.evaluate(predictions=predictions, ground_df=ground_truth,root_dir=os.path.dirname(csv_file), savedir=None)     
+result = evaluate.evaluate(predictions=predictions, ground_df=ground_truth,root_dir=os.path.dirname(csv_file), savedir=None)
 ```
 This is a dictionary with keys
 
@@ -230,13 +234,13 @@ The evaluation method uses deepforest.predict_image for each of the paths suppli
 
 psuedo_code:
 
-```
+```python
 output_annotations = deepforest.preprocess.split_raster(
     path_to_raster = <path>,
     annotations_file = <original_annotation_path>,
     base_dir = <location to save crops>
     patch_size = <size of each crop>
-    
+
 )
 
 output_annotations.to_csv("new_annotations.csv")
@@ -246,4 +250,3 @@ results = model.evaluate(
     root_dir=<base_dir from above>
 )
 ```
-

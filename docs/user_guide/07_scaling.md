@@ -15,7 +15,7 @@ DeepForest's create_trainer argument passes any argument to pytorch lightning. T
 https://lightning.ai/docs/pytorch/stable/accelerators/gpu_intermediate.html
 
 For example on a SLURM cluster, we use the following line to get 5 gpus on a single node.
-```
+```python
 m.create_trainer(logger=comet_logger, accelerator="gpu", strategy="ddp", num_nodes=1, devices=devices)
 ```
 
@@ -45,7 +45,7 @@ There are a few situations in which it is useful to replicate the DeepForest mod
 Imagine we have a list of images we want to predict using `deepforest.main.predict_tile()`. DeepForest does not allow multi-GPU inference within each tile, as it is too much of a headache to make sure the threads return the correct overlapping window. Instead, we can parallelize across tiles, such that each GPU takes a tile and performs an action. The general structure is to create a Dask client across multiple GPUs, submit each DeepForest `predict_tile()` instance, and monitor the results. In this example, we are using a SLURMCluster, a common job scheduler for large clusters. There are many similar ways to create a Dask client object that will be specific to a particular organization. The following arguments are specific to the University of Florida cluster, but will be largely similar to other SLURM naming conventions. We use the extra Dask package, `dask-jobqueue`, which helps format the call.
 
 
-```
+```python
 from dask_jobqueue import SLURMCluster
 from dask.distributed import Client
 
@@ -68,11 +68,14 @@ dask_client = Client(cluster)
 This job script gets a single GPUs with "40GB" of memory with 10 cpus. We then ask for 10 instances of this setup.
 Now that we have a dask client, we can send our custom function.
 
-```
+```python
+import os
+from deepforest import main
+
 def function_to_parallelize(tile):
     m = main.deepforest()
     m.load_model("weecology/deepforest-tree") # sub in the custom logic to load your own models
-    boxes = m.predict_tile(path=tile)
+    boxes = m.predict_tile(raster_path=tile)
     # save the predictions using the tile pathname
     filename = "{}.csv".format(os.path.splitext(os.path.basename(tile))[0])
     filename = os.path.join(<savedir>,filename)
@@ -81,7 +84,7 @@ def function_to_parallelize(tile):
     return filename
 ```
 
-```
+```python
 tiles = [<list of tiles to predict>]
 futures = []
 for tile in tiles:
@@ -91,7 +94,7 @@ for tile in tiles:
 
 We can wait to see the futures as they complete! Dask also has a beautiful visualization tool using bokeh.
 
-```
+```python
 for x in futures:
     completed_filename = x.result()
     print(completed_filename)

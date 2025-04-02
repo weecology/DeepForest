@@ -30,6 +30,12 @@ While that approach is certainly valid, there are a few key benefits to using Cr
 Consider a test file with tree boxes and an 'Alive/Dead' label that comes with all DeepForest installations:
 
 ```python
+
+import pandas as pd
+from deepforest import model
+from deepforest import main as m
+from deepforest.utilities import get_data
+
 df = pd.read_csv(get_data("testfile_multi.csv"))
 crop_model = model.CropModel(num_classes=2)
 # Or set up the crop model or load weights model.CropModel.load_from_checkpoint(<path>)
@@ -73,6 +79,10 @@ result.head()
 A `CropModel` is a PyTorch Lightning object and can also be used like any other model.
 
 ```python
+
+import torch
+from deepforest.model import CropModel
+
 # Test forward pass
 x = torch.rand(4, 3, 224, 224)
 output = crop_model.forward(x)
@@ -84,6 +94,9 @@ assert output.shape == (4, 2)
 We can either classify crops in memory or save them to disk.
 
 ```python
+
+import os
+
 boxes = df[['xmin', 'ymin', 'xmax', 'ymax']].values.tolist()
 image_path = os.path.join(os.path.dirname(get_data("SOAP_061.png")), df["image_path"].iloc[0])
 crop_model.write_crops(boxes=boxes, labels=df.label.values, image_path=image_path, savedir=tmpdir)
@@ -96,6 +109,9 @@ This saves each crop in labeled folders (`Alive/Dead`).
 You can train a new model using PyTorch Lightning:
 
 ```python
+
+from deepforest.model import CropModel
+
 crop_model.create_trainer(fast_dev_run=True)
 # Get the data stored from the write_crops step above.
 crop_model.load_from_disk(train_dir=tmpdir, val_dir=tmpdir)
@@ -127,6 +143,9 @@ print(crop_model.get_transform(augment=True))
 To see the `torchvision` `transform.Compose` statement, you can overwrite this if needed for the `torchvision.ImageFolder` reader when reading existing images.
 
 ```python
+
+from torchvision import transforms
+
 def custom_transform(self, augment):
     data_transforms = []
     data_transforms.append(transforms.ToTensor())
@@ -142,6 +161,8 @@ crop_model.get_transform = custom_transform
 Or, when running from memory crops during prediction, you can pass the transform and augment flag to the `predict` methods.
 
 ```python
+from deepforest import main as m
+
 m.predict_tile(..., crop_transform=custom_transform, augment=False)
 ```
 
