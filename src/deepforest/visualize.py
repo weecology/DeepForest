@@ -318,10 +318,19 @@ def convert_to_sv_format(df, width=None, height=None):
         # Create a reverse mapping from integer to string labels
         class_name = {v: k for k, v in label_mapping.items()}
 
-        # Create masks
-        if height is None or width is None:
-            raise ValueError(
-                "height and width of the mask must be provided for polygon predictions")
+        # Auto-detect width/height if missing
+        if width is None or height is None:
+            if 'image_path' not in df.columns:
+                raise ValueError("'image_path' column required for polygons.")
+
+            # Use the first image_path entry
+            image_path = df['image_path'].iloc[0]
+            try:
+                with Image.open(image_path) as img:
+                    width, height = img.size  # Get dimensions
+            except Exception as e:
+                raise ValueError(
+                    f"Could not read image dimensions from {image_path}: {e}")
 
         polygons = df.geometry.apply(lambda x: np.array(x.exterior.coords)).values
         # as integers
