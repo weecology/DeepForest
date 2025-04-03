@@ -301,7 +301,9 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                                  label_dict=self.label_dict,
                                  preload_images=self.config["train"]["preload_images"])
         if len(ds) == 0:
-          raise ValueError(f"Dataset from {csv_file} is empty. Check CSV for valid entries and columns.")
+            raise ValueError(
+                f"Dataset from {csv_file} is empty. Check CSV for valid entries and columns."
+            )
 
         data_loader = torch.utils.data.DataLoader(
             ds,
