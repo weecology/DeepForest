@@ -283,7 +283,7 @@ def test_geo_to_image_coordinates_UTM_N(tmpdir):
     original = utilities.read_file(annotations)
     assert original.crs is None
 
-    geo_coords = utilities.image_to_geo_coordinates(original, root_dir=os.path.dirname(path_to_raster))
+    geo_coords = utilities.image_to_geo_coordinates(original)
     assert geo_coords.crs == src.crs
     src_window = geometry.box(*src.bounds)
 
@@ -367,7 +367,7 @@ def test_image_to_geo_coordinates(tmpdir):
 
     # Convert to geo coordinates
     src = rio.open(path_to_raster)
-    geo_coords = utilities.image_to_geo_coordinates(gdf, root_dir=os.path.dirname(path_to_raster))
+    geo_coords = utilities.image_to_geo_coordinates(gdf)
     src_window = geometry.box(*src.bounds)
     assert geo_coords[geo_coords.intersects(src_window)].shape[0] == pd.read_csv(annotations).shape[0]
 
@@ -399,7 +399,7 @@ def test_image_to_geo_coordinates_boxes(tmpdir):
 
     # Convert to geo coordinates
     src = rio.open(path_to_raster)
-    geo_coords = utilities.image_to_geo_coordinates(gdf, root_dir=os.path.dirname(path_to_raster))
+    geo_coords = utilities.image_to_geo_coordinates(gdf)
     src_window = geometry.box(*src.bounds)
     assert geo_coords[geo_coords.intersects(src_window)].shape[0] == pd.read_csv(annotations).shape[0]
 
@@ -432,7 +432,7 @@ def test_image_to_geo_coordinates_points(tmpdir):
 
     # Convert to geo coordinates
     src = rio.open(path_to_raster)
-    geo_coords = utilities.image_to_geo_coordinates(gdf, root_dir=os.path.dirname(path_to_raster))
+    geo_coords = utilities.image_to_geo_coordinates(gdf)
     src_window = geometry.box(*src.bounds)
     assert geo_coords[geo_coords.intersects(src_window)].shape[0] == pd.read_csv(annotations).shape[0]
 
@@ -466,7 +466,7 @@ def test_image_to_geo_coordinates_polygons(tmpdir):
 
     # Convert to geo coordinates
     src = rio.open(path_to_raster)
-    geo_coords = utilities.image_to_geo_coordinates(gdf, root_dir=os.path.dirname(path_to_raster))
+    geo_coords = utilities.image_to_geo_coordinates(gdf)
     src_window = geometry.box(*src.bounds)
     assert geo_coords[geo_coords.intersects(src_window)].shape[0] == pd.read_csv(annotations).shape[0]
 

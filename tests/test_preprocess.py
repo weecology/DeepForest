@@ -301,8 +301,7 @@ def test_split_raster_from_shp(tmpdir):
     annotations = get_data("2018_SJER_3_252000_4107000_image_477.csv")
     path_to_raster = get_data("2018_SJER_3_252000_4107000_image_477.tif")
     gdf = utilities.read_file(annotations)
-    geo_coords = utilities.image_to_geo_coordinates(
-        gdf, root_dir=os.path.dirname(path_to_raster))
+    geo_coords = utilities.image_to_geo_coordinates(gdf)
     annotations_file = tmpdir.join("projected_annotations.shp").strpath
     geo_coords.to_file(annotations_file)
 
