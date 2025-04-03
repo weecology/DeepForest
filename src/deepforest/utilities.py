@@ -542,18 +542,29 @@ def check_image(image):
                          "found image with shape {}".format(image.shape))
 
 
-def image_to_geo_coordinates(gdf, root_dir, flip_y_axis=False):
+def image_to_geo_coordinates(gdf, root_dir=None, flip_y_axis=False):
     """Convert from image coordinates to geographic coordinates.
 
     Args:
         gdf: A geodataframe.
-        root_dir: Directory of images to lookup image_path column.
+        root_dir: Directory of images to lookup image_path column. If None, it will attempt to use gdf.root_dir.
         flip_y_axis: If True, reflect predictions over y axis to align with raster data in QGIS, which uses a negative y origin compared to numpy.
 
     Returns:
         transformed_gdf: A geospatial dataframe with the boxes optionally transformed to the target crs.
     """
     transformed_gdf = gdf.copy(deep=True)
+
+    # Attempt to use root_dir from gdf if not provided
+    if root_dir is None:
+        if hasattr(gdf, "root_dir") and gdf.root_dir:
+            root_dir = gdf.root_dir
+        else:
+            raise ValueError(
+                "root_dir is not provided and could not be inferred from the predictions."
+                "Ensure that the predictions have a root_dir attribute or pass root_dir explicitly."
+            )
+
     plot_names = transformed_gdf.image_path.unique()
     if len(plot_names) > 1:
         raise ValueError(

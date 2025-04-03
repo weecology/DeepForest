@@ -25,7 +25,7 @@ path_to_raster = get_data("2018_SJER_3_252000_4107000_image_477.tif")
 src = rio.open(path_to_raster)
 original = utilities.read_file(annotations)
 
-geo_coords = utilities.image_to_geo_coordinates(original, root_dir=os.path.dirname(path_to_raster))
+geo_coords = utilities.image_to_geo_coordinates(original)
 src_window = geometry.box(*src.bounds)
 
 fig, ax = plt.subplots(figsize=(10, 10))
