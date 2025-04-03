@@ -145,7 +145,6 @@ def xml_to_annotations(xml_path):
     return read_pascal_voc(xml_path)
 
 
-# TO DO -> Should this whole function hae a deprecation warning? Shouldn't users just use the read_file function?
 def shapefile_to_annotations(shapefile,
                              rgb=None,
                              root_dir=None,
@@ -225,9 +224,10 @@ def shapefile_to_annotations(shapefile,
                 "The shapefile crs {} does not match the image crs {}".format(
                     gdf.crs.to_string(), src.crs.to_string()), UserWarning)
 
-    if src.crs is not None:
-        print("CRS of shapefile is {}".format(src.crs))
-        gdf = geo_to_image_coordinates(gdf, src.bounds, src.res[0])
+        if src.crs is not None:
+            print("CRS of shapefile is {}".format(gdf.crs))
+            print("CRS of image is {}".format(raster_crs))
+            gdf = geo_to_image_coordinates(gdf, src.bounds, src.res[0])
 
     # check for label column
     if "label" not in gdf.columns:
