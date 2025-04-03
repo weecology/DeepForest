@@ -14,8 +14,9 @@ The model was initially described in [Remote Sensing](https://www.mdpi.com/2072-
 
 ![image](../../www/MEE_Figure4.png)
 
-```
-# Load deepforest model and set bird label
+```python
+from deepforest import main
+
 m = main.deepforest()
 m.load_model(model_name="weecology/deepforest-tree")
 ```
@@ -37,7 +38,9 @@ The model was initially described in [Ecological Applications](https://esajourna
 
 ![image](../../www/example_predictions_small.png)
 
-```
+```python
+from deepforest import main
+
 # Load deepforest model and set bird label
 m = main.deepforest()
 m.load_model(model_name="weecology/deepforest-bird")
@@ -60,7 +63,9 @@ The model was improved by @camappel and a nice notebook illustrates its improvem
 
 ![alt text](../../www/finetune_cattle_predictions.png)
 
-```
+```python
+from deepforest import main
+
 # Load deepforest model and set bird label
 m = main.deepforest()
 m.load_model(model_name="weecology/deepforest-livestock")

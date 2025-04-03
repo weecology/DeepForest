@@ -6,8 +6,11 @@ Here is a quick example. Suppose you want to log the training metrics, which is 
 
 We can subclass the main deepforest module, use super() to init all the normal class methods, and then just overwrite the method we would like to change.
 
-```
-#Overwrite default training logs and lr
+```python
+# Necessary imports
+from deepforest import main
+
+# Overwrite default training logs and lr
 class mymodule(main.deepforest):
     def __init__(self):
         super().__init__()
@@ -30,7 +33,7 @@ class mymodule(main.deepforest):
 
 Now when we call this module, it has the changed training_step, but still has all the other methods we would like, such as downloading the release model.
 
-```
+```python
 m = mymodule()
 m.load_model("weecology/deepforest-tree") 
 

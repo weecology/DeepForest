@@ -23,21 +23,25 @@ OSBS_029.jpg,161,155,199,191,Tree
 The config file specifies the path to the CSV file that we want to use when training. The images are located in the working directory by default, and a user can provide a path to a different image directory.
 
 ```python
+import os
+from deepforest import model as m
+from deepforest import get_data
+
 # Example run with short training
 annotations_file = get_data("testfile_deepforest.csv")
 
-model.config["epochs"] = 1
-model.config["save-snapshot"] = False
-model.config["train"]["csv_file"] = annotations_file
-model.config["train"]["root_dir"] = os.path.dirname(annotations_file)
+m.config["epochs"] = 1
+m.config["save-snapshot"] = False
+m.config["train"]["csv_file"] = annotations_file
+m.config["train"]["root_dir"] = os.path.dirname(annotations_file)
 
-model.create_trainer()
+m.create_trainer()
 ```
 
 For debugging, its often useful to use the [fast_dev_run = True from pytorch lightning](https://pytorch-lightning.readthedocs.io/en/latest/common/trainer.html#fast-dev-run)
 
-```
-model.config["train"]["fast_dev_run"] = True
+```python
+m.config["train"]["fast_dev_run"] = True
 ```
 
 See [config](https://deepforest.readthedocs.io/en/latest/ConfigurationFile.html) for full set of available arguments. You can also pass any [additional](https://pytorch-lightning.readthedocs.io/en/latest/common/trainer.html) pytorch lightning argument to trainer.
@@ -45,8 +49,8 @@ See [config](https://deepforest.readthedocs.io/en/latest/ConfigurationFile.html)
 To begin training, we create a pytorch-lightning trainer and call trainer.fit on the model object directly on itself.
 While this might look a touch awkward, it is useful for exposing the pytorch lightning functionality.
 
-```
-model.trainer.fit(model)
+```python
+m.trainer.fit(model)
 ```
 
 [For more, see Google colab demo on model training](https://colab.research.google.com/drive/1gKUiocwfCvcvVfiKzAaf6voiUVL2KK_r?usp=sharing)
@@ -56,6 +60,8 @@ model.trainer.fit(model)
 If you want to disable the progress bar while training change the `create_trainer` call to:
 
 ```python
+from deepforest import model 
+
  model.create_trainer(enable_progress_bar=False)
 ```
 
@@ -63,8 +69,9 @@ If you want to disable the progress bar while training change the `create_traine
 
 DeepForest logs the training loss, validation loss and class metrics (for multi-class models) during each epoch. To view the training curves, we *highly* recommend using a pytorch-lightning logger, this is the proper way of handling the many outputs during training. See [pytorch-lightning docs](https://lightning.ai/docs/pytorch/stable/extensions/logging.html) for all available loggers.
 
-```
+```python
 from deepforest import main
+
 m = main.deepforest()
 logger = <any supported pytorch lightning logger>
 m.create_trainer(logger=logger)
@@ -92,13 +99,19 @@ src.read().shape
 
 With 574 trees annotations
 
-```
+```python
+from deepforest import utilities
+from deepforest import get_data
+
 annotations = utilities.read_pascal_voc(get_data("2019_YELL_2_528000_4978000_image_crop2.xml"))
 annotations.shape
 (574, 6)
 ```
 
-```
+```python
+import tempfile
+from deepforest import preprocess
+
 #Write csv to file and crop
 tmpdir = tempfile.gettempdir()
 annotations.to_csv("{}/example.csv".format(tmpdir), index=False)
@@ -118,7 +131,7 @@ Now we have crops and annotations in 500 px patches for training.
 
 To include images with no annotations from the target classes create a dummy row specifying the image_path, but set all bounding boxes to 0
 
-```
+```python
 image_path, xmin, ymin, xmax, ymax, label
 myimage.png, 0,0,0,0,"Tree"
 ```
@@ -129,7 +142,10 @@ Excessive use of negative samples may have a negative impact on model performanc
 
 Pytorch lightning allows you to [save a model](https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#checkpoint-callback) at the end of each epoch. By default this behevaior is turned off since it slows down training and quickly fills up storage. To restore model checkpointing
 
-```
+```python 
+from pytorch_lightning.callbacks import ModelCheckpoint
+from pytorch_lightning.loggers import TensorBoardLogger
+
 callback = ModelCheckpoint(dirpath='temp/dir',
                                  monitor='box_recall',
                                  mode="max",
@@ -141,9 +157,11 @@ model.trainer.fit(model)
 ```
 ### Saving and loading models
 
-```
+```python
 import tempfile
 import pandas as pd
+from deepforest import model
+
 tmpdir = tempfile.TemporaryDirectory()
 
 model.load_model("weecology/deepforest-tree")
@@ -201,7 +219,10 @@ Note that if you trained on GPU and restore on cpu, you will need the map_locati
 DeepForest uses the same transform for train/test, so you need to encode a switch for turning the 'augment' off.
 Wrap any new augmentations like so:
 
-```
+```python
+import albumentations as A
+from albumentations.pytorch import ToTensorV2
+
 def get_transform(augment):
     """This is the new transform"""
     if augment:
@@ -256,7 +277,7 @@ https://github.com/weecology/DeepForest/issues/338
 
 If you run into this error, users (e.g https://github.com/weecology/DeepForest/issues/443), have found that creating the trainer object within the loop can resolve this issue. 
 
-```
+```python
 for tile in tiles_to_predict:
     m.create_trainer()
     m.predict_tile(tile)
@@ -272,7 +293,7 @@ Setting the trainer object to None and directly using the pytorch object is a re
 
 Replace
 
-```
+```python
 m = main.deepforest()
 m.create_trainer()
 m.trainer.fit(m)
@@ -280,7 +301,7 @@ m.trainer.fit(m)
 
 with
 
-```
+```python
 m.trainer = None
 from pytorch_lightning import Trainer
 
