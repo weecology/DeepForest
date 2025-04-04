@@ -517,6 +517,11 @@ def plot_results(results,
         image_path = os.path.join(root_dir, results.image_path.unique()[0])
         image = np.array(Image.open(image_path))
 
+        # Drop alpha channel if present and warn 
+        if image.shape[2] == 4:
+            warnings.warn("Image has an alpha channel. Dropping alpha channel.")
+            image = image[:, :, :3]
+            
     # Plot the results following https://supervision.roboflow.com/annotators/
     fig, ax = plt.subplots()
     annotated_scene = _plot_image_with_geometry(df=results,
