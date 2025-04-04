@@ -317,10 +317,29 @@ def read_file(input, root_dir=None, image_path=None, label=None):
     Args:
         input: a path to a file or a pandas dataframe
         root_dir (str): location of the image files, if not in the same directory as the annotations file
+        image_path (str, optional): If provided, this value will be assigned to a new 'image_path' column 
+            for every row in the dataframe. Only use this when the file contains annotations from a single image.
+        label (str, optional): If provided, this value will be assigned to a new 'label' column 
+            for every row in the dataframe. Only use this when all annotations share the same label.
     Returns:
         df: a geopandas dataframe with the properly formatted geometry column
         df.root_dir: the root directory of the image files
+    Warnings:
+        Passing `image_path` or `label` will apply the same value to all rows in the dataframe.
+        This should only be used when the input file contains annotations for a single image.
     """
+
+    if image_path is not None:
+        warnings.warn(
+            "You have passed an image_path. This value will be assigned to every row in the dataframe. "
+            "Only use this if the file contains annotations for a single image.",
+            UserWarning)
+
+    if label is not None:
+        warnings.warn(
+            "You have passed a label. This value will be assigned to every row in the dataframe. "
+            "Only use this if all annotations share the same label.", UserWarning)
+
     # read file
     if isinstance(input, str):
         if input.endswith(".csv"):
