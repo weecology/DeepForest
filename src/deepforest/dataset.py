@@ -74,6 +74,10 @@ class TreeDataset(Dataset):
         else:
             self.transform = transforms
         self.image_names = self.annotations.image_path.unique()
+
+        # Validate all images and bounding boxes upon initialization
+        self._validate_annotations()
+
         self.label_dict = label_dict
         self.train = train
         self.image_converter = A.Compose([ToTensorV2()])
@@ -87,6 +91,43 @@ class TreeDataset(Dataset):
                 img_name = os.path.join(self.root_dir, x)
                 image = np.array(Image.open(img_name).convert("RGB")) / 255
                 self.image_dict[idx] = image.astype("float32")
+
+    def _validate_annotations(self):
+        # Create image size lookup dictionary
+        image_size_dict = {}
+        for img_path in self.image_names:
+            full_path = os.path.join(self.root_dir, img_path)
+            if not os.path.isfile(full_path):
+                raise FileNotFoundError(f"Image file not found: {full_path}")
+            with Image.open(full_path) as img:
+                image_size_dict[img_path] = img.size  # (width, height)
+
+        # Create temporary series for vectorized operations
+        widths = self.annotations['image_path'].map(lambda x: image_size_dict[x][0])
+        heights = self.annotations['image_path'].map(lambda x: image_size_dict[x][1])
+
+        # Vectorized boundary checks
+        invalid_mask = ((self.annotations['xmin'] < 0) | (self.annotations['ymin'] < 0) |
+                        (self.annotations['xmax'] > widths) |
+                        (self.annotations['ymax'] > heights))
+
+        if invalid_mask.any():
+            invalid_records = self.annotations[invalid_mask]
+            error_msg = ["Invalid bounding boxes detected:"]
+
+            # Group errors by image for better reporting
+            grouped = invalid_records.groupby('image_path')
+            for img_path, group in grouped:
+                img_width, img_height = image_size_dict[img_path]
+                error_msg.append(f"Image '{img_path}' ({img_width}x{img_height}): "
+                                 f"{len(group)} invalid boxes")
+                for _, row in group.head(3).iterrows():  # Show first 3 errors
+                    error_msg.append(f"  Box [xmin={row.xmin}, ymin={row.ymin}, "
+                                     f"xmax={row.xmax}, ymax={row.ymax}]")
+                if len(group) > 3:
+                    error_msg.append(f"  ...and {len(group)-3} more")
+
+            raise ValueError('\n'.join(error_msg))
 
     def __len__(self):
         return len(self.image_names)
