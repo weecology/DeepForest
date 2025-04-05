@@ -753,3 +753,34 @@ def project_boxes(df, root_dir, transform=True):
         "This function is deprecated. Please use image_to_geo_coordinates instead.")
 
     return df
+
+
+def read_tile(raster_path):
+    """Read a raster from disk, remove alpha channel if present, and reorder
+    dimensions to channel-last (H, W, C) for consistency with DeepForest input
+    expectations.
+
+    Args:
+        raster_path (str): Path to the GeoTIFF (or other supported raster format).
+
+    Returns:
+        numpy.ndarray: A 3D numpy array of shape (H, W, C).
+    """
+
+    with rasterio.open(raster_path) as src:
+        image = src.read()
+
+    if image.shape[0] == 4:
+        warnings.warn(
+            "Detected an alpha channel, removing it to match DeepForest's requirement of 3 bands."
+        )
+        image = image[:3]
+
+    # Confirm we now have 3 bands
+    if image.shape[0] != 3:
+        raise ValueError(
+            f"Expected 3 bands, but got {image.shape[0]}. Please check your raster.")
+
+    image = np.moveaxis(image, 0, -1)
+
+    return image
