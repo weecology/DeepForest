@@ -10,6 +10,9 @@ import numpy as np
 import tempfile
 import rasterio as rio
 from deepforest.dataset import BoundingBoxDataset
+from deepforest.dataset import RasterDataset
+from torch.utils.data import DataLoader
+
 
 
 def single_class():
@@ -189,23 +192,20 @@ def test_bounding_box_dataset():
 
 def test_raster_dataset():
     """Test the RasterDataset class"""
-    from deepforest.dataset import RasterDataset
-    import torch
-    from torch.utils.data import DataLoader
-    
+
     # Test initialization and context manager
     ds = RasterDataset(get_data("test_tiled.tif"), patch_size=256, patch_overlap=0.1)
-    
+
     # Test basic properties
     assert hasattr(ds, 'windows')
-        
+
     # Test first window
     first_crop = ds[0]
     assert isinstance(first_crop, torch.Tensor)
     assert first_crop.dtype == torch.float32
     assert first_crop.shape[0] == 3  # RGB channels first
     assert 0 <= first_crop.min() <= first_crop.max() <= 1.0  # Check normalization
-        
+
     # Test with DataLoader
     dataloader = DataLoader(ds, batch_size=2, num_workers=0)
     batch = next(iter(dataloader))

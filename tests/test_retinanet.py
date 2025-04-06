@@ -62,7 +62,7 @@ def test_forward_empty(config):
 
 
 # Can we update parameters after training
-def test_mantain_parameters(config):
+def test_maintain_parameters(config):
     config["retinanet"]["score_thresh"] = 0.4
     retinanet_model = retinanet.Model(config).create_model()
     assert retinanet_model.score_thresh == config["retinanet"]["score_thresh"]

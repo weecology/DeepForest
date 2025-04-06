@@ -136,7 +136,7 @@ def plot_prediction_dataframe(df,
 def plot_points(image, points, color=None, radius=5, thickness=1):
     """Plot points on an image
     Args:
-        image: a numpy array in *BGR* color order! Channel order is channels first 
+        image: a numpy array in *BGR* color order! Channel order is channels first
         points: a numpy array of shape (N, 2) representing the coordinates of the points
         color: color of the points as a tuple of BGR color, e.g. orange points is (0, 165, 255)
         radius: radius of the points in px
@@ -517,11 +517,11 @@ def plot_results(results,
         image_path = os.path.join(root_dir, results.image_path.unique()[0])
         image = np.array(Image.open(image_path))
 
-        # Drop alpha channel if present and warn 
+        # Drop alpha channel if present and warn
         if image.shape[2] == 4:
             warnings.warn("Image has an alpha channel. Dropping alpha channel.")
             image = image[:, :, :3]
-            
+
     # Plot the results following https://supervision.roboflow.com/annotators/
     fig, ax = plt.subplots()
     annotated_scene = _plot_image_with_geometry(df=results,

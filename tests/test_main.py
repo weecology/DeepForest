@@ -924,7 +924,7 @@ def test_empty_frame_accuracy_without_predictions(tmpdir):
     results = m.trainer.validate(m)
     assert results[0]["empty_frame_accuracy"] == 1
 
-def test_mulit_class_with_empty_frame_accuracy_without_predictions(two_class_m, tmpdir):
+def test_multi_class_with_empty_frame_accuracy_without_predictions(two_class_m, tmpdir):
     """Create a ground truth with empty frames, the accuracy should be 1 with a random model"""
     # Create ground truth with empty frames
     ground_df = pd.read_csv(get_data("testfile_deepforest.csv"))
