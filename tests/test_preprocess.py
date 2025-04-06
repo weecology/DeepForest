@@ -275,7 +275,7 @@ def test_split_raster_with_polygon_annotations(tmpdir, config):
 
 def test_split_raster_from_csv(tmpdir):
     """Read in annotations, convert to a projected shapefile, read back in and crop,
-    the output annotations should still be mantained in logical place"""
+    the output annotations should still be maintained in logical place"""
     annotations = get_data("2018_SJER_3_252000_4107000_image_477.csv")
     path_to_raster = get_data("2018_SJER_3_252000_4107000_image_477.tif")
 

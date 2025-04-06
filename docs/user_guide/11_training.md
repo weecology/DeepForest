@@ -60,7 +60,7 @@ m.trainer.fit(model)
 If you want to disable the progress bar while training change the `create_trainer` call to:
 
 ```python
-from deepforest import model 
+from deepforest import model
 
  model.create_trainer(enable_progress_bar=False)
 ```
@@ -136,13 +136,13 @@ image_path, xmin, ymin, xmax, ymax, label
 myimage.png, 0,0,0,0,"Tree"
 ```
 
-Excessive use of negative samples may have a negative impact on model performance, but when used sparingly, they can increase precision. 
+Excessive use of negative samples may have a negative impact on model performance, but when used sparingly, they can increase precision.
 
 ### Model checkpoints
 
 Pytorch lightning allows you to [save a model](https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#checkpoint-callback) at the end of each epoch. By default this behevaior is turned off since it slows down training and quickly fills up storage. To restore model checkpointing
 
-```python 
+```python
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.loggers import TensorBoardLogger
 
@@ -251,7 +251,7 @@ m.config["workers"] = 5
 
 It is not foolproof, and occasionally 0 workers, in which data loading is run on the main thread, is optimal : https://stackoverflow.com/questions/73331758/can-ideal-num-workers-for-a-large-dataset-in-pytorch-be-0.
 
-For large training runs, setting preload_images to True can be helpful. 
+For large training runs, setting preload_images to True can be helpful.
 
 ```
 m.config["preload_images"] = True
@@ -268,14 +268,14 @@ Remember to call m.create_trainer() after updating the config dictionary.
 
 ### Avoiding **Weakly referenced objects** errors
 
-On some devices and systems we have found an error referencing the model.trainer object that was created in m.create_trainer(). 
+On some devices and systems we have found an error referencing the model.trainer object that was created in m.create_trainer().
 We welcome a reproducible issue to address this error as it appears highly variable and relates to upstream issues. It appears more common on google colab and github actions.
 
 In most cases, this error appears when running multiple calls to model.predict or model.train. We believe this occurs because garbage collection has deleted the model.trainer object see:
 https://github.com/Lightning-AI/lightning/issues/12233
 https://github.com/weecology/DeepForest/issues/338
 
-If you run into this error, users (e.g https://github.com/weecology/DeepForest/issues/443), have found that creating the trainer object within the loop can resolve this issue. 
+If you run into this error, users (e.g https://github.com/weecology/DeepForest/issues/443), have found that creating the trainer object within the loop can resolve this issue.
 
 ```python
 for tile in tiles_to_predict:
@@ -287,9 +287,9 @@ Usually creating this object does not cost too much computational time.
 
 #### Training across multiple nodes on a HPC system
 
-We have heard that this error can appear when trying to deep copy the pytorch lighnting module. The trainer object is not pickleable.
-For example, on multi-gpu enviroments when trying to scale the deepforest model the entire module is copied leading to this error.
-Setting the trainer object to None and directly using the pytorch object is a reasonable workaround. 
+We have heard that this error can appear when trying to deep copy the pytorch lightning module. The trainer object is not pickleable.
+For example, on multi-gpu environments when trying to scale the deepforest model the entire module is copied leading to this error.
+Setting the trainer object to None and directly using the pytorch object is a reasonable workaround.
 
 Replace
 
@@ -316,6 +316,6 @@ from pytorch_lightning import Trainer
 trainer.fit(m)
 ```
 
-The added benefits of this is more control over the trainer object. 
-The downside is that it doesn't align with the .config pattern where a user now has to look into the config to create the trainer. 
+The added benefits of this is more control over the trainer object.
+The downside is that it doesn't align with the .config pattern where a user now has to look into the config to create the trainer.
 We are open to changing this to be the default pattern in the future and welcome input from users.
