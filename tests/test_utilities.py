@@ -535,123 +535,58 @@ def test_read_coco_json(tmpdir):
         assert geom.is_valid
         assert isinstance(geom, shapely.geometry.Polygon)
 
-
-def test_read_tile_3band(tmpdir):
-    """
-    Test that a 3-band raster is read properly
-    and ends up in (height, width, channels) shape with no warnings.
-    """
+@pytest.fixture
+def create_test_raster():
+    """Creates a test raster with specified bands, dimensions, and data type."""
+    def _create_raster(bands, size, tmpdir, filename, dtype=np.uint8):
+        data = np.random.randint(
+            low=0,
+            high=255,
+            size=(bands, size, size),
+            dtype=dtype
+        )
+        
+        path = os.path.join(tmpdir, f"{filename}.tif")
+        profile = {
+            "count": bands,
+            "height": size,
+            "width": size,
+            "dtype": dtype,
+            "driver": "GTiff",
+            "transform": rio.transform.from_origin(0, 0, 1, 1),
+            "crs": "+proj=latlong"
+        }
+        
+        with rio.open(path, "w", **profile) as dst:
+            dst.write(data)
+            
+        return path, data
     
-    # Create synthetic 3-band data: shape = (3, 10, 10)
-    data = np.random.randint(
-        low=0,
-        high=255,
-        size=(3, 10, 10),
-        dtype=np.uint8
-    )
+    return _create_raster
 
-    path_3band = os.path.join(tmpdir, "3band.tif")
-    profile = {
-        "count": 3,
-        "height": data.shape[1],
-        "width": data.shape[2],
-        "dtype": data.dtype,
-        "driver": "GTiff",
-        "transform": rio.transform.from_origin(0, 0, 1, 1),
-        "crs": "+proj=latlong"
-    }
-    with rio.open(path_3band, "w", **profile) as dst:
-        dst.write(data)
-
-    image = utilities.read_tile(path_3band)
-
-    assert image.shape == (10, 10, 3), f"Expected (10,10,3), got {image.shape}"
-
-def test_read_tile_4band(tmpdir):
-    """
-    Test that a 4-band raster has its alpha channel removed
-    and that a UserWarning is issued.
-    """
-    data = np.random.randint(
-        low=0,
-        high=255,
-        size=(4, 8, 8),
-        dtype=np.uint8
-    )
-
-    path_4band = os.path.join(tmpdir, "4band.tif")
-    profile = {
-        "count": 4,
-        "height": data.shape[1],
-        "width": data.shape[2],
-        "dtype": data.dtype,
-        "driver": "GTiff",
-        "transform": rio.transform.from_origin(0, 0, 1, 1),
-        "crs": "+proj=latlong"
-    }
-    with rio.open(path_4band, "w", **profile) as dst:
-        dst.write(data)
-
-    with pytest.warns(UserWarning, match="Detected an alpha channel"):
-        image = utilities.read_tile(path_4band)
-    assert image.shape == (8, 8, 3), f"Expected (8,8,3), got {image.shape}"
-
-def test_read_tile_invalid_band_count(tmpdir):
-    # Test that an invalid band count (e.g., 2-band or 5-band) raises a ValueError.
-    data_2band = np.random.randint(
-        low=0,
-        high=255,
-        size=(2, 5, 5),
-        dtype=np.uint8
-    )
-
-    path_2band = os.path.join(tmpdir, "2band.tif")
-    profile = {
-        "count": 2,
-        "height": data_2band.shape[1],
-        "width": data_2band.shape[2],
-        "dtype": data_2band.dtype,
-        "driver": "GTiff",
-        "transform": rio.transform.from_origin(0, 0, 1, 1),
-        "crs": "+proj=latlong"
-    }
-    with rio.open(path_2band, "w", **profile) as dst:
-        dst.write(data_2band)
-
-    # This should raise a ValueError since read_tile expects exactly 3 bands
-    with pytest.raises(ValueError, match="Expected 3 bands"):
-        _ = utilities.read_tile(path_2band)
-
-def test_read_tile_with_pil(tmpdir):
-    """
-    Test that the returned numpy array can be opened with PIL (common scenario).
-    """
-    from PIL import Image
-
-    data = np.random.randint(
-        low=0,
-        high=255,
-        size=(3, 6, 6),
-        dtype=np.uint8
-    )
-
-    path_3band = os.path.join(tmpdir, "3band_for_pil.tif")
-    profile = {
-        "count": 3,
-        "height": data.shape[1],
-        "width": data.shape[2],
-        "dtype": data.dtype,
-        "driver": "GTiff",
-        "transform": rio.transform.from_origin(0, 0, 1, 1),
-        "crs": "+proj=latlong"
-    }
-    with rio.open(path_3band, "w", **profile) as dst:
-        dst.write(data)
-
-    image_array = utilities.read_tile(path_3band)
-
-    assert image_array.shape == (6, 6, 3)
-
-    pil_img = Image.fromarray(image_array, mode="RGB")
-    assert pil_img.size == (6, 6)
-    assert pil_img.mode == "RGB"
+@pytest.mark.parametrize("bands,size,expected_shape,expected_behavior", [
+    (3, 10, (10, 10, 3), "success"),  # 3-band case
+    (4, 8, (8, 8, 3), "warning")      # 4-band with alpha channel case
+])
+def test_remove_alpha_channel(bands, size, expected_shape, expected_behavior, tmpdir, create_test_raster):
+    """Test remove_alpha_channel with various band configurations."""
+    filename = f"{bands}band"
+    path, _ = create_test_raster(bands, size, tmpdir, filename)
+    
+    if expected_behavior == "success":
+        image = utilities.remove_alpha_channel(path)
+        assert image.shape == expected_shape, f"Expected {expected_shape}, got {image.shape}"
+        
+        # Test compatibility with PIL
+        pil_img = Image.fromarray(image, mode="RGB")
+        assert pil_img.size == (size, size)
+        assert pil_img.mode == "RGB"
+        
+    elif expected_behavior == "warning":
+        with pytest.warns(UserWarning, match="Detected an alpha channel"):
+            image = utilities.remove_alpha_channel(path)
+        assert image.shape == expected_shape, f"Expected {expected_shape}, got {image.shape}"
+        
+    elif expected_behavior == "error":
+        with pytest.raises(ValueError, match="Expected 3 bands"):
+            _ = utilities.remove_alpha_channel(path)

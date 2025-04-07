@@ -12,6 +12,7 @@ import warnings
 import supervision as sv
 import shapely
 from deepforest.utilities import determine_geometry_type
+from deepforest.utilities import remove_alpha_channel
 
 
 def view_dataset(ds, savedir=None, color=None, thickness=1):
@@ -518,9 +519,8 @@ def plot_results(results,
         image = np.array(Image.open(image_path))
 
         # Drop alpha channel if present and warn
-        if image.shape[2] == 4:
-            warnings.warn("Image has an alpha channel. Dropping alpha channel.")
-            image = image[:, :, :3]
+        if image.shape[2] > 3:
+            image = remove_alpha_channel(image)
 
     # Plot the results following https://supervision.roboflow.com/annotators/
     fig, ax = plt.subplots()

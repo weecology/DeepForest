@@ -755,10 +755,9 @@ def project_boxes(df, root_dir, transform=True):
     return df
 
 
-def read_tile(raster_path):
+def remove_alpha_channel(raster_path):
     """Read a raster from disk, remove alpha channel if present, and reorder
-    dimensions to channel-last (H, W, C) for consistency with DeepForest input
-    expectations.
+    dimensions to channel-last (H, W, C) for consistency.
 
     Args:
         raster_path (str): Path to the GeoTIFF (or other supported raster format).
@@ -770,16 +769,11 @@ def read_tile(raster_path):
     with rasterio.open(raster_path) as src:
         image = src.read()
 
-    if image.shape[0] == 4:
-        warnings.warn(
-            "Detected an alpha channel, removing it to match DeepForest's requirement of 3 bands."
-        )
-        image = image[:3]
-
-    # Confirm we now have 3 bands
-    if image.shape[0] != 3:
-        raise ValueError(
-            f"Expected 3 bands, but got {image.shape[0]}. Please check your raster.")
+        if image.shape[0] == 4:
+            warnings.warn(
+                "Detected an alpha channel, removing it to match DeepForest's requirement of 3 bands."
+            )
+            image = image[:3]
 
     image = np.moveaxis(image, 0, -1)
 
