@@ -313,7 +313,7 @@ def read_file(input, root_dir=None, image_path=None, label=None):
     """Read a file and return a geopandas dataframe.
 
     This is the main entry point for reading annotations into deepforest.
-    
+
     Args:
         input: a path to a file or a pandas dataframe
         root_dir (str): location of the image files, if not in the same directory as the annotations file
@@ -321,11 +321,11 @@ def read_file(input, root_dir=None, image_path=None, label=None):
             for every row in the dataframe. Only use this when the file contains annotations from a single image.
         label (str, optional): If provided, this value will be assigned to a new 'label' column
             for every row in the dataframe. Only use this when all annotations share the same label.
-    
+
     Returns:
         df: a geopandas dataframe with the properly formatted geometry column
         df.root_dir: the root directory of the image files
-    
+
     Warnings:
         Passing `image_path` or `label` will apply the same value to all rows in the dataframe.
         This should only be used when the input file contains annotations for a single image.
