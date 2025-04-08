@@ -316,9 +316,9 @@ def read_file(input, root_dir=None, image_path=None, label=None):
     Args:
         input: a path to a file or a pandas dataframe
         root_dir (str): location of the image files, if not in the same directory as the annotations file
-        image_path (str, optional): If provided, this value will be assigned to a new 'image_path' column 
+        image_path (str, optional): If provided, this value will be assigned to a new 'image_path' column
             for every row in the dataframe. Only use this when the file contains annotations from a single image.
-        label (str, optional): If provided, this value will be assigned to a new 'label' column 
+        label (str, optional): If provided, this value will be assigned to a new 'label' column
             for every row in the dataframe. Only use this when all annotations share the same label.
     Returns:
         df: a geopandas dataframe with the properly formatted geometry column
