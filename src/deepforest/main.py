@@ -806,7 +806,10 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             self.predictions_df = pd.concat(self.predictions)
 
         #Evaluate every n epochs
-        if self.current_epoch % self.config["validation"]["val_accuracy_interval"] == 0:
+        if (self.config["validation"]["val_accuracy_interval"]
+                <= self.config["train"]["epochs"] and
+                self.current_epoch % self.config["validation"]["val_accuracy_interval"]
+                == 0):
             #Create a geospatial column
             ground_df = utilities.read_file(self.config["validation"]["csv_file"])
             ground_df["label"] = ground_df.label.apply(lambda x: self.label_dict[x])
