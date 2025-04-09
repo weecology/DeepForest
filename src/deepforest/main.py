@@ -813,13 +813,15 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                 output = self.mAP_metric.compute()
 
                 # Remove classes from output dict
-                output = {key: value for key, value in output.items() if not key == "classes"}
+                output = {
+                    key: value for key, value in output.items() if not key == "classes"
+                }
                 try:
                     self.log_dict(output)
                 except MisconfigurationException:
                     pass
                 self.mAP_metric.reset()
-            
+
             #Create a geospatial column
             ground_df = utilities.read_file(self.config["validation"]["csv_file"])
             ground_df["label"] = ground_df.label.apply(lambda x: self.label_dict[x])
