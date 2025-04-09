@@ -888,16 +888,41 @@ def test_epoch_evaluation_end_empty(m):
     boxes["image_path"] = "test"
     m.predictions = [boxes]
     m.on_validation_epoch_end()
-
-def test_empty_frame_accuracy_with_predictions(m, tmpdir):
-    """Create a ground truth with empty frames, the accuracy should be 1 with a random model"""
-    # Create ground truth with empty frames
+def test_empty_frame_accuracy_all_empty_with_predictions(m, tmpdir):
+    """Test empty frame accuracy when all frames are empty but model predicts objects.
+    The accuracy should be 0 since model incorrectly predicts objects in empty frames."""
+    # Create ground truth with all empty frames
     ground_df = pd.read_csv(get_data("testfile_deepforest.csv"))
-    # Set all xmin, ymin, xmax, ymax to 0
+    # Set all xmin, ymin, xmax, ymax to 0 to mark as empty
     ground_df.loc[:, ["xmin", "ymin", "xmax", "ymax"]] = 0
     ground_df.drop_duplicates(subset=["image_path"], keep="first", inplace=True)
 
     # Save the ground truth to a temporary file
+    ground_df.to_csv(tmpdir.strpath + "/ground_truth.csv", index=False)
+    m.config["validation"]["csv_file"] = tmpdir.strpath + "/ground_truth.csv"
+    m.config["validation"]["root_dir"] = os.path.dirname(get_data("testfile_deepforest.csv"))
+
+    m.create_trainer()
+    results = m.trainer.validate(m)
+    assert results[0]["empty_frame_accuracy"] == 0
+
+def test_empty_frame_accuracy_mixed_frames_with_predictions(m, tmpdir):
+    """Test empty frame accuracy with a mix of empty and non-empty frames.
+    Model predicts objects in all frames, so accuracy for empty frames should be 0."""
+    # Create ground truth with mix of empty and non-empty frames
+    tree_ground_df = pd.read_csv(get_data("testfile_deepforest.csv"))
+    empty_ground_df = pd.DataFrame({
+        "image_path": ["AWPE Pigeon Lake 2020 DJI_0005.JPG"],
+        "xmin": [0],
+        "ymin": [0], 
+        "xmax": [0],
+        "ymax": [0],
+        "label": ["Tree"]
+    })
+
+    ground_df = pd.concat([tree_ground_df, empty_ground_df])
+
+    # Save the ground truth to a temporary file  
     ground_df.to_csv(tmpdir.strpath + "/ground_truth.csv", index=False)
     m.config["validation"]["csv_file"] = tmpdir.strpath + "/ground_truth.csv"
     m.config["validation"]["root_dir"] = os.path.dirname(get_data("testfile_deepforest.csv"))
