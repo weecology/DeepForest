@@ -702,8 +702,18 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         preds = self.model.forward(images)
 
         # Calculate intersection-over-union
-        self.iou_metric.update(preds, targets)
-        self.mAP_metric.update(preds, targets)
+        if len(targets) > 0:
+            # Remove empty targets
+            # Remove empty targets and corresponding predictions
+            filtered_preds = []
+            filtered_targets = []
+            for i, target in enumerate(targets):
+                if target["boxes"].shape[0] > 0:
+                    filtered_preds.append(preds[i])
+                    filtered_targets.append(target)
+
+            self.iou_metric.update(filtered_preds, filtered_targets)
+            self.mAP_metric.update(filtered_preds, filtered_targets)
 
         # Log loss
         for key, value in loss_dict.items():
@@ -782,31 +792,36 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
     def on_validation_epoch_end(self):
         """Compute metrics."""
 
-        output = self.iou_metric.compute()
-        try:
-            # This is a bug in lightning, it claims this is a warning but it is not. https://github.com/Lightning-AI/pytorch-lightning/pull/9733/files
-            self.log_dict(output)
-        except:
-            pass
-
-        self.iou_metric.reset()
-        output = self.mAP_metric.compute()
-
-        # Remove classes from output dict
-        output = {key: value for key, value in output.items() if not key == "classes"}
-        try:
-            self.log_dict(output)
-        except MisconfigurationException:
-            pass
-        self.mAP_metric.reset()
-
-        if len(self.predictions) == 0:
-            return None
-        else:
-            self.predictions_df = pd.concat(self.predictions)
-
         #Evaluate every n epochs
         if self.current_epoch % self.config["validation"]["val_accuracy_interval"] == 0:
+
+            if len(self.predictions) == 0:
+                return None
+            else:
+                self.predictions_df = pd.concat(self.predictions)
+
+            # If non-empty ground truth, evaluate IoU and mAP
+            if len(self.iou_metric.groundtruth_labels) > 0:
+                output = self.iou_metric.compute()
+                try:
+                    # This is a bug in lightning, it claims this is a warning but it is not. https://github.com/Lightning-AI/pytorch-lightning/pull/9733/files
+                    self.log_dict(output)
+                except:
+                    pass
+
+                self.iou_metric.reset()
+                output = self.mAP_metric.compute()
+
+                # Remove classes from output dict
+                output = {
+                    key: value for key, value in output.items() if not key == "classes"
+                }
+                try:
+                    self.log_dict(output)
+                except MisconfigurationException:
+                    pass
+                self.mAP_metric.reset()
+
             #Create a geospatial column
             ground_df = utilities.read_file(self.config["validation"]["csv_file"])
             ground_df["label"] = ground_df.label.apply(lambda x: self.label_dict[x])
