@@ -75,10 +75,6 @@ class TreeDataset(Dataset):
         else:
             self.transform = transforms
         self.image_names = self.annotations.image_path.unique()
-
-        # Validate all images and bounding boxes upon initialization
-        self._validate_annotations()
-
         self.label_dict = label_dict
         self.train = train
         self.image_converter = A.Compose([ToTensorV2()])
