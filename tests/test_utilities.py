@@ -52,6 +52,49 @@ def test_read_file(tmpdir):
     assert shp.shape[0] == 2
 
 
+def test_read_file_in_memory_geodataframe():
+    """Test reading an in-memory GeoDataFrame"""
+    sample_geometry = [geometry.Point(404211.9 + 10, 3285102 + 20), geometry.Point(404211.9 + 20, 3285102 + 20)]
+    labels = ["Tree", "Tree"]
+    df = pd.DataFrame({"geometry": sample_geometry, "label": labels})
+    gdf = gpd.GeoDataFrame(df, geometry="geometry", crs="EPSG:32617")
+    gdf["image_path"] = get_data("OSBS_029.tif")
+
+    # Process through read_file
+    result = utilities.read_file(input=gdf)
+
+    # Verify coordinate conversion happened
+    original_coords = gdf.geometry.iloc[0].coords[0]
+    result_coords = result.geometry.iloc[0].coords[0]
+
+    # Coordinates should change after geo_to_image conversion
+    assert original_coords != result_coords
+
+    # Verify output
+    assert isinstance(result, gpd.GeoDataFrame)
+    assert len(result) == 2
+    assert "geometry" in result.columns
+
+
+def test_read_file_in_memory_dataframe():
+    """Test reading an in-memory DataFrame with box coordinates"""
+    # Create DataFrame with box columns
+    test_df = pd.DataFrame({
+        'xmin': [0, 10], 'ymin': [0, 10],
+        'xmax': [5, 15], 'ymax': [5, 15],
+        'label': ['Tree', 'Tree']
+    })
+
+    # Process through read_file
+    result = utilities.read_file(input=test_df)
+
+    # Verify output
+    assert isinstance(result, gpd.GeoDataFrame)
+    assert 'geometry' in result.columns
+    assert all(result.geometry.geom_type == 'Polygon')
+    assert len(result) == 2
+
+
 def test_shapefile_to_annotations_convert_unprojected_to_boxes(tmpdir):
     sample_geometry = [geometry.Point(10, 20), geometry.Point(20, 40)]
     labels = ["Tree", "Tree"]
