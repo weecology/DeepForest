@@ -9,7 +9,10 @@ import pandas as pd
 import numpy as np
 import tempfile
 import rasterio as rio
-from deepforest.dataset import BoundingBoxDataset
+from deepforest.dataset import BoundingBoxDataset, TreeDataset
+from deepforest.dataset import RasterDataset
+from torch.utils.data import DataLoader
+from PIL import Image
 
 
 def single_class():
@@ -211,3 +214,50 @@ def test_raster_dataset():
     batch = next(iter(dataloader))
     assert batch.shape[0] == 2  # Batch size
     assert batch.shape[1] == 3  # Channels first
+
+def test_validate_annotations_invalid_boxes(tmpdir):
+    img_path = get_data("OSBS_029.tif")
+    image = Image.open(img_path)
+    width, height = image.size
+
+    test_cases = [
+        {
+            "test_box": (width - 5, 0, width + 10, 10),
+            "reason": "xmax exceeds image width"
+        },
+        {
+            "test_box": (0, height - 5, 10, height + 10),
+            "reason": "ymax exceeds image height"
+        },
+        {
+            "test_box": (-5, 0, 10, 10),
+            "reason": "xmin is negative"
+        },
+        {
+            "test_box": (0, -5, 10, 10),
+            "reason": "ymin is negative"
+        },
+    ]
+
+    for case in test_cases:
+        test_box = case["test_box"]
+        error_msg = "exceeds image dimensions"
+        reason = case["reason"]
+
+        csv_path = os.path.join(tmpdir, "test.csv")
+        df = pd.DataFrame({
+            "image_path": ["OSBS_029.tif"],
+            "xmin": [test_box[0]],
+            "ymin": [test_box[1]],
+            "xmax": [test_box[2]],
+            "ymax": [test_box[3]],
+            "label": ["Tree"]
+        })
+        df.to_csv(csv_path, index=False)
+        root_dir = os.path.dirname(img_path)
+        
+        with pytest.raises(ValueError) as excinfo:
+            TreeDataset(csv_file=csv_path, root_dir=root_dir)
+        
+        assert error_msg in str(excinfo.value), f"Test failed for case: {reason}"
+    

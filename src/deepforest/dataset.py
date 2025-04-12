@@ -69,6 +69,7 @@ class TreeDataset(Dataset):
         """
         self.annotations = pd.read_csv(csv_file)
         self.root_dir = root_dir
+        self.validate_annotations()
         if transforms is None:
             self.transform = get_transform(augment=train)
         else:
@@ -92,42 +93,49 @@ class TreeDataset(Dataset):
                 image = np.array(Image.open(img_name).convert("RGB")) / 255
                 self.image_dict[idx] = image.astype("float32")
 
-    def _validate_annotations(self):
-        # Create image size lookup dictionary
-        image_size_dict = {}
-        for img_path in self.image_names:
-            full_path = os.path.join(self.root_dir, img_path)
-            if not os.path.isfile(full_path):
-                raise FileNotFoundError(f"Image file not found: {full_path}")
-            with Image.open(full_path) as img:
-                image_size_dict[img_path] = img.size  # (width, height)
+    def validate_annotations(self):
+        errors = []
+        for idx, row in self.annotations.iterrows():
+            img_path = os.path.join(self.root_dir, row['image_path'])
+            try:
+                with Image.open(img_path) as img:
+                    width, height = img.size
+            except Exception as e:
+                errors.append(f"Failed to open image {img_path}: {e}")
+                continue
 
-        # Create temporary series for vectorized operations
-        widths = self.annotations['image_path'].map(lambda x: image_size_dict[x][0])
-        heights = self.annotations['image_path'].map(lambda x: image_size_dict[x][1])
+            # Extract bounding box
+            try:
+                if 'geometry' in self.annotations.columns:
+                    geom = shapely.wkt.loads(row['geometry'])
+                    xmin, ymin, xmax, ymax = geom.bounds
+                else:
+                    xmin = row['xmin']
+                    ymin = row['ymin']
+                    xmax = row['xmax']
+                    ymax = row['ymax']
+            except Exception as e:
+                errors.append(f"Invalid box format at index {idx}: {e}")
+                continue
 
-        # Vectorized boundary checks
-        invalid_mask = ((self.annotations['xmin'] < 0) | (self.annotations['ymin'] < 0) |
-                        (self.annotations['xmax'] > widths) |
-                        (self.annotations['ymax'] > heights))
+            #Check if box is valid
+            oob_issues = []
+            if xmin < 0:
+                oob_issues.append(f"xmin ({xmin}) < 0")
+            if xmax > width:
+                oob_issues.append(f"xmax ({xmax}) > image width ({width})")
+            if ymin < 0:
+                oob_issues.append(f"ymin ({ymin}) < 0")
+            if ymax > height:
+                oob_issues.append(f"ymax ({ymax}) > image height ({height})")
 
-        if invalid_mask.any():
-            invalid_records = self.annotations[invalid_mask]
-            error_msg = ["Invalid bounding boxes detected:"]
+            if oob_issues:
+                errors.append(
+                    f"Box, ({xmin}, {ymin}, {xmax}, {ymax}) exceeds image dimensions, ({width}, {height}). Issues: {', '.join(oob_issues)}."
+                )
 
-            # Group errors by image for better reporting
-            grouped = invalid_records.groupby('image_path')
-            for img_path, group in grouped:
-                img_width, img_height = image_size_dict[img_path]
-                error_msg.append(f"Image '{img_path}' ({img_width}x{img_height}): "
-                                 f"{len(group)} invalid boxes")
-                for _, row in group.head(3).iterrows():  # Show first 3 errors
-                    error_msg.append(f"  Box [xmin={row.xmin}, ymin={row.ymin}, "
-                                     f"xmax={row.xmax}, ymax={row.ymax}]")
-                if len(group) > 3:
-                    error_msg.append(f"  ...and {len(group)-3} more")
-
-            raise ValueError('\n'.join(error_msg))
+        if errors:
+            raise ValueError("\n".join(errors))
 
     def __len__(self):
         return len(self.image_names)
