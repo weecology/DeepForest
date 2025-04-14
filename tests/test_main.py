@@ -970,3 +970,14 @@ def test_set_labels_invalid_length(m): # Expect a ValueError when setting an inv
     invalid_mapping = {"Object": 0, "Extra": 1}
     with pytest.raises(ValueError):
         m.set_labels(invalid_mapping)
+    
+def test_validation_interval_greater_than_epochs(m):
+    # Set interval higher than max_epochs to disable evaluation
+    m.config["validation"]["val_accuracy_interval"] = 3
+    m.config["train"]["epochs"] = 2
+    m.create_trainer()
+    m.trainer.fit(m)
+    
+    assert "box_precision" not in m.trainer.logged_metrics
+    assert "box_recall" not in m.trainer.logged_metrics
+    assert "empty_frame_accuracy" not in m.trainer.logged_metrics
