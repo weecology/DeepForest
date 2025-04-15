@@ -12,10 +12,10 @@ import yaml
 @pytest.mark.parametrize("num_workers", [0, 2])
 def test_predict_tile_workers(m, num_workers):
     # Default workers is 0
-    original_workers = m.config["workers"]
+    original_workers = m.config.workers
     assert original_workers == 0
 
-    m.config["workers"] = num_workers
+    m.config.workers = num_workers
     csv_file = get_data("OSBS_029.csv")
     # make a dataset
     ds = dataset.TreeDataset(csv_file=csv_file,

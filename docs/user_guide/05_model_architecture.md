@@ -1,6 +1,6 @@
 # Extending DeepForest with Custom Models and Dataloaders
 
-DeepForest allows users to specify custom model architectures if they follow certain guidelines. 
+DeepForest allows users to specify custom model architectures if they follow certain guidelines.
 To create a compliant format, follow the recipe below.
 
 ## Subclass the model.Model() structure
@@ -14,7 +14,7 @@ import torch
 
 class Model():
     """A architecture agnostic class that controls the basic train, eval and predict functions.
-    A model should optionally allow a backbone for pretraining. To add new architectures, simply create a new module in models/ and write a create_model. 
+    A model should optionally allow a backbone for pretraining. To add new architectures, simply create a new module in models/ and write a create_model.
     Then add the result to the if else statement below.
     Args:
         num_classes (int): number of classes in the model
@@ -30,11 +30,11 @@ class Model():
 
         # Check input output format:
         self.check_model()
-    
+
     def create_model():
         """This function converts a deepforest config file into a model. An architecture should have a list of nested arguments in config that match this function"""
         raise ValueError("The create_model class method needs to be implemented. Take in args and return a pytorch nn module.")
-    
+
     def check_model(self):
         """
         Ensure that model follows deepforest guidelines
@@ -44,7 +44,7 @@ class Model():
         test_model = self.create_model()
         test_model.eval()
 
-        # Create a dummy batch of 3 band data. 
+        # Create a dummy batch of 3 band data.
         x = [torch.rand(3, 300, 400), torch.rand(3, 500, 400)]
 
         predictions = test_model(x)
@@ -80,9 +80,9 @@ For train/test
 from deepforest import main
 
 m = main.deepforest()
-existing_loader = m.load_dataset(csv_file=m.config["train"]["csv_file"],
-                                root_dir=m.config["train"]["root_dir"],
-                                batch_size=m.config["batch_size"])
+existing_loader = m.load_dataset(csv_file=m.config.train.csv_file,
+                                root_dir=m.config.train.root_dir,
+                                batch_size=m.config.batch_size)
 
 # Can be passed directly to main.deepforest(existing_train_dataloader) or reassign to existing deepforest object
 m.existing_train_dataloader_loader
@@ -90,7 +90,7 @@ m.create_trainer()
 m.trainer.fit()
 ```
 
-For prediction directly on a dataloader, we need a dataloader that yields images, see [TileDataset](https://deepforest.readthedocs.io/en/latest/source/deepforest.html#deepforest.dataset.TileDataset) for an example. Any dataloader could be supplied to m.trainer.predict as long as it meets this specification.  
+For prediction directly on a dataloader, we need a dataloader that yields images, see [TileDataset](https://deepforest.readthedocs.io/en/latest/source/deepforest.html#deepforest.dataset.TileDataset) for an example. Any dataloader could be supplied to m.trainer.predict as long as it meets this specification.
 
 ```python
 import numpy as np
@@ -101,5 +101,5 @@ ds = dataset.TileDataset(tile=np.random.random((400,400,3)).astype("float32"), p
 existing_loader = m.predict_dataloader(ds)
 
 batches = m.trainer.predict(m, existing_loader)
-len(batches[0]) == m.config["batch_size"] + 1
+len(batches[0]) == m.config.batch_size + 1
 ```
