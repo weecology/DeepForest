@@ -146,24 +146,9 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         # Load the model using from_pretrained
         self.create_model()
         loaded_model = self.from_pretrained(model_name, revision=revision)
+        self.label_dict = loaded_model.label_dict
         self.model = loaded_model.model
-
-        # Set label_dict and other configurations based on the model_name
-        if model_name == "weecology/deepforest-tree":
-            self.label_dict = {"Tree": 0}
-        elif model_name == "weecology/deepforest-bird":
-            self.label_dict = {"Bird": 0}
-            self.config['retinanet']["score_thresh"] = 0.3  # Bird-specific threshold
-        elif model_name == "weecology/deepforest-livestock":
-            self.label_dict = {"Livestock": 0}
-        elif model_name == "weecology/everglades-nest-detection":
-            self.label_dict = {"Nest": 0}
-        else:
-            # For custom or unspecified models, use the loaded model's label_dict
-            self.label_dict = loaded_model.label_dict
-
-        # Update numeric_to_label_dict based on the defined label_dict
-        self.numeric_to_label_dict = {v: k for k, v in self.label_dict.items()}
+        self.numeric_to_label_dict = loaded_model.numeric_to_label_dict
 
     def set_labels(self, label_dict):
         """Set new label mapping, updating both the label dictionary (str ->
