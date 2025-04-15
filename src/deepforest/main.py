@@ -19,6 +19,8 @@ from huggingface_hub import PyTorchModelHubMixin
 from deepforest import dataset, visualize, get_data, utilities, predict
 from deepforest import evaluate as evaluate_iou
 
+from omegaconf import DictConfig
+
 from lightning_fabric.utilities.exceptions import MisconfigurationException
 
 
@@ -26,8 +28,8 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
     """Class for training and predicting tree crowns in RGB images.
 
     Args:
-        num_classes (int): number of classes in the model
         config_file (str): path to deepforest config file
+        num_classes (int): number of classes in the model
         model (model.Model()): a deepforest model object, see model.Model()
         config_args (dict): a dictionary of key->value to update config file at run time.
             e.g. {"batch_size":10}. This is useful for iterating over arguments during model testing.
@@ -39,51 +41,35 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
     """
 
     def __init__(self,
+                 config: DictConfig = None,
+                 config_args: typing.Optional[dict] = None,
                  num_classes: int = 1,
                  label_dict: dict = {"Tree": 0},
                  transforms=None,
-                 config_file: str = 'deepforest_config.yml',
-                 config_args=None,
                  model=None,
                  existing_train_dataloader=None,
                  existing_val_dataloader=None):
 
         super().__init__()
 
-        # Read config file. Defaults to deepforest_config.yml in working directory.
-        # Falls back to default installed version
-        if os.path.exists(config_file):
-            config_path = config_file
-        else:
-            try:
-                config_path = get_data("deepforest_config.yml")
-            except Exception as e:
-                raise ValueError("No config file provided and deepforest_config.yml "
-                                 "not found either in local directory or in installed "
-                                 "package location. {}".format(e))
+        # If not provided, load default config via hydra.
+        if config is None:
+            config = utilities.load_config("config", overrides=config_args)
+        elif 'config_file' in config:
+            # This is from the hub
+            config = utilities.load_config("config", overrides=config['config_args'])
+        elif config_args is not None:
+            warnings.warn(
+                f"Ignoring options as configuration object was provided: {config_args}")
 
-        print("Reading config file: {}".format(config_path))
-        self.config = utilities.read_config(config_path)
-        self.config["num_classes"] = num_classes
+        self.config = config
+
         # If num classes is specified, overwrite config
         if not num_classes == 1:
             warnings.warn(
                 "Directly specifying the num_classes arg in deepforest.main will be deprecated in 2.0 in favor of config_args. Use main.deepforest(config_args={'num_classes':value})"
             )
-
-        # Update config with user supplied arguments
-        if config_args:
-            for key, value in config_args.items():
-                if key not in self.config.keys():
-                    raise ValueError(
-                        "Config argument {} not found in config file".format(key))
-                if type(value) == dict:
-                    for subkey, subvalue in value.items():
-                        print("setting config {} to {}".format(subkey, subvalue))
-                        self.config[key][subkey] = subvalue
-                else:
-                    print("setting config {} to {}".format(key, value))
-                    self.config[key] = value
+            self.config.num_classes = num_classes
 
         self.model = model
 
@@ -940,21 +926,19 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                               lr=self.config["train"]["lr"],
                               momentum=0.9)
 
-        scheduler_config = self.config["train"]["scheduler"]
-        scheduler_type = scheduler_config["type"]
-        params = scheduler_config["params"]
+        # Assume the lambda is a function of epoch
+        lr_lambda = lambda epoch: eval(params.lr_lambda)
 
         if scheduler_type == "cosine":
             scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
                 optimizer, T_max=params["T_max"], eta_min=params["eta_min"])
 
         elif scheduler_type == "lambdaLR":
-            scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer,
-                                                          lr_lambda=params["lr_lambda"])
+            scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lr_lambda)
 
         elif scheduler_type == "multiplicativeLR":
-            scheduler = torch.optim.lr_scheduler.MultiplicativeLR(
-                optimizer, lr_lambda=params["lr_lambda"])
+            scheduler = torch.optim.lr_scheduler.MultiplicativeLR(optimizer,
+                                                                  lr_lambda=lr_lambda)
 
         elif scheduler_type == "stepLR":
             scheduler = torch.optim.lr_scheduler.StepLR(optimizer,

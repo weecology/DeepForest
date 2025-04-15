@@ -12,6 +12,14 @@ architecture: 'retinanet'
 num_classes: 1
 nms_thresh: 0.05
 
+# Pre-processing parameters
+path_to_raster:
+patch_size:
+patch_overlap:
+annotations_xml:
+rgb_dir:
+path_to_rgb:
+
 # Architecture specific params
 retinanet:
     # Non-max suppression of overlapping predictions
@@ -20,7 +28,7 @@ retinanet:
 train:
     csv_file:
     root_dir:
-    
+
     # Optimizer initial learning rate
     lr: 0.001
     scheduler:
@@ -29,7 +37,7 @@ train:
             # Common parameters
             T_max: 10
             eta_min: 0.00001
-            lr_lambda: "lambda epoch: 0.95 ** epoch"  # For lambdaLR and multiplicativeLR
+            lr_lambda: "0.95 ** epoch"  # For lambdaLR and multiplicativeLR
             step_size: 30  # For stepLR
             gamma: 0.1  # For stepLR, multistepLR, and exponentialLR
             milestones: [50, 100]  # For multistepLR
@@ -50,11 +58,12 @@ train:
     fast_dev_run: False
     # pin images to GPU memory for fast training. This depends on GPU size and number of images.
     preload_images: False
-    
+
 validation:
     # callback args
-    csv_file: 
+    csv_file:
     root_dir:
+
     # Intersection over union evaluation
     iou_threshold: 0.4
     val_accuracy_interval: 20

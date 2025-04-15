@@ -13,7 +13,7 @@ collect_ignore = ['setup.py']
 
 @pytest.fixture(scope="session")
 def config():
-    config = utilities.read_config(get_data("deepforest_config.yml"))
+    config = utilities.load_config()
     config["fast_dev_run"] = True
     config["batch_size"] = True
     return config

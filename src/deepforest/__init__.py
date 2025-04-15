@@ -15,7 +15,7 @@ disable_possible_user_warnings()
 
 def get_data(path):
     """Helper function to get package sample data."""
-    if path == "deepforest_config.yml":
-        return os.path.join(_ROOT, "deepforest_config.yml")
+    if path == "config.yml":
+        return os.path.join(_ROOT, "conf", "config.yml")
     else:
         return os.path.join(_ROOT, "data", path)
