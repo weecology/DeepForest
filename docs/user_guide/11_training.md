@@ -24,18 +24,21 @@ The config file specifies the path to the CSV file that we want to use when trai
 
 ```python
 import os
-from deepforest import model as m
+from deepforest import main
 from deepforest import get_data
 
 # Example run with short training
 annotations_file = get_data("testfile_deepforest.csv")
 
-m.config["epochs"] = 1
-m.config["save-snapshot"] = False
-m.config["train"]["csv_file"] = annotations_file
-m.config["train"]["root_dir"] = os.path.dirname(annotations_file)
+# Initialize a DeepForest model instance to access configuration and training methods
+model = main.deepforest()
 
-m.create_trainer()
+model.config["epochs"] = 1
+model.config["save-snapshot"] = False
+model.config["train"]["csv_file"] = annotations_file
+model.config["train"]["root_dir"] = os.path.dirname(annotations_file)
+
+model.create_trainer()
 ```
 
 For debugging, its often useful to use the [fast_dev_run = True from pytorch lightning](https://pytorch-lightning.readthedocs.io/en/latest/common/trainer.html#fast-dev-run)
