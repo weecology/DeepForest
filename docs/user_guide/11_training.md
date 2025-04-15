@@ -24,11 +24,14 @@ The config file specifies the path to the CSV file that we want to use when trai
 
 ```python
 import os
-from deepforest import model as m
+from deepforest import main
 from deepforest import get_data
 
 # Example run with short training
 annotations_file = get_data("testfile_deepforest.csv")
+
+# Initialize a DeepForest model instance to access configuration and training methods
+m = main.deepforest()
 
 m.config["epochs"] = 1
 m.config["save-snapshot"] = False
