@@ -6,5 +6,5 @@ Module contents
 
 .. automodule:: deepforest.data
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:

@@ -8,7 +8,6 @@ Subpackages
    :maxdepth: 4
 
    deepforest.data
-   deepforest.models
 
 Submodules
 ----------
@@ -18,93 +17,85 @@ deepforest.IoU module
 
 .. automodule:: deepforest.IoU
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:
 
 deepforest.callbacks module
 ---------------------------
 
 .. automodule:: deepforest.callbacks
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:
 
 deepforest.dataset module
 -------------------------
 
 .. automodule:: deepforest.dataset
    :members:
-   :show-inheritance:
    :undoc-members:
-
-deepforest.download module
---------------------------
-
-.. automodule:: deepforest.download
-   :members:
    :show-inheritance:
-   :undoc-members:
 
 deepforest.evaluate module
 --------------------------
 
 .. automodule:: deepforest.evaluate
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:
 
 deepforest.main module
 ----------------------
 
 .. automodule:: deepforest.main
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:
 
 deepforest.model module
 -----------------------
 
 .. automodule:: deepforest.model
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:
 
 deepforest.predict module
 -------------------------
 
 .. automodule:: deepforest.predict
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:
 
 deepforest.preprocess module
 ----------------------------
 
 .. automodule:: deepforest.preprocess
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:
 
 deepforest.utilities module
 ---------------------------
 
 .. automodule:: deepforest.utilities
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:
 
 deepforest.visualize module
 ---------------------------
 
 .. automodule:: deepforest.visualize
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:
 
 Module contents
 ---------------
 
 .. automodule:: deepforest
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:
