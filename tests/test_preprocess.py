@@ -18,15 +18,15 @@ from shapely import geometry
 
 @pytest.fixture()
 def config():
-    config = utilities.read_config(get_data("deepforest_config.yml"))
-    config["patch_size"] = 300
-    config["patch_overlap"] = 0.25
-    config["annotations_xml"] = get_data("OSBS_029.xml")
-    config["rgb_dir"] = "data"
-    config["path_to_raster"] = get_data("OSBS_029.tif")
+    config = utilities.load_config()
+    config.patch_size = 300
+    config.patch_overlap = 0.25
+    config.annotations_xml = get_data("OSBS_029.xml")
+    config.rgb_dir = "data"
+    config.path_to_raster = get_data("OSBS_029.tif")
 
     # Create a clean config test data
-    annotations = utilities.read_pascal_voc(xml_path=config["annotations_xml"])
+    annotations = utilities.read_pascal_voc(xml_path=config.annotations_xml)
     annotations.to_csv("tests/data/OSBS_029.csv", index=False)
 
     return config
@@ -41,13 +41,13 @@ def geodataframe():
 
 @pytest.fixture()
 def image(config):
-    raster = Image.open(config["path_to_raster"])
+    raster = Image.open(config.path_to_raster)
     return np.array(raster)
 
 
 def test_compute_windows(config, image):
-    windows = preprocess.compute_windows(image, config["patch_size"],
-                                         config["patch_overlap"])
+    windows = preprocess.compute_windows(image, config.patch_size,
+                                         config.patch_overlap)
     assert len(windows) == 4
 
 
@@ -122,13 +122,13 @@ def test_split_raster_no_annotations(config, tmpdir):
 
 
 def test_split_raster_from_image(config, tmpdir, geodataframe):
-    r = rasterio.open(config["path_to_raster"]).read()
+    r = rasterio.open(config.path_to_raster).read()
     r = np.rollaxis(r, 0, 3)
     annotations_file = preprocess.split_raster(numpy_image=r,
                                                annotations_file=geodataframe,
                                                save_dir=tmpdir,
-                                               patch_size=config["patch_size"],
-                                               patch_overlap=config["patch_overlap"],
+                                               patch_size=config.patch_size,
+                                               patch_overlap=config.patch_overlap,
                                                image_name="OSBS_029.tif")
 
     assert not annotations_file.empty
@@ -151,19 +151,19 @@ def test_split_raster_empty(tmpdir, config, allow_empty):
     if not allow_empty:
         with pytest.raises(ValueError):
             annotations_file = preprocess.split_raster(
-                path_to_raster=config["path_to_raster"],
+                path_to_raster=config.path_to_raster,
                 annotations_file=tmpdir.join("blank_annotations.csv").strpath,
                 save_dir=tmpdir,
-                patch_size=config["patch_size"],
-                patch_overlap=config["patch_overlap"],
+                patch_size=config.patch_size,
+                patch_overlap=config.patch_overlap,
                 allow_empty=allow_empty)
     else:
         annotations_file = preprocess.split_raster(
-            path_to_raster=config["path_to_raster"],
+            path_to_raster=config.path_to_raster,
             annotations_file=tmpdir.join("blank_annotations.csv").strpath,
             save_dir=tmpdir,
-            patch_size=config["patch_size"],
-            patch_overlap=config["patch_overlap"],
+            patch_size=config.patch_size,
+            patch_overlap=config.patch_overlap,
             allow_empty=allow_empty)
         assert annotations_file.shape[0] == 4
         assert annotations_file["xmin"].sum() == 0
@@ -176,11 +176,11 @@ def test_split_raster_empty(tmpdir, config, allow_empty):
 def test_split_size_error(config, tmpdir, geodataframe):
     with pytest.raises(ValueError):
         annotations_file = preprocess.split_raster(
-            path_to_raster=config["path_to_raster"],
+            path_to_raster=config.path_to_raster,
             annotations_file=geodataframe,
             save_dir=tmpdir,
             patch_size=2000,
-            patch_overlap=config["patch_overlap"])
+            patch_overlap=config.patch_overlap)
 
 
 @pytest.mark.parametrize("orders", [(4, 400, 400), (400, 400, 4)])
@@ -198,8 +198,8 @@ def test_split_raster_4_band_warns(config, tmpdir, orders, geodataframe):
         preprocess.split_raster(numpy_image=numpy_image,
                                 annotations_file=geodataframe,
                                 save_dir=tmpdir,
-                                patch_size=config["patch_size"],
-                                patch_overlap=config["patch_overlap"],
+                                patch_size=config.patch_size,
+                                patch_overlap=config.patch_overlap,
                                 image_name="OSBS_029.tif")
 
 
@@ -217,7 +217,7 @@ def test_split_raster_with_point_annotations(tmpdir, config):
 
     # Call split_raster function
     preprocess.split_raster(annotations_file=annotations_file.strpath,
-                            path_to_raster=config["path_to_raster"],
+                            path_to_raster=config.path_to_raster,
                             save_dir=tmpdir)
 
     # Assert that the output annotations file is created
@@ -240,7 +240,7 @@ def test_split_raster_with_box_annotations(tmpdir, config):
 
     # Call split_raster function
     preprocess.split_raster(annotations_file=annotations_file.strpath,
-                            path_to_raster=config["path_to_raster"],
+                            path_to_raster=config.path_to_raster,
                             save_dir=tmpdir)
 
     # Assert that the output annotations file is created
@@ -264,7 +264,7 @@ def test_split_raster_with_polygon_annotations(tmpdir, config):
 
     # Call split_raster function
     split_annotations = preprocess.split_raster(annotations_file=annotations_file.strpath,
-                                                path_to_raster=config["path_to_raster"],
+                                                path_to_raster=config.path_to_raster,
                                                 save_dir=tmpdir)
 
     assert not split_annotations.empty

@@ -62,7 +62,7 @@ class images_callback(Callback):
 
         # Add root_dir to the dataframe
         if "root_dir" not in df.columns:
-            df["root_dir"] = pl_module.config["validation"]["root_dir"]
+            df["root_dir"] = pl_module.config.validation.root_dir
 
         # Ensure color is correctly assigned
         if self.color is None:

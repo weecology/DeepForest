@@ -73,7 +73,6 @@ def test_evaluate_boxes_save_images(tmpdir):
 
 def test_evaluate_empty(m):
     m = main.deepforest()
-    m.config["score_thresh"] = 0.8
     csv_file = get_data("OSBS_029.csv")
     results = m.evaluate(csv_file, iou_threshold=0.4)
 

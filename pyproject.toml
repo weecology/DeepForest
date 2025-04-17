@@ -45,6 +45,7 @@ dependencies = [
     "aiohttp",
     "docformatter",
     "huggingface_hub>=0.25.0",
+    "hydra-core",
     "geopandas",
     "matplotlib",
     "nbqa",

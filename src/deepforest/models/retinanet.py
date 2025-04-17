@@ -52,9 +52,9 @@ class Model(Model):
         resnet = self.load_backbone()
         backbone = resnet.backbone
 
-        model = RetinaNet(backbone=backbone, num_classes=self.config["num_classes"])
-        model.nms_thresh = self.config["nms_thresh"]
-        model.score_thresh = self.config["retinanet"]["score_thresh"]
+        model = RetinaNet(backbone=backbone, num_classes=self.config.num_classes)
+        model.nms_thresh = self.config.nms_thresh
+        model.score_thresh = self.config.retinanet.score_thresh
 
         # Optionally allow anchor generator parameters to be created here
         # https://pytorch.org/vision/stable/_modules/torchvision/models/detection/retinanet.html

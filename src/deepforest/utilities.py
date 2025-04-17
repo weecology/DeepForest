@@ -8,6 +8,7 @@ import shapely
 import xmltodict
 import yaml
 from tqdm import tqdm
+from typing import Union
 
 from PIL import Image
 from deepforest import _ROOT
@@ -16,18 +17,27 @@ import urllib.request
 from huggingface_hub import hf_hub_download
 from huggingface_hub.errors import RevisionNotFoundError, HfHubHTTPError
 
+from hydra import compose, initialize
+from hydra.core.global_hydra import GlobalHydra
+from omegaconf import DictConfig
 
-def read_config(config_path):
-    """Read config yaml file."""
-    try:
-        with open(config_path, 'r') as f:
-            config = yaml.load(f, Loader=yaml.FullLoader)
 
-    except Exception as e:
-        raise FileNotFoundError("There is no config at {}, yields {}".format(
-            config_path, e))
+def load_config(config_name: str = "config",
+                overrides: Union[str, list, dict] = []) -> DictConfig:
+    """Load yaml configuration file via Hydra."""
+    if not GlobalHydra().is_initialized():
+        initialize(config_path="conf", version_base=None)
 
-    return config
+    if isinstance(overrides, dict):
+        cfg = compose(config_name=config_name)
+        cfg.merge_with(overrides)
+    else:
+        if isinstance(overrides, str):
+            overrides = [overrides]
+
+        cfg = compose(config_name=config_name, overrides=overrides)
+
+    return cfg
 
 
 class DownloadProgressBar(tqdm):
