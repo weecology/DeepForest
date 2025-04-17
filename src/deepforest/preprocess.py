@@ -221,98 +221,140 @@ def split_raster(annotations_file=None,
     if image_name is None:
         image_name = os.path.basename(path_to_raster)
 
-    # Load annotations file and coerce dtype
+    # Early return for non-annotation case
     if annotations_file is None:
-        allow_empty = True
-    elif type(annotations_file) == str:
-        annotations = read_file(annotations_file, root_dir=root_dir)
+        return process_without_annotations(numpy_image, windows, image_name, save_dir)
+
+    # Process annotations
+    annotations = load_annotations(annotations_file, root_dir)
+    validate_annotations(annotations, numpy_image, path_to_raster)
+
+    image_annotations = annotations[annotations.image_path == image_name]
+
+    if not allow_empty and image_annotations.empty:
+        raise ValueError(
+            "No image names match between the file:{} and the image_path: {}. "
+            "Reminder that image paths should be the relative "
+            "path (e.g. 'image_name.tif'), not the full path "
+            "(e.g. path/to/dir/image_name.tif)".format(annotations_file, image_name))
+
+    return process_with_annotations(numpy_image=numpy_image,
+                                    windows=windows,
+                                    image_annotations=image_annotations,
+                                    image_name=image_name,
+                                    save_dir=save_dir,
+                                    allow_empty=allow_empty)
+
+
+def load_annotations(annotations_file, root_dir):
+    """Load and validate annotations file."""
+    if type(annotations_file) == str:
+        return read_file(annotations_file, root_dir=root_dir)
     elif type(annotations_file) == pd.DataFrame:
         if root_dir is None:
             raise ValueError(
                 "If passing a pandas DataFrame with relative pathnames in image_path, please also specify a root_dir"
             )
-        annotations = read_file(annotations_file, root_dir=root_dir)
+        return read_file(annotations_file, root_dir=root_dir)
     elif type(annotations_file) == gpd.GeoDataFrame:
-        annotations = annotations_file
+        return annotations_file
     else:
         raise TypeError(
-            "Annotations file must either be None, a path, Pandas Dataframe, or Geopandas GeoDataFrame, found {}"
+            "Annotations file must either be a path, Pandas Dataframe, or Geopandas GeoDataFrame, found {}"
             .format(type(annotations_file)))
 
-    # Select matching annotations
-    if annotations_file is not None:
-        image_annotations = annotations[annotations.image_path == image_name]
-    image_basename = os.path.splitext(image_name)[0]
-    image_basename = os.path.splitext(image_name)[0]
 
-    # Sanity checks
-    if not allow_empty:
-        if image_annotations.empty:
+def validate_annotations(annotations, numpy_image, path_to_raster):
+    """Validate annotation coordinate systems and bounds."""
+    if hasattr(annotations, 'crs'):
+        if annotations.crs is not None and annotations.crs.is_geographic:
             raise ValueError(
-                "No image names match between the file:{} and the image_path: {}. "
-                "Reminder that image paths should be the relative "
-                "path (e.g. 'image_name.tif'), not the full path "
-                "(e.g. path/to/dir/image_name.tif)".format(annotations_file, image_name))
+                "Annotations appear to be in geographic coordinates (latitude/longitude). "
+                "Please convert your annotations to the same projected coordinate system as your raster."
+            )
 
-    annotations_files = []
+    if hasattr(annotations, 'total_bounds'):
+        raster_height, raster_width = numpy_image.shape[0], numpy_image.shape[1]
+        ann_bounds = annotations.total_bounds
+
+        if (ann_bounds[0] < -raster_width * 0.1 or  # xmin
+                ann_bounds[2] > raster_width * 1.1 or  # xmax
+                ann_bounds[1] < -raster_height * 0.1 or  # ymin
+                ann_bounds[3] > raster_height * 1.1):  # ymax
+            raise ValueError(
+                f"Annotation bounds {ann_bounds} appear to be outside reasonable range for "
+                f"raster dimensions ({raster_width}, {raster_height}). "
+                "This might indicate your annotations are in a different coordinate system."
+            )
+
+
+def process_without_annotations(numpy_image, windows, image_name, save_dir):
+    """Process raster without annotations."""
     crop_filenames = []
     for index, window in enumerate(windows):
-        # Crop image
-        crop = numpy_image[windows[index].indices()]
+        crop = numpy_image[window.indices()]
+        if crop.size == 0:
+            continue
+        crop_filename = save_crop(save_dir, image_name, index, crop)
+        crop_filenames.append(crop_filename)
+    return crop_filenames
 
-        # Skip if empty crop
+
+def process_with_annotations(numpy_image, windows, image_annotations, image_name,
+                             save_dir, allow_empty):
+    """Process raster with annotations."""
+    annotations_files = []
+    crop_filenames = []
+    image_basename = os.path.splitext(image_name)[0]
+
+    for index, window in enumerate(windows):
+        crop = numpy_image[window.indices()]
         if crop.size == 0:
             continue
 
-        # Find annotations, image_name is the basename of the path
-        if annotations_file is not None:
-            crop_annotations = select_annotations(image_annotations,
-                                                  window=windows[index])
-            crop_annotations["image_path"] = "{}_{}.png".format(image_basename, index)
-            if crop_annotations.empty:
-                if allow_empty:
-                    geom_type = determine_geometry_type(image_annotations)
-                    # The safest thing is to use the first label and it will be ignored
-                    crop_annotations.loc[0, "label"] = image_annotations.label.unique()[0]
-                    crop_annotations.loc[0, "image_path"] = "{}_{}.png".format(
-                        image_basename, index)
-                    if geom_type == "box":
-                        crop_annotations.loc[0, "xmin"] = 0
-                        crop_annotations.loc[0, "ymin"] = 0
-                        crop_annotations.loc[0, "xmax"] = 0
-                        crop_annotations.loc[0, "ymax"] = 0
-                    elif geom_type == "point":
-                        crop_annotations.loc[0, "geometry"] = geometry.Point(0, 0)
-                        crop_annotations.loc[0, "x"] = 0
-                        crop_annotations.loc[0, "y"] = 0
-                    elif geom_type == "polygon":
-                        crop_annotations.loc[0, "geometry"] = geometry.Polygon([(0, 0),
-                                                                                (0, 0),
-                                                                                (0, 0)])
-                        crop_annotations.loc[0, "polygon"] = 0
-                else:
-                    continue
+        crop_annotations = select_annotations(image_annotations, window=window)
+        crop_annotations["image_path"] = f"{image_basename}_{index}.png"
 
-            annotations_files.append(crop_annotations)
+        if crop_annotations.empty:
+            if allow_empty:
+                crop_annotations = create_empty_annotation(image_annotations,
+                                                           image_basename, index)
+            else:
+                continue
 
-        # Save image crop
-        if allow_empty or crop_annotations is not None:
-            crop_filename = save_crop(save_dir, image_name, index, crop)
-            crop_filenames.append(crop_filename)
+        annotations_files.append(crop_annotations)
+        crop_filename = save_crop(save_dir, image_name, index, crop)
+        crop_filenames.append(crop_filename)
 
-    if annotations_file is None:
-        return crop_filenames
-    elif len(annotations_files) == 0:
+    if len(annotations_files) == 0:
         raise ValueError(
             "Input file has no overlapping annotations and allow_empty is {}".format(
                 allow_empty))
-    else:
-        annotations_files = pd.concat(annotations_files)
 
-        # Checkpoint csv files, useful for parallelization
-        # use the filename of the raster path to save the annotations
-        image_basename = os.path.splitext(image_name)[0]
-        file_path = os.path.join(save_dir, f"{image_basename}.csv")
-        annotations_files.to_csv(file_path, index=False, header=True)
+    annotations_files = pd.concat(annotations_files)
+    file_path = os.path.join(save_dir, f"{image_basename}.csv")
+    annotations_files.to_csv(file_path, index=False, header=True)
+    return annotations_files
 
-        return annotations_files
+
+def create_empty_annotation(image_annotations, image_basename, index):
+    """Create empty annotation record when allow_empty=True."""
+    geom_type = determine_geometry_type(image_annotations)
+    crop_annotations = pd.DataFrame(columns=image_annotations.columns)
+    crop_annotations.loc[0, "label"] = image_annotations.label.unique()[0]
+    crop_annotations.loc[0, "image_path"] = f"{image_basename}_{index}.png"
+
+    if geom_type == "box":
+        crop_annotations.loc[0, "xmin"] = 0
+        crop_annotations.loc[0, "ymin"] = 0
+        crop_annotations.loc[0, "xmax"] = 0
+        crop_annotations.loc[0, "ymax"] = 0
+    elif geom_type == "point":
+        crop_annotations.loc[0, "geometry"] = geometry.Point(0, 0)
+        crop_annotations.loc[0, "x"] = 0
+        crop_annotations.loc[0, "y"] = 0
+    elif geom_type == "polygon":
+        crop_annotations.loc[0, "geometry"] = geometry.Polygon([(0, 0), (0, 0), (0, 0)])
+        crop_annotations.loc[0, "polygon"] = 0
+
+    return crop_annotations

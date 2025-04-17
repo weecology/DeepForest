@@ -48,6 +48,10 @@ For long-term projects, we recommend using [Label Studio](https://labelstud.io/)
 ```
 *Label Studio annotation platform.*
 
+```{raw} html
+<div style="position: relative; padding-bottom: 62.5%; height: 0;"><iframe src="https://www.loom.com/embed/fdc99e706b6741ad8632c78ca3c07b9f?sid=3542e416-8337-48aa-ba0a-f5898425bd3e" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe></div>
+```
+
 ## Exporting Annotations for DeepForest
 
 To ensure compatibility with DeepForest, export your annotations from Label Studio in **Pascal VOC XML format**. This format is widely used for object detection tasks and can be directly read by DeepForest's `read_pascal_voc` function.

@@ -2,6 +2,24 @@
 
 The most time-consuming part of many open-source projects is getting the data in and out. This is because there are so many formats and ways a user might interact with the package. DeepForest has collated many use cases into a single `read_file` function that will attempt to read many common data formats, both projected and unprojected, and create a dataframe ready for DeepForest functions.
 
+You can also optionally provide:
+  - `image_path`: A single image path to assign to all annotations in the input. This is useful when the input contains annotations for only one image.
+  - `label`: A single label to apply to all rows. This is helpful when all annotations share the same label (e.g., "Tree").
+
+Example:
+```
+from deepforest import utilities
+
+df = utilities.read_file("annotations.csv", image_path="OSBS_029.tif", label="Tree")
+```
+
+**Note:** If your input file contains multiple image filenames and you do not provide the `image_path` argument, a warning may appear:
+
+```
+UserWarning: Multiple image filenames found. This may cause issues if the file paths are not correctly specified. 
+```
+To avoid this, consider providing a single `image_path` argument if all annotations belong to the same image.
+
 At a high level, `read_file` will:
 
 1. Check the file extension to determine the format.
