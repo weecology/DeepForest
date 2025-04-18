@@ -230,5 +230,11 @@ Directory to search for images in the csv_file image_path column
 
 ### val_accuracy_interval
 
-Compute and log the classification accuracy of the predicted results computed every X epochs. 
-This incurs some reductions in speed of training and is most useful for multi-class models. To deactivate, set to an number larger than epochs.
+Compute and log the classification accuracy of predicted results every **X** epochs. This evaluation is most useful for multi-class models and may reduce training speed slightly due to the extra evaluation step.
+
+- **To disable validation during training**, set `val_accuracy_interval` to a number **larger than** `train.epochs`.
+- **Sanity check behavior:** PyTorch Lightning performs a short validation sanity check *before training starts* to catch errors. DeepForest now automatically **skips validation during this phase**, even if the interval condition is met.
+- **Validation will still run** during standalone validation (e.g., calling `.evaluate()` or using the Trainer with `validate=True`), regardless of the interval setting.
+
+This behavior ensures that validation only runs when intended and avoids unnecessary computation or unexpected behavior during setup.
+

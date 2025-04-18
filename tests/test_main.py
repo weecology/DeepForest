@@ -995,3 +995,83 @@ def test_set_labels_invalid_length(m): # Expect a ValueError when setting an inv
     invalid_mapping = {"Object": 0, "Extra": 1}
     with pytest.raises(ValueError):
         m.set_labels(invalid_mapping)
+
+def test_validation_skip_during_sanity_check(m):
+    """Validation should be skipped during sanity checks"""
+    # Create proper trainer mock with all required attributes
+    m.trainer.sanity_checking = True
+    m.on_validation_epoch_end()
+    assert not hasattr(m, "predictions_df")
+
+
+def test_validation_skipped_when_interval_exceeds_epochs(m):
+    """Validation should skip when interval > max_epochs"""
+    # Setup test prediction
+    preds = [{
+        'boxes': torch.tensor([[100, 100, 200, 200]]),
+        'scores': torch.tensor([0.9]),
+        'labels': torch.tensor([0])
+    }]
+    
+    # Update metrics
+    m.iou_metric.update(preds, preds)
+    m.mAP_metric.update(preds, preds)
+    
+    # Format predictions
+    m.predictions = [format_geometry(preds[0])]
+    m.predictions[0]["image_path"] = "test"
+    
+    # Set config
+    m.config["validation"]["val_accuracy_interval"] = 5
+    m.config["train"]["epochs"] = 2
+    
+    # Simulate being at epoch 1 by patching the property
+    original_property = type(m).current_epoch
+    try:
+        type(m).current_epoch = property(lambda self: 1)
+        m.on_validation_epoch_end()
+    finally:
+        type(m).current_epoch = original_property
+    
+    assert not hasattr(m, "predictions_df")
+
+
+def test_validation_runs_in_standalone_mode(m):
+    """Validation should work in standalone mode"""
+    # Setup test prediction data
+    preds = [{
+        'boxes': torch.tensor([[50, 60, 150, 160]]),
+        'scores': torch.tensor([0.95]),
+        'labels': torch.tensor([0])
+    }]
+    m.predictions = [format_geometry(preds[0])]
+    m.predictions[0]["image_path"] = "test"
+
+    # Create complete Trainer state
+    class TrainerState:
+        def __init__(self):
+            self.fn = "validate"
+            self.stage = "running"
+            self.status = "running"
+            self.phase = "validation"
+            self.evaluating = True
+            self.progress = type('Progress', (), {
+                'current_epoch': 0,
+                'current_step': 0,
+                'total_steps': 0
+            })()
+    
+    # Configure trainer
+    m.trainer.sanity_checking = False
+    m.trainer.state = TrainerState()
+    m.trainer.validate = True
+    m.trainer.training = False
+    m.trainer.testing = False
+    m.trainer.validating = True
+
+    # Run validation
+    m.on_validation_epoch_end()
+
+    # Verify results
+    assert hasattr(m, "predictions_df")
+    assert not m.predictions_df.empty
