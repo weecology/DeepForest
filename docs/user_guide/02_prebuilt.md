@@ -51,6 +51,12 @@ m.load_model(model_name="weecology/deepforest-bird")
 We have created a [GPU colab tutorial](https://colab.research.google.com/drive/1e9_pZM0n_v3MkZpSjVRjm55-LuCE2IYE?usp=sharing
 ) to demonstrate the workflow for using the bird model.
 
+### Getting Started with DeepForest Bird Detection Model
+
+```{raw} html
+<div style="position: relative; padding-bottom: 62.5%; height: 0;"><iframe src="https://www.loom.com/share/0039ee541e174180a52cfe9e85228358?sid=e4a41bbc-97e3-4d2e-9992-fe4f9ebc6432" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe></div>
+```
+
 For more information, or specific questions about the bird detection, please create issues on the [BirdDetector repo](https://github.com/weecology/BirdDetector)
 
 ## Livestock Detectors model
