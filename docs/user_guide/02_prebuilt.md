@@ -29,7 +29,7 @@ m.load_model(model_name="weecology/deepforest-tree")
 The model was initially described in [Ecological Applications](https://esajournals.onlinelibrary.wiley.com/doi/abs/10.1002/eap.2694). From the abstract
 
 >
- Using over 250,000 annotations from 13 projects from around the world, we develop a general bird detection model that achieves over 65% recall and 50% precision on novel aerial data without any local training despite differences in species, habitat, and imaging methodology. Fine-tuning this model with only 1000 local annotations increases these values to an average of 84% recall and 69% precision by building on the general features learned from other data sources. 
+ Using over 250,000 annotations from 13 projects from around the world, we develop a general bird detection model that achieves over 65% recall and 50% precision on novel aerial data without any local training despite differences in species, habitat, and imaging methodology. Fine-tuning this model with only 1000 local annotations increases these values to an average of 84% recall and 69% precision by building on the general features learned from other data sources.
  >
 
 
@@ -54,14 +54,24 @@ We have created a [GPU colab tutorial](https://colab.research.google.com/drive/1
 ### Getting Started with DeepForest Bird Detection Model
 
 ```{raw} html
-<div style="position: relative; padding-bottom: 62.5%; height: 0;"><iframe src="https://www.loom.com/share/0039ee541e174180a52cfe9e85228358?sid=e4a41bbc-97e3-4d2e-9992-fe4f9ebc6432" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe></div>
+<div style="position: relative; padding-bottom: 62.5%; height: 0;">
+  <iframe
+    src="https://www.loom.com/embed/0039ee541e174180a52cfe9e85228358?sid=d44c25cc-e1bc-46fe-833b-e9c87193e32c"
+    frameborder="0"
+    webkitallowfullscreen
+    mozallowfullscreen
+    allowfullscreen
+    width="640"
+    height="360">
+  </iframe>
+</div>
 ```
 
 For more information, or specific questions about the bird detection, please create issues on the [BirdDetector repo](https://github.com/weecology/BirdDetector)
 
 ## Livestock Detectors model
 
-This model has a single label 'cattle' trained on drone imagery of cows, sheep and other large mammals in agricultural settings. 
+This model has a single label 'cattle' trained on drone imagery of cows, sheep and other large mammals in agricultural settings.
 
 ![image](../../www/livestock-example.png)
 
@@ -96,4 +106,4 @@ Citation: Weinstein, Ben G., et al. "Capturing long‐tailed individual tree div
 
 ## Want more pretrained models?
 
-Please consider contributing your data to open source repositories, such as zenodo or lila.science. The more data we gather, the more we can combine the annotation and data collection efforts of hundreds of researchers to built models available to everyone. We welcome suggestions on what models and data are most urgently [needed](https://github.com/weecology/DeepForest/discussions). 
+Please consider contributing your data to open source repositories, such as zenodo or lila.science. The more data we gather, the more we can combine the annotation and data collection efforts of hundreds of researchers to built models available to everyone. We welcome suggestions on what models and data are most urgently [needed](https://github.com/weecology/DeepForest/discussions).
