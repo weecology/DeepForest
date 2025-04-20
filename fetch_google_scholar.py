@@ -24,9 +24,10 @@ if citation_count is not None:
         "message": str(citation_count),
         "color": "blue"
     }
-    with open(JSON_PATH, "w") as f:
-        json.dump(data, f, indent=4)
-
+    json_str = json.dumps(data, indent=4)
+    with open(JSON_PATH, "w", newline='') as f:
+        f.write(json_str.strip())
+        f.write('\n')
     print(f"Updated citation count: {citation_count}")
 else:
     print("Skipping citation count update")
