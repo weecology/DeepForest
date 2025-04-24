@@ -168,3 +168,32 @@ def test_crop_model_load_checkpoint_with_explicit_num_classes(tmpdir, crop_model
     # Check model parameters match
     for p1, p2 in zip(crop_model.parameters(), loaded_model.parameters()):
         assert torch.equal(p1, p2)
+
+
+def test_expand_bbox_to_square_edge_cases():
+    """Test cases for the expand_bbox_to_square function."""
+    crop_model = model.CropModel(num_classes=2)
+    
+    # Test Case 1: Bounding box at the image edge (0,0)
+    bbox = [0, 0, 20, 30]
+    image_width, image_height = 100, 100
+    # Expected to expand vertically to make a square while remaining within image bounds
+    expected = [0.0, 0.0, 30.0, 30.0]
+    result = crop_model.expand_bbox_to_square(bbox, image_width, image_height)
+    assert result == expected
+
+    # Test Case 2: Side length exceeds both image dimensions
+    bbox = [10, 10, 180, 180] 
+    image_width, image_height = 100, 100
+    # Expected to be clamped to the size of the image: full image bounding box
+    expected = [0.0, 0.0, 100.0, 100.0]
+    result = crop_model.expand_bbox_to_square(bbox, image_width, image_height)
+    assert result == expected
+    
+    # Test Case 3: Basic case - bounding box well within image boundaries
+    bbox = [40, 30, 60, 70]
+    image_width, image_height = 100, 100
+    # Expected to expand width to match height while maintaining the center point (50,50)
+    expected = [30.0, 30.0, 70.0, 70.0]
+    result = crop_model.expand_bbox_to_square(bbox, image_width, image_height)
+    assert result == expected

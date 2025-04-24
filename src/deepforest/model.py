@@ -189,10 +189,54 @@ class CropModel(LightningModule):
             data_transforms.append(transforms.RandomHorizontalFlip(0.5))
         return transforms.Compose(data_transforms)
 
-    def write_crops(self, root_dir, images, boxes, labels, savedir):
-        """Write crops to disk.
+    def expand_bbox_to_square(self, bbox, image_width, image_height):
+        """
+        Expand a bounding box to a square by extending the shorter side.
+        
+        Parameters:
+        -----------
+        bbox : list or tuple
+            Bounding box in format [xmin, ymin, xmax, ymax]
+        image_width : int
+            Width of the original image
+        image_height : int
+            Height of the original image
+            
+        Returns:
+        --------
+        list
+            Square bounding box in format [xmin, ymin, xmax, ymax]
+        """
+        xmin, ymin, xmax, ymax = bbox
+        width = xmax - xmin
+        height = ymax - ymin
 
-        Args:
+        center_x = xmin + width / 2
+        center_y = ymin + height / 2
+
+        side_length = max(width, height)
+
+        new_xmin = center_x - side_length / 2
+        new_ymin = center_y - side_length / 2
+
+        new_xmin = max(0, min(new_xmin, image_width - side_length))
+        new_ymin = max(0, min(new_ymin, image_height - side_length))
+
+        if side_length > image_width:
+            side_length = image_width
+            new_xmin = 0
+
+        if side_length > image_height:
+            side_length = image_height
+            new_ymin = 0
+
+        new_xmax = new_xmin + side_length
+        new_ymax = new_ymin + side_length
+
+        return [new_xmin, new_ymin, new_xmax, new_ymax]
+
+    def write_crops(self, root_dir, images, boxes, labels, savedir):
+        """Write crops to disk.... Args:
             root_dir (str): The root directory where the images are located.
             images (list): A list of image filenames.
             boxes (list): A list of bounding box coordinates in the format [xmin, ymin, xmax, ymax].
@@ -209,12 +253,19 @@ class CropModel(LightningModule):
 
         # Use rasterio to read the image
         for index, box in enumerate(boxes):
-            xmin, ymin, xmax, ymax = box
             label = labels[index]
             image = images[index]
             with rasterio.open(os.path.join(root_dir, image)) as src:
-                # Crop the image using the bounding box coordinates
-                img = src.read(window=((ymin, ymax), (xmin, xmax)))
+                # Get image dimensions
+                image_width = src.width
+                image_height = src.height
+
+                # Expand the bounding box to a square
+                square_box = self.expand_bbox_to_square(box, image_width, image_height)
+                xmin, ymin, xmax, ymax = square_box
+
+                # Crop the image using the square box coordinates
+                img = src.read(window=((int(ymin), int(ymax)), (int(xmin), int(xmax))))
                 # Save the cropped image as a PNG file using opencv
                 image_basename = os.path.splitext(os.path.basename(image))[0]
                 img_path = os.path.join(savedir, label, f"{image_basename}_{index}.png")
@@ -280,12 +331,11 @@ class CropModel(LightningModule):
         self.log("val_loss", loss)
         metric_dict = self.metrics(outputs, y)
         for key, value in metric_dict.items():
-            for key, value in metric_dict.items():
-                if isinstance(value, torch.Tensor) and value.numel() > 1:
-                    for i, v in enumerate(value):
-                        self.log(f"{key}_{i}", v, on_step=False, on_epoch=True)
-                else:
-                    self.log(key, value, on_step=False, on_epoch=True)
+            if isinstance(value, torch.Tensor) and value.numel() > 1:
+                for i, v in enumerate(value):
+                    self.log(f"{key}_{i}", v, on_step=False, on_epoch=True)
+            else:
+                self.log(key, value, on_step=False, on_epoch=True)
         return loss
 
     def configure_optimizers(self):
