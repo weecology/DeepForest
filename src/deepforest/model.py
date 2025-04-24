@@ -190,9 +190,8 @@ class CropModel(LightningModule):
         return transforms.Compose(data_transforms)
 
     def expand_bbox_to_square(self, bbox, image_width, image_height):
-        """
-        Expand a bounding box to a square by extending the shorter side.
-        
+        """Expand a bounding box to a square by extending the shorter side.
+
         Parameters:
         -----------
         bbox : list or tuple
@@ -201,7 +200,7 @@ class CropModel(LightningModule):
             Width of the original image
         image_height : int
             Height of the original image
-            
+
         Returns:
         --------
         list
@@ -236,7 +235,9 @@ class CropModel(LightningModule):
         return [new_xmin, new_ymin, new_xmax, new_ymax]
 
     def write_crops(self, root_dir, images, boxes, labels, savedir):
-        """Write crops to disk.... Args:
+        """Write crops to disk.
+
+        Args:
             root_dir (str): The root directory where the images are located.
             images (list): A list of image filenames.
             boxes (list): A list of bounding box coordinates in the format [xmin, ymin, xmax, ymax].
