@@ -792,8 +792,20 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
     def on_validation_epoch_end(self):
         """Compute metrics."""
 
-        #Evaluate every n epochs
-        if self.current_epoch % self.config["validation"]["val_accuracy_interval"] == 0:
+        # Skip validation during sanity checking or if trainer is not available
+        if self.trainer is None or getattr(self.trainer, "sanity_checking", False):
+            return
+
+        # Check if we are in a standalone validation run
+        is_validate_phase = self.trainer.state.fn == "validate"
+
+        # Evaluate every n epochs or during standalone validation
+        evaluate_this_epoch = (is_validate_phase or
+                               (self.config["validation"]["val_accuracy_interval"]
+                                <= self.config["train"]["epochs"] and self.current_epoch %
+                                self.config["validation"]["val_accuracy_interval"] == 0))
+
+        if evaluate_this_epoch:
 
             if len(self.predictions) == 0:
                 return None
