@@ -2,7 +2,30 @@
 
 There are many open-source projects for training machine learning models. 
 DeepForest aims to complement these existing tools by providing a specialized, streamlined approach tailored to ecological and environmental monitoring tasks. 
+This document also includes an overview of the models that have been built using the DeepForest framework.
 Below, we compare DeepForest with other notable tools in this space, highlighting similarities, differences, and areas of potential collaboration.
+
+## Tools Built on DeepForest
+
+DeepForest's core functionality has been successfully integrated into a variety of external platforms and tools. These implementations enable users to leverage DeepForest’s advanced tree crown detection capabilities across different GIS environments, all while maintaining the same model architecture and prediction performance.
+
+### ArcGIS Tree Crown Delineation Tool
+
+Available in the [ArcGIS Marketplace](https://www.arcgis.com/home/item.html?id=4af356858b1044908d9204f8b79ced99), this specialized plugin brings DeepForest's tree crown detection strengths into the ArcGIS Pro environment:
+
+- Provides a seamless, native ArcGIS interface for running DeepForest predictions and analyses
+- Fully integrates with Esri's comprehensive geospatial workflows, tools, and data management systems
+- Requires an active, licensed ArcGIS Pro installation to operate
+- Ideal for organizations and institutions already working extensively within the Esri ecosystem
+
+### TreeEyed for QGIS
+
+Available on [GitHub](https://github.com/afruizh/TreeEyed), this open-source QGIS plugin incorporates DeepForest together with additional models for enhanced tree crown analysis:
+
+- Offers a flexible, open-source solution for tree crown delineation tasks
+- Operates directly within the QGIS environment, providing an intuitive graphical user interface
+- Combines DeepForest with supplementary segmentation, tracking, and refinement capabilities
+- Suitable for users and researchers preferring robust, open-source GIS solutions without licensing restrictions
 
 ## Similar Tools
 
