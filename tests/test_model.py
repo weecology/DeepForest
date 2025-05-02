@@ -124,6 +124,25 @@ def test_crop_model_load_checkpoint(tmpdir, crop_model_data):
         for p1, p2 in zip(crop_model.parameters(), loaded_model.parameters()):
             assert torch.equal(p1, p2)
 
+def test_crop_model_mantain_label_dict(tmpdir, crop_model_data):
+    """
+    Test that the label dictionary is maintained when loading a checkpoint.
+    """
+    crop_model = model.CropModel(num_classes=2)
+    crop_model.create_trainer(fast_dev_run=True)
+    crop_model.load_from_disk(train_dir=tmpdir, val_dir=tmpdir)
+
+    crop_model.trainer.fit(crop_model)
+    checkpoint_path = os.path.join(tmpdir, "epoch=0-step=0.ckpt")
+    crop_model.trainer.save_checkpoint(checkpoint_path)
+    
+    # Load from checkpoint
+    loaded_model = model.CropModel.load_from_checkpoint(checkpoint_path)
+    
+    # Check that the label dictionary is maintained
+    assert crop_model.label_dict == loaded_model.label_dict
+    
+    
 def test_crop_model_init_no_num_classes():
     """
     Test that initializing CropModel() without num_classes

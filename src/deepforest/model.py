@@ -140,6 +140,9 @@ class CropModel(LightningModule):
         self.batch_size = batch_size
         self.lr = lr
 
+    def on_save_checkpoint(self, checkpoint):
+        checkpoint['label_dict'] = self.label_dict
+
     def create_trainer(self, **kwargs):
         """Create a pytorch lightning trainer object."""
         self.trainer = Trainer(**kwargs)
@@ -162,6 +165,7 @@ class CropModel(LightningModule):
             "Accuracy": self.total_accuracy,
             "Precision": self.precision_metric
         })
+        self.label_dict = checkpoint['label_dict']
 
     def load_from_disk(self, train_dir, val_dir):
         self.train_ds = ImageFolder(root=train_dir,
