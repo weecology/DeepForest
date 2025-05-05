@@ -11,6 +11,7 @@ import typing
 from deepforest import visualize, dataset
 from deepforest.utilities import read_file
 
+
 def _predict_image_(model,
                     image: typing.Optional[np.ndarray] = None,
                     path: typing.Optional[str] = None,
@@ -59,6 +60,7 @@ def _predict_image_(model,
             df["image_path"] = os.path.basename(path)
 
     return df
+
 
 def across_class_nms(predicted_boxes, iou_threshold=0.15):
     """Perform non-max suppression for a dataframe of results (see
@@ -216,7 +218,12 @@ def _predict_crop_model_(crop_model,
     return results
 
 
-def _sahi_predict_wrapper_(model, image, device, patch_size=400, patch_overlap=0.05, confidence_threshold=0.2):
+def _sahi_predict_wrapper_(model,
+                           image,
+                           device,
+                           patch_size=400,
+                           patch_overlap=0.05,
+                           confidence_threshold=0.2):
     """Wrapper function for SAHI (Slicing Aided Hyper Inference) prediction.
     
     Args:

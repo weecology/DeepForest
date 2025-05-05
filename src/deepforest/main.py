@@ -538,8 +538,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             patch_size=patch_size,
             patch_overlap=patch_overlap,
             confidence_threshold=confidence_threshold,
-            device=self.device
-        )
+            device=self.device)
 
         if results.empty:
             return None
@@ -555,18 +554,17 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             crop_model = [crop_model]
 
         if crop_model:
-            is_single_model = len(crop_model) == 1  # Flag to check if only one model is passed
+            is_single_model = len(
+                crop_model) == 1  # Flag to check if only one model is passed
             for i, crop_model in enumerate(crop_model):
-                results = predict._predict_crop_model_(
-                    crop_model=crop_model,
-                    results=results,
-                    raster_path=path,
-                    trainer=self.trainer,
-                    transform=crop_transform,
-                    augment=crop_augment,
-                    model_index=i,
-                    is_single_model=is_single_model
-                )
+                results = predict._predict_crop_model_(crop_model=crop_model,
+                                                       results=results,
+                                                       raster_path=path,
+                                                       trainer=self.trainer,
+                                                       transform=crop_transform,
+                                                       augment=crop_augment,
+                                                       model_index=i,
+                                                       is_single_model=is_single_model)
 
         if path is None:
             warnings.warn(
