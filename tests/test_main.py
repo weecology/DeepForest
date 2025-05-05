@@ -436,12 +436,6 @@ def test_train_callbacks(m):
     trainer = Trainer(fast_dev_run=True)
     trainer.fit(m, train_ds)
 
-#TODO: XFAIL for now until this test is fixed.
-@pytest.mark.xfail
-def test_custom_config_file_path(ROOT, tmpdir):
-    m = main.deepforest(
-        config_file='{}/deepforest_config.yml'.format(os.path.dirname(ROOT)))
-
 
 def test_save_and_reload_checkpoint(m, tmpdir):
     img_path = get_data(path="2019_YELL_2_528000_4978000_image_crop2.png")

@@ -28,27 +28,29 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
     """Class for training and predicting tree crowns in RGB images.
 
     Args:
-        config_file (str): path to deepforest config file
         num_classes (int): number of classes in the model
         model (model.Model()): a deepforest model object, see model.Model()
-        config_args (dict): a dictionary of key->value to update config file at run time.
-            e.g. {"batch_size":10}. This is useful for iterating over arguments during model testing.
         existing_train_dataloader: a Pytorch dataloader that yields a tuple path, images, targets
         existing_val_dataloader: a Pytorch dataloader that yields a tuple path, images, targets
+        config_file (str): path to deepforest config file
+        config_args (dict): a dictionary of key->value to update config file at run time.
+            e.g. {"batch_size":10}. This is useful for iterating over arguments during model testing.
 
     Returns:
         self: a deepforest pytorch lightning module
     """
 
-    def __init__(self,
-                 config: DictConfig = None,
-                 config_args: typing.Optional[dict] = None,
-                 num_classes: int = 1,
-                 label_dict: dict = {"Tree": 0},
-                 transforms=None,
-                 model=None,
-                 existing_train_dataloader=None,
-                 existing_val_dataloader=None):
+    def __init__(
+        self,
+        num_classes: int = 1,
+        label_dict: dict = {"Tree": 0},
+        transforms=None,
+        model=None,
+        existing_train_dataloader=None,
+        existing_val_dataloader=None,
+        config: DictConfig = None,
+        config_args: typing.Optional[dict] = None,
+    ):
 
         super().__init__()
 
@@ -56,7 +58,6 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         if config is None:
             config = utilities.load_config("config", overrides=config_args)
         elif 'config_file' in config:
-            # This is from the hub
             config = utilities.load_config("config", overrides=config['config_args'])
         elif config_args is not None:
             warnings.warn(

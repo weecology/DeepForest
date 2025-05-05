@@ -32,6 +32,7 @@ def load_config(config_name: str = "config",
         cfg = compose(config_name=config_name)
         cfg.merge_with(overrides)
     else:
+        # For Hydra compose API
         if isinstance(overrides, str):
             overrides = [overrides]
 
