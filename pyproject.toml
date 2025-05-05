@@ -61,6 +61,7 @@ dependencies = [
     "recommonmark",
     "rtree",
     "safetensors",
+    "sahi>=0.11.0",
     "scipy>1.5",
     "six",
     "slidingwindow",

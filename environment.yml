@@ -52,5 +52,6 @@ dependencies:
     - opencv-python-headless
     - safetensors
     - myst-parser
+    - sahi>=0.11.0
 
 

@@ -14,6 +14,8 @@ from pytorch_lightning.callbacks import LearningRateMonitor
 from torch import optim
 from torchmetrics.detection import IntersectionOverUnion, MeanAveragePrecision
 from torchmetrics.classification import BinaryAccuracy
+from sahi import AutoDetectionModel
+from sahi.predict import get_sliced_prediction
 
 from huggingface_hub import PyTorchModelHubMixin
 from deepforest import dataset, visualize, get_data, utilities, predict
@@ -489,164 +491,82 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         return results
 
     def predict_tile(self,
-                     raster_path=None,
                      path=None,
                      image=None,
                      patch_size=400,
                      patch_overlap=0.05,
-                     iou_threshold=0.15,
-                     in_memory=True,
-                     return_plot=False,
-                     mosaic=True,
-                     sigma=0.5,
-                     thresh=0.001,
-                     color=None,
-                     thickness=1,
                      crop_model=None,
                      crop_transform=None,
-                     crop_augment=False):
-        """For images too large to input into the model, predict_tile cuts the
-        image into overlapping windows, predicts trees on each window and
-        reassambles into a single array.
+                     crop_augment=False,
+                     confidence_threshold=0.2):
+        """For images too large to input into the model, predict_tile uses SAHI (Slicing Aided Hyper Inference)
+        to perform object detection on large images by slicing them into overlapping windows.
 
         Args:
-            raster_path: [Deprecated] Use 'path' instead
             path: Path to image on disk
             image (array): Numpy image array in BGR channel order following openCV convention
             patch_size: patch size for each window
             patch_overlap: patch overlap among windows
-            iou_threshold: Minimum iou overlap among predictions between windows to be suppressed
-            in_memory: If true, the entire dataset is loaded into memory
-            mosaic: Return a single prediction dataframe (True) or a tuple of image crops and predictions (False)
-            sigma: variance of Gaussian function used in Gaussian Soft NMS
-            thresh: the score thresh used to filter bboxes after soft-nms performed
             crop_model: a deepforest.model.CropModel object to predict on crops
             crop_transform: a torchvision.transforms object to apply to crops
             crop_augment: a boolean to apply augmentations to crops
-            return_plot: return a plot of the image with predictions overlaid (deprecated)
-            color: color of the bounding box as a tuple of BGR color (deprecated)
-            thickness: thickness of the rectangle border line in px (deprecated)
+            confidence_threshold: Minimum confidence score for predictions
 
         Returns:
-            pd.DataFrame or tuple: Predictions dataframe or (predictions, crops) tuple
+            pd.DataFrame: Predictions dataframe with bounding boxes, labels, and scores
         """
         self.model.eval()
-        self.model.nms_thresh = self.config["nms_thresh"]
-
-        # if 'raster_path' is used, give a deprecation warning and use 'path' instead
-        if raster_path is not None:
-            warnings.warn(
-                "The 'raster_path' argument is deprecated and will be removed in 2.0. Use 'path' instead.",
-                DeprecationWarning)
-            path = raster_path
-
-        # if more than one GPU present, use only a the first available gpu
-        if torch.cuda.device_count() > 1:
-            # Get available gpus and regenerate trainer
-            warnings.warn(
-                "More than one GPU detected. Using only the first GPU for predict_tile.")
-            self.config["devices"] = 1
-            self.create_trainer()
 
         if (path is None) and (image is None):
-            raise ValueError(
-                "Both tile and tile_path are None. Either supply a path to a tile on disk, or read one into memory!"
-            )
+            raise ValueError("Either path or image array must be provided")
 
-        if in_memory:
-            if path is None:
-                image = image
-            else:
-                image = rio.open(path).read()
-                image = np.moveaxis(image, 0, 2)
+        # Load image
+        if path is not None:
+            image = rio.open(path).read()
+            image = np.moveaxis(image, 0, 2)
+        elif not isinstance(image, np.ndarray):
+            raise ValueError("Either path or image array must be provided")
 
-            ds = dataset.TileDataset(tile=image,
-                                     patch_overlap=patch_overlap,
-                                     patch_size=patch_size)
-        else:
-            if path is None:
-                raise ValueError("path is required if in_memory is False")
+        # Convert image to PIL format for SAHI
+        if isinstance(image, np.ndarray):
+            image = Image.fromarray(image.astype(np.uint8))
 
-            # Check for workers config when using out of memory dataset
-            if self.config["workers"] > 0:
-                raise ValueError(
-                    "workers must be 0 when using out-of-memory dataset (in_memory=False). Set config['workers']=0 and recreate trainer self.create_trainer()."
-                )
+        # Use SAHI wrapper for prediction
+        results = predict._sahi_predict_wrapper_(
+            model=self.model,
+            image=image,
+            patch_size=patch_size,
+            patch_overlap=patch_overlap,
+            confidence_threshold=confidence_threshold,
+            device=self.device
+        )
 
-            ds = dataset.RasterDataset(raster_path=path,
-                                       patch_overlap=patch_overlap,
-                                       patch_size=patch_size)
+        if results.empty:
+            return None
 
-        batched_results = self.trainer.predict(self, self.predict_dataloader(ds))
+        results["label"] = results.label.apply(lambda x: self.numeric_to_label_dict[x])
 
-        # Flatten list from batched prediction
-        results = []
-        for batch in batched_results:
-            for boxes in batch:
-                results.append(boxes)
+        # Add image path if available
+        if path is not None:
+            results["image_path"] = os.path.basename(path)
 
-        if mosaic:
-            results = predict.mosiac(results,
-                                     ds.windows,
-                                     sigma=sigma,
-                                     thresh=thresh,
-                                     iou_threshold=iou_threshold)
-            results["label"] = results.label.apply(
-                lambda x: self.numeric_to_label_dict[x])
-            if path:
-                results["image_path"] = os.path.basename(path)
-            if return_plot:
-                # Add deprecated warning
-                warnings.warn("return_plot is deprecated and will be removed in 2.0. "
-                              "Use visualize.plot_results on the result instead.")
-                # Draw predictions on BGR
-                if path:
-                    tile = rio.open(path).read()
-                else:
-                    tile = image
-                drawn_plot = tile[:, :, ::-1]
-                drawn_plot = visualize.plot_predictions(tile,
-                                                        results,
-                                                        color=color,
-                                                        thickness=thickness)
-                return drawn_plot
-        else:
-            for df in results:
-                df["label"] = df.label.apply(lambda x: self.numeric_to_label_dict[x])
-
-            # TODO this is the 2nd time the crops are generated? Could be more efficient, but memory intensive
-            self.crops = []
-            if path is None:
-                image = image
-            else:
-                image = rio.open(path).read()
-                image = np.moveaxis(image, 0, 2)
-
-            for window in ds.windows:
-                crop = image[window.indices()]
-                self.crops.append(crop)
-
-            return list(zip(results, self.crops))
-
+        # Handle crop model predictions if provided
         if crop_model is not None and not isinstance(crop_model, list):
             crop_model = [crop_model]
 
         if crop_model:
-            is_single_model = len(
-                crop_model) == 1  # Flag to check if only one model is passed
+            is_single_model = len(crop_model) == 1  # Flag to check if only one model is passed
             for i, crop_model in enumerate(crop_model):
-                results = predict._predict_crop_model_(crop_model=crop_model,
-                                                       results=results,
-                                                       raster_path=path,
-                                                       trainer=self.trainer,
-                                                       transform=crop_transform,
-                                                       augment=crop_augment,
-                                                       model_index=i,
-                                                       is_single_model=is_single_model)
-
-        if results.empty:
-            warnings.warn("No predictions made, returning None")
-            return None
+                results = predict._predict_crop_model_(
+                    crop_model=crop_model,
+                    results=results,
+                    raster_path=path,
+                    trainer=self.trainer,
+                    transform=crop_transform,
+                    augment=crop_augment,
+                    model_index=i,
+                    is_single_model=is_single_model
+                )
 
         if path is None:
             warnings.warn(
@@ -913,16 +833,16 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
         self.model.eval()
 
-        #conver to tensor if input is array
+        # conver to tensor if input is array
         if isinstance(images, np.ndarray):
             images = torch.tensor(images, device=self.device)
 
-        #check input format
+        # check input format
         if images.dim() == 4 and images.shape[-1] == 3:
             #Convert channels_last (B, H, W, C) to channels_first (B, C, H, W)
             images = images.permute(0, 3, 1, 2)
 
-        #appy preprocessing if available
+        # apply preprocessing if available
         if preprocess_fn:
             images = preprocess_fn(images)
 

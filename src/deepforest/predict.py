@@ -5,11 +5,11 @@ import os
 
 import torch
 from torchvision.ops import nms
+from sahi import AutoDetectionModel
+from sahi.predict import get_sliced_prediction
 import typing
-
 from deepforest import visualize, dataset
 from deepforest.utilities import read_file
-
 
 def _predict_image_(model,
                     image: typing.Optional[np.ndarray] = None,
@@ -59,49 +59,6 @@ def _predict_image_(model,
             df["image_path"] = os.path.basename(path)
 
     return df
-
-
-def mosiac(boxes, windows, sigma=0.5, thresh=0.001, iou_threshold=0.1):
-    # transform the coordinates to original system
-    for index, _ in enumerate(boxes):
-        xmin, ymin, xmax, ymax = windows[index].getRect()
-        boxes[index].xmin += xmin
-        boxes[index].xmax += xmin
-        boxes[index].ymin += ymin
-        boxes[index].ymax += ymin
-
-    predicted_boxes = pd.concat(boxes)
-    print(
-        f"{predicted_boxes.shape[0]} predictions in overlapping windows, applying non-max suppression"
-    )
-    # move prediciton to tensor
-    boxes = torch.tensor(predicted_boxes[["xmin", "ymin", "xmax", "ymax"]].values,
-                         dtype=torch.float32)
-    scores = torch.tensor(predicted_boxes.score.values, dtype=torch.float32)
-    labels = predicted_boxes.label.values
-    # Performs non-maximum suppression (NMS) on the boxes according to
-    # their intersection-over-union (IoU).
-    bbox_left_idx = nms(boxes=boxes, scores=scores, iou_threshold=iou_threshold)
-
-    bbox_left_idx = bbox_left_idx.numpy()
-    new_boxes, new_labels, new_scores = boxes[bbox_left_idx].type(
-        torch.int), labels[bbox_left_idx], scores[bbox_left_idx]
-
-    # Recreate box dataframe
-    image_detections = np.concatenate([
-        new_boxes,
-        np.expand_dims(new_labels, axis=1),
-        np.expand_dims(new_scores, axis=1)
-    ],
-                                      axis=1)
-
-    mosaic_df = pd.DataFrame(image_detections,
-                             columns=["xmin", "ymin", "xmax", "ymax", "label", "score"])
-
-    print(f"{mosaic_df.shape[0]} predictions kept after non-max suppression")
-
-    return mosaic_df
-
 
 def across_class_nms(predicted_boxes, iou_threshold=0.15):
     """Perform non-max suppression for a dataframe of results (see
@@ -257,3 +214,54 @@ def _predict_crop_model_(crop_model,
     results[score_column] = score
 
     return results
+
+
+def _sahi_predict_wrapper_(model, image, device, patch_size=400, patch_overlap=0.05, confidence_threshold=0.2):
+    """Wrapper function for SAHI (Slicing Aided Hyper Inference) prediction.
+    
+    Args:
+        model: The PyTorch model to use for prediction
+        image: PIL Image or numpy array to predict on
+        patch_size: Size of each patch for prediction
+        patch_overlap: Overlap ratio between patches
+        confidence_threshold: Minimum confidence score for predictions
+        
+    Returns:
+        pd.DataFrame: DataFrame containing predictions with columns:
+            - xmin, ymin, xmax, ymax: Bounding box coordinates
+            - label: Predicted class label
+            - score: Confidence score
+    """
+    # Initialize SAHI's AutoDetectionModel
+    detection_model = AutoDetectionModel.from_pretrained(
+        model_type="torchvision",
+        model=model,
+        confidence_threshold=confidence_threshold,
+        device=device,
+    )
+
+    # Get sliced prediction using SAHI
+    sahi_result = get_sliced_prediction(
+        image,
+        detection_model=detection_model,
+        slice_height=patch_size,
+        slice_width=patch_size,
+        overlap_height_ratio=patch_overlap,
+        overlap_width_ratio=patch_overlap,
+    )
+
+    # Convert SAHI predictions to DataFrame
+    predictions = sahi_result.object_prediction_list
+    results = []
+    for pred in predictions:
+        bbox = pred.bbox.to_xyxy()
+        results.append({
+            "xmin": bbox[0],
+            "ymin": bbox[1],
+            "xmax": bbox[2],
+            "ymax": bbox[3],
+            "label": pred.category.id,
+            "score": pred.score,
+        })
+
+    return pd.DataFrame(results)
