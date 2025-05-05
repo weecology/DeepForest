@@ -24,7 +24,7 @@ The config file specifies the path to the CSV file that we want to use when trai
 
 ```python
 import os
-from deepforest import model as m
+from deepforest import main
 from deepforest import get_data
 
 # Example run with short training
