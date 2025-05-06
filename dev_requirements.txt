@@ -1,4 +1,4 @@
-albumentations>=1.0.0
+albumentations>=1.0.0,<2.0.0
 aiolimiter
 aiohttp
 bump-my-version

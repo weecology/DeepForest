@@ -17,7 +17,7 @@ import pandas as pd
 import numpy as np
 from torch.utils.data import Dataset
 import albumentations as A
-from albumentations import functional as F
+from albumentations.augmentations import functional as F
 from albumentations.pytorch import ToTensorV2
 import torch
 import typing
@@ -56,14 +56,14 @@ class TreeDataset(Dataset):
                  train=True,
                  preload_images=False):
         """
-        
+
         Args:
             csv_file (string): Path to a single csv file with annotations.
             root_dir (string): Directory with all the images.
             transform (callable, optional): Optional transform to be applied
                 on a sample.
             label_dict: a dictionary where keys are labels from the csv column and values are numeric labels "Tree" -> 0
-        
+
         Returns:
             If train, path, image, targets else image
         """
@@ -157,7 +157,7 @@ class TileDataset(Dataset):
                  patch_size: int = 400,
                  patch_overlap: float = 0.05):
         """
-        
+
         Args:
             tile: an in memory numpy array.
             patch_size (int): The size for the crops used to cut the input raster into smaller pieces. This is given in pixels, not any geographic unit.
