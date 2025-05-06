@@ -95,5 +95,8 @@ dev = [
     "myst-parser",
 ]
 
+[project.scripts]
+deepforest = "deepforest.scripts.cli:main"
+
 [tool.setuptools.packages.find]
 where = ["src"]
