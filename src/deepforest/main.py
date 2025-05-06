@@ -56,9 +56,9 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
         # If not provided, load default config via hydra.
         if config is None:
-            config = utilities.load_config("config", overrides=config_args)
+            config = utilities.load_config(overrides=config_args)
         elif 'config_file' in config:
-            config = utilities.load_config("config", overrides=config['config_args'])
+            config = utilities.load_config(overrides=config['config_args'])
         elif config_args is not None:
             warnings.warn(
                 f"Ignoring options as configuration object was provided: {config_args}")
