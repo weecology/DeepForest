@@ -24,7 +24,7 @@ def _predict_image_(model,
         model: a deepforest.main.model object
         image: a tensor of shape (channels, height, width)
         path: optional path to read image from disk instead of passing image arg
-        nms_thresh: Non-max suppression threshold, see config["nms_thresh"]
+        nms_thresh: Non-max suppression threshold, see config.nms_thresh
         return_plot: Return image with plotted detections
         thickness: thickness of the rectangle border line in px
         color: color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255)
@@ -153,7 +153,7 @@ def _dataloader_wrapper_(model,
         dataloader: pytorch dataloader object
         root_dir: directory of images. If none, uses "image_dir" in config
         annotations: a pandas dataframe of annotations
-        nms_thresh: Non-max suppression threshold, see config["nms_thresh"]
+        nms_thresh: Non-max suppression threshold, see config.nms_thresh
         savedir: Optional. Directory to save image plots.
         color: color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255)
         thickness: thickness of the rectangle border line in px

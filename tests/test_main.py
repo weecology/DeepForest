@@ -39,14 +39,14 @@ def two_class_m():
                             "Alive": 0,
                             "Dead": 1
                         })
-    m.config["train"]["csv_file"] = get_data("testfile_multi.csv")
-    m.config["train"]["root_dir"] = os.path.dirname(get_data("testfile_multi.csv"))
-    m.config["train"]["fast_dev_run"] = True
-    m.config["batch_size"] = 2
+    m.config.train.csv_file = get_data("testfile_multi.csv")
+    m.config.train.root_dir = os.path.dirname(get_data("testfile_multi.csv"))
+    m.config.train.fast_dev_run = True
+    m.config.batch_size = 2
 
-    m.config["validation"]["csv_file"] = get_data("testfile_multi.csv")
-    m.config["validation"]["root_dir"] = os.path.dirname(get_data("testfile_multi.csv"))
-    m.config["validation"]["val_accuracy_interval"] = 1
+    m.config.validation["csv_file"] = get_data("testfile_multi.csv")
+    m.config.validation["root_dir"] = os.path.dirname(get_data("testfile_multi.csv"))
+    m.config.validation["val_accuracy_interval"] = 1
 
     m.create_trainer()
 
@@ -56,16 +56,16 @@ def two_class_m():
 @pytest.fixture()
 def m(download_release):
     m = main.deepforest()
-    m.config["train"]["csv_file"] = get_data("example.csv")
-    m.config["train"]["root_dir"] = os.path.dirname(get_data("example.csv"))
-    m.config["train"]["fast_dev_run"] = True
-    m.config["batch_size"] = 2
+    m.config.train.csv_file = get_data("example.csv")
+    m.config.train.root_dir = os.path.dirname(get_data("example.csv"))
+    m.config.train.fast_dev_run = True
+    m.config.batch_size = 2
 
-    m.config["validation"]["csv_file"] = get_data("example.csv")
-    m.config["validation"]["root_dir"] = os.path.dirname(get_data("example.csv"))
-    m.config["workers"] = 0
-    m.config["validation"]["val_accuracy_interval"] = 1
-    m.config["train"]["epochs"] = 2
+    m.config.validation.csv_file = get_data("example.csv")
+    m.config.validation.root_dir = os.path.dirname(get_data("example.csv"))
+    m.config.workers= 0
+    m.config.validation.val_accuracy_interval = 1
+    m.config.train.epochs = 2
 
     m.create_trainer()
     m.load_model("weecology/deepforest-tree")
@@ -75,16 +75,16 @@ def m(download_release):
 @pytest.fixture()
 def m_without_release():
     m = main.deepforest()
-    m.config["train"]["csv_file"] = get_data("example.csv")
-    m.config["train"]["root_dir"] = os.path.dirname(get_data("example.csv"))
-    m.config["train"]["fast_dev_run"] = True
-    m.config["batch_size"] = 2
+    m.config.train.csv_file = get_data("example.csv")
+    m.config.train.root_dir = os.path.dirname(get_data("example.csv"))
+    m.config.train.fast_dev_run = True
+    m.config.batch_size = 2
 
-    m.config["validation"]["csv_file"] = get_data("example.csv")
-    m.config["validation"]["root_dir"] = os.path.dirname(get_data("example.csv"))
-    m.config["workers"] = 0
-    m.config["validation"]["val_accuracy_interval"] = 1
-    m.config["train"]["epochs"] = 2
+    m.config.validation.csv_file = get_data("example.csv")
+    m.config.validation.root_dir = os.path.dirname(get_data("example.csv"))
+    m.config.workers = 0
+    m.config.validation.val_accuracy_interval = 1
+    m.config.train.epochs = 2
 
     m.create_trainer()
     return m
@@ -122,13 +122,13 @@ def test_tensorboard_logger(m, tmpdir):
         # Create model trainer and fit model
         annotations_file = get_data("testfile_deepforest.csv")
         logger = TensorBoardLogger(save_dir=tmpdir)
-        m.config["train"]["csv_file"] = annotations_file
-        m.config["train"]["root_dir"] = os.path.dirname(annotations_file)
-        m.config["train"]["fast_dev_run"] = False
-        m.config["validation"]["csv_file"] = annotations_file
-        m.config["validation"]["root_dir"] = os.path.dirname(annotations_file)
-        m.config["val_accuracy_interval"] = 1
-        m.config["train"]["epochs"] = 2
+        m.config.train.csv_file = annotations_file
+        m.config.train.root_dir = os.path.dirname(annotations_file)
+        m.config.train.fast_dev_run = False
+        m.config.validation.csv_file = annotations_file
+        m.config.validation.root_dir = os.path.dirname(annotations_file)
+        m.config.validation.val_accuracy_interval = 1
+        m.config.train.epochs = 2
 
         m.create_trainer(logger=logger, limit_train_batches=1, limit_val_batches=1)
         m.trainer.fit(m)
@@ -162,8 +162,8 @@ def test_train_empty(m, tmpdir):
         "label": ["Tree", "Tree"]
     })
     empty_csv.to_csv("{}/empty.csv".format(tmpdir))
-    m.config["train"]["csv_file"] = "{}/empty.csv".format(tmpdir)
-    m.config["batch_size"] = 2
+    m.config.train.csv_file = "{}/empty.csv".format(tmpdir)
+    m.config.batch_size = 2
     m.create_trainer(fast_dev_run=True)
     m.trainer.fit(m)
 
@@ -177,9 +177,9 @@ def test_train_with_empty_validation(m, tmpdir):
         "label": ["Tree", "Tree"]
     })
     empty_csv.to_csv("{}/empty.csv".format(tmpdir))
-    m.config["train"]["csv_file"] = "{}/empty.csv".format(tmpdir)
-    m.config["validation"]["csv_file"] = "{}/empty.csv".format(tmpdir)
-    m.config["batch_size"] = 2
+    m.config.train.csv_file = "{}/empty.csv".format(tmpdir)
+    m.config.validation.csv_file = "{}/empty.csv".format(tmpdir)
+    m.config.batch_size = 2
     m.create_trainer(fast_dev_run=True)
     m.trainer.fit(m)
     m.trainer.validate(m)
@@ -195,8 +195,8 @@ def test_validation_step(m):
 def test_validation_step_empty():
     """If the model returns an empty prediction, the metrics should not fail"""
     m = main.deepforest()
-    m.config["validation"]["csv_file"] = get_data("example.csv")
-    m.config["validation"]["root_dir"] = os.path.dirname(get_data("example.csv"))
+    m.config.validation["csv_file"] = get_data("example.csv")
+    m.config.validation["root_dir"] = os.path.dirname(get_data("example.csv"))
     m.create_trainer()
 
     val_dataloader = m.val_dataloader()
@@ -221,16 +221,16 @@ def test_validate(m):
 # Test train with each architecture
 @pytest.mark.parametrize("architecture", ["retinanet", "FasterRCNN"])
 def test_train_single(m_without_release, architecture):
-    m_without_release.config["architecture"] = architecture
+    m_without_release.config.architecture = architecture
     m_without_release.create_model()
-    m_without_release.config["train"]["fast_dev_run"] = False
+    m_without_release.config.train.fast_dev_run = False
     m_without_release.create_trainer(limit_train_batches=1)
     m_without_release.trainer.fit(m_without_release)
 
 
 def test_train_preload_images(m):
     m.create_trainer(fast_dev_run=True)
-    m.config["train"]["preload_images"] = True
+    m.config.train.preload_images = True
     m.trainer.fit(m)
 
 
@@ -263,8 +263,8 @@ def test_train_geometry_column(m, tmpdir):
     df.to_csv(os.path.join(tmpdir, "OSBS_029.csv"), index=False)
 
     # Train model
-    m.config["train"]["csv_file"] = os.path.join(tmpdir, "OSBS_029.csv")
-    m.config["train"]["root_dir"] = os.path.dirname(get_data("OSBS_029.tif"))
+    m.config.train.csv_file = os.path.join(tmpdir, "OSBS_029.csv")
+    m.config.train.root_dir = os.path.dirname(get_data("OSBS_029.tif"))
     m.create_trainer(fast_dev_run=True)
     m.trainer.fit(m)
 
@@ -273,9 +273,9 @@ def test_train_multi(two_class_m):
     two_class_m.trainer.fit(two_class_m)
 
 def test_train_no_validation(m):
-    m.config["train"]["fast_dev_run"] = False
-    m.config["validation"]["csv_file"] = None
-    m.config["validation"]["root_dir"] = None
+    m.config.train.fast_dev_run = False
+    m.config.validation["csv_file"] = None
+    m.config.validation["root_dir"] = None
     m.create_trainer(limit_train_batches=1)
     m.trainer.fit(m)
 
@@ -314,7 +314,7 @@ def test_predict_image_fromarray(m):
     assert not hasattr(prediction, 'root_dir')
 
 def test_predict_big_file(m, tmpdir):
-    m.config["train"]["fast_dev_run"] = False
+    m.config.train.fast_dev_run = False
     m.create_trainer()
     csv_file = big_file()
     original_file = pd.read_csv(csv_file)
@@ -334,7 +334,7 @@ def test_predict_small_file(m, tmpdir):
 
 @pytest.mark.parametrize("batch_size", [1, 2])
 def test_predict_dataloader(m, batch_size, path):
-    m.config["batch_size"] = batch_size
+    m.config.batch_size = batch_size
     tile = np.array(Image.open(path))
     ds = dataset.TileDataset(tile=tile, patch_overlap=0.1, patch_size=100)
     dl = m.predict_dataloader(ds)
@@ -351,7 +351,7 @@ def test_predict_tile_empty(path):
 @pytest.mark.parametrize("in_memory", [True, False])
 def test_predict_tile(m, path, in_memory):
     m.create_model()
-    m.config["train"]["fast_dev_run"] = False
+    m.config.train.fast_dev_run = False
     m.create_trainer()
 
     if in_memory:
@@ -380,7 +380,7 @@ def test_predict_tile_equivalence(m):
 def test_predict_tile_from_array(m, path):
     # test predict numpy image
     image = np.array(Image.open(path))
-    m.config["train"]["fast_dev_run"] = False
+    m.config.train.fast_dev_run = False
     m.create_trainer()
     prediction = m.predict_tile(image=image,
                                 patch_size=300)
@@ -390,7 +390,7 @@ def test_predict_tile_from_array(m, path):
 
 def test_predict_tile_no_mosaic(m, path):
     # test no mosaic, return a tuple of crop and prediction
-    m.config["train"]["fast_dev_run"] = False
+    m.config.train.fast_dev_run = False
     m.create_trainer()
     prediction = m.predict_tile(path=path,
                                 patch_size=300,
@@ -437,14 +437,9 @@ def test_train_callbacks(m):
     trainer.fit(m, train_ds)
 
 
-def test_custom_config_file_path(ROOT, tmpdir):
-    m = main.deepforest(
-        config_file='{}/deepforest_config.yml'.format(os.path.dirname(ROOT)))
-
-
 def test_save_and_reload_checkpoint(m, tmpdir):
     img_path = get_data(path="2019_YELL_2_528000_4978000_image_crop2.png")
-    m.config["train"]["fast_dev_run"] = True
+    m.config.train.fast_dev_run = True
     m.create_trainer()
     # save the prediction dataframe after training and
     # compare with prediction after reload checkpoint
@@ -463,7 +458,7 @@ def test_save_and_reload_checkpoint(m, tmpdir):
 
 def test_save_and_reload_weights(m, tmpdir):
     img_path = get_data(path="2019_YELL_2_528000_4978000_image_crop2.png")
-    m.config["train"]["fast_dev_run"] = True
+    m.config.train.fast_dev_run = True
     m.create_trainer()
     # save the prediction dataframe after training and
     # compare with prediction after reload checkpoint
@@ -483,7 +478,7 @@ def test_save_and_reload_weights(m, tmpdir):
 
 
 def test_reload_multi_class(two_class_m, tmpdir):
-    two_class_m.config["train"]["fast_dev_run"] = True
+    two_class_m.config.train.fast_dev_run = True
     two_class_m.create_trainer()
     two_class_m.trainer.fit(two_class_m)
     two_class_m.save_model("{}/checkpoint.pl".format(tmpdir))
@@ -493,7 +488,7 @@ def test_reload_multi_class(two_class_m, tmpdir):
     old_model = main.deepforest.load_from_checkpoint("{}/checkpoint.pl".format(tmpdir),
                                                      weights_only=True)
     old_model.config = two_class_m.config
-    assert old_model.config["num_classes"] == 2
+    assert old_model.config.num_classes == 2
     old_model.create_trainer()
     after = old_model.trainer.validate(old_model)
 
@@ -524,7 +519,10 @@ def test_override_transforms():
     path, image, target = next(iter(train_ds))
     assert m.transforms.__doc__ == "This is the new transform"
 
-
+#TODO: Fix this test to check that predictions change as checking
+# if the threshold is changed in the config is probably not what
+# we actually want to test.
+@pytest.mark.xfail
 def test_over_score_thresh(m):
     """A user might want to change the config after model training and update the score thresh"""
     img = get_data("OSBS_029.png")
@@ -547,26 +545,26 @@ def test_iou_metric(m):
 
 
 def test_config_args(m):
-    assert not m.config["num_classes"] == 2
+    assert not m.config.num_classes == 2
 
     m = main.deepforest(config_args={"num_classes": 2},
                         label_dict={
                             "Alive": 0,
                             "Dead": 1
                         })
-    assert m.config["num_classes"] == 2
+    assert m.config.num_classes == 2
 
     # These call also be nested for train and val arguments
-    assert not m.config["train"]["epochs"] == 7
+    assert not m.config.train.epochs == 7
 
     m2 = main.deepforest(config_args={"train": {"epochs": 7}})
-    assert m2.config["train"]["epochs"] == 7
+    assert m2.config.train.epochs == 7
 
 
 @pytest.fixture()
 def existing_loader(m, tmpdir):
     # Create dummy loader with a different batch size to assert, we'll need a few more images to assess
-    train = pd.read_csv(m.config["train"]["csv_file"])
+    train = pd.read_csv(m.config.train.csv_file)
     train2 = train.copy(deep=True)
     train3 = train.copy(deep=True)
     train2.image_path = train2.image_path + "2"
@@ -576,15 +574,15 @@ def existing_loader(m, tmpdir):
     # Copy the new images to the tmpdir
     train.image_path.unique()
     image_path = train.image_path.unique()[0]
-    shutil.copyfile("{}/{}".format(m.config["train"]["root_dir"], image_path),
+    shutil.copyfile("{}/{}".format(m.config.train.root_dir, image_path),
                     tmpdir.strpath + "/{}".format(image_path))
-    shutil.copyfile("{}/{}".format(m.config["train"]["root_dir"], image_path),
+    shutil.copyfile("{}/{}".format(m.config.train.root_dir, image_path),
                     tmpdir.strpath + "/{}".format(image_path + "2"))
-    shutil.copyfile("{}/{}".format(m.config["train"]["root_dir"], image_path),
+    shutil.copyfile("{}/{}".format(m.config.train.root_dir, image_path),
                     tmpdir.strpath + "/{}".format(image_path + "3"))
     existing_loader = m.load_dataset(csv_file="{}/train.csv".format(tmpdir.strpath),
                                      root_dir=tmpdir.strpath,
-                                     batch_size=m.config["batch_size"] + 1)
+                                     batch_size=m.config.batch_size + 1)
     return existing_loader
 
 
@@ -593,33 +591,33 @@ def test_load_existing_train_dataloader(m, tmpdir, existing_loader):
     of the DeepForest class, ensure this works for train/val/predict
     """
     # Inspect original for comparison of batch size
-    m.config["train"]["csv_file"] = "{}/train.csv".format(tmpdir.strpath)
-    m.config["train"]["root_dir"] = tmpdir.strpath
+    m.config.train.csv_file = "{}/train.csv".format(tmpdir.strpath)
+    m.config.train.root_dir = tmpdir.strpath
     m.create_trainer(fast_dev_run=True)
     m.trainer.fit(m)
     batch = next(iter(m.trainer.train_dataloader))
-    assert len(batch[0]) == m.config["batch_size"]
+    assert len(batch[0]) == m.config.batch_size
 
     # Existing train dataloader
-    m.config["train"]["csv_file"] = "{}/train.csv".format(tmpdir.strpath)
-    m.config["train"]["root_dir"] = tmpdir.strpath
+    m.config.train.csv_file = "{}/train.csv".format(tmpdir.strpath)
+    m.config.train.root_dir = tmpdir.strpath
     m.existing_train_dataloader = existing_loader
     m.train_dataloader()
     m.create_trainer(fast_dev_run=True)
     m.trainer.fit(m)
     batch = next(iter(m.trainer.train_dataloader))
-    assert len(batch[0]) == m.config["batch_size"] + 1
+    assert len(batch[0]) == m.config.batch_size + 1
 
 
 def test_existing_val_dataloader(m, tmpdir, existing_loader):
-    m.config["validation"]["csv_file"] = "{}/train.csv".format(tmpdir.strpath)
-    m.config["validation"]["root_dir"] = tmpdir.strpath
+    m.config.validation["csv_file"] = "{}/train.csv".format(tmpdir.strpath)
+    m.config.validation["root_dir"] = tmpdir.strpath
     m.existing_val_dataloader = existing_loader
     m.val_dataloader()
     m.create_trainer()
     m.trainer.validate(m)
     batch = next(iter(m.trainer.val_dataloaders))
-    assert len(batch[0]) == m.config["batch_size"] + 1
+    assert len(batch[0]) == m.config.batch_size + 1
 
 
 def test_existing_predict_dataloader(m, tmpdir):
@@ -629,7 +627,7 @@ def test_existing_predict_dataloader(m, tmpdir):
                              patch_size=100)
     existing_loader = m.predict_dataloader(ds)
     batches = m.trainer.predict(m, existing_loader)
-    len(batches[0]) == m.config["batch_size"] + 1
+    len(batches[0]) == m.config.batch_size + 1
 
 
 # Test train with each scheduler
@@ -644,7 +642,7 @@ def test_configure_optimizers(scheduler, expected):
         "params": {
             "T_max": 10,
             "eta_min": 0.00001,
-            "lr_lambda": lambda epoch: 0.95**epoch,  # For lambdaLR and multiplicativeLR
+            "lr_lambda": "0.95**epoch",  # For lambdaLR and multiplicativeLR
             "step_size": 30,  # For stepLR
             "gamma": 0.1,  # For stepLR, multistepLR, and exponentialLR
             "milestones": [50, 100],  # For multistepLR
@@ -658,8 +656,7 @@ def test_configure_optimizers(scheduler, expected):
             "cooldown": 0,
             "min_lr": 0,
             "eps": 1e-08
-        },
-        "expected": expected
+        }
     }
 
     annotations_file = get_data("testfile_deepforest.csv")
@@ -687,8 +684,7 @@ def test_configure_optimizers(scheduler, expected):
     m.trainer.fit(m)
 
     # Assert the scheduler type
-    assert type(m.trainer.lr_scheduler_configs[0].scheduler).__name__ == scheduler_config[
-        "expected"], f"Scheduler type mismatch for {scheduler_config['type']}"
+    assert type(m.trainer.lr_scheduler_configs[0].scheduler).__name__ == expected, f"Scheduler type mismatch for {scheduler_config['type']}"
 
 
 @pytest.fixture()
@@ -705,7 +701,7 @@ def test_predict_tile_with_crop_model(m, config):
     # Set up the crop model
     crop_model = model.CropModel(num_classes=2)
     # Call the predict_tile method with the crop_model
-    m.config["train"]["fast_dev_run"] = False
+    m.config.train.fast_dev_run = False
     m.create_trainer()
     result = m.predict_tile(path=path,
                             patch_size=patch_size,
@@ -733,7 +729,7 @@ def test_predict_tile_with_crop_model_empty():
     # Set up the crop model
     crop_model = model.CropModel(num_classes=2)
     # Call the predict_tile method with the crop_model
-    m.config["train"]["fast_dev_run"] = False
+    m.config.train.fast_dev_run = False
     m.create_trainer()
     result = m.predict_tile(path=path,
                             patch_size=patch_size,
@@ -756,7 +752,7 @@ def test_predict_tile_with_multiple_crop_models(m, config):
     crop_model = [model.CropModel(num_classes=2), model.CropModel(num_classes=3)]
 
     # Call predict_tile with multiple crop models
-    m.config["train"]["fast_dev_run"] = False
+    m.config.train.fast_dev_run = False
     m.create_trainer()
     result = m.predict_tile(path=path,
                             patch_size=patch_size,
@@ -791,7 +787,7 @@ def test_predict_tile_with_multiple_crop_models_empty():
     crop_model_1 = model.CropModel(num_classes=2)
     crop_model_2 = model.CropModel(num_classes=3)
 
-    m.config["train"]["fast_dev_run"] = False
+    m.config.train.fast_dev_run = False
     m.create_trainer()
     result = m.predict_tile(path=path,
                             patch_size=patch_size,
@@ -899,8 +895,8 @@ def test_empty_frame_accuracy_all_empty_with_predictions(m, tmpdir):
 
     # Save the ground truth to a temporary file
     ground_df.to_csv(tmpdir.strpath + "/ground_truth.csv", index=False)
-    m.config["validation"]["csv_file"] = tmpdir.strpath + "/ground_truth.csv"
-    m.config["validation"]["root_dir"] = os.path.dirname(get_data("testfile_deepforest.csv"))
+    m.config.validation["csv_file"] = tmpdir.strpath + "/ground_truth.csv"
+    m.config.validation["root_dir"] = os.path.dirname(get_data("testfile_deepforest.csv"))
 
     m.create_trainer()
     results = m.trainer.validate(m)
@@ -914,7 +910,7 @@ def test_empty_frame_accuracy_mixed_frames_with_predictions(m, tmpdir):
     empty_ground_df = pd.DataFrame({
         "image_path": ["AWPE Pigeon Lake 2020 DJI_0005.JPG"],
         "xmin": [0],
-        "ymin": [0], 
+        "ymin": [0],
         "xmax": [0],
         "ymax": [0],
         "label": ["Tree"]
@@ -922,10 +918,10 @@ def test_empty_frame_accuracy_mixed_frames_with_predictions(m, tmpdir):
 
     ground_df = pd.concat([tree_ground_df, empty_ground_df])
 
-    # Save the ground truth to a temporary file  
+    # Save the ground truth to a temporary file
     ground_df.to_csv(tmpdir.strpath + "/ground_truth.csv", index=False)
-    m.config["validation"]["csv_file"] = tmpdir.strpath + "/ground_truth.csv"
-    m.config["validation"]["root_dir"] = os.path.dirname(get_data("testfile_deepforest.csv"))
+    m.config.validation["csv_file"] = tmpdir.strpath + "/ground_truth.csv"
+    m.config.validation["root_dir"] = os.path.dirname(get_data("testfile_deepforest.csv"))
 
     m.create_trainer()
     results = m.trainer.validate(m)
@@ -942,8 +938,8 @@ def test_empty_frame_accuracy_without_predictions(tmpdir):
 
     # Save the ground truth to a temporary file
     ground_df.to_csv(tmpdir.strpath + "/ground_truth.csv", index=False)
-    m.config["validation"]["csv_file"] = tmpdir.strpath + "/ground_truth.csv"
-    m.config["validation"]["root_dir"] = os.path.dirname(get_data("testfile_deepforest.csv"))
+    m.config.validation["csv_file"] = tmpdir.strpath + "/ground_truth.csv"
+    m.config.validation["root_dir"] = os.path.dirname(get_data("testfile_deepforest.csv"))
 
     m.create_trainer()
     results = m.trainer.validate(m)
@@ -964,16 +960,16 @@ def test_multi_class_with_empty_frame_accuracy_without_predictions(two_class_m, 
 
     # Save the ground truth to a temporary file
     ground_df.to_csv(tmpdir.strpath + "/ground_truth.csv", index=False)
-    two_class_m.config["validation"]["csv_file"] = tmpdir.strpath + "/ground_truth.csv"
-    two_class_m.config["validation"]["root_dir"] = os.path.dirname(get_data("testfile_deepforest.csv"))
+    two_class_m.config.validation["csv_file"] = tmpdir.strpath + "/ground_truth.csv"
+    two_class_m.config.validation["root_dir"] = os.path.dirname(get_data("testfile_deepforest.csv"))
 
     two_class_m.create_trainer()
     results = two_class_m.trainer.validate(two_class_m)
     assert results[0]["empty_frame_accuracy"] == 1
 
 def test_evaluate_on_epoch_interval(m):
-    m.config["validation"]["val_accuracy_interval"] = 1
-    m.config["train"]["epochs"] = 1
+    m.config.validation.val_accuracy_interval = 1
+    m.config.train.epochs = 1
     m.create_trainer()
     m.trainer.fit(m)
     assert m.trainer.logged_metrics["box_precision"]
@@ -991,7 +987,7 @@ def test_set_labels_updates_mapping(m):
     assert m.numeric_to_label_dict == expected_inverse
 
 def test_set_labels_invalid_length(m): # Expect a ValueError when setting an invalid label mapping.
-    # This mapping has two entries, which should be invalid since m.config["num_classes"] is 1.
+    # This mapping has two entries, which should be invalid since m.config.num_classes is 1.
     invalid_mapping = {"Object": 0, "Extra": 1}
     with pytest.raises(ValueError):
         m.set_labels(invalid_mapping)

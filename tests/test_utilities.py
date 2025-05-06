@@ -21,7 +21,7 @@ from PIL import Image
 
 @pytest.fixture()
 def config():
-    config = utilities.read_config(get_data("deepforest_config.yml"))
+    config = utilities.load_config()
     return config
 
 

@@ -30,13 +30,10 @@ from deepforest import get_data
 # Example run with short training
 annotations_file = get_data("testfile_deepforest.csv")
 
-# Initialize a DeepForest model instance to access configuration and training methods
-m = main.deepforest()
-
-m.config["epochs"] = 1
-m.config["save-snapshot"] = False
-m.config["train"]["csv_file"] = annotations_file
-m.config["train"]["root_dir"] = os.path.dirname(annotations_file)
+m.config.epochs = 1
+m.config.save-snapshot = False
+m.config.train.csv_file = annotations_file
+m.config.train.root_dir = os.path.dirname(annotations_file)
 
 m.create_trainer()
 ```
@@ -44,7 +41,7 @@ m.create_trainer()
 For debugging, its often useful to use the [fast_dev_run = True from pytorch lightning](https://pytorch-lightning.readthedocs.io/en/latest/common/trainer.html#fast-dev-run)
 
 ```python
-m.config["train"]["fast_dev_run"] = True
+m.config.train.fast_dev_run = True
 ```
 
 See [config](https://deepforest.readthedocs.io/en/latest/ConfigurationFile.html) for full set of available arguments. You can also pass any [additional](https://pytorch-lightning.readthedocs.io/en/latest/common/trainer.html) pytorch lightning argument to trainer.
@@ -249,7 +246,7 @@ see https://albumentations.ai/docs/getting_started/bounding_boxes_augmentation/ 
 While it is impossible to anticipate the setup for all users, there are a few guidelines. First, a GPU-enabled processor is key. Training on a CPU can be done, but it will take much longer (100x) and is probably only done if needed. Using Google Colab can be beneficial but prone to errors. Once on the GPU, the configuration includes a "workers" argument. This connects to PyTorch's dataloader. As the number of workers increases, data is fed to the GPU in parallel. Increase the worker argument slowly, we have found that the optimal number of workers varies by system.
 
 ```
-m.config["workers"] = 5
+m.config.workers = 5
 ```
 
 It is not foolproof, and occasionally 0 workers, in which data loading is run on the main thread, is optimal : https://stackoverflow.com/questions/73331758/can-ideal-num-workers-for-a-large-dataset-in-pytorch-be-0.
@@ -257,14 +254,14 @@ It is not foolproof, and occasionally 0 workers, in which data loading is run on
 For large training runs, setting preload_images to True can be helpful.
 
 ```
-m.config["preload_images"] = True
+m.configpreload_images = True
 ```
 
 This will load all data into GPU memory once, at the beginning of the run. This is great, but it requires you to have enough memory space to do so.
 Similarly, increasing the batch size can speed up training. Like both of the options above, we have seen examples where performance (and accuracy) improves and decreases depending on batch size. Track experiment results carefully when altering batch size, since it directly [effects the speed of learning](https://www.baeldung.com/cs/learning-rate-batch-size).
 
 ```
-m.config["batch_size"] = 10
+m.config.batch_size = 10
 ```
 
 Remember to call m.create_trainer() after updating the config dictionary.
@@ -311,9 +308,9 @@ from pytorch_lightning import Trainer
     trainer = Trainer(
         accelerator="gpu",
         strategy="ddp",
-        devices=model.config["devices"],
+        devices=model.config.devices,
         enable_checkpointing=False,
-        max_epochs=model.config["train"]["epochs"],
+        max_epochs=model.config.train.epochs,
         logger=comet_logger
     )
 trainer.fit(m)

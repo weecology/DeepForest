@@ -33,6 +33,6 @@ class Model(Model):
 
         # define a new head for the detector with required number of classes
         model.roi_heads.box_predictor = FastRCNNPredictor(
-            in_features, num_classes=self.config["num_classes"])
+            in_features, num_classes=self.config.num_classes)
 
         return model

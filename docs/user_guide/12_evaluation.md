@@ -26,7 +26,7 @@ This was the original DeepForest metric, set to an IoU of 0.4. This means that a
 
 There is an additional difference between ecological object detection methods like tree crowns and traditional computer vision methods. Instead of a single or set of easily differentiated ground truths, we could have 60 or 70 objects that overlap in an image. How do you best assign each prediction to each ground truth?
 
-DeepForest uses the [hungarian matching algorithm](https://thinkautonomous.medium.com/computer-vision-for-tracking-8220759eee85) to assign predictions to ground truth based on maximum IoU overlap. This is slow compared to the methods above, and so isn't a good choice for running hundreds of times during model training see config["validation"]["val_accuracy_interval"] for setting the frequency of the evaluate callback for this metric.
+DeepForest uses the [hungarian matching algorithm](https://thinkautonomous.medium.com/computer-vision-for-tracking-8220759eee85) to assign predictions to ground truth based on maximum IoU overlap. This is slow compared to the methods above, and so isn't a good choice for running hundreds of times during model training see config.validation.val_accuracy_interval for setting the frequency of the evaluate callback for this metric.
 
 ### Empty Frame Accuracy
 
@@ -46,8 +46,8 @@ These metrics are largely used during training to keep track of model performanc
     m = main.deepforest()
     csv_file = get_data("OSBS_029.csv")
     root_dir = os.path.dirname(csv_file)
-    m.config["validation"]["csv_file"] = csv_file
-    m.config["validation"]["root_dir"] = root_dir
+    m.config.validation.csv_file = csv_file
+    m.config.validation.root_dir = root_dir
     results = m.trainer.validate(m)
 ```
 This creates a dictionary of the average IoU ('iou') as well as 'iou' for each class. Here there is just one class, 'Tree'. Then the COCO mAP scores. See Further Reading above for an explanation of mAP level scores. The val_bbox_regression is the loss function of the object detection box head, and the loss_classification is the loss function of the object classification head.

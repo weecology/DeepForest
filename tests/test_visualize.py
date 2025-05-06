@@ -47,7 +47,7 @@ def test_plot_prediction_dataframe(m, tmpdir):
         target_df = visualize.format_boxes(target, scores=False)
         target_df["image_path"] = path
         filenames = visualize.plot_prediction_dataframe(
-            df=target_df, savedir=tmpdir, root_dir=m.config["validation"]["root_dir"])
+            df=target_df, savedir=tmpdir, root_dir=m.config.validation.root_dir)
 
     assert all([os.path.exists(x) for x in filenames])
 

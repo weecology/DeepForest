@@ -19,6 +19,8 @@ from huggingface_hub import PyTorchModelHubMixin
 from deepforest import dataset, visualize, get_data, utilities, predict
 from deepforest import evaluate as evaluate_iou
 
+from omegaconf import DictConfig
+
 from lightning_fabric.utilities.exceptions import MisconfigurationException
 
 
@@ -27,63 +29,48 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
     Args:
         num_classes (int): number of classes in the model
-        config_file (str): path to deepforest config file
         model (model.Model()): a deepforest model object, see model.Model()
-        config_args (dict): a dictionary of key->value to update config file at run time.
-            e.g. {"batch_size":10}. This is useful for iterating over arguments during model testing.
         existing_train_dataloader: a Pytorch dataloader that yields a tuple path, images, targets
         existing_val_dataloader: a Pytorch dataloader that yields a tuple path, images, targets
+        config_file (str): path to deepforest config file
+        config_args (dict): a dictionary of key->value to update config file at run time.
+            e.g. {"batch_size":10}. This is useful for iterating over arguments during model testing.
 
     Returns:
         self: a deepforest pytorch lightning module
     """
 
-    def __init__(self,
-                 num_classes: int = 1,
-                 label_dict: dict = {"Tree": 0},
-                 transforms=None,
-                 config_file: str = 'deepforest_config.yml',
-                 config_args=None,
-                 model=None,
-                 existing_train_dataloader=None,
-                 existing_val_dataloader=None):
+    def __init__(
+        self,
+        num_classes: int = 1,
+        label_dict: dict = {"Tree": 0},
+        transforms=None,
+        model=None,
+        existing_train_dataloader=None,
+        existing_val_dataloader=None,
+        config: DictConfig = None,
+        config_args: typing.Optional[dict] = None,
+    ):
 
         super().__init__()
 
-        # Read config file. Defaults to deepforest_config.yml in working directory.
-        # Falls back to default installed version
-        if os.path.exists(config_file):
-            config_path = config_file
-        else:
-            try:
-                config_path = get_data("deepforest_config.yml")
-            except Exception as e:
-                raise ValueError("No config file provided and deepforest_config.yml "
-                                 "not found either in local directory or in installed "
-                                 "package location. {}".format(e))
+        # If not provided, load default config via hydra.
+        if config is None:
+            config = utilities.load_config("config", overrides=config_args)
+        elif 'config_file' in config:
+            config = utilities.load_config("config", overrides=config['config_args'])
+        elif config_args is not None:
+            warnings.warn(
+                f"Ignoring options as configuration object was provided: {config_args}")
 
-        print("Reading config file: {}".format(config_path))
-        self.config = utilities.read_config(config_path)
-        self.config["num_classes"] = num_classes
+        self.config = config
+
         # If num classes is specified, overwrite config
         if not num_classes == 1:
             warnings.warn(
                 "Directly specifying the num_classes arg in deepforest.main will be deprecated in 2.0 in favor of config_args. Use main.deepforest(config_args={'num_classes':value})"
             )
-
-        # Update config with user supplied arguments
-        if config_args:
-            for key, value in config_args.items():
-                if key not in self.config.keys():
-                    raise ValueError(
-                        "Config argument {} not found in config file".format(key))
-                if type(value) == dict:
-                    for subkey, subvalue in value.items():
-                        print("setting config {} to {}".format(subkey, subvalue))
-                        self.config[key][subkey] = subvalue
-                else:
-                    print("setting config {} to {}".format(key, value))
-                    self.config[key] = value
+            self.config.num_classes = num_classes
 
         self.model = model
 
@@ -97,7 +84,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
         # Metrics
         self.iou_metric = IntersectionOverUnion(
-            class_metrics=True, iou_threshold=self.config["validation"]["iou_threshold"])
+            class_metrics=True, iou_threshold=self.config.validation.iou_threshold)
         self.mAP_metric = MeanAveragePrecision()
 
         # Empty frame accuracy
@@ -107,12 +94,12 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         self.create_trainer()
 
         # Label encoder and decoder
-        if not len(label_dict) == self.config["num_classes"]:
+        if not len(label_dict) == self.config.num_classes:
             raise ValueError('label_dict {} does not match requested number of '
                              'classes {}, please supply a label_dict argument '
                              '{{"label1":0, "label2":1, "label3":2 ... etc}} '
                              'for each label in the '
-                             'dataset'.format(label_dict, self.config["num_classes"]))
+                             'dataset'.format(label_dict, self.config.num_classes))
 
         self.label_dict = label_dict
         self.numeric_to_label_dict = {v: k for k, v in label_dict.items()}
@@ -151,7 +138,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         self.numeric_to_label_dict = loaded_model.numeric_to_label_dict
         # Set bird-specific settings if loading the bird model
         if model_name == "weecology/deepforest-bird":
-            self.config['retinanet']["score_thresh"] = 0.3
+            self.config.retinanet.score_thresh = 0.3
             self.label_dict = {"Bird": 0}
             self.numeric_to_label_dict = {v: k for k, v in self.label_dict.items()}
 
@@ -162,7 +149,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         Args:
             label_dict (dict): Dictionary mapping class names to numeric IDs.
         """
-        if len(label_dict) != self.config["num_classes"]:
+        if len(label_dict) != self.config.num_classes:
             raise ValueError("The length of label_dict must match the number of classes.")
 
         self.label_dict = label_dict
@@ -202,7 +189,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
     def create_model(self):
         """Define a deepforest architecture. This can be done in two ways.
         Passed as the model argument to deepforest __init__(), or as a named
-        architecture in config["architecture"], which corresponds to a file in
+        architecture in config.architecture, which corresponds to a file in
         models/, as is a subclass of model.Model(). The config args in the
         .yaml are specified.
 
@@ -211,7 +198,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         """
         if self.model is None:
             model_name = importlib.import_module("deepforest.models.{}".format(
-                self.config["architecture"]))
+                self.config.architecture))
             self.model = model_name.Model(config=self.config).create_model()
 
     def create_trainer(self, logger=None, callbacks=[], **kwargs):
@@ -226,7 +213,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             None
         """
         # If val data is passed, monitor learning rate and setup classification metrics
-        if not self.config["validation"]["csv_file"] is None:
+        if not self.config.validation.csv_file is None:
             if logger is not None:
                 lr_monitor = LearningRateMonitor(logging_interval='epoch')
                 callbacks.append(lr_monitor)
@@ -245,11 +232,11 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
         trainer_args = {
             "logger": logger,
-            "max_epochs": self.config["train"]["epochs"],
+            "max_epochs": self.config.train.epochs,
             "enable_checkpointing": enable_checkpointing,
-            "devices": self.config["devices"],
-            "accelerator": self.config["accelerator"],
-            "fast_dev_run": self.config["train"]["fast_dev_run"],
+            "devices": self.config.devices,
+            "accelerator": self.config.accelerator,
+            "fast_dev_run": self.config.train.fast_dev_run,
             "callbacks": callbacks,
             "limit_val_batches": limit_val_batches,
             "num_sanity_val_steps": num_sanity_val_steps
@@ -260,7 +247,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         self.trainer = pl.Trainer(**trainer_args)
 
     def on_fit_start(self):
-        if self.config["train"]["csv_file"] is None:
+        if self.config.train.csv_file is None:
             raise AttributeError(
                 "Cannot train with a train annotations file, please set 'config['train']['csv_file'] before calling deepforest.create_trainer()'"
             )
@@ -299,7 +286,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                                  root_dir=root_dir,
                                  transforms=self.transforms(augment=augment),
                                  label_dict=self.label_dict,
-                                 preload_images=self.config["train"]["preload_images"])
+                                 preload_images=self.config.train.preload_images)
         if len(ds) == 0:
             raise ValueError(
                 f"Dataset from {csv_file} is empty. Check CSV for valid entries and columns."
@@ -310,7 +297,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             batch_size=batch_size,
             shuffle=shuffle,
             collate_fn=utilities.collate_fn,
-            num_workers=self.config["workers"],
+            num_workers=self.config.workers,
         )
 
         return data_loader
@@ -324,11 +311,11 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         if self.existing_train_dataloader:
             return self.existing_train_dataloader
 
-        loader = self.load_dataset(csv_file=self.config["train"]["csv_file"],
-                                   root_dir=self.config["train"]["root_dir"],
+        loader = self.load_dataset(csv_file=self.config.train.csv_file,
+                                   root_dir=self.config.train.root_dir,
                                    augment=True,
                                    shuffle=True,
-                                   batch_size=self.config["batch_size"])
+                                   batch_size=self.config.batch_size)
 
         return loader
 
@@ -344,12 +331,12 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
         if self.existing_val_dataloader:
             return self.existing_val_dataloader
-        if self.config["validation"]["csv_file"] is not None:
-            loader = self.load_dataset(csv_file=self.config["validation"]["csv_file"],
-                                       root_dir=self.config["validation"]["root_dir"],
+        if self.config.validation.csv_file is not None:
+            loader = self.load_dataset(csv_file=self.config.validation.csv_file,
+                                       root_dir=self.config.validation.root_dir,
                                        augment=False,
                                        shuffle=False,
-                                       batch_size=self.config["batch_size"])
+                                       batch_size=self.config.batch_size)
         return loader
 
     def predict_dataloader(self, ds):
@@ -362,9 +349,9 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             torch.utils.data.DataLoader: A dataloader object that can be used for prediction.
         """
         loader = torch.utils.data.DataLoader(ds,
-                                             batch_size=self.config["batch_size"],
+                                             batch_size=self.config.batch_size,
                                              shuffle=False,
-                                             num_workers=self.config["workers"])
+                                             num_workers=self.config.workers)
 
         return loader
 
@@ -416,7 +403,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         result = predict._predict_image_(model=self.model,
                                          image=image,
                                          path=path,
-                                         nms_thresh=self.config["nms_thresh"],
+                                         nms_thresh=self.config.nms_thresh,
                                          return_plot=return_plot,
                                          thickness=thickness,
                                          color=color)
@@ -479,7 +466,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                                                annotations=df,
                                                dataloader=dataloader,
                                                root_dir=root_dir,
-                                               nms_thresh=self.config["nms_thresh"],
+                                               nms_thresh=self.config.nms_thresh,
                                                color=color,
                                                savedir=savedir,
                                                thickness=thickness)
@@ -531,7 +518,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             pd.DataFrame or tuple: Predictions dataframe or (predictions, crops) tuple
         """
         self.model.eval()
-        self.model.nms_thresh = self.config["nms_thresh"]
+        self.model.nms_thresh = self.config.nms_thresh
 
         # if 'raster_path' is used, give a deprecation warning and use 'path' instead
         if raster_path is not None:
@@ -545,7 +532,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             # Get available gpus and regenerate trainer
             warnings.warn(
                 "More than one GPU detected. Using only the first GPU for predict_tile.")
-            self.config["devices"] = 1
+            self.config.devices = 1
             self.create_trainer()
 
         if (path is None) and (image is None):
@@ -568,7 +555,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                 raise ValueError("path is required if in_memory is False")
 
             # Check for workers config when using out of memory dataset
-            if self.config["workers"] > 0:
+            if self.config.workers > 0:
                 raise ValueError(
                     "workers must be 0 when using out-of-memory dataset (in_memory=False). Set config['workers']=0 and recreate trainer self.create_trainer()."
                 )
@@ -793,7 +780,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         """Compute metrics."""
 
         #Evaluate every n epochs
-        if self.current_epoch % self.config["validation"]["val_accuracy_interval"] == 0:
+        if self.current_epoch % self.config.validation.val_accuracy_interval == 0:
 
             if len(self.predictions) == 0:
                 return None
@@ -823,7 +810,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                 self.mAP_metric.reset()
 
             #Create a geospatial column
-            ground_df = utilities.read_file(self.config["validation"]["csv_file"])
+            ground_df = utilities.read_file(self.config.validation.csv_file)
             ground_df["label"] = ground_df.label.apply(lambda x: self.label_dict[x])
 
             # If there are empty frames, evaluate empty frame accuracy separately
@@ -859,7 +846,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                 results = evaluate_iou.__evaluate_wrapper__(
                     predictions=self.predictions_df,
                     ground_df=ground_df,
-                    iou_threshold=self.config["validation"]["iou_threshold"],
+                    iou_threshold=self.config.validation.iou_threshold,
                     numeric_to_label_dict=self.numeric_to_label_dict)
 
                 if empty_accuracy is not None:
@@ -937,37 +924,41 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
     def configure_optimizers(self):
         optimizer = optim.SGD(self.model.parameters(),
-                              lr=self.config["train"]["lr"],
+                              lr=self.config.train.lr,
                               momentum=0.9)
 
-        scheduler_config = self.config["train"]["scheduler"]
-        scheduler_type = scheduler_config["type"]
-        params = scheduler_config["params"]
+        scheduler_config = self.config.train.scheduler
+        scheduler_type = scheduler_config.type
+        params = scheduler_config.params
+
+        # Assume the lambda is a function of epoch
+        lr_lambda = lambda epoch: eval(params.lr_lambda)
 
         if scheduler_type == "cosine":
-            scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-                optimizer, T_max=params["T_max"], eta_min=params["eta_min"])
+            scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,
+                                                                   T_max=params.T_max,
+                                                                   eta_min=params.eta_min)
 
         elif scheduler_type == "lambdaLR":
-            scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer,
-                                                          lr_lambda=params["lr_lambda"])
+            scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lr_lambda)
 
         elif scheduler_type == "multiplicativeLR":
-            scheduler = torch.optim.lr_scheduler.MultiplicativeLR(
-                optimizer, lr_lambda=params["lr_lambda"])
+            scheduler = torch.optim.lr_scheduler.MultiplicativeLR(optimizer,
+                                                                  lr_lambda=lr_lambda)
 
         elif scheduler_type == "stepLR":
             scheduler = torch.optim.lr_scheduler.StepLR(optimizer,
-                                                        step_size=params["step_size"],
-                                                        gamma=params["gamma"])
+                                                        step_size=params.step_size,
+                                                        gamma=params.gamma)
 
         elif scheduler_type == "multistepLR":
-            scheduler = torch.optim.lr_scheduler.MultiStepLR(
-                optimizer, milestones=params["milestones"], gamma=params["gamma"])
+            scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer,
+                                                             milestones=params.milestones,
+                                                             gamma=params.gamma)
 
         elif scheduler_type == "exponentialLR":
             scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer,
-                                                               gamma=params["gamma"])
+                                                               gamma=params.gamma)
 
         else:
             scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
@@ -982,7 +973,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                 eps=params["eps"])
 
         # Monitor rate is val data is used
-        if self.config["validation"]["csv_file"] is not None:
+        if self.config.validation.csv_file is not None:
             return {
                 'optimizer': optimizer,
                 'lr_scheduler': scheduler,
@@ -1008,7 +999,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                                         root_dir=os.path.dirname(csv_file))
 
         if iou_threshold is None:
-            iou_threshold = self.config["validation"]["iou_threshold"]
+            iou_threshold = self.config.validation.iou_threshold
 
         results = evaluate_iou.__evaluate_wrapper__(
             predictions=predictions,
