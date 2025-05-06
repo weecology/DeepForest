@@ -169,7 +169,7 @@ def test_crop_model_load_checkpoint_with_explicit_num_classes(tmpdir, crop_model
     crop_model = model.CropModel(num_classes=num_classes)
     crop_model.create_trainer(fast_dev_run=True)
     crop_model.load_from_disk(train_dir=tmpdir, val_dir=tmpdir)
-
+    crop_model.label_dict = {0: "label1", 1: "label2", 2: "label3"}
     crop_model.trainer.fit(crop_model)
     checkpoint_path = os.path.join(tmpdir, "epoch=0-step=0.ckpt")
     crop_model.trainer.save_checkpoint(checkpoint_path)
