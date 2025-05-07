@@ -69,6 +69,7 @@ class TreeDataset(Dataset):
         """
         self.annotations = pd.read_csv(csv_file)
         self.root_dir = root_dir
+        self.validate_annotations()
         if transforms is None:
             self.transform = get_transform(augment=train)
         else:
@@ -87,6 +88,50 @@ class TreeDataset(Dataset):
                 img_name = os.path.join(self.root_dir, x)
                 image = np.array(Image.open(img_name).convert("RGB")) / 255
                 self.image_dict[idx] = image.astype("float32")
+
+    def validate_annotations(self):
+        errors = []
+        for idx, row in self.annotations.iterrows():
+            img_path = os.path.join(self.root_dir, row['image_path'])
+            try:
+                with Image.open(img_path) as img:
+                    width, height = img.size
+            except Exception as e:
+                errors.append(f"Failed to open image {img_path}: {e}")
+                continue
+
+            # Extract bounding box
+            try:
+                if 'geometry' in self.annotations.columns:
+                    geom = shapely.wkt.loads(row['geometry'])
+                    xmin, ymin, xmax, ymax = geom.bounds
+                else:
+                    xmin = row['xmin']
+                    ymin = row['ymin']
+                    xmax = row['xmax']
+                    ymax = row['ymax']
+            except Exception as e:
+                errors.append(f"Invalid box format at index {idx}: {e}")
+                continue
+
+            #Check if box is valid
+            oob_issues = []
+            if xmin < 0:
+                oob_issues.append(f"xmin ({xmin}) < 0")
+            if xmax > width:
+                oob_issues.append(f"xmax ({xmax}) > image width ({width})")
+            if ymin < 0:
+                oob_issues.append(f"ymin ({ymin}) < 0")
+            if ymax > height:
+                oob_issues.append(f"ymax ({ymax}) > image height ({height})")
+
+            if oob_issues:
+                errors.append(
+                    f"Box, ({xmin}, {ymin}, {xmax}, {ymax}) exceeds image dimensions, ({width}, {height}). Issues: {', '.join(oob_issues)}."
+                )
+
+        if errors:
+            raise ValueError("\n".join(errors))
 
     def __len__(self):
         return len(self.image_names)
