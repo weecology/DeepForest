@@ -16,29 +16,24 @@ import json
 import urllib.request
 from huggingface_hub import hf_hub_download
 from huggingface_hub.errors import RevisionNotFoundError, HfHubHTTPError
-
-from hydra import compose, initialize
-from hydra.core.global_hydra import GlobalHydra
-from omegaconf import DictConfig
+from omegaconf import DictConfig, OmegaConf
 
 
-def load_config(config_name: str = "config",
-                overrides: Union[str, list, dict] = []) -> DictConfig:
+def load_config(config_name: str = "config.yaml",
+                overrides: Union[DictConfig, dict] = {}) -> DictConfig:
     """Load yaml configuration file via Hydra."""
-    if not GlobalHydra().is_initialized():
-        initialize(config_path="conf", version_base=None)
 
-    if isinstance(overrides, dict):
-        cfg = compose(config_name=config_name)
-        cfg.merge_with(overrides)
-    else:
-        # For Hydra compose API
-        if isinstance(overrides, str):
-            overrides = [overrides]
+    if not config_name.endswith('yaml'):
+        config_name += '.yaml'
 
-        cfg = compose(config_name=config_name, overrides=overrides)
+    if overrides is None:
+        overrides = {}
 
-    return cfg
+    config_root = os.path.abspath(os.path.join(_ROOT, "conf"))
+    config = OmegaConf.load(os.path.join(config_root, config_name))
+    config.merge_with(overrides)
+
+    return config
 
 
 class DownloadProgressBar(tqdm):
