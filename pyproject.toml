@@ -95,5 +95,9 @@ dev = [
     "myst-parser",
 ]
 
+[project.scripts]
+deepforest-predict = "deepforest.scripts.predict:main"
+deepforest-train = "deepforest.scripts.train:main"
+
 [tool.setuptools.packages.find]
 where = ["src"]
