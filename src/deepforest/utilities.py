@@ -6,18 +6,17 @@ import pandas as pd
 import rasterio
 import shapely
 import xmltodict
-import yaml
 from tqdm import tqdm
 from typing import Union
 
 from PIL import Image
-from deepforest import _ROOT
 import json
-import urllib.request
-from huggingface_hub import hf_hub_download
-from huggingface_hub.errors import RevisionNotFoundError, HfHubHTTPError
 from omegaconf import DictConfig, OmegaConf
 
+from deepforest import _ROOT
+import matplotlib.pyplot as plt
+import numpy as np
+import rasterio
 
 def load_config(config_name: str = "config.yaml",
                 overrides: Union[DictConfig, dict] = {}) -> DictConfig:

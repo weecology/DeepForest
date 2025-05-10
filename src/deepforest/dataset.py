@@ -17,7 +17,7 @@ import pandas as pd
 import numpy as np
 from torch.utils.data import Dataset
 import albumentations as A
-from albumentations import functional as F
+from torch.nn import functional as Ftorch
 from albumentations.pytorch import ToTensorV2
 import torch
 import typing
@@ -27,7 +27,6 @@ from deepforest import preprocess
 from rasterio.windows import Window
 from torchvision import transforms
 import slidingwindow
-import warnings
 import shapely
 
 
@@ -152,14 +151,15 @@ class TreeDataset(Dataset):
 class TileDataset(Dataset):
 
     def __init__(self,
-                 tile: typing.Optional[np.ndarray],
+                 path: typing.Optional[str],
+                 image: typing.Optional[np.ndarray],
                  preload_images: bool = False,
                  patch_size: int = 400,
                  patch_overlap: float = 0.05):
         """
-        
         Args:
-            tile: an in memory numpy array.
+            path: a path to a raster file.
+            image: an in memory numpy array.
             patch_size (int): The size for the crops used to cut the input raster into smaller pieces. This is given in pixels, not any geographic unit.
             patch_overlap (float): The horizontal and vertical overlap among patches
             preload_images (bool): If true, the entire dataset is loaded into memory. This is useful for small datasets, but not recommended for large datasets since both the tile and the crops are stored in memory.
@@ -167,12 +167,19 @@ class TileDataset(Dataset):
         Returns:
             ds: a pytorch dataset
         """
-        if not tile.shape[2] == 3:
+        if path is not None:
+            self.image_path = path
+            image = rio.open(path).read()
+            image = np.moveaxis(image, 0, 2)
+        else:
+            self.image_path = None
+
+        if not image.shape[2] == 3:
             raise ValueError(
                 "Only three band raster are accepted. Channels should be the final dimension. Input tile has shape {}. Check for transparent alpha channel and remove if present"
-                .format(tile.shape))
+                .format(image.shape))
 
-        self.image = tile
+        self.image = image
         self.preload_images = preload_images
         self.windows = preprocess.compute_windows(self.image, patch_size, patch_overlap)
 
@@ -186,16 +193,148 @@ class TileDataset(Dataset):
     def __len__(self):
         return len(self.windows)
 
+    def collate_fn(self, batch):
+        # Separate first and second positions from each batch item
+        crops = [item[0] for item in batch]
+        windows = [item[1] for item in batch]
+        image_basename = [os.path.basename(self.image_path)] * len(windows)
+        
+        # Concatenate crops and return with windows
+        return torch.stack(crops, dim=0), windows, image_basename
+    
+    def window_list(self):
+        return [x.getRect() for x in self.windows]
+    
     def __getitem__(self, idx):
         # Read image if not in memory
         if self.preload_images:
             crop = self.crops[idx]
         else:
+            window_rect = self.windows[idx].getRect()
             crop = self.image[self.windows[idx].indices()]
             crop = preprocess.preprocess_image(crop)
 
-        return crop
+        return crop, window_rect
 
+class BatchTileDataset(Dataset):
+    def __init__(self, image_paths, patch_size, patch_overlap):
+        """
+        Args:
+            image_paths (list): List of image paths.
+            patch_size (int): Size of the patches to extract.
+            patch_overlap (int): Overlap between patches.
+        """
+        self.image_paths = image_paths
+        self.patch_size = patch_size
+        self.patch_overlap = patch_overlap
+
+    def create_overlapping_views(self, input_tensor, size, overlap):
+        """
+        Creates overlapping views of a 4D tensor.
+
+        Args:
+            input_tensor (torch.Tensor): A 4D tensor of shape [N, C, H, W].
+            size (int): The size of the sliding window (square).
+            overlap (int): The overlap between adjacent windows.
+
+        Returns:
+            torch.Tensor: A tensor containing all the overlapping views.
+                          The output shape is [N * num_windows, C, size, size].
+        """
+
+        # Get the input tensor shape
+        N, C, H, W = input_tensor.shape
+
+        # Calculate the number of padding pixels needed, accounting for overlap
+        padding_h = size - ((H - overlap) % (size - overlap)) if H % (size - overlap) != 0 else 0
+        padding_w = size - ((W - overlap) % (size - overlap)) if W % (size - overlap) != 0 else 0
+
+        # Pad the input tensor
+        padded_tensor = Ftorch.pad(input_tensor, (padding_w, padding_w, padding_h, padding_h), "constant", 0)
+
+        # Calculate the step size for the sliding window
+        step = size - overlap
+
+        # Use torch.unfold to create the overlapping views
+        unfolded_h = padded_tensor.unfold(2, size, step)
+        unfolded = unfolded_h.unfold(3, size, step)
+
+        # The unfolded tensor has shape:
+        # [N, C, H', W', size, size]
+        # where H' and W' are the number of sliding windows in the height and width dimensions
+
+        # Reshape to [N * H' * W', C, size, size]
+        output = unfolded.permute(0, 2, 3, 1, 4, 5).reshape(-1, C, size, size)
+                
+        return output
+
+    def _create_patches(self, image):
+        image_tensor = torch.tensor(image).permute(2, 0, 1).unsqueeze(0) # Convert to (N, C, H, W)
+        patch_overlap_size = int(self.patch_size * self.patch_overlap)
+        patches = self.create_overlapping_views(image_tensor, self.patch_size, patch_overlap_size)
+
+        return patches
+    
+    def window_list(self):
+        """Get the original positions of patches in the image.
+        
+        Returns:
+            list: List of tuples containing (x, y, w, h) coordinates of each patch
+        """
+        image_tensor = torch.tensor(self.image).permute(2, 0, 1).unsqueeze(0)  # Convert to (N, C, H, W)
+        N, C, H, W = image_tensor.shape
+        patch_overlap_size = int(self.patch_size * self.patch_overlap)
+        step = self.patch_size - patch_overlap_size
+
+        # Calculate padding needed
+        padding_h = self.patch_size - ((H - patch_overlap_size) % (self.patch_size - patch_overlap_size)) if H % (self.patch_size - patch_overlap_size) != 0 else 0
+        padding_w = self.patch_size - ((W - patch_overlap_size) % (self.patch_size - patch_overlap_size)) if W % (self.patch_size - patch_overlap_size) != 0 else 0
+
+        # Adjust H and W to include padding
+        H_padded = H + padding_h
+        W_padded = W + padding_w
+
+        windows = []
+        for y in range(0, H_padded - self.patch_size + 1, step):
+            for x in range(0, W_padded - self.patch_size + 1, step):
+                windows.append((x, y, self.patch_size, self.patch_size))
+
+        return windows
+
+    def collate_fn(self, batch):
+        # Separate first and second positions from each batch item
+        crops = [item[0] for item in batch]
+        windows = []
+        for item in batch:
+            windows.extend(item[1])
+
+        image_basenames = []
+        for item in batch:
+            image_basenames.extend(item[2])
+        
+        crops = torch.cat(crops, dim=0)
+        
+        return crops, windows, image_basenames
+
+    def __len__(self):
+        return len(self.image_paths)
+
+    def _load_and_preprocess_image(self, image_path):
+        image = Image.open(image_path)
+        image = np.array(image)
+        image = image / 255.0
+        image = image.astype(np.float32)
+        
+        return image
+
+    def __getitem__(self, idx):
+        self.image = self._load_and_preprocess_image(self.image_paths[idx])
+        patches = self._create_patches(self.image)
+        window_list = self.window_list()
+        image_basename = os.path.basename(self.image_paths[idx])
+        image_basename = [image_basename] * len(window_list)
+
+        return patches, window_list, image_basename
 
 class RasterDataset:
     """Dataset for predicting on raster windows.
@@ -239,6 +378,18 @@ class RasterDataset:
     def __len__(self):
         return self.n_windows
 
+    def collate_fn(self, batch):
+        # Separate first and second positions from each batch item
+        crops = [item[0] for item in batch]
+        windows = [item[1] for item in batch]
+        image_paths = [item[2] for item in batch]
+        
+        # Concatenate crops and return with windows
+        return torch.stack(crops, dim=0), windows, image_paths
+    
+    def window_list(self):
+        return [x.getRect() for x in self.windows]
+
     def __getitem__(self, idx):
         """Get a window of the raster.
 
@@ -258,7 +409,7 @@ class RasterDataset:
         window_data = torch.from_numpy(window_data).float()  # Convert to torch tensor
         window_data = window_data / 255.0  # Normalize
 
-        return window_data  # Already in (C, H, W) format from rasterio
+        return window_data, self.window_list()[idx], os.path.basename(self.raster_path)  # Already in (C, H, W) format from rasterio
 
 
 def bounding_box_transform(augment=False):
