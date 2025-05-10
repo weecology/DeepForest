@@ -17,7 +17,6 @@ import pandas as pd
 import numpy as np
 from torch.utils.data import Dataset
 import albumentations as A
-from albumentations import functional as F
 from albumentations.pytorch import ToTensorV2
 import torch
 import typing
@@ -197,7 +196,7 @@ class TileDataset(Dataset):
         return crop
 
 
-class RasterDataset:
+class RasterDataset(Dataset):
     """Dataset for predicting on raster windows.
 
     Args:
@@ -322,3 +321,83 @@ class BoundingBoxDataset(Dataset):
             image = box
 
         return image
+
+
+class BatchTileDataset(Dataset):
+
+    def __init__(self,
+                 tile: typing.Optional[np.ndarray],
+                 preload_images: bool = False,
+                 patch_size: int = 400,
+                 patch_overlap: float = 0.05):
+        """
+        
+        Args:
+            tile: an in memory numpy array.
+            patch_size (int): The size for the crops used to cut the input raster into smaller pieces. This is given in pixels, not any geographic unit.
+            patch_overlap (float): The horizontal and vertical overlap among patches
+            preload_images (bool): If true, the entire dataset is loaded into memory. This is useful for small datasets, but not recommended for large datasets since both the tile and the crops are stored in memory.
+
+        Returns:
+            ds: a pytorch dataset
+        """
+        if not tile.shape[2] == 3:
+            raise ValueError(
+                "Only three band raster are accepted. Channels should be the final dimension. Input tile has shape {}. Check for transparent alpha channel and remove if present"
+                .format(tile.shape))
+
+        self.image = tile
+        self.preload_images = preload_images
+        self.patch_size = patch_size
+        self.patch_overlap = patch_overlap
+
+        if self.preload_images:
+            self.crops = []
+            self.windows = []
+            for idx in range(len(self.image)):
+                crop = self.image[idx]
+                crop = preprocess.preprocess_image(crop)
+                self.crops.append(crop)
+                self.windows.append(self.get_index(idx))
+
+    def __len__(self):
+        return len(self.crops)
+
+    def __getitem__(self, idx):
+        # Read image if not in memory
+        if self.preload_images:
+            crop = self.crops[idx]
+        else:
+            crop = self.image[self.windows[idx]]
+            crop = preprocess.preprocess_image(crop)
+
+        return crop
+
+    def get_index(self, idx):
+        """Get the original position of a patch in the image.
+
+        Args:
+            idx (int): Index of the patch
+
+        Returns:
+            tuple: (y, x) coordinates of the top-left corner of the patch
+        """
+        # Calculate number of patches in width
+        n_patches_w = (self.image.shape[1] - self.patch_size) // (
+            self.patch_size - int(self.patch_size * self.patch_overlap)) + 1
+
+        # Calculate position
+        y = (idx // n_patches_w) * (self.patch_size -
+                                    int(self.patch_size * self.patch_overlap))
+        x = (idx % n_patches_w) * (self.patch_size -
+                                   int(self.patch_size * self.patch_overlap))
+
+        return (y, x)
+
+    def collate_fn(self, batch):
+        # Separate first and second positions from each batch item
+        crops = [item[0] for item in batch]
+        windows = [item[1] for item in batch]
+
+        # Concatenate crops and return with windows
+        return torch.cat(crops, dim=0), windows

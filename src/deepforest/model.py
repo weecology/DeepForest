@@ -108,11 +108,16 @@ class CropModel(LightningModule):
                  batch_size=4,
                  num_workers=0,
                  lr=0.0001,
+                 label_dict=None,
                  model=None):
         super().__init__()
         self.num_classes = num_classes
         self.num_workers = num_workers
-        self.numeric_to_label_dict = None
+        self.label_dict = label_dict
+        if label_dict is not None:
+            self.numeric_to_label_dict = {v: k for k, v in label_dict.items()}
+        else:
+            self.numeric_to_label_dict = None
         self.save_hyperparameters()
 
         if num_classes is not None:
@@ -166,6 +171,7 @@ class CropModel(LightningModule):
             "Precision": self.precision_metric
         })
         self.label_dict = checkpoint['label_dict']
+        self.numeric_to_label_dict = {v: k for k, v in self.label_dict.items()}
 
     def load_from_disk(self, train_dir, val_dir):
         self.train_ds = ImageFolder(root=train_dir,
