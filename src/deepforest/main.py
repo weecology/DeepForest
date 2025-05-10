@@ -351,8 +351,8 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         loader = torch.utils.data.DataLoader(ds,
                                              batch_size=self.config.batch_size,
                                              shuffle=False,
-                                             num_workers=self.config.workers)
-
+                                             num_workers=self.config.workers,
+                                             collate_fn=ds.collate_fn)
         return loader
 
     def predict_image(self,
@@ -482,11 +482,9 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                      patch_size=400,
                      patch_overlap=0.05,
                      iou_threshold=0.15,
-                     in_memory=True,
+                     dataloader_strategy="in_memory",
                      return_plot=False,
                      mosaic=True,
-                     sigma=0.5,
-                     thresh=0.001,
                      color=None,
                      thickness=1,
                      crop_model=None,
@@ -503,10 +501,11 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             patch_size: patch size for each window
             patch_overlap: patch overlap among windows
             iou_threshold: Minimum iou overlap among predictions between windows to be suppressed
-            in_memory: If true, the entire dataset is loaded into memory
+            dataloader_strategy: "single", "batch", or "window". 
+                - "Single" loads the entire image into memory and passes individual windows to GPU and cannot be parallelized. 
+                - "batch" loads the entire image into GPU memory and creates views of an image as batch, requires in the entire tile to fit into GPU memory. CPU parallelization is possible for loading images.
+                - "window" loads only the desired window of the image from the raster dataset. Most memory efficient option, but cannot parallelize across windows due to rasterio GIL.
             mosaic: Return a single prediction dataframe (True) or a tuple of image crops and predictions (False)
-            sigma: variance of Gaussian function used in Gaussian Soft NMS
-            thresh: the score thresh used to filter bboxes after soft-nms performed
             crop_model: a deepforest.model.CropModel object to predict on crops
             crop_transform: a torchvision.transforms object to apply to crops
             crop_augment: a boolean to apply augmentations to crops
@@ -527,30 +526,24 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                 DeprecationWarning)
             path = raster_path
 
-        # if more than one GPU present, use only a the first available gpu
-        if torch.cuda.device_count() > 1:
-            # Get available gpus and regenerate trainer
-            warnings.warn(
-                "More than one GPU detected. Using only the first GPU for predict_tile.")
-            self.config.devices = 1
-            self.create_trainer()
 
         if (path is None) and (image is None):
             raise ValueError(
                 "Both tile and tile_path are None. Either supply a path to a tile on disk, or read one into memory!"
             )
 
-        if in_memory:
-            if path is None:
-                image = image
-            else:
-                image = rio.open(path).read()
-                image = np.moveaxis(image, 0, 2)
-
-            ds = dataset.TileDataset(tile=image,
+        if dataloader_strategy == "single":
+            ds = dataset.TileDataset(path=path,
+                                     image=image,
                                      patch_overlap=patch_overlap,
                                      patch_size=patch_size)
-        else:
+            
+        elif dataloader_strategy == "batch":
+            ds = dataset.BatchTileDataset(image_paths=path,
+                                          patch_overlap=patch_overlap,
+                                          patch_size=patch_size)
+            
+        elif dataloader_strategy == "window":
             if path is None:
                 raise ValueError("path is required if in_memory is False")
 
@@ -573,15 +566,15 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                 results.append(boxes)
 
         if mosaic:
-            results = predict.mosiac(results,
-                                     ds.windows,
-                                     sigma=sigma,
-                                     thresh=thresh,
-                                     iou_threshold=iou_threshold)
+            results = predict.mosiac(results, iou_threshold=iou_threshold)
+            
+            if results.empty:
+                warnings.warn("No predictions made, returning None")
+                return None
+            
             results["label"] = results.label.apply(
                 lambda x: self.numeric_to_label_dict[x])
-            if path:
-                results["image_path"] = os.path.basename(path)
+            
             if return_plot:
                 # Add deprecated warning
                 warnings.warn("return_plot is deprecated and will be removed in 2.0. "
@@ -642,7 +635,11 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             results = utilities.read_file(results)
 
         else:
-            root_dir = os.path.dirname(path)
+            if isinstance(path, list):
+                root_dir = os.path.dirname(path[0])
+                print(f"Root directory determined from the first path in the list: {root_dir}")
+            else:
+                root_dir = os.path.dirname(path)
             results = utilities.read_file(results, root_dir=root_dir)
 
         return results
@@ -878,12 +875,19 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                                 pass
 
     def predict_step(self, batch, batch_idx):
-        batch_results = self.model(batch)
-
+        crops, window_list, image_basenames = batch
+        batch_results = self.model(crops)
+        
         results = []
-        for result in batch_results:
+        for i, result in enumerate(batch_results):
+            window_rect = window_list[i]
+            image_basename = image_basenames[i]
             boxes = visualize.format_boxes(result)
+            boxes["window_xmin"] = window_rect[0] 
+            boxes["window_ymin"] = window_rect[1]
+            boxes["image_path"] = image_basename
             results.append(boxes)
+            
         return results
 
     def predict_batch(self, images, preprocess_fn=None):

@@ -15,7 +15,7 @@ import albumentations as A
 from albumentations.pytorch import ToTensorV2
 
 from deepforest import main, get_data, dataset, model
-from deepforest.visualize import format_geometry
+from deepforest.visualize import format_geometry, plot_results
 from deepforest.utilities import read_file
 
 from pytorch_lightning import Trainer
@@ -387,6 +387,20 @@ def test_predict_tile_from_array(m, path):
 
     assert not prediction.empty
 
+
+def test_predict_tile_batch_strategy(m, path):
+    m.config["train"]["fast_dev_run"] = False
+    m.create_trainer()
+
+    prediction_batch = m.predict_tile(path=path,
+                                patch_size=400,
+                                patch_overlap=0,
+                                dataloader_strategy="batch")
+
+    assert not prediction_batch.empty
+
+    # View the predictions
+    plot_results(prediction_batch)
 
 def test_predict_tile_no_mosaic(m, path):
     # test no mosaic, return a tuple of crop and prediction
