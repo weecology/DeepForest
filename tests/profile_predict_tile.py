@@ -70,13 +70,11 @@ def run():
     m.create_model()
     #m.load_model("Weecology/deepforest-bird")
     m.config["train"]["fast_dev_run"] = False
-    m.config["batch_size"] = 5
-    m.config["predict"]["pin_memory"] = False
-    
+    m.config["batch_size"] = 3
     strategies = ["single", "batch"]
     
     # Get test data
-    paths = glob.glob("/blue/ewhite/b.weinstein/BOEM/JPG_20241220_145900/*.jpg")[:20]
+    paths = glob.glob("/blue/ewhite/b.weinstein/BOEM/JPG_20241220_145900/*.jpg")[:50]
     
     # Test configurations
     worker_configs = [0, 5, 10]
@@ -86,11 +84,16 @@ def run():
     results = []
     for strategy in strategies:
         for device in devices:
-            for workers in worker_configs:
+            if strategy == "single":
+                # Only run workers = 0 for single strategy
                 m.create_trainer()  # Recreate trainer for each configuration
-                result = profile_predict_tile(m, paths, device, workers, dataloader_strategy=strategy)
+                result = profile_predict_tile(m, paths, device, workers=0, dataloader_strategy=strategy)
                 results.append(result)
-    
+            else:
+                for workers in worker_configs:
+                    m.create_trainer()  # Recreate trainer for each configuration
+                    result = profile_predict_tile(m, paths, device, workers, dataloader_strategy=strategy)
+                    results.append(result)
     # Create comparison table
     table_data = []
     headers = ["Device", "Workers", "Strategy", "Mean Time (s)", "Std Time (s)"]
