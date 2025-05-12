@@ -348,20 +348,22 @@ def test_predict_tile_empty(path):
     predictions = m.predict_tile(path=path, patch_size=300, patch_overlap=0)
     assert predictions is None
 
-@pytest.mark.parametrize("in_memory", [True, False])
-def test_predict_tile(m, path, in_memory):
+@pytest.mark.parametrize("dataloader_strategy", ["single", "window", "batch"])
+def test_predict_tile(m, path, dataloader_strategy):
     m.create_model()
     m.config.train.fast_dev_run = False
     m.create_trainer()
 
-    if in_memory:
+    if dataloader_strategy == "single":
         path = path
-    else:
+    elif dataloader_strategy == "window":
         path = get_data("test_tiled.tif")
+    else:
+        path = [get_data("test_tiled.tif")]
 
     prediction = m.predict_tile(path=path,
                                 patch_size=300,
-                                in_memory=in_memory,
+                                dataloader_strategy=dataloader_strategy,
                                 patch_overlap=0.1)
 
     assert isinstance(prediction, pd.DataFrame)
@@ -373,26 +375,22 @@ def test_predict_tile(m, path, in_memory):
 # test equivalence for in_memory=True and False
 def test_predict_tile_equivalence(m):
     path = get_data("test_tiled.tif")
-    in_memory_prediction = m.predict_tile(path=path, patch_size=300, patch_overlap=0, in_memory=True)
-    not_in_memory_prediction = m.predict_tile(path=path, patch_size=300, patch_overlap=0, in_memory=False)
+    in_memory_prediction = m.predict_tile(path=path, patch_size=300, patch_overlap=0, dataloader_strategy="single")
+    not_in_memory_prediction = m.predict_tile(path=path, patch_size=300, patch_overlap=0, dataloader_strategy="window")
     assert in_memory_prediction.equals(not_in_memory_prediction)
 
 def test_predict_tile_from_array(m, path):
-    # test predict numpy image
     image = np.array(Image.open(path))
     m.config.train.fast_dev_run = False
     m.create_trainer()
-    prediction = m.predict_tile(image=image,
-                                patch_size=300)
+    prediction = m.predict_tile(image=image, patch_size=300)
 
-    assert not prediction.empty
-
+    assert not prediction.empty    
 
 def test_predict_tile_batch_strategy(m, path):
     m.config["train"]["fast_dev_run"] = False
     m.create_trainer()
-
-    prediction_batch = m.predict_tile(path=path,
+    prediction_batch = m.predict_tile(path=[path, path],
                                 patch_size=400,
                                 patch_overlap=0,
                                 dataloader_strategy="batch")

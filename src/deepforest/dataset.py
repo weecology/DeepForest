@@ -12,23 +12,30 @@ labels (Int64Tensor[N]): the class label for each ground-truth box
 
 https://colab.research.google.com/github/benihime91/pytorch_retinanet/blob/master/demo.ipynb#scrollTo=0zNGhr6D7xGN
 """
+# Standard library imports
 import os
-import pandas as pd
-import numpy as np
-from torch.utils.data import Dataset
-import albumentations as A
-from torch.nn import functional as Ftorch
-from albumentations.pytorch import ToTensorV2
-import torch
 import typing
+from typing import List
+
+# Third party imports
+import numpy as np
+import pandas as pd
+import torch
+from torch.utils.data import Dataset
+from torch.nn import functional as Ftorch
 from PIL import Image
 import rasterio as rio
-from deepforest import preprocess
 from rasterio.windows import Window
-from torchvision import transforms
-import slidingwindow
 import shapely
+import slidingwindow
 
+# Image processing imports
+import albumentations as A
+from albumentations.pytorch import ToTensorV2
+from torchvision import transforms
+
+# Local imports
+from deepforest import preprocess
 
 def get_transform(augment):
     """Albumentations transformation of bounding boxs."""
@@ -197,7 +204,10 @@ class TileDataset(Dataset):
         # Separate first and second positions from each batch item
         crops = [item[0] for item in batch]
         windows = [item[1] for item in batch]
-        image_basename = [os.path.basename(self.image_path)] * len(windows)
+        if self.image_path is not None:
+            image_basename = [os.path.basename(self.image_path)] * len(windows)
+        else:
+            image_basename = None
         
         # Concatenate crops and return with windows
         return torch.stack(crops, dim=0), windows, image_basename
@@ -215,15 +225,19 @@ class TileDataset(Dataset):
             crop = preprocess.preprocess_image(crop)
 
         return crop, window_rect
-
+    
 class BatchTileDataset(Dataset):
-    def __init__(self, image_paths, patch_size, patch_overlap):
+    def __init__(self, image_paths: List[str], patch_size: int, patch_overlap: float):
         """
         Args:
-            image_paths (list): List of image paths.
+            image_paths (List[str]): List of image paths.
             patch_size (int): Size of the patches to extract.
-            patch_overlap (int): Overlap between patches.
+            patch_overlap (float): Overlap between patches.
         """
+        # Runtime type checking
+        if not isinstance(image_paths, list):
+            raise TypeError(f"image_paths must be a list, got {type(image_paths)}")
+            
         self.image_paths = image_paths
         self.patch_size = patch_size
         self.patch_overlap = patch_overlap

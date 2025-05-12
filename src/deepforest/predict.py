@@ -131,11 +131,9 @@ def mosiac(boxes, iou_threshold=0.1):
         
     predicted_boxes = pd.concat(transformed_boxes)
     
-    # Apply NMS per image
     final_boxes = []
-    for image_path in predicted_boxes["image_path"].unique():
-        print(f"{predicted_boxes.shape[0]} predictions in overlapping windows, applying non-max suppression")
-        image_boxes = predicted_boxes[predicted_boxes["image_path"] == image_path]
+    if predicted_boxes["image_path"].isnull().all():
+        image_boxes = predicted_boxes
         
         # Convert to tensors
         boxes = torch.tensor(image_boxes[["xmin", "ymin", "xmax", "ymax"]].values,
@@ -145,10 +143,27 @@ def mosiac(boxes, iou_threshold=0.1):
         
         # Apply NMS
         filtered_boxes = apply_nms(boxes, scores, labels, iou_threshold)
-        filtered_boxes["image_path"] = image_path
+        filtered_boxes["image_path"] = None
         print(f"{filtered_boxes.shape[0]} predictions kept after non-max suppression")
         final_boxes.append(filtered_boxes)
-    
+    else:
+        # Apply NMS per image
+        for image_path in predicted_boxes["image_path"].unique():
+            print(f"{predicted_boxes.shape[0]} predictions in overlapping windows, applying non-max suppression")
+            image_boxes = predicted_boxes[predicted_boxes["image_path"] == image_path]
+            
+            # Convert to tensors
+            boxes = torch.tensor(image_boxes[["xmin", "ymin", "xmax", "ymax"]].values,
+                            dtype=torch.float32)
+            scores = torch.tensor(image_boxes.score.values, dtype=torch.float32)
+            labels = image_boxes.label.values
+            
+            # Apply NMS
+            filtered_boxes = apply_nms(boxes, scores, labels, iou_threshold)
+            filtered_boxes["image_path"] = image_path
+            print(f"{filtered_boxes.shape[0]} predictions kept after non-max suppression")
+            final_boxes.append(filtered_boxes)
+        
     if not final_boxes:
         return pd.DataFrame()
         
