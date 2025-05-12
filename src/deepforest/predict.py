@@ -249,10 +249,7 @@ def _predict_crop_model_(crop_model,
         label_column = f"cropmodel_label_{model_index}"
         score_column = f"cropmodel_score_{model_index}"
 
-    if crop_model.numeric_to_label_dict is not None:
-        results[label_column] = [crop_model.numeric_to_label_dict[x] for x in label]
-    else:
-        results[label_column] = label
+    results[label_column] = [crop_model.numeric_to_label_dict[x] for x in label]
 
     results[score_column] = score
 
