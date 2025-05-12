@@ -881,7 +881,10 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         results = []
         for i, result in enumerate(batch_results):
             window_rect = window_list[i]
-            image_basename = image_basenames[i]
+            if image_basenames is not None:
+                image_basename = image_basenames[i]
+            else:
+                image_basename = None
             boxes = visualize.format_boxes(result)
             boxes["window_xmin"] = window_rect[0] 
             boxes["window_ymin"] = window_rect[1]
