@@ -9,17 +9,10 @@ import pytorch_lightning as pl
 import numpy as np
 from deepforest.predict import _predict_crop_model_
 
-# The model object is achitecture agnostic container.
+# The model object is architecture agnostic container.
 def test_model_no_args(config):
     with pytest.raises(ValueError):
         model.Model(config)
-
-
-# The model object is achitecture agnostic container.
-def test_model_no_args(config):
-    with pytest.raises(ValueError):
-        model.Model(config)
-
 
 @pytest.fixture()
 def crop_model():
@@ -124,7 +117,7 @@ def test_crop_model_load_checkpoint(tmpdir, crop_model_data):
         for p1, p2 in zip(crop_model.parameters(), loaded_model.parameters()):
             assert torch.equal(p1, p2)
 
-def test_crop_model_mantain_label_dict(tmpdir, crop_model_data):
+def test_crop_model_maintain_label_dict(tmpdir, crop_model_data):
     """
     Test that the label dictionary is maintained when loading a checkpoint.
     """
