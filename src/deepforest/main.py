@@ -482,7 +482,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                      patch_size=400,
                      patch_overlap=0.05,
                      iou_threshold=0.15,
-                     dataloader_strategy="in_memory",
+                     dataloader_strategy="single",
                      return_plot=False,
                      mosaic=True,
                      color=None,
