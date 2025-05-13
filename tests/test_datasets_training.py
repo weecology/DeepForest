@@ -8,7 +8,7 @@ import pandas as pd
 import numpy as np
 import tempfile
 
-from deepforest.datasets.box.train import BoxDataset
+from deepforest.datasets.training import BoxDataset
 
 def single_class():
     csv_file = get_data("example.csv")
@@ -77,7 +77,7 @@ def test_tree_dataset_transform(augment):
     root_dir = os.path.dirname(csv_file)
     ds = BoxDataset(csv_file=csv_file,
                              root_dir=root_dir,
-                             transforms=get_transform(augment=augment))
+                             train=augment)
 
     for i in range(len(ds)):
         # Between 0 and 1
@@ -99,7 +99,7 @@ def test_collate():
     root_dir = os.path.dirname(csv_file)
     ds = BoxDataset(csv_file=csv_file,
                              root_dir=root_dir,
-                             transforms=get_transform(augment=False))
+                             train=False)
 
     for i in range(len(ds)):
         # Between 0 and 1
@@ -114,7 +114,7 @@ def test_empty_collate():
     root_dir = os.path.dirname(csv_file)
     ds = BoxDataset(csv_file=csv_file,
                              root_dir=root_dir,
-                             transforms=get_transform(augment=False))
+                             train=False)
 
     for i in range(len(ds)):
         # Between 0 and 1
@@ -145,7 +145,7 @@ def test_multi_image_warning():
     root_dir = os.path.dirname(csv_file1)
     ds = BoxDataset(csv_file=csv_file,
                              root_dir=root_dir,
-                             transforms=get_transform(augment=False))
+                             train=False)
 
     for i in range(len(ds)):
         # Between 0 and 1

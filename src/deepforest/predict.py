@@ -7,7 +7,7 @@ import torch
 from torchvision.ops import nms
 import typing
 
-from deepforest import visualize
+from deepforest import utilities
 from deepforest.datasets import cropmodel
 from deepforest.utilities import read_file
 
@@ -39,7 +39,7 @@ def _predict_image_(model,
     if len(prediction[0]["boxes"]) == 0:
         return None
 
-    df = visualize.format_boxes(prediction[0])
+    df = utilities.format_boxes(prediction[0])
     df = across_class_nms(df, iou_threshold=nms_thresh)
 
     df["image_path"] = os.path.basename(path)

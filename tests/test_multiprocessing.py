@@ -1,6 +1,6 @@
 # Ensure that multiprocessing is behaving as expected.
 from deepforest import main, get_data
-from deepforest.datasets.box import prediction
+from deepforest.datasets import prediction
 
 import pytest
 import os
