@@ -17,7 +17,7 @@ from torchmetrics.classification import BinaryAccuracy
 from huggingface_hub import PyTorchModelHubMixin
 from deepforest import visualize, utilities, predict
 from deepforest import evaluate as evaluate_iou
-from deepforest.datasets.box import prediction, train
+from deepforest.datasets import prediction, training
 
 from omegaconf import DictConfig
 
@@ -277,7 +277,10 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         Returns:
             ds: a pytorch dataset
         """
-        ds = train.BoxDataset(csv_file=csv_file,
+
+        # TODO, generalize to other datasets geometries here.
+
+        ds = training.BoxDataset(csv_file=csv_file,
                                  root_dir=root_dir,
                                  transforms=transforms,
                                  label_dict=self.label_dict,
@@ -492,11 +495,9 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
         batched_results = self.trainer.predict(self, self.predict_dataloader(ds))
 
-        results = []
+        results = []    
         for i, result in enumerate(batched_results):
-            window_rect = ds.get_crop_bounds(i)
-            image_basename = ds.get_image_basename(i)
-            result_dataframe = ds.postprocess(result, window_rect, image_basename)
+            result_dataframe = ds.postprocess(result, idx=i)
             results.append(result_dataframe)
 
         if mosaic:
@@ -625,7 +626,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                         "score": [None]
                     }))
             else:
-                boxes = visualize.format_geometry(result)
+                boxes = utilities.format_geometry(result)
                 boxes["image_path"] = path[index]
                 self.predictions.append(boxes)
 
