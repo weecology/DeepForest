@@ -97,6 +97,12 @@ class TreeDataset(Dataset):
     def __len__(self):
         return len(self.image_names)
 
+    def collate_fn(self, batch):
+        images = [item[0] for item in batch]
+        targets = [item[1] for item in batch]
+        
+        return images, targets
+
     def __getitem__(self, idx):
 
         # Read image if not in memory
@@ -155,7 +161,96 @@ class TreeDataset(Dataset):
             return converted["image"]
 
 
-class TileDataset(Dataset):
+
+# Base box class
+class BoxDataset(Dataset):
+    def __init__(self, patch_size: int, patch_overlap: float):
+        self.patch_size = patch_size
+        self.patch_overlap = patch_overlap
+        self.items = self.prepare_items()
+
+    def _load_and_preprocess_image(self, image_path):
+        image = Image.open(image_path)
+        image = np.array(image)
+        image = image / 255.0
+        image = image.astype(np.float32)
+        
+        if not image.shape[2] == 3:
+            raise ValueError(
+                "Only three band raster are accepted. Channels should be the final dimension. Input tile has shape {}. Check for transparent alpha channel and remove if present"
+                .format(image.shape))
+        
+        return image
+    
+    def prepare_items(self):
+        raise NotImplementedError("Subclasses must implement this method")
+
+    def __len__(self):
+        return len(self.items)
+    
+    def __getitem__(self, idx):
+        return self.get_view(idx), self.get_image(idx), self.get_image_basename(idx)
+    
+    def collate_fn(self, batch):
+        raise NotImplementedError("Subclasses must implement this method")
+    
+    def get_crop_bounds(self, idx):
+        raise NotImplementedError("Subclasses must implement this method")
+    
+    def get_crop(self, idx):
+        raise NotImplementedError("Subclasses must implement this method")  
+    
+    def get_image_basename(self, idx):
+        raise NotImplementedError("Subclasses must implement this method")
+
+class BoxDataset_SingleImage(BoxDataset):
+    def __init__(self, path: str, patch_size: int, patch_overlap: float, preload_images: bool = False):
+        super().__init__(patch_size, patch_overlap)
+        self.path = path
+        self.preload_images = preload_images
+
+    def prepare_items(self):
+        self.image = self._load_and_preprocess_image(self.path)
+        self.windows = preprocess.compute_windows(self.image, self.patch_size, self.patch_overlap)
+
+        if self.preload_images:
+            self.crops = []
+            for window in self.windows:
+                crop = self.image[window.indices()]
+                crop = preprocess.preprocess_image(crop)
+                self.crops.append(crop)
+
+        return self.windows, self.crops
+
+    def __len__(self):
+        return len(self.windows)
+
+    def collate_fn(self, batch):
+        # Separate first and second positions from each batch item
+        crops = [item[0] for item in batch]
+        windows = [item[1] for item in batch]
+        image_basename = [item[2] for item in batch]
+        
+        # Concatenate crops and return with windows
+        return torch.stack(crops, dim=0), windows, image_basename
+    
+    def window_list(self):
+        return [x.getRect() for x in self.windows]
+    
+    def get_crop(self, idx):
+        if self.preload_images:
+            crop = self.crops[idx]
+        else:
+            crop = self.image[self.windows[idx].indices()]
+            crop = preprocess.preprocess_image(crop)
+        return crop
+    def get_image_basename(self, idx):
+        return os.path.basename(self.path)
+    
+    def get_crop_bounds(self, idx):
+        return self.windows[idx].getRect()
+    
+class TileDataset(BoxDataset):
 
     def __init__(self,
                  path: typing.Optional[str],
@@ -204,10 +299,7 @@ class TileDataset(Dataset):
         # Separate first and second positions from each batch item
         crops = [item[0] for item in batch]
         windows = [item[1] for item in batch]
-        if self.image_path is not None:
-            image_basename = [os.path.basename(self.image_path)] * len(windows)
-        else:
-            image_basename = None
+        image_basename = [item[2] for item in batch]
         
         # Concatenate crops and return with windows
         return torch.stack(crops, dim=0), windows, image_basename
@@ -224,7 +316,7 @@ class TileDataset(Dataset):
             crop = self.image[self.windows[idx].indices()]
             crop = preprocess.preprocess_image(crop)
 
-        return crop, window_rect
+        return crop, window_rect, os.path.basename(self.image_path)
     
 class BatchTileDataset(Dataset):
     def __init__(self, image_paths: List[str], patch_size: int, patch_overlap: float):
