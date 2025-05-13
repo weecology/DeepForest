@@ -8,7 +8,6 @@ from torchvision import models, transforms
 from torchvision.datasets import ImageFolder
 import numpy as np
 import rasterio
-from torch.utils.data import Dataset
 import torch.nn.functional as F
 import cv2
 

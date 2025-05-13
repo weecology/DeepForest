@@ -7,17 +7,15 @@ import torch
 from torchvision.ops import nms
 import typing
 
-from deepforest import visualize, dataset
+from deepforest import visualize
+from deepforest.datasets import cropmodel
 from deepforest.utilities import read_file
 
 
 def _predict_image_(model,
                     image: typing.Optional[np.ndarray] = None,
                     path: typing.Optional[str] = None,
-                    nms_thresh: float = 0.15,
-                    return_plot: bool = False,
-                    thickness: int = 1,
-                    color: typing.Optional[tuple] = (0, 165, 255)):
+                    nms_thresh: float = 0.15):
     """Predict a single image with a deepforest model.
 
     Args:
@@ -25,13 +23,15 @@ def _predict_image_(model,
         image: a tensor of shape (channels, height, width)
         path: optional path to read image from disk instead of passing image arg
         nms_thresh: Non-max suppression threshold, see config.nms_thresh
-        return_plot: Return image with plotted detections
-        thickness: thickness of the rectangle border line in px
         color: color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255)
     Returns:
         df: A pandas dataframe of predictions (Default)
         img: The input with predictions overlaid (Optional)
     """
+
+    image = torch.tensor(image, device=model.device).permute(2, 0, 1)
+    image = image / 255
+    
     with torch.no_grad():
         prediction = model(image.unsqueeze(0))
 
@@ -42,21 +42,7 @@ def _predict_image_(model,
     df = visualize.format_boxes(prediction[0])
     df = across_class_nms(df, iou_threshold=nms_thresh)
 
-    if return_plot:
-        # Bring to gpu
-        image = image.cpu()
-
-        # Cv2 likes no batch dim, BGR image and channels last, 0-255
-        image = np.array(image.squeeze(0))
-        image = np.rollaxis(image, 0, 3)
-        image = image[:, :, ::-1] * 255
-        image = image.astype("uint8")
-        image = visualize.plot_predictions(image, df, color=color, thickness=thickness)
-
-        return image
-    else:
-        if path:
-            df["image_path"] = os.path.basename(path)
+    df["image_path"] = os.path.basename(path)
 
     return df
 
@@ -281,7 +267,7 @@ def _predict_crop_model_(crop_model,
     results = results[results.ymin != results.ymax]
 
     # Create dataset
-    bounding_box_dataset = dataset.BoundingBoxDataset(
+    bounding_box_dataset = cropmodel.BoundingBoxDataset(
         results,
         root_dir=os.path.dirname(raster_path),
         transform=transform,

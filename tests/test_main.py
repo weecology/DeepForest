@@ -14,9 +14,10 @@ import importlib.util
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 
-from deepforest import main, get_data, dataset, model
+from deepforest import main, get_data, model
 from deepforest.visualize import format_geometry, plot_results
 from deepforest.utilities import read_file
+from deepforest.datasets.box import prediction
 
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import Callback
@@ -336,7 +337,7 @@ def test_predict_small_file(m, tmpdir):
 def test_predict_dataloader(m, batch_size, path):
     m.config.batch_size = batch_size
     tile = np.array(Image.open(path))
-    ds = dataset.TileDataset(tile=tile, patch_overlap=0.1, patch_size=100)
+    ds = prediction.BoxDataset_SingleImage(image=tile, path=path, patch_overlap=0.1, patch_size=100)
     dl = m.predict_dataloader(ds)
     batch = next(iter(dl))
     batch.shape[0] == batch_size
@@ -634,7 +635,7 @@ def test_existing_val_dataloader(m, tmpdir, existing_loader):
 
 def test_existing_predict_dataloader(m, tmpdir):
     # Predict datasets yield only images
-    ds = dataset.TileDataset(tile=np.random.random((400, 400, 3)).astype("float32"),
+    ds = prediction.TiledRaster(tile=np.random.random((400, 400, 3)).astype("float32"),
                              patch_overlap=0.1,
                              patch_size=100)
     existing_loader = m.predict_dataloader(ds)
@@ -821,7 +822,7 @@ def test_predict_tile_with_multiple_crop_models_empty():
 def test_batch_prediction(m, path):
     # Prepare input data
     tile = np.array(Image.open(path))
-    ds = dataset.TileDataset(tile=tile, patch_overlap=0.1, patch_size=300)
+    ds = prediction.TileDataset(tile=tile, patch_overlap=0.1, patch_size=300)
     dl = DataLoader(ds, batch_size=3)
 
     # Perform prediction
@@ -841,7 +842,7 @@ def test_batch_prediction(m, path):
 
 def test_batch_inference_consistency(m, path):
     tile = np.array(Image.open(path))
-    ds = dataset.TileDataset(tile=tile, patch_overlap=0.1, patch_size=300)
+    ds = prediction.TileDataset(tile=tile, patch_overlap=0.1, patch_size=300)
     dl = DataLoader(ds, batch_size=4)
 
     batch_predictions = []
