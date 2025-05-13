@@ -15,9 +15,9 @@ import albumentations as A
 from albumentations.pytorch import ToTensorV2
 
 from deepforest import main, get_data, model
-from deepforest.visualize import format_geometry, plot_results
-from deepforest.utilities import read_file
-from deepforest.datasets.box import prediction
+from deepforest.visualize import plot_results
+from deepforest.utilities import read_file, format_geometry
+from deepforest.datasets import prediction
 
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import Callback
@@ -70,6 +70,8 @@ def m(download_release):
 
     m.create_trainer()
     m.load_model("weecology/deepforest-tree")
+
+    #assert that the model is loaded and produces logical predictions
     return m
 
 
@@ -99,7 +101,6 @@ def path():
 def big_file():
     tmpdir = tempfile.gettempdir()
     csv_file = get_data("OSBS_029.csv")
-    image_path = get_data("OSBS_029.png")
     df = pd.read_csv(csv_file)
 
     big_frame = []
@@ -327,7 +328,6 @@ def test_predict_big_file(m, tmpdir):
 
 def test_predict_small_file(m, tmpdir):
     csv_file = get_data("OSBS_029.csv")
-    original_file = pd.read_csv(csv_file)
     df = m.predict_file(csv_file, root_dir=os.path.dirname(csv_file))
     assert set(df.columns) == {
         'label', 'score', 'image_path', 'geometry', "xmin", "ymin", "xmax", "ymax"

@@ -3,20 +3,11 @@ on_epoch_begin, on_epoch_end, on_fit_end, on_fit_begin methods and inject model
 and epoch kwargs."""
 
 from deepforest import visualize
-from matplotlib import pyplot as plt
-import pandas as pd
 import numpy as np
 import glob
-import tempfile
-import os
 import supervision as sv
 
 from pytorch_lightning import Callback
-from deepforest import dataset
-from deepforest import utilities
-from deepforest import predict
-
-import torch
 
 
 class images_callback(Callback):
