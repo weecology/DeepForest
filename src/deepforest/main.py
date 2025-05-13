@@ -7,7 +7,6 @@ import warnings
 import numpy as np
 import pandas as pd
 import pytorch_lightning as pl
-import rasterio as rio
 import torch
 from PIL import Image
 from pytorch_lightning.callbacks import LearningRateMonitor
@@ -16,8 +15,9 @@ from torchmetrics.detection import IntersectionOverUnion, MeanAveragePrecision
 from torchmetrics.classification import BinaryAccuracy
 
 from huggingface_hub import PyTorchModelHubMixin
-from deepforest import dataset, visualize, get_data, utilities, predict
+from deepforest import visualize, utilities, predict
 from deepforest import evaluate as evaluate_iou
+from deepforest.datasets.box import prediction, train
 
 from omegaconf import DictConfig
 
@@ -44,7 +44,6 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         self,
         num_classes: int = 1,
         label_dict: dict = {"Tree": 0},
-        transforms=None,
         model=None,
         existing_train_dataloader=None,
         existing_val_dataloader=None,
@@ -104,12 +103,6 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         self.label_dict = label_dict
         self.numeric_to_label_dict = {v: k for k, v in label_dict.items()}
 
-        # Add user supplied transforms
-        if transforms is None:
-            self.transforms = dataset.get_transform
-        else:
-            self.transforms = transforms
-
         self.save_hyperparameters()
 
     def load_model(self, model_name="weecology/deepforest-tree", revision='main'):
@@ -136,6 +129,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         self.label_dict = loaded_model.label_dict
         self.model = loaded_model.model
         self.numeric_to_label_dict = loaded_model.numeric_to_label_dict
+        
         # Set bird-specific settings if loading the bird model
         if model_name == "weecology/deepforest-bird":
             self.config.retinanet.score_thresh = 0.3
@@ -223,6 +217,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             # Disable validation, don't use trainer defaults
             limit_val_batches = 0
             num_sanity_val_steps = 0
+        
         # Check for model checkpoint object
         checkpoint_types = [type(x).__qualname__ for x in callbacks]
         if 'ModelCheckpoint' in checkpoint_types:
@@ -264,11 +259,10 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
     def load_dataset(self,
                      csv_file,
                      root_dir=None,
-                     augment=False,
                      shuffle=True,
-                     batch_size=1,
-                     train=False):
-        """Create a tree dataset for inference Csv file format is .csv file
+                     transforms=None,
+                     batch_size=1):
+        """Create a dataset for inference or training. Csv file format is .csv file
         with the columns "image_path", "xmin","ymin","xmax","ymax" for the
         image name and bounding box position. Image_path is the relative
         filename, not absolute path, which is in the root_dir directory. One
@@ -277,14 +271,15 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         Args:
             csv_file: path to csv file
             root_dir: directory of images. If none, uses "image_dir" in config
-            augment: Whether to create a training dataset, this activates data augmentations
+            transforms: Albumentations transforms
+            batch_size: batch size
 
         Returns:
             ds: a pytorch dataset
         """
-        ds = dataset.TreeDataset(csv_file=csv_file,
+        ds = train.BoxDataset(csv_file=csv_file,
                                  root_dir=root_dir,
-                                 transforms=self.transforms(augment=augment),
+                                 transforms=transforms,
                                  label_dict=self.label_dict,
                                  preload_images=self.config.train.preload_images)
         if len(ds) == 0:
@@ -357,27 +352,16 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
     def predict_image(self,
                       image: typing.Optional[np.ndarray] = None,
-                      path: typing.Optional[str] = None,
-                      return_plot: bool = False,
-                      color: typing.Optional[tuple] = (0, 165, 255),
-                      thickness: int = 1):
+                      path: typing.Optional[str] = None):
         """Predict a single image with a deepforest model.
-
-        Deprecation warning: The 'return_plot', and related 'color' and 'thickness' arguments
-        are deprecated and will be removed in 2.0. Use visualize.plot_results on the result instead.
 
         Args:
             image: a float32 numpy array of a RGB with channels last format
             path: optional path to read image from disk instead of passing image arg
-            return_plot: return a plot of the image with predictions overlaid (deprecated)
-            color: color of the bounding box as a tuple of BGR color (deprecated)
-            thickness: thickness of the rectangle border line in px (deprecated)
 
         Returns:
             result: A pandas dataframe of predictions (Default)
-            img: The input with predictions overlaid (Optional)
         """
-
         # Ensure we are in eval mode
         self.model.eval()
 
@@ -397,31 +381,17 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                           f"(image.astype('float32')")
             image = image.astype("float32")
 
-        image = torch.tensor(image, device=self.device).permute(2, 0, 1)
-        image = image / 255
-
         result = predict._predict_image_(model=self.model,
                                          image=image,
                                          path=path,
-                                         nms_thresh=self.config.nms_thresh,
-                                         return_plot=return_plot,
-                                         thickness=thickness,
-                                         color=color)
+                                         nms_thresh=self.config.nms_thresh)
 
-        if return_plot:
-            # Add deprecated warning
-            warnings.warn(
-                "return_plot is deprecated and will be removed in 2.0. Use visualize.plot_results on the result instead."
-            )
-
-            return result
+        #If there were no predictions, return None
+        if result is None:
+            return None
         else:
-            #If there were no predictions, return None
-            if result is None:
-                return None
-            else:
-                result["label"] = result.label.apply(
-                    lambda x: self.numeric_to_label_dict[x])
+            result["label"] = result.label.apply(
+                lambda x: self.numeric_to_label_dict[x])
 
         if path is None:
             result = utilities.read_file(result)
@@ -435,7 +405,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         return result
 
     def predict_file(self, csv_file, root_dir):
-        """Create a dataset and predict entire annotation file Csv file format
+        """Create a dataset and predict entire annotation file CSV file format
         is .csv file with the columns "image_path", "xmin","ymin","xmax","ymax"
         for the image name and bounding box position. Image_path is the
         relative filename, not absolute path, which is in the root_dir
@@ -450,10 +420,8 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         """
 
         df = utilities.read_file(csv_file)
-        ds = dataset.TreeDataset(csv_file=csv_file,
-                                 root_dir=root_dir,
-                                 transforms=None,
-                                 train=False)
+        ds = prediction.FromCSVFile(csv_file=csv_file, root_dir=root_dir)
+
         dataloader = self.predict_dataloader(ds)
 
         results = predict._dataloader_wrapper_(model=self,
@@ -468,26 +436,19 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         return results
 
     def predict_tile(self,
-                     raster_path=None,
                      path=None,
                      image=None,
                      patch_size=400,
                      patch_overlap=0.05,
                      iou_threshold=0.15,
                      dataloader_strategy="single",
-                     return_plot=False,
                      mosaic=True,
-                     color=None,
-                     thickness=1,
-                     crop_model=None,
-                     crop_transform=None,
-                     crop_augment=False):
+                     crop_model=None):
         """For images too large to input into the model, predict_tile cuts the
         image into overlapping windows, predicts trees on each window and
         reassambles into a single array.
 
         Args:
-            raster_path: [Deprecated] Use 'path' instead
             path: Path to image on disk
             image (array): Numpy image array in BGR channel order following openCV convention
             patch_size: patch size for each window
@@ -499,11 +460,6 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                 - "window" loads only the desired window of the image from the raster dataset. Most memory efficient option, but cannot parallelize across windows due to rasterio GIL.
             mosaic: Return a single prediction dataframe (True) or a tuple of image crops and predictions (False)
             crop_model: a deepforest.model.CropModel object to predict on crops
-            crop_transform: a torchvision.transforms object to apply to crops
-            crop_augment: a boolean to apply augmentations to crops
-            return_plot: return a plot of the image with predictions overlaid (deprecated)
-            color: color of the bounding box as a tuple of BGR color (deprecated)
-            thickness: thickness of the rectangle border line in px (deprecated)
 
         Returns:
             pd.DataFrame or tuple: Predictions dataframe or (predictions, crops) tuple
@@ -511,51 +467,37 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         self.model.eval()
         self.model.nms_thresh = self.config.nms_thresh
 
-        # if 'raster_path' is used, give a deprecation warning and use 'path' instead
-        if raster_path is not None:
-            warnings.warn(
-                "The 'raster_path' argument is deprecated and will be removed in 2.0. Use 'path' instead.",
-                DeprecationWarning)
-            path = raster_path
-
-
-        if (path is None) and (image is None):
-            raise ValueError(
-                "Both tile and tile_path are None. Either supply a path to a tile on disk, or read one into memory!"
-            )
+        # Check if path or image is provided
+        if path is None and image is None:
+            raise ValueError("Either path or image must be provided")
 
         if dataloader_strategy == "single":
-            ds = dataset.TileDataset(path=path,
+            ds = prediction.SingleImage(path=path,
                                      image=image,
                                      patch_overlap=patch_overlap,
                                      patch_size=patch_size)
             
         elif dataloader_strategy == "batch":
-            ds = dataset.BatchTileDataset(image_paths=path,
+            ds = prediction.MultiImage(path=path,
                                           patch_overlap=patch_overlap,
                                           patch_size=patch_size)
             
         elif dataloader_strategy == "window":
-            if path is None:
-                raise ValueError("path is required if in_memory is False")
-
             # Check for workers config when using out of memory dataset
             if self.config.workers > 0:
                 raise ValueError(
-                    "workers must be 0 when using out-of-memory dataset (in_memory=False). Set config['workers']=0 and recreate trainer self.create_trainer()."
+                    "workers must be 0 when using out-of-memory dataset (dataloader_strategy='window'). Set config['workers']=0 and recreate trainer self.create_trainer()."
                 )
-
-            ds = dataset.RasterDataset(raster_path=path,
-                                       patch_overlap=patch_overlap,
-                                       patch_size=patch_size)
+            ds = prediction.TiledRaster(path=path, patch_overlap=patch_overlap, patch_size=patch_size)
 
         batched_results = self.trainer.predict(self, self.predict_dataloader(ds))
 
-        # Flatten list from batched prediction
         results = []
-        for batch in batched_results:
-            for boxes in batch:
-                results.append(boxes)
+        for i, result in enumerate(batched_results):
+            window_rect = ds.get_crop_bounds(i)
+            image_basename = ds.get_image_basename(i)
+            result_dataframe = ds.postprocess(result, window_rect, image_basename)
+            results.append(result_dataframe)
 
         if mosaic:
             results = predict.mosiac(results, iou_threshold=iou_threshold)
@@ -566,36 +508,13 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             
             results["label"] = results.label.apply(
                 lambda x: self.numeric_to_label_dict[x])
-            
-            if return_plot:
-                # Add deprecated warning
-                warnings.warn("return_plot is deprecated and will be removed in 2.0. "
-                              "Use visualize.plot_results on the result instead.")
-                # Draw predictions on BGR
-                if path:
-                    tile = rio.open(path).read()
-                else:
-                    tile = image
-                drawn_plot = tile[:, :, ::-1]
-                drawn_plot = visualize.plot_predictions(tile,
-                                                        results,
-                                                        color=color,
-                                                        thickness=thickness)
-                return drawn_plot
         else:
             for df in results:
                 df["label"] = df.label.apply(lambda x: self.numeric_to_label_dict[x])
 
-            # TODO this is the 2nd time the crops are generated? Could be more efficient, but memory intensive
             self.crops = []
-            if path is None:
-                image = image
-            else:
-                image = rio.open(path).read()
-                image = np.moveaxis(image, 0, 2)
-
-            for window in ds.windows:
-                crop = image[window.indices()]
+            for window_index in range(len(ds.windows)):
+                crop = ds.get_crop(window_index)
                 self.crops.append(crop)
 
             return list(zip(results, self.crops))
@@ -604,15 +523,12 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             crop_model = [crop_model]
 
         if crop_model:
-            is_single_model = len(
-                crop_model) == 1  # Flag to check if only one model is passed
+            is_single_model = len(crop_model) == 1  # Flag to check if only one model is passed
             for i, crop_model in enumerate(crop_model):
                 results = predict._predict_crop_model_(crop_model=crop_model,
                                                        results=results,
                                                        raster_path=path,
                                                        trainer=self.trainer,
-                                                       transform=crop_transform,
-                                                       augment=crop_augment,
                                                        model_index=i,
                                                        is_single_model=is_single_model)
 
@@ -621,9 +537,6 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             return None
 
         if path is None:
-            warnings.warn(
-                "An image was passed directly to predict_tile, the results.root_dir attribute will be None in the output dataframe, to use visualize.plot_results, please assign results.root_dir = <directory name>"
-            )
             results = utilities.read_file(results)
 
         else:
@@ -867,23 +780,9 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                                 pass
 
     def predict_step(self, batch, batch_idx):
-        crops, window_list, image_basenames = batch
-        batch_results = self.model(crops)
+        batch_results = self.model(batch)
         
-        results = []
-        for i, result in enumerate(batch_results):
-            window_rect = window_list[i]
-            if image_basenames is not None:
-                image_basename = image_basenames[i]
-            else:
-                image_basename = None
-            boxes = visualize.format_boxes(result)
-            boxes["window_xmin"] = window_rect[0] 
-            boxes["window_ymin"] = window_rect[1]
-            boxes["image_path"] = image_basename
-            results.append(boxes)
-            
-        return results
+        return batch_results
 
     def predict_batch(self, images, preprocess_fn=None):
         """Predict a batch of images with the deepforest model.
@@ -1007,3 +906,4 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             numeric_to_label_dict=self.numeric_to_label_dict)
 
         return results
+    
