@@ -112,14 +112,14 @@ df = m.predict_file(csv_file, root_dir=os.path.dirname(csv_file))
 For existing dataloaders, the `predict_batch` function will return a list of dataframes, one for each batch. This is more efficient than using predict_image since multiple images can be processed in a single forward pass.
 
 ```python
-from deepforest.datasets.training import TileDataset
+from deepforest.datasets.training import BoxDataset
 from torch.utils.data import DataLoader
 import numpy as np
 from PIL import Image
 
 raster_path = get_data("OSBS_029.tif")
 tile = np.array(Image.open(raster_path))
-ds = TileDataset(tile=tile, patch_overlap=0.1, patch_size=100)
+ds = BoxDataset(tile=tile, patch_overlap=0.1, patch_size=100)
 dl = DataLoader(ds, batch_size=3)
 
 # Perform prediction

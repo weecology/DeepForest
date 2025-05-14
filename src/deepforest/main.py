@@ -440,6 +440,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
     def predict_tile(self,
                      path=None,
+                     paths=None,
                      image=None,
                      patch_size=400,
                      patch_overlap=0.05,
@@ -453,6 +454,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
         Args:
             path: Path to image on disk
+            paths: List of paths to images on disk
             image (array): Numpy image array in BGR channel order following openCV convention
             patch_size: patch size for each window
             patch_overlap: patch overlap among windows
@@ -471,9 +473,14 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         self.model.nms_thresh = self.config.nms_thresh
 
         # Check if path or image is provided
-        if path is None and image is None:
-            raise ValueError("Either path or image must be provided")
-
+        if dataloader_strategy == "single":
+            if path is None and image is None:
+                raise ValueError("Either path or image must be provided for single tile prediction")
+        
+        if dataloader_strategy == "batch":
+            if paths is None:
+                raise ValueError("paths argument must be provided when using dataloader_strategy='batch'")
+        
         if dataloader_strategy == "single":
             ds = prediction.SingleImage(path=path,
                                      image=image,
@@ -481,7 +488,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                                      patch_size=patch_size)
             
         elif dataloader_strategy == "batch":
-            ds = prediction.MultiImage(path=path,
+            ds = prediction.MultiImage(paths=paths,
                                           patch_overlap=patch_overlap,
                                           patch_size=patch_size)
             
@@ -495,12 +502,19 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
         batched_results = self.trainer.predict(self, self.predict_dataloader(ds))
 
-        results = []    
-        for i, result in enumerate(batched_results):
-            result_dataframe = ds.postprocess(result, idx=i)
-            results.append(result_dataframe)
-
+        if len(batched_results) == 1:
+            results = ds.postprocess(batched_results[0])
+        else:
+            results = []
+            for result in batched_results:
+                results.append(ds.postprocess(result))
+            
         if mosaic:
+            # Concatenate results into a single dataframe
+            if isinstance(results, list):
+                results = pd.concat(results)
+            else:
+                results = results
             results = predict.mosiac(results, iou_threshold=iou_threshold)
             
             if results.empty:
@@ -781,9 +795,36 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                                 pass
 
     def predict_step(self, batch, batch_idx):
-        batch_results = self.model(batch)
-        
-        return batch_results
+        """Predict a batch of images with the deepforest model. If batch is a list, concatenate the images, predict and then split the results, useful for main.predict_tile.
+
+        Args:
+            batch (torch.Tensor or np.ndarray): A batch of images with shape (B, C, H, W).
+            batch_idx (int): The index of the batch.
+
+        Returns:
+        """
+        split_results = False
+        # If batch is a list, concatenate the images, predict and then split the results
+        if isinstance(batch, list):
+            original_list_length = len(batch)
+            combined_batch = torch.cat(batch, dim=0)
+            split_results = True
+        else:
+            combined_batch = batch
+
+        batch_results = self.model(combined_batch)
+
+        # If batch is a list, split the results
+        if split_results:
+            results = []
+            batch_size = len(batch_results) // original_list_length
+            for i in range(original_list_length):
+                start_idx = i * batch_size
+                end_idx = start_idx + batch_size
+                results.append(batch_results[start_idx:end_idx])
+            return results
+        else:
+            return batch_results
 
     def predict_batch(self, images, preprocess_fn=None):
         """Predict a batch of images with the deepforest model.

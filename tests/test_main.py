@@ -71,7 +71,6 @@ def m(download_release):
     m.create_trainer()
     m.load_model("weecology/deepforest-tree")
 
-    #assert that the model is loaded and produces logical predictions
     return m
 
 
@@ -98,6 +97,7 @@ def path():
     return get_data(path='OSBS_029.tif')
 
 
+@pytest.fixture()
 def big_file():
     tmpdir = tempfile.gettempdir()
     csv_file = get_data("OSBS_029.csv")
@@ -117,6 +117,9 @@ def big_file():
 
     return "{}/annotations.csv".format(tmpdir)
 
+def test_m_has_tree_model_loaded(m):
+    boxes = m.predict_image(path=get_data("OSBS_029.tif"))
+    assert not boxes.empty
 
 def test_tensorboard_logger(m, tmpdir):
     # Check if TensorBoard is installed
@@ -297,6 +300,7 @@ def test_predict_image_fromfile(m):
     assert set(prediction.columns) == {
         "xmin", "ymin", "xmax", "ymax", "label", "score", "image_path", "geometry"
     }
+    assert not prediction.empty
 
 
 def test_predict_image_fromarray(m):
@@ -319,14 +323,13 @@ def test_predict_big_file(m, tmpdir):
     m.config.train.fast_dev_run = False
     m.create_trainer()
     csv_file = big_file()
-    original_file = pd.read_csv(csv_file)
     df = m.predict_file(csv_file=csv_file,
                         root_dir=os.path.dirname(csv_file))
     assert set(df.columns) == {
         'label', 'score', 'image_path', 'geometry', "xmin", "ymin", "xmax", "ymax"
     }
 
-def test_predict_small_file(m, tmpdir):
+def test_predict_small_file(m):
     csv_file = get_data("OSBS_029.csv")
     df = m.predict_file(csv_file, root_dir=os.path.dirname(csv_file))
     assert set(df.columns) == {
@@ -337,11 +340,10 @@ def test_predict_small_file(m, tmpdir):
 def test_predict_dataloader(m, batch_size, path):
     m.config.batch_size = batch_size
     tile = np.array(Image.open(path))
-    ds = prediction.BoxDataset_SingleImage(image=tile, path=path, patch_overlap=0.1, patch_size=100)
+    ds = prediction.SingleImage(image=tile, path=path, patch_overlap=0.1, patch_size=100)
     dl = m.predict_dataloader(ds)
     batch = next(iter(dl))
-    batch.shape[0] == batch_size
-
+    assert batch.shape[0] == batch_size
 
 def test_predict_tile_empty(path):
     # Random weights
@@ -356,13 +358,17 @@ def test_predict_tile(m, path, dataloader_strategy):
     m.create_trainer()
 
     if dataloader_strategy == "single":
-        path = path
+        image_path = path
+        paths = None
     elif dataloader_strategy == "window":
-        path = get_data("test_tiled.tif")
+        image_path = get_data("test_tiled.tif")
+        paths = None
     else:
-        path = [get_data("test_tiled.tif")]
+        image_path = None
+        paths = [path, path]
 
-    prediction = m.predict_tile(path=path,
+    prediction = m.predict_tile(paths=paths,
+                                path=image_path,
                                 patch_size=300,
                                 dataloader_strategy=dataloader_strategy,
                                 patch_overlap=0.1)
@@ -373,7 +379,7 @@ def test_predict_tile(m, path, dataloader_strategy):
     }
     assert not prediction.empty
 
-# test equivalence for in_memory=True and False
+# test equivalence for within and out of memory dataset strategies
 def test_predict_tile_equivalence(m):
     path = get_data("test_tiled.tif")
     in_memory_prediction = m.predict_tile(path=path, patch_size=300, patch_overlap=0, dataloader_strategy="single")

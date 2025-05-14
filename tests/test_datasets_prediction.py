@@ -26,7 +26,7 @@ def test_SingleImage_path():
         assert ds.get_crop(i).shape == (3, 300, 300)
 
 def test_MultiImage():
-    ds = MultiImage(image_paths=[get_data("OSBS_029.png"), get_data("OSBS_029.png")],
+    ds = MultiImage(paths=[get_data("OSBS_029.png"), get_data("OSBS_029.png")],
                     patch_size=300,
                     patch_overlap=0)
     assert len(ds) == 2
