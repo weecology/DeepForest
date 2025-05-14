@@ -26,59 +26,62 @@ def get_transform(augment: bool) -> A.Compose:
     else:
         return A.Compose([ToTensorV2()], bbox_params=bbox_params)
 
-class BoxDataset(Dataset):
-    def __init__(
-        self,
-        csv_file: str,
-        root_dir: str,
-        transforms: Optional[A.Compose] = None,
-        label_dict: Dict[str, int] = {"Tree": 0},
-        train: bool = True,
-        preload_images: bool = False
-    ):
-        """
-        Initialize the TrainDataset for Box Geometry.
 
+class BoxDataset(Dataset):
+    def __init__(self,
+                 csv_file,
+                 root_dir,
+                 transforms=None,
+                 label_dict={"Tree": 0},
+                 train=True,
+                 preload_images=False):
+        """
+        
         Args:
-            csv_file (str): Path to a single csv file with annotations.
-            root_dir (str): Directory with all the images.
-            transforms (Optional[A.Compose]): Optional transform to be applied on a sample.
-            label_dict (Dict[str, int]): A dictionary mapping labels to numeric values.
-            train (bool): Whether to trigger default train augmentations.
-            preload_images (bool): Whether to preload images into memory.
+            csv_file (string): Path to a single csv file with annotations.
+            root_dir (string): Directory with all the images.
+            transform (callable, optional): Optional transform to be applied
+                on a sample.
+            label_dict: a dictionary where keys are labels from the csv column and values are numeric labels "Tree" -> 0
+        
+        Returns:
+            If train, path, image, targets else image
         """
         self.annotations = pd.read_csv(csv_file)
         self.root_dir = root_dir
-        self.transform = transforms if transforms is not None else get_transform(augment=train)
+        if transforms is None:
+            self.transform = get_transform(augment=train)
+        else:
+            self.transform = transforms
         self.image_names = self.annotations.image_path.unique()
         self.label_dict = label_dict
         self.train = train
         self.image_converter = A.Compose([ToTensorV2()])
         self.preload_images = preload_images
 
+        # Pin data to memory if desired
         if self.preload_images:
-            self._preload_images()
+            print("Pinning dataset to GPU memory")
+            self.image_dict = {}
+            for idx, x in enumerate(self.image_names):
+                img_name = os.path.join(self.root_dir, x)
+                image = np.array(Image.open(img_name).convert("RGB")) / 255
+                self.image_dict[idx] = image.astype("float32")
 
-    def _preload_images(self):
-        """Preload images into memory if desired."""
-        print("Pinning dataset to GPU memory")
-        self.image_dict = {}
-        for idx, img_path in enumerate(self.image_names):
-            img_name = os.path.join(self.root_dir, img_path)
-            image = np.array(Image.open(img_name).convert("RGB")) / 255
-            self.image_dict[idx] = image.astype("float32")
-
-    def __len__(self) -> int:
+    def __len__(self):
         return len(self.image_names)
 
-    def collate_fn(self, batch: List[tuple]) -> tuple:
-        """Collate function for DataLoader."""
+    def collate_fn(self, batch):
+        """
+        Collate function for DataLoader.
+        """
         images = [item[0] for item in batch]
         targets = [item[1] for item in batch]
         return images, targets
+    
+    def __getitem__(self, idx):
 
-    def __getitem__(self, idx: int) -> Union[tuple, torch.Tensor]:
-        """Get item from dataset."""
+        # Read image if not in memory
         if self.preload_images:
             image = self.image_dict[idx]
         else:
@@ -87,56 +90,49 @@ class BoxDataset(Dataset):
             image = image.astype("float32")
 
         if self.train:
-            return self._get_train_item(idx, image)
+            # select annotations
+            image_annotations = self.annotations[self.annotations.image_path ==
+                                                 self.image_names[idx]]
+            targets = {}
+
+            if "geometry" in image_annotations.columns:
+                targets["boxes"] = np.array([
+                    shapely.wkt.loads(x).bounds for x in image_annotations.geometry
+                ]).astype("float32")
+            else:
+                targets["boxes"] = image_annotations[["xmin", "ymin", "xmax",
+                                                      "ymax"]].values.astype("float32")
+
+            # Labels need to be encoded
+            targets["labels"] = image_annotations.label.apply(
+                lambda x: self.label_dict[x]).values.astype(np.int64)
+
+            # If image has no annotations, don't augment
+            if np.sum(targets["boxes"]) == 0:
+                boxes = torch.zeros((0, 4), dtype=torch.float32)
+                labels = torch.zeros(0, dtype=torch.int64)
+                # channels last
+                image = np.rollaxis(image, 2, 0)
+                image = torch.from_numpy(image).float()
+                targets = {"boxes": boxes, "labels": labels}
+
+                return self.image_names[idx], image, targets
+
+            augmented = self.transform(image=image,
+                                       bboxes=targets["boxes"],
+                                       category_ids=targets["labels"].astype(np.int64))
+            image = augmented["image"]
+
+            boxes = np.array(augmented["bboxes"])
+            boxes = torch.from_numpy(boxes).float()
+            labels = np.array(augmented["category_ids"])
+            labels = torch.from_numpy(labels.astype(np.int64))
+            targets = {"boxes": boxes, "labels": labels}
+
+            return self.image_names[idx], image, targets
+
         else:
-            return self._get_test_item(image)
+            # Mimic the train augmentation
+            converted = self.image_converter(image=image)
+            return converted["image"]
 
-    def _get_train_item(self, idx: int, image: np.ndarray) -> tuple:
-        """Process and return a training item."""
-        image_annotations = self.annotations[self.annotations.image_path == self.image_names[idx]]
-        targets = self._prepare_targets(image_annotations)
-
-        if np.sum(targets["boxes"]) == 0:
-            return self._handle_empty_annotations(idx, image)
-
-        augmented = self.transform(
-            image=image,
-            bboxes=targets["boxes"],
-            category_ids=targets["labels"].astype(np.int64)
-        )
-
-        return self._process_augmented_data(idx, augmented)
-
-    def _get_test_item(self, image: np.ndarray) -> torch.Tensor:
-        """Process and return a test item."""
-        converted = self.image_converter(image=image)
-        return converted["image"]
-
-    def _prepare_targets(self, image_annotations: pd.DataFrame) -> Dict[str, np.ndarray]:
-        """Prepare target boxes and labels."""
-        if "geometry" in image_annotations.columns:
-            boxes = np.array([
-                shapely.wkt.loads(x).bounds for x in image_annotations.geometry
-            ]).astype("float32")
-        else:
-            boxes = image_annotations[["xmin", "ymin", "xmax", "ymax"]].values.astype("float32")
-
-        labels = image_annotations.label.apply(lambda x: self.label_dict[x]).values.astype(np.int64)
-
-        return {"boxes": boxes, "labels": labels}
-
-    def _handle_empty_annotations(self, idx: int, image: np.ndarray) -> tuple:
-        """Handle cases where there are no annotations."""
-        boxes = torch.zeros((0, 4), dtype=torch.float32)
-        labels = torch.zeros(0, dtype=torch.int64)
-        image = torch.from_numpy(np.rollaxis(image, 2, 0)).float()
-        targets = {"boxes": boxes, "labels": labels}
-        return self.image_names[idx], image, targets
-
-    def _process_augmented_data(self, idx: int, augmented: Dict[str, Union[torch.Tensor, List]]) -> tuple:
-        """Process augmented data and prepare final output."""
-        image = augmented["image"]
-        boxes = torch.from_numpy(np.array(augmented["bboxes"])).float()
-        labels = torch.from_numpy(np.array(augmented["category_ids"]).astype(np.int64))
-        targets = {"boxes": boxes, "labels": labels}
-        return self.image_names[idx], image, targets
