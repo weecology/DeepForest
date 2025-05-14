@@ -21,6 +21,9 @@ from deepforest import preprocess
 
 # Base prediction class
 class PredictionDataset(Dataset):
+    """
+    This is the base class for all prediction datasets. It defines the interface for all prediction datasets.
+    """
     def __init__(self, image=None, path=None, patch_size=None, patch_overlap=None):
         self.image = image
         self.path = path
@@ -29,23 +32,35 @@ class PredictionDataset(Dataset):
         self.items = self.prepare_items()
 
     def _load_and_preprocess_image(self, image_path):
+        """
+        Load and preprocess an image. Datasets should load using PIL and transpose the image to (C, H, W) before main.model.forward() is called.
+        """
         image = Image.open(image_path)
-        image = self.preprocess_crop(image)
- 
+        image = np.array(image)
         if not image.shape[2] == 3:
             raise ValueError(
-                "Only three band raster are accepted. Channels should be the final dimension. Input tile has shape {}. Check for transparent alpha channel and remove if present"
+                "Only three band raster are accepted. Input tile has shape {}. Check for transparent alpha channel and remove if present"
                 .format(image.shape))
         
+        image = np.transpose(image, (2, 0, 1))
+        image = self.preprocess_crop(image)
+ 
         return image
     
     def preprocess_crop(self, image):
+        """
+        Preprocess a crop to a float32 tensor between 0 and 1.
+        """
         image = np.array(image)
         image = image / 255.0
         image = image.astype(np.float32)
+
         return image
     
     def prepare_items(self):
+        """
+        Prepare the items for the dataset. This is used for special cases before the main.model.forward() is called.
+        """
         raise NotImplementedError("Subclasses must implement this method")
 
     def __len__(self):
@@ -64,6 +79,9 @@ class PredictionDataset(Dataset):
         return default_collate(batch)
     
     def get_crop_bounds(self, idx):
+        """
+        Get the crop bounds at the given index, needed to mosaic predictions.
+        """
         raise NotImplementedError("Subclasses must implement this method")
     
     def get_crop(self, idx):
@@ -78,35 +96,62 @@ class PredictionDataset(Dataset):
         """
         raise NotImplementedError("Subclasses must implement this method")
 
-    def postprocess(self, batched_result, idx): 
+    def determine_geometry_type(self, batched_result):
         """
-        Postprocess the batched result into a single dataframe
+        Determine the geometry type of the batched result.
         """
         # Assumes that all geometries are the same in a batch
-        if "boxes" in batched_result[0].keys():
+        if "boxes" in batched_result.keys():
             geom_type = "box"
-        elif "points" in batched_result[0].keys():
+        elif "points" in batched_result.keys():
             geom_type = "point"
-        elif "polygons" in batched_result[0].keys():
+        elif "polygons" in batched_result.keys():
             geom_type = "polygon"
         else:
-            raise ValueError("Unknown geometry type, prediction keys are {}".format(batched_result[0].keys()))
+            raise ValueError("Unknown geometry type, prediction keys are {}".format(batched_result.keys()))
 
+        return geom_type
+
+    def format_batch(self, batch, idx, sub_idx=None):
+        """
+        Format the batch into a single dataframe.
+
+        Args:
+            batch (list): The batch to format.
+            idx (int): The index of the batch.
+            sub_idx (int): The index of the subbatch. If None, the index is the subbatch index.
+        """
+        if sub_idx is None:
+            sub_idx = idx
+        geom_type = self.determine_geometry_type(batch)
+        result = format_geometry(batch, geom_type=geom_type)
+        if result is None:
+            return None
+        result["window_xmin"] = self.get_crop_bounds(sub_idx)[0] 
+        result["window_ymin"] = self.get_crop_bounds(sub_idx)[1]
+        result["image_path"] = self.get_image_basename(idx)
+
+        return result
+    
+    def postprocess(self, batched_result): 
+        """
+        Postprocess the batched result into a single dataframe. In the case of subbatches, the index is the subbatch index.
+        """    
         formatted_result = []
-        for batch in batched_result:
-            result = format_geometry(batch, geom_type=geom_type)
-            if result is None:
-                continue
-            result["window_xmin"] = self.get_crop_bounds(idx)[0] 
-            result["window_ymin"] = self.get_crop_bounds(idx)[1]
-            result["image_path"] = self.get_image_basename(idx)
-            formatted_result.append(result)
+        for idx, batch in enumerate(batched_result):
+            if isinstance(batch, list):
+                for sub_idx, sub_batch in enumerate(batch):
+                    result = self.format_batch(sub_batch, idx, sub_idx)
+                    formatted_result.append(result)
+            else:
+                result = self.format_batch(batch, idx)
+                formatted_result.append(result)
 
-        # Concatenate all results into a single dataframe
         if len(formatted_result) > 0:
             formatted_result = pd.concat(formatted_result)
         else:
             formatted_result = pd.DataFrame()
+
         return formatted_result
 
 class SingleImage(PredictionDataset):
@@ -128,8 +173,7 @@ class SingleImage(PredictionDataset):
     
     def get_crop(self, idx):
         crop = self.image[self.windows[idx].indices()]
-        crop = preprocess.preprocess_image(crop)
-
+        
         return crop
     
     def get_image_basename(self, idx):
@@ -167,18 +211,18 @@ class FromCSVFile(PredictionDataset):
 
     
 class MultiImage(PredictionDataset):
-    def __init__(self, image_paths: List[str], patch_size: int, patch_overlap: float):
+    def __init__(self, paths: List[str], patch_size: int, patch_overlap: float):
         """
         Args:
-            image_paths (List[str]): List of image paths.
+            paths (List[str]): List of image paths.
             patch_size (int): Size of the patches to extract.
             patch_overlap (float): Overlap between patches.
         """
         # Runtime type checking
-        if not isinstance(image_paths, list):
-            raise TypeError(f"image_paths must be a list, got {type(image_paths)}")
+        if not isinstance(paths, list):
+            raise TypeError(f"paths must be a list, got {type(paths)}")
             
-        self.image_paths = image_paths
+        self.paths = paths
         self.patch_size = patch_size
         self.patch_overlap = patch_overlap
 
@@ -223,7 +267,7 @@ class MultiImage(PredictionDataset):
         return output
 
     def _create_patches(self, image):
-        image_tensor = torch.tensor(image).permute(2, 0, 1).unsqueeze(0) # Convert to (N, C, H, W)
+        image_tensor = torch.tensor(image).unsqueeze(0) # Convert to (N, C, H, W)
         patch_overlap_size = int(self.patch_size * self.patch_overlap)
         patches = self.create_overlapping_views(image_tensor, self.patch_size, patch_overlap_size)
 
@@ -235,7 +279,7 @@ class MultiImage(PredictionDataset):
         Returns:
             list: List of tuples containing (x, y, w, h) coordinates of each patch
         """
-        image_tensor = torch.tensor(self.image).permute(2, 0, 1).unsqueeze(0)  # Convert to (N, C, H, W)
+        image_tensor = torch.tensor(self.image).unsqueeze(0)  # Convert to (N, C, H, W)
         N, C, H, W = image_tensor.shape
         patch_overlap_size = int(self.patch_size * self.patch_overlap)
         step = self.patch_size - patch_overlap_size
@@ -255,26 +299,23 @@ class MultiImage(PredictionDataset):
 
         return windows
 
-    def collate_fn(self, batch):
-        # Separate first and second positions from each batch item
-        crops = [item[0] for item in batch]
-        crops = torch.cat(crops, dim=0)
-        
-        return crops
+    def collate_fn(self, batch):  
+        # Comes pre-batched
+        return batch
 
     def __len__(self):
-        return len(self.image_paths)
+        return len(self.paths)
 
     def get_crop(self, idx):
-        self.image = self._load_and_preprocess_image(self.image_paths[idx])
+        self.image = self._load_and_preprocess_image(self.paths[idx])
         return self._create_patches(self.image)
     
     def get_image_basename(self, idx):
-        return os.path.basename(self.image_paths[idx])
+        return os.path.basename(self.paths[idx])
     
     def get_crop_bounds(self, idx):
-        return self.window_list()
-
+        return self.window_list()[idx]
+    
 class TiledRaster(PredictionDataset):
     """Dataset for predicting on raster windows
 
@@ -323,13 +364,6 @@ class TiledRaster(PredictionDataset):
         
     def __len__(self):
         return len(self.windows)
-
-    def collate_fn(self, batch):
-        # Separate first and second positions from each batch item
-        crops = [item[0] for item in batch]
-        
-        # Concatenate crops and return with windows
-        return torch.stack(crops, dim=0)
     
     def window_list(self):
         return [x.getRect() for x in self.windows]
@@ -346,7 +380,7 @@ class TiledRaster(PredictionDataset):
         return window_data
     
     def get_image_basename(self, idx):
-        return os.path.basename(self.raster_path)
+        return os.path.basename(self.path)
     
     def get_crop_bounds(self, idx):
         return self.window_list()[idx]
