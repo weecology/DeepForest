@@ -261,6 +261,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                      root_dir=None,
                      shuffle=True,
                      transforms=None,
+                     train=True,
                      batch_size=1):
         """Create a dataset for inference or training. Csv file format is .csv file
         with the columns "image_path", "xmin","ymin","xmax","ymax" for the
@@ -273,16 +274,15 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             root_dir: directory of images. If none, uses "image_dir" in config
             transforms: Albumentations transforms
             batch_size: batch size
+            train: if True, use default training transforms
 
         Returns:
             ds: a pytorch dataset
         """
-
-        # TODO, generalize to other datasets geometries here.
-
         ds = training.BoxDataset(csv_file=csv_file,
                                  root_dir=root_dir,
                                  transforms=transforms,
+                                 train=train,
                                  label_dict=self.label_dict,
                                  preload_images=self.config.train.preload_images)
         if len(ds) == 0:
@@ -294,7 +294,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             ds,
             batch_size=batch_size,
             shuffle=shuffle,
-            collate_fn=utilities.collate_fn,
+            collate_fn=ds.collate_fn,
             num_workers=self.config.workers,
         )
 
@@ -311,7 +311,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
         loader = self.load_dataset(csv_file=self.config.train.csv_file,
                                    root_dir=self.config.train.root_dir,
-                                   augment=True,
+                                   train=True,
                                    shuffle=True,
                                    batch_size=self.config.batch_size)
 
@@ -332,7 +332,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         if self.config.validation.csv_file is not None:
             loader = self.load_dataset(csv_file=self.config.validation.csv_file,
                                        root_dir=self.config.validation.root_dir,
-                                       augment=False,
+                                       train=False,
                                        shuffle=False,
                                        batch_size=self.config.batch_size)
         return loader
@@ -570,7 +570,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         self.model.train()
 
         # allow for empty data if data augmentation is generated
-        path, images, targets = batch
+        images, targets = batch
         loss_dict = self.model.forward(images, targets)
 
         # sum of regression and classification loss
