@@ -14,9 +14,10 @@ import importlib.util
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 
-from deepforest import main, get_data, dataset, model
-from deepforest.visualize import format_geometry
-from deepforest.utilities import read_file
+from deepforest import main, get_data, model
+from deepforest.visualize import plot_results
+from deepforest.utilities import read_file, format_geometry
+from deepforest.datasets import prediction
 
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import Callback
@@ -69,6 +70,7 @@ def m(download_release):
 
     m.create_trainer()
     m.load_model("weecology/deepforest-tree")
+
     return m
 
 
@@ -95,10 +97,10 @@ def path():
     return get_data(path='OSBS_029.tif')
 
 
+@pytest.fixture()
 def big_file():
     tmpdir = tempfile.gettempdir()
     csv_file = get_data("OSBS_029.csv")
-    image_path = get_data("OSBS_029.png")
     df = pd.read_csv(csv_file)
 
     big_frame = []
@@ -115,6 +117,9 @@ def big_file():
 
     return "{}/annotations.csv".format(tmpdir)
 
+def test_m_has_tree_model_loaded(m):
+    boxes = m.predict_image(path=get_data("OSBS_029.tif"))
+    assert not boxes.empty
 
 def test_tensorboard_logger(m, tmpdir):
     # Check if TensorBoard is installed
@@ -295,6 +300,7 @@ def test_predict_image_fromfile(m):
     assert set(prediction.columns) == {
         "xmin", "ymin", "xmax", "ymax", "label", "score", "image_path", "geometry"
     }
+    assert not prediction.empty
 
 
 def test_predict_image_fromarray(m):
@@ -317,16 +323,14 @@ def test_predict_big_file(m, tmpdir):
     m.config.train.fast_dev_run = False
     m.create_trainer()
     csv_file = big_file()
-    original_file = pd.read_csv(csv_file)
     df = m.predict_file(csv_file=csv_file,
                         root_dir=os.path.dirname(csv_file))
     assert set(df.columns) == {
         'label', 'score', 'image_path', 'geometry', "xmin", "ymin", "xmax", "ymax"
     }
 
-def test_predict_small_file(m, tmpdir):
+def test_predict_small_file(m):
     csv_file = get_data("OSBS_029.csv")
-    original_file = pd.read_csv(csv_file)
     df = m.predict_file(csv_file, root_dir=os.path.dirname(csv_file))
     assert set(df.columns) == {
         'label', 'score', 'image_path', 'geometry', "xmin", "ymin", "xmax", "ymax"
@@ -336,11 +340,10 @@ def test_predict_small_file(m, tmpdir):
 def test_predict_dataloader(m, batch_size, path):
     m.config.batch_size = batch_size
     tile = np.array(Image.open(path))
-    ds = dataset.TileDataset(tile=tile, patch_overlap=0.1, patch_size=100)
+    ds = prediction.SingleImage(image=tile, path=path, patch_overlap=0.1, patch_size=100)
     dl = m.predict_dataloader(ds)
     batch = next(iter(dl))
-    batch.shape[0] == batch_size
-
+    assert batch.shape[0] == batch_size
 
 def test_predict_tile_empty(path):
     # Random weights
@@ -348,20 +351,26 @@ def test_predict_tile_empty(path):
     predictions = m.predict_tile(path=path, patch_size=300, patch_overlap=0)
     assert predictions is None
 
-@pytest.mark.parametrize("in_memory", [True, False])
-def test_predict_tile(m, path, in_memory):
+@pytest.mark.parametrize("dataloader_strategy", ["single", "window", "batch"])
+def test_predict_tile(m, path, dataloader_strategy):
     m.create_model()
     m.config.train.fast_dev_run = False
     m.create_trainer()
 
-    if in_memory:
-        path = path
+    if dataloader_strategy == "single":
+        image_path = path
+        paths = None
+    elif dataloader_strategy == "window":
+        image_path = get_data("test_tiled.tif")
+        paths = None
     else:
-        path = get_data("test_tiled.tif")
+        image_path = None
+        paths = [path, path]
 
-    prediction = m.predict_tile(path=path,
+    prediction = m.predict_tile(paths=paths,
+                                path=image_path,
                                 patch_size=300,
-                                in_memory=in_memory,
+                                dataloader_strategy=dataloader_strategy,
                                 patch_overlap=0.1)
 
     assert isinstance(prediction, pd.DataFrame)
@@ -370,23 +379,33 @@ def test_predict_tile(m, path, in_memory):
     }
     assert not prediction.empty
 
-# test equivalence for in_memory=True and False
+# test equivalence for within and out of memory dataset strategies
 def test_predict_tile_equivalence(m):
     path = get_data("test_tiled.tif")
-    in_memory_prediction = m.predict_tile(path=path, patch_size=300, patch_overlap=0, in_memory=True)
-    not_in_memory_prediction = m.predict_tile(path=path, patch_size=300, patch_overlap=0, in_memory=False)
+    in_memory_prediction = m.predict_tile(path=path, patch_size=300, patch_overlap=0, dataloader_strategy="single")
+    not_in_memory_prediction = m.predict_tile(path=path, patch_size=300, patch_overlap=0, dataloader_strategy="window")
     assert in_memory_prediction.equals(not_in_memory_prediction)
 
 def test_predict_tile_from_array(m, path):
-    # test predict numpy image
     image = np.array(Image.open(path))
     m.config.train.fast_dev_run = False
     m.create_trainer()
-    prediction = m.predict_tile(image=image,
-                                patch_size=300)
+    prediction = m.predict_tile(image=image, patch_size=300)
 
-    assert not prediction.empty
+    assert not prediction.empty    
 
+def test_predict_tile_batch_strategy(m, path):
+    m.config["train"]["fast_dev_run"] = False
+    m.create_trainer()
+    prediction_batch = m.predict_tile(path=[path, path],
+                                patch_size=400,
+                                patch_overlap=0,
+                                dataloader_strategy="batch")
+
+    assert not prediction_batch.empty
+
+    # View the predictions
+    plot_results(prediction_batch)
 
 def test_predict_tile_no_mosaic(m, path):
     # test no mosaic, return a tuple of crop and prediction
@@ -622,7 +641,7 @@ def test_existing_val_dataloader(m, tmpdir, existing_loader):
 
 def test_existing_predict_dataloader(m, tmpdir):
     # Predict datasets yield only images
-    ds = dataset.TileDataset(tile=np.random.random((400, 400, 3)).astype("float32"),
+    ds = prediction.TiledRaster(path=get_data("test_tiled.tif"),
                              patch_overlap=0.1,
                              patch_size=100)
     existing_loader = m.predict_dataloader(ds)
@@ -808,8 +827,7 @@ def test_predict_tile_with_multiple_crop_models_empty():
 
 def test_batch_prediction(m, path):
     # Prepare input data
-    tile = np.array(Image.open(path))
-    ds = dataset.TileDataset(tile=tile, patch_overlap=0.1, patch_size=300)
+    ds = prediction.SingleImage(path=path, patch_overlap=0.1, patch_size=300)
     dl = DataLoader(ds, batch_size=3)
 
     # Perform prediction
@@ -828,8 +846,7 @@ def test_batch_prediction(m, path):
             assert "geometry" in image_pred.columns
 
 def test_batch_inference_consistency(m, path):
-    tile = np.array(Image.open(path))
-    ds = dataset.TileDataset(tile=tile, patch_overlap=0.1, patch_size=300)
+    ds = prediction.SingleImage(path=path, patch_overlap=0.1, patch_size=300)
     dl = DataLoader(ds, batch_size=4)
 
     batch_predictions = []

@@ -47,9 +47,13 @@ def compute_windows(numpy_image, patch_size, patch_overlap):
     if patch_overlap > 1:
         raise ValueError("Patch overlap {} must be between 0 - 1".format(patch_overlap))
 
+    # Check that image is 3 channels
+    if numpy_image.shape[0] != 3:
+        raise ValueError("Image must have 3 channels")
+
     # Generate overlapping sliding windows
     windows = slidingwindow.generate(numpy_image,
-                                     slidingwindow.DimOrder.HeightWidthChannel,
+                                     slidingwindow.DimOrder.ChannelHeightWidth,
                                      patch_size, patch_overlap)
 
     return (windows)

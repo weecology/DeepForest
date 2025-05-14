@@ -1,6 +1,6 @@
 # Test visualize
 from deepforest import visualize
-from deepforest.utilities import read_file
+from deepforest import utilities
 from deepforest import get_data
 import os
 import pytest
@@ -12,16 +12,6 @@ from shapely import geometry
 import cv2
 
 
-def test_format_boxes(m):
-    ds = m.val_dataloader()
-    batch = next(iter(ds))
-    paths, images, targets = batch
-    for path, image, target in zip(paths, images, targets):
-        target_df = visualize.format_boxes(target, scores=False)
-        assert list(target_df.columns.values) == ["xmin", "ymin", "xmax", "ymax", "label"]
-        assert not target_df.empty
-
-
 # Test different color labels
 @pytest.mark.parametrize("label", [0, 1, 20])
 def test_plot_predictions(m, tmpdir, label):
@@ -29,7 +19,7 @@ def test_plot_predictions(m, tmpdir, label):
     batch = next(iter(ds))
     paths, images, targets = batch
     for path, image, target in zip(paths, images, targets):
-        target_df = visualize.format_boxes(target, scores=False)
+        target_df = utilities.format_boxes(target, scores=False)
         target_df["image_path"] = path
         image = np.array(image)[:, :, ::-1]
         image = np.rollaxis(image, 0, 3)
@@ -44,7 +34,7 @@ def test_plot_prediction_dataframe(m, tmpdir):
     batch = next(iter(ds))
     paths, images, targets = batch
     for path, image, target in zip(paths, images, targets):
-        target_df = visualize.format_boxes(target, scores=False)
+        target_df = utilities.format_boxes(target, scores=False)
         target_df["image_path"] = path
         filenames = visualize.plot_prediction_dataframe(
             df=target_df, savedir=tmpdir, root_dir=m.config.validation.root_dir)
@@ -81,7 +71,7 @@ def test_predict_tile_and_plot(m, tmpdir):
 
 def test_multi_class_plot( tmpdir):
     results = pd.read_csv(get_data("testfile_multi.csv"))
-    results = read_file(results, root_dir=os.path.dirname(get_data("SOAP_061.png")))
+    results = utilities.read_file(results, root_dir=os.path.dirname(get_data("SOAP_061.png")))
     visualize.plot_results(results, savedir=tmpdir)
 
     assert os.path.exists(os.path.join(tmpdir, "SOAP_061.png"))
@@ -98,7 +88,7 @@ def test_convert_to_sv_format():
         'image_path': ['image1.jpg', 'image1.jpg']
     }
     df = pd.DataFrame(data)
-    df = read_file(df, root_dir=os.path.dirname(get_data("OSBS_029.tif")))
+    df = utilities.read_file(df, root_dir=os.path.dirname(get_data("OSBS_029.tif")))
 
     # Call the function
     detections = visualize.convert_to_sv_format(df)
@@ -126,7 +116,7 @@ def test_plot_annotations(tmpdir):
         "score": [0.9, 0.8]
     }
     df = pd.DataFrame(data)
-    gdf = read_file(df, root_dir=os.path.dirname(get_data("OSBS_029.tif")))
+    gdf = utilities.read_file(df, root_dir=os.path.dirname(get_data("OSBS_029.tif")))
     gdf.root_dir = os.path.dirname(get_data("OSBS_029.tif"))
 
     # Call the function
@@ -148,7 +138,7 @@ def test_plot_results_box(m, tmpdir):
         "score": [0.9, 0.8]
     }
     df = pd.DataFrame(data)
-    gdf = read_file(df, root_dir=os.path.dirname(get_data("OSBS_029.tif")))
+    gdf = utilities.read_file(df, root_dir=os.path.dirname(get_data("OSBS_029.tif")))
     gdf.root_dir = os.path.dirname(get_data("OSBS_029.tif"))
 
     # Call the function
@@ -167,7 +157,7 @@ def test_plot_results_point(m, tmpdir):
         'score': [0.9, 0.8]
     }
     df = pd.DataFrame(data)
-    gdf = read_file(df, root_dir=os.path.dirname(get_data("OSBS_029.tif")))
+    gdf = utilities.read_file(df, root_dir=os.path.dirname(get_data("OSBS_029.tif")))
     gdf.root_dir = os.path.dirname(get_data("OSBS_029.tif"))
 
     # Call the function
@@ -185,7 +175,7 @@ def test_plot_results_point_no_label(m, tmpdir):
         'image_path': [get_data("OSBS_029.tif"), get_data("OSBS_029.tif")],
     }
     df = pd.DataFrame(data)
-    gdf = read_file(df, root_dir=os.path.dirname(get_data("OSBS_029.tif")))
+    gdf = utilities.read_file(df, root_dir=os.path.dirname(get_data("OSBS_029.tif")))
     gdf.root_dir = os.path.dirname(get_data("OSBS_029.tif"))
 
     # Call the function
