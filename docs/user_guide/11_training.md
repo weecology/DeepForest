@@ -319,3 +319,31 @@ trainer.fit(m)
 The added benefits of this is more control over the trainer object.
 The downside is that it doesn't align with the .config pattern where a user now has to look into the config to create the trainer.
 We are open to changing this to be the default pattern in the future and welcome input from users.
+
+#### Training via command line
+
+We provide a basic script to trigger a training run via CLI. This script is installed as part of the standard DeepForest installation is called `deepforest train`. We use [Hydra](https://hydra.cc/docs/intro/) for configuration management and you can pass configuration parameters as command line arguments as follows:
+
+```bash
+deepforest train batch_size=8 train.csv_file=your_labels.csv train.root_dir=some/path
+```
+
+Under the hood, this simply sets up a standard DeepForest model, creates a trainer and runs `fit`. You can have a look at the script in `src/deepforest/scripts/cli.py` to see exactly what's being run. However for most users, configuring the dataset paths (`train.csv_file` and `train.root_dir`) and perhaps modifying `batch_size` should be sufficient to start with.
+
+To check what configuration options are available, run:
+
+```bash
+deepforest config
+```
+
+which will show you where Hydra is looking and what the current (default) config is. You can then pick which parameters you want to override with the syntax `<key>=<value>`. For nested cofiguration, like the `train` option we passed above, separate levels of nesting with periods (`.`), such as `train.scheduler.params.gamma=0.1`.
+
+For more complex training requirements, such as adding additional transforms or other aspects which are not directly modifiable via the config file, we suggest using the script as a reference.
+
+To override settings using your own configuration file, we recommend copying the default configuration and place it in your working/training directory. This is the **preferred method** for repeatable training because it will provide you with a full record of the configuration of your training run. Then run:
+
+```bash
+deepforest --config-dir /your/config/folder --config-name config_file_name train
+```
+
+Note you don't need to pass the `yaml` extension. This method uses Hydra's [standard flags](https://hydra.cc/docs/advanced/hydra-command-line-flags/). Otherwise you can save a config file using any valid subset of the options (for example just the CSV location and root directory) and Hydra will overlay those on top of the default config.
