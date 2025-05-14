@@ -29,7 +29,7 @@ def _predict_image_(model,
         img: The input with predictions overlaid (Optional)
     """
 
-    image = torch.tensor(image, device=model.device).permute(2, 0, 1)
+    image = torch.tensor(image).permute(2, 0, 1)
     image = image / 255
     
     with torch.no_grad():
@@ -95,21 +95,27 @@ def apply_nms(boxes, scores, labels, iou_threshold):
                        columns=["xmin", "ymin", "xmax", "ymax", "label", "score"])
 
 
-def mosiac(boxes, iou_threshold=0.1):
+def mosiac(predictions, iou_threshold=0.1):
     """Mosaic predictions from overlapping windows.
 
     Args:
-        boxes: A list of pandas dataframes containing predictions from overlapping windows.
+        predictions: A pandas dataframe containing predictions from overlapping windows.
         iou_threshold: The IoU threshold for non-max suppression.
 
     Returns:
         A pandas dataframe of predictions.
     """
     # Transform coordinates for each image separately
+
+    # Split pandas dataframe into list of dataframes for each image_path
+    predictions_list = []
+    for image_path in predictions["image_path"].unique():
+        predictions_list.append(predictions[predictions["image_path"] == image_path])
+
     transformed_boxes = []
-    for box_df in boxes:
-        if box_df is not None and not box_df.empty:
-            transformed_box = transform_coordinates(box_df)
+    for prediction in predictions_list:
+        if prediction is not None and not prediction.empty:
+            transformed_box = transform_coordinates(prediction)
             transformed_boxes.append(transformed_box)
     
     if not transformed_boxes:
