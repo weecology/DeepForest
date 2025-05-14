@@ -641,7 +641,7 @@ def test_existing_val_dataloader(m, tmpdir, existing_loader):
 
 def test_existing_predict_dataloader(m, tmpdir):
     # Predict datasets yield only images
-    ds = prediction.TiledRaster(tile=np.random.random((400, 400, 3)).astype("float32"),
+    ds = prediction.TiledRaster(path=get_data("test_tiled.tif"),
                              patch_overlap=0.1,
                              patch_size=100)
     existing_loader = m.predict_dataloader(ds)
@@ -827,8 +827,7 @@ def test_predict_tile_with_multiple_crop_models_empty():
 
 def test_batch_prediction(m, path):
     # Prepare input data
-    tile = np.array(Image.open(path))
-    ds = prediction.TileDataset(tile=tile, patch_overlap=0.1, patch_size=300)
+    ds = prediction.SingleImage(path=path, patch_overlap=0.1, patch_size=300)
     dl = DataLoader(ds, batch_size=3)
 
     # Perform prediction
@@ -847,8 +846,7 @@ def test_batch_prediction(m, path):
             assert "geometry" in image_pred.columns
 
 def test_batch_inference_consistency(m, path):
-    tile = np.array(Image.open(path))
-    ds = prediction.TileDataset(tile=tile, patch_overlap=0.1, patch_size=300)
+    ds = prediction.SingleImage(path=path, patch_overlap=0.1, patch_size=300)
     dl = DataLoader(ds, batch_size=4)
 
     batch_predictions = []
