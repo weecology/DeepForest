@@ -699,7 +699,8 @@ def test_predict_tile_with_crop_model(m, config):
     iou_threshold = 0.15
     mosaic = True
     # Set up the crop model
-    crop_model = model.CropModel(num_classes=2)
+    crop_model = model.CropModel(num_classes=2, label_dict = {"Dead":0, "Alive":1})
+
     # Call the predict_tile method with the crop_model
     m.config.train.fast_dev_run = False
     m.create_trainer()
@@ -717,6 +718,10 @@ def test_predict_tile_with_crop_model(m, config):
         "cropmodel_score", "image_path"
     }
 
+    # Assert cropmodel_label is in the label_dict
+    labels = [x for x in crop_model.label_dict]
+    assert result.cropmodel_label.isin(labels).all()
+
 
 def test_predict_tile_with_crop_model_empty():
     """If the model return is empty, the crop model should return an empty dataframe"""
@@ -726,8 +731,10 @@ def test_predict_tile_with_crop_model_empty():
     patch_overlap = 0.05
     iou_threshold = 0.15
     mosaic = True
+    
     # Set up the crop model
-    crop_model = model.CropModel(num_classes=2)
+    crop_model = model.CropModel(num_classes=2, label_dict = {"Dead": 0, "Alive": 1})
+    
     # Call the predict_tile method with the crop_model
     m.config.train.fast_dev_run = False
     m.create_trainer()
@@ -737,6 +744,7 @@ def test_predict_tile_with_crop_model_empty():
                             iou_threshold=iou_threshold,
                             mosaic=mosaic,
                             crop_model=crop_model)
+    
 
     # Assert the result
     assert result is None or result.empty
@@ -749,7 +757,7 @@ def test_predict_tile_with_multiple_crop_models(m, config):
     mosaic = True
 
     # Create multiple crop models
-    crop_model = [model.CropModel(num_classes=2), model.CropModel(num_classes=3)]
+    crop_model = [model.CropModel(num_classes=2, label_dict={"Dead":0, "Alive":1}), model.CropModel(num_classes=3, label_dict={"Dead":0, "Alive":1, "Sapling":2})]
 
     # Call predict_tile with multiple crop models
     m.config.train.fast_dev_run = False
@@ -784,8 +792,8 @@ def test_predict_tile_with_multiple_crop_models_empty():
     mosaic = True
 
     # Create multiple crop models
-    crop_model_1 = model.CropModel(num_classes=2)
-    crop_model_2 = model.CropModel(num_classes=3)
+    crop_model_1 = model.CropModel(num_classes=2, label_dict={"Dead":0, "Alive":1})
+    crop_model_2 = model.CropModel(num_classes=3, label_dict={"Dead":0, "Alive":1, "Sapling":2})
 
     m.config.train.fast_dev_run = False
     m.create_trainer()
@@ -884,6 +892,7 @@ def test_epoch_evaluation_end_empty(m):
     boxes["image_path"] = "test"
     m.predictions = [boxes]
     m.on_validation_epoch_end()
+
 def test_empty_frame_accuracy_all_empty_with_predictions(m, tmpdir):
     """Test empty frame accuracy when all frames are empty but model predicts objects.
     The accuracy should be 0 since model incorrectly predicts objects in empty frames."""
