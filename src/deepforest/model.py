@@ -32,9 +32,6 @@ class Model():
         # Check for required properties and formats
         self.config = config
 
-        # Check input output format:
-        self.check_model()
-
     def create_model(self):
         """This function converts a deepforest config file into a model.
 
