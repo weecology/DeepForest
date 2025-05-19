@@ -22,9 +22,11 @@ from deepforest import preprocess
 
 # Base prediction class
 class PredictionDataset(Dataset):
-    """
-    This is the base class for all prediction datasets. It defines the interface for all prediction datasets. It flexibly accepts a single image or a list of images, a single path or a list of paths, and a patch_size and patch_overlap.
-    
+    """This is the base class for all prediction datasets. It defines the
+    interface for all prediction datasets. It flexibly accepts a single image
+    or a list of images, a single path or a list of paths, and a patch_size and
+    patch_overlap.
+
     Args:
         image (PIL.Image.Image): A single image.
         path (str): A single image path.
@@ -53,8 +55,10 @@ class PredictionDataset(Dataset):
         self.items = self.prepare_items()
 
     def _load_and_preprocess_image(self, image_path, image=None, size=None):
-        """
-        Load and preprocess an image. Datasets should load using PIL and transpose the image to (C, H, W) before main.model.forward() is called.
+        """Load and preprocess an image.
+
+        Datasets should load using PIL and transpose the image to (C, H,
+        W) before main.model.forward() is called.
         """
         if image is None:
             image = Image.open(image_path)
@@ -72,9 +76,7 @@ class PredictionDataset(Dataset):
         return image
 
     def preprocess_crop(self, image, size=None):
-        """
-        Preprocess a crop to a float32 tensor between 0 and 1.
-        """
+        """Preprocess a crop to a float32 tensor between 0 and 1."""
         image = np.array(image)
         image = image / 255.0
         image = image.astype(np.float32)
@@ -85,15 +87,15 @@ class PredictionDataset(Dataset):
         return image
 
     def resize_image(self, image, size):
-        """
-        Resize an image to a new size.
-        """
+        """Resize an image to a new size."""
         image = np.resize(image, (image.shape[0], size, size))
         return image
 
     def prepare_items(self):
-        """
-        Prepare the items for the dataset. This is used for special cases before the main.model.forward() is called.
+        """Prepare the items for the dataset.
+
+        This is used for special cases before the main.model.forward()
+        is called.
         """
         raise NotImplementedError("Subclasses must implement this method")
 
@@ -101,15 +103,11 @@ class PredictionDataset(Dataset):
         return len(self.items)
 
     def __getitem__(self, idx):
-        """
-        Get the item at the given index
-        """
+        """Get the item at the given index."""
         return self.get_crop(idx)
 
     def collate_fn(self, batch):
-        """
-        Collate the batch into a single tensor
-        """
+        """Collate the batch into a single tensor."""
         # Check if all images in batch have same dimensions
         try:
             return default_collate(batch)
@@ -119,27 +117,20 @@ class PredictionDataset(Dataset):
             )
 
     def get_crop_bounds(self, idx):
-        """
-        Get the crop bounds at the given index, needed to mosaic predictions.
-        """
+        """Get the crop bounds at the given index, needed to mosaic
+        predictions."""
         raise NotImplementedError("Subclasses must implement this method")
 
     def get_crop(self, idx):
-        """
-        Get the crop of the image at the given index
-        """
+        """Get the crop of the image at the given index."""
         raise NotImplementedError("Subclasses must implement this method")
 
     def get_image_basename(self, idx):
-        """
-        Get the basename of the image at the given index
-        """
+        """Get the basename of the image at the given index."""
         raise NotImplementedError("Subclasses must implement this method")
 
     def determine_geometry_type(self, batched_result):
-        """
-        Determine the geometry type of the batched result.
-        """
+        """Determine the geometry type of the batched result."""
         # Assumes that all geometries are the same in a batch
         if "boxes" in batched_result.keys():
             geom_type = "box"
@@ -154,8 +145,7 @@ class PredictionDataset(Dataset):
         return geom_type
 
     def format_batch(self, batch, idx, sub_idx=None):
-        """
-        Format the batch into a single dataframe.
+        """Format the batch into a single dataframe.
 
         Args:
             batch (list): The batch to format.
@@ -175,8 +165,9 @@ class PredictionDataset(Dataset):
         return result
 
     def postprocess(self, batched_result):
-        """
-        Postprocess the batched result into a single dataframe. In the case of subbatches, the index is the subbatch index.
+        """Postprocess the batched result into a single dataframe.
+
+        In the case of subbatches, the index is the subbatch index.
         """
         formatted_result = []
         for idx, batch in enumerate(batched_result):
@@ -199,7 +190,7 @@ class PredictionDataset(Dataset):
 
 
 class SingleImage(PredictionDataset):
-    """Take in a single image path, preprocess and batch together"""
+    """Take in a single image path, preprocess and batch together."""
 
     def __init__(self, path=None, image=None, patch_size=None, patch_overlap=None):
         super().__init__(path=path,
@@ -234,7 +225,8 @@ class SingleImage(PredictionDataset):
 
 
 class FromCSVFile(PredictionDataset):
-    """Take in a csv file with image paths and preprocess and batch together"""
+    """Take in a csv file with image paths and preprocess and batch
+    together."""
 
     def __init__(self, csv_file: str, root_dir: str, size: int = None):
         self.csv_file = csv_file
@@ -261,8 +253,7 @@ class FromCSVFile(PredictionDataset):
         return None
 
     def format_batch(self, batch, idx, sub_idx=None):
-        """
-        Format the batch into a single dataframe.
+        """Format the batch into a single dataframe.
 
         Args:
             batch (list): The batch to format.
@@ -281,7 +272,7 @@ class FromCSVFile(PredictionDataset):
 
 
 class MultiImage(PredictionDataset):
-    """Take in a list of image paths, preprocess and batch together"""
+    """Take in a list of image paths, preprocess and batch together."""
 
     def __init__(self, paths: List[str], patch_size: int, patch_overlap: float):
         """
@@ -299,8 +290,7 @@ class MultiImage(PredictionDataset):
         self.patch_overlap = patch_overlap
 
     def create_overlapping_views(self, input_tensor, size, overlap):
-        """
-        Creates overlapping views of a 4D tensor.
+        """Creates overlapping views of a 4D tensor.
 
         Args:
             input_tensor (torch.Tensor): A 4D tensor of shape [N, C, H, W].
@@ -351,7 +341,7 @@ class MultiImage(PredictionDataset):
 
     def window_list(self):
         """Get the original positions of patches in the image.
-        
+
         Returns:
             list: List of tuples containing (x, y, w, h) coordinates of each patch
         """
@@ -398,7 +388,7 @@ class MultiImage(PredictionDataset):
 
 
 class TiledRaster(PredictionDataset):
-    """Dataset for predicting on raster windows
+    """Dataset for predicting on raster windows.
 
     This dataset is useful for predicting on a large raster that is too large to fit into memory.
 

@@ -275,8 +275,8 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                      augment=True,
                      preload_images=False,
                      batch_size=1):
-        """Create a dataset for inference or training. Csv file format is .csv file
-        with the columns "image_path", "xmin","ymin","xmax","ymax" for the
+        """Create a dataset for inference or training. Csv file format is .csv
+        file with the columns "image_path", "xmin","ymin","xmax","ymax" for the
         image name and bounding box position. Image_path is the relative
         filename, not absolute path, which is in the root_dir directory. One
         bounding box per line.
@@ -471,8 +471,8 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             patch_size: patch size for each window
             patch_overlap: patch overlap among windows
             iou_threshold: Minimum iou overlap among predictions between windows to be suppressed
-            dataloader_strategy: "single", "batch", or "window". 
-                - "Single" loads the entire image into memory and passes individual windows to GPU and cannot be parallelized. 
+            dataloader_strategy: "single", "batch", or "window".
+                - "Single" loads the entire image into memory and passes individual windows to GPU and cannot be parallelized.
                 - "batch" loads the entire image into GPU memory and creates views of an image as batch, requires in the entire tile to fit into GPU memory. CPU parallelization is possible for loading images.
                 - "window" loads only the desired window of the image from the raster dataset. Most memory efficient option, but cannot parallelize across windows due to rasterio GIL.
             crop_model: a deepforest.model.CropModel object to predict on crops
@@ -714,7 +714,8 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                 pass
 
     def on_validation_epoch_end(self):
-        """Compute metrics and predictions at the end of the validation epoch."""
+        """Compute metrics and predictions at the end of the validation
+        epoch."""
         if self.trainer.sanity_checking:  # optional skip
             return
 
@@ -733,7 +734,9 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             self.__evaluation_logs__(results)
 
     def predict_step(self, batch, batch_idx):
-        """Predict a batch of images with the deepforest model. If batch is a list, concatenate the images, predict and then split the results, useful for main.predict_tile.
+        """Predict a batch of images with the deepforest model. If batch is a
+        list, concatenate the images, predict and then split the results,
+        useful for main.predict_tile.
 
         Args:
             batch (torch.Tensor or np.ndarray): A batch of images with shape (B, C, H, W).
@@ -895,7 +898,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         return results
 
     def __evaluation_logs__(self, results):
-        """Log metrics from evaluation results"""
+        """Log metrics from evaluation results."""
         # Log metrics
         for key, value in results.items():
             if type(value) in [pd.DataFrame, gpd.GeoDataFrame]:
