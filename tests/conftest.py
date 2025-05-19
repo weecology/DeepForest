@@ -34,7 +34,7 @@ def ROOT():
     return _ROOT
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 def two_class_m():
     m = main.deepforest(num_classes=2, label_dict={"Alive": 0, "Dead": 1})
     m.config.train.csv_file = get_data("testfile_multi.csv")
@@ -50,7 +50,7 @@ def two_class_m():
     return m
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 def m(download_release):
     m = main.deepforest()
     m.config.train.csv_file = get_data("example.csv")
