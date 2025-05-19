@@ -927,7 +927,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                                 row["precision"])
                         except MisconfigurationException:
                             pass
-                elif key in ["predictions", "results"]:
+                elif key in ["predictions", "results", "ground_df"]:
                     # Don't log dataframes of predictions or IoU results per epoch
                     pass
                 elif value is None:
