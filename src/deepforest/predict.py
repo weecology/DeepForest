@@ -31,7 +31,7 @@ def _predict_image_(model,
 
     image = torch.tensor(image).permute(2, 0, 1)
     image = image / 255
-    
+
     with torch.no_grad():
         prediction = model(image.unsqueeze(0))
 
@@ -65,7 +65,7 @@ def transform_coordinates(boxes):
     boxes["xmax"] += boxes["window_xmin"]
     boxes["ymin"] += boxes["window_ymin"]
     boxes["ymax"] += boxes["window_ymin"]
-    
+
     return boxes
 
 
@@ -83,7 +83,7 @@ def apply_nms(boxes, scores, labels, iou_threshold):
     """
     bbox_left_idx = nms(boxes=boxes, scores=scores, iou_threshold=iou_threshold)
     bbox_left_idx = bbox_left_idx.numpy()
-    
+
     new_boxes = boxes[bbox_left_idx].type(torch.int)
     new_labels = labels[bbox_left_idx]
     new_scores = scores[bbox_left_idx]
@@ -93,10 +93,11 @@ def apply_nms(boxes, scores, labels, iou_threshold):
         new_boxes,
         np.expand_dims(new_labels, axis=1),
         np.expand_dims(new_scores, axis=1)
-    ], axis=1)
+    ],
+                                      axis=1)
 
     return pd.DataFrame(image_detections,
-                       columns=["xmin", "ymin", "xmax", "ymax", "label", "score"])
+                        columns=["xmin", "ymin", "xmax", "ymax", "label", "score"])
 
 
 def mosiac(predictions, iou_threshold=0.1):
@@ -110,18 +111,20 @@ def mosiac(predictions, iou_threshold=0.1):
         A pandas dataframe of predictions.
     """
     predicted_boxes = transform_coordinates(predictions)
-    print(f"{predicted_boxes.shape[0]} predictions in overlapping windows, applying non-max suppression")
-    
+    print(
+        f"{predicted_boxes.shape[0]} predictions in overlapping windows, applying non-max suppression"
+    )
+
     # Convert to tensors
     boxes = torch.tensor(predicted_boxes[["xmin", "ymin", "xmax", "ymax"]].values,
-                    dtype=torch.float32)
+                         dtype=torch.float32)
     scores = torch.tensor(predicted_boxes.score.values, dtype=torch.float32)
     labels = predicted_boxes.label.values
-    
+
     # Apply NMS
     filtered_boxes = apply_nms(boxes, scores, labels, iou_threshold)
     print(f"{filtered_boxes.shape[0]} predictions kept after non-max suppression")
-    
+
     return filtered_boxes
 
 
@@ -155,11 +158,7 @@ def across_class_nms(predicted_boxes, iou_threshold=0.15):
     return new_df
 
 
-def _dataloader_wrapper_(model,
-                         trainer,
-                         dataloader,
-                         root_dir,
-                         crop_model):
+def _dataloader_wrapper_(model, trainer, dataloader, root_dir, crop_model):
     """
 
     Args:
@@ -183,7 +182,7 @@ def _dataloader_wrapper_(model,
 
     # Postprocess predictions
     results = dataloader.dataset.postprocess(prediction_list)
-    
+
     if results.empty:
         return results
 
@@ -193,17 +192,17 @@ def _dataloader_wrapper_(model,
         image_results = results[results.image_path == image_path].copy()
 
         if crop_model:
-            is_single_model = len(crop_model) == 1  # Flag to check if only one model is passed
-        
+            is_single_model = len(
+                crop_model) == 1  # Flag to check if only one model is passed
+
             for i, crop_model in enumerate(crop_model):
-                crop_model_results = _predict_crop_model_(
-                                        crop_model=crop_model,
-                                        results=image_results,
-                                        path=image_path,
-                                        trainer=trainer,
-                                        model_index=i,
-                                        is_single_model=is_single_model)
-            
+                crop_model_results = _predict_crop_model_(crop_model=crop_model,
+                                                          results=image_results,
+                                                          path=image_path,
+                                                          trainer=trainer,
+                                                          model_index=i,
+                                                          is_single_model=is_single_model)
+
             processed_results.append(crop_model_results)
 
     results = read_file(results, root_dir)
@@ -240,11 +239,10 @@ def _predict_crop_model_(crop_model,
     results = results[results.ymin != results.ymax]
 
     # Create dataset
-    bounding_box_dataset = cropmodel.BoundingBoxDataset(
-        results,
-        root_dir=os.path.dirname(path),
-        transform=transform,
-        augment=augment)
+    bounding_box_dataset = cropmodel.BoundingBoxDataset(results,
+                                                        root_dir=os.path.dirname(path),
+                                                        transform=transform,
+                                                        augment=augment)
 
     # Create dataloader
     crop_dataloader = crop_model.predict_dataloader(bounding_box_dataset)
@@ -276,32 +274,33 @@ def _predict_crop_model_(crop_model,
 
     return results
 
+
 def _crop_models_wrapper_(crop_models,
-                         trainer,
-                         results,
-                         path,
-                         transform=None,
-                         augment=False):
+                          trainer,
+                          results,
+                          path,
+                          transform=None,
+                          augment=False):
     if crop_models is not None and not isinstance(crop_models, list):
         crop_models = [crop_models]
 
     # Run predictions
     crop_results = []
     if crop_models:
-        is_single_model = len(crop_models) == 1  # Flag to check if only one model is passed
+        is_single_model = len(
+            crop_models) == 1  # Flag to check if only one model is passed
         for i, crop_model in enumerate(crop_models):
-            crop_result = _predict_crop_model_(
-                crop_model=crop_model,
-                results=results,
-                path=path,
-                trainer=trainer,
-                model_index=i,
-                transform=transform,
-                augment=augment,
-                is_single_model=is_single_model)
+            crop_result = _predict_crop_model_(crop_model=crop_model,
+                                               results=results,
+                                               path=path,
+                                               trainer=trainer,
+                                               model_index=i,
+                                               transform=transform,
+                                               augment=augment,
+                                               is_single_model=is_single_model)
             crop_results.append(crop_result)
-    
+
     # Concatenate results
     crop_results = pd.concat(crop_results)
-    
+
     return crop_results

@@ -308,7 +308,7 @@ def format_geometry(predictions, scores=True, geom_type=None):
         raise ValueError("Polygon predictions are not yet supported for formatting")
     elif geom_type == "point":
         raise ValueError("Point predictions are not yet supported for formatting")
-    
+
     return df
 
 
@@ -324,7 +324,7 @@ def format_boxes(prediction, scores=True):
     """
     if len(prediction["boxes"]) == 0:
         return None
-    
+
     df = pd.DataFrame(prediction["boxes"].cpu().detach().numpy(),
                       columns=["xmin", "ymin", "xmax", "ymax"])
     df["label"] = prediction["labels"].cpu().detach().numpy()
@@ -333,6 +333,7 @@ def format_boxes(prediction, scores=True):
         df["score"] = prediction["scores"].cpu().detach().numpy()
 
     return df
+
 
 def read_coco(json_file):
     """Read a COCO format JSON file and return a pandas dataframe.

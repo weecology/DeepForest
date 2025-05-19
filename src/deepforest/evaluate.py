@@ -150,7 +150,7 @@ def evaluate_boxes(predictions, ground_df, iou_threshold=0.4):
             "box_precision": 0,
             "class_recall": None
         }
-    
+
     # Run evaluation on all plots
     results = []
     box_recalls = []
@@ -189,7 +189,6 @@ def evaluate_boxes(predictions, ground_df, iou_threshold=0.4):
         box_precisions.append(precision)
         results.append(result)
 
-    
     results = pd.concat(results)
     box_precision = np.mean(box_precisions)
     box_recall = np.mean(box_recalls)
