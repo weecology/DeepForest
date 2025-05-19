@@ -32,31 +32,29 @@ class BoxDataset(Dataset):
                  csv_file,
                  root_dir,
                  transforms=None,
+                 augment=True,
                  label_dict={"Tree": 0},
-                 train=True,
                  preload_images=False):
         """
-        
         Args:
             csv_file (string): Path to a single csv file with annotations.
             root_dir (string): Directory with all the images.
             transform (callable, optional): Optional transform to be applied
                 on a sample.
             label_dict: a dictionary where keys are labels from the csv column and values are numeric labels "Tree" -> 0
-        
+            augment: if True, apply augmentations to the images
+            preload_images: if True, preload the images into memory
         Returns:
-            If train, path, image, targets else image
+            List of images and targets. Targets are dictionaries with keys "boxes" and "labels". Boxes are numpy arrays with shape (N, 4) and labels are numpy arrays with shape (N,).
         """
         self.annotations = pd.read_csv(csv_file)
         self.root_dir = root_dir
         if transforms is None:
-            self.transform = get_transform(augment=train)
+            self.transform = get_transform(augment=augment)
         else:
             self.transform = transforms
         self.image_names = self.annotations.image_path.unique()
         self.label_dict = label_dict
-        self.train = train
-        self.image_converter = A.Compose([ToTensorV2()])
         self.preload_images = preload_images
 
         # Pin data to memory if desired
@@ -64,9 +62,7 @@ class BoxDataset(Dataset):
             print("Pinning dataset to GPU memory")
             self.image_dict = {}
             for idx, x in enumerate(self.image_names):
-                img_name = os.path.join(self.root_dir, x)
-                image = np.array(Image.open(img_name).convert("RGB")) / 255
-                self.image_dict[idx] = image.astype("float32")
+                self.image_dict[idx] = self.load_image(idx)
 
     def __len__(self):
         return len(self.image_names)
@@ -77,7 +73,14 @@ class BoxDataset(Dataset):
         """
         images = [item[0] for item in batch]
         targets = [item[1] for item in batch]
+        
         return images, targets
+    
+    def load_image(self, idx):
+        img_name = os.path.join(self.root_dir, self.image_names[idx])
+        image = np.array(Image.open(img_name).convert("RGB")) / 255
+        image = image.astype("float32")
+        return image
     
     def __getitem__(self, idx):
 
@@ -85,11 +88,8 @@ class BoxDataset(Dataset):
         if self.preload_images:
             image = self.image_dict[idx]
         else:
-            img_name = os.path.join(self.root_dir, self.image_names[idx])
-            image = np.array(Image.open(img_name).convert("RGB")) / 255
-            image = image.astype("float32")
+            image = self.load_image(idx)
 
-        if self.train:
             # select annotations
             image_annotations = self.annotations[self.annotations.image_path ==
                                                  self.image_names[idx]]
@@ -116,23 +116,20 @@ class BoxDataset(Dataset):
                 image = torch.from_numpy(image).float()
                 targets = {"boxes": boxes, "labels": labels}
 
-                return self.image_names[idx], image, targets
+                return image, targets
 
+            # Apply augmentations
             augmented = self.transform(image=image,
                                        bboxes=targets["boxes"],
                                        category_ids=targets["labels"].astype(np.int64))
             image = augmented["image"]
 
+            # Convert boxes to tensor
             boxes = np.array(augmented["bboxes"])
             boxes = torch.from_numpy(boxes).float()
             labels = np.array(augmented["category_ids"])
             labels = torch.from_numpy(labels.astype(np.int64))
             targets = {"boxes": boxes, "labels": labels}
 
-            return self.image_names[idx], image, targets
-
-        else:
-            # Mimic the train augmentation
-            converted = self.image_converter(image=image)
-            return converted["image"]
+            return image, targets
 

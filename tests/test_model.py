@@ -5,9 +5,6 @@ from deepforest import get_data
 import pandas as pd
 import os
 from torchvision import transforms
-import pytorch_lightning as pl
-import numpy as np
-from deepforest.predict import _predict_crop_model_
 
 # The model object is architecture agnostic container.
 def test_model_no_args(config):

@@ -31,11 +31,14 @@ class PredictionDataset(Dataset):
         self.patch_overlap = patch_overlap
         self.items = self.prepare_items()
 
-    def _load_and_preprocess_image(self, image_path):
+    def _load_and_preprocess_image(self, image_path, image=None):
         """
         Load and preprocess an image. Datasets should load using PIL and transpose the image to (C, H, W) before main.model.forward() is called.
         """
-        image = Image.open(image_path)
+        if image is None:
+            image = Image.open(image_path)
+        else:
+            image = image
         image = np.array(image)
         if not image.shape[2] == 3:
             raise ValueError(
@@ -142,10 +145,12 @@ class PredictionDataset(Dataset):
             if isinstance(batch, list):
                 for sub_idx, sub_batch in enumerate(batch):
                     result = self.format_batch(sub_batch, idx, sub_idx)
-                    formatted_result.append(result)
+                    if result is not None:
+                        formatted_result.append(result)
             else:
                 result = self.format_batch(batch, idx)
-                formatted_result.append(result)
+                if result is not None:
+                    formatted_result.append(result)
 
         if len(formatted_result) > 0:
             formatted_result = pd.concat(formatted_result)
@@ -159,10 +164,7 @@ class SingleImage(PredictionDataset):
         super().__init__(path=path, image=image, patch_size=patch_size, patch_overlap=patch_overlap)
 
     def prepare_items(self):
-        if self.path is not None:
-            self.image = self._load_and_preprocess_image(self.path)
-        else:
-            self.image = self.image
+        self.image = self._load_and_preprocess_image(self.path, self.image)
         self.windows = preprocess.compute_windows(self.image, self.patch_size, self.patch_overlap)
 
     def __len__(self):
@@ -209,6 +211,24 @@ class FromCSVFile(PredictionDataset):
     def get_crop_bounds(self, idx):
         return None
 
+    def format_batch(self, batch, idx, sub_idx=None):
+        """
+        Format the batch into a single dataframe.
+
+        Args:
+            batch (list): The batch to format.
+            idx (int): The index of the batch.
+            sub_idx (int): The index of the subbatch. If None, the index is the subbatch index.
+        """
+        if sub_idx is None:
+            sub_idx = idx
+        geom_type = self.determine_geometry_type(batch)
+        result = format_geometry(batch, geom_type=geom_type)
+        if result is None:
+            return None
+        result["image_path"] = self.get_image_basename(idx)
+
+        return result
     
 class MultiImage(PredictionDataset):
     def __init__(self, paths: List[str], patch_size: int, patch_overlap: float):

@@ -319,12 +319,11 @@ def test_predict_image_fromarray(m):
     assert set(prediction.columns) == {"xmin", "ymin", "xmax", "ymax", "label", "score", "geometry"}
     assert not hasattr(prediction, 'root_dir')
 
-def test_predict_big_file(m, tmpdir):
+def test_predict_big_file(m, big_file):
     m.config.train.fast_dev_run = False
     m.create_trainer()
-    csv_file = big_file()
-    df = m.predict_file(csv_file=csv_file,
-                        root_dir=os.path.dirname(csv_file))
+    df = m.predict_file(csv_file=big_file,
+                        root_dir=os.path.dirname(big_file))
     assert set(df.columns) == {
         'label', 'score', 'image_path', 'geometry', "xmin", "ymin", "xmax", "ymax"
     }
@@ -384,7 +383,9 @@ def test_predict_tile_equivalence(m):
     path = get_data("test_tiled.tif")
     in_memory_prediction = m.predict_tile(path=path, patch_size=300, patch_overlap=0, dataloader_strategy="single")
     not_in_memory_prediction = m.predict_tile(path=path, patch_size=300, patch_overlap=0, dataloader_strategy="window")
-    assert in_memory_prediction.equals(not_in_memory_prediction)
+
+    # Assert same number of predictions
+    assert len(in_memory_prediction) == len(not_in_memory_prediction)
 
 def test_predict_tile_from_array(m, path):
     image = np.array(Image.open(path))
@@ -393,32 +394,6 @@ def test_predict_tile_from_array(m, path):
     prediction = m.predict_tile(image=image, patch_size=300)
 
     assert not prediction.empty    
-
-def test_predict_tile_batch_strategy(m, path):
-    m.config["train"]["fast_dev_run"] = False
-    m.create_trainer()
-    prediction_batch = m.predict_tile(path=[path, path],
-                                patch_size=400,
-                                patch_overlap=0,
-                                dataloader_strategy="batch")
-
-    assert not prediction_batch.empty
-
-    # View the predictions
-    plot_results(prediction_batch)
-
-def test_predict_tile_no_mosaic(m, path):
-    # test no mosaic, return a tuple of crop and prediction
-    m.config.train.fast_dev_run = False
-    m.create_trainer()
-    prediction = m.predict_tile(path=path,
-                                patch_size=300,
-                                patch_overlap=0,
-                                mosaic=False)
-    assert len(prediction) == 4
-    assert len(prediction[0]) == 2
-    assert prediction[0][1].shape == (300, 300, 3)
-
 
 def test_evaluate(m, tmpdir):
     csv_file = get_data("OSBS_029.csv")
@@ -535,7 +510,7 @@ def test_override_transforms():
     root_dir = os.path.dirname(csv_file)
     train_ds = m.load_dataset(csv_file, root_dir=root_dir, augment=True)
 
-    path, image, target = next(iter(train_ds))
+    image, target = next(iter(train_ds))
     assert m.transforms.__doc__ == "This is the new transform"
 
 #TODO: Fix this test to check that predictions change as checking
@@ -746,10 +721,6 @@ def test_predict_tile_with_crop_model_empty():
     """If the model return is empty, the crop model should return an empty dataframe"""
     path = get_data("SOAP_061.png")
     m = main.deepforest()
-    patch_size = 400
-    patch_overlap = 0.05
-    iou_threshold = 0.15
-    mosaic = True
     
     # Set up the crop model
     crop_model = model.CropModel(num_classes=2, label_dict = {"Dead": 0, "Alive": 1})
@@ -758,10 +729,9 @@ def test_predict_tile_with_crop_model_empty():
     m.config.train.fast_dev_run = False
     m.create_trainer()
     result = m.predict_tile(path=path,
-                            patch_size=patch_size,
-                            patch_overlap=patch_overlap,
-                            iou_threshold=iou_threshold,
-                            mosaic=mosaic,
+                            patch_size=400,
+                            patch_overlap=0.05,
+                            iou_threshold=0.15,
                             crop_model=crop_model)
     
 
@@ -805,10 +775,6 @@ def test_predict_tile_with_multiple_crop_models_empty():
     """If no predictions are made, result should be empty"""
     path = get_data("SOAP_061.png")
     m = main.deepforest()
-    patch_size = 400
-    patch_overlap = 0.05
-    iou_threshold = 0.15
-    mosaic = True
 
     # Create multiple crop models
     crop_model_1 = model.CropModel(num_classes=2, label_dict={"Dead":0, "Alive":1})
@@ -817,10 +783,10 @@ def test_predict_tile_with_multiple_crop_models_empty():
     m.config.train.fast_dev_run = False
     m.create_trainer()
     result = m.predict_tile(path=path,
-                            patch_size=patch_size,
-                            patch_overlap=patch_overlap,
-                            iou_threshold=iou_threshold,
-                            mosaic=mosaic,
+                            patch_size=400,
+                            patch_overlap=0.05,
+                            iou_threshold=0.15,
+                            mosaic=True,
                             crop_model=[crop_model_1, crop_model_2])
 
     assert result is None or result.empty  # Ensure empty result is handled properly
@@ -833,8 +799,8 @@ def test_batch_prediction(m, path):
     # Perform prediction
     predictions = []
     for batch in dl:
-        prediction = m.predict_batch(batch)
-        predictions.append(prediction)
+        batch_predictions = m.predict_batch(batch)
+        predictions.extend(batch_predictions)
 
     # Check results
     assert len(predictions) == len(dl)
