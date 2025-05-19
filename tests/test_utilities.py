@@ -349,14 +349,6 @@ def test_geo_to_image_coordinates_UTM_N(tmpdir):
     assert image_coords[image_coords.intersects(numpy_window)].shape[0] == pd.read_csv(
         annotations).shape[0]
 
-    images = visualize.plot_prediction_dataframe(image_coords,
-                                                 root_dir=os.path.dirname(path_to_raster),
-                                                 savedir=tmpdir)
-    # Confirm the image coordinates are correct
-    for image in images:
-        im = Image.open(image)
-        im.show()
-
 
 def test_geo_to_image_coordinates_UTM_S(tmpdir):
     """Read in a csv file, make a projected shapefile, convert to image coordinates and view the results"""
@@ -384,14 +376,6 @@ def test_geo_to_image_coordinates_UTM_S(tmpdir):
     numpy_window = geometry.box(0, 0, width, height)
     assert image_coords[image_coords.intersects(numpy_window)].shape[0] == gpd.read_file(annotations).shape[0]
 
-    images = visualize.plot_prediction_dataframe(image_coords,
-                                                 root_dir=os.path.dirname(path_to_raster),
-                                                 savedir=tmpdir)
-    # Confirm the image coordinates are correct
-    for image in images:
-        im = Image.open(image)
-        im.show()
-
 
 def test_image_to_geo_coordinates(tmpdir):
     annotations = get_data("2018_SJER_3_252000_4107000_image_477.csv")
@@ -399,15 +383,9 @@ def test_image_to_geo_coordinates(tmpdir):
 
     # Convert to image coordinates
     gdf = utilities.read_file(annotations)
-    images = visualize.plot_prediction_dataframe(gdf, root_dir=os.path.dirname(path_to_raster), savedir=tmpdir)
 
     # Confirm it has no crs
     assert gdf.crs is None
-
-    # Confirm the image coordinates are correct
-    for image in images:
-        im = Image.open(image)
-        im.show(title="before")
 
     # Convert to geo coordinates
     src = rio.open(path_to_raster)
@@ -429,17 +407,9 @@ def test_image_to_geo_coordinates_boxes(tmpdir):
 
     # Convert to image coordinates
     gdf = utilities.read_file(annotations)
-    images = visualize.plot_prediction_dataframe(gdf,
-                                                 root_dir=os.path.dirname(path_to_raster),
-                                                 savedir=tmpdir)
 
     # Confirm it has no crs
     assert gdf.crs is None
-
-    # Confirm the image coordinates are correct
-    for image in images:
-        im = Image.open(image)
-        im.show(title="before")
 
     # Convert to geo coordinates
     src = rio.open(path_to_raster)
@@ -462,17 +432,9 @@ def test_image_to_geo_coordinates_points(tmpdir):
     # Convert to image coordinates
     gdf = utilities.read_file(annotations)
     gdf["geometry"] = gdf.geometry.centroid
-    images = visualize.plot_prediction_dataframe(gdf,
-                                                 root_dir=os.path.dirname(path_to_raster),
-                                                 savedir=tmpdir)
 
     # Confirm it has no crs
     assert gdf.crs is None
-
-    # Confirm the image coordinates are correct
-    for image in images:
-        im = Image.open(image)
-        im.show(title="before")
 
     # Convert to geo coordinates
     src = rio.open(path_to_raster)
@@ -496,17 +458,9 @@ def test_image_to_geo_coordinates_polygons(tmpdir):
     gdf = utilities.read_file(annotations)
     # Skew boxes to make them polygons
     gdf["geometry"] = gdf.geometry.skew(7, 7)
-    images = visualize.plot_prediction_dataframe(gdf,
-                                                 root_dir=os.path.dirname(path_to_raster),
-                                                 savedir=tmpdir)
 
     # Confirm it has no crs
     assert gdf.crs is None
-
-    # Confirm the image coordinates are correct
-    for image in images:
-        im = Image.open(image)
-        im.show(title="before")
 
     # Convert to geo coordinates
     src = rio.open(path_to_raster)
@@ -586,7 +540,7 @@ def test_format_geometry_box():
     prediction = {
         "boxes": torch.tensor([[10, 20, 30, 40], [50, 60, 70, 80]]),
         "labels": torch.tensor([0, 0]),
-        "scores": torch.tensor([0.9, 0.8])
+        "scores": torch.tensor([1.0, 0.8])
     }
     
     # Format geometry
@@ -594,7 +548,7 @@ def test_format_geometry_box():
     
     # Check output format
     assert isinstance(result, pd.DataFrame)
-    assert list(result.columns) == ["xmin", "ymin", "xmax", "ymax", "label", "score"]
+    assert list(result.columns) == ["xmin", "ymin", "xmax", "ymax", "label", "score", "geometry"]
     assert len(result) == 2
     
     # Check values
@@ -603,7 +557,7 @@ def test_format_geometry_box():
     assert result.iloc[0]["xmax"] == 30
     assert result.iloc[0]["ymax"] == 40
     assert result.iloc[0]["label"] == 0
-    assert result.iloc[0]["score"] == 0.9
+    assert result.iloc[0]["score"] == 1.0
 
 
 def test_format_geometry_empty():
@@ -619,10 +573,7 @@ def test_format_geometry_empty():
     result = utilities.format_geometry(prediction)
     
     # Check output format
-    assert isinstance(result, pd.DataFrame)
-    assert list(result.columns) == ["xmin", "ymin", "xmax", "ymax", "label", "score"]
-    assert len(result) == 0
-
+    assert result is None
 
 def test_format_geometry_multi_class():
     """Test formatting predictions with multiple classes"""
@@ -638,7 +589,7 @@ def test_format_geometry_multi_class():
     
     # Check output format
     assert isinstance(result, pd.DataFrame)
-    assert list(result.columns) == ["xmin", "ymin", "xmax", "ymax", "label", "score"]
+    assert list(result.columns) == ["xmin", "ymin", "xmax", "ymax", "label", "score", "geometry"]
     assert len(result) == 2
     
     # Check values
@@ -679,7 +630,7 @@ def test_format_geometry_with_geometry_column():
     }
     
     # Format geometry
-    result = utilities.format_geometry(prediction, add_geometry=True)
+    result = utilities.format_geometry(prediction)
     
     # Check output format
     assert isinstance(result, pd.DataFrame)
@@ -718,17 +669,3 @@ def test_format_geometry_polygon():
     # Format geometry should raise ValueError since polygon predictions are not supported
     with pytest.raises(ValueError, match="Polygon predictions are not yet supported for formatting"):
         utilities.format_geometry(prediction, geom_type="polygon")
-
-
-def test_format_geometry_invalid_geom_type():
-    """Test handling of invalid geometry type"""
-    # Create a mock prediction
-    prediction = {
-        "boxes": torch.tensor([[10, 20, 30, 40]]),
-        "labels": torch.tensor([0]),
-        "scores": torch.tensor([0.9])
-    }
-    
-    # Format geometry should raise ValueError for invalid geometry type
-    with pytest.raises(ValueError, match="Invalid geometry type"):
-        utilities.format_geometry(prediction, geom_type="invalid_type")

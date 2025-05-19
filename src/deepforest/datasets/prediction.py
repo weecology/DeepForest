@@ -22,11 +22,13 @@ from deepforest import preprocess
 # Base prediction class
 class PredictionDataset(Dataset):
     """
-    This is the base class for all prediction datasets. It defines the interface for all prediction datasets.
+    This is the base class for all prediction datasets. It defines the interface for all prediction datasets. It flexibly accepts a single image or a list of images, a single path or a list of paths, and a patch_size and patch_overlap.
     """
-    def __init__(self, image=None, path=None, patch_size=None, patch_overlap=None):
+    def __init__(self, image=None, path=None, images=None, paths=None, patch_size=None, patch_overlap=None):
         self.image = image
+        self.images = images
         self.path = path
+        self.paths = paths
         self.patch_size = patch_size
         self.patch_overlap = patch_overlap
         self.items = self.prepare_items()
@@ -160,6 +162,7 @@ class PredictionDataset(Dataset):
         return formatted_result
 
 class SingleImage(PredictionDataset):
+    """Take in a single image path, preprocess and batch together"""
     def __init__(self, path=None, image=None, patch_size=None, patch_overlap=None):
         super().__init__(path=path, image=image, patch_size=patch_size, patch_overlap=patch_overlap)
 
@@ -188,6 +191,7 @@ class SingleImage(PredictionDataset):
         return self.windows[idx].getRect()
     
 class FromCSVFile(PredictionDataset):
+    """Take in a csv file with image paths and preprocess and batch together"""
     def __init__(self, csv_file: str, root_dir: str):
         self.csv_file = csv_file
         self.root_dir = root_dir
@@ -231,6 +235,7 @@ class FromCSVFile(PredictionDataset):
         return result
     
 class MultiImage(PredictionDataset):
+    """Take in a list of image paths, preprocess and batch together"""
     def __init__(self, paths: List[str], patch_size: int, patch_overlap: float):
         """
         Args:
