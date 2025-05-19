@@ -40,7 +40,7 @@ urls.Source = "https://github.com/Weecology/DeepForest"
 urls.Contributors = "https://github.com/Weecology/DeepForest/graphs/contributors"
 
 dependencies = [
-    "albumentations>=1.0.0",
+    "albumentations>=1.0.0,<2.0.0",
     "aiolimiter",
     "aiohttp",
     "docformatter",
