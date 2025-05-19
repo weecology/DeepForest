@@ -53,10 +53,10 @@ def _predict_image_(model,
 
 def transform_coordinates(boxes):
     """Transform box coordinates from window space to original image space.
-    
+
     Args:
         boxes: DataFrame of predictions with xmin, ymin, xmax, ymax, window_xmin, window_ymin columns
-        
+
     Returns:
         DataFrame with transformed coordinates
     """
@@ -71,13 +71,13 @@ def transform_coordinates(boxes):
 
 def apply_nms(boxes, scores, labels, iou_threshold):
     """Apply non-maximum suppression to boxes.
-    
+
     Args:
         boxes: tensor of shape (N, 4) containing box coordinates
         scores: tensor of shape (N,) containing confidence scores
         labels: array of shape (N,) containing labels
         iou_threshold: IoU threshold for NMS
-        
+
     Returns:
         DataFrame with filtered boxes
     """
