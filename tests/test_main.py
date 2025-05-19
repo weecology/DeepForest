@@ -15,7 +15,6 @@ import albumentations as A
 from albumentations.pytorch import ToTensorV2
 
 from deepforest import main, get_data, model
-from deepforest.visualize import plot_results
 from deepforest.utilities import read_file, format_geometry
 from deepforest.datasets import prediction
 
@@ -206,10 +205,7 @@ def test_validation_step_empty():
 
     val_dataloader = m.val_dataloader()
     batch = next(iter(val_dataloader))
-    m.predictions = []
-    val_loss = m.validation_step(batch, 0)
-    assert len(m.predictions) == 1
-    assert m.predictions[0].xmin.isna().all()
+    val_predictions = m.validation_step(batch, 0)
     assert m.iou_metric.compute()["iou"] == 0
 
 def test_validate(m):
@@ -587,19 +583,16 @@ def test_load_existing_train_dataloader(m, tmpdir, existing_loader):
     # Inspect original for comparison of batch size
     m.config.train.csv_file = "{}/train.csv".format(tmpdir.strpath)
     m.config.train.root_dir = tmpdir.strpath
-    m.create_trainer(fast_dev_run=True)
-    m.trainer.fit(m)
-    batch = next(iter(m.trainer.train_dataloader))
+    batch = next(iter(m.train_dataloader()))
     assert len(batch[0]) == m.config.batch_size
 
     # Existing train dataloader
     m.config.train.csv_file = "{}/train.csv".format(tmpdir.strpath)
     m.config.train.root_dir = tmpdir.strpath
     m.existing_train_dataloader = existing_loader
-    m.train_dataloader()
     m.create_trainer(fast_dev_run=True)
     m.trainer.fit(m)
-    batch = next(iter(m.trainer.train_dataloader))
+    batch = next(iter(m.train_dataloader()))
     assert len(batch[0]) == m.config.batch_size + 1
 
 
@@ -607,10 +600,9 @@ def test_existing_val_dataloader(m, tmpdir, existing_loader):
     m.config.validation["csv_file"] = "{}/train.csv".format(tmpdir.strpath)
     m.config.validation["root_dir"] = tmpdir.strpath
     m.existing_val_dataloader = existing_loader
-    m.val_dataloader()
     m.create_trainer()
     m.trainer.validate(m)
-    batch = next(iter(m.trainer.val_dataloaders))
+    batch = next(iter(m.val_dataloader()))
     assert len(batch[0]) == m.config.batch_size + 1
 
 
@@ -691,7 +683,6 @@ def test_predict_tile_with_crop_model(m, config):
     patch_size = 400
     patch_overlap = 0.05
     iou_threshold = 0.15
-    mosaic = True
     # Set up the crop model
     crop_model = model.CropModel(num_classes=2, label_dict = {"Dead":0, "Alive":1})
 
@@ -702,7 +693,6 @@ def test_predict_tile_with_crop_model(m, config):
                             patch_size=patch_size,
                             patch_overlap=patch_overlap,
                             iou_threshold=iou_threshold,
-                            mosaic=mosaic,
                             crop_model=crop_model)
 
     # Assert the result
@@ -743,7 +733,6 @@ def test_predict_tile_with_multiple_crop_models(m, config):
     patch_size = 400
     patch_overlap = 0.05
     iou_threshold = 0.15
-    mosaic = True
 
     # Create multiple crop models
     crop_model = [model.CropModel(num_classes=2, label_dict={"Dead":0, "Alive":1}), model.CropModel(num_classes=3, label_dict={"Dead":0, "Alive":1, "Sapling":2})]
@@ -755,7 +744,6 @@ def test_predict_tile_with_multiple_crop_models(m, config):
                             patch_size=patch_size,
                             patch_overlap=patch_overlap,
                             iou_threshold=iou_threshold,
-                            mosaic=mosaic,
                             crop_model=crop_model)
 
     # Assert result type
@@ -786,7 +774,6 @@ def test_predict_tile_with_multiple_crop_models_empty():
                             patch_size=400,
                             patch_overlap=0.05,
                             iou_threshold=0.15,
-                            mosaic=True,
                             crop_model=[crop_model_1, crop_model_2])
 
     assert result is None or result.empty  # Ensure empty result is handled properly
@@ -816,14 +803,14 @@ def test_batch_inference_consistency(m, path):
 
     batch_predictions = []
     for batch in dl:
-        prediction = m.predict_batch(batch)
-        batch_predictions.extend(prediction)
+        batch_prediction = m.predict_batch(batch)
+        batch_predictions.extend(batch_prediction)
 
     single_predictions = []
     for image in ds:
-        image = image.permute(1,2,0).numpy() * 255
-        prediction = m.predict_image(image=image)
-        single_predictions.append(prediction)
+        image = np.rollaxis(image, 0, 3) * 255
+        single_prediction = m.predict_image(image=image)
+        single_predictions.append(single_prediction)
 
     batch_df = pd.concat(batch_predictions, ignore_index=True)
     single_df = pd.concat(single_predictions, ignore_index=True)
@@ -891,7 +878,10 @@ def test_empty_frame_accuracy_all_empty_with_predictions(m, tmpdir):
 
     m.create_trainer()
     results = m.trainer.validate(m)
-    assert results[0]["empty_frame_accuracy"] == 0
+    
+    # This is bit of a preference, if there are no predictions, the empty frame accuracy should be 0, precision is 0, and accuracy is None.
+    assert results[0]["empty_frame_accuracy"] == 0.0
+    assert results[0]["box_precision"] == 0.0
 
 def test_empty_frame_accuracy_mixed_frames_with_predictions(m, tmpdir):
     """Test empty frame accuracy with a mix of empty and non-empty frames.
@@ -911,8 +901,9 @@ def test_empty_frame_accuracy_mixed_frames_with_predictions(m, tmpdir):
 
     # Save the ground truth to a temporary file
     ground_df.to_csv(tmpdir.strpath + "/ground_truth.csv", index=False)
-    m.config.validation["csv_file"] = tmpdir.strpath + "/ground_truth.csv"
-    m.config.validation["root_dir"] = os.path.dirname(get_data("testfile_deepforest.csv"))
+    m.config.validation.csv_file = tmpdir.strpath + "/ground_truth.csv"
+    m.config.validation.root_dir = os.path.dirname(get_data("testfile_deepforest.csv"))
+    m.config.validation.size = 400
 
     m.create_trainer()
     results = m.trainer.validate(m)

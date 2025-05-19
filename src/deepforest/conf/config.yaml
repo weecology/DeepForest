@@ -68,6 +68,7 @@ validation:
     csv_file:
     root_dir:
     preload_images: False
+    size:
 
     # Intersection over union evaluation
     iou_threshold: 0.4

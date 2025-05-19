@@ -21,6 +21,7 @@ from deepforest import utilities, predict
 
 from deepforest import evaluate as evaluate_iou
 from deepforest.datasets import prediction, training
+import geopandas as gpd
 
 from omegaconf import DictConfig
 
@@ -421,7 +422,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
         return result
 
-    def predict_file(self, csv_file, root_dir, crop_model=None):
+    def predict_file(self, csv_file, root_dir, crop_model=None, size=None):
         """Create a dataset and predict entire annotation file CSV file format
         is .csv file with the columns "image_path", "xmin","ymin","xmax","ymax"
         for the image name and bounding box position. Image_path is the
@@ -432,12 +433,12 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             csv_file: path to csv file
             root_dir: directory of images. If none, uses "image_dir" in config
             crop_model: a deepforest.model.CropModel object to predict on crops
+            size: the size of the image to resize to. Optional, if not provided, the image is not resized.
         Returns:
             df: pandas dataframe with bounding boxes, label and scores for each image in the csv file
         """
 
-        df = utilities.read_file(csv_file)
-        ds = prediction.FromCSVFile(csv_file=csv_file, root_dir=root_dir)
+        ds = prediction.FromCSVFile(csv_file=csv_file, root_dir=root_dir, size=size)
 
         dataloader = self.predict_dataloader(ds)
         results = predict._dataloader_wrapper_(model=self,
@@ -538,6 +539,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                 image_mosaic = predict.mosiac(results[results["image_path"] == image_path], iou_threshold=iou_threshold)
                 image_mosaic["image_path"] = image_path
                 mosaic_results.append(image_mosaic)
+        
         mosaic_results = pd.concat(mosaic_results)
         mosaic_results["label"] = mosaic_results.label.apply(lambda x: self.numeric_to_label_dict[x])
 
@@ -597,6 +599,23 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             except MisconfigurationException:
                 pass
 
+        # In eval model, return predictions to calculate prediction metrics
+        preds = self.model.eval()
+        with torch.no_grad():
+            preds = self.model.forward(images, targets)
+        if len(targets) > 0:
+            # Remove empty targets
+            # Remove empty targets and corresponding predictions
+            filtered_preds = []
+            filtered_targets = []
+            for i, target in enumerate(targets):
+                if target["boxes"].shape[0] > 0:
+                    filtered_preds.append(preds[i])
+                    filtered_targets.append(target)
+
+            self.iou_metric.update(filtered_preds, filtered_targets)
+            self.mAP_metric.update(filtered_preds, filtered_targets)
+        
         return losses
     
     def on_validation_epoch_start(self):
@@ -624,161 +643,85 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         if len(empty_images) == 0:
             return None
 
-        # Get non-empty predictions for empty images
-        non_empty_predictions = predictions_df.loc[predictions_df.xmin.notnull()]
-        predictions_for_empty_images = non_empty_predictions.loc[
-            non_empty_predictions.image_path.isin(empty_images)]
+        if predictions_df.empty:
+            # if there are empty ground truth, but no predictions, there is 100% accuracy empty frames
+            empty_accuracy = 1
+        else:
+            # Get non-empty predictions for empty images
+            non_empty_predictions = predictions_df.loc[predictions_df.xmin.notnull()]
+            predictions_for_empty_images = non_empty_predictions.loc[
+                non_empty_predictions.image_path.isin(empty_images)]
 
-        # Create prediction tensor - 1 if model predicted objects, 0 if predicted empty
-        predictions = torch.zeros(len(empty_images))
-        for index, image in enumerate(empty_images):
-            if len(predictions_for_empty_images.loc[
-                    predictions_for_empty_images.image_path == image]) > 0:
-                predictions[index] = 1
+            # Create prediction tensor - 1 if model predicted objects, 0 if predicted empty
+            predictions = torch.zeros(len(empty_images))
+            for index, image in enumerate(empty_images):
+                if len(predictions_for_empty_images.loc[
+                        predictions_for_empty_images.image_path == image]) > 0:
+                    predictions[index] = 1
 
-        # Ground truth tensor - all zeros since these are empty frames
-        gt = torch.zeros(len(empty_images))
-        predictions = torch.tensor(predictions)
+            # Ground truth tensor - all zeros since these are empty frames
+            gt = torch.zeros(len(empty_images))
+            predictions = torch.tensor(predictions)
 
-        # Calculate accuracy using metric
-        self.empty_frame_accuracy.update(predictions, gt)
-        empty_accuracy = self.empty_frame_accuracy.compute()
+            # Calculate accuracy using metric
+            self.empty_frame_accuracy.update(predictions, gt)
+            empty_accuracy = self.empty_frame_accuracy.compute()
+
+        # Log empty frame accuracy
+        try:
+            self.log("empty_frame_accuracy", empty_accuracy)
+        except MisconfigurationException:
+            pass
 
         return empty_accuracy
 
-    # def on_validation_epoch_end(self, trainer: L.Trainer, pl_module: L.LightningModule) -> None:
-    #     """Compute metrics."""
-    #     self.model.eval()
-    #     # Can we avoid another forward pass here? https://discuss.pytorch.org/t/how-to-get-losses-and-predictions-at-the-same-time/167223
-    #     # Issue has been documented for years, https://github.com/pytorch/vision/issues/8126
-    #     if self.trainer.sanity_checking:  # optional skip
-    #         return
+    def log_epoch_metrics(self):
+        if len(self.iou_metric.groundtruth_labels) > 0:
+            output = self.iou_metric.compute()
+            try:
+                # This is a bug in lightning, it claims this is a warning but it is not. https://github.com/Lightning-AI/pytorch-lightning/pull/9733/files
+                self.log_dict(output)
+            except:
+                pass
 
-    #     trainer_state = deepcopy(self.trainer.state)
-    #     current_fx_name = self._current_fx_name
-    #     val_ds = self.val_dataloader().dataset
-    #     dataloader = self.predict_dataloader(shuffle=False, dataset=val_ds)        
-    #     self.predictions_df = predict._dataloader_wrapper_(model=self,
-    #                                     trainer=self.trainer,
-    #                                     dataloader=dataloader,
-    #                                     root_dir=self.config.validation.root_dir)
-    #     self.trainer.state = trainer_state
-    #     self._current_fx_name = current_fx_name
+            self.iou_metric.reset()
+            output = self.mAP_metric.compute()
 
-    #     # Get ground truth
-    #     targets = [target for batch in dataloader for target in batch[1]]
-        
-    #     # Calculate intersection-over-union
-    #     if len(targets) > 0:
-    #         # Remove empty targets
-    #         # Remove empty targets and corresponding predictions
-    #         filtered_preds = []
-    #         filtered_targets = []
-    #         for i, target in enumerate(targets):
-    #             if target["boxes"].shape[0] > 0:
-    #                 filtered_preds.append(preds[i])
-    #                 filtered_targets.append(target)
+            # Remove classes from output dict
+            output = {key: value for key, value in output.items() if not key == "classes"}
+            try:
+                self.log_dict(output)
+            except MisconfigurationException:
+                pass
+            self.mAP_metric.reset()
 
-    #         self.iou_metric.update(filtered_preds, filtered_targets)
-    #         self.mAP_metric.update(filtered_preds, filtered_targets)
+        # Log empty frame accuracy if it has been updated
+        if self.empty_frame_accuracy._update_called:
+            empty_accuracy = self.empty_frame_accuracy.compute()
 
-    #     #Evaluate every n epochs
-    #     if self.current_epoch % self.config.validation.val_accuracy_interval == 0:
+            # Log empty frame accuracy
+            try:
+                self.log("empty_frame_accuracy", empty_accuracy)
+            except MisconfigurationException:
+                pass
 
-    #         if len(self.predictions) == 0:
-    #             return None
-    #         else:
-    #             self.predictions_df = pd.concat(self.predictions)
+    def on_validation_epoch_end(self):
+        """Compute metrics and predictions at the end of the validation epoch."""
+        if self.trainer.sanity_checking:  # optional skip
+            return
 
-    #         # If non-empty ground truth, evaluate IoU and mAP
-    #         if len(self.iou_metric.groundtruth_labels) > 0:
-    #             output = self.iou_metric.compute()
-    #             try:
-    #                 # This is a bug in lightning, it claims this is a warning but it is not. https://github.com/Lightning-AI/pytorch-lightning/pull/9733/files
-    #                 self.log_dict(output)
-    #             except:
-    #                 pass
+        if self.current_epoch % self.config.validation.val_accuracy_interval == 0:
+            trainer_state = deepcopy(self.trainer.state)
+            current_fx_name = self._current_fx_name
+            results = self.evaluate(self.config.validation.csv_file, root_dir=self.config.validation.root_dir, size=self.config.validation.size)
+            self.predictions = results["predictions"]
+            self.trainer.state = trainer_state
+            self._current_fx_name = current_fx_name
 
-    #             self.iou_metric.reset()
-    #             output = self.mAP_metric.compute()
+            # Log epoch metrics
+            self.log_epoch_metrics() 
+            self.__evaluation_logs__(results)
 
-    #             # Remove classes from output dict
-    #             output = {
-    #                 key: value for key, value in output.items() if not key == "classes"
-    #             }
-    #             try:
-    #                 self.log_dict(output)
-    #             except MisconfigurationException:
-    #                 pass
-    #             self.mAP_metric.reset()
-
-    #         #Create a geospatial column
-    #         ground_df = utilities.read_file(self.config.validation.csv_file)
-    #         ground_df["label"] = ground_df.label.apply(lambda x: self.label_dict[x])
-
-    #         # If there are empty frames, evaluate empty frame accuracy separately
-    #         empty_accuracy = self.calculate_empty_frame_accuracy(
-    #             ground_df, self.predictions_df)
-
-    #         if empty_accuracy is not None:
-    #             try:
-    #                 self.log("empty_frame_accuracy", empty_accuracy)
-    #             except:
-    #                 pass
-
-    #         # Remove empty predictions from the rest of the evaluation
-    #         self.predictions_df = self.predictions_df.loc[
-    #             self.predictions_df.xmin.notnull()]
-    #         if self.predictions_df.empty:
-    #             warnings.warn("No predictions made, skipping detection evaluation")
-    #             geom_type = utilities.determine_geometry_type(ground_df)
-    #             if geom_type == "box":
-    #                 result = {
-    #                     "box_recall": 0,
-    #                     "box_precision": 0,
-    #                     "class_recall": pd.DataFrame()
-    #                 }
-    #         else:
-    #             # Remove empty ground truth
-    #             ground_df = ground_df.loc[~(ground_df.xmin == 0)]
-    #             if ground_df.empty:
-    #                 results = {}
-    #                 results["empty_frame_accuracy"] = empty_accuracy
-    #                 return results
-
-    #             results = evaluate_iou.__evaluate_wrapper__(
-    #                 predictions=self.predictions_df,
-    #                 ground_df=ground_df,
-    #                 iou_threshold=self.config.validation.iou_threshold,
-    #                 numeric_to_label_dict=self.numeric_to_label_dict)
-
-    #             if empty_accuracy is not None:
-    #                 results["empty_frame_accuracy"] = empty_accuracy
-
-    #             # Log each key value pair of the results dict
-    #             if not results["class_recall"] is None:
-    #                 for key, value in results.items():
-    #                     if key in ["class_recall"]:
-    #                         for index, row in value.iterrows():
-    #                             try:
-    #                                 self.log(
-    #                                     "{}_Recall".format(
-    #                                         self.numeric_to_label_dict[row["label"]]),
-    #                                     row["recall"])
-    #                                 self.log(
-    #                                     "{}_Precision".format(
-    #                                         self.numeric_to_label_dict[row["label"]]),
-    #                                     row["precision"])
-    #                             except MisconfigurationException:
-    #                                 pass
-    #                     elif key in ["predictions", "results"]:
-    #                         # Don't log dataframes of predictions or IoU results per epoch
-    #                         pass
-    #                     else:
-    #                         try:
-    #                             self.log(key, value)
-    #                         except MisconfigurationException:
-    #                             pass
 
     def predict_step(self, batch, batch_idx):
         """Predict a batch of images with the deepforest model. If batch is a list, concatenate the images, predict and then split the results, useful for main.predict_tile.
@@ -823,7 +766,6 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         Returns:
             List[pd.DataFrame]: A list of dataframes with predictions for each image.
         """
-
         self.model.eval()
 
         #conver to tensor if input is array
@@ -907,7 +849,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         else:
             return optimizer
 
-    def evaluate(self, csv_file, iou_threshold=None):
+    def evaluate(self, csv_file, iou_threshold=None, root_dir=None, size=None):
         """Compute intersection-over-union and precision/recall for a given
         iou_threshold.
 
@@ -920,8 +862,13 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         """
         ground_df = utilities.read_file(csv_file)
         ground_df["label"] = ground_df.label.apply(lambda x: self.label_dict[x])
+
+        if root_dir is None:
+            root_dir = os.path.dirname(csv_file)
+
         predictions = self.predict_file(csv_file=csv_file,
-                                        root_dir=os.path.dirname(csv_file))
+                                        root_dir=root_dir,
+                                        size=size)
 
         if iou_threshold is None:
             iou_threshold = self.config.validation.iou_threshold
@@ -931,6 +878,53 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             ground_df=ground_df,
             iou_threshold=iou_threshold,
             numeric_to_label_dict=self.numeric_to_label_dict)
+        
+        # empty frame accuracy
+        empty_accuracy = self.calculate_empty_frame_accuracy(ground_df, predictions)
+        results["empty_frame_accuracy"] = empty_accuracy
+
+        self.__evaluation_logs__(results)
 
         return results
+    
+    def __evaluation_logs__(self, results):
+        """Log metrics from evaluation results"""
+        # Log metrics
+        for key, value in results.items():
+            if type(value) in [pd.DataFrame, gpd.GeoDataFrame]:
+                pass
+            elif value is None:
+                pass
+            else:
+                try:
+                    self.log(key, value)
+                except MisconfigurationException:
+                    pass
+
+        # Log each key value pair of the results dict
+        if not results["class_recall"] is None:
+            for key, value in results.items():
+                if key in ["class_recall"]:
+                    for index, row in value.iterrows():
+                        try:
+                            self.log(
+                                "{}_Recall".format(
+                                    self.numeric_to_label_dict[row["label"]]),
+                                row["recall"])
+                            self.log(
+                                "{}_Precision".format(
+                                    self.numeric_to_label_dict[row["label"]]),
+                                row["precision"])
+                        except MisconfigurationException:
+                            pass
+                elif key in ["predictions", "results"]:
+                    # Don't log dataframes of predictions or IoU results per epoch
+                    pass
+                elif value is None:
+                    pass
+                else:
+                    try:
+                        self.log(key, value)
+                    except MisconfigurationException:
+                        pass
     
