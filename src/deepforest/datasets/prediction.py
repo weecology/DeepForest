@@ -23,17 +23,27 @@ from deepforest import preprocess
 class PredictionDataset(Dataset):
     """
     This is the base class for all prediction datasets. It defines the interface for all prediction datasets. It flexibly accepts a single image or a list of images, a single path or a list of paths, and a patch_size and patch_overlap.
+    
+    Args:
+        image (PIL.Image.Image): A single image.
+        path (str): A single image path.
+        images (List[PIL.Image.Image]): A list of images.
+        paths (List[str]): A list of image paths.
+        patch_size (int): The size of the patches to extract.
+        patch_overlap (float): The overlap between patches.
+        size (int): The size of the image to resize to. Optional, if not provided, the image is not resized.
     """
-    def __init__(self, image=None, path=None, images=None, paths=None, patch_size=None, patch_overlap=None):
+    def __init__(self, image=None, path=None, images=None, paths=None, patch_size=None, patch_overlap=None, size=None):
         self.image = image
         self.images = images
         self.path = path
         self.paths = paths
         self.patch_size = patch_size
         self.patch_overlap = patch_overlap
+        self.size = size
         self.items = self.prepare_items()
 
-    def _load_and_preprocess_image(self, image_path, image=None):
+    def _load_and_preprocess_image(self, image_path, image=None, size=None):
         """
         Load and preprocess an image. Datasets should load using PIL and transpose the image to (C, H, W) before main.model.forward() is called.
         """
@@ -48,11 +58,11 @@ class PredictionDataset(Dataset):
                 .format(image.shape))
         
         image = np.transpose(image, (2, 0, 1))
-        image = self.preprocess_crop(image)
+        image = self.preprocess_crop(image, size)
  
         return image
     
-    def preprocess_crop(self, image):
+    def preprocess_crop(self, image, size=None):
         """
         Preprocess a crop to a float32 tensor between 0 and 1.
         """
@@ -60,8 +70,18 @@ class PredictionDataset(Dataset):
         image = image / 255.0
         image = image.astype(np.float32)
 
+        if size is not None:
+            image = self.resize_image(image, size)
+
         return image
     
+    def resize_image(self, image, size):
+        """
+        Resize an image to a new size.
+        """
+        image = np.resize(image, (image.shape[0], size, size))
+        return image
+
     def prepare_items(self):
         """
         Prepare the items for the dataset. This is used for special cases before the main.model.forward() is called.
@@ -81,7 +101,11 @@ class PredictionDataset(Dataset):
         """
         Collate the batch into a single tensor
         """
-        return default_collate(batch)
+        # Check if all images in batch have same dimensions
+        try:
+            return default_collate(batch)
+        except RuntimeError as e:
+            raise RuntimeError("Images in batch have different dimensions. Set validation.size in config.yaml to resize all images to a common size.")
     
     def get_crop_bounds(self, idx):
         """
@@ -192,9 +216,10 @@ class SingleImage(PredictionDataset):
     
 class FromCSVFile(PredictionDataset):
     """Take in a csv file with image paths and preprocess and batch together"""
-    def __init__(self, csv_file: str, root_dir: str):
+    def __init__(self, csv_file: str, root_dir: str, size: int = None):
         self.csv_file = csv_file
         self.root_dir = root_dir
+        super().__init__(size=size)
         self.prepare_items()
 
     def prepare_items(self):
@@ -206,7 +231,7 @@ class FromCSVFile(PredictionDataset):
         return len(self.image_paths)
     
     def get_crop(self, idx):
-        image = self._load_and_preprocess_image(self.image_paths[idx])
+        image = self._load_and_preprocess_image(self.image_paths[idx], size=self.size)
         return image
     
     def get_image_basename(self, idx):

@@ -113,7 +113,7 @@ def __evaluate_wrapper__(predictions, ground_df, iou_threshold, numeric_to_label
             "Geometry type {} not implemented".format(prediction_geometry))
 
     # replace classes if not NUll
-    if not results is None:
+    if not results["results"] is None:
         results["results"]["predicted_label"] = results["results"][
             "predicted_label"].apply(lambda x: numeric_to_label_dict[x]
                                      if not pd.isnull(x) else x)
@@ -141,6 +141,16 @@ def evaluate_boxes(predictions, ground_df, iou_threshold=0.4):
         box_precision: proportion of predictions that are true positive, regardless of class
         class_recall: a pandas dataframe of class level recall and precision with class sizes
     """
+
+    # If all empty ground truth, return 0 recall and precision
+    if ground_df.empty:
+        return {
+            "results": None,
+            "box_recall": None,
+            "box_precision": 0,
+            "class_recall": None
+        }
+    
     # Run evaluation on all plots
     results = []
     box_recalls = []
@@ -179,6 +189,7 @@ def evaluate_boxes(predictions, ground_df, iou_threshold=0.4):
         box_precisions.append(precision)
         results.append(result)
 
+    
     results = pd.concat(results)
     box_precision = np.mean(box_precisions)
     box_recall = np.mean(box_recalls)

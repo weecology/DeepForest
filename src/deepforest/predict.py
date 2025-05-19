@@ -184,6 +184,9 @@ def _dataloader_wrapper_(model,
     # Postprocess predictions
     results = dataloader.dataset.postprocess(prediction_list)
     
+    if results.empty:
+        return results
+
     # Apply across class NMS for each image
     processed_results = []
     for image_path in results.image_path.unique():
