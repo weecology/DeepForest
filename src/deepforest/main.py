@@ -17,7 +17,8 @@ from torchmetrics.detection import IntersectionOverUnion, MeanAveragePrecision
 from torchmetrics.classification import BinaryAccuracy
 
 from huggingface_hub import PyTorchModelHubMixin
-from deepforest import visualize, utilities, predict
+from deepforest import utilities, predict
+
 from deepforest import evaluate as evaluate_iou
 from deepforest.datasets import prediction, training
 
@@ -457,7 +458,6 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                      patch_overlap=0.05,
                      iou_threshold=0.15,
                      dataloader_strategy="single",
-                     mosaic=True,
                      crop_model=None):
         """For images too large to input into the model, predict_tile cuts the
         image into overlapping windows, predicts trees on each window and
@@ -474,7 +474,6 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                 - "Single" loads the entire image into memory and passes individual windows to GPU and cannot be parallelized. 
                 - "batch" loads the entire image into GPU memory and creates views of an image as batch, requires in the entire tile to fit into GPU memory. CPU parallelization is possible for loading images.
                 - "window" loads only the desired window of the image from the raster dataset. Most memory efficient option, but cannot parallelize across windows due to rasterio GIL.
-            mosaic: Return a single prediction dataframe (True) or a tuple of image crops and predictions (False)
             crop_model: a deepforest.model.CropModel object to predict on crops
 
         Returns:
@@ -548,7 +547,13 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                                                     mosaic_results,
                                                     path)
 
-        formatted_results = utilities.read_file(mosaic_results)
+        if path is not None:
+            root_dir = os.path.dirname(path)
+        else:
+            print("No image path provided, root_dir will be None, since either images were directly provided or there were multiple image paths")
+            root_dir = None
+            
+        formatted_results = utilities.read_file(mosaic_results, root_dir=root_dir)
 
         return formatted_results
 
@@ -834,7 +839,11 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             predictions = self.predict_step(images, 0)
 
         #convert predictions to dataframes
-        results = [utilities.read_file(pred) for pred in predictions if pred is not None]
+        results = []
+        for pred in predictions:
+            geom_type = utilities.determine_geometry_type(pred)
+            result = utilities.format_geometry(pred, geom_type=geom_type)
+            results.append(utilities.read_file(result))
 
         return results
 

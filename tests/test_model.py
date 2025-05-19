@@ -9,7 +9,7 @@ from torchvision import transforms
 # The model object is architecture agnostic container.
 def test_model_no_args(config):
     with pytest.raises(ValueError):
-        model.Model(config)
+        model.Model.create_model(config)
 
 @pytest.fixture()
 def crop_model():

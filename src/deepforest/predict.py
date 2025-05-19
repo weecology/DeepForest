@@ -40,9 +40,13 @@ def _predict_image_(model,
         return None
 
     df = utilities.format_boxes(prediction[0])
-    df = across_class_nms(df, iou_threshold=nms_thresh)
 
-    df["image_path"] = os.path.basename(path)
+    if df.label.nunique() > 1:
+        df = across_class_nms(df, iou_threshold=nms_thresh)
+
+    # Add image path if provided
+    if path is not None:
+        df["image_path"] = os.path.basename(path)
 
     return df
 

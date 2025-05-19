@@ -35,14 +35,13 @@ def test_BoxDataset(csv_file, label_dict):
 
     for i in range(len(ds)):
         # Between 0 and 1
-        path, image, targets = ds[i]
+        image, targets = ds[i]
         assert image.max() <= 1
         assert image.min() >= 0
         assert targets["boxes"].shape == (raw_data.shape[0], 4)
         assert targets["labels"].shape == (raw_data.shape[0],)
         assert targets["labels"].dtype == torch.int64
         assert len(np.unique(targets["labels"])) == len(raw_data.label.unique())
-
 
 def test_single_class_with_empty(tmpdir):
     """Add fake empty annotations to test parsing """
@@ -66,22 +65,22 @@ def test_single_class_with_empty(tmpdir):
                              label_dict={"Tree": 0})
     assert len(ds) == 2
     # First image has annotations
-    assert not torch.sum(ds[0][2]["boxes"]) == 0
+    assert not torch.sum(ds[0][1]["boxes"]) == 0
     # Second image has no annotations
-    assert torch.sum(ds[1][2]["boxes"]) == 0
+    assert torch.sum(ds[1][1]["boxes"]) == 0
 
 
 @pytest.mark.parametrize("augment", [True, False])
-def test_tree_dataset_transform(augment):
+def test_BoxDataset_transform(augment):
     csv_file = get_data("example.csv")
     root_dir = os.path.dirname(csv_file)
     ds = BoxDataset(csv_file=csv_file,
                              root_dir=root_dir,
-                             train=augment)
+                             augment=augment)
 
     for i in range(len(ds)):
         # Between 0 and 1
-        path, image, targets = ds[i]
+        image, targets = ds[i]
         assert image.max() <= 1
         assert image.min() >= 0
         assert targets["boxes"].shape == (79, 4)
@@ -98,8 +97,7 @@ def test_collate():
     csv_file = get_data("example.csv")
     root_dir = os.path.dirname(csv_file)
     ds = BoxDataset(csv_file=csv_file,
-                             root_dir=root_dir,
-                             train=False)
+                             root_dir=root_dir)
 
     for i in range(len(ds)):
         # Between 0 and 1
@@ -113,8 +111,7 @@ def test_empty_collate():
     csv_file = get_data("example.csv")
     root_dir = os.path.dirname(csv_file)
     ds = BoxDataset(csv_file=csv_file,
-                             root_dir=root_dir,
-                             train=False)
+                             root_dir=root_dir)
 
     for i in range(len(ds)):
         # Between 0 and 1
@@ -123,14 +120,14 @@ def test_empty_collate():
         len(collated_batch[0]) == 2
 
 
-def test_dataloader():
+def test_BoxDataset_format():
     csv_file = get_data("example.csv")
     root_dir = os.path.dirname(csv_file)
-    ds = BoxDataset(csv_file=csv_file, root_dir=root_dir, train=False)
-    image = next(iter(ds))
+    ds = BoxDataset(csv_file=csv_file, root_dir=root_dir)
+    image, targets = next(iter(ds))
+    
     # Assert image is channels first format
     assert image.shape[0] == 3
-
 
 def test_multi_image_warning():
     tmpdir = tempfile.gettempdir()
@@ -144,8 +141,7 @@ def test_multi_image_warning():
 
     root_dir = os.path.dirname(csv_file1)
     ds = BoxDataset(csv_file=csv_file,
-                             root_dir=root_dir,
-                             train=False)
+                             root_dir=root_dir)
 
     for i in range(len(ds)):
         # Between 0 and 1

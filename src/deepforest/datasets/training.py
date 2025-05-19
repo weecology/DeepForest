@@ -90,46 +90,46 @@ class BoxDataset(Dataset):
         else:
             image = self.load_image(idx)
 
-            # select annotations
-            image_annotations = self.annotations[self.annotations.image_path ==
-                                                 self.image_names[idx]]
-            targets = {}
+        # select annotations
+        image_annotations = self.annotations[self.annotations.image_path ==
+                                                self.image_names[idx]]
+        targets = {}
 
-            if "geometry" in image_annotations.columns:
-                targets["boxes"] = np.array([
-                    shapely.wkt.loads(x).bounds for x in image_annotations.geometry
-                ]).astype("float32")
-            else:
-                targets["boxes"] = image_annotations[["xmin", "ymin", "xmax",
-                                                      "ymax"]].values.astype("float32")
+        if "geometry" in image_annotations.columns:
+            targets["boxes"] = np.array([
+                shapely.wkt.loads(x).bounds for x in image_annotations.geometry
+            ]).astype("float32")
+        else:
+            targets["boxes"] = image_annotations[["xmin", "ymin", "xmax",
+                                                    "ymax"]].values.astype("float32")
 
-            # Labels need to be encoded
-            targets["labels"] = image_annotations.label.apply(
-                lambda x: self.label_dict[x]).values.astype(np.int64)
+        # Labels need to be encoded
+        targets["labels"] = image_annotations.label.apply(
+            lambda x: self.label_dict[x]).values.astype(np.int64)
 
-            # If image has no annotations, don't augment
-            if np.sum(targets["boxes"]) == 0:
-                boxes = torch.zeros((0, 4), dtype=torch.float32)
-                labels = torch.zeros(0, dtype=torch.int64)
-                # channels last
-                image = np.rollaxis(image, 2, 0)
-                image = torch.from_numpy(image).float()
-                targets = {"boxes": boxes, "labels": labels}
-
-                return image, targets
-
-            # Apply augmentations
-            augmented = self.transform(image=image,
-                                       bboxes=targets["boxes"],
-                                       category_ids=targets["labels"].astype(np.int64))
-            image = augmented["image"]
-
-            # Convert boxes to tensor
-            boxes = np.array(augmented["bboxes"])
-            boxes = torch.from_numpy(boxes).float()
-            labels = np.array(augmented["category_ids"])
-            labels = torch.from_numpy(labels.astype(np.int64))
+        # If image has no annotations, don't augment
+        if np.sum(targets["boxes"]) == 0:
+            boxes = torch.zeros((0, 4), dtype=torch.float32)
+            labels = torch.zeros(0, dtype=torch.int64)
+            # channels last
+            image = np.rollaxis(image, 2, 0)
+            image = torch.from_numpy(image).float()
             targets = {"boxes": boxes, "labels": labels}
 
             return image, targets
+
+        # Apply augmentations
+        augmented = self.transform(image=image,
+                                    bboxes=targets["boxes"],
+                                    category_ids=targets["labels"].astype(np.int64))
+        image = augmented["image"]
+
+        # Convert boxes to tensor
+        boxes = np.array(augmented["bboxes"])
+        boxes = torch.from_numpy(boxes).float()
+        labels = np.array(augmented["category_ids"])
+        labels = torch.from_numpy(labels.astype(np.int64))
+        targets = {"boxes": boxes, "labels": labels}
+
+        return image, targets
 

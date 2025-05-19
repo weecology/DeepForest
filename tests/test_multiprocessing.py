@@ -5,7 +5,6 @@ from deepforest.datasets import prediction
 import pytest
 import os
 
-
 @pytest.mark.parametrize("num_workers", [0, 2])
 def test_predict_tile_workers(m, num_workers):
     # Default workers is 0
@@ -16,9 +15,7 @@ def test_predict_tile_workers(m, num_workers):
     csv_file = get_data("OSBS_029.csv")
     # make a dataset
     ds = prediction.FromCSVFile(csv_file=csv_file,
-                             root_dir=os.path.dirname(csv_file),
-                             transforms=None,
-                             train=False)
+                             root_dir=os.path.dirname(csv_file))
     dataloader = m.predict_dataloader(ds)
     assert dataloader.num_workers == num_workers
 
@@ -28,8 +25,6 @@ def test_predict_tile_workers_config(num_workers):
     csv_file = get_data("OSBS_029.csv")
     # make a dataset
     ds = prediction.FromCSVFile(csv_file=csv_file,
-                             root_dir=os.path.dirname(csv_file),
-                             transforms=None,
-                             train=False)
+                             root_dir=os.path.dirname(csv_file))
     dataloader = m.predict_dataloader(ds)
     assert dataloader.num_workers == num_workers

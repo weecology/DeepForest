@@ -802,14 +802,13 @@ def test_batch_prediction(m, path):
         batch_predictions = m.predict_batch(batch)
         predictions.extend(batch_predictions)
 
-    # Check results
-    assert len(predictions) == len(dl)
-    for batch_pred in predictions:
-        for image_pred in batch_pred:
-            assert isinstance(image_pred, pd.DataFrame)
-            assert "label" in image_pred.columns
-            assert "score" in image_pred.columns
-            assert "geometry" in image_pred.columns
+    # Check results  
+    assert len(predictions) == len(ds)
+    for image_pred in predictions:
+        assert isinstance(image_pred, pd.DataFrame)
+        assert "label" in image_pred.columns
+        assert "score" in image_pred.columns
+        assert "geometry" in image_pred.columns
 
 def test_batch_inference_consistency(m, path):
     ds = prediction.SingleImage(path=path, patch_overlap=0.1, patch_size=300)
