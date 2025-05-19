@@ -92,7 +92,9 @@ def __evaluate_wrapper__(predictions, ground_df, iou_threshold, numeric_to_label
             "results": None,
             "box_recall": 0,
             "box_precision": np.nan,
-            "class_recall": None
+            "class_recall": None,
+            "predictions": predictions,
+            "ground_df": ground_df
         }
         return results
 
@@ -148,7 +150,9 @@ def evaluate_boxes(predictions, ground_df, iou_threshold=0.4):
             "results": None,
             "box_recall": None,
             "box_precision": 0,
-            "class_recall": None
+            "class_recall": None,
+            "predictions": predictions,
+            "ground_df": ground_df
         }
 
     # Run evaluation on all plots
@@ -201,7 +205,9 @@ def evaluate_boxes(predictions, ground_df, iou_threshold=0.4):
         "results": results,
         "box_precision": box_precision,
         "box_recall": box_recall,
-        "class_recall": class_recall
+        "class_recall": class_recall,
+        "predictions": predictions,
+        "ground_df": ground_df
     }
 
 
