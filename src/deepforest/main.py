@@ -113,7 +113,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             self.transforms = None
         else:
             self.transforms = transforms
-            
+
         self.save_hyperparameters()
 
     def load_model(self, model_name="weecology/deepforest-tree", revision='main'):
@@ -140,7 +140,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         self.label_dict = loaded_model.label_dict
         self.model = loaded_model.model
         self.numeric_to_label_dict = loaded_model.numeric_to_label_dict
-        
+
         # Set bird-specific settings if loading the bird model
         if model_name == "weecology/deepforest-bird":
             self.config.retinanet.score_thresh = 0.3
@@ -228,7 +228,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             # Disable validation, don't use trainer defaults
             limit_val_batches = 0
             num_sanity_val_steps = 0
-        
+
         # Check for model checkpoint object
         checkpoint_types = [type(x).__qualname__ for x in callbacks]
         if 'ModelCheckpoint' in checkpoint_types:
@@ -344,12 +344,13 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         if self.existing_val_dataloader:
             return self.existing_val_dataloader
         if self.config.validation.csv_file is not None:
-            loader = self.load_dataset(csv_file=self.config.validation.csv_file,
-                                       root_dir=self.config.validation.root_dir,
-                                       augment=False,
-                                       shuffle=False,
-                                       preload_images=self.config.validation.preload_images,
-                                       batch_size=self.config.batch_size)
+            loader = self.load_dataset(
+                csv_file=self.config.validation.csv_file,
+                root_dir=self.config.validation.root_dir,
+                augment=False,
+                shuffle=False,
+                preload_images=self.config.validation.preload_images,
+                batch_size=self.config.batch_size)
         return loader
 
     def predict_dataloader(self, ds):
@@ -408,8 +409,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         if result is None:
             return None
         else:
-            result["label"] = result.label.apply(
-                lambda x: self.numeric_to_label_dict[x])
+            result["label"] = result.label.apply(lambda x: self.numeric_to_label_dict[x])
 
         if path is None:
             result = utilities.read_file(result)
@@ -446,7 +446,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                                                trainer=self.trainer,
                                                dataloader=dataloader,
                                                root_dir=root_dir)
-        
+
         results.root_dir = root_dir
 
         return results
@@ -486,30 +486,35 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         # Check if path or image is provided
         if dataloader_strategy == "single":
             if path is None and image is None:
-                raise ValueError("Either path or image must be provided for single tile prediction")
-        
+                raise ValueError(
+                    "Either path or image must be provided for single tile prediction")
+
         if dataloader_strategy == "batch":
             if paths is None:
-                raise ValueError("paths argument must be provided when using dataloader_strategy='batch'")
-        
+                raise ValueError(
+                    "paths argument must be provided when using dataloader_strategy='batch'"
+                )
+
         if dataloader_strategy == "single":
             ds = prediction.SingleImage(path=path,
-                                     image=image,
-                                     patch_overlap=patch_overlap,
-                                     patch_size=patch_size)
-            
+                                        image=image,
+                                        patch_overlap=patch_overlap,
+                                        patch_size=patch_size)
+
         elif dataloader_strategy == "batch":
             ds = prediction.MultiImage(paths=paths,
-                                          patch_overlap=patch_overlap,
-                                          patch_size=patch_size)
-            
+                                       patch_overlap=patch_overlap,
+                                       patch_size=patch_size)
+
         elif dataloader_strategy == "window":
             # Check for workers config when using out of memory dataset
             if self.config.workers > 0:
                 raise ValueError(
                     "workers must be 0 when using out-of-memory dataset (dataloader_strategy='window'). Set config['workers']=0 and recreate trainer self.create_trainer()."
                 )
-            ds = prediction.TiledRaster(path=path, patch_overlap=patch_overlap, patch_size=patch_size)
+            ds = prediction.TiledRaster(path=path,
+                                        patch_overlap=patch_overlap,
+                                        patch_size=patch_size)
 
         batched_results = self.trainer.predict(self, self.predict_dataloader(ds))
 
@@ -519,7 +524,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             results = []
             for result in batched_results:
                 results.append(ds.postprocess(result))
-            
+
         # Concatenate results into a single dataframe
         if isinstance(results, list):
             results = pd.concat(results)
@@ -529,32 +534,35 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         if results.empty:
             warnings.warn("No predictions made, returning None")
             return None
-        
+
         # Perform mosaic for each image_path, or all is image_path is None
         mosaic_results = []
         if results["image_path"].isnull().all():
             mosaic_results.append(predict.mosiac(results, iou_threshold=iou_threshold))
         else:
             for image_path in results["image_path"].unique():
-                image_mosaic = predict.mosiac(results[results["image_path"] == image_path], iou_threshold=iou_threshold)
+                image_mosaic = predict.mosiac(
+                    results[results["image_path"] == image_path],
+                    iou_threshold=iou_threshold)
                 image_mosaic["image_path"] = image_path
                 mosaic_results.append(image_mosaic)
-        
+
         mosaic_results = pd.concat(mosaic_results)
-        mosaic_results["label"] = mosaic_results.label.apply(lambda x: self.numeric_to_label_dict[x])
+        mosaic_results["label"] = mosaic_results.label.apply(
+            lambda x: self.numeric_to_label_dict[x])
 
         if crop_model is not None:
-            mosaic_results = predict._crop_models_wrapper_(crop_model,
-                                                    self.trainer,
-                                                    mosaic_results,
-                                                    path)
+            mosaic_results = predict._crop_models_wrapper_(crop_model, self.trainer,
+                                                           mosaic_results, path)
 
         if path is not None:
             root_dir = os.path.dirname(path)
         else:
-            print("No image path provided, root_dir will be None, since either images were directly provided or there were multiple image paths")
+            print(
+                "No image path provided, root_dir will be None, since either images were directly provided or there were multiple image paths"
+            )
             root_dir = None
-            
+
         formatted_results = utilities.read_file(mosaic_results, root_dir=root_dir)
 
         return formatted_results
@@ -591,7 +599,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
         # sum of regression and classification loss
         losses = sum([loss for loss in loss_dict.values()])
-        
+
         # Log loss
         for key, value in loss_dict.items():
             try:
@@ -615,9 +623,9 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
             self.iou_metric.update(filtered_preds, filtered_targets)
             self.mAP_metric.update(filtered_preds, filtered_targets)
-        
+
         return losses
-    
+
     def on_validation_epoch_start(self):
         self.predictions = []
 
@@ -713,15 +721,16 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         if self.current_epoch % self.config.validation.val_accuracy_interval == 0:
             trainer_state = deepcopy(self.trainer.state)
             current_fx_name = self._current_fx_name
-            results = self.evaluate(self.config.validation.csv_file, root_dir=self.config.validation.root_dir, size=self.config.validation.size)
+            results = self.evaluate(self.config.validation.csv_file,
+                                    root_dir=self.config.validation.root_dir,
+                                    size=self.config.validation.size)
             self.predictions = results["predictions"]
             self.trainer.state = trainer_state
             self._current_fx_name = current_fx_name
 
             # Log epoch metrics
-            self.log_epoch_metrics() 
+            self.log_epoch_metrics()
             self.__evaluation_logs__(results)
-
 
     def predict_step(self, batch, batch_idx):
         """Predict a batch of images with the deepforest model. If batch is a list, concatenate the images, predict and then split the results, useful for main.predict_tile.
@@ -866,9 +875,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         if root_dir is None:
             root_dir = os.path.dirname(csv_file)
 
-        predictions = self.predict_file(csv_file=csv_file,
-                                        root_dir=root_dir,
-                                        size=size)
+        predictions = self.predict_file(csv_file=csv_file, root_dir=root_dir, size=size)
 
         if iou_threshold is None:
             iou_threshold = self.config.validation.iou_threshold
@@ -878,7 +885,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             ground_df=ground_df,
             iou_threshold=iou_threshold,
             numeric_to_label_dict=self.numeric_to_label_dict)
-        
+
         # empty frame accuracy
         empty_accuracy = self.calculate_empty_frame_accuracy(ground_df, predictions)
         results["empty_frame_accuracy"] = empty_accuracy
@@ -886,7 +893,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         self.__evaluation_logs__(results)
 
         return results
-    
+
     def __evaluation_logs__(self, results):
         """Log metrics from evaluation results"""
         # Log metrics
@@ -927,4 +934,3 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                         self.log(key, value)
                     except MisconfigurationException:
                         pass
-    

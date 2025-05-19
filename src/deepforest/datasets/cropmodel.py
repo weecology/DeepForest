@@ -8,6 +8,7 @@ from rasterio.windows import Window
 from torch.utils.data import Dataset
 from torchvision import transforms
 
+
 def bounding_box_transform(augment=False):
     data_transforms = []
     data_transforms.append(transforms.ToTensor())
@@ -20,6 +21,8 @@ def bounding_box_transform(augment=False):
 
 resnet_normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                         std=[0.229, 0.224, 0.225])
+
+
 class BoundingBoxDataset(Dataset):
     """An in memory dataset for bounding box predictions.
 

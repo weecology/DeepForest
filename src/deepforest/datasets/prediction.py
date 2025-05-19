@@ -19,6 +19,7 @@ from deepforest.utilities import format_geometry
 # Local imports
 from deepforest import preprocess
 
+
 # Base prediction class
 class PredictionDataset(Dataset):
     """
@@ -33,7 +34,15 @@ class PredictionDataset(Dataset):
         patch_overlap (float): The overlap between patches.
         size (int): The size of the image to resize to. Optional, if not provided, the image is not resized.
     """
-    def __init__(self, image=None, path=None, images=None, paths=None, patch_size=None, patch_overlap=None, size=None):
+
+    def __init__(self,
+                 image=None,
+                 path=None,
+                 images=None,
+                 paths=None,
+                 patch_size=None,
+                 patch_overlap=None,
+                 size=None):
         self.image = image
         self.images = images
         self.path = path
@@ -56,12 +65,12 @@ class PredictionDataset(Dataset):
             raise ValueError(
                 "Only three band raster are accepted. Input tile has shape {}. Check for transparent alpha channel and remove if present"
                 .format(image.shape))
-        
+
         image = np.transpose(image, (2, 0, 1))
         image = self.preprocess_crop(image, size)
- 
+
         return image
-    
+
     def preprocess_crop(self, image, size=None):
         """
         Preprocess a crop to a float32 tensor between 0 and 1.
@@ -74,7 +83,7 @@ class PredictionDataset(Dataset):
             image = self.resize_image(image, size)
 
         return image
-    
+
     def resize_image(self, image, size):
         """
         Resize an image to a new size.
@@ -90,13 +99,13 @@ class PredictionDataset(Dataset):
 
     def __len__(self):
         return len(self.items)
-    
+
     def __getitem__(self, idx):
         """
         Get the item at the given index
         """
         return self.get_crop(idx)
-    
+
     def collate_fn(self, batch):
         """
         Collate the batch into a single tensor
@@ -105,20 +114,22 @@ class PredictionDataset(Dataset):
         try:
             return default_collate(batch)
         except RuntimeError as e:
-            raise RuntimeError("Images in batch have different dimensions. Set validation.size in config.yaml to resize all images to a common size.")
-    
+            raise RuntimeError(
+                "Images in batch have different dimensions. Set validation.size in config.yaml to resize all images to a common size."
+            )
+
     def get_crop_bounds(self, idx):
         """
         Get the crop bounds at the given index, needed to mosaic predictions.
         """
         raise NotImplementedError("Subclasses must implement this method")
-    
+
     def get_crop(self, idx):
         """
         Get the crop of the image at the given index
         """
-        raise NotImplementedError("Subclasses must implement this method")  
-    
+        raise NotImplementedError("Subclasses must implement this method")
+
     def get_image_basename(self, idx):
         """
         Get the basename of the image at the given index
@@ -137,7 +148,8 @@ class PredictionDataset(Dataset):
         elif "polygons" in batched_result.keys():
             geom_type = "polygon"
         else:
-            raise ValueError("Unknown geometry type, prediction keys are {}".format(batched_result.keys()))
+            raise ValueError("Unknown geometry type, prediction keys are {}".format(
+                batched_result.keys()))
 
         return geom_type
 
@@ -156,16 +168,16 @@ class PredictionDataset(Dataset):
         result = format_geometry(batch, geom_type=geom_type)
         if result is None:
             return None
-        result["window_xmin"] = self.get_crop_bounds(sub_idx)[0] 
+        result["window_xmin"] = self.get_crop_bounds(sub_idx)[0]
         result["window_ymin"] = self.get_crop_bounds(sub_idx)[1]
         result["image_path"] = self.get_image_basename(idx)
 
         return result
-    
-    def postprocess(self, batched_result): 
+
+    def postprocess(self, batched_result):
         """
         Postprocess the batched result into a single dataframe. In the case of subbatches, the index is the subbatch index.
-        """    
+        """
         formatted_result = []
         for idx, batch in enumerate(batched_result):
             if isinstance(batch, list):
@@ -185,37 +197,45 @@ class PredictionDataset(Dataset):
 
         return formatted_result
 
+
 class SingleImage(PredictionDataset):
     """Take in a single image path, preprocess and batch together"""
+
     def __init__(self, path=None, image=None, patch_size=None, patch_overlap=None):
-        super().__init__(path=path, image=image, patch_size=patch_size, patch_overlap=patch_overlap)
+        super().__init__(path=path,
+                         image=image,
+                         patch_size=patch_size,
+                         patch_overlap=patch_overlap)
 
     def prepare_items(self):
         self.image = self._load_and_preprocess_image(self.path, self.image)
-        self.windows = preprocess.compute_windows(self.image, self.patch_size, self.patch_overlap)
+        self.windows = preprocess.compute_windows(self.image, self.patch_size,
+                                                  self.patch_overlap)
 
     def __len__(self):
         return len(self.windows)
-    
+
     def window_list(self):
         return [x.getRect() for x in self.windows]
-    
+
     def get_crop(self, idx):
         crop = self.image[self.windows[idx].indices()]
-        
+
         return crop
-    
+
     def get_image_basename(self, idx):
         if self.path is not None:
             return os.path.basename(self.path)
         else:
             return None
-    
+
     def get_crop_bounds(self, idx):
         return self.windows[idx].getRect()
-    
+
+
 class FromCSVFile(PredictionDataset):
     """Take in a csv file with image paths and preprocess and batch together"""
+
     def __init__(self, csv_file: str, root_dir: str, size: int = None):
         self.csv_file = csv_file
         self.root_dir = root_dir
@@ -226,17 +246,17 @@ class FromCSVFile(PredictionDataset):
         self.annotations = pd.read_csv(self.csv_file)
         self.image_names = self.annotations.image_path.unique()
         self.image_paths = [os.path.join(self.root_dir, x) for x in self.image_names]
-    
+
     def __len__(self):
         return len(self.image_paths)
-    
+
     def get_crop(self, idx):
         image = self._load_and_preprocess_image(self.image_paths[idx], size=self.size)
         return image
-    
+
     def get_image_basename(self, idx):
         return os.path.basename(self.image_paths[idx])
-    
+
     def get_crop_bounds(self, idx):
         return None
 
@@ -258,9 +278,11 @@ class FromCSVFile(PredictionDataset):
         result["image_path"] = self.get_image_basename(idx)
 
         return result
-    
+
+
 class MultiImage(PredictionDataset):
     """Take in a list of image paths, preprocess and batch together"""
+
     def __init__(self, paths: List[str], patch_size: int, patch_overlap: float):
         """
         Args:
@@ -271,7 +293,7 @@ class MultiImage(PredictionDataset):
         # Runtime type checking
         if not isinstance(paths, list):
             raise TypeError(f"paths must be a list, got {type(paths)}")
-            
+
         self.paths = paths
         self.patch_size = patch_size
         self.patch_overlap = patch_overlap
@@ -294,11 +316,14 @@ class MultiImage(PredictionDataset):
         N, C, H, W = input_tensor.shape
 
         # Calculate the number of padding pixels needed, accounting for overlap
-        padding_h = size - ((H - overlap) % (size - overlap)) if H % (size - overlap) != 0 else 0
-        padding_w = size - ((W - overlap) % (size - overlap)) if W % (size - overlap) != 0 else 0
+        padding_h = size - ((H - overlap) %
+                            (size - overlap)) if H % (size - overlap) != 0 else 0
+        padding_w = size - ((W - overlap) %
+                            (size - overlap)) if W % (size - overlap) != 0 else 0
 
         # Pad the input tensor
-        padded_tensor = F.pad(input_tensor, (padding_w, padding_w, padding_h, padding_h), "constant", 0)
+        padded_tensor = F.pad(input_tensor, (padding_w, padding_w, padding_h, padding_h),
+                              "constant", 0)
 
         # Calculate the step size for the sliding window
         step = size - overlap
@@ -313,16 +338,17 @@ class MultiImage(PredictionDataset):
 
         # Reshape to [N * H' * W', C, size, size]
         output = unfolded.permute(0, 2, 3, 1, 4, 5).reshape(-1, C, size, size)
-                
+
         return output
 
     def _create_patches(self, image):
-        image_tensor = torch.tensor(image).unsqueeze(0) # Convert to (N, C, H, W)
+        image_tensor = torch.tensor(image).unsqueeze(0)  # Convert to (N, C, H, W)
         patch_overlap_size = int(self.patch_size * self.patch_overlap)
-        patches = self.create_overlapping_views(image_tensor, self.patch_size, patch_overlap_size)
+        patches = self.create_overlapping_views(image_tensor, self.patch_size,
+                                                patch_overlap_size)
 
         return patches
-    
+
     def window_list(self):
         """Get the original positions of patches in the image.
         
@@ -335,8 +361,12 @@ class MultiImage(PredictionDataset):
         step = self.patch_size - patch_overlap_size
 
         # Calculate padding needed
-        padding_h = self.patch_size - ((H - patch_overlap_size) % (self.patch_size - patch_overlap_size)) if H % (self.patch_size - patch_overlap_size) != 0 else 0
-        padding_w = self.patch_size - ((W - patch_overlap_size) % (self.patch_size - patch_overlap_size)) if W % (self.patch_size - patch_overlap_size) != 0 else 0
+        padding_h = self.patch_size - (
+            (H - patch_overlap_size) % (self.patch_size - patch_overlap_size)) if H % (
+                self.patch_size - patch_overlap_size) != 0 else 0
+        padding_w = self.patch_size - (
+            (W - patch_overlap_size) % (self.patch_size - patch_overlap_size)) if W % (
+                self.patch_size - patch_overlap_size) != 0 else 0
 
         # Adjust H and W to include padding
         H_padded = H + padding_h
@@ -349,7 +379,7 @@ class MultiImage(PredictionDataset):
 
         return windows
 
-    def collate_fn(self, batch):  
+    def collate_fn(self, batch):
         # Comes pre-batched
         return batch
 
@@ -359,13 +389,14 @@ class MultiImage(PredictionDataset):
     def get_crop(self, idx):
         self.image = self._load_and_preprocess_image(self.paths[idx])
         return self._create_patches(self.image)
-    
+
     def get_image_basename(self, idx):
         return os.path.basename(self.paths[idx])
-    
+
     def get_crop_bounds(self, idx):
         return self.window_list()[idx]
-    
+
+
 class TiledRaster(PredictionDataset):
     """Dataset for predicting on raster windows
 
@@ -403,7 +434,7 @@ class TiledRaster(PredictionDataset):
                     "\nPlease run: "
                     "\ngdal_translate -of GTiff -co TILED=YES <input> <output> "
                     "to create a tiled raster")
-        
+
         # Generate sliding windows
         self.windows = slidingwindow.generateForSize(
             height,
@@ -411,10 +442,10 @@ class TiledRaster(PredictionDataset):
             dimOrder=slidingwindow.DimOrder.ChannelHeightWidth,
             maxWindowSize=self.patch_size,
             overlapPercent=self.patch_overlap)
-        
+
     def __len__(self):
         return len(self.windows)
-    
+
     def window_list(self):
         return [x.getRect() for x in self.windows]
 
@@ -422,15 +453,15 @@ class TiledRaster(PredictionDataset):
         window = self.windows[idx]
         with rio.open(self.path) as src:
             window_data = src.read(window=Window(window.x, window.y, window.w, window.h))
-        
+
         # Convert to torch tensor and rearrange dimensions
         window_data = torch.from_numpy(window_data).float()  # Convert to torch tensor
         window_data = window_data / 255.0  # Normalize
-        
+
         return window_data
-    
+
     def get_image_basename(self, idx):
         return os.path.basename(self.path)
-    
+
     def get_crop_bounds(self, idx):
         return self.window_list()[idx]

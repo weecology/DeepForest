@@ -49,7 +49,8 @@ def compute_windows(numpy_image, patch_size, patch_overlap):
 
     # Check that image is channels first
     if numpy_image.shape[0] != 3:
-        raise ValueError("Image is not channels first, shape is {}".format(numpy_image.shape))
+        raise ValueError("Image is not channels first, shape is {}".format(
+            numpy_image.shape))
 
     # Generate overlapping sliding windows
     windows = slidingwindow.generate(numpy_image,
@@ -191,14 +192,17 @@ def split_raster(annotations_file=None,
 
     # If its channels last, convert to channels first
     if numpy_image.shape[2] in [3, 4]:
-        print("Image shape is {}, assuming this is channels last, converting to channels first".format(numpy_image.shape[2]))
+        print(
+            "Image shape is {}, assuming this is channels last, converting to channels first"
+            .format(numpy_image.shape[2]))
         numpy_image = numpy_image.transpose(2, 0, 1)
 
     # Check that it's 3 bands
     bands = numpy_image.shape[2]
     if not bands == 3:
         warnings.warn(
-            "Input image had non-3 band shape of {}, selecting first 3 bands".format(numpy_image.shape), UserWarning)
+            "Input image had non-3 band shape of {}, selecting first 3 bands".format(
+                numpy_image.shape), UserWarning)
         try:
             numpy_image = numpy_image[:3, :, :].astype("uint8")
         except:

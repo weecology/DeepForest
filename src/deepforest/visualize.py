@@ -12,6 +12,7 @@ import warnings
 import supervision as sv
 from deepforest.utilities import determine_geometry_type
 
+
 def plot_points(image, points, color=None, radius=5, thickness=1):
     """Plot points on an image
     Args:

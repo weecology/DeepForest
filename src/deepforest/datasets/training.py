@@ -14,20 +14,19 @@ import albumentations as A
 from albumentations.pytorch import ToTensorV2
 import shapely
 
+
 def get_transform(augment: bool) -> A.Compose:
     """Create Albumentations transformation for bounding boxes."""
     bbox_params = A.BboxParams(format='pascal_voc', label_fields=["category_ids"])
-    
+
     if augment:
-        return A.Compose([
-            A.HorizontalFlip(p=0.5),
-            ToTensorV2()
-        ], bbox_params=bbox_params)
+        return A.Compose([A.HorizontalFlip(p=0.5), ToTensorV2()], bbox_params=bbox_params)
     else:
         return A.Compose([ToTensorV2()], bbox_params=bbox_params)
 
 
 class BoxDataset(Dataset):
+
     def __init__(self,
                  csv_file,
                  root_dir,
@@ -73,15 +72,15 @@ class BoxDataset(Dataset):
         """
         images = [item[0] for item in batch]
         targets = [item[1] for item in batch]
-        
+
         return images, targets
-    
+
     def load_image(self, idx):
         img_name = os.path.join(self.root_dir, self.image_names[idx])
         image = np.array(Image.open(img_name).convert("RGB")) / 255
         image = image.astype("float32")
         return image
-    
+
     def __getitem__(self, idx):
 
         # Read image if not in memory
@@ -92,7 +91,7 @@ class BoxDataset(Dataset):
 
         # select annotations
         image_annotations = self.annotations[self.annotations.image_path ==
-                                                self.image_names[idx]]
+                                             self.image_names[idx]]
         targets = {}
 
         if "geometry" in image_annotations.columns:
@@ -101,7 +100,7 @@ class BoxDataset(Dataset):
             ]).astype("float32")
         else:
             targets["boxes"] = image_annotations[["xmin", "ymin", "xmax",
-                                                    "ymax"]].values.astype("float32")
+                                                  "ymax"]].values.astype("float32")
 
         # Labels need to be encoded
         targets["labels"] = image_annotations.label.apply(
@@ -120,8 +119,8 @@ class BoxDataset(Dataset):
 
         # Apply augmentations
         augmented = self.transform(image=image,
-                                    bboxes=targets["boxes"],
-                                    category_ids=targets["labels"].astype(np.int64))
+                                   bboxes=targets["boxes"],
+                                   category_ids=targets["labels"].astype(np.int64))
         image = augmented["image"]
 
         # Convert boxes to tensor
@@ -132,4 +131,3 @@ class BoxDataset(Dataset):
         targets = {"boxes": boxes, "labels": labels}
 
         return image, targets
-
