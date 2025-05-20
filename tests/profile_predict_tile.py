@@ -7,6 +7,7 @@ import psutil
 import gc
 import glob
 from tabulate import tabulate
+import matplotlib.pyplot as plt
 
 def get_memory_usage():
     """Get current memory usage in MB"""
@@ -25,8 +26,7 @@ def profile_predict_tile(model, paths, device, workers=0, patch_size=1500, patch
     for i in range(num_runs):
         start_time = time.time()
         if dataloader_strategy == "batch":
-            #change batch size to 1 for batch strategy
-            model.config["batch_size"] = 2
+            model.config["batch_size"] = 1
             model.predict_tile(
                 paths=paths, 
                 patch_size=patch_size, 
@@ -64,48 +64,70 @@ def run():
     m.create_model()
     m.load_model("Weecology/deepforest-bird")
     m.config["train"]["fast_dev_run"] = False
-    m.config["batch_size"] = 3
+    m.config["batch_size"] = 10
     strategies = ["single", "batch"]
     
-    # Get test data
-    paths = glob.glob("/blue/ewhite/b.weinstein/BOEM/JPG_20241220_145900/*.jpg")[:20]
-    
-    # Test configurations
+    # Image counts to test
+    image_counts = [5, 10, 20]
     worker_configs = [0, 5]
     devices = ["cuda"]
     
-    # Run all configurations
-    results = []
+
+    all_results = []
+
+    for n_images in image_counts:
+        paths = glob.glob("/blue/ewhite/b.weinstein/BOEM/JPG_20241220_145900/*.jpg")[:n_images]
+        for strategy in strategies:
+            for device in devices:
+                if strategy == "single":
+                    m.create_trainer()
+                    result = profile_predict_tile(m, paths, device, workers=0, dataloader_strategy=strategy)
+                    result["n_images"] = n_images
+                    all_results.append(result)
+                else:
+                    for workers in worker_configs:
+                        m.create_trainer()
+                        result = profile_predict_tile(m, paths, device, workers, dataloader_strategy=strategy)
+                        result["n_images"] = n_images
+                        all_results.append(result)
+
+    # Plotting
+    plt.figure(figsize=(10,6))
     for strategy in strategies:
-        for device in devices:
-            if strategy == "single":
-                # Only run workers = 0 for single strategy
-                m.create_trainer()  # Recreate trainer for each configuration
-                result = profile_predict_tile(m, paths, device, workers=0, dataloader_strategy=strategy)
-                results.append(result)
-            else:
-                for workers in worker_configs:
-                    m.create_trainer()  # Recreate trainer for each configuration
-                    result = profile_predict_tile(m, paths, device, workers, dataloader_strategy=strategy)
-                    results.append(result)
+        for workers in [0, 5, 10]:
+            subset = [r for r in all_results if r["strategy"] == strategy and r["workers"] == workers]
+            if not subset:
+                continue
+            x = [r["n_images"] for r in subset]
+            y = [r["mean_time"] for r in subset]
+            plt.plot(x, y, marker='o', label=f"{strategy}, workers={workers}")
+
+    plt.xlabel("Number of Images")
+    plt.ylabel("Mean Runtime (s)")
+    plt.title("Runtime vs Number of Images: {} GPUs".format(torch.cuda.device_count()))
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+    plt.savefig("{}_profiling.png".format(torch.cuda.device_count()), dpi=300)
+
     # Create comparison table
     table_data = []
-    headers = ["Device", "Workers", "Strategy", "Mean Time (s)", "Std Time (s)"]
+    headers = ["Device", "Workers", "Strategy", "Num Images", "Mean Time (s)", "Std Time (s)"]
     
-    for result in results:
+    for result in all_results:
         table_data.append([
             result["device"],
             result["workers"],
             result["strategy"],
+            result["n_images"],  # Add number of images here
             f"{result['mean_time']:.2f}",
             f"{result['std_time']:.2f}",
         ])
     
     # Print results
     print("\nProfiling Results Comparison:")
-    print("persistant workers")
     print("=" * 140)
     print(tabulate(table_data, headers=headers, tablefmt="grid"))
-    
+
 if __name__ == "__main__":
     run()
