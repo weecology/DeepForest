@@ -20,12 +20,6 @@ def profile_predict_tile(model, paths, device, workers=0, patch_size=1500, patch
     # Update worker configuration
     model.config["workers"] = workers
     
-    # Move model to device
-    if device == "cuda":
-        model.model = model.model.cuda()
-    else:
-        model.model = model.model.cpu()
-    
     # Time profiling
     times = []
     for i in range(num_runs):
@@ -34,7 +28,7 @@ def profile_predict_tile(model, paths, device, workers=0, patch_size=1500, patch
             #change batch size to 1 for batch strategy
             model.config["batch_size"] = 2
             model.predict_tile(
-                path=paths, 
+                paths=paths, 
                 patch_size=patch_size, 
                 patch_overlap=patch_overlap,
                 dataloader_strategy=dataloader_strategy
@@ -68,16 +62,16 @@ def run():
     # Initialize model
     m = main.deepforest()
     m.create_model()
-    #m.load_model("Weecology/deepforest-bird")
+    m.load_model("Weecology/deepforest-bird")
     m.config["train"]["fast_dev_run"] = False
     m.config["batch_size"] = 3
     strategies = ["single", "batch"]
     
     # Get test data
-    paths = glob.glob("/blue/ewhite/b.weinstein/BOEM/JPG_20241220_145900/*.jpg")[:50]
+    paths = glob.glob("/blue/ewhite/b.weinstein/BOEM/JPG_20241220_145900/*.jpg")[:20]
     
     # Test configurations
-    worker_configs = [0, 5, 10]
+    worker_configs = [0, 5]
     devices = ["cuda"]
     
     # Run all configurations

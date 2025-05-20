@@ -289,6 +289,10 @@ class MultiImage(PredictionDataset):
         self.patch_size = patch_size
         self.patch_overlap = patch_overlap
 
+        image = self._load_and_preprocess_image(self.paths[0])
+        self.image_height = image.shape[1]
+        self.image_width = image.shape[2]
+
     def create_overlapping_views(self, input_tensor, size, overlap):
         """Creates overlapping views of a 4D tensor.
 
@@ -345,8 +349,9 @@ class MultiImage(PredictionDataset):
         Returns:
             list: List of tuples containing (x, y, w, h) coordinates of each patch
         """
-        image_tensor = torch.tensor(self.image).unsqueeze(0)  # Convert to (N, C, H, W)
-        N, C, H, W = image_tensor.shape
+        H = self.image_height
+        W = self.image_width
+
         patch_overlap_size = int(self.patch_size * self.patch_overlap)
         step = self.patch_size - patch_overlap_size
 
@@ -377,8 +382,8 @@ class MultiImage(PredictionDataset):
         return len(self.paths)
 
     def get_crop(self, idx):
-        self.image = self._load_and_preprocess_image(self.paths[idx])
-        return self._create_patches(self.image)
+        image = self._load_and_preprocess_image(self.paths[idx])
+        return self._create_patches(image)
 
     def get_image_basename(self, idx):
         return os.path.basename(self.paths[idx])
