@@ -42,8 +42,8 @@ class PredictionDataset(Dataset):
                  path=None,
                  images=None,
                  paths=None,
-                 patch_size=None,
-                 patch_overlap=None,
+                 patch_size=400,
+                 patch_overlap=0,
                  size=None):
         self.image = image
         self.images = images
@@ -192,7 +192,7 @@ class PredictionDataset(Dataset):
 class SingleImage(PredictionDataset):
     """Take in a single image path, preprocess and batch together."""
 
-    def __init__(self, path=None, image=None, patch_size=None, patch_overlap=None):
+    def __init__(self, path=None, image=None, patch_size=400, patch_overlap=0):
         super().__init__(path=path,
                          image=image,
                          patch_size=patch_size,
