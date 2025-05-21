@@ -38,7 +38,7 @@ def compute_windows(numpy_image, patch_size, patch_overlap):
     """Create a sliding window object from a raster tile.
 
     Args:
-        numpy_image (array): Raster object as numpy array to cut into crops
+        numpy_image (array): Raster object as numpy array to cut into crops, channels first
 
     Returns:
         windows (list): a sliding windows object
@@ -47,9 +47,14 @@ def compute_windows(numpy_image, patch_size, patch_overlap):
     if patch_overlap > 1:
         raise ValueError("Patch overlap {} must be between 0 - 1".format(patch_overlap))
 
+    # Check that image is channels first
+    if numpy_image.shape[0] != 3:
+        raise ValueError("Image is not channels first, shape is {}".format(
+            numpy_image.shape))
+
     # Generate overlapping sliding windows
     windows = slidingwindow.generate(numpy_image,
-                                     slidingwindow.DimOrder.HeightWidthChannel,
+                                     slidingwindow.DimOrder.ChannelHeightWidth,
                                      patch_size, patch_overlap)
 
     return (windows)
@@ -118,7 +123,8 @@ def save_crop(base_dir, image_name, index, crop):
     if not os.path.exists(base_dir):
         os.makedirs(base_dir)
 
-    # Convert NumPy array to PIL image
+    # Convert NumPy array to PIL image, PIL expects channels last
+    crop = np.moveaxis(crop, 0, 2)
     im = Image.fromarray(crop)
 
     # Extract the basename of the image
@@ -177,39 +183,39 @@ def split_raster(annotations_file=None,
                       "from existing in-memory numpy object, as numpy_image=")
 
     if path_to_raster:
-        numpy_image = rasterio.open(path_to_raster).read()
-        numpy_image = np.moveaxis(numpy_image, 0, 2)
+        numpy_image = Image.open(path_to_raster)
+        numpy_image = np.array(numpy_image)
     else:
         if image_name is None:
             raise IOError("If passing a numpy_image, please also specify an image_name"
                           " to match the column in the annotation.csv file")
 
-    # Confirm that raster is H x W x C, if not, convert, assuming image is wider/taller than channels
-    if numpy_image.shape[0] < numpy_image.shape[-1]:
-        warnings.warn(
-            "Input rasterio had shape {}, assuming channels first. Converting to channels last"
-            .format(numpy_image.shape), UserWarning)
-        numpy_image = np.moveaxis(numpy_image, 0, 2)
+    # If its channels last, convert to channels first
+    if numpy_image.shape[2] in [3, 4]:
+        print(
+            "Image shape is {}, assuming this is channels last, converting to channels first"
+            .format(numpy_image.shape[2]))
+        numpy_image = numpy_image.transpose(2, 0, 1)
 
     # Check that it's 3 bands
     bands = numpy_image.shape[2]
     if not bands == 3:
         warnings.warn(
-            "Input rasterio had non-3 band shape of {}, ignoring "
-            "alpha channel".format(numpy_image.shape), UserWarning)
+            "Input image had non-3 band shape of {}, selecting first 3 bands".format(
+                numpy_image.shape), UserWarning)
         try:
-            numpy_image = numpy_image[:, :, :3].astype("uint8")
+            numpy_image = numpy_image[:3, :, :].astype("uint8")
         except:
             raise IOError("Input file {} has {} bands. "
                           "DeepForest only accepts 3 band RGB rasters in the order "
-                          "(height, width, channels). "
+                          "(height, width). "
                           "Selecting the first three bands failed, "
                           "please reshape manually. If the image was cropped and "
                           "saved as a .jpg, please ensure that no alpha channel "
                           "was used.".format(path_to_raster, bands))
 
     # Check that patch size is greater than image size
-    height, width = numpy_image.shape[0], numpy_image.shape[1]
+    height, width = numpy_image.shape[1], numpy_image.shape[2]
     if any(np.array([height, width]) < patch_size):
         raise ValueError("Patch size of {} is larger than the image dimensions {}".format(
             patch_size, [height, width]))
@@ -274,7 +280,7 @@ def validate_annotations(annotations, numpy_image, path_to_raster):
             )
 
     if hasattr(annotations, 'total_bounds'):
-        raster_height, raster_width = numpy_image.shape[0], numpy_image.shape[1]
+        raster_height, raster_width = numpy_image.shape[1], numpy_image.shape[2]
         ann_bounds = annotations.total_bounds
 
         if (ann_bounds[0] < -raster_width * 0.1 or  # xmin

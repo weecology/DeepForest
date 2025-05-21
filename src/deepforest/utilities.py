@@ -6,16 +6,12 @@ import pandas as pd
 import rasterio
 import shapely
 import xmltodict
-import yaml
 from tqdm import tqdm
 from typing import Union
 
 from PIL import Image
 from deepforest import _ROOT
 import json
-import urllib.request
-from huggingface_hub import hf_hub_download
-from huggingface_hub.errors import RevisionNotFoundError, HfHubHTTPError
 from omegaconf import DictConfig, OmegaConf
 
 
@@ -286,6 +282,57 @@ def determine_geometry_type(df):
             geometry_type = "point"
 
     return geometry_type
+
+
+def format_geometry(predictions, scores=True, geom_type=None):
+    """Format a retinanet prediction into a pandas dataframe for a batch of images
+    Args:
+        predictions: a list of dictionaries with keys 'boxes' and 'labels' coming from a retinanet
+        scores: Whether boxes come with scores, during prediction, or without scores, as in during training.
+    Returns:
+        df: a pandas dataframe
+        None if the dataframe is empty
+    """
+
+    # Detect geometry type
+    if geom_type is None:
+        geom_type = determine_geometry_type(predictions)
+
+    if geom_type == "box":
+        df = format_boxes(predictions, scores=scores)
+        if df is None:
+            return None
+        df['geometry'] = df.apply(
+            lambda x: shapely.geometry.box(x.xmin, x.ymin, x.xmax, x.ymax), axis=1)
+    elif geom_type == "polygon":
+        raise ValueError("Polygon predictions are not yet supported for formatting")
+    elif geom_type == "point":
+        raise ValueError("Point predictions are not yet supported for formatting")
+
+    return df
+
+
+def format_boxes(prediction, scores=True):
+    """Format a retinanet prediction into a pandas dataframe for a single
+    image.
+
+    Args:
+        prediction: a dictionary with keys 'boxes' and 'labels' coming from a retinanet
+        scores: Whether boxes come with scores, during prediction, or without scores, as in during training.
+    Returns:
+        df: a pandas dataframe
+    """
+    if len(prediction["boxes"]) == 0:
+        return None
+
+    df = pd.DataFrame(prediction["boxes"].cpu().detach().numpy(),
+                      columns=["xmin", "ymin", "xmax", "ymax"])
+    df["label"] = prediction["labels"].cpu().detach().numpy()
+
+    if scores:
+        df["score"] = prediction["scores"].cpu().detach().numpy()
+
+    return df
 
 
 def read_coco(json_file):
@@ -612,7 +659,6 @@ def image_to_geo_coordinates(gdf, root_dir=None, flip_y_axis=False):
     with rasterio.open(rgb_path) as dataset:
         bounds = dataset.bounds
         left, bottom, right, top = bounds
-        pixelSizeX, pixelSizeY = dataset.res
         crs = dataset.crs
         transform = dataset.transform
 

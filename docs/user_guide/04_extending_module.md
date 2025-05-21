@@ -18,7 +18,7 @@ class mymodule(main.deepforest):
     def training_step(self, batch, batch_idx):
         """Train on a loaded dataset
         """
-        path, images, targets = batch
+        images, targets = batch
     
         loss_dict = self.model.forward(images, targets)
     
