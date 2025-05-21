@@ -507,11 +507,6 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                                        patch_size=patch_size)
 
         elif dataloader_strategy == "window":
-            # Check for workers config when using out of memory dataset
-            if self.config.workers > 0:
-                raise ValueError(
-                    "workers must be 0 when using out-of-memory dataset (dataloader_strategy='window'). Set config['workers']=0 and recreate trainer self.create_trainer()."
-                )
             ds = prediction.TiledRaster(path=path,
                                         patch_overlap=patch_overlap,
                                         patch_size=patch_size)

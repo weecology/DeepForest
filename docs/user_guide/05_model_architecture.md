@@ -28,8 +28,6 @@ class Model():
         # Check for required properties and formats
         self.config = config
 
-        # Check input output format:
-        self.check_model()
 
     def create_model():
         """This function converts a deepforest config file into a model. An architecture should have a list of nested arguments in config that match this function"""

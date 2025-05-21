@@ -43,11 +43,11 @@ prediction_single = m.predict_tile(path=path, patch_size=300, dataloader_strateg
 ```
 The `dataloader_strategy` parameter has three options:
 
-* **single**: Loads the entire image into CPU memory and passes individual windows to GPU.
+* **single**: Loads the entire image into CPU memory and passes individual windows to GPU. This works well for large images and is the default choice. Increasing batch size increases the number of windows from an image processed together. Batch size cannot be larger than the number of windows in an image.
 
-* **batch**: Loads the entire image into GPU memory and creates views of the image as batches. Requires the entire tile to fit into GPU memory. CPU parallelization is possible for loading images.
+* **batch**: Loads the entire image into GPU memory and creates views of the image as batches. Requires the entire tile to fit into GPU memory. CPU parallelization is possible for loading images. This is faster than single, but more memory intensive. Batch size is the number of entire images passed to the GPU.
 
-* **window**: Loads only the desired window of the image from the raster dataset. Most memory efficient option, but cannot parallelize across windows due to rasterio's Global Interpreter Lock (GIL), workers must be set to 0. 
+* **window**: Loads only the desired window of the image from the raster dataset. This is slower than the single strategy, but is the most memory efficient option. 
 
 ## Data Loading
 
@@ -56,6 +56,6 @@ DeepForest uses PyTorch's DataLoader for efficient data loading. One important p
 ```
 m.config["workers"] = 10
 ```
-0 workers runs without multiprocessing, workers > 1 runs with multiprocessing. Increase this value slowly, as IO constraints can lead to deadlocks among workers.
+0 workers runs without multiprocessing, workers > 1 runs with multiprocessing. Increase this value slowly, as IO constraints can lead to deadlocks among workers. In multi-gpu settings, *each* GPU gets n workers.
 
 
