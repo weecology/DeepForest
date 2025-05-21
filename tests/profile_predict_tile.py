@@ -75,6 +75,7 @@ def run():
     all_results = []
 
     for n_images in image_counts:
+        #paths = glob.glob("/orange/ewhite/DeepForest/Radogoshi_Sweden/images/*.JPG")[:n_images]
         paths = glob.glob("/orange/ewhite/NeonData/HARV/DP3.30010.001/neon-aop-products/2022/FullSite/D01/2022_HARV_7/L3/Camera/Mosaic/*.tif")[:n_images]
         #paths = glob.glob("/blue/ewhite/b.weinstein/BOEM/JPG_20241220_145900/*.jpg")[:n_images]
         for strategy in strategies:

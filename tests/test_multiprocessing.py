@@ -75,9 +75,7 @@ def test_multi_process_dataloader_strategy_batch(m):
 def test_multi_process_dataloader_strategy_window(m):
     root_dir = os.path.dirname(get_data("OSBS_029.csv"))
     image_path = os.path.join(root_dir, "test_tiled.tif")
-    
-    with pytest.raises(ValueError):
-        results = m.predict_tile(
+    results = m.predict_tile(
             path=image_path,
             dataloader_strategy="window", 
             patch_size=400,
