@@ -15,7 +15,7 @@ disable_possible_user_warnings()
 
 def get_data(path):
     """Helper function to get package sample data."""
-    if path == "config.yml":
-        return os.path.join(_ROOT, "conf", "config.yml")
+    if path == "config.yaml":
+        return os.path.join(_ROOT, "conf", "config.yaml")
     else:
         return os.path.join(_ROOT, "data", path)
