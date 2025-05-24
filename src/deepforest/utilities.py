@@ -383,6 +383,7 @@ def read_file(input, root_dir=None, image_path=None, label=None):
                 df['geometry'] = df.apply(
                     lambda x: shapely.geometry.box(x.xmin, x.ymin, x.xmax, x.ymax),
                     axis=1)
+                df = gpd.GeoDataFrame(df, geometry='geometry')
             elif geom_type == "polygon":
                 df['geometry'] = gpd.GeoSeries.from_wkt(df["polygon"])
             elif geom_type == "point":
