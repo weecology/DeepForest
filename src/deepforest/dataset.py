@@ -17,7 +17,6 @@ import pandas as pd
 import numpy as np
 from torch.utils.data import Dataset
 import albumentations as A
-from albumentations.augmentations import functional as F
 from albumentations.pytorch import ToTensorV2
 import torch
 import typing
