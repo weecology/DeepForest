@@ -12,10 +12,14 @@ architecture: 'retinanet'
 num_classes: 1
 nms_thresh: 0.05
 
+model:
+    name: 'weecology/deepforest-tree'
+    revision: 'main'
+
 # Pre-processing parameters
 path_to_raster:
-patch_size:
-patch_overlap:
+patch_size: 400
+patch_overlap: 0.05
 annotations_xml:
 rgb_dir:
 path_to_rgb:

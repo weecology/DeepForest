@@ -1,10 +1,42 @@
 # Prediction
 
 There are atleast four ways to make predictions with DeepForest.
-1. Predict an image using [model.predict_image](https://deepforest.readthedocs.io/en/latest/source/deepforest.html#deepforest.main.deepforest.predict_image)
-2. Predict a tile using [model.predict_tile](https://deepforest.readthedocs.io/en/latest/source/deepforest.html#deepforest.main.deepforest.predict_tile) 
-3. Predict a directory of using a csv file using [model.predict_file](https://deepforest.readthedocs.io/en/latest/source/deepforest.html#deepforest.main.deepforest.predict_file)
-4. Predict a batch of images using [model.predict_batch](https://deepforest.readthedocs.io/en/latest/source/deepforest.html#deepforest.main.deepforest.predict_batch)
+1. Predict an image using the command line
+2. Predict an image using [model.predict_image](https://deepforest.readthedocs.io/en/latest/source/deepforest.html#deepforest.main.deepforest.predict_image)
+3. Predict a tile using [model.predict_tile](https://deepforest.readthedocs.io/en/latest/source/deepforest.html#deepforest.main.deepforest.predict_tile)
+4. Predict a directory of using a csv file using [model.predict_file](https://deepforest.readthedocs.io/en/latest/source/deepforest.html#deepforest.main.deepforest.predict_file)
+5. Predict a batch of images using [model.predict_batch](https://deepforest.readthedocs.io/en/latest/source/deepforest.html#deepforest.main.deepforest.predict_batch)
+
+## Predict an image using the command line
+
+We provide a basic utility script to run a prediction task with the ability to save and/or plot outputs. This command is called `deepforest predict` and is included as part of the standard installation. You can run the command without any arguments, or the `--help` flag to check that it's available. The script will run in tiled prediction mode by default.
+
+```bash
+> deepforest predict -h
+
+usage: deepforest predict [-h] [-o OUTPUT] [--plot] input
+
+positional arguments:
+  input                 Path to input raster
+
+options:
+  -h, --help            show this help message and exit
+  -o OUTPUT, --output OUTPUT
+                        Path to prediction results
+  --plot                Plot results
+
+Any remaining arguments <key>=<value> will be passed to Hydra to override the current config.
+```
+
+You should provide an `input` path, to an image you'd like predictions for. If you want to save the results as a CSV file, use `-o`. If you want to plot the results in a GUI, you can use the `--plot` flag. Any and all other configuration options can be provided afterwards, for example if you wanted to change the patch size:
+
+```bash
+deepforest predict ./path/to/your/image.tif -o results.csv patch_size=250 patch_overlap=0.1
+```
+
+We use [Hydra](https://hydra.cc/docs/intro/) for configuration management, and the format for specifying predictions is a space-separated list of `<key>=<value>`s, like the example above.
+
+To see the default configuration and to check what options you can set, you can run `deepforest --show-config` flag (no other options are required).
 
 ## Predict an image using model.predict_image
 
@@ -16,7 +48,7 @@ from deepforest.visualize import plot_results
 # Initialize the model class
 model = main.deepforest()
 
-# Load a pretrained tree detection model from Hugging Face 
+# Load a pretrained tree detection model from Hugging Face
 model.load_model(model_name="weecology/deepforest-tree", revision="main")
 
 sample_image_path = get_data("OSBS_029.png")
@@ -89,7 +121,7 @@ raster_path = get_data("OSBS_029.tif")
 tile = np.array(Image.open(raster_path))
 ds = dataset.TileDataset(tile=tile, patch_overlap=0.1, patch_size=100)
 dl = DataLoader(ds, batch_size=3)
-    
+
 # Perform prediction
 predictions = []
 for batch in dl:
