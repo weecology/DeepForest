@@ -60,7 +60,7 @@ train:
     epochs: 1
     # Useful debugging flag in pytorch lightning, set to True to get a single batch of training to test settings.
     fast_dev_run: False
-    # pin images to GPU memory for fast training. This depends on GPU size and number of images.
+    # preload images to GPU memory for fast training. This depends on GPU size and number of images.
     preload_images: False
 
 validation:
@@ -71,3 +71,6 @@ validation:
     # Intersection over union evaluation
     iou_threshold: 0.4
     val_accuracy_interval: 20
+
+predict:
+    pin_memory: False
