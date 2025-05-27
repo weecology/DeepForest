@@ -40,12 +40,16 @@ mAP is the standard COCO evaluation metric and the most common for comparing com
 1. Not intuitive and difficult to translate to ecological applications. Read the sections above and visualize the mAP metric, which is essentially the area under the precision-recall curve at a range of IoU values.
 2. The vast majority of biological applications use a fixed cutoff to determine an object of interest in an image. Perhaps in the future we will weight tree boxes by their confidence score, but currently we do things like, "All predictions > 0.4 score are considered positive detections". This does not connect well with the mAP metric.
 
+For information on how to calculate mAP, see the [torchmetrics documentation](https://torchmetrics.readthedocs.io/en/stable/detection/mean_average_precision.html) and further reading below.
+
 ### Precision and Recall at a set IoU threshold.
 This was the original DeepForest metric, set to an IoU of 0.4. This means that all predictions that overlap a ground truth box at IoU > 0.4 are true positives. As opposed to the torchmetrics above, it is intuitive and matches downstream ecological tasks. The drawback is that it is slow, coarse, and does not fully reward the model for having high confidence scores on true positives.
 
 There is an additional difference between ecological object detection methods like tree crowns and traditional computer vision methods. Instead of a single or set of easily differentiated ground truths, we could have 60 or 70 objects that overlap in an image. How do you best assign each prediction to each ground truth?
 
-DeepForest uses the [hungarian matching algorithm](https://thinkautonomous.medium.com/computer-vision-for-tracking-8220759eee85) to assign predictions to ground truth based on maximum IoU overlap. This is slow compared to the methods above, and so isn't a good choice for running hundreds of times during model training see config.validation.val_accuracy_interval for setting the frequency of the evaluate callback for this metric.
+DeepForest uses the [hungarian matching algorithm](https://thinkautonomous.medium.com/computer-vision-for-tracking-8220759eee85) to assign predictions to ground truth based on maximum IoU overlap. This is slow compared to the methods above, and so isn't a good choice for running hundreds of times during model training see config.validation.val_accuracy_interval for setting the frequency of the evaluate callback for this metric. 
+
+When there are no true positives, this metric is undefined.
 
 ### Empty Frame Accuracy
 
