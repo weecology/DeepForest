@@ -8,7 +8,6 @@ from torchvision import models, transforms
 from torchvision.datasets import ImageFolder
 import numpy as np
 import rasterio
-from torch.utils.data import Dataset
 import torch.nn.functional as F
 import cv2
 
@@ -32,9 +31,6 @@ class Model():
 
         # Check for required properties and formats
         self.config = config
-
-        # Check input output format:
-        self.check_model()
 
     def create_model(self):
         """This function converts a deepforest config file into a model.
