@@ -103,7 +103,7 @@ The `dataloader_strategy` parameter has three options:
 
 * **window**: Loads only the desired window of the image from the raster dataset. Most memory efficient option, but cannot parallelize across windows due to rasterio's Global Interpreter Lock (GIL), workers must be set to 0. 
 
-![](www/dataloader-strategy.png)
+![](../../www/dataloader-strategy.png)
 
 The image shows that the speed of the predict_tile function is related to the strategy, the number of images, and the num of dataloader workers, which is set in the deepforest config file. 
 
