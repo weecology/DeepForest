@@ -88,6 +88,25 @@ predicted_raster = model.predict_tile(raster_path, patch_size=300, patch_overlap
 plot_results(predicted_raster)
 ```
 
+### dataloader-strategy
+
+An optional argument to predict_tile allows the user to control how to scale prediction of tiles and the windows per tile.
+
+```python
+prediction_single = m.predict_tile(path=path, patch_size=300, dataloader_strategy="single")
+```
+The `dataloader_strategy` parameter has three options:
+
+* **single**: Loads the entire image into CPU memory and passes individual windows to GPU.
+
+* **batch**: Loads the entire image into GPU memory and creates views of the image as batches. Requires the entire tile to fit into GPU memory. CPU parallelization is possible for loading images.
+
+* **window**: Loads only the desired window of the image from the raster dataset. Most memory efficient option, but cannot parallelize across windows due to rasterio's Global Interpreter Lock (GIL), workers must be set to 0. 
+
+![](www/dataloader-strategy.png)
+
+The image shows that the speed of the predict_tile function is related to the strategy, the number of images, and the num of dataloader workers, which is set in the deepforest config file. 
+
 ### Patch Size
 
    The *predict_tile* function is sensitive to *patch_size*, especially when using the prebuilt model on new data.
