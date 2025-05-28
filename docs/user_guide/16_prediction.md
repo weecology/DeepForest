@@ -1,11 +1,16 @@
 # Prediction
 
 There are atleast four ways to make predictions with DeepForest.
-1. Predict an image using the command line
-2. Predict an image using [model.predict_image](https://deepforest.readthedocs.io/en/latest/source/deepforest.html#deepforest.main.deepforest.predict_image)
-3. Predict a tile using [model.predict_tile](https://deepforest.readthedocs.io/en/latest/source/deepforest.html#deepforest.main.deepforest.predict_tile)
-4. Predict a directory of using a csv file using [model.predict_file](https://deepforest.readthedocs.io/en/latest/source/deepforest.html#deepforest.main.deepforest.predict_file)
-5. Predict a batch of images using [model.predict_batch](https://deepforest.readthedocs.io/en/latest/source/deepforest.html#deepforest.main.deepforest.predict_batch)
+
+1. Predict an image using [model.predict_image](https://deepforest.readthedocs.io/en/latest/source/deepforest.html#deepforest.main.deepforest.predict_image). The entire image is passed to the model.
+
+2. Predict a large number, which we call a 'tile', using [model.predict_tile](https://deepforest.readthedocs.io/en/latest/source/deepforest.html#deepforest.main.deepforest.predict_tile). The tile is cut into smaller windows and each window is predicted. 
+
+3. Predict a directory of using a csv file using [model.predict_file](https://deepforest.readthedocs.io/en/latest/source/deepforest.html#deepforest.main.deepforest.predict_file). Each unique image listed in a csv file is predicted.
+
+4. Predict a batch of images using [model.predict_batch](https://deepforest.readthedocs.io/en/latest/source/deepforest.html#deepforest.main.deepforest.predict_batch). This is useful when you have an existing dataloader from outside DeepForest that yields data in batches.
+
+In general, during inference, for large images it is most common to use predict_tile.
 
 ## Predict an image using the command line
 
@@ -39,6 +44,8 @@ We use [Hydra](https://hydra.cc/docs/intro/) for configuration management, and t
 To see the default configuration and to check what options you can set, you can run `deepforest --show-config` flag (no other options are required).
 
 ## Predict an image using model.predict_image
+
+This is most commonly used for small images or pre-cropped windows of large tiles. Passing a large tile to predict_image will lead to poor performance, use predict_tile. 
 
 ```python
 from deepforest import main
