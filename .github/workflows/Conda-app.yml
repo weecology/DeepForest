@@ -56,6 +56,12 @@ jobs:
       - name: Run pytest
         run: uv run pytest -v
 
+      - name: Check predict script
+        run: uv run deepforest predict src/deepforest/data/OSBS_029.png
+
+      - name: Check train script
+        run: uv run deepforest train train.csv_file=src/deepforest/data/OSBS_029.csv train.root_dir=src/deepforest/data train.fast_dev_run=True
+
       - name: Check style
         run: uv run yapf -d --recursive src/deepforest/ --style=.style.yapf
 
