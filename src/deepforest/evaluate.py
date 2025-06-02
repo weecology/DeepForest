@@ -10,38 +10,7 @@ import torch
 from scipy import optimize
 from torchmetrics.detection.mean_ap import MeanAveragePrecision
 
-from deepforest import IoU
 from deepforest.utilities import determine_geometry_type
-
-
-def evaluate_image_boxes(predictions, ground_df):
-    """Compute intersection-over-union matching among prediction and ground
-    truth boxes for one image.
-
-    Args:
-        predictions: a geopandas dataframe with geometry columns
-        ground_df: a geopandas dataframe with geometry columns
-
-    Returns:
-        result: pandas dataframe with crown ids of prediction and ground truth and the IoU score.
-
-    """
-    plot_names = predictions["image_path"].unique()
-    if len(plot_names) > 1:
-        raise ValueError(
-            "More than one plot passed to image crown: {}".format(plot_names)
-        )
-
-    # match
-    result = IoU.compute_IoU(ground_df, predictions)
-
-    # add the label classes
-    result["predicted_label"] = result.prediction_id.apply(
-        lambda x: predictions.label.loc[x] if pd.notnull(x) else x
-    )
-    result["true_label"] = result.truth_id.apply(lambda x: ground_df.label.loc[x])
-
-    return result
 
 
 def compute_class_recall(results):
