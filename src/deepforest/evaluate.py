@@ -99,7 +99,7 @@ def _torch_dict_from_df(df, label_dict):
     return d
 
 
-def __evaluate_wrapper__(predictions, ground_df, iou_threshold, numeric_to_label_dict):
+def __evaluate_wrapper__(predictions, ground_df, iou_threshold, label_dict):
     """Evaluate a set of predictions against a ground truth csv file
     Args:
         predictions: a pandas dataframe, if supplied a root dir is needed to give the relative path of files in df.name. The labels in ground truth and predictions must match. If one is numeric, the other must be numeric.
@@ -143,13 +143,13 @@ def __evaluate_wrapper__(predictions, ground_df, iou_threshold, numeric_to_label
     if results is not None:
         results["results"]["predicted_label"] = results["results"][
             "predicted_label"
-        ].apply(lambda x: numeric_to_label_dict[x] if not pd.isnull(x) else x)
+        ].apply(lambda x: label_dict[x] if not pd.isnull(x) else x)
         results["results"]["true_label"] = results["results"]["true_label"].apply(
-            lambda x: numeric_to_label_dict[x]
+            lambda x: label_dict[x]
         )
         results["predictions"] = predictions
         results["predictions"]["label"] = results["predictions"]["label"].apply(
-            lambda x: numeric_to_label_dict[x]
+            lambda x: label_dict[x]
         )
 
     return results
