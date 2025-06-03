@@ -354,16 +354,12 @@ def test_predict_tile(m, path, dataloader_strategy):
 
     if dataloader_strategy == "single":
         image_path = path
-        paths = None
     elif dataloader_strategy == "window":
         image_path = get_data("test_tiled.tif")
-        paths = None
     else:
-        image_path = None
-        paths = [path, path]
+        image_path = [path, path]
 
-    prediction = m.predict_tile(paths=paths,
-                                path=image_path,
+    prediction = m.predict_tile(path=image_path,
                                 patch_size=300,
                                 dataloader_strategy=dataloader_strategy,
                                 patch_overlap=0.1)

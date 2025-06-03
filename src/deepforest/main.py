@@ -453,7 +453,6 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
     def predict_tile(self,
                      path=None,
-                     paths=None,
                      image=None,
                      patch_size=400,
                      patch_overlap=0.05,
@@ -465,8 +464,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         reassambles into a single array.
 
         Args:
-            path: Path to image on disk
-            paths: List of paths to images on disk
+            path: Path or list of paths to images on disk. If a single string is provided, it will be converted to a list.
             image (array): Numpy image array in BGR channel order following openCV convention
             patch_size: patch size for each window
             patch_overlap: patch overlap among windows
@@ -490,19 +488,23 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                     "Either path or image must be provided for single tile prediction")
 
         if dataloader_strategy == "batch":
-            if paths is None:
+            if path is None:
                 raise ValueError(
-                    "paths argument must be provided when using dataloader_strategy='batch'"
+                    "path argument must be provided when using dataloader_strategy='batch'"
                 )
 
+        # Convert single path to list for consistent handling
+        if isinstance(path, str):
+            path = [path]
+
         if dataloader_strategy == "single":
-            ds = prediction.SingleImage(path=path,
+            ds = prediction.SingleImage(path=path[0] if path else None,
                                         image=image,
                                         patch_overlap=patch_overlap,
                                         patch_size=patch_size)
 
         elif dataloader_strategy == "batch":
-            ds = prediction.MultiImage(paths=paths,
+            ds = prediction.MultiImage(paths=path,
                                        patch_overlap=patch_overlap,
                                        patch_size=patch_size)
 
@@ -512,7 +514,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                 raise ValueError(
                     "workers must be 0 when using out-of-memory dataset (dataloader_strategy='window'). Set config['workers']=0 and recreate trainer self.create_trainer()."
                 )
-            ds = prediction.TiledRaster(path=path,
+            ds = prediction.TiledRaster(path=path[0] if path else None,
                                         patch_overlap=patch_overlap,
                                         patch_size=patch_size)
 
@@ -553,10 +555,10 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
         if crop_model is not None:
             mosaic_results = predict._crop_models_wrapper_(crop_model, self.trainer,
-                                                           mosaic_results, path)
+                                                           mosaic_results, path[0] if path else None)
 
-        if path is not None:
-            root_dir = os.path.dirname(path)
+        if path is not None and len(path) == 1:
+            root_dir = os.path.dirname(path[0])
         else:
             print(
                 "No image path provided, root_dir will be None, since either images were directly provided or there were multiple image paths"

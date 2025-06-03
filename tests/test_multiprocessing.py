@@ -65,7 +65,7 @@ def test_multi_process_dataloader_strategy_batch(m):
     image_path = os.path.join(root_dir, "OSBS_029.png")
     
     results = m.predict_tile(
-        paths=[image_path],
+        path=[image_path],
         dataloader_strategy="batch",
         patch_size=400,
         patch_overlap=0,

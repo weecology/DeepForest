@@ -158,7 +158,6 @@ def split_raster(annotations_file=None,
         path_to_raster: (str): Path to a tile that can be read by rasterio on disk
         annotations_file (str or pd.DataFrame): A pandas dataframe or path to annotations csv file to transform to cropped images. In the format -> image_path, xmin, ymin, xmax, ymax, label. If None, allow_empty is ignored and the function will only return the cropped images.
         save_dir (str): Directory to save images
-        base_dir (str): Directory to save images
         patch_size (int): Maximum dimensions of square window
         patch_overlap (float): Percent of overlap among windows 0->1
         allow_empty: If True, include images with no annotations
@@ -170,12 +169,6 @@ def split_raster(annotations_file=None,
         If annotations_file is provided, a pandas dataframe with annotations file for training. A copy of this file is written to save_dir as a side effect.
         If not, a list of filenames of the cropped images.
     """
-    # Set deprecation warning for base_dir and set to save_dir
-    if base_dir:
-        warnings.warn(
-            "base_dir argument will be deprecated in 2.0. The naming is confusing, the rest of the API uses 'save_dir' to refer to location of images. Please use 'save_dir' argument.",
-            DeprecationWarning)
-        save_dir = base_dir
 
     # Load raster as image
     if numpy_image is None and path_to_raster is None:
@@ -190,7 +183,7 @@ def split_raster(annotations_file=None,
             raise IOError("If passing a numpy_image, please also specify an image_name"
                           " to match the column in the annotation.csv file")
 
-    # If its channels last, convert to channels first
+    # If its channels last H x W x C, convert to channels first C x H x W
     if numpy_image.shape[2] in [3, 4]:
         print(
             "Image shape is {}, assuming this is channels last, converting to channels first"
@@ -208,10 +201,10 @@ def split_raster(annotations_file=None,
         except:
             raise IOError("Input file {} has {} bands. "
                           "DeepForest only accepts 3 band RGB rasters in the order "
-                          "(height, width). "
+                          "(channels, height, width). "
                           "Selecting the first three bands failed, "
                           "please reshape manually. If the image was cropped and "
-                          "saved as a .jpg, please ensure that no alpha channel "
+                          "saved, please ensure that no alpha channel "
                           "was used.".format(path_to_raster, bands))
 
     # Check that patch size is greater than image size
