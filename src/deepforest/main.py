@@ -465,7 +465,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
         Args:
             path: Path or list of paths to images on disk. If a single string is provided, it will be converted to a list.
-            image (array): Numpy image array in BGR channel order following openCV convention
+            image (array): Numpy image array in BGR channel order following openCV convention. Not possible in combination with dataloader_strategy='batch'.
             patch_size: patch size for each window
             patch_overlap: patch overlap among windows
             iou_threshold: Minimum iou overlap among predictions between windows to be suppressed
@@ -498,7 +498,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             path = [path]
 
         if dataloader_strategy == "single":
-            ds = prediction.SingleImage(path=path[0],
+            ds = prediction.SingleImage(path=path[0] if path else None,
                                         image=image,
                                         patch_overlap=patch_overlap,
                                         patch_size=patch_size)
@@ -514,7 +514,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                 raise ValueError(
                     "workers must be 0 when using out-of-memory dataset (dataloader_strategy='window'). Set config['workers']=0 and recreate trainer self.create_trainer()."
                 )
-            ds = prediction.TiledRaster(path=path[0],
+            ds = prediction.TiledRaster(path=path[0] if path else None,
                                         patch_overlap=patch_overlap,
                                         patch_size=patch_size)
 
