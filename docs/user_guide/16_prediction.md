@@ -6,7 +6,7 @@ There are atleast four ways to make predictions with DeepForest.
 
 2. Predict a large number, which we call a 'tile', using [model.predict_tile](https://deepforest.readthedocs.io/en/latest/source/deepforest.html#deepforest.main.deepforest.predict_tile). The tile is cut into smaller windows and each window is predicted. 
 
-3. Predict a directory of using a csv file using [model.predict_file](https://deepforest.readthedocs.io/en/latest/source/deepforest.html#deepforest.main.deepforest.predict_file). Each unique image listed in a csv file is predicted.
+3. Predict a directory of images using a csv file using [model.predict_file](https://deepforest.readthedocs.io/en/latest/source/deepforest.html#deepforest.main.deepforest.predict_file). Each unique image listed in a csv file is predicted.
 
 4. Predict a batch of images using [model.predict_batch](https://deepforest.readthedocs.io/en/latest/source/deepforest.html#deepforest.main.deepforest.predict_batch). This is useful when you have an existing dataloader from outside DeepForest that yields data in batches.
 
@@ -90,7 +90,7 @@ plot_results(predicted_raster)
 
 ### dataloader-strategy
 
-An optional argument to predict_tile allows the user to control how to scale prediction of tiles and the windows per tile.
+An optional argument to predict_tile allows the user to control how to scale prediction of tiles and how the windows are created within tiles.
 
 ```python
 prediction_single = m.predict_tile(path=path, patch_size=300, dataloader_strategy="single")
@@ -101,11 +101,11 @@ The `dataloader_strategy` parameter has three options:
 
 * **batch**: Loads the entire image into GPU memory and creates views of the image as batches. Requires the entire tile to fit into GPU memory. CPU parallelization is possible for loading images.
 
-* **window**: Loads only the desired window of the image from the raster dataset. Most memory efficient option, but cannot parallelize across windows due to rasterio's Global Interpreter Lock (GIL), workers must be set to 0. 
+* **window**: Loads only the desired window of the image from the raster dataset. Most memory efficient option, but cannot parallelize across windows due to Python's Global Interpreter Lock, workers must be set to 0. 
 
 ![](../../www/dataloader-strategy.png)
 
-The image shows that the speed of the predict_tile function is related to the strategy, the number of images, and the num of dataloader workers, which is set in the deepforest config file. 
+The image shows that the speed of the predict_tile function is related to the strategy, the number of images, and the number of dataloader workers, which is set in the deepforest config file. 
 
 ### Patch Size
 

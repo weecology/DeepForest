@@ -5,14 +5,16 @@ DeepForest allows users to assess model performance compared to ground-truth dat
 ## Summary
 
 1. Recall - the proportion of ground-truth objects correctly covered by predictions.
-2. Predicision - the proportion of predictions that overlap ground-truth.
+2. Precision - the proportion of predictions that overlap ground-truth.
 3. Empty-frame accuracy - the proportion of ground-truth images that are currently predicted to have no objects of interest.
 4. iou - Intersection-over-Union, a computer vision metric that assesses how tightly a bounding box prediction overlaps with its matched ground-truth. 
 5. mAP - Mean-Average-Precision, a computer vision metric that assesses the performance of the model incoporating precision, recall and average score of true positives. See below.
 
 ## Evaluation code
 
-```
+The model's .evaluate method takes a set of labels in the form of a CSV file that includes paths to images and the coordinates of associated labels as well as thresholds to determine if a prediction is close enough to a label to be considered a match.
+
+```python
 from deepforest import main, get_data
 m = main.deepforest()
 m.load_model("Weecology/deepforest-tree")
@@ -21,13 +23,13 @@ csv_file = get_data("OSBS_029.csv")
 results = m.evaluate(csv_file, iou_threshold=0.4)
 ```
 
-Results is a dictionary of metrics, the predictions dataframe and the ground truth dataframe.
+This produces a dictionary that contains a detailed result comparison for each label, the aggregate metrics, the predictions data frame, and the ground truth data frame.
 
 ## Evaluation Philosophy and Further Information
 
- We stress that evaluation data must be different from training data, as neural networks have millions of parameters and can easily memorize thousands of samples. Avoid random train-test splits, try to create test datasets that mimic downstream tasks. If you are predicting among temporal surveys or across imaging platforms, your train-test data should reflect these partitions. Random sampling is almost never the right choice, biological data often has high spatial, temporal or taxonomic correlation that makes it easier for your model to generalize, but will fail when pushed into new situations.
+ We stress that evaluation data must be different from training data, as neural networks have millions of parameters and can easily memorize thousands of samples. We also recommend creating test datasets that mimic downstream tasks instead of using random train-test splits. If you are predicting among temporal surveys or across imaging platforms, your train-test data should reflect these partitions. Random sampling is almost never the right choice, because biological data often has high spatial, temporal or taxonomic correlation that can result in overfitting or exaggerated evaluation metrics when using random splits.
 
-DeepForest provides several evaluation metrics. There is no one-size-fits all evaluation approach, and the user needs to consider which evaluation metric best fits the task. There is significant information online about the evaluation of object detection networks. Our philosophy is to provide a user with a range of statistics and visualizations. Always visualize results and trust your judgment. Never be guided by a single metric.
+DeepForest provides several evaluation metrics. There is no one-size-fits all evaluation approach, and the user needs to consider which evaluation metric best fits the task. There is significant information online about the evaluation of object detection networks. Our philosophy is to provide users with a range of statistics and visualizations. Always visualize results and trust your judgment. Never be guided by a single metric.
 
 ## Metrics
 

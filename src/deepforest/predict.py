@@ -23,7 +23,6 @@ def _predict_image_(model,
         image: a tensor of shape (channels, height, width)
         path: optional path to read image from disk instead of passing image arg
         nms_thresh: Non-max suppression threshold, see config.nms_thresh
-        color: color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255)
     Returns:
         df: A pandas dataframe of predictions (Default)
         img: The input with predictions overlaid (Optional)
@@ -168,7 +167,6 @@ def _dataloader_wrapper_(model, trainer, dataloader, root_dir, crop_model):
         root_dir: directory of images. If none, uses "image_dir" in config
         nms_thresh: Non-max suppression threshold, see config.nms_thresh
         crop_model: Optional. A list of crop models to be used for prediction.
-        savedir: Optional. Directory to save image plots.
     Returns:
         results: pandas dataframe with bounding boxes, label and scores for each image in the csv file
     """
@@ -192,8 +190,8 @@ def _dataloader_wrapper_(model, trainer, dataloader, root_dir, crop_model):
         image_results = results[results.image_path == image_path].copy()
 
         if crop_model:
-            is_single_model = len(
-                crop_model) == 1  # Flag to check if only one model is passed
+            # Flag to check if only one model is passed
+            is_single_model = len(crop_model) == 1  
 
             for i, crop_model in enumerate(crop_model):
                 crop_model_results = _predict_crop_model_(crop_model=crop_model,

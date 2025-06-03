@@ -474,7 +474,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             dataloader_strategy: "single", "batch", or "window".
                 - "Single" loads the entire image into memory and passes individual windows to GPU and cannot be parallelized.
                 - "batch" loads the entire image into GPU memory and creates views of an image as batch, requires in the entire tile to fit into GPU memory. CPU parallelization is possible for loading images.
-                - "window" loads only the desired window of the image from the raster dataset. Most memory efficient option, but cannot parallelize across windows due to rasterio GIL.
+                - "window" loads only the desired window of the image from the raster dataset. Most memory efficient option, but cannot parallelize across windows.
             crop_model: a deepforest.model.CropModel object to predict on crops
 
         Returns:
@@ -535,7 +535,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             warnings.warn("No predictions made, returning None")
             return None
 
-        # Perform mosaic for each image_path, or all is image_path is None
+        # Perform mosaic for each image_path, or all if image_path is None
         mosaic_results = []
         if results["image_path"].isnull().all():
             mosaic_results.append(predict.mosiac(results, iou_threshold=iou_threshold))

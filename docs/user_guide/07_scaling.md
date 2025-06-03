@@ -47,11 +47,11 @@ The `dataloader_strategy` parameter has three options:
 
 * **batch**: Loads the entire image into GPU memory and creates views of the image as batches. Requires the entire tile to fit into GPU memory. CPU parallelization is possible for loading images.
 
-* **window**: Loads only the desired window of the image from the raster dataset. Most memory efficient option, but cannot parallelize across windows due to rasterio's Global Interpreter Lock (GIL), workers must be set to 0. 
+* **window**: Loads only the desired window of the image from the raster dataset. Most memory efficient option, but cannot parallelize across windows due to Python's Global Interpreter Lock, workers must be set to 0. 
 
 ## Data Loading
 
-DeepForest uses PyTorch's DataLoader for efficient data loading. One important parameter for scaling is `num_workers`, which controls parallel data loading using multiple CPU processes. This can be set 
+DeepForest uses PyTorch's DataLoader for efficient data loading. One important parameter for scaling is the number of CPU workers, which controls parallel data loading using multiple CPU processes. This can be set 
 
 ```
 m.config["workers"] = 10
