@@ -14,35 +14,24 @@ def train(config: DictConfig) -> None:
     m.trainer.fit(m)
 
 
-def predict(config: DictConfig,
-            input_path: str,
-            output_path: Optional[str] = None,
-            plot: Optional[bool] = False) -> None:
-    """Run prediction for the given image, optionally saving the results to the
-    provided path and optionally visualizing the results.
+def predict(input, output=None, plot=False, **kwargs):
+    """Predict on a single image or directory of images."""
+    m = deepforest()
+    m.load_model()
 
-    Args:
-        config (DictConfig): Hydra configuration.
-        input_path (str): Path to the input image.
-        output_path (Optional[str]): Path to save the prediction results.
-        plot (Optional[bool]): Whether to plot the results.
+    # Predict on a single image
+    if os.path.isfile(input):
+        res = m.predict_tile(paths=input, **kwargs)
+    else:
+        raise ValueError("Input must be a file")
 
-    Returns:
-        None
-    """
-    m = deepforest(config=config)
-    m.load_model(model_name=config.model.name, revision=config.model.revision)
-    res = m.predict_tile(path=input_path,
-                         patch_size=config.patch_size,
-                         patch_overlap=config.patch_overlap,
-                         iou_threshold=config.nms_thresh)
-
-    if output_path is not None:
-        os.makedirs(os.path.dirname(output_path), exist_ok=True)
-        res.to_csv(output_path, index=False)
+    if output:
+        res.to_csv(output, index=False)
 
     if plot:
         plot_results(res)
+
+    return res
 
 
 def main():
@@ -87,7 +76,7 @@ def main():
     cfg = compose(config_name=args.config_name, overrides=overrides)
 
     if args.command == "predict":
-        predict(cfg, input_path=args.input, output_path=args.output, plot=args.plot)
+        predict(args.input, args.output, args.plot)
     elif args.command == "train":
         train(cfg)
     elif args.command == "config":

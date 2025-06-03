@@ -343,7 +343,7 @@ def test_predict_dataloader(m, batch_size, path):
 def test_predict_tile_empty(path):
     # Random weights
     m = main.deepforest()
-    predictions = m.predict_tile(path=path, patch_size=300, patch_overlap=0)
+    predictions = m.predict_tile(paths=path, patch_size=300, patch_overlap=0)
     assert predictions is None
 
 @pytest.mark.parametrize("dataloader_strategy", ["single", "window", "batch"])
@@ -353,17 +353,13 @@ def test_predict_tile(m, path, dataloader_strategy):
     m.create_trainer()
 
     if dataloader_strategy == "single":
-        image_path = path
-        paths = None
+        paths = path
     elif dataloader_strategy == "window":
-        image_path = get_data("test_tiled.tif")
-        paths = None
+        paths = get_data("test_tiled.tif")
     else:
-        image_path = None
         paths = [path, path]
 
     prediction = m.predict_tile(paths=paths,
-                                path=image_path,
                                 patch_size=300,
                                 dataloader_strategy=dataloader_strategy,
                                 patch_overlap=0.1)
@@ -377,8 +373,8 @@ def test_predict_tile(m, path, dataloader_strategy):
 # test equivalence for within and out of memory dataset strategies
 def test_predict_tile_equivalence(m):
     path = get_data("test_tiled.tif")
-    in_memory_prediction = m.predict_tile(path=path, patch_size=300, patch_overlap=0, dataloader_strategy="single")
-    not_in_memory_prediction = m.predict_tile(path=path, patch_size=300, patch_overlap=0, dataloader_strategy="window")
+    in_memory_prediction = m.predict_tile(paths=path, patch_size=300, patch_overlap=0, dataloader_strategy="single")
+    not_in_memory_prediction = m.predict_tile(paths=path, patch_size=300, patch_overlap=0, dataloader_strategy="window")
 
     # Assert same number of predictions
     assert len(in_memory_prediction) == len(not_in_memory_prediction)
@@ -689,7 +685,7 @@ def test_predict_tile_with_crop_model(m, config):
     # Call the predict_tile method with the crop_model
     m.config.train.fast_dev_run = False
     m.create_trainer()
-    result = m.predict_tile(path=path,
+    result = m.predict_tile(paths=path,
                             patch_size=patch_size,
                             patch_overlap=patch_overlap,
                             iou_threshold=iou_threshold,
@@ -718,7 +714,7 @@ def test_predict_tile_with_crop_model_empty():
     # Call the predict_tile method with the crop_model
     m.config.train.fast_dev_run = False
     m.create_trainer()
-    result = m.predict_tile(path=path,
+    result = m.predict_tile(paths=path,
                             patch_size=400,
                             patch_overlap=0.05,
                             iou_threshold=0.15,
@@ -740,7 +736,7 @@ def test_predict_tile_with_multiple_crop_models(m, config):
     # Call predict_tile with multiple crop models
     m.config.train.fast_dev_run = False
     m.create_trainer()
-    result = m.predict_tile(path=path,
+    result = m.predict_tile(paths=path,
                             patch_size=patch_size,
                             patch_overlap=patch_overlap,
                             iou_threshold=iou_threshold,
@@ -770,7 +766,7 @@ def test_predict_tile_with_multiple_crop_models_empty():
 
     m.config.train.fast_dev_run = False
     m.create_trainer()
-    result = m.predict_tile(path=path,
+    result = m.predict_tile(paths=path,
                             patch_size=400,
                             patch_overlap=0.05,
                             iou_threshold=0.15,

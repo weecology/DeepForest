@@ -17,12 +17,11 @@ model = main.deepforest()
 
 # Load a pretrained tree detection model from Hugging Face
 model.load_model(model_name="weecology/deepforest-tree", revision="main")
+
 # Predict on large geospatial tiles using overlapping windows
 path = get_data("OSBS_029.tif")
-predicted_image = model.predict_tile(path=path, patch_size=300, patch_overlap=0.25)
+predicted_image = model.predict_tile(paths=path, patch_size=300, patch_overlap=0.25)
 plot_results(predicted_image)
 ```
 
-```{note}
-The `predict_tile` function is sensitive to `patch_size`, especially when using the prebuilt model on new data. We encourage users to experiment with various patch sizes. For 0.1m data, 400-800px per window is appropriate, but it will depend on the density of tree plots. For coarser resolution tiles, >800px patch sizes have been effective.
 ```

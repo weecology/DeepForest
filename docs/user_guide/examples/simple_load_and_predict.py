@@ -8,7 +8,7 @@ m = main.deepforest()
 m.load_model(model_name="weecology/deepforest-tree")
 
 # Perform tree detection on the image
-trees = m.predict_tile(path='<path to image>', patch_size=3000, patch_overlap=0)
+trees = m.predict_tile(paths='<path to image>', patch_size=3000, patch_overlap=0)
 
 # Filter out low-confidence detections
 trees = trees[trees.score > 0.3]
