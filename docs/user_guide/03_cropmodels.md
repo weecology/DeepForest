@@ -14,7 +14,7 @@ Why would you want to apply a model directly to each crop? Why not train a multi
 
 While that approach is certainly valid, there are a few key benefits to using CropModels, especially in common use cases:  
 
-- **Flexible Labeling**: Object detection models require that all objects of a particular class be annotated within an image, which can be impossible for detailed category labels. For example, you might have bounding boxes for all 'trees' in an image, but only have species or health labels for a small portion of them based on ground surveys. Training a multi-class object detection model would mean training on only a portion of your available data. 
+- **Flexible Labeling**: Object detection models require that all objects of a particular class be annotated within an image, which can be impossible for detailed category labels. For example, you might have bounding boxes for all ‘trees’ in an image, but only have species or health labels for a small portion of them based on ground surveys. Training a multi-class object detection model would mean training on only a portion of your available data. 
 - **Simpler and Extendable**: CropModels decouple detection and classification workflows, allowing separate handling of challenges like class imbalance and incomplete labels, without reducing the quality of the detections. Two-stage object detection models can be finicky with similar classes and often require expertise in managing learning rates. 
 - **New Data and Multi-sensor Learning**: In many applications, the data needed for detection and classification may differ. The CropModel concept provides an extendable piece that allows for advanced pipelines.
 
@@ -41,7 +41,7 @@ crop_model = model.CropModel(num_classes=2)
 # Or set up the crop model or load weights model.CropModel.load_from_checkpoint(<path>)
 
 m.create_trainer()
-result = m.predict_tile(paths=path, crop_model=crop_model)
+result = m.predict_tile(path=path, crop_model=crop_model)
 ```
 
 ```python
@@ -62,7 +62,7 @@ You can also pass multiple crop models to `predict_tile`. Each model's predictio
 ```python
 crop_model1 = model.CropModel(num_classes=2)
 crop_model2 = model.CropModel(num_classes=3)
-result = m.predict_tile(paths=path, crop_model=[crop_model1, crop_model2])
+result = m.predict_tile(path=path, crop_model=[crop_model1, crop_model2])
 ```
 
 ```python

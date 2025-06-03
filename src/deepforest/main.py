@@ -452,20 +452,21 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         return results
 
     def predict_tile(self,
+                     path=None,
                      paths=None,
                      image=None,
                      patch_size=400,
                      patch_overlap=0.05,
                      iou_threshold=0.15,
                      dataloader_strategy="single",
-                     crop_model=None,
-                     path=None):
+                     crop_model=None):
         """For images too large to input into the model, predict_tile cuts the
         image into overlapping windows, predicts trees on each window and
         reassambles into a single array.
 
         Args:
-            paths: Path or list of paths to images on disk. If a single string is provided, it will be converted to a list.
+            path: Path to image on disk
+            paths: List of paths to images on disk
             image (array): Numpy image array in BGR channel order following openCV convention
             patch_size: patch size for each window
             patch_overlap: patch overlap among windows
@@ -475,31 +476,18 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                 - "batch" loads the entire image into GPU memory and creates views of an image as batch, requires in the entire tile to fit into GPU memory. CPU parallelization is possible for loading images.
                 - "window" loads only the desired window of the image from the raster dataset. Most memory efficient option, but cannot parallelize across windows.
             crop_model: a deepforest.model.CropModel object to predict on crops
-            path: Deprecated. Use paths instead. Will be removed in version 2.0.
 
         Returns:
             pd.DataFrame or tuple: Predictions dataframe or (predictions, crops) tuple
         """
-        # Handle deprecated path parameter
-        if path is not None:
-            import warnings
-            warnings.warn(
-                "The 'path' parameter is deprecated and will be removed in version 2.0. Use 'paths' instead.",
-                DeprecationWarning,
-                stacklevel=2
-            )
-            if paths is not None:
-                raise ValueError("Cannot specify both 'path' and 'paths' parameters")
-            paths = path
-
         self.model.eval()
         self.model.nms_thresh = self.config.nms_thresh
 
-        # Check if paths or image is provided
+        # Check if path or image is provided
         if dataloader_strategy == "single":
-            if paths is None and image is None:
+            if path is None and image is None:
                 raise ValueError(
-                    "Either paths or image must be provided for single tile prediction")
+                    "Either path or image must be provided for single tile prediction")
 
         if dataloader_strategy == "batch":
             if paths is None:
@@ -507,12 +495,8 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                     "paths argument must be provided when using dataloader_strategy='batch'"
                 )
 
-        # Convert single path to list for consistent handling
-        if isinstance(paths, str):
-            paths = [paths]
-
         if dataloader_strategy == "single":
-            ds = prediction.SingleImage(path=paths[0] if paths else None,
+            ds = prediction.SingleImage(path=path,
                                         image=image,
                                         patch_overlap=patch_overlap,
                                         patch_size=patch_size)
@@ -528,7 +512,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                 raise ValueError(
                     "workers must be 0 when using out-of-memory dataset (dataloader_strategy='window'). Set config['workers']=0 and recreate trainer self.create_trainer()."
                 )
-            ds = prediction.TiledRaster(path=paths[0] if paths else None,
+            ds = prediction.TiledRaster(path=path,
                                         patch_overlap=patch_overlap,
                                         patch_size=patch_size)
 
@@ -569,10 +553,10 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
         if crop_model is not None:
             mosaic_results = predict._crop_models_wrapper_(crop_model, self.trainer,
-                                                           mosaic_results, paths[0] if paths else None)
+                                                           mosaic_results, path)
 
-        if paths is not None and len(paths) == 1:
-            root_dir = os.path.dirname(paths[0])
+        if path is not None:
+            root_dir = os.path.dirname(path)
         else:
             print(
                 "No image path provided, root_dir will be None, since either images were directly provided or there were multiple image paths"

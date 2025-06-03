@@ -84,7 +84,7 @@ model.load_model(model_name="weecology/deepforest-tree", revision="main")
 
 # Predict on large geospatial tiles using overlapping windows
 raster_path = get_data("OSBS_029.tif")
-predicted_raster = model.predict_tile(paths=raster_path, patch_size=300, patch_overlap=0.25)
+predicted_raster = model.predict_tile(raster_path, patch_size=300, patch_overlap=0.25)
 plot_results(predicted_raster)
 ```
 
@@ -93,7 +93,7 @@ plot_results(predicted_raster)
 An optional argument to predict_tile allows the user to control how to scale prediction of tiles and how the windows are created within tiles.
 
 ```python
-prediction_single = m.predict_tile(paths=path, patch_size=300, dataloader_strategy="single")
+prediction_single = m.predict_tile(path=path, patch_size=300, dataloader_strategy="single")
 ```
 The `dataloader_strategy` parameter has three options:
 
