@@ -496,9 +496,11 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         # Convert single path to list for consistent handling
         if isinstance(path, str):
             path = [path]
+        elif path is None:
+            path = [None]
 
         if dataloader_strategy == "single":
-            ds = prediction.SingleImage(path=path[0] if path else None,
+            ds = prediction.SingleImage(path=path[0],
                                         image=image,
                                         patch_overlap=patch_overlap,
                                         patch_size=patch_size)
@@ -514,7 +516,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                 raise ValueError(
                     "workers must be 0 when using out-of-memory dataset (dataloader_strategy='window'). Set config['workers']=0 and recreate trainer self.create_trainer()."
                 )
-            ds = prediction.TiledRaster(path=path[0] if path else None,
+            ds = prediction.TiledRaster(path=path[0],
                                         patch_overlap=patch_overlap,
                                         patch_size=patch_size)
 
@@ -558,7 +560,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                                                            mosaic_results,
                                                            path[0] if path else None)
 
-        if path is not None and len(path) == 1:
+        if path[0] is not None:
             root_dir = os.path.dirname(path[0])
         else:
             print(

@@ -351,6 +351,7 @@ def test_predict_tile(m, path, dataloader_strategy):
     m.create_model()
     m.config.train.fast_dev_run = False
     m.create_trainer()
+    m.load_model("weecology/deepforest-tree")
 
     if dataloader_strategy == "single":
         image_path = path
