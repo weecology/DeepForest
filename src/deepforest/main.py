@@ -498,7 +498,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             path = [path]
 
         if dataloader_strategy == "single":
-            ds = prediction.SingleImage(path=path[0] if path else None,
+            ds = prediction.SingleImage(path=path[0],
                                         image=image,
                                         patch_overlap=patch_overlap,
                                         patch_size=patch_size)
@@ -514,7 +514,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                 raise ValueError(
                     "workers must be 0 when using out-of-memory dataset (dataloader_strategy='window'). Set config['workers']=0 and recreate trainer self.create_trainer()."
                 )
-            ds = prediction.TiledRaster(path=path[0] if path else None,
+            ds = prediction.TiledRaster(path=path[0],
                                         patch_overlap=patch_overlap,
                                         patch_size=patch_size)
 
@@ -555,7 +555,8 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
         if crop_model is not None:
             mosaic_results = predict._crop_models_wrapper_(crop_model, self.trainer,
-                                                           mosaic_results, path[0] if path else None)
+                                                           mosaic_results,
+                                                           path[0] if path else None)
 
         if path is not None and len(path) == 1:
             root_dir = os.path.dirname(path[0])

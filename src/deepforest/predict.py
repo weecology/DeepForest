@@ -191,7 +191,7 @@ def _dataloader_wrapper_(model, trainer, dataloader, root_dir, crop_model):
 
         if crop_model:
             # Flag to check if only one model is passed
-            is_single_model = len(crop_model) == 1  
+            is_single_model = len(crop_model) == 1
 
             for i, crop_model in enumerate(crop_model):
                 crop_model_results = _predict_crop_model_(crop_model=crop_model,
