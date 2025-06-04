@@ -581,6 +581,8 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             cropmodel_results = []
             for path in paths:
                 image_result = mosaic_results[mosaic_results.image_path == os.path.basename(path)]
+                if image_result.empty:
+                    continue
                 image_result.root_dir = os.path.dirname(path)
                 cropmodel_result = predict._crop_models_wrapper_(crop_model, self.trainer,
                                                                image_result)
