@@ -297,7 +297,7 @@ def _crop_models_wrapper_(crop_models,
                                                 transform=transform,
                                                 augment=augment,
                                                 is_single_model=is_single_model)
-            crop_results.append(crop_result)
+                crop_results.append(crop_result)
 
     # Concatenate results
     crop_results = pd.concat(crop_results)
