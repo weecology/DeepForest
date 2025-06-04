@@ -11,7 +11,6 @@ import slidingwindow
 from PIL import Image
 import torch
 import warnings
-import rasterio
 import geopandas as gpd
 from deepforest.utilities import read_file, determine_geometry_type
 from shapely import geometry

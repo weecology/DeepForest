@@ -167,7 +167,7 @@ class PredictionDataset(Dataset):
     def postprocess(self, batched_result):
         """Postprocess the batched result into a single dataframe.
 
-        In the case of subbatches, the index is the subbatch index.
+        In the case of sub-batches, the index is the sub-batch index.
         """
         formatted_result = []
         for idx, batch in enumerate(batched_result):
@@ -186,6 +186,9 @@ class PredictionDataset(Dataset):
         else:
             formatted_result = pd.DataFrame()
 
+        # reset index
+        formatted_result = formatted_result.reset_index(drop=True)
+        
         return formatted_result
 
 

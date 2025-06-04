@@ -495,45 +495,58 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
         # Convert single path to list for consistent handling
         if isinstance(path, str):
-            path = [path]
+            paths = [path]
         elif path is None:
-            path = [None]
+            paths = [None]
+        else:
+            paths = path
 
-        if dataloader_strategy == "single":
-            ds = prediction.SingleImage(path=path[0],
-                                        image=image,
-                                        patch_overlap=patch_overlap,
-                                        patch_size=patch_size)
+        image_results = []
+        if dataloader_strategy in ["single", "window"]:
+            for image_path in paths:
+                if dataloader_strategy == "single":
+                    ds = prediction.SingleImage(path=image_path,
+                                                image=image,
+                                                patch_overlap=patch_overlap,
+                                                patch_size=patch_size)
+                else:
+                    # Check for workers config when using out of memory dataset
+                    if self.config.workers > 0:
+                        raise ValueError(
+                            "workers must be 0 when using out-of-memory dataset (dataloader_strategy='window'). Set config['workers']=0 and recreate trainer self.create_trainer()."
+                        )
+                    ds = prediction.TiledRaster(path=image_path,
+                                                patch_overlap=patch_overlap,
+                                                patch_size=patch_size)
+
+                batched_results = self.trainer.predict(self, self.predict_dataloader(ds))
+
+                # Flatten list from batched prediction
+                prediction_list = []
+                for batch in batched_results:
+                    for images in batch:
+                        prediction_list.append(images)
+                image_results.append(ds.postprocess(prediction_list))
+
+            results = pd.concat(image_results)
 
         elif dataloader_strategy == "batch":
-            ds = prediction.MultiImage(paths=path,
-                                       patch_overlap=patch_overlap,
-                                       patch_size=patch_size)
+            ds = prediction.MultiImage(paths=paths,
+                                    patch_overlap=patch_overlap,
+                                    patch_size=patch_size)
 
-        elif dataloader_strategy == "window":
-            # Check for workers config when using out of memory dataset
-            if self.config.workers > 0:
-                raise ValueError(
-                    "workers must be 0 when using out-of-memory dataset (dataloader_strategy='window'). Set config['workers']=0 and recreate trainer self.create_trainer()."
-                )
-            ds = prediction.TiledRaster(path=path[0],
-                                        patch_overlap=patch_overlap,
-                                        patch_size=patch_size)
+            batched_results = self.trainer.predict(self, self.predict_dataloader(ds))
 
-        batched_results = self.trainer.predict(self, self.predict_dataloader(ds))
+            # Flatten list from batched prediction
+            prediction_list = []
+            for batch in batched_results:
+                for images in batch:
+                    prediction_list.append(images)
+            image_results.append(ds.postprocess(prediction_list))
+            results = pd.concat(image_results)
 
-        if len(batched_results) == 1:
-            results = ds.postprocess(batched_results[0])
         else:
-            results = []
-            for result in batched_results:
-                results.append(ds.postprocess(result))
-
-        # Concatenate results into a single dataframe
-        if isinstance(results, list):
-            results = pd.concat(results)
-        else:
-            results = results
+            raise ValueError(f"Invalid dataloader_strategy: {dataloader_strategy}")
 
         if results.empty:
             warnings.warn("No predictions made, returning None")
@@ -545,8 +558,9 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             mosaic_results.append(predict.mosiac(results, iou_threshold=iou_threshold))
         else:
             for image_path in results["image_path"].unique():
+                image_results = results[results["image_path"] == image_path]
                 image_mosaic = predict.mosiac(
-                    results[results["image_path"] == image_path],
+                    image_results,
                     iou_threshold=iou_threshold)
                 image_mosaic["image_path"] = image_path
                 mosaic_results.append(image_mosaic)
@@ -555,20 +569,27 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         mosaic_results["label"] = mosaic_results.label.apply(
             lambda x: self.numeric_to_label_dict[x])
 
-        if crop_model is not None:
-            mosaic_results = predict._crop_models_wrapper_(crop_model, self.trainer,
-                                                           mosaic_results,
-                                                           path[0] if path else None)
-
-        if path[0] is not None:
-            root_dir = os.path.dirname(path[0])
+        if paths[0] is not None:
+            root_dir = os.path.dirname(paths[0])
         else:
             print(
                 "No image path provided, root_dir will be None, since either images were directly provided or there were multiple image paths"
             )
             root_dir = None
 
-        formatted_results = utilities.read_file(mosaic_results, root_dir=root_dir)
+        if crop_model is not None:
+            cropmodel_results = []
+            for path in paths:
+                image_result = mosaic_results[mosaic_results.image_path == os.path.basename(path)]
+                image_result.root_dir = os.path.dirname(path)
+                cropmodel_result = predict._crop_models_wrapper_(crop_model, self.trainer,
+                                                               image_result)
+                cropmodel_results.append(cropmodel_result)
+            cropmodel_results = pd.concat(cropmodel_results)
+        else:
+            cropmodel_results = mosaic_results
+
+        formatted_results = utilities.read_file(cropmodel_results, root_dir=root_dir)
 
         return formatted_results
 

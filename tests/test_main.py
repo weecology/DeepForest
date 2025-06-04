@@ -17,6 +17,7 @@ from albumentations.pytorch import ToTensorV2
 from deepforest import main, get_data, model
 from deepforest.utilities import read_file, format_geometry
 from deepforest.datasets import prediction
+from deepforest.visualize import plot_results 
 
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import Callback
@@ -358,18 +359,47 @@ def test_predict_tile(m, path, dataloader_strategy):
     elif dataloader_strategy == "window":
         image_path = get_data("test_tiled.tif")
     else:
-        image_path = [path, path]
+        image_path = [path]
 
     prediction = m.predict_tile(path=image_path,
                                 patch_size=300,
                                 dataloader_strategy=dataloader_strategy,
-                                patch_overlap=0.1)
+                                patch_overlap=0)
 
     assert isinstance(prediction, pd.DataFrame)
     assert set(prediction.columns) == {
         "xmin", "ymin", "xmax", "ymax", "label", "score", "image_path", "geometry"
     }
     assert not prediction.empty
+
+    # Assert there are predictions in each corner of the image
+    assert prediction.xmin.min() < 50
+    assert prediction.xmin.max() > 350
+    assert prediction.ymin.min() < 50
+    assert prediction.ymin.max() > 350
+
+    plot_results(prediction)
+
+
+# Add predict_tile for serial single dataloader strategy
+def test_predict_tile_serial_single(m):
+    path1 = get_data("OSBS_029.png")
+    path2 = get_data("SOAP_031.png")
+    m.create_model()
+    m.config.train.fast_dev_run = False
+    m.create_trainer()
+    m.load_model("weecology/deepforest-tree")
+    prediction = m.predict_tile(path=[path1, path2], patch_size=300, patch_overlap=0, dataloader_strategy="batch")
+    assert prediction.image_path.unique().tolist() == [os.path.basename(path1), os.path.basename(path2)]
+
+    # view the predictions of each image
+    prediction_1 = prediction[prediction.image_path == os.path.basename(path1)]
+    prediction_1.root_dir = os.path.dirname(path1)
+    prediction_2 = prediction[prediction.image_path == os.path.basename(path2)]
+    prediction_2.root_dir = os.path.dirname(path2)
+
+    plot_results(prediction_1)
+    plot_results(prediction_2)
 
 # test equivalence for within and out of memory dataset strategies
 def test_predict_tile_equivalence(m):

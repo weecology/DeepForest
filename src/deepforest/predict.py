@@ -276,7 +276,6 @@ def _predict_crop_model_(crop_model,
 def _crop_models_wrapper_(crop_models,
                           trainer,
                           results,
-                          path,
                           transform=None,
                           augment=False):
     if crop_models is not None and not isinstance(crop_models, list):
@@ -288,14 +287,16 @@ def _crop_models_wrapper_(crop_models,
         is_single_model = len(
             crop_models) == 1  # Flag to check if only one model is passed
         for i, crop_model in enumerate(crop_models):
-            crop_result = _predict_crop_model_(crop_model=crop_model,
-                                               results=results,
-                                               path=path,
-                                               trainer=trainer,
-                                               model_index=i,
-                                               transform=transform,
-                                               augment=augment,
-                                               is_single_model=is_single_model)
+            for path in results.image_path.unique():
+                path = os.path.join(results.root_dir, path)
+                crop_result = _predict_crop_model_(crop_model=crop_model,
+                                                results=results,
+                                                path=path,
+                                                trainer=trainer,
+                                                model_index=i,
+                                                transform=transform,
+                                                augment=augment,
+                                                is_single_model=is_single_model)
             crop_results.append(crop_result)
 
     # Concatenate results
