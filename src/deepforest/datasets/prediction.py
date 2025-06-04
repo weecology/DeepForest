@@ -308,32 +308,34 @@ class MultiImage(PredictionDataset):
             torch.Tensor: A tensor containing all the overlapping views.
                           The output shape is [N * num_windows, C, size, size].
         """
-
         # Get the input tensor shape
         N, C, H, W = input_tensor.shape
 
-        # Calculate the number of padding pixels needed, accounting for overlap
-        padding_h = size - ((H - overlap) %
-                            (size - overlap)) if H % (size - overlap) != 0 else 0
-        padding_w = size - ((W - overlap) %
-                            (size - overlap)) if W % (size - overlap) != 0 else 0
-
-        # Pad the input tensor
-        padded_tensor = F.pad(input_tensor, (padding_w, padding_w, padding_h, padding_h),
-                              "constant", 0)
-
-        # Calculate the step size for the sliding window
+        # Calculate step size based on overlap
         step = size - overlap
 
-        # Use torch.unfold to create the overlapping views
-        unfolded_h = padded_tensor.unfold(2, size, step)
-        unfolded = unfolded_h.unfold(3, size, step)
+        # Calculate number of patches needed in each dimension
+        n_patches_h = (H - overlap) // step + 1 
+        n_patches_w = (W - overlap) // step + 1
 
-        # The unfolded tensor has shape:
-        # [N, C, H', W', size, size]
-        # where H' and W' are the number of sliding windows in the height and width dimensions
+        # Calculate total padded dimensions needed
+        H_padded = n_patches_h * step + overlap
+        W_padded = n_patches_w * step + overlap
 
-        # Reshape to [N * H' * W', C, size, size]
+        # Calculate padding needed
+        padding_h = max(0, H_padded - H)
+        padding_w = max(0, W_padded - W)
+
+        # Pad the input tensor
+        padded_tensor = F.pad(input_tensor, (0, padding_w, 0, padding_h))
+
+        # Use unfold to create views of the tensor
+        # This creates views rather than copies
+        unfolded_h = padded_tensor.unfold(2, size, step)  # unfold height dimension
+        unfolded = unfolded_h.unfold(3, size, step)       # unfold width dimension
+
+        # Reshape to [N * num_windows, C, size, size]
+        # This is still a view operation
         output = unfolded.permute(0, 2, 3, 1, 4, 5).reshape(-1, C, size, size)
 
         return output
@@ -358,22 +360,19 @@ class MultiImage(PredictionDataset):
         patch_overlap_size = int(self.patch_size * self.patch_overlap)
         step = self.patch_size - patch_overlap_size
 
-        # Calculate padding needed
-        padding_h = self.patch_size - (
-            (H - patch_overlap_size) % (self.patch_size - patch_overlap_size)) if H % (
-                self.patch_size - patch_overlap_size) != 0 else 0
-        padding_w = self.patch_size - (
-            (W - patch_overlap_size) % (self.patch_size - patch_overlap_size)) if W % (
-                self.patch_size - patch_overlap_size) != 0 else 0
+        # Calculate number of patches needed in each dimension
+        n_patches_h = (H - patch_overlap_size) // step + 1 
+        n_patches_w = (W - patch_overlap_size) // step + 1
 
-        # Adjust H and W to include padding
-        H_padded = H + padding_h
-        W_padded = W + padding_w
-
+        # Generate window coordinates matching the unfolded tensor views
         windows = []
-        for y in range(0, H_padded - self.patch_size + 1, step):
-            for x in range(0, W_padded - self.patch_size + 1, step):
-                windows.append((x, y, self.patch_size, self.patch_size))
+        for i in range(n_patches_h):
+            for j in range(n_patches_w):
+                y = i * step
+                x = j * step
+                # Only add window if it contains any real data
+                if (x < W and y < H):
+                    windows.append((x, y, self.patch_size, self.patch_size))
 
         return windows
 
