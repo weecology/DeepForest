@@ -910,11 +910,12 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
         # Get the predict dataloader and use predict_batch
         ds = prediction.FromCSVFile(csv_file=csv_file, root_dir=root_dir, size=size)
-        ds = self.predict_dataloader(ds)
+        dl = self.predict_dataloader(ds)
         predictions = []
-        for batch in ds:
-            batch_results = self.predict_batch(batch)
-            predictions.extend(batch_results)
+        for batch in dl:
+            batch_results = self.predict_step(batch, 0)
+            batch_prediction = ds.postprocess(batch_results)
+            predictions.append(batch_prediction)
 
         if len(predictions) > 0:
             predictions = pd.concat(predictions)
