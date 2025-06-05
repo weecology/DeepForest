@@ -913,6 +913,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         dl = self.predict_dataloader(ds)
         predictions = []
         for batch in dl:
+            batch = self.transfer_batch_to_device(batch, self.device, dataloader_idx=0)
             batch_results = self.predict_step(batch, 0)
             batch_prediction = ds.postprocess(batch_results)
             predictions.append(batch_prediction)
