@@ -33,6 +33,10 @@ def test_retinanet(config):
     assert r
 
 
+def retinanet_check_model(config):
+    r = retinanet.Model(config)
+    r.check_model()
+
 def test_load_backbone(config):
     r = retinanet.Model(config)
     resnet_backbone = r.load_backbone()
