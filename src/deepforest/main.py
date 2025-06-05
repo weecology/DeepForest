@@ -748,18 +748,18 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             return
 
         if self.current_epoch % self.config.validation.val_accuracy_interval == 0:
-            # trainer_state = deepcopy(self.trainer.state)
-            # current_fx_name = self._current_fx_name
-            # results = self.evaluate(self.config.validation.csv_file,
-            #                         root_dir=self.config.validation.root_dir,
-            #                         size=self.config.validation.size)
-            # self.predictions = results["predictions"]
-            # self.trainer.state = trainer_state
-            # self._current_fx_name = current_fx_name
+            trainer_state = deepcopy(self.trainer.state)
+            current_fx_name = self._current_fx_name
+            results = self.evaluate(self.config.validation.csv_file,
+                                    root_dir=self.config.validation.root_dir,
+                                    size=self.config.validation.size)
+            self.predictions = results["predictions"]
+            self.trainer.state = trainer_state
+            self._current_fx_name = current_fx_name
 
             # Log epoch metrics
             self.log_epoch_metrics()
-            # self.__evaluation_logs__(results)
+            self.__evaluation_logs__(results)
 
     def predict_step(self, batch, batch_idx):
         """Predict a batch of images with the deepforest model. If batch is a
@@ -823,6 +823,8 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         #convert predictions to dataframes
         results = []
         for pred in predictions:
+            if len(pred["boxes"]) == 0:
+                continue
             geom_type = utilities.determine_geometry_type(pred)
             result = utilities.format_geometry(pred, geom_type=geom_type)
             results.append(utilities.read_file(result))
@@ -906,7 +908,18 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         if root_dir is None:
             root_dir = os.path.dirname(csv_file)
 
-        predictions = self.predict_file(csv_file=csv_file, root_dir=root_dir, size=size)
+        # Get the predict dataloader and use predict_batch
+        ds = prediction.FromCSVFile(csv_file=csv_file, root_dir=root_dir, size=size)
+        ds = self.predict_dataloader(ds)
+        predictions = []
+        for batch in ds:
+            batch_results = self.predict_batch(batch)
+            predictions.extend(batch_results)
+
+        if len(predictions) > 0:
+            predictions = pd.concat(predictions)
+        else:
+            predictions = pd.DataFrame()
 
         if iou_threshold is None:
             iou_threshold = self.config.validation.iou_threshold

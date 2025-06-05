@@ -364,7 +364,7 @@ def test_predict_tile(m, path, dataloader_strategy):
     prediction = m.predict_tile(path=image_path,
                                 patch_size=300,
                                 dataloader_strategy=dataloader_strategy,
-                                patch_overlap=0)
+                                patch_overlap=0.1)
 
     assert isinstance(prediction, pd.DataFrame)
     assert set(prediction.columns) == {
