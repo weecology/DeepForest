@@ -748,18 +748,18 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             return
 
         if self.current_epoch % self.config.validation.val_accuracy_interval == 0:
-            trainer_state = deepcopy(self.trainer.state)
-            current_fx_name = self._current_fx_name
-            results = self.evaluate(self.config.validation.csv_file,
-                                    root_dir=self.config.validation.root_dir,
-                                    size=self.config.validation.size)
-            self.predictions = results["predictions"]
-            self.trainer.state = trainer_state
-            self._current_fx_name = current_fx_name
+            # trainer_state = deepcopy(self.trainer.state)
+            # current_fx_name = self._current_fx_name
+            # results = self.evaluate(self.config.validation.csv_file,
+            #                         root_dir=self.config.validation.root_dir,
+            #                         size=self.config.validation.size)
+            # self.predictions = results["predictions"]
+            # self.trainer.state = trainer_state
+            # self._current_fx_name = current_fx_name
 
             # Log epoch metrics
             self.log_epoch_metrics()
-            self.__evaluation_logs__(results)
+            # self.__evaluation_logs__(results)
 
     def predict_step(self, batch, batch_idx):
         """Predict a batch of images with the deepforest model. If batch is a
