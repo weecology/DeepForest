@@ -188,7 +188,7 @@ class PredictionDataset(Dataset):
 
         # reset index
         formatted_result = formatted_result.reset_index(drop=True)
-        
+
         return formatted_result
 
 
@@ -315,7 +315,7 @@ class MultiImage(PredictionDataset):
         step = size - overlap
 
         # Calculate number of patches needed in each dimension
-        n_patches_h = (H - overlap) // step + 1 
+        n_patches_h = (H - overlap) // step + 1
         n_patches_w = (W - overlap) // step + 1
 
         # Calculate total padded dimensions needed
@@ -332,7 +332,7 @@ class MultiImage(PredictionDataset):
         # Use unfold to create views of the tensor
         # This creates views rather than copies
         unfolded_h = padded_tensor.unfold(2, size, step)  # unfold height dimension
-        unfolded = unfolded_h.unfold(3, size, step)       # unfold width dimension
+        unfolded = unfolded_h.unfold(3, size, step)  # unfold width dimension
 
         # Reshape to [N * num_windows, C, size, size]
         # This is still a view operation
@@ -361,7 +361,7 @@ class MultiImage(PredictionDataset):
         step = self.patch_size - patch_overlap_size
 
         # Calculate number of patches needed in each dimension
-        n_patches_h = (H - patch_overlap_size) // step + 1 
+        n_patches_h = (H - patch_overlap_size) // step + 1
         n_patches_w = (W - patch_overlap_size) // step + 1
 
         # Generate window coordinates matching the unfolded tensor views

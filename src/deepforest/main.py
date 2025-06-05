@@ -532,8 +532,8 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
         elif dataloader_strategy == "batch":
             ds = prediction.MultiImage(paths=paths,
-                                    patch_overlap=patch_overlap,
-                                    patch_size=patch_size)
+                                       patch_overlap=patch_overlap,
+                                       patch_size=patch_size)
 
             batched_results = self.trainer.predict(self, self.predict_dataloader(ds))
 
@@ -559,9 +559,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         else:
             for image_path in results["image_path"].unique():
                 image_results = results[results["image_path"] == image_path]
-                image_mosaic = predict.mosiac(
-                    image_results,
-                    iou_threshold=iou_threshold)
+                image_mosaic = predict.mosiac(image_results, iou_threshold=iou_threshold)
                 image_mosaic["image_path"] = image_path
                 mosaic_results.append(image_mosaic)
 
@@ -580,12 +578,13 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         if crop_model is not None:
             cropmodel_results = []
             for path in paths:
-                image_result = mosaic_results[mosaic_results.image_path == os.path.basename(path)]
+                image_result = mosaic_results[mosaic_results.image_path ==
+                                              os.path.basename(path)]
                 if image_result.empty:
                     continue
                 image_result.root_dir = os.path.dirname(path)
-                cropmodel_result = predict._crop_models_wrapper_(crop_model, self.trainer,
-                                                               image_result)
+                cropmodel_result = predict._crop_models_wrapper_(
+                    crop_model, self.trainer, image_result)
                 cropmodel_results.append(cropmodel_result)
             cropmodel_results = pd.concat(cropmodel_results)
         else:
