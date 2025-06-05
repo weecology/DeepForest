@@ -902,6 +902,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         Returns:
             dict: Results dictionary containing precision, recall and other metrics
         """
+        self.model.eval()
         ground_df = utilities.read_file(csv_file)
         ground_df["label"] = ground_df.label.apply(lambda x: self.label_dict[x])
 
