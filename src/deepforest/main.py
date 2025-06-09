@@ -1,6 +1,7 @@
 # entry point for deepforest model
 import importlib
 import os
+import tempfile
 import typing
 import warnings
 
@@ -16,7 +17,8 @@ from torchmetrics.detection import IntersectionOverUnion, MeanAveragePrecision
 from torchmetrics.classification import BinaryAccuracy
 
 from huggingface_hub import PyTorchModelHubMixin
-from deepforest import dataset, visualize, get_data, utilities, predict
+from deepforest import dataset
+from deepforest import visualize, visualize, get_data, utilities, predict
 from deepforest import evaluate as evaluate_iou
 
 from omegaconf import DictConfig
@@ -111,6 +113,74 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             self.transforms = transforms
 
         self.save_hyperparameters()
+
+
+    def on_train_start(self):
+        """Log sample images from training and validation datasets at training start."""
+        # Call parent on_train_start if it exists
+        super().on_train_start()
+        
+        # Get non-empty annotations from training dataset
+        train_annotations = self.trainer.datamodule.train_ds.annotations
+        non_empty_train = train_annotations[~train_annotations.empty]
+        
+        if non_empty_train.empty:
+            return
+        
+        # Create temporary directory for images
+        tmpdir = tempfile.mkdtemp()
+        
+        # Sample up to 5 images from training set
+        n_samples = min(5, len(non_empty_train.image_path.unique()))
+        sample_images = non_empty_train.image_path.sample(n=n_samples).unique()
+        
+        for filename in sample_images:
+            # Get annotations for this image
+            image_annotations = non_empty_train[non_empty_train.image_path == filename].copy()
+            image_annotations.root_dir = self.trainer.datamodule.train_ds.root_dir
+            
+            # Plot and save
+            save_path = os.path.join(tmpdir, f"train_{os.path.basename(filename)}")
+            visualize.plot_annotations(image_annotations, savedir=tmpdir)
+            
+            # Log to available loggers
+            for logger in self.trainer.loggers:
+                if hasattr(logger.experiment, 'log_image'):
+                    logger.experiment.log_image(
+                        save_path,
+                        metadata={
+                            "name": filename,
+                            "context": "detection_train",
+                            "step": self.global_step
+                        }
+                    )
+        
+        # Also log validation images if available
+        if hasattr(self.trainer.datamodule, 'val_ds') and self.trainer.datamodule.val_ds:
+            val_annotations = self.trainer.datamodule.val_ds.annotations
+            non_empty_val = val_annotations[~val_annotations.empty]
+            
+            if not non_empty_val.empty:
+                n_samples = min(5, len(non_empty_val.image_path.unique()))
+                sample_images = non_empty_val.image_path.sample(n=n_samples).unique()
+                
+                for filename in sample_images:
+                    image_annotations = non_empty_val[non_empty_val.image_path == filename].copy()
+                    image_annotations.root_dir = self.trainer.datamodule.val_ds.root_dir
+                    
+                    save_path = os.path.join(tmpdir, f"val_{os.path.basename(filename)}")
+                    visualize.plot_annotations(image_annotations, savedir=tmpdir)
+                    
+                    for logger in self.trainer.loggers:
+                        if hasattr(logger.experiment, 'log_image'):
+                            logger.experiment.log_image(
+                                save_path,
+                                metadata={
+                                    "name": filename,
+                                    "context": "detection_val",
+                                    "step": self.global_step
+                                }
+                            )
 
     def load_model(self, model_name="weecology/deepforest-tree", revision='main'):
         """Loads a model that has already been pretrained for a specific task,
