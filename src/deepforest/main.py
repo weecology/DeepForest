@@ -353,7 +353,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                 batch_size=self.config.batch_size)
         return loader
 
-    def predict_dataloader(self, ds):
+    def predict_dataloader(self, ds, batch_size=None):
         """Create a PyTorch dataloader for prediction.
 
         Args:
@@ -362,8 +362,12 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         Returns:
             torch.utils.data.DataLoader: A dataloader object that can be used for prediction.
         """
+        if batch_size is None:
+            batch_size = self.config.batch_size
+        else:
+            batch_size = batch_size
         loader = torch.utils.data.DataLoader(ds,
-                                             batch_size=self.config.batch_size,
+                                             batch_size=batch_size,
                                              shuffle=False,
                                              num_workers=self.config.workers,
                                              collate_fn=ds.collate_fn)
@@ -422,7 +426,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
         return result
 
-    def predict_file(self, csv_file, root_dir, crop_model=None, size=None):
+    def predict_file(self, csv_file, root_dir, crop_model=None, size=None, batch_size=None):
         """Create a dataset and predict entire annotation file CSV file format
         is .csv file with the columns "image_path", "xmin","ymin","xmax","ymax"
         for the image name and bounding box position. Image_path is the
@@ -440,7 +444,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
         ds = prediction.FromCSVFile(csv_file=csv_file, root_dir=root_dir, size=size)
 
-        dataloader = self.predict_dataloader(ds)
+        dataloader = self.predict_dataloader(ds, batch_size=batch_size)
         results = predict._dataloader_wrapper_(model=self,
                                                crop_model=crop_model,
                                                trainer=self.trainer,
@@ -890,13 +894,14 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         else:
             return optimizer
 
-    def evaluate(self, csv_file, iou_threshold=None, root_dir=None, size=None):
+    def evaluate(self, csv_file, iou_threshold=None, root_dir=None, size=None, batch_size=None):
         """Compute intersection-over-union and precision/recall for a given
         iou_threshold.
 
         Args:
             csv_file: location of a csv file with columns "name","xmin","ymin","xmax","ymax","label"
             iou_threshold: float [0,1] intersection-over-union threshold for true positive
+            batch_size: int, the batch size to use for prediction. If None, uses the batch size of the model.
 
         Returns:
             dict: Results dictionary containing precision, recall and other metrics
@@ -910,7 +915,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
         # Get the predict dataloader and use predict_batch
         ds = prediction.FromCSVFile(csv_file=csv_file, root_dir=root_dir, size=size)
-        dl = self.predict_dataloader(ds)
+        dl = self.predict_dataloader(ds, batch_size=batch_size)
         predictions = []
         for batch in dl:
             batch = self.transfer_batch_to_device(batch, self.device, dataloader_idx=0)
