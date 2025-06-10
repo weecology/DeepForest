@@ -110,7 +110,7 @@ class CropModel(LightningModule):
         self.num_classes = num_classes
         self.num_workers = num_workers
         self.label_dict = label_dict
-        
+
         if label_dict is not None:
             self.numeric_to_label_dict = {v: k for k, v in label_dict.items()}
         else:
@@ -120,7 +120,9 @@ class CropModel(LightningModule):
             if num_classes is not None:
                 self.create_model(num_classes)
             else:
-                print("No model created if model or num_classes is not provided, use load_from_disk to create a model from data directory.")
+                print(
+                    "No model created if model or num_classes is not provided, use load_from_disk to create a model from data directory."
+                )
         else:
             self.model = model
 
@@ -131,18 +133,18 @@ class CropModel(LightningModule):
     def create_model(self, num_classes):
         """Create a model with the given number of classes."""
         self.accuracy = torchmetrics.Accuracy(average='none',
-                                                num_classes=num_classes,
-                                                task="multiclass")
+                                              num_classes=num_classes,
+                                              task="multiclass")
         self.total_accuracy = torchmetrics.Accuracy(num_classes=num_classes,
                                                     task="multiclass")
         self.precision_metric = torchmetrics.Precision(num_classes=num_classes,
-                                                        task="multiclass")
+                                                       task="multiclass")
         self.metrics = torchmetrics.MetricCollection({
             "Class Accuracy": self.accuracy,
             "Accuracy": self.total_accuracy,
             "Precision": self.precision_metric
         })
-    
+
         self.model = simple_resnet_50(num_classes=num_classes)
 
     def on_save_checkpoint(self, checkpoint):
@@ -189,7 +191,7 @@ class CropModel(LightningModule):
         self.val_ds = ImageFolder(root=val_dir,
                                   transform=self.get_transform(augment=False))
         self.label_dict = self.train_ds.class_to_idx
-        
+
         # Create a reverse mapping from numeric indices to class labels
         self.numeric_to_label_dict = {v: k for k, v in self.label_dict.items()}
 
