@@ -196,7 +196,7 @@ class CropModel(LightningModule):
         self.numeric_to_label_dict = {v: k for k, v in self.label_dict.items()}
 
         if recreate_model:
-            self.model = self.create_model(len(self.label_dict))
+            self.create_model(num_classes=len(self.label_dict))
 
     def get_transform(self, augment):
         """Returns the data transformation pipeline for the model.
