@@ -120,7 +120,7 @@ class CropModel(LightningModule):
             if num_classes is not None:
                 self.create_model(num_classes)
             else:
-                raise ValueError("num_classes must be provided if model is None")
+                print("No model created if model or num_classes is not provided, use load_from_disk to create a model from data directory.")
         else:
             self.model = model
 
@@ -174,7 +174,16 @@ class CropModel(LightningModule):
         self.numeric_to_label_dict = {v: k for k, v in self.label_dict.items()}
 
     def load_from_disk(self, train_dir, val_dir, recreate_model=False):
-        """Load the training and validation datasets from disk."""
+        """Load the training and validation datasets from disk.
+
+        Args:
+            train_dir (str): The directory containing the training dataset.
+            val_dir (str): The directory containing the validation dataset.
+            recreate_model (bool): Whether to recreate the model with the new number of classes.
+
+        Returns:
+            None
+        """
         self.train_ds = ImageFolder(root=train_dir,
                                     transform=self.get_transform(augment=True))
         self.val_ds = ImageFolder(root=val_dir,
