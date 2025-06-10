@@ -67,9 +67,9 @@ def test_crop_model_train(crop_model, tmpdir, crop_model_data):
 
 def test_crop_model_recreate_model(tmpdir, crop_model_data):
     crop_model = model.CropModel()
-    crop_model.load_from_disk(train_dir=tmpdir, val_dir=tmpdir)
+    crop_model.load_from_disk(train_dir=tmpdir, val_dir=tmpdir, recreate_model=True)
     assert crop_model.model is not None
-    assert crop_model.model.num_classes == 2
+    assert crop_model.model.fc.out_features == 2
 
 def test_crop_model_custom_transform():
     # Create a dummy instance of CropModel
