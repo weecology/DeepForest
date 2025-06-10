@@ -14,7 +14,7 @@ def test_model_no_args(config):
 @pytest.fixture()
 def crop_model():
     crop_model = model.CropModel(num_classes=2)
-
+    
     return crop_model
 
 @pytest.fixture()
@@ -32,8 +32,7 @@ def crop_model_data(crop_model, tmpdir):
 
     return None
 
-def test_crop_model(
-        crop_model):  # Use pytest tempdir fixture to create a temporary directory
+def test_crop_model(crop_model):
     # Test forward pass
     x = torch.rand(4, 3, 224, 224)
     output = crop_model.forward(x)
@@ -140,12 +139,8 @@ def test_crop_model_init_no_num_classes():
     This confirms that the user either needs to provide num_classes
     or load from a checkpoint that contains it.
     """
-    crop_model = model.CropModel()  # num_classes=None
-    x = torch.rand(4, 3, 224, 224)
-
-    # Expect the forward pass to fail because the model is uninitialized.
-    with pytest.raises(AttributeError):
-        _ = crop_model.forward(x)
+    with pytest.raises(ValueError):
+        crop_model = model.CropModel()  # num_classes=None
 
 
 def test_crop_model_load_checkpoint_with_explicit_num_classes(tmpdir, crop_model_data):

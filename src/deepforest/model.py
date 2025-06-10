@@ -110,36 +110,40 @@ class CropModel(LightningModule):
         self.num_classes = num_classes
         self.num_workers = num_workers
         self.label_dict = label_dict
+        
         if label_dict is not None:
             self.numeric_to_label_dict = {v: k for k, v in label_dict.items()}
         else:
             self.numeric_to_label_dict = None
         self.save_hyperparameters()
-
-        if num_classes is not None:
-            if model is None:
-                self.model = simple_resnet_50(num_classes=num_classes)
+        if model is None:
+            if num_classes is not None:
+                self.create_model(num_classes)
             else:
-                self.model = model
-
-            self.accuracy = torchmetrics.Accuracy(average='none',
-                                                  num_classes=num_classes,
-                                                  task="multiclass")
-            self.total_accuracy = torchmetrics.Accuracy(num_classes=num_classes,
-                                                        task="multiclass")
-            self.precision_metric = torchmetrics.Precision(num_classes=num_classes,
-                                                           task="multiclass")
-            self.metrics = torchmetrics.MetricCollection({
-                "Class Accuracy": self.accuracy,
-                "Accuracy": self.total_accuracy,
-                "Precision": self.precision_metric
-            })
+                raise ValueError("num_classes must be provided if model is None")
         else:
             self.model = model
 
         # Training Hyperparameters
         self.batch_size = batch_size
         self.lr = lr
+
+    def create_model(self, num_classes):
+        """Create a model with the given number of classes."""
+        self.accuracy = torchmetrics.Accuracy(average='none',
+                                                num_classes=num_classes,
+                                                task="multiclass")
+        self.total_accuracy = torchmetrics.Accuracy(num_classes=num_classes,
+                                                    task="multiclass")
+        self.precision_metric = torchmetrics.Precision(num_classes=num_classes,
+                                                        task="multiclass")
+        self.metrics = torchmetrics.MetricCollection({
+            "Class Accuracy": self.accuracy,
+            "Accuracy": self.total_accuracy,
+            "Precision": self.precision_metric
+        })
+    
+        self.model = simple_resnet_50(num_classes=num_classes)
 
     def on_save_checkpoint(self, checkpoint):
         checkpoint['label_dict'] = self.label_dict
@@ -169,14 +173,19 @@ class CropModel(LightningModule):
         self.label_dict = checkpoint['label_dict']
         self.numeric_to_label_dict = {v: k for k, v in self.label_dict.items()}
 
-    def load_from_disk(self, train_dir, val_dir):
+    def load_from_disk(self, train_dir, val_dir, recreate_model=False):
+        """Load the training and validation datasets from disk."""
         self.train_ds = ImageFolder(root=train_dir,
                                     transform=self.get_transform(augment=True))
         self.val_ds = ImageFolder(root=val_dir,
                                   transform=self.get_transform(augment=False))
         self.label_dict = self.train_ds.class_to_idx
+        
         # Create a reverse mapping from numeric indices to class labels
         self.numeric_to_label_dict = {v: k for k, v in self.label_dict.items()}
+
+        if recreate_model:
+            self.model = self.create_model(len(self.label_dict))
 
     def get_transform(self, augment):
         """Returns the data transformation pipeline for the model.
