@@ -70,8 +70,9 @@ class BoxDataset(Dataset):
         """Collate function for DataLoader."""
         images = [item[0] for item in batch]
         targets = [item[1] for item in batch]
+        image_names = [item[2] for item in batch]
 
-        return images, targets
+        return images, targets, image_names
 
     def load_image(self, idx):
         img_name = os.path.join(self.root_dir, self.image_names[idx])
@@ -113,7 +114,7 @@ class BoxDataset(Dataset):
             image = torch.from_numpy(image).float()
             targets = {"boxes": boxes, "labels": labels}
 
-            return image, targets
+            return image, targets, self.image_names[idx]
 
         # Apply augmentations
         augmented = self.transform(image=image,
@@ -128,4 +129,4 @@ class BoxDataset(Dataset):
         labels = torch.from_numpy(labels.astype(np.int64))
         targets = {"boxes": boxes, "labels": labels}
 
-        return image, targets
+        return image, targets, self.image_names[idx]

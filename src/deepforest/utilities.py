@@ -302,8 +302,7 @@ def format_geometry(predictions, scores=True, geom_type=None):
         df = format_boxes(predictions, scores=scores)
         if df is None:
             return None
-        df['geometry'] = df.apply(
-            lambda x: shapely.geometry.box(x.xmin, x.ymin, x.xmax, x.ymax), axis=1)
+
     elif geom_type == "polygon":
         raise ValueError("Polygon predictions are not yet supported for formatting")
     elif geom_type == "point":
@@ -332,6 +331,8 @@ def format_boxes(prediction, scores=True):
     if scores:
         df["score"] = prediction["scores"].cpu().detach().numpy()
 
+    df['geometry'] = df.apply(
+        lambda x: shapely.geometry.box(x.xmin, x.ymin, x.xmax, x.ymax), axis=1)
     return df
 
 

@@ -206,6 +206,7 @@ def test_validation_step_empty():
 
     val_dataloader = m.val_dataloader()
     batch = next(iter(val_dataloader))
+    m.predictions = []
     val_predictions = m.validation_step(batch, 0)
     assert m.iou_metric.compute()["iou"] == 0
 
@@ -849,14 +850,15 @@ def test_batch_inference_consistency(m, path):
     pd.testing.assert_frame_equal(batch_df[["xmin", "ymin", "xmax", "ymax"]], single_df[["xmin", "ymin", "xmax", "ymax"]], check_dtype=False)
 
 
-def test_epoch_evaluation_end(m):
+def test_epoch_evaluation_end(m, tmpdir):
+    """Test the epoch evaluation end method by """
     preds = [{
         'boxes': torch.tensor([
             [690.3572, 902.9113, 781.1031, 996.5151],
             [998.1990, 655.7919, 172.4619, 321.8518]
         ]),
         'scores': torch.tensor([
-            0.6740, 0.6625
+            1.0, 1.0
         ]),
         'labels': torch.tensor([
             0, 0
@@ -869,8 +871,21 @@ def test_epoch_evaluation_end(m):
 
     boxes = format_geometry(preds[0])
     boxes["image_path"] = "test"
-    m.predictions = [boxes]
-    m.on_validation_epoch_end()
+
+    predictions = boxes.copy()
+    assert m.iou_metric.compute()["iou"] == 1.0
+
+    # write a csv file to the tmpdir
+    boxes["label"] = "Tree"
+    m.predictions = [predictions]
+    boxes.to_csv(tmpdir.strpath + "/predictions.csv", index=False)
+    m.config.validation.csv_file = tmpdir.strpath + "/predictions.csv"
+    m.config.validation.root_dir = tmpdir.strpath
+
+    results = m.on_validation_epoch_end()
+
+    assert results["box_precision"] == 1.0
+    assert results["box_recall"] == 1.0
 
 def test_epoch_evaluation_end_empty(m):
     """If the model returns an empty prediction, the metrics should not fail"""

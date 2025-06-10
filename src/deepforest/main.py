@@ -21,6 +21,8 @@ from deepforest import utilities, predict
 
 from deepforest import evaluate as evaluate_iou
 from deepforest.datasets import prediction, training
+from deepforest.utilities import format_geometry
+
 import geopandas as gpd
 
 from omegaconf import DictConfig
@@ -343,6 +345,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
         if self.existing_val_dataloader:
             return self.existing_val_dataloader
+
         if self.config.validation.csv_file is not None:
             loader = self.load_dataset(
                 csv_file=self.config.validation.csv_file,
@@ -351,6 +354,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                 shuffle=False,
                 preload_images=self.config.validation.preload_images,
                 batch_size=self.config.batch_size)
+
         return loader
 
     def predict_dataloader(self, ds, batch_size=None):
@@ -426,7 +430,12 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
         return result
 
-    def predict_file(self, csv_file, root_dir, crop_model=None, size=None, batch_size=None):
+    def predict_file(self,
+                     csv_file,
+                     root_dir,
+                     crop_model=None,
+                     size=None,
+                     batch_size=None):
         """Create a dataset and predict entire annotation file CSV file format
         is .csv file with the columns "image_path", "xmin","ymin","xmax","ymax"
         for the image name and bounding box position. Image_path is the
@@ -443,7 +452,6 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         """
 
         ds = prediction.FromCSVFile(csv_file=csv_file, root_dir=root_dir, size=size)
-
         dataloader = self.predict_dataloader(ds, batch_size=batch_size)
         results = predict._dataloader_wrapper_(model=self,
                                                crop_model=crop_model,
@@ -604,7 +612,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         self.model.train()
 
         # allow for empty data if data augmentation is generated
-        images, targets = batch
+        images, targets, image_names = batch
         loss_dict = self.model.forward(images, targets)
 
         # sum of regression and classification loss
@@ -621,7 +629,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
     def validation_step(self, batch, batch_idx):
         """Evaluate a batch."""
-        images, targets = batch
+        images, targets, image_names = batch
 
         # Get loss from "train" mode, but don't allow optimization. Torchvision has a 'train' mode that returns a loss and a 'eval' mode that returns predictions. The names are confusing, but this is the correct way to get the loss.
         self.model.train()
@@ -642,8 +650,8 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         preds = self.model.eval()
         with torch.no_grad():
             preds = self.model.forward(images, targets)
+
         if len(targets) > 0:
-            # Remove empty targets
             # Remove empty targets and corresponding predictions
             filtered_preds = []
             filtered_targets = []
@@ -654,6 +662,13 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
             self.iou_metric.update(filtered_preds, filtered_targets)
             self.mAP_metric.update(filtered_preds, filtered_targets)
+
+        # Log the predictions if you want to use them for evaluation logs
+        for i, result in enumerate(preds):
+            formatted_result = format_geometry(result)
+            if formatted_result is not None:
+                formatted_result["image_path"] = image_names[i]
+                self.predictions.append(formatted_result)
 
         return losses
 
@@ -751,18 +766,21 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             return
 
         if self.current_epoch % self.config.validation.val_accuracy_interval == 0:
-            trainer_state = deepcopy(self.trainer.state)
-            current_fx_name = self._current_fx_name
+            if len(self.predictions) > 0:
+                self.predictions = pd.concat(self.predictions)
+            else:
+                self.predictions = pd.DataFrame()
+
             results = self.evaluate(self.config.validation.csv_file,
                                     root_dir=self.config.validation.root_dir,
-                                    size=self.config.validation.size)
-            self.predictions = results["predictions"]
-            self.trainer.state = trainer_state
-            self._current_fx_name = current_fx_name
+                                    size=self.config.validation.size,
+                                    predictions=self.predictions)
 
             # Log epoch metrics
             self.log_epoch_metrics()
             self.__evaluation_logs__(results)
+
+            return results
 
     def predict_step(self, batch, batch_idx):
         """Predict a batch of images with the deepforest model. If batch is a
@@ -894,7 +912,13 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         else:
             return optimizer
 
-    def evaluate(self, csv_file, iou_threshold=None, root_dir=None, size=None, batch_size=None):
+    def evaluate(self,
+                 csv_file,
+                 iou_threshold=None,
+                 root_dir=None,
+                 size=None,
+                 batch_size=None,
+                 predictions=None):
         """Compute intersection-over-union and precision/recall for a given
         iou_threshold.
 
@@ -902,6 +926,8 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             csv_file: location of a csv file with columns "name","xmin","ymin","xmax","ymax","label"
             iou_threshold: float [0,1] intersection-over-union threshold for true positive
             batch_size: int, the batch size to use for prediction. If None, uses the batch size of the model.
+            size: int, the size to resize the images to. If None, no resizing is done.
+            predictions: list of predictions to use for evaluation. If None, predictions are generated from the model.
 
         Returns:
             dict: Results dictionary containing precision, recall and other metrics
@@ -913,20 +939,12 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         if root_dir is None:
             root_dir = os.path.dirname(csv_file)
 
-        # Get the predict dataloader and use predict_batch
-        ds = prediction.FromCSVFile(csv_file=csv_file, root_dir=root_dir, size=size)
-        dl = self.predict_dataloader(ds, batch_size=batch_size)
-        predictions = []
-        for batch in dl:
-            batch = self.transfer_batch_to_device(batch, self.device, dataloader_idx=0)
-            batch_results = self.predict_step(batch, 0)
-            batch_prediction = ds.postprocess(batch_results)
-            predictions.append(batch_prediction)
-
-        if len(predictions) > 0:
-            predictions = pd.concat(predictions)
-        else:
-            predictions = pd.DataFrame()
+        if predictions is None:
+            # Get the predict dataloader and use predict_batch
+            predictions = self.predict_file(csv_file,
+                                            root_dir,
+                                            size=size,
+                                            batch_size=batch_size)
 
         if iou_threshold is None:
             iou_threshold = self.config.validation.iou_threshold
