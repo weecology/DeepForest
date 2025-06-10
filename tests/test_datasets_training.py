@@ -35,7 +35,7 @@ def test_BoxDataset(csv_file, label_dict):
 
     for i in range(len(ds)):
         # Between 0 and 1
-        image, targets = ds[i]
+        image, targets, paths = ds[i]
         assert image.max() <= 1
         assert image.min() >= 0
         assert targets["boxes"].shape == (raw_data.shape[0], 4)
@@ -80,7 +80,7 @@ def test_BoxDataset_transform(augment):
 
     for i in range(len(ds)):
         # Between 0 and 1
-        image, targets = ds[i]
+        image, targets, path = ds[i]
         assert image.max() <= 1
         assert image.min() >= 0
         assert targets["boxes"].shape == (79, 4)
@@ -124,7 +124,7 @@ def test_BoxDataset_format():
     csv_file = get_data("example.csv")
     root_dir = os.path.dirname(csv_file)
     ds = BoxDataset(csv_file=csv_file, root_dir=root_dir)
-    image, targets = next(iter(ds))
+    image, targets, path = next(iter(ds))
     
     # Assert image is channels first format
     assert image.shape[0] == 3

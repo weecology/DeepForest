@@ -534,7 +534,7 @@ def test_override_transforms():
     root_dir = os.path.dirname(csv_file)
     train_ds = m.load_dataset(csv_file, root_dir=root_dir, augment=True)
 
-    image, target = next(iter(train_ds))
+    image, target, path = next(iter(train_ds))
     assert m.transforms.__doc__ == "This is the new transform"
 
 #TODO: Fix this test to check that predictions change as checking
