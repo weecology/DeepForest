@@ -13,6 +13,50 @@ from torchmetrics.detection.mean_ap import MeanAveragePrecision
 from deepforest.utilities import determine_geometry_type
 
 
+def evaluate_image_boxes(predictions, ground_df, iou_tensor):
+    # check that `iou_tensor` is a two-dimensional tensor
+    if iou_tensor != [] and len(iou_tensor.shape) == 2:
+        # create cost matrix for assignment, with rows and columns respectively
+        # representing predictions and ground truths and the cost being the area of
+        # the intersection
+        # ACHTUNG: since in most cases images are tiles (hence are rather small),
+        # using the spatial index is slower
+        # annot_sindex = annot_df.sindex
+        # cost_arr = pred_df.geometry.apply(
+        #     lambda pred_geom: annot_df.iloc[
+        #         annot_sindex.intersection(pred_geom.bounds)
+        #     ]
+        #     .intersection(pred_geom)
+        #     .area
+        # ).fillna(0)
+        # TODO: can we get the ground truth-prediction matches from torchmetrics?
+        # we'd need to access the `coco_eval` variable within the
+        # `MeanAveragePrecision.compute` method (see https://github.com/
+        # Lightning-AI/torchmetrics/blob/master/src/torchmetrics/detection/
+        # mean_ap.py#L522), but this would require modifying torchmetrics.
+        # Additionally, how to access the matches would depend on the backend used
+        # (i.e., pycocotools or faster_coco_eval).
+        cost_arr = predictions.geometry.apply(
+            lambda pred_geom: ground_df.intersection(pred_geom).area
+        ).values
+
+        row_ind, col_ind = optimize.linear_sum_assignment(
+            cost_arr,
+            maximize=True,
+        )
+        return pd.DataFrame(
+            {
+                "prediction_id": row_ind,
+                "truth_id": col_ind,
+                "IoU": iou_tensor[row_ind, col_ind],
+            },
+        ).sort_values("truth_id", ascending=True)
+    else:
+        # when iou_dict[(image_key, class_val)] is [], aka, no predictions
+        # except ValueError, IndexError:
+        return None
+
+
 def compute_class_recall(results):
     """Given a set of evaluations, what proportion of predicted boxes match.
 
@@ -145,8 +189,13 @@ def evaluate_boxes(predictions, ground_df, iou_threshold=0.4):
 
     # get a label dictionary mapping the integer ids to the class names, from the
     # "label" column of `predictions` and `ground_df`
+    # label_dict = {
+    #     label: i
+    #     for i, label in enumerate(set(predictions["label"]).union(ground_df["label"]))
+    # }
+    # we need to match all tree bounding boxes, so we will ignore the classes first
     label_dict = {
-        label: i
+        label: 0
         for i, label in enumerate(set(predictions["label"]).union(ground_df["label"]))
     }
 
@@ -185,7 +234,6 @@ def evaluate_boxes(predictions, ground_df, iou_threshold=0.4):
     # ious
     # shape: dict with keys of the form (image, class) and values with the corresponding
     # ious for each detection (row) and ground truth (column)
-    # TODO: support multi-class
     # TODO: support multi-image predictions and annotations
     # ious = mean_ap_dict["ious"]  # [(0, 0)].max(dim=0).values
 
@@ -235,68 +283,18 @@ def evaluate_boxes(predictions, ground_df, iou_threshold=0.4):
         image_key: image_path
         for image_key, (image_path, _) in enumerate(ground_df.groupby("image_path"))
     }
-    numeric_to_label_dict = {val: label for label, val in label_dict.items()}
+    # numeric_to_label_dict = {val: label for label, val in label_dict.items()}
     iou_dict = mean_ap_dict["ious"]
-
-    def process_image_class(image_key, class_val):
-        iou_tensor = iou_dict[(image_key, class_val)]
-        # check that `iou_tensor` is a two-dimensional tensor
-        if iou_tensor != [] and len(iou_tensor.shape) == 2:
-            # create cost matrix for assignment, with rows and columns respectively
-            # representing predictions and ground truths and the cost being the area of
-            # the intersection
-            # ACHTUNG: since in most cases images are tiles (hence are rather small),
-            # using the spatial index is slower
-            # annot_sindex = annot_df.sindex
-            # cost_arr = pred_df.geometry.apply(
-            #     lambda pred_geom: annot_df.iloc[
-            #         annot_sindex.intersection(pred_geom.bounds)
-            #     ]
-            #     .intersection(pred_geom)
-            #     .area
-            # ).fillna(0)
-            # TODO: can we get the ground truth-prediction matches from torchmetrics?
-            # we'd need to access the `coco_eval` variable within the
-            # `MeanAveragePrecision.compute` method (see https://github.com/
-            # Lightning-AI/torchmetrics/blob/master/src/torchmetrics/detection/
-            # mean_ap.py#L522), but this would require modifying torchmetrics.
-            # Additionally, how to access the matches would depend on the backend used
-            # (i.e., pycocotools or faster_coco_eval).
-            cost_arr = (
-                predictions[
-                    (predictions["image_path"] == image_path_dict[image_key])
-                    & (predictions["label"] == numeric_to_label_dict[class_val])
-                ]
-                .geometry.apply(
-                    lambda pred_geom: ground_df[
-                        (ground_df["image_path"] == image_path_dict[image_key])
-                        & (ground_df["label"] == numeric_to_label_dict[class_val])
-                    ]
-                    .intersection(pred_geom)
-                    .area
-                )
-                .values
-            )
-
-            row_ind, col_ind = optimize.linear_sum_assignment(
-                cost_arr,
-                maximize=True,
-            )
-            return pd.DataFrame(
-                {
-                    "prediction_id": row_ind,
-                    "truth_id": col_ind,
-                    "IoU": iou_tensor[row_ind, col_ind],
-                },
-            ).sort_values("truth_id", ascending=True)
-        else:
-            # when iou_dict[(image_key, class_val)] is [], aka, no predictions
-            # except ValueError, IndexError:
-            return None
 
     results_df = pd.concat(
         [
-            process_image_class(image_key, class_val)
+            evaluate_image_boxes(
+                *[
+                    df[df["image_path"] == image_path_dict[image_key]]
+                    for df in [predictions, ground_df]
+                ],
+                iou_dict[(image_key, class_val)],
+            )
             for image_key, class_val in iou_dict.keys()
         ],
         axis="rows",
