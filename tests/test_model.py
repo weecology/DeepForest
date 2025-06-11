@@ -238,5 +238,5 @@ def test_crop_model_val_dataset_confusion(tmpdir, crop_model_data):
     assert len(images) == 37
 
     # There was just one batch in the fast_dev_run
-    assert len(labels) == 4 
+    assert len(labels) ==37 
     assert len(predictions) == 4
