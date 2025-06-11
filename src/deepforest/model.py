@@ -115,7 +115,6 @@ class CropModel(LightningModule):
             self.numeric_to_label_dict = {v: k for k, v in label_dict.items()}
         else:
             self.numeric_to_label_dict = None
-        self.save_hyperparameters()
         if model is None:
             if num_classes is not None:
                 self.create_model(num_classes)
@@ -149,31 +148,17 @@ class CropModel(LightningModule):
 
     def on_save_checkpoint(self, checkpoint):
         checkpoint['label_dict'] = self.label_dict
+        checkpoint["num_classes"] = self.num_classes
 
     def create_trainer(self, **kwargs):
         """Create a pytorch lightning trainer object."""
         self.trainer = Trainer(**kwargs)
 
     def on_load_checkpoint(self, checkpoint):
-        # Now that self.num_classes always exists, this check won't error
-        if self.num_classes is None:
-            self.num_classes = checkpoint['hyper_parameters']['num_classes']
-        if self.model is None:
-            self.model = simple_resnet_50(num_classes=self.num_classes)
-        self.accuracy = torchmetrics.Accuracy(average='none',
-                                              num_classes=self.num_classes,
-                                              task="multiclass")
-        self.total_accuracy = torchmetrics.Accuracy(num_classes=self.num_classes,
-                                                    task="multiclass")
-        self.precision_metric = torchmetrics.Precision(num_classes=self.num_classes,
-                                                       task="multiclass")
-        self.metrics = torchmetrics.MetricCollection({
-            "Class Accuracy": self.accuracy,
-            "Accuracy": self.total_accuracy,
-            "Precision": self.precision_metric
-        })
         self.label_dict = checkpoint['label_dict']
         self.numeric_to_label_dict = {v: k for k, v in self.label_dict.items()}
+        self.create_model(checkpoint['num_classes'])
+        self.load_state_dict(checkpoint['state_dict'])
 
     def load_from_disk(self, train_dir, val_dir, recreate_model=False):
         """Load the training and validation datasets from disk.
@@ -196,7 +181,8 @@ class CropModel(LightningModule):
         self.numeric_to_label_dict = {v: k for k, v in self.label_dict.items()}
 
         if recreate_model:
-            self.create_model(num_classes=len(self.label_dict))
+            self.num_classes = len(self.label_dict)
+            self.create_model(num_classes=self.num_classes)
 
     def get_transform(self, augment):
         """Returns the data transformation pipeline for the model.

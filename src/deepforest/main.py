@@ -260,6 +260,14 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                 "Cannot train with a train annotations file, please set 'config['train']['csv_file'] before calling deepforest.create_trainer()'"
             )
 
+    def on_save_checkpoint(self, checkpoint):
+        checkpoint["label_dict"] = self.label_dict
+        checkpoint["numeric_to_label_dict"] = self.numeric_to_label_dict
+
+    def on_load_checkpoint(self, checkpoint):
+        self.label_dict = checkpoint["label_dict"]
+        self.numeric_to_label_dict = checkpoint["numeric_to_label_dict"]
+
     def save_model(self, path):
         """Save the trainer checkpoint in user defined path, in order to access
         in future.

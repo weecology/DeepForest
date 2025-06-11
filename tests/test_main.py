@@ -455,6 +455,30 @@ def test_train_callbacks(m):
     trainer.fit(m, train_ds)
 
 
+def test_checkpoint_label_dict(m, tmpdir):
+    """Test that the label dict is saved and loaded correctly from a checkpoint."""
+    csv_file = get_data("example.csv")
+    df = pd.read_csv(csv_file)
+    df["label"] = "Object"
+
+    #write to tmpdir
+    df.to_csv(os.path.join(tmpdir, "example.csv"), index=False)
+
+    m.config["train"]["csv_file"] = os.path.join(tmpdir, "example.csv")
+    m.config["train"]["root_dir"] = os.path.dirname(csv_file)
+    m.config["validation"]["csv_file"] = os.path.join(tmpdir, "example.csv")
+    m.config["validation"]["root_dir"] = os.path.dirname(csv_file)
+    
+    m.config.train.fast_dev_run = True
+    m.create_trainer()
+    m.label_dict = {"Object": 0}
+    m.numeric_to_label_dict = {0: "Object"}
+    m.trainer.fit(m)
+    m.trainer.save_checkpoint("{}/checkpoint.pl".format(tmpdir))
+    after = main.deepforest.load_from_checkpoint("{}/checkpoint.pl".format(tmpdir))
+    assert after.label_dict == {"Object": 0}
+    assert after.numeric_to_label_dict == {0: "Object"}
+
 def test_save_and_reload_checkpoint(m, tmpdir):
     img_path = get_data(path="2019_YELL_2_528000_4978000_image_crop2.png")
     m.config.train.fast_dev_run = True
