@@ -3,20 +3,11 @@ on_epoch_begin, on_epoch_end, on_fit_end, on_fit_begin methods and inject model
 and epoch kwargs."""
 
 from deepforest import visualize
-from matplotlib import pyplot as plt
-import pandas as pd
 import numpy as np
 import glob
-import tempfile
-import os
 import supervision as sv
 
 from pytorch_lightning import Callback
-from deepforest import dataset
-from deepforest import utilities
-from deepforest import predict
-
-import torch
 
 
 class images_callback(Callback):
@@ -51,7 +42,7 @@ class images_callback(Callback):
 
     def log_images(self, pl_module):
         # It is not clear if this is per device, or per batch. If per batch, then this will not work.
-        df = pl_module.predictions[0]
+        df = pl_module.predictions
 
         # Limit to n images, potentially randomly selected
         if self.select_random:
@@ -88,7 +79,7 @@ class images_callback(Callback):
                   "skipping upload, images were saved to {}, "
                   "error was raised {}".format(self.savedir, e))
 
-    def on_validation_epoch_end(self, trainer, pl_module):
+    def on_validation_end(self, trainer, pl_module):
         if trainer.sanity_checking:  # optional skip
             return
 

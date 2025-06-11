@@ -1,11 +1,7 @@
 # test callbacks
-from deepforest import main
 from deepforest import callbacks
 import glob
-import os
-import pytest
 from pytorch_lightning.callbacks import ModelCheckpoint
-from deepforest import get_data
 
 
 def test_log_images(m, tmpdir):

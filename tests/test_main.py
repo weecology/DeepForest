@@ -14,9 +14,10 @@ import importlib.util
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 
-from deepforest import main, get_data, dataset, model
-from deepforest.visualize import format_geometry
-from deepforest.utilities import read_file
+from deepforest import main, get_data, model
+from deepforest.utilities import read_file, format_geometry
+from deepforest.datasets import prediction
+from deepforest.visualize import plot_results 
 
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import Callback
@@ -69,6 +70,7 @@ def m(download_release):
 
     m.create_trainer()
     m.load_model("weecology/deepforest-tree")
+
     return m
 
 
@@ -95,10 +97,10 @@ def path():
     return get_data(path='OSBS_029.tif')
 
 
+@pytest.fixture()
 def big_file():
     tmpdir = tempfile.gettempdir()
     csv_file = get_data("OSBS_029.csv")
-    image_path = get_data("OSBS_029.png")
     df = pd.read_csv(csv_file)
 
     big_frame = []
@@ -115,6 +117,9 @@ def big_file():
 
     return "{}/annotations.csv".format(tmpdir)
 
+def test_m_has_tree_model_loaded(m):
+    boxes = m.predict_image(path=get_data("OSBS_029.tif"))
+    assert not boxes.empty
 
 def test_tensorboard_logger(m, tmpdir):
     # Check if TensorBoard is installed
@@ -202,9 +207,7 @@ def test_validation_step_empty():
     val_dataloader = m.val_dataloader()
     batch = next(iter(val_dataloader))
     m.predictions = []
-    val_loss = m.validation_step(batch, 0)
-    assert len(m.predictions) == 1
-    assert m.predictions[0].xmin.isna().all()
+    val_predictions = m.validation_step(batch, 0)
     assert m.iou_metric.compute()["iou"] == 0
 
 def test_validate(m):
@@ -295,6 +298,7 @@ def test_predict_image_fromfile(m):
     assert set(prediction.columns) == {
         "xmin", "ymin", "xmax", "ymax", "label", "score", "image_path", "geometry"
     }
+    assert not prediction.empty
 
 
 def test_predict_image_fromarray(m):
@@ -313,20 +317,17 @@ def test_predict_image_fromarray(m):
     assert set(prediction.columns) == {"xmin", "ymin", "xmax", "ymax", "label", "score", "geometry"}
     assert not hasattr(prediction, 'root_dir')
 
-def test_predict_big_file(m, tmpdir):
+def test_predict_big_file(m, big_file):
     m.config.train.fast_dev_run = False
     m.create_trainer()
-    csv_file = big_file()
-    original_file = pd.read_csv(csv_file)
-    df = m.predict_file(csv_file=csv_file,
-                        root_dir=os.path.dirname(csv_file))
+    df = m.predict_file(csv_file=big_file,
+                        root_dir=os.path.dirname(big_file))
     assert set(df.columns) == {
         'label', 'score', 'image_path', 'geometry', "xmin", "ymin", "xmax", "ymax"
     }
 
-def test_predict_small_file(m, tmpdir):
+def test_predict_small_file(m):
     csv_file = get_data("OSBS_029.csv")
-    original_file = pd.read_csv(csv_file)
     df = m.predict_file(csv_file, root_dir=os.path.dirname(csv_file))
     assert set(df.columns) == {
         'label', 'score', 'image_path', 'geometry', "xmin", "ymin", "xmax", "ymax"
@@ -336,11 +337,10 @@ def test_predict_small_file(m, tmpdir):
 def test_predict_dataloader(m, batch_size, path):
     m.config.batch_size = batch_size
     tile = np.array(Image.open(path))
-    ds = dataset.TileDataset(tile=tile, patch_overlap=0.1, patch_size=100)
+    ds = prediction.SingleImage(image=tile, path=path, patch_overlap=0.1, patch_size=100)
     dl = m.predict_dataloader(ds)
     batch = next(iter(dl))
-    batch.shape[0] == batch_size
-
+    assert batch.shape[0] == batch_size
 
 def test_predict_tile_empty(path):
     # Random weights
@@ -348,20 +348,23 @@ def test_predict_tile_empty(path):
     predictions = m.predict_tile(path=path, patch_size=300, patch_overlap=0)
     assert predictions is None
 
-@pytest.mark.parametrize("in_memory", [True, False])
-def test_predict_tile(m, path, in_memory):
+@pytest.mark.parametrize("dataloader_strategy", ["single", "window", "batch"])
+def test_predict_tile(m, path, dataloader_strategy):
     m.create_model()
     m.config.train.fast_dev_run = False
     m.create_trainer()
+    m.load_model("weecology/deepforest-tree")
 
-    if in_memory:
-        path = path
+    if dataloader_strategy == "single":
+        image_path = path
+    elif dataloader_strategy == "window":
+        image_path = get_data("test_tiled.tif")
     else:
-        path = get_data("test_tiled.tif")
+        image_path = [path]
 
-    prediction = m.predict_tile(path=path,
+    prediction = m.predict_tile(path=image_path,
                                 patch_size=300,
-                                in_memory=in_memory,
+                                dataloader_strategy=dataloader_strategy,
                                 patch_overlap=0.1)
 
     assert isinstance(prediction, pd.DataFrame)
@@ -370,36 +373,51 @@ def test_predict_tile(m, path, in_memory):
     }
     assert not prediction.empty
 
-# test equivalence for in_memory=True and False
+    # Assert there are predictions in each corner of the image
+    assert prediction.xmin.min() < 50
+    assert prediction.xmin.max() > 350
+    assert prediction.ymin.min() < 50
+    assert prediction.ymin.max() > 350
+
+    plot_results(prediction)
+
+
+# Add predict_tile for serial single dataloader strategy
+def test_predict_tile_serial_single(m):
+    path1 = get_data("OSBS_029.png")
+    path2 = get_data("SOAP_031.png")
+    m.create_model()
+    m.config.train.fast_dev_run = False
+    m.create_trainer()
+    m.load_model("weecology/deepforest-tree")
+    prediction = m.predict_tile(path=[path1, path2], patch_size=300, patch_overlap=0, dataloader_strategy="batch")
+    assert prediction.image_path.unique().tolist() == [os.path.basename(path1), os.path.basename(path2)]
+
+    # view the predictions of each image
+    prediction_1 = prediction[prediction.image_path == os.path.basename(path1)]
+    prediction_1.root_dir = os.path.dirname(path1)
+    prediction_2 = prediction[prediction.image_path == os.path.basename(path2)]
+    prediction_2.root_dir = os.path.dirname(path2)
+
+    plot_results(prediction_1)
+    plot_results(prediction_2)
+
+# test equivalence for within and out of memory dataset strategies
 def test_predict_tile_equivalence(m):
     path = get_data("test_tiled.tif")
-    in_memory_prediction = m.predict_tile(path=path, patch_size=300, patch_overlap=0, in_memory=True)
-    not_in_memory_prediction = m.predict_tile(path=path, patch_size=300, patch_overlap=0, in_memory=False)
-    assert in_memory_prediction.equals(not_in_memory_prediction)
+    in_memory_prediction = m.predict_tile(path=path, patch_size=300, patch_overlap=0, dataloader_strategy="single")
+    not_in_memory_prediction = m.predict_tile(path=path, patch_size=300, patch_overlap=0, dataloader_strategy="window")
+
+    # Assert same number of predictions
+    assert len(in_memory_prediction) == len(not_in_memory_prediction)
 
 def test_predict_tile_from_array(m, path):
-    # test predict numpy image
     image = np.array(Image.open(path))
     m.config.train.fast_dev_run = False
     m.create_trainer()
-    prediction = m.predict_tile(image=image,
-                                patch_size=300)
+    prediction = m.predict_tile(image=image, patch_size=300)
 
-    assert not prediction.empty
-
-
-def test_predict_tile_no_mosaic(m, path):
-    # test no mosaic, return a tuple of crop and prediction
-    m.config.train.fast_dev_run = False
-    m.create_trainer()
-    prediction = m.predict_tile(path=path,
-                                patch_size=300,
-                                patch_overlap=0,
-                                mosaic=False)
-    assert len(prediction) == 4
-    assert len(prediction[0]) == 2
-    assert prediction[0][1].shape == (300, 300, 3)
-
+    assert not prediction.empty    
 
 def test_evaluate(m, tmpdir):
     csv_file = get_data("OSBS_029.csv")
@@ -516,7 +534,7 @@ def test_override_transforms():
     root_dir = os.path.dirname(csv_file)
     train_ds = m.load_dataset(csv_file, root_dir=root_dir, augment=True)
 
-    path, image, target = next(iter(train_ds))
+    image, target, path = next(iter(train_ds))
     assert m.transforms.__doc__ == "This is the new transform"
 
 #TODO: Fix this test to check that predictions change as checking
@@ -593,19 +611,16 @@ def test_load_existing_train_dataloader(m, tmpdir, existing_loader):
     # Inspect original for comparison of batch size
     m.config.train.csv_file = "{}/train.csv".format(tmpdir.strpath)
     m.config.train.root_dir = tmpdir.strpath
-    m.create_trainer(fast_dev_run=True)
-    m.trainer.fit(m)
-    batch = next(iter(m.trainer.train_dataloader))
+    batch = next(iter(m.train_dataloader()))
     assert len(batch[0]) == m.config.batch_size
 
     # Existing train dataloader
     m.config.train.csv_file = "{}/train.csv".format(tmpdir.strpath)
     m.config.train.root_dir = tmpdir.strpath
     m.existing_train_dataloader = existing_loader
-    m.train_dataloader()
     m.create_trainer(fast_dev_run=True)
     m.trainer.fit(m)
-    batch = next(iter(m.trainer.train_dataloader))
+    batch = next(iter(m.train_dataloader()))
     assert len(batch[0]) == m.config.batch_size + 1
 
 
@@ -613,16 +628,15 @@ def test_existing_val_dataloader(m, tmpdir, existing_loader):
     m.config.validation["csv_file"] = "{}/train.csv".format(tmpdir.strpath)
     m.config.validation["root_dir"] = tmpdir.strpath
     m.existing_val_dataloader = existing_loader
-    m.val_dataloader()
     m.create_trainer()
     m.trainer.validate(m)
-    batch = next(iter(m.trainer.val_dataloaders))
+    batch = next(iter(m.val_dataloader()))
     assert len(batch[0]) == m.config.batch_size + 1
 
 
 def test_existing_predict_dataloader(m, tmpdir):
     # Predict datasets yield only images
-    ds = dataset.TileDataset(tile=np.random.random((400, 400, 3)).astype("float32"),
+    ds = prediction.TiledRaster(path=get_data("test_tiled.tif"),
                              patch_overlap=0.1,
                              patch_size=100)
     existing_loader = m.predict_dataloader(ds)
@@ -697,7 +711,6 @@ def test_predict_tile_with_crop_model(m, config):
     patch_size = 400
     patch_overlap = 0.05
     iou_threshold = 0.15
-    mosaic = True
     # Set up the crop model
     crop_model = model.CropModel(num_classes=2, label_dict = {"Dead":0, "Alive":1})
 
@@ -708,7 +721,6 @@ def test_predict_tile_with_crop_model(m, config):
                             patch_size=patch_size,
                             patch_overlap=patch_overlap,
                             iou_threshold=iou_threshold,
-                            mosaic=mosaic,
                             crop_model=crop_model)
 
     # Assert the result
@@ -727,10 +739,6 @@ def test_predict_tile_with_crop_model_empty():
     """If the model return is empty, the crop model should return an empty dataframe"""
     path = get_data("SOAP_061.png")
     m = main.deepforest()
-    patch_size = 400
-    patch_overlap = 0.05
-    iou_threshold = 0.15
-    mosaic = True
     
     # Set up the crop model
     crop_model = model.CropModel(num_classes=2, label_dict = {"Dead": 0, "Alive": 1})
@@ -739,10 +747,9 @@ def test_predict_tile_with_crop_model_empty():
     m.config.train.fast_dev_run = False
     m.create_trainer()
     result = m.predict_tile(path=path,
-                            patch_size=patch_size,
-                            patch_overlap=patch_overlap,
-                            iou_threshold=iou_threshold,
-                            mosaic=mosaic,
+                            patch_size=400,
+                            patch_overlap=0.05,
+                            iou_threshold=0.15,
                             crop_model=crop_model)
     
 
@@ -754,7 +761,6 @@ def test_predict_tile_with_multiple_crop_models(m, config):
     patch_size = 400
     patch_overlap = 0.05
     iou_threshold = 0.15
-    mosaic = True
 
     # Create multiple crop models
     crop_model = [model.CropModel(num_classes=2, label_dict={"Dead":0, "Alive":1}), model.CropModel(num_classes=3, label_dict={"Dead":0, "Alive":1, "Sapling":2})]
@@ -766,7 +772,6 @@ def test_predict_tile_with_multiple_crop_models(m, config):
                             patch_size=patch_size,
                             patch_overlap=patch_overlap,
                             iou_threshold=iou_threshold,
-                            mosaic=mosaic,
                             crop_model=crop_model)
 
     # Assert result type
@@ -786,10 +791,6 @@ def test_predict_tile_with_multiple_crop_models_empty():
     """If no predictions are made, result should be empty"""
     path = get_data("SOAP_061.png")
     m = main.deepforest()
-    patch_size = 400
-    patch_overlap = 0.05
-    iou_threshold = 0.15
-    mosaic = True
 
     # Create multiple crop models
     crop_model_1 = model.CropModel(num_classes=2, label_dict={"Dead":0, "Alive":1})
@@ -798,50 +799,46 @@ def test_predict_tile_with_multiple_crop_models_empty():
     m.config.train.fast_dev_run = False
     m.create_trainer()
     result = m.predict_tile(path=path,
-                            patch_size=patch_size,
-                            patch_overlap=patch_overlap,
-                            iou_threshold=iou_threshold,
-                            mosaic=mosaic,
+                            patch_size=400,
+                            patch_overlap=0.05,
+                            iou_threshold=0.15,
                             crop_model=[crop_model_1, crop_model_2])
 
     assert result is None or result.empty  # Ensure empty result is handled properly
 
 def test_batch_prediction(m, path):
     # Prepare input data
-    tile = np.array(Image.open(path))
-    ds = dataset.TileDataset(tile=tile, patch_overlap=0.1, patch_size=300)
+    ds = prediction.SingleImage(path=path, patch_overlap=0.1, patch_size=300)
     dl = DataLoader(ds, batch_size=3)
 
     # Perform prediction
     predictions = []
     for batch in dl:
-        prediction = m.predict_batch(batch)
-        predictions.append(prediction)
+        batch_predictions = m.predict_batch(batch)
+        predictions.extend(batch_predictions)
 
-    # Check results
-    assert len(predictions) == len(dl)
-    for batch_pred in predictions:
-        for image_pred in batch_pred:
-            assert isinstance(image_pred, pd.DataFrame)
-            assert "label" in image_pred.columns
-            assert "score" in image_pred.columns
-            assert "geometry" in image_pred.columns
+    # Check results  
+    assert len(predictions) == len(ds)
+    for image_pred in predictions:
+        assert isinstance(image_pred, pd.DataFrame)
+        assert "label" in image_pred.columns
+        assert "score" in image_pred.columns
+        assert "geometry" in image_pred.columns
 
 def test_batch_inference_consistency(m, path):
-    tile = np.array(Image.open(path))
-    ds = dataset.TileDataset(tile=tile, patch_overlap=0.1, patch_size=300)
+    ds = prediction.SingleImage(path=path, patch_overlap=0.1, patch_size=300)
     dl = DataLoader(ds, batch_size=4)
 
     batch_predictions = []
     for batch in dl:
-        prediction = m.predict_batch(batch)
-        batch_predictions.extend(prediction)
+        batch_prediction = m.predict_batch(batch)
+        batch_predictions.extend(batch_prediction)
 
     single_predictions = []
     for image in ds:
-        image = image.permute(1,2,0).numpy() * 255
-        prediction = m.predict_image(image=image)
-        single_predictions.append(prediction)
+        image = np.rollaxis(image, 0, 3) * 255
+        single_prediction = m.predict_image(image=image)
+        single_predictions.append(single_prediction)
 
     batch_df = pd.concat(batch_predictions, ignore_index=True)
     single_df = pd.concat(single_predictions, ignore_index=True)
@@ -853,14 +850,15 @@ def test_batch_inference_consistency(m, path):
     pd.testing.assert_frame_equal(batch_df[["xmin", "ymin", "xmax", "ymax"]], single_df[["xmin", "ymin", "xmax", "ymax"]], check_dtype=False)
 
 
-def test_epoch_evaluation_end(m):
+def test_epoch_evaluation_end(m, tmpdir):
+    """Test the epoch evaluation end method by """
     preds = [{
         'boxes': torch.tensor([
             [690.3572, 902.9113, 781.1031, 996.5151],
             [998.1990, 655.7919, 172.4619, 321.8518]
         ]),
         'scores': torch.tensor([
-            0.6740, 0.6625
+            1.0, 1.0
         ]),
         'labels': torch.tensor([
             0, 0
@@ -873,8 +871,21 @@ def test_epoch_evaluation_end(m):
 
     boxes = format_geometry(preds[0])
     boxes["image_path"] = "test"
-    m.predictions = [boxes]
-    m.on_validation_epoch_end()
+
+    predictions = boxes.copy()
+    assert m.iou_metric.compute()["iou"] == 1.0
+
+    # write a csv file to the tmpdir
+    boxes["label"] = "Tree"
+    m.predictions = [predictions]
+    boxes.to_csv(tmpdir.strpath + "/predictions.csv", index=False)
+    m.config.validation.csv_file = tmpdir.strpath + "/predictions.csv"
+    m.config.validation.root_dir = tmpdir.strpath
+
+    results = m.on_validation_epoch_end()
+
+    assert results["box_precision"] == 1.0
+    assert results["box_recall"] == 1.0
 
 def test_epoch_evaluation_end_empty(m):
     """If the model returns an empty prediction, the metrics should not fail"""
@@ -909,7 +920,10 @@ def test_empty_frame_accuracy_all_empty_with_predictions(m, tmpdir):
 
     m.create_trainer()
     results = m.trainer.validate(m)
-    assert results[0]["empty_frame_accuracy"] == 0
+    
+    # This is bit of a preference, if there are no predictions, the empty frame accuracy should be 0, precision is 0, and accuracy is None.
+    assert results[0]["empty_frame_accuracy"] == 0.0
+    assert results[0]["box_precision"] == 0.0
 
 def test_empty_frame_accuracy_mixed_frames_with_predictions(m, tmpdir):
     """Test empty frame accuracy with a mix of empty and non-empty frames.
@@ -929,8 +943,9 @@ def test_empty_frame_accuracy_mixed_frames_with_predictions(m, tmpdir):
 
     # Save the ground truth to a temporary file
     ground_df.to_csv(tmpdir.strpath + "/ground_truth.csv", index=False)
-    m.config.validation["csv_file"] = tmpdir.strpath + "/ground_truth.csv"
-    m.config.validation["root_dir"] = os.path.dirname(get_data("testfile_deepforest.csv"))
+    m.config.validation.csv_file = tmpdir.strpath + "/ground_truth.csv"
+    m.config.validation.root_dir = os.path.dirname(get_data("testfile_deepforest.csv"))
+    m.config.validation.size = 400
 
     m.create_trainer()
     results = m.trainer.validate(m)

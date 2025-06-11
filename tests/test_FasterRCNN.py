@@ -38,6 +38,9 @@ def test_load_backbone(config):
     x = [torch.rand(3, 300, 400), torch.rand(3, 500, 400)]
     prediction = resnet_backbone(x)
 
+def test_check_model(config):
+    r = FasterRCNN.Model(config)
+    r.check_model()
 
 # This test still fails, do we want a way to pass kwargs directly to method,
 # instead of being limited by config structure?

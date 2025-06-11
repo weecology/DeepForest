@@ -7,17 +7,23 @@ import warnings
 import numpy as np
 import pandas as pd
 import pytorch_lightning as pl
-import rasterio as rio
 import torch
 from PIL import Image
 from pytorch_lightning.callbacks import LearningRateMonitor
+from copy import deepcopy
+import pytorch_lightning as L
 from torch import optim
 from torchmetrics.detection import IntersectionOverUnion, MeanAveragePrecision
 from torchmetrics.classification import BinaryAccuracy
 
 from huggingface_hub import PyTorchModelHubMixin
-from deepforest import dataset, visualize, get_data, utilities, predict
+from deepforest import utilities, predict
+
 from deepforest import evaluate as evaluate_iou
+from deepforest.datasets import prediction, training
+from deepforest.utilities import format_geometry
+
+import geopandas as gpd
 
 from omegaconf import DictConfig
 
@@ -44,8 +50,8 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         self,
         num_classes: int = 1,
         label_dict: dict = {"Tree": 0},
-        transforms=None,
         model=None,
+        transforms=None,
         existing_train_dataloader=None,
         existing_val_dataloader=None,
         config: DictConfig = None,
@@ -106,7 +112,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
         # Add user supplied transforms
         if transforms is None:
-            self.transforms = dataset.get_transform
+            self.transforms = None
         else:
             self.transforms = transforms
 
@@ -136,6 +142,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         self.label_dict = loaded_model.label_dict
         self.model = loaded_model.model
         self.numeric_to_label_dict = loaded_model.numeric_to_label_dict
+
         # Set bird-specific settings if loading the bird model
         if model_name == "weecology/deepforest-bird":
             self.config.retinanet.score_thresh = 0.3
@@ -223,6 +230,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             # Disable validation, don't use trainer defaults
             limit_val_batches = 0
             num_sanity_val_steps = 0
+
         # Check for model checkpoint object
         checkpoint_types = [type(x).__qualname__ for x in callbacks]
         if 'ModelCheckpoint' in checkpoint_types:
@@ -264,12 +272,13 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
     def load_dataset(self,
                      csv_file,
                      root_dir=None,
-                     augment=False,
                      shuffle=True,
-                     batch_size=1,
-                     train=False):
-        """Create a tree dataset for inference Csv file format is .csv file
-        with the columns "image_path", "xmin","ymin","xmax","ymax" for the
+                     transforms=None,
+                     augment=True,
+                     preload_images=False,
+                     batch_size=1):
+        """Create a dataset for inference or training. Csv file format is .csv
+        file with the columns "image_path", "xmin","ymin","xmax","ymax" for the
         image name and bounding box position. Image_path is the relative
         filename, not absolute path, which is in the root_dir directory. One
         bounding box per line.
@@ -277,16 +286,19 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         Args:
             csv_file: path to csv file
             root_dir: directory of images. If none, uses "image_dir" in config
-            augment: Whether to create a training dataset, this activates data augmentations
-
+            transforms: Albumentations transforms
+            batch_size: batch size
+            preload_images: if True, preload the images into memory
+            augment: if True, apply augmentations to the images
         Returns:
             ds: a pytorch dataset
         """
-        ds = dataset.TreeDataset(csv_file=csv_file,
+        ds = training.BoxDataset(csv_file=csv_file,
                                  root_dir=root_dir,
-                                 transforms=self.transforms(augment=augment),
+                                 transforms=transforms,
                                  label_dict=self.label_dict,
-                                 preload_images=self.config.train.preload_images)
+                                 augment=augment,
+                                 preload_images=preload_images)
         if len(ds) == 0:
             raise ValueError(
                 f"Dataset from {csv_file} is empty. Check CSV for valid entries and columns."
@@ -296,7 +308,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             ds,
             batch_size=batch_size,
             shuffle=shuffle,
-            collate_fn=utilities.collate_fn,
+            collate_fn=ds.collate_fn,
             num_workers=self.config.workers,
         )
 
@@ -314,7 +326,9 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         loader = self.load_dataset(csv_file=self.config.train.csv_file,
                                    root_dir=self.config.train.root_dir,
                                    augment=True,
+                                   preload_images=self.config.train.preload_images,
                                    shuffle=True,
+                                   transforms=self.transforms,
                                    batch_size=self.config.batch_size)
 
         return loader
@@ -331,15 +345,19 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
         if self.existing_val_dataloader:
             return self.existing_val_dataloader
+
         if self.config.validation.csv_file is not None:
-            loader = self.load_dataset(csv_file=self.config.validation.csv_file,
-                                       root_dir=self.config.validation.root_dir,
-                                       augment=False,
-                                       shuffle=False,
-                                       batch_size=self.config.batch_size)
+            loader = self.load_dataset(
+                csv_file=self.config.validation.csv_file,
+                root_dir=self.config.validation.root_dir,
+                augment=False,
+                shuffle=False,
+                preload_images=self.config.validation.preload_images,
+                batch_size=self.config.batch_size)
+
         return loader
 
-    def predict_dataloader(self, ds):
+    def predict_dataloader(self, ds, batch_size=None):
         """Create a PyTorch dataloader for prediction.
 
         Args:
@@ -348,36 +366,29 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         Returns:
             torch.utils.data.DataLoader: A dataloader object that can be used for prediction.
         """
+        if batch_size is None:
+            batch_size = self.config.batch_size
+        else:
+            batch_size = batch_size
         loader = torch.utils.data.DataLoader(ds,
-                                             batch_size=self.config.batch_size,
+                                             batch_size=batch_size,
                                              shuffle=False,
-                                             num_workers=self.config.workers)
-
+                                             num_workers=self.config.workers,
+                                             collate_fn=ds.collate_fn)
         return loader
 
     def predict_image(self,
                       image: typing.Optional[np.ndarray] = None,
-                      path: typing.Optional[str] = None,
-                      return_plot: bool = False,
-                      color: typing.Optional[tuple] = (0, 165, 255),
-                      thickness: int = 1):
+                      path: typing.Optional[str] = None):
         """Predict a single image with a deepforest model.
-
-        Deprecation warning: The 'return_plot', and related 'color' and 'thickness' arguments
-        are deprecated and will be removed in 2.0. Use visualize.plot_results on the result instead.
 
         Args:
             image: a float32 numpy array of a RGB with channels last format
             path: optional path to read image from disk instead of passing image arg
-            return_plot: return a plot of the image with predictions overlaid (deprecated)
-            color: color of the bounding box as a tuple of BGR color (deprecated)
-            thickness: thickness of the rectangle border line in px (deprecated)
 
         Returns:
             result: A pandas dataframe of predictions (Default)
-            img: The input with predictions overlaid (Optional)
         """
-
         # Ensure we are in eval mode
         self.model.eval()
 
@@ -397,31 +408,16 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                           f"(image.astype('float32')")
             image = image.astype("float32")
 
-        image = torch.tensor(image, device=self.device).permute(2, 0, 1)
-        image = image / 255
-
         result = predict._predict_image_(model=self.model,
                                          image=image,
                                          path=path,
-                                         nms_thresh=self.config.nms_thresh,
-                                         return_plot=return_plot,
-                                         thickness=thickness,
-                                         color=color)
+                                         nms_thresh=self.config.nms_thresh)
 
-        if return_plot:
-            # Add deprecated warning
-            warnings.warn(
-                "return_plot is deprecated and will be removed in 2.0. Use visualize.plot_results on the result instead."
-            )
-
-            return result
+        #If there were no predictions, return None
+        if result is None:
+            return None
         else:
-            #If there were no predictions, return None
-            if result is None:
-                return None
-            else:
-                result["label"] = result.label.apply(
-                    lambda x: self.numeric_to_label_dict[x])
+            result["label"] = result.label.apply(lambda x: self.numeric_to_label_dict[x])
 
         if path is None:
             result = utilities.read_file(result)
@@ -434,85 +430,62 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
         return result
 
-    def predict_file(self, csv_file, root_dir, savedir=None, color=None, thickness=1):
-        """Create a dataset and predict entire annotation file Csv file format
+    def predict_file(self,
+                     csv_file,
+                     root_dir,
+                     crop_model=None,
+                     size=None,
+                     batch_size=None):
+        """Create a dataset and predict entire annotation file CSV file format
         is .csv file with the columns "image_path", "xmin","ymin","xmax","ymax"
         for the image name and bounding box position. Image_path is the
         relative filename, not absolute path, which is in the root_dir
         directory. One bounding box per line.
 
-        Deprecation warning: The return_plot argument is deprecated and will be removed in 2.0. Use visualize.plot_results on the result instead.
-
         Args:
             csv_file: path to csv file
             root_dir: directory of images. If none, uses "image_dir" in config
-            (deprecated) savedir: directory to save images with bounding boxes
-            (deprecated) color: color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255)
-            (deprecated) thickness: thickness of the rectangle border line in px
-
+            crop_model: a deepforest.model.CropModel object to predict on crops
+            size: the size of the image to resize to. Optional, if not provided, the image is not resized.
         Returns:
             df: pandas dataframe with bounding boxes, label and scores for each image in the csv file
         """
 
-        df = utilities.read_file(csv_file)
-        ds = dataset.TreeDataset(csv_file=csv_file,
-                                 root_dir=root_dir,
-                                 transforms=None,
-                                 train=False)
-        dataloader = self.predict_dataloader(ds)
-
+        ds = prediction.FromCSVFile(csv_file=csv_file, root_dir=root_dir, size=size)
+        dataloader = self.predict_dataloader(ds, batch_size=batch_size)
         results = predict._dataloader_wrapper_(model=self,
+                                               crop_model=crop_model,
                                                trainer=self.trainer,
-                                               annotations=df,
                                                dataloader=dataloader,
-                                               root_dir=root_dir,
-                                               nms_thresh=self.config.nms_thresh,
-                                               color=color,
-                                               savedir=savedir,
-                                               thickness=thickness)
+                                               root_dir=root_dir)
 
         results.root_dir = root_dir
 
         return results
 
     def predict_tile(self,
-                     raster_path=None,
                      path=None,
                      image=None,
                      patch_size=400,
                      patch_overlap=0.05,
                      iou_threshold=0.15,
-                     in_memory=True,
-                     return_plot=False,
-                     mosaic=True,
-                     sigma=0.5,
-                     thresh=0.001,
-                     color=None,
-                     thickness=1,
-                     crop_model=None,
-                     crop_transform=None,
-                     crop_augment=False):
+                     dataloader_strategy="single",
+                     crop_model=None):
         """For images too large to input into the model, predict_tile cuts the
         image into overlapping windows, predicts trees on each window and
         reassambles into a single array.
 
         Args:
-            raster_path: [Deprecated] Use 'path' instead
-            path: Path to image on disk
-            image (array): Numpy image array in BGR channel order following openCV convention
+            path: Path or list of paths to images on disk. If a single string is provided, it will be converted to a list.
+            image (array): Numpy image array in BGR channel order following openCV convention. Not possible in combination with dataloader_strategy='batch'.
             patch_size: patch size for each window
             patch_overlap: patch overlap among windows
             iou_threshold: Minimum iou overlap among predictions between windows to be suppressed
-            in_memory: If true, the entire dataset is loaded into memory
-            mosaic: Return a single prediction dataframe (True) or a tuple of image crops and predictions (False)
-            sigma: variance of Gaussian function used in Gaussian Soft NMS
-            thresh: the score thresh used to filter bboxes after soft-nms performed
+            dataloader_strategy: "single", "batch", or "window".
+                - "Single" loads the entire image into memory and passes individual windows to GPU and cannot be parallelized.
+                - "batch" loads the entire image into GPU memory and creates views of an image as batch, requires in the entire tile to fit into GPU memory. CPU parallelization is possible for loading images.
+                - "window" loads only the desired window of the image from the raster dataset. Most memory efficient option, but cannot parallelize across windows.
             crop_model: a deepforest.model.CropModel object to predict on crops
-            crop_transform: a torchvision.transforms object to apply to crops
-            crop_augment: a boolean to apply augmentations to crops
-            return_plot: return a plot of the image with predictions overlaid (deprecated)
-            color: color of the bounding box as a tuple of BGR color (deprecated)
-            thickness: thickness of the rectangle border line in px (deprecated)
 
         Returns:
             pd.DataFrame or tuple: Predictions dataframe or (predictions, crops) tuple
@@ -520,132 +493,118 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         self.model.eval()
         self.model.nms_thresh = self.config.nms_thresh
 
-        # if 'raster_path' is used, give a deprecation warning and use 'path' instead
-        if raster_path is not None:
-            warnings.warn(
-                "The 'raster_path' argument is deprecated and will be removed in 2.0. Use 'path' instead.",
-                DeprecationWarning)
-            path = raster_path
-
-        # if more than one GPU present, use only a the first available gpu
-        if torch.cuda.device_count() > 1:
-            # Get available gpus and regenerate trainer
-            warnings.warn(
-                "More than one GPU detected. Using only the first GPU for predict_tile.")
-            self.config.devices = 1
-            self.create_trainer()
-
-        if (path is None) and (image is None):
-            raise ValueError(
-                "Both tile and tile_path are None. Either supply a path to a tile on disk, or read one into memory!"
-            )
-
-        if in_memory:
-            if path is None:
-                image = image
-            else:
-                image = rio.open(path).read()
-                image = np.moveaxis(image, 0, 2)
-
-            ds = dataset.TileDataset(tile=image,
-                                     patch_overlap=patch_overlap,
-                                     patch_size=patch_size)
-        else:
-            if path is None:
-                raise ValueError("path is required if in_memory is False")
-
-            # Check for workers config when using out of memory dataset
-            if self.config.workers > 0:
+        # Check if path or image is provided
+        if dataloader_strategy == "single":
+            if path is None and image is None:
                 raise ValueError(
-                    "workers must be 0 when using out-of-memory dataset (in_memory=False). Set config['workers']=0 and recreate trainer self.create_trainer()."
+                    "Either path or image must be provided for single tile prediction")
+
+        if dataloader_strategy == "batch":
+            if path is None:
+                raise ValueError(
+                    "path argument must be provided when using dataloader_strategy='batch'"
                 )
 
-            ds = dataset.RasterDataset(raster_path=path,
+        # Convert single path to list for consistent handling
+        if isinstance(path, str):
+            paths = [path]
+        elif path is None:
+            paths = [None]
+        else:
+            paths = path
+
+        image_results = []
+        if dataloader_strategy in ["single", "window"]:
+            for image_path in paths:
+                if dataloader_strategy == "single":
+                    ds = prediction.SingleImage(path=image_path,
+                                                image=image,
+                                                patch_overlap=patch_overlap,
+                                                patch_size=patch_size)
+                else:
+                    # Check for workers config when using out of memory dataset
+                    if self.config.workers > 0:
+                        raise ValueError(
+                            "workers must be 0 when using out-of-memory dataset (dataloader_strategy='window'). Set config['workers']=0 and recreate trainer self.create_trainer()."
+                        )
+                    ds = prediction.TiledRaster(path=image_path,
+                                                patch_overlap=patch_overlap,
+                                                patch_size=patch_size)
+
+                batched_results = self.trainer.predict(self, self.predict_dataloader(ds))
+
+                # Flatten list from batched prediction
+                prediction_list = []
+                for batch in batched_results:
+                    for images in batch:
+                        prediction_list.append(images)
+                image_results.append(ds.postprocess(prediction_list))
+
+            results = pd.concat(image_results)
+
+        elif dataloader_strategy == "batch":
+            ds = prediction.MultiImage(paths=paths,
                                        patch_overlap=patch_overlap,
                                        patch_size=patch_size)
 
-        batched_results = self.trainer.predict(self, self.predict_dataloader(ds))
+            batched_results = self.trainer.predict(self, self.predict_dataloader(ds))
 
-        # Flatten list from batched prediction
-        results = []
-        for batch in batched_results:
-            for boxes in batch:
-                results.append(boxes)
+            # Flatten list from batched prediction
+            prediction_list = []
+            for batch in batched_results:
+                for images in batch:
+                    prediction_list.append(images)
+            image_results.append(ds.postprocess(prediction_list))
+            results = pd.concat(image_results)
 
-        if mosaic:
-            results = predict.mosiac(results,
-                                     ds.windows,
-                                     sigma=sigma,
-                                     thresh=thresh,
-                                     iou_threshold=iou_threshold)
-            results["label"] = results.label.apply(
-                lambda x: self.numeric_to_label_dict[x])
-            if path:
-                results["image_path"] = os.path.basename(path)
-            if return_plot:
-                # Add deprecated warning
-                warnings.warn("return_plot is deprecated and will be removed in 2.0. "
-                              "Use visualize.plot_results on the result instead.")
-                # Draw predictions on BGR
-                if path:
-                    tile = rio.open(path).read()
-                else:
-                    tile = image
-                drawn_plot = tile[:, :, ::-1]
-                drawn_plot = visualize.plot_predictions(tile,
-                                                        results,
-                                                        color=color,
-                                                        thickness=thickness)
-                return drawn_plot
         else:
-            for df in results:
-                df["label"] = df.label.apply(lambda x: self.numeric_to_label_dict[x])
-
-            # TODO this is the 2nd time the crops are generated? Could be more efficient, but memory intensive
-            self.crops = []
-            if path is None:
-                image = image
-            else:
-                image = rio.open(path).read()
-                image = np.moveaxis(image, 0, 2)
-
-            for window in ds.windows:
-                crop = image[window.indices()]
-                self.crops.append(crop)
-
-            return list(zip(results, self.crops))
-
-        if crop_model is not None and not isinstance(crop_model, list):
-            crop_model = [crop_model]
-
-        if crop_model:
-            is_single_model = len(
-                crop_model) == 1  # Flag to check if only one model is passed
-            for i, crop_model in enumerate(crop_model):
-                results = predict._predict_crop_model_(crop_model=crop_model,
-                                                       results=results,
-                                                       raster_path=path,
-                                                       trainer=self.trainer,
-                                                       transform=crop_transform,
-                                                       augment=crop_augment,
-                                                       model_index=i,
-                                                       is_single_model=is_single_model)
+            raise ValueError(f"Invalid dataloader_strategy: {dataloader_strategy}")
 
         if results.empty:
             warnings.warn("No predictions made, returning None")
             return None
 
-        if path is None:
-            warnings.warn(
-                "An image was passed directly to predict_tile, the results.root_dir attribute will be None in the output dataframe, to use visualize.plot_results, please assign results.root_dir = <directory name>"
-            )
-            results = utilities.read_file(results)
-
+        # Perform mosaic for each image_path, or all if image_path is None
+        mosaic_results = []
+        if results["image_path"].isnull().all():
+            mosaic_results.append(predict.mosiac(results, iou_threshold=iou_threshold))
         else:
-            root_dir = os.path.dirname(path)
-            results = utilities.read_file(results, root_dir=root_dir)
+            for image_path in results["image_path"].unique():
+                image_results = results[results["image_path"] == image_path]
+                image_mosaic = predict.mosiac(image_results, iou_threshold=iou_threshold)
+                image_mosaic["image_path"] = image_path
+                mosaic_results.append(image_mosaic)
 
-        return results
+        mosaic_results = pd.concat(mosaic_results)
+        mosaic_results["label"] = mosaic_results.label.apply(
+            lambda x: self.numeric_to_label_dict[x])
+
+        if paths[0] is not None:
+            root_dir = os.path.dirname(paths[0])
+        else:
+            print(
+                "No image path provided, root_dir will be None, since either images were directly provided or there were multiple image paths"
+            )
+            root_dir = None
+
+        if crop_model is not None:
+            cropmodel_results = []
+            for path in paths:
+                image_result = mosaic_results[mosaic_results.image_path ==
+                                              os.path.basename(path)]
+                if image_result.empty:
+                    continue
+                image_result.root_dir = os.path.dirname(path)
+                cropmodel_result = predict._crop_models_wrapper_(
+                    crop_model, self.trainer, image_result)
+                cropmodel_results.append(cropmodel_result)
+            cropmodel_results = pd.concat(cropmodel_results)
+        else:
+            cropmodel_results = mosaic_results
+
+        formatted_results = utilities.read_file(cropmodel_results, root_dir=root_dir)
+
+        return formatted_results
 
     def training_step(self, batch, batch_idx):
         """Train on a loaded dataset."""
@@ -653,7 +612,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         self.model.train()
 
         # allow for empty data if data augmentation is generated
-        path, images, targets = batch
+        images, targets, image_names = batch
         loss_dict = self.model.forward(images, targets)
 
         # sum of regression and classification loss
@@ -670,11 +629,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
     def validation_step(self, batch, batch_idx):
         """Evaluate a batch."""
-        try:
-            path, images, targets = batch
-        except:
-            print("Empty batch encountered, skipping")
-            return None
+        images, targets, image_names = batch
 
         # Get loss from "train" mode, but don't allow optimization. Torchvision has a 'train' mode that returns a loss and a 'eval' mode that returns predictions. The names are confusing, but this is the correct way to get the loss.
         self.model.train()
@@ -684,13 +639,19 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         # sum of regression and classification loss
         losses = sum([loss for loss in loss_dict.values()])
 
-        self.model.eval()
-        # Can we avoid another forward pass here? https://discuss.pytorch.org/t/how-to-get-losses-and-predictions-at-the-same-time/167223
-        preds = self.model.forward(images)
+        # Log loss
+        for key, value in loss_dict.items():
+            try:
+                self.log("val_{}".format(key), value, on_epoch=True)
+            except MisconfigurationException:
+                pass
 
-        # Calculate intersection-over-union
+        # In eval model, return predictions to calculate prediction metrics
+        preds = self.model.eval()
+        with torch.no_grad():
+            preds = self.model.forward(images, targets)
+
         if len(targets) > 0:
-            # Remove empty targets
             # Remove empty targets and corresponding predictions
             filtered_preds = []
             filtered_targets = []
@@ -702,30 +663,12 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             self.iou_metric.update(filtered_preds, filtered_targets)
             self.mAP_metric.update(filtered_preds, filtered_targets)
 
-        # Log loss
-        for key, value in loss_dict.items():
-            try:
-                self.log("val_{}".format(key), value, on_epoch=True)
-            except MisconfigurationException:
-                pass
-
-        for index, result in enumerate(preds):
-            # Skip empty predictions
-            if result["boxes"].shape[0] == 0:
-                self.predictions.append(
-                    pd.DataFrame({
-                        "image_path": [path[index]],
-                        "xmin": [None],
-                        "ymin": [None],
-                        "xmax": [None],
-                        "ymax": [None],
-                        "label": [None],
-                        "score": [None]
-                    }))
-            else:
-                boxes = visualize.format_geometry(result)
-                boxes["image_path"] = path[index]
-                self.predictions.append(boxes)
+        # Log the predictions if you want to use them for evaluation logs
+        for i, result in enumerate(preds):
+            formatted_result = format_geometry(result)
+            if formatted_result is not None:
+                formatted_result["image_path"] = image_names[i]
+                self.predictions.append(formatted_result)
 
         return losses
 
@@ -754,160 +697,141 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         if len(empty_images) == 0:
             return None
 
-        # Get non-empty predictions for empty images
-        non_empty_predictions = predictions_df.loc[predictions_df.xmin.notnull()]
-        predictions_for_empty_images = non_empty_predictions.loc[
-            non_empty_predictions.image_path.isin(empty_images)]
+        if predictions_df.empty:
+            # if there are empty ground truth, but no predictions, there is 100% accuracy empty frames
+            empty_accuracy = 1
+        else:
+            # Get non-empty predictions for empty images
+            non_empty_predictions = predictions_df.loc[predictions_df.xmin.notnull()]
+            predictions_for_empty_images = non_empty_predictions.loc[
+                non_empty_predictions.image_path.isin(empty_images)]
 
-        # Create prediction tensor - 1 if model predicted objects, 0 if predicted empty
-        predictions = torch.zeros(len(empty_images))
-        for index, image in enumerate(empty_images):
-            if len(predictions_for_empty_images.loc[
-                    predictions_for_empty_images.image_path == image]) > 0:
-                predictions[index] = 1
+            # Create prediction tensor - 1 if model predicted objects, 0 if predicted empty
+            predictions = torch.zeros(len(empty_images))
+            for index, image in enumerate(empty_images):
+                if len(predictions_for_empty_images.loc[
+                        predictions_for_empty_images.image_path == image]) > 0:
+                    predictions[index] = 1
 
-        # Ground truth tensor - all zeros since these are empty frames
-        gt = torch.zeros(len(empty_images))
-        predictions = torch.tensor(predictions)
+            # Ground truth tensor - all zeros since these are empty frames
+            gt = torch.zeros(len(empty_images))
+            predictions = torch.tensor(predictions)
 
-        # Calculate accuracy using metric
-        self.empty_frame_accuracy.update(predictions, gt)
-        empty_accuracy = self.empty_frame_accuracy.compute()
+            # Calculate accuracy using metric
+            self.empty_frame_accuracy.update(predictions, gt)
+            empty_accuracy = self.empty_frame_accuracy.compute()
+
+        # Log empty frame accuracy
+        try:
+            self.log("empty_frame_accuracy", empty_accuracy)
+        except MisconfigurationException:
+            pass
 
         return empty_accuracy
 
+    def log_epoch_metrics(self):
+        if len(self.iou_metric.groundtruth_labels) > 0:
+            output = self.iou_metric.compute()
+            try:
+                # This is a bug in lightning, it claims this is a warning but it is not. https://github.com/Lightning-AI/pytorch-lightning/pull/9733/files
+                self.log_dict(output)
+            except:
+                pass
+
+            self.iou_metric.reset()
+            output = self.mAP_metric.compute()
+
+            # Remove classes from output dict
+            output = {key: value for key, value in output.items() if not key == "classes"}
+            try:
+                self.log_dict(output)
+            except MisconfigurationException:
+                pass
+            self.mAP_metric.reset()
+
+        # Log empty frame accuracy if it has been updated
+        if self.empty_frame_accuracy._update_called:
+            empty_accuracy = self.empty_frame_accuracy.compute()
+
+            # Log empty frame accuracy
+            try:
+                self.log("empty_frame_accuracy", empty_accuracy)
+            except MisconfigurationException:
+                pass
+
     def on_validation_epoch_end(self):
-        """Compute metrics."""
+        """Compute metrics and predictions at the end of the validation
+        epoch."""
+        if self.trainer.sanity_checking:  # optional skip
+            return
 
-        #Evaluate every n epochs
         if self.current_epoch % self.config.validation.val_accuracy_interval == 0:
-
-            if len(self.predictions) == 0:
-                return None
+            if len(self.predictions) > 0:
+                self.predictions = pd.concat(self.predictions)
             else:
-                self.predictions_df = pd.concat(self.predictions)
+                self.predictions = pd.DataFrame()
 
-            # If non-empty ground truth, evaluate IoU and mAP
-            if len(self.iou_metric.groundtruth_labels) > 0:
-                output = self.iou_metric.compute()
-                try:
-                    # This is a bug in lightning, it claims this is a warning but it is not. https://github.com/Lightning-AI/pytorch-lightning/pull/9733/files
-                    self.log_dict(output)
-                except:
-                    pass
+            results = self.evaluate(self.config.validation.csv_file,
+                                    root_dir=self.config.validation.root_dir,
+                                    size=self.config.validation.size,
+                                    predictions=self.predictions)
 
-                self.iou_metric.reset()
-                output = self.mAP_metric.compute()
+            # Log epoch metrics
+            self.log_epoch_metrics()
+            self.__evaluation_logs__(results)
 
-                # Remove classes from output dict
-                output = {
-                    key: value for key, value in output.items() if not key == "classes"
-                }
-                try:
-                    self.log_dict(output)
-                except MisconfigurationException:
-                    pass
-                self.mAP_metric.reset()
-
-            #Create a geospatial column
-            ground_df = utilities.read_file(self.config.validation.csv_file)
-            ground_df["label"] = ground_df.label.apply(lambda x: self.label_dict[x])
-
-            # If there are empty frames, evaluate empty frame accuracy separately
-            empty_accuracy = self.calculate_empty_frame_accuracy(
-                ground_df, self.predictions_df)
-
-            if empty_accuracy is not None:
-                try:
-                    self.log("empty_frame_accuracy", empty_accuracy)
-                except:
-                    pass
-
-            # Remove empty predictions from the rest of the evaluation
-            self.predictions_df = self.predictions_df.loc[
-                self.predictions_df.xmin.notnull()]
-            if self.predictions_df.empty:
-                warnings.warn("No predictions made, skipping detection evaluation")
-                geom_type = utilities.determine_geometry_type(ground_df)
-                if geom_type == "box":
-                    result = {
-                        "box_recall": 0,
-                        "box_precision": 0,
-                        "class_recall": pd.DataFrame()
-                    }
-            else:
-                # Remove empty ground truth
-                ground_df = ground_df.loc[~(ground_df.xmin == 0)]
-                if ground_df.empty:
-                    results = {}
-                    results["empty_frame_accuracy"] = empty_accuracy
-                    return results
-
-                results = evaluate_iou.__evaluate_wrapper__(
-                    predictions=self.predictions_df,
-                    ground_df=ground_df,
-                    iou_threshold=self.config.validation.iou_threshold,
-                    numeric_to_label_dict=self.numeric_to_label_dict)
-
-                if empty_accuracy is not None:
-                    results["empty_frame_accuracy"] = empty_accuracy
-
-                # Log each key value pair of the results dict
-                if not results["class_recall"] is None:
-                    for key, value in results.items():
-                        if key in ["class_recall"]:
-                            for index, row in value.iterrows():
-                                try:
-                                    self.log(
-                                        "{}_Recall".format(
-                                            self.numeric_to_label_dict[row["label"]]),
-                                        row["recall"])
-                                    self.log(
-                                        "{}_Precision".format(
-                                            self.numeric_to_label_dict[row["label"]]),
-                                        row["precision"])
-                                except MisconfigurationException:
-                                    pass
-                        elif key in ["predictions", "results"]:
-                            # Don't log dataframes of predictions or IoU results per epoch
-                            pass
-                        else:
-                            try:
-                                self.log(key, value)
-                            except MisconfigurationException:
-                                pass
+            return results
 
     def predict_step(self, batch, batch_idx):
-        batch_results = self.model(batch)
+        """Predict a batch of images with the deepforest model. If batch is a
+        list, concatenate the images, predict and then split the results,
+        useful for main.predict_tile.
 
-        results = []
-        for result in batch_results:
-            boxes = visualize.format_boxes(result)
-            results.append(boxes)
-        return results
+        Args:
+            batch (torch.Tensor or np.ndarray): A batch of images with shape (B, C, H, W).
+            batch_idx (int): The index of the batch.
+
+        Returns:
+        """
+        split_results = False
+        # If batch is a list, concatenate the images, predict and then split the results
+        if isinstance(batch, list):
+            original_list_length = len(batch)
+            combined_batch = torch.cat(batch, dim=0)
+            split_results = True
+        else:
+            combined_batch = batch
+
+        batch_results = self.model(combined_batch)
+
+        # If batch is a list, split the results
+        if split_results:
+            results = []
+            batch_size = len(batch_results) // original_list_length
+            for i in range(original_list_length):
+                start_idx = i * batch_size
+                end_idx = start_idx + batch_size
+                results.append(batch_results[start_idx:end_idx])
+            return results
+        else:
+            return batch_results
 
     def predict_batch(self, images, preprocess_fn=None):
         """Predict a batch of images with the deepforest model.
 
         Args:
-            images (torch.Tensor or np.ndarray): A batch of images with shape (B, C, H, W) or (B, H, W, C).
+            images (torch.Tensor or np.ndarray): A batch of images with shape (B, C, H, W).
             preprocess_fn (callable, optional): A function to preprocess images before prediction.
                 If None, assumes images are preprocessed.
 
         Returns:
             List[pd.DataFrame]: A list of dataframes with predictions for each image.
         """
-
         self.model.eval()
 
         #conver to tensor if input is array
         if isinstance(images, np.ndarray):
             images = torch.tensor(images, device=self.device)
-
-        #check input format
-        if images.dim() == 4 and images.shape[-1] == 3:
-            #Convert channels_last (B, H, W, C) to channels_first (B, C, H, W)
-            images = images.permute(0, 3, 1, 2)
 
         #appy preprocessing if available
         if preprocess_fn:
@@ -918,7 +842,13 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             predictions = self.predict_step(images, 0)
 
         #convert predictions to dataframes
-        results = [utilities.read_file(pred) for pred in predictions if pred is not None]
+        results = []
+        for pred in predictions:
+            if len(pred["boxes"]) == 0:
+                continue
+            geom_type = utilities.determine_geometry_type(pred)
+            result = utilities.format_geometry(pred, geom_type=geom_type)
+            results.append(utilities.read_file(result))
 
         return results
 
@@ -982,21 +912,39 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         else:
             return optimizer
 
-    def evaluate(self, csv_file, iou_threshold=None):
+    def evaluate(self,
+                 csv_file,
+                 iou_threshold=None,
+                 root_dir=None,
+                 size=None,
+                 batch_size=None,
+                 predictions=None):
         """Compute intersection-over-union and precision/recall for a given
         iou_threshold.
 
         Args:
             csv_file: location of a csv file with columns "name","xmin","ymin","xmax","ymax","label"
             iou_threshold: float [0,1] intersection-over-union threshold for true positive
+            batch_size: int, the batch size to use for prediction. If None, uses the batch size of the model.
+            size: int, the size to resize the images to. If None, no resizing is done.
+            predictions: list of predictions to use for evaluation. If None, predictions are generated from the model.
 
         Returns:
             dict: Results dictionary containing precision, recall and other metrics
         """
+        self.model.eval()
         ground_df = utilities.read_file(csv_file)
         ground_df["label"] = ground_df.label.apply(lambda x: self.label_dict[x])
-        predictions = self.predict_file(csv_file=csv_file,
-                                        root_dir=os.path.dirname(csv_file))
+
+        if root_dir is None:
+            root_dir = os.path.dirname(csv_file)
+
+        if predictions is None:
+            # Get the predict dataloader and use predict_batch
+            predictions = self.predict_file(csv_file,
+                                            root_dir,
+                                            size=size,
+                                            batch_size=batch_size)
 
         if iou_threshold is None:
             iou_threshold = self.config.validation.iou_threshold
@@ -1007,4 +955,51 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             iou_threshold=iou_threshold,
             numeric_to_label_dict=self.numeric_to_label_dict)
 
+        # empty frame accuracy
+        empty_accuracy = self.calculate_empty_frame_accuracy(ground_df, predictions)
+        results["empty_frame_accuracy"] = empty_accuracy
+
+        self.__evaluation_logs__(results)
+
         return results
+
+    def __evaluation_logs__(self, results):
+        """Log metrics from evaluation results."""
+        # Log metrics
+        for key, value in results.items():
+            if type(value) in [pd.DataFrame, gpd.GeoDataFrame]:
+                pass
+            elif value is None:
+                pass
+            else:
+                try:
+                    self.log(key, value)
+                except MisconfigurationException:
+                    pass
+
+        # Log each key value pair of the results dict
+        if not results["class_recall"] is None:
+            for key, value in results.items():
+                if key in ["class_recall"]:
+                    for index, row in value.iterrows():
+                        try:
+                            self.log(
+                                "{}_Recall".format(
+                                    self.numeric_to_label_dict[row["label"]]),
+                                row["recall"])
+                            self.log(
+                                "{}_Precision".format(
+                                    self.numeric_to_label_dict[row["label"]]),
+                                row["precision"])
+                        except MisconfigurationException:
+                            pass
+                elif key in ["predictions", "results", "ground_df"]:
+                    # Don't log dataframes of predictions or IoU results per epoch
+                    pass
+                elif value is None:
+                    pass
+                else:
+                    try:
+                        self.log(key, value)
+                    except MisconfigurationException:
+                        pass

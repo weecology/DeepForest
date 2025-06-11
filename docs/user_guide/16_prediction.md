@@ -1,11 +1,16 @@
 # Prediction
 
 There are atleast four ways to make predictions with DeepForest.
-1. Predict an image using the command line
-2. Predict an image using [model.predict_image](https://deepforest.readthedocs.io/en/latest/source/deepforest.html#deepforest.main.deepforest.predict_image)
-3. Predict a tile using [model.predict_tile](https://deepforest.readthedocs.io/en/latest/source/deepforest.html#deepforest.main.deepforest.predict_tile)
-4. Predict a directory of using a csv file using [model.predict_file](https://deepforest.readthedocs.io/en/latest/source/deepforest.html#deepforest.main.deepforest.predict_file)
-5. Predict a batch of images using [model.predict_batch](https://deepforest.readthedocs.io/en/latest/source/deepforest.html#deepforest.main.deepforest.predict_batch)
+
+1. Predict an image using [model.predict_image](https://deepforest.readthedocs.io/en/latest/source/deepforest.html#deepforest.main.deepforest.predict_image). The entire image is passed to the model.
+
+2. Predict a large number, which we call a 'tile', using [model.predict_tile](https://deepforest.readthedocs.io/en/latest/source/deepforest.html#deepforest.main.deepforest.predict_tile). The tile is cut into smaller windows and each window is predicted. 
+
+3. Predict a directory of images using a csv file using [model.predict_file](https://deepforest.readthedocs.io/en/latest/source/deepforest.html#deepforest.main.deepforest.predict_file). Each unique image listed in a csv file is predicted.
+
+4. Predict a batch of images using [model.predict_batch](https://deepforest.readthedocs.io/en/latest/source/deepforest.html#deepforest.main.deepforest.predict_batch). This is useful when you have an existing dataloader from outside DeepForest that yields data in batches.
+
+In general, during inference, for large images it is most common to use predict_tile.
 
 ## Predict an image using the command line
 
@@ -39,6 +44,8 @@ We use [Hydra](https://hydra.cc/docs/intro/) for configuration management, and t
 To see the default configuration and to check what options you can set, you can run `deepforest --show-config` flag (no other options are required).
 
 ## Predict an image using model.predict_image
+
+This is most commonly used for small images or pre-cropped windows of large tiles. Passing a large tile to predict_image will lead to poor performance, use predict_tile. 
 
 ```python
 from deepforest import main
@@ -81,6 +88,25 @@ predicted_raster = model.predict_tile(raster_path, patch_size=300, patch_overlap
 plot_results(predicted_raster)
 ```
 
+### dataloader-strategy
+
+An optional argument to predict_tile allows the user to control how to scale prediction of tiles and how the windows are created within tiles.
+
+```python
+prediction_single = m.predict_tile(path=path, patch_size=300, dataloader_strategy="single")
+```
+The `dataloader_strategy` parameter has three options:
+
+* **single**: Loads the entire image into CPU memory and passes individual windows to GPU.
+
+* **batch**: Loads the entire image into GPU memory and creates views of the image as batches. Requires the entire tile to fit into GPU memory. CPU parallelization is possible for loading images.
+
+* **window**: Loads only the desired window of the image from the raster dataset. Most memory efficient option, but cannot parallelize across windows due to Python's Global Interpreter Lock, workers must be set to 0. 
+
+![](../../www/dataloader-strategy.png)
+
+The image shows that the speed of the predict_tile function is related to the strategy, the number of images, and the number of dataloader workers, which is set in the deepforest config file. 
+
 ### Patch Size
 
    The *predict_tile* function is sensitive to *patch_size*, especially when using the prebuilt model on new data.
@@ -112,14 +138,14 @@ df = m.predict_file(csv_file, root_dir=os.path.dirname(csv_file))
 For existing dataloaders, the `predict_batch` function will return a list of dataframes, one for each batch. This is more efficient than using predict_image since multiple images can be processed in a single forward pass.
 
 ```python
-from deepforest import dataset
+from deepforest.datasets.training import BoxDataset
 from torch.utils.data import DataLoader
 import numpy as np
 from PIL import Image
 
 raster_path = get_data("OSBS_029.tif")
 tile = np.array(Image.open(raster_path))
-ds = dataset.TileDataset(tile=tile, patch_overlap=0.1, patch_size=100)
+ds = BoxDataset(tile=tile, patch_overlap=0.1, patch_size=100)
 dl = DataLoader(ds, batch_size=3)
 
 # Perform prediction

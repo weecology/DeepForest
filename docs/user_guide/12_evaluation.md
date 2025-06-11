@@ -1,10 +1,63 @@
 # Evaluation
 
- We stress that evaluation data must be different from training data, as neural networks have millions of parameters and can easily memorize thousands of samples. Avoid random train-test splits, try to create test datasets that mimic downstream tasks. If you are predicting among temporal surveys or across imaging platforms, your train-test data should reflect these partitions. Random sampling is almost never the right choice, biological data often has high spatial, temporal or taxonomic correlation that makes it easier for your model to generalize, but will fail when pushed into new situations.
+DeepForest allows users to assess model performance compared to ground-truth data. 
 
-DeepForest provides several evaluation metrics. There is no one-size-fits all evaluation approach, and the user needs to consider which evaluation metric best fits the task. There is significant information online about the evaluation of object detection networks. Our philosophy is to provide a user with a range of statistics and visualizations. Always visualize results and trust your judgment. Never be guided by a single metric.
+## Summary
 
-## Further Reading
+1. Recall - the proportion of ground-truth objects correctly covered by predictions.
+2. Precision - the proportion of predictions that overlap ground-truth.
+3. Empty-frame accuracy - the proportion of ground-truth images that are currently predicted to have no objects of interest.
+4. iou - Intersection-over-Union, a computer vision metric that assesses how tightly a bounding box prediction overlaps with its matched ground-truth. 
+5. mAP - Mean-Average-Precision, a computer vision metric that assesses the performance of the model incoporating precision, recall and average score of true positives. See below.
+
+## Evaluation code
+
+The model's .evaluate method takes a set of labels in the form of a CSV file that includes paths to images and the coordinates of associated labels as well as thresholds to determine if a prediction is close enough to a label to be considered a match.
+
+```python
+from deepforest import main, get_data
+m = main.deepforest()
+m.load_model("Weecology/deepforest-tree")
+# Sample data
+csv_file = get_data("OSBS_029.csv")
+results = m.evaluate(csv_file, iou_threshold=0.4)
+```
+
+This produces a dictionary that contains a detailed result comparison for each label, the aggregate metrics, the predictions data frame, and the ground truth data frame.
+
+## Evaluation Philosophy and Further Information
+
+ We stress that evaluation data must be different from training data, as neural networks have millions of parameters and can easily memorize thousands of samples. We also recommend creating test datasets that mimic downstream tasks instead of using random train-test splits. If you are predicting among temporal surveys or across imaging platforms, your train-test data should reflect these partitions. Random sampling is almost never the right choice, because biological data often has high spatial, temporal or taxonomic correlation that can result in overfitting or exaggerated evaluation metrics when using random splits.
+
+DeepForest provides several evaluation metrics. There is no one-size-fits all evaluation approach, and the user needs to consider which evaluation metric best fits the task. There is significant information online about the evaluation of object detection networks. Our philosophy is to provide users with a range of statistics and visualizations. Always visualize results and trust your judgment. Never be guided by a single metric.
+
+## Metrics
+
+### Average Intersection over Union
+DeepForest modules use torchmetric's [IntersectionOverUnion](https://torchmetrics.readthedocs.io/en/stable/detection/intersection_over_union.html) metric. This calculates the average overlap between predictions and ground truth boxes. This can be considered a general indicator of model performance but is not sufficient on its own for model evaluation. There are lots of reasons predictions might overlap with ground truth; for example, consider a model that covers an entire image with boxes. This would have a high IoU but a low value for model utility.
+
+### Mean-Average-Precision (mAP)
+mAP is the standard COCO evaluation metric and the most common for comparing computer vision models. It is useful as a summary statistic. However, it has several limitations for an ecological use case.
+
+1. Not intuitive and difficult to translate to ecological applications. Read the sections above and visualize the mAP metric, which is essentially the area under the precision-recall curve at a range of IoU values.
+2. The vast majority of biological applications use a fixed cutoff to determine an object of interest in an image. Perhaps in the future we will weight tree boxes by their confidence score, but currently we do things like, "All predictions > 0.4 score are considered positive detections". This does not connect well with the mAP metric.
+
+For information on how to calculate mAP, see the [torchmetrics documentation](https://torchmetrics.readthedocs.io/en/stable/detection/mean_average_precision.html) and further reading below.
+
+### Precision and Recall at a set IoU threshold.
+This was the original DeepForest metric, set to an IoU of 0.4. This means that all predictions that overlap a ground truth box at IoU > 0.4 are true positives. As opposed to the torchmetrics above, it is intuitive and matches downstream ecological tasks. The drawback is that it is slow, coarse, and does not fully reward the model for having high confidence scores on true positives.
+
+There is an additional difference between ecological object detection methods like tree crowns and traditional computer vision methods. Instead of a single or set of easily differentiated ground truths, we could have 60 or 70 objects that overlap in an image. How do you best assign each prediction to each ground truth?
+
+DeepForest uses the [hungarian matching algorithm](https://thinkautonomous.medium.com/computer-vision-for-tracking-8220759eee85) to assign predictions to ground truth based on maximum IoU overlap. This is slow compared to the methods above, and so isn't a good choice for running hundreds of times during model training see config.validation.val_accuracy_interval for setting the frequency of the evaluate callback for this metric. 
+
+When there are no true positives, this metric is undefined.
+
+### Empty Frame Accuracy
+
+DeepForest allows the user to pass empty frames to evaluation by setting xmin, ymin, xmax, ymax to 0. This is useful for evaluating models on data that has empty frames. The empty frame accuracy is the proportion of empty frames that are contain no predictions. The 'label' column in this case is ignored, but must be one of the labels in the model to be included in the evaluation.
+
+### Further Reading
 
 [MeanAveragePrecision in torchmetrics](https://medium.com/data-science-at-microsoft/how-to-smoothly-integrate-meanaverageprecision-into-your-training-loop-using-torchmetrics-7d6f2ce0a2b3)
 
@@ -12,29 +65,7 @@ DeepForest provides several evaluation metrics. There is no one-size-fits all ev
 
 [Comparing Object Detection Models](https://www.comet.com/site/blog/compare-object-detection-models-from-torchvision/)
 
-## Average Intersection over Union
-DeepForest modules use torchmetric's [IntersectionOverUnion](https://torchmetrics.readthedocs.io/en/stable/detection/intersection_over_union.html) metric. This calculates the average overlap between predictions and ground truth boxes. This can be considered a general indicator of model performance but is not sufficient on its own for model evaluation. There are lots of reasons predictions might overlap with ground truth; for example, consider a model that covers an entire image with boxes. This would have a high IoU but a low value for model utility.
-
-## Mean-Average-Precision (mAP)
-mAP is the standard COCO evaluation metric and the most common for comparing computer vision models. It is useful as a summary statistic. However, it has several limitations for an ecological use case.
-
-1. Not intuitive and difficult to translate to ecological applications. Read the sections above and visualize the mAP metric, which is essentially the area under the precision-recall curve at a range of IoU values.
-2. The vast majority of biological applications use a fixed cutoff to determine an object of interest in an image. Perhaps in the future we will weight tree boxes by their confidence score, but currently we do things like, "All predictions > 0.4 score are considered positive detections". This does not connect well with the mAP metric.
-
-## Precision and Recall at a set IoU threshold.
-This was the original DeepForest metric, set to an IoU of 0.4. This means that all predictions that overlap a ground truth box at IoU > 0.4 are true positives. As opposed to the torchmetrics above, it is intuitive and matches downstream ecological tasks. The drawback is that it is slow, coarse, and does not fully reward the model for having high confidence scores on true positives.
-
-There is an additional difference between ecological object detection methods like tree crowns and traditional computer vision methods. Instead of a single or set of easily differentiated ground truths, we could have 60 or 70 objects that overlap in an image. How do you best assign each prediction to each ground truth?
-
-DeepForest uses the [hungarian matching algorithm](https://thinkautonomous.medium.com/computer-vision-for-tracking-8220759eee85) to assign predictions to ground truth based on maximum IoU overlap. This is slow compared to the methods above, and so isn't a good choice for running hundreds of times during model training see config.validation.val_accuracy_interval for setting the frequency of the evaluate callback for this metric.
-
-### Empty Frame Accuracy
-
-DeepForest allows the user to pass empty frames to evaluation by setting xmin, ymin, xmax, ymax to 0. This is useful for evaluating models on data that has empty frames. The empty frame accuracy is the proportion of empty frames that are contain no predictions. The 'label' column in this case is ignored, but must be one of the labels in the model to be included in the evaluation.
-
-# Calculating Evaluation Metrics
-
-## Torchmetrics and loss scores
+### Evaluation loss and map scores
 
 These metrics are largely used during training to keep track of model performance. They are relatively fast and will be automatically run during training.
 
@@ -75,7 +106,7 @@ This creates a dictionary of the average IoU ('iou') as well as 'iou' for each c
 
 > **_Advanced tip:_**  Users can set the frequency of pytorch lightning evaluation using kwargs passed to main.deepforest.create_trainer(). For example [check_val_every_n_epochs](https://lightning.ai/docs/pytorch/stable/common/trainer.html#check-val-every-n-epoch).
 
-## Recall and Precision at a fixed IoU Score
+### Recall and Precision at a fixed IoU Score
 To get a recall and precision at a set IoU evaluation score, specify an annotations' file using the m.evaluate method.
 
 ```python
@@ -113,7 +144,7 @@ results["box_precision"]
 0.781
 ```
 
-### Worked example of calculating IoU and recall/precision values
+## Worked example of calculating IoU and recall/precision values
 To convert overlap among predicted and ground truth bounding boxes into measures of accuracy and precision, the most common approach is to compare the overlap using the intersection-over-union metric (IoU).
 IoU is the ratio between the area of the overlap between the predicted polygon box and the ground truth polygon box divided by the area of the combined bounding box region.
 
@@ -186,9 +217,9 @@ true_positive = sum(result["match"])
 recall = true_positive / result.shape[0]
 precision = true_positive / predictions.shape[0]
 recall
-0.819672131147541
+0.81967
 precision
-0.5494505494505495
+0.54945
 ```
 
 This can be stated as 81.97% of the ground truth boxes are correctly matched to a predicted box at IoU threshold of 0.4, and 54.94% of predicted boxes match a ground truth box.
@@ -203,7 +234,7 @@ This is a dictionary with keys
 
 ```
 result.keys()
-dict_keys(['results', 'box_precision', 'box_recall', 'class_recall'])
+dict_keys(['results', 'box_precision', 'box_recall', 'class_recall','predictions','ground_df'])
 ```
 
 The added class_recall dataframe is mostly relevant for multi-class problems, in which the recall and precision per class is given.
@@ -214,7 +245,8 @@ result["class_recall"]
 0  Tree     1.0    0.67033    61
 ```
 
-### How to average evaluation metrics across images?
+## How to average evaluation metrics across images?
+
 One important decision was how to average precision and recall across multiple images. Two reasonable options might be to take all predictions and all ground truth and compute the statistic on the entire dataset. This strategy makes more sense for evaluation data that is relatively homogenous across images. We prefer to take the average of per-image precision and recall. This helps balance the dataset if some images have many objects and others have few objects, such as when you are comparing multiple habitat types.
 Users are welcome to calculate their own statistics directly from the results dataframe.
 
@@ -228,7 +260,7 @@ result["results"].head()
 34             34         4  0.595862  ...       Tree  OSBS_029.tif   True
 ```
 
-### Evaluating tiles too large for memory
+## Evaluating tiles too large for memory
 
 The evaluation method uses deepforest.predict_image for each of the paths supplied in the image_path column. This means that the entire image is passed for prediction. This will not work for large images. The deepforest.predict_tile method does a couple things under the hood that need to be repeated for evaluation.
 

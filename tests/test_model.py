@@ -5,19 +5,16 @@ from deepforest import get_data
 import pandas as pd
 import os
 from torchvision import transforms
-import pytorch_lightning as pl
-import numpy as np
-from deepforest.predict import _predict_crop_model_
 
 # The model object is architecture agnostic container.
 def test_model_no_args(config):
     with pytest.raises(ValueError):
-        model.Model(config)
+        model.Model.create_model(config)
 
 @pytest.fixture()
 def crop_model():
     crop_model = model.CropModel(num_classes=2)
-
+    
     return crop_model
 
 @pytest.fixture()
@@ -35,8 +32,7 @@ def crop_model_data(crop_model, tmpdir):
 
     return None
 
-def test_crop_model(
-        crop_model):  # Use pytest tempdir fixture to create a temporary directory
+def test_crop_model(crop_model):
     # Test forward pass
     x = torch.rand(4, 3, 224, 224)
     output = crop_model.forward(x)
@@ -69,6 +65,11 @@ def test_crop_model_train(crop_model, tmpdir, crop_model_data):
     crop_model.trainer.fit(crop_model)
     crop_model.trainer.validate(crop_model)
 
+def test_crop_model_recreate_model(tmpdir, crop_model_data):
+    crop_model = model.CropModel()
+    crop_model.load_from_disk(train_dir=tmpdir, val_dir=tmpdir, recreate_model=True)
+    assert crop_model.model is not None
+    assert crop_model.model.fc.out_features == 2
 
 def test_crop_model_custom_transform():
     # Create a dummy instance of CropModel
