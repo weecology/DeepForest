@@ -387,7 +387,9 @@ class CropModel(LightningModule):
         predicted_label, _ = self.postprocess_predictions(predictions)
         true_label = [self.val_ds.imgs[i][1] for i in range(len(self.val_ds.imgs))]
         if return_images:
-            images = [Image.open(self.val_ds.imgs[i][0]) for i in range(len(self.val_ds.imgs))]
+            images = [
+                Image.open(self.val_ds.imgs[i][0]) for i in range(len(self.val_ds.imgs))
+            ]
             return images, true_label, predicted_label
         else:
             return true_label, predicted_label
