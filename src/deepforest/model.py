@@ -381,7 +381,7 @@ class CropModel(LightningModule):
         return {'optimizer': optimizer, 'lr_scheduler': scheduler, "monitor": 'val_loss'}
 
     def val_dataset_confusion(self, return_images=False):
-        """Create a confusion matrix from a data loader."""
+        """Create a labels and predictions from the validation dataset to be created into a confusion matrix."""
         dl = self.predict_dataloader(self.val_ds)
         predictions = self.trainer.predict(self, dl)
         predicted_label, _ = self.postprocess_predictions(predictions)

@@ -304,6 +304,67 @@ metrics = crop_model.trainer.validate(crop_model)
 images, labels, predictions = crop_model.val_dataset_confusion(return_images=True)
 ```
 
+### Confusion Matrix Visualization
+
+You can visualize the confusion matrix in several ways:
+
+```python
+import matplotlib.pyplot as plt
+from torchmetrics.classification import MulticlassConfusionMatrix
+import seaborn as sns
+
+# Method 1: Using torchmetrics
+metric = MulticlassConfusionMatrix(num_classes=crop_model.num_classes)
+metric.update(preds=predictions, target=labels)
+fig, ax = metric.plot()
+plt.title("Confusion Matrix")
+plt.show()
+
+# Method 2: Using seaborn with val_dataset_confusion
+images, labels, predictions = crop_model.val_dataset_confusion(return_images=True)
+confusion_matrix = np.zeros((crop_model.num_classes, crop_model.num_classes))
+for true, pred in zip(labels, predictions):
+    confusion_matrix[true][pred] += 1
+
+# Plot with seaborn
+plt.figure(figsize=(10, 8))
+sns.heatmap(confusion_matrix, 
+            annot=True, 
+            fmt='g',
+            xticklabels=list(crop_model.label_dict.keys()),
+            yticklabels=list(crop_model.label_dict.keys()))
+plt.title("Confusion Matrix")
+plt.xlabel("Predicted")
+plt.ylabel("True")
+plt.show()
+
+# Get per-class metrics
+from torchmetrics.classification import MulticlassPrecision, MulticlassRecall, MulticlassF1Score
+
+precision = MulticlassPrecision(num_classes=crop_model.num_classes)
+recall = MulticlassRecall(num_classes=crop_model.num_classes)
+f1 = MulticlassF1Score(num_classes=crop_model.num_classes)
+
+precision_score = precision(torch.tensor(predictions), torch.tensor(labels))
+recall_score = recall(torch.tensor(predictions), torch.tensor(labels))
+f1_score = f1(torch.tensor(predictions), torch.tensor(labels))
+
+print(f"Precision: {precision_score:.3f}")
+print(f"Recall: {recall_score:.3f}")
+print(f"F1 Score: {f1_score:.3f}")
+```
+
+This will give you a comprehensive view of your model's performance, including:
+- A visual confusion matrix showing true vs predicted classes
+- Per-class precision, recall, and F1 scores
+- The ability to identify which classes are most commonly confused with each other
+
+The confusion matrix is particularly useful for:
+- Identifying class imbalance issues
+- Finding classes that are frequently confused
+- Understanding the model's strengths and weaknesses
+- Guiding decisions about data collection and model improvement
+
 ## Advanced Usage
 
 ### Custom Model Architecture
