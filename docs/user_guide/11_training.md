@@ -403,6 +403,11 @@ deepforest --config-dir /your/config/folder --config-name config_file_name train
 
 Note you don't need to pass the `yaml` extension. This method uses Hydra's [standard flags](https://hydra.cc/docs/advanced/hydra-command-line-flags/). Otherwise you can save a config file using any valid subset of the options (for example just the CSV location and root directory) and Hydra will overlay those on top of the default config.
 
+
+### Visualize input data
+
+The `on_train_start` method in `main.py` allows you to see sample images from your training and validation datasets at the start of training, provided there is a logger that supports image logging. This feature helps you verify that your data is being loaded and annotated correctly before the training process begins.
+
 ### Accessing and Visualizing Datasets
 
 You can access the training and validation datasets directly for visualization and analysis:

@@ -311,11 +311,11 @@ def determine_geometry_type(df):
     return geometry_type
 
 
-def format_geometry(predictions, scores=True, geom_type=None):
+def format_geometry(predictions, geom_type=None):
     """Format a retinanet prediction into a pandas dataframe for a batch of images
     Args:
         predictions: a list of dictionaries with keys 'boxes' and 'labels' coming from a retinanet
-        scores: Whether boxes come with scores, during prediction, or without scores, as in during training.
+        geom_type: the geometry type of the predictions, if not provided, it will be inferred from the predictions
     Returns:
         df: a pandas dataframe
         None if the dataframe is empty
@@ -326,7 +326,7 @@ def format_geometry(predictions, scores=True, geom_type=None):
         geom_type = determine_geometry_type(predictions)
 
     if geom_type == "box":
-        df = format_boxes(predictions, scores=scores)
+        df = format_boxes(predictions)
         if df is None:
             return None
 
@@ -338,7 +338,7 @@ def format_geometry(predictions, scores=True, geom_type=None):
     return df
 
 
-def format_boxes(prediction, scores=True):
+def format_boxes(prediction):
     """Format a retinanet prediction into a pandas dataframe for a single
     image.
 
@@ -355,11 +355,12 @@ def format_boxes(prediction, scores=True):
                       columns=["xmin", "ymin", "xmax", "ymax"])
     df["label"] = prediction["labels"].cpu().detach().numpy()
 
-    if scores:
+    if 'scores' in prediction.keys():
         df["score"] = prediction["scores"].cpu().detach().numpy()
 
     df['geometry'] = df.apply(
         lambda x: shapely.geometry.box(x.xmin, x.ymin, x.xmax, x.ymax), axis=1)
+    
     return df
 
 

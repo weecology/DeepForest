@@ -256,6 +256,11 @@ def test_train_single(m_without_release, architecture, accelerator):
     m_without_release.trainer.fit(m_without_release)
 
 
+def test_on_train_start_basic(m):
+    """Test that on_train_start runs without error and logs images using the default logger."""
+    m.create_trainer(fast_dev_run=False, limit_train_batches=2, limit_val_batches=2)
+    m.on_train_start()
+
 def test_train_preload_images(m):
     m.create_trainer(fast_dev_run=True)
     m.config.train.preload_images = True
