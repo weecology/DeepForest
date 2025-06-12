@@ -204,11 +204,12 @@ cropmodel = CropModel.load_from_checkpoint("path/to/checkpoint.ckpt")
 ### Making Predictions on a Dataset
 
 ```python
-# Create dataset using the model's transform
-val_ds = ImageFolder(
-    root="path/to/images",
-    transform=cropmodel.get_transform(augment=False)
-)
+# Create a validation dataset
+from torchvision.datasets import ImageFolder
+val_ds = ImageFolder(root=root_dir, transform=cropmodel.get_transform(augment=False))
+
+# Get predictions and labels
+images, labels, predictions = cropmodel.val_dataset_confusion(return_images=True)
 
 # Create dataloader
 crop_dataloader = cropmodel.predict_dataloader(val_ds)
