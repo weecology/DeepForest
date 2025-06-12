@@ -249,9 +249,7 @@ def _predict_crop_model_(crop_model,
     crop_results = trainer.predict(crop_model, crop_dataloader)
 
     # Process results
-    stacked_outputs = np.vstack(np.concatenate(crop_results))
-    label = np.argmax(stacked_outputs, axis=1)  # Get class with highest probability
-    score = np.max(stacked_outputs, axis=1)  # Get confidence score
+    label, score = crop_model.postprocess_predictions(crop_results)
 
     # Determine column names
     if is_single_model:
