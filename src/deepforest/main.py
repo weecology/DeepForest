@@ -269,8 +269,9 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             self.label_dict = checkpoint["label_dict"]
             self.numeric_to_label_dict = checkpoint["numeric_to_label_dict"]
         except KeyError:
-            print("No label_dict found in checkpoint, using default label_dict, please use deepforest.set_labels() to set the label_dict after loading the checkpoint.")
-        
+            print(
+                "No label_dict found in checkpoint, using default label_dict, please use deepforest.set_labels() to set the label_dict after loading the checkpoint."
+            )
 
     def save_model(self, path):
         """Save the trainer checkpoint in user defined path, in order to access
