@@ -119,31 +119,35 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
     def on_train_start(self):
         """Log sample images from training and validation datasets at training start."""
-        # Call parent on_train_start if it exists
-        super().on_train_start()
         
-        # Get non-empty annotations from training dataset
-        train_annotations = self.trainer.datamodule.train_ds.annotations
-        non_empty_train = train_annotations[~train_annotations.empty]
-        
-        if non_empty_train.empty:
+        if self.trainer.fast_dev_run:
             return
+        
+        # Get training dataset
+        train_ds = self.train_dataloader().dataset
+        
+        # Sample up to 5 indices from training dataset
+        n_samples = min(5, len(train_ds))
+        sample_indices = torch.randperm(len(train_ds))[:n_samples]
         
         # Create temporary directory for images
         tmpdir = tempfile.mkdtemp()
         
-        # Sample up to 5 images from training set
-        n_samples = min(5, len(non_empty_train.image_path.unique()))
-        sample_images = non_empty_train.image_path.sample(n=n_samples).unique()
+        # Get images, targets and paths for sampled indices
+        sample_data = [train_ds[idx] for idx in sample_indices]
+        sample_images = [data[0] for data in sample_data]
+        sample_targets = [data[1] for data in sample_data] 
+        sample_paths = [data[2] for data in sample_data]
         
-        for filename in sample_images:
+        for image, target, path in zip(sample_images, sample_targets, sample_paths):
             # Get annotations for this image
-            image_annotations = non_empty_train[non_empty_train.image_path == filename].copy()
-            image_annotations.root_dir = self.trainer.datamodule.train_ds.root_dir
-            
+            image_annotations = target.copy()
+            image_annotations = utilities.format_geometry(image_annotations)
+            image_annotations.root_dir = self.config.train.root_dir
+
             # Plot and save
-            save_path = os.path.join(tmpdir, f"train_{os.path.basename(filename)}")
-            visualize.plot_annotations(image_annotations, savedir=tmpdir)
+            save_path = os.path.join(tmpdir, f"train_{os.path.basename(path)}")
+            visualize.plot_annotations(image_annotations, savedir=tmpdir, image=image.numpy(), basename=path)
             
             # Log to available loggers
             for logger in self.trainer.loggers:
@@ -151,38 +155,42 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                     logger.experiment.log_image(
                         save_path,
                         metadata={
-                            "name": filename,
+                            "name": path,
                             "context": "detection_train",
                             "step": self.global_step
                         }
                     )
         
         # Also log validation images if available
-        if hasattr(self.trainer.datamodule, 'val_ds') and self.trainer.datamodule.val_ds:
-            val_annotations = self.trainer.datamodule.val_ds.annotations
-            non_empty_val = val_annotations[~val_annotations.empty]
+        if self.config.validation.csv_file is not None:
+            val_ds = self.val_dataloader().dataset
             
-            if not non_empty_val.empty:
-                n_samples = min(5, len(non_empty_val.image_path.unique()))
-                sample_images = non_empty_val.image_path.sample(n=n_samples).unique()
+            n_samples = min(5, len(val_ds))
+            sample_indices = torch.randperm(len(val_ds))[:n_samples]
+            
+            sample_data = [val_ds[idx] for idx in sample_indices]
+            sample_images = [data[0] for data in sample_data]
+            sample_targets = [data[1] for data in sample_data] 
+            sample_paths = [data[2] for data in sample_data]
                 
-                for filename in sample_images:
-                    image_annotations = non_empty_val[non_empty_val.image_path == filename].copy()
-                    image_annotations.root_dir = self.trainer.datamodule.val_ds.root_dir
-                    
-                    save_path = os.path.join(tmpdir, f"val_{os.path.basename(filename)}")
-                    visualize.plot_annotations(image_annotations, savedir=tmpdir)
-                    
-                    for logger in self.trainer.loggers:
-                        if hasattr(logger.experiment, 'log_image'):
-                            logger.experiment.log_image(
-                                save_path,
-                                metadata={
-                                    "name": filename,
-                                    "context": "detection_val",
-                                    "step": self.global_step
-                                }
-                            )
+            for image, target, path in zip(sample_images, sample_targets, sample_paths):
+                image_annotations = target.copy()
+                image_annotations = utilities.format_geometry(image_annotations)
+                image_annotations.root_dir = self.config.validation.root_dir
+                
+                save_path = os.path.join(tmpdir, f"val_{os.path.basename(path)}")
+                visualize.plot_annotations(image_annotations, savedir=tmpdir, image=image.numpy(), basename=path)
+                
+                for logger in self.trainer.loggers:
+                    if hasattr(logger.experiment, 'log_image'):
+                        logger.experiment.log_image(
+                            save_path,
+                            metadata={
+                                "name": path,
+                                "context": "detection_val",
+                                "step": self.global_step
+                            }
+                        )
 
     def load_model(self, model_name="weecology/deepforest-tree", revision='main'):
         """Loads a model that has already been pretrained for a specific task,
