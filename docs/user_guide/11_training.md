@@ -402,3 +402,84 @@ deepforest --config-dir /your/config/folder --config-name config_file_name train
 ```
 
 Note you don't need to pass the `yaml` extension. This method uses Hydra's [standard flags](https://hydra.cc/docs/advanced/hydra-command-line-flags/). Otherwise you can save a config file using any valid subset of the options (for example just the CSV location and root directory) and Hydra will overlay those on top of the default config.
+
+### Accessing and Visualizing Datasets
+
+You can access the training and validation datasets directly for visualization and analysis:
+
+```python
+# Load datasets
+m.load_dataset(csv_file=m.config.train.csv_file, root_dir=m.config.train.root_dir)
+
+# Access datasets directly
+train_dataset = m.train_ds
+val_dataset = m.val_ds
+
+# Visualize sample images from the training dataset
+import matplotlib.pyplot as plt
+import supervision as sv
+import numpy as np
+from PIL import Image
+
+def show_images(dataset, num_images=5):
+    fig, axes = plt.subplots(1, num_images, figsize=(15, 3))
+    for i in range(num_images):
+        img, target = dataset[i]
+        # Convert tensor to numpy array and transpose to channels last
+        img = img.numpy().transpose(1, 2, 0)
+        # Denormalize image
+        mean = np.array([0.485, 0.456, 0.406])
+        std = np.array([0.229, 0.224, 0.225])
+        img = std * img + mean
+        img = np.clip(img, 0, 1)
+        
+        # Convert to supervision format
+        boxes = target['boxes'].numpy()
+        labels = target['labels'].numpy()
+        detections = sv.Detections(
+            xyxy=boxes,
+            class_id=labels,
+            confidence=np.ones(len(labels))  # Add dummy confidence scores
+        )
+        
+        # Create annotator
+        box_annotator = sv.BoxAnnotator(
+            color=sv.ColorPalette.from_matplotlib('viridis', len(m.label_dict)),
+            thickness=2
+        )
+        
+        # Annotate image
+        annotated_frame = box_annotator.annotate(
+            scene=img.copy(),
+            detections=detections,
+            labels=[m.numeric_to_label_dict[label] for label in labels]
+        )
+        
+        axes[i].imshow(annotated_frame)
+        axes[i].axis('off')
+    plt.tight_layout()
+    plt.show()
+
+# Show sample images from training set
+show_images(train_dataset)
+
+# Get dataset statistics
+print(f"Number of training images: {len(train_dataset)}")
+print(f"Number of validation images: {len(val_dataset)}")
+print(f"Classes: {list(m.label_dict.keys())}")
+print(f"Class distribution in training set:")
+for class_name, class_id in m.label_dict.items():
+    count = sum(1 for _, target in train_dataset if class_id in target['labels'])
+    print(f"  {class_name}: {count}")
+
+# Create dataloaders when needed for training
+train_loader = m.train_dataloader()
+val_loader = m.val_dataloader()
+```
+
+This will give you a comprehensive view of your training data, including:
+- Sample images with bounding boxes and labels using the same visualization style as predictions
+- Dataset size and class distribution
+- Visual verification of data loading and transformations
+
+See [config](https://deepforest.readthedocs.io/en/latest/ConfigurationFile.html) for full set of available arguments. You can also pass any [additional](https://pytorch-lightning.readthedocs.io/en/latest/common/trainer.html) pytorch lightning argument to trainer.
