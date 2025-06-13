@@ -71,6 +71,7 @@ dependencies = [
     "torchvision>=0.13",
     "tqdm",
     "xmltodict",
+    "transformers>=4.46.3",
 ]
 
 [project.optional-dependencies]
