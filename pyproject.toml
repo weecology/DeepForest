@@ -8,7 +8,7 @@ version = "1.5.3-dev0"
 description = "Tree crown prediction using deep learning retinanets"
 readme = "README.md"
 license = { text = "MIT" }
-requires-python = ">=3.8,<3.13"
+requires-python = ">=3.9,<3.13"
 classifiers = [
     "Development Status :: 6 - Mature",
     "License :: OSI Approved :: MIT License",
@@ -40,7 +40,7 @@ urls.Source = "https://github.com/Weecology/DeepForest"
 urls.Contributors = "https://github.com/Weecology/DeepForest/graphs/contributors"
 
 dependencies = [
-    "albumentations>=1.0.0,<2.0.0",
+    "albumentations>=2.0.0",
     "aiolimiter",
     "aiohttp",
     "docformatter",
@@ -72,6 +72,7 @@ dependencies = [
     "tqdm",
     "xmltodict",
     "transformers>=4.46.3",
+    "timm>=1.0.15",
 ]
 
 [project.optional-dependencies]

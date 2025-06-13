@@ -145,7 +145,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
         # Set bird-specific settings if loading the bird model
         if model_name == "weecology/deepforest-bird":
-            self.config.retinanet.score_thresh = 0.3
+            self.config.score_thresh = 0.3
             self.label_dict = {"Bird": 0}
             self.numeric_to_label_dict = {v: k for k, v in self.label_dict.items()}
 
