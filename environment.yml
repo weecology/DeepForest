@@ -39,7 +39,7 @@ dependencies:
   - yapf
   - pip:
     - sphinx-markdown-tables
-    - albumentations>=1.0.0,<2.0.0
+    - albumentations>=2.0.0
     - comet_ml
     - pycocotools
     - aiolimiter
