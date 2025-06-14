@@ -63,7 +63,8 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         # If not provided, load default config via hydra.
         if config is None:
             config = utilities.load_config(overrides=config_args)
-        elif 'config_file' in config:
+        # Hub overrides
+        elif 'config_file' in config or 'config_args' in config:
             config = utilities.load_config(overrides=config['config_args'])
         elif config_args is not None:
             warnings.warn(
@@ -118,7 +119,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
         self.save_hyperparameters()
 
-    def load_model(self, model_name="weecology/deepforest-tree", revision='main'):
+    def load_model(self, model_name=None, revision=None):
         """Loads a model that has already been pretrained for a specific task,
         like tree crown detection.
 
@@ -136,8 +137,14 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         Returns:
             None
         """
+
+        if model_name is None:
+            model_name = self.config.model.name
+
+        if revision is None:
+            revision = self.config.model.revision
+
         # Load the model using from_pretrained
-        self.create_model()
         loaded_model = self.from_pretrained(model_name, revision=revision)
         self.label_dict = loaded_model.label_dict
         self.model = loaded_model.model

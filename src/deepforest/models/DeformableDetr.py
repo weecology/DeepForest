@@ -1,7 +1,10 @@
 import warnings
-from transformers import DeformableDetrForObjectDetection, DeformableDetrConfig, DeformableDetrImageProcessor
+from transformers import DeformableDetrForObjectDetection, DeformableDetrImageProcessor, logging
 from deepforest.model import Model
 from torch import nn
+
+# Suppress huge amounts of unnecessary warnings from transformers.
+logging.set_verbosity_error()
 
 
 class TransformersWrapper(nn.Module):
