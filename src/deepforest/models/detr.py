@@ -55,7 +55,8 @@ class TransformersWrapper(nn.Module):
             return self.processor.post_process_object_detection(
                 preds,
                 threshold=self.config.score_thresh,
-                target_sizes=[i.shape[-2:] for i in images])
+                target_sizes=[i.shape[-2:] for i in images]
+                if isinstance(images, list) else [images.shape[-2:]])
         else:
             return preds.loss_dict
 
