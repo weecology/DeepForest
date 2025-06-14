@@ -13,7 +13,7 @@ def config():
     config.model.name = "joshvm/milliontrees-detr"
     config.architecture = "detr"
     config.train.fast_dev_run = True
-    config.batch_size = 1 #True Why is this true?
+    config.batch_size = 1
     return config
 
 @pytest.fixture()
@@ -44,6 +44,10 @@ def test_check_model(config):
 # from_pretrained logic.
 @pytest.mark.parametrize("num_classes", [1, 5, 10])
 def test_create_model(config, num_classes):
+    """
+    Test that we can instantiate a model with differing numbers
+    of classes and that we can pass images through.
+    """
     config.num_classes = num_classes
     detr_model = detr.Model(config).create_model()
     detr_model.eval()
@@ -51,6 +55,10 @@ def test_create_model(config, num_classes):
     _ = detr_model(x)
 
 def test_boxes_in_output(config):
+    """
+    Test that a reference input image yields predictions that
+    include boxes, scores and labels.
+    """
     detr_model = detr.Model(config).create_model()
     detr_model.eval()
 
@@ -59,23 +67,30 @@ def test_boxes_in_output(config):
     # Passing a numpy array (or tensor) should work:
     result = detr_model(np.array(Image.open(image_path)))
 
-    assert "boxes" in result[0]
-    assert "scores" in result[0]
-    assert "labels" in result[0]
+    for r in result:
+        assert "boxes" in r
+        assert "scores" in r
+        assert "labels" in r
 
     # Passing a list is also allowed:
     result = detr_model([np.array(Image.open(image_path))])
 
-    assert "boxes" in result[0]
-    assert "scores" in result[0]
-    assert "labels" in result[0]
+    for r in result:
+        assert "boxes" in r
+        assert "scores" in r
+        assert "labels" in r
 
-# Test
+
 def test_forward_sample(config, coco_sample):
-    r = detr.Model(config)
-    model = r.create_model()
+    """
+    Test that in training mode, we get a loss dict and it's
+    non-zero.
+    """
+    detr_model = detr.Model(config).create_model()
+    detr_model.train()
+
     image, targets = coco_sample
-    loss_dict = model(image, targets)
+    loss_dict = detr_model(image, targets)
 
     # Assert non-zero loss
     assert sum([loss for loss in loss_dict.values()]) > 0
