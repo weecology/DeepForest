@@ -27,6 +27,7 @@ class Model():
 
         # Check for required properties and formats
         self.config = config
+        self.nms_thresh = None  # Required for some models but not all
 
     def create_model(self):
         """This function converts a deepforest config file into a model.

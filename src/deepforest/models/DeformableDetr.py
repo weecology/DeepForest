@@ -1,5 +1,5 @@
 import warnings
-from transformers import AutoModelForObjectDetection, AutoImageProcessor
+from transformers import DeformableDetrForObjectDetection, DeformableDetrConfig, DeformableDetrImageProcessor
 from deepforest.model import Model
 from torch import nn
 
@@ -8,11 +8,12 @@ class TransformersWrapper(nn.Module):
     """This class wraps a transformers AutoModelForObjectDetection model so
     that input pre- and post-processing happens transparently."""
 
-    def __init__(self, config):
+    def __init__(self, config, name, revision):
         """Initialize an AutoModelForObjectDetection model.
 
-        We assume that the provided model.name specified via config
-        applies to both the model and the processor.
+        We assume that the provided name applies to both model and
+        processor. By default this function creates a model with MS-COCO
+        initialized weights, but can be overridden if needed.
         """
         super().__init__()
         self.config = config
@@ -22,17 +23,13 @@ class TransformersWrapper(nn.Module):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=UserWarning)
 
-            self.net = AutoModelForObjectDetection.from_pretrained(
-                self.config.model.name,
-                revision=self.config.model.revision,
+            self.net = DeformableDetrForObjectDetection.from_pretrained(
+                name,
+                revision=revision,
                 num_labels=self.config.num_classes,
-                ignore_mismatched_sizes=True,
-            )
-
-        self.processor = AutoImageProcessor.from_pretrained(
-            self.config.model.name,
-            revision=self.config.model.revision,
-        )
+                ignore_mismatched_sizes=True)
+            self.processor = DeformableDetrImageProcessor.from_pretrained(
+                name, revision=revision)
 
     def prepare_targets(self, targets):
 
@@ -97,11 +94,11 @@ class Model(Model):
         """
         super().__init__(config)
 
-    def create_model(self):
+    def create_model(self, name="SenseTime/deformable-detr", revision="main"):
         """Create a Deformable DETR model from pretrained weights.
 
         The number of classes set via config and will override the
         downloaded checkpoint, which is expected if training from a
         model derived from MS-COCO.
         """
-        return TransformersWrapper(self.config)
+        return TransformersWrapper(self.config, name, revision)
