@@ -1,11 +1,13 @@
 # test Transformers/detr
 from deepforest.models import detr
 from deepforest import utilities
+from deepforest.datasets.training import BoxDataset
 from deepforest import get_data
 import pytest
 import torch
 from PIL import Image
 import numpy as np
+import os
 
 @pytest.fixture()
 def config():
@@ -18,8 +20,11 @@ def config():
 
 @pytest.fixture()
 def coco_sample():
+    """
+    Dummy sample that conforms to the MS-COCO format
+    """
     images = [torch.rand((3, 100, 100), dtype=torch.float32)]
-    negative_target = {
+    target = {
         "labels": torch.zeros(0, dtype=torch.int64),
         "image_id": 4,
         "annotations": [{
@@ -32,7 +37,7 @@ def coco_sample():
         }]
     }
 
-    targets = [negative_target]
+    targets = [target]
     return images, targets
 
 def test_check_model(config):
@@ -81,7 +86,7 @@ def test_boxes_in_output(config):
         assert "labels" in r
 
 
-def test_forward_sample(config, coco_sample):
+def test_forward_sample_dummy(config, coco_sample):
     """
     Test that in training mode, we get a loss dict and it's
     non-zero.
@@ -90,6 +95,25 @@ def test_forward_sample(config, coco_sample):
     detr_model.train()
 
     image, targets = coco_sample
+    loss_dict = detr_model(image, targets, prepare_targets=False)
+
+    # Assert non-zero loss
+    assert sum([loss for loss in loss_dict.values()]) > 0
+
+def test_training_sample(config):
+    """
+    Confirm integration between the training BoxDataset and
+    the model.
+    """
+    csv_file = get_data("example.csv")
+    root_dir = os.path.dirname(csv_file)
+    ds = BoxDataset(csv_file=csv_file, root_dir=root_dir)
+
+    image, targets, _ = next(iter(ds))
+
+    detr_model = detr.Model(config).create_model()
+    detr_model.train()
+
     loss_dict = detr_model(image, targets)
 
     # Assert non-zero loss

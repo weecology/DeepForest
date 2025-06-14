@@ -34,7 +34,31 @@ class TransformersWrapper(nn.Module):
             revision=self.config.model.revision,
         )
 
-    def forward(self, images, targets=None):
+    def prepare_targets(self, targets):
+
+        if not isinstance(targets, list):
+            targets = [targets]
+
+        coco_targets = []
+
+        for target in targets:
+            coco_targets.append({
+                "image_id":
+                    0,
+                "annotations": [{
+                    "id": i,
+                    "image_id": i,
+                    "category_id": label,
+                    "bbox": box.tolist(),
+                    "area": (box[3] - box[1]) * (box[2] - box[0]),
+                    "iscrowd": 0,
+                } for i, (label, box) in enumerate(zip(target["labels"], target["boxes"]))
+                               ]
+            })
+
+        return coco_targets
+
+    def forward(self, images, targets=None, prepare_targets=True):
         """AutoModelForObjectDetection forward pass. If targets are provided
         the function returns a loss dictionary, otherwise it returns processed
         predictions. For details, see the transformers documentation for
@@ -44,6 +68,10 @@ class TransformersWrapper(nn.Module):
             predictions: list of dictionaries with "score", "boxes" and "labels", or
                           a loss dict for training.
         """
+
+        if targets and prepare_targets:
+            targets = self.prepare_targets(targets)
+
         encoded_inputs = self.processor.preprocess(images=images,
                                                    annotations=targets,
                                                    return_tensors="pt",
