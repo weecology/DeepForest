@@ -10,13 +10,67 @@ import cv2
 import random
 import warnings
 import supervision as sv
+from typing import Optional, Union
 from deepforest.utilities import determine_geometry_type
 
 
-def plot_points(image, points, color=None, radius=5, thickness=1):
-    """Plot points on an image
+def _load_image(image: Optional[Union[np.typing.NDArray, str]] = None,
+                df: Optional[pd.DataFrame] = None) -> np.typing.NDArray:
+    """Utility function to load an image from either a path or a
+    prediction/annotation dataframe.
+
+    Returns an image in RGB format with CHW channel ordering.
+
     Args:
-        image: a numpy array in *BGR* color order! Channel order is channels first
+        image (optional): Numpy array or string
+        df (optiona): Pandas dataframe
+
+    Returns:
+        image: Numpy array
+    """
+
+    if image is None and df is None:
+        raise ValueError(
+            "Either an image or a valid dataframe must be provided for plotting.")
+    elif df is not None:
+        if not hasattr(df, 'root_dir'):
+            raise ValueError(
+                "The 'root_dir' attribute does not exist in the dataframe. Please specify the 'root_dir' argument."
+            )
+        else:
+            root_dir = df.root_dir
+
+        # expected str, bytes or os.PathLike object, not Series
+        root_dir = df.root_dir.iloc[0] if isinstance(root_dir, pd.Series) else root_dir
+        image_path = os.path.join(root_dir, df.image_path.unique()[0])
+        image = np.array(Image.open(image_path))
+    elif isinstance(image, str):
+        image = np.array(Image.open(image))
+    elif not isinstance(image, np.typing.NDArray):
+        raise ValueError("Image")
+
+    # Fix channel ordering
+    if image.shape[0] == 3:
+        warnings.warn("Input images must be channels last format [h, w, 3] not channels "
+                      "first [3, h, w], using np.rollaxis(image, 0, 3) to invert!")
+        image = np.rollaxis(image, 0, 3)
+
+    # Drop alpha channel if present and warn
+    if image.shape[2] == 4:
+        warnings.warn("Image has an alpha channel. Dropping alpha channel.")
+        image = image[:, :, :3]
+
+    if image.dtype == "float32":
+        warnings.warn("Image provided as float array, casting to usnsign")
+        image = image.astype("uint8")
+
+    return image
+
+
+def draw_points(image, points, color=None, radius=5, thickness=1):
+    """Draw points on an image, returns a copy of the array
+    Args:
+        image: a numpy array in RGB order, CHW format
         points: a numpy array of shape (N, 2) representing the coordinates of the points
         color: color of the points as a tuple of BGR color, e.g. orange points is (0, 165, 255)
         radius: radius of the points in px
@@ -24,13 +78,8 @@ def plot_points(image, points, color=None, radius=5, thickness=1):
     Returns:
         image: a numpy array with drawn points
     """
-    if image.shape[0] == 3:
-        warnings.warn("Input images must be channels last format [h, w, 3] not channels "
-                      "first [3, h, w], using np.rollaxis(image, 0, 3) to invert!")
-        image = np.rollaxis(image, 0, 3)
-    if image.dtype == "float32":
-        image = image.astype("uint8")
-    image = image.copy()
+    image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR).copy()
+
     if not color:
         color = (0, 165, 255)  # Default color is orange
 
@@ -43,26 +92,19 @@ def plot_points(image, points, color=None, radius=5, thickness=1):
     return image
 
 
-def plot_predictions(image, df, color=None, thickness=1):
-    """Plot a set of boxes on an image By default this function does not show,
-    but only plots an axis Label column must be numeric! Image must be BGR
-    color order!
+def draw_objects(image, df, color=None, thickness=1):
+    """Draw geometries on an image, returns a copy of the array.
 
     Args:
-        image: a numpy array in *BGR* color order! Channel order is channels first
+        image: a numpy array in RGB order, CHW format
         df: a pandas dataframe with xmin, xmax, ymin, ymax and label column
         color: color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255)
         thickness: thickness of the rectangle border line in px
     Returns:
         image: a numpy array with drawn annotations
     """
-    if image.shape[0] == 3:
-        warnings.warn("Input images must be channels last format [h, w, 3] not channels "
-                      "first [3, h, w], using np.rollaxis(image, 0, 3) to invert!")
-        image = np.rollaxis(image, 0, 3)
-    if image.dtype == "float32":
-        image = image.astype("uint8")
-    image = image.copy()
+    image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR).copy()
+
     if not color:
         if not ptypes.is_numeric_dtype(df.label):
             warnings.warn("No color was provided and the label column is not numeric. "
@@ -315,23 +357,10 @@ def plot_annotations(annotations,
     num_labels = len(annotations.label.unique())
     annotation_color = __check_color__(color, num_labels)
 
-    # Read images
-    if not hasattr(annotations, 'root_dir'):
-        if root_dir is None:
-            raise ValueError(
-                "The 'annotations.root_dir' attribute does not exist. Please specify the 'root_dir' argument."
-            )
-        else:
-            root_dir = root_dir
-    else:
-        root_dir = annotations.root_dir
-
-    if image is None:
-        image_path = os.path.join(root_dir, annotations.image_path.unique()[0])
-        image = np.array(Image.open(image_path))
+    image = _load_image(image, annotations)
 
     # Plot the results following https://supervision.roboflow.com/annotators/
-    fig, ax = plt.subplots()
+    plt.subplots()
     annotated_scene = _plot_image_with_geometry(df=annotations,
                                                 image=image,
                                                 sv_color=annotation_color,
@@ -389,27 +418,10 @@ def plot_results(results,
     results_color_sv = __check_color__(results_color, num_labels)
     ground_truth_color_sv = __check_color__(ground_truth_color, num_labels)
 
-    # Read images
-    if image is None:
-        root_dir = results.root_dir
-        # expected str, bytes or os.PathLike object, not Series
-        root_dir = root_dir.iloc[0] if isinstance(root_dir, pd.Series) else root_dir
-        image_path = os.path.join(root_dir, results.image_path.unique()[0])
-        image = np.array(Image.open(image_path))
-    elif isinstance(image, str):
-        image = np.array(Image.open(image))
-    elif not isinstance(image, np.typing.NDArray):
-        raise ValueError(
-            "Unable to load image, please provide either a Numpy array, a string path or a suitable dataframe"
-        )
-
-    # Drop alpha channel if present and warn
-    if image.shape[2] == 4:
-        warnings.warn("Image has an alpha channel. Dropping alpha channel.")
-        image = image[:, :, :3]
+    image = _load_image(image, results)
 
     # Plot the results following https://supervision.roboflow.com/annotators/
-    fig, ax = plt.subplots()
+    plt.subplots()
     annotated_scene = _plot_image_with_geometry(df=results,
                                                 image=image,
                                                 sv_color=results_color_sv,
@@ -434,8 +446,6 @@ def plot_results(results,
                 results.image_path.unique()[0]))[0]
         image_name = "{}.png".format(basename)
         image_path = os.path.join(savedir, image_name)
-        # Flip RGB to BGR
-        annotated_scene = annotated_scene[:, :, ::-1]
         cv2.imwrite(image_path, annotated_scene)
     else:
         # Display the image using Matplotlib

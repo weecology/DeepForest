@@ -11,6 +11,20 @@ import geopandas as gpd
 from shapely import geometry
 import cv2
 
+@pytest.fixture
+def gdf():
+    data = {
+        'geometry': [geometry.Polygon([(10, 10), (20, 10), (20, 20), (10, 20), (15, 25)]),
+                        geometry.Polygon([(30, 30), (40, 30), (40, 40), (30, 40), (35, 35)])],
+        'label': ['Tree', 'Tree'],
+        'image_path': [get_data("OSBS_029.tif"), get_data("OSBS_029.tif")],
+        'score': [0.9, 0.8]
+    }
+    gdf = gpd.GeoDataFrame(data)
+    gdf.root_dir = os.path.dirname(get_data("OSBS_029.tif"))
+    return gdf
+
+
 def test_predict_image_and_plot(m, tmpdir):
     sample_image_path = get_data("OSBS_029.png")
     results = m.predict_image(path=sample_image_path)
@@ -25,7 +39,7 @@ def test_predict_tile_and_plot(m, tmpdir):
 
     assert os.path.exists(os.path.join(tmpdir, "OSBS_029.png"))
 
-def test_multi_class_plot( tmpdir):
+def test_multi_class_plot(tmpdir):
     results = pd.read_csv(get_data("testfile_multi.csv"))
     results = utilities.read_file(results, root_dir=os.path.dirname(get_data("SOAP_061.png")))
     visualize.plot_results(results, savedir=tmpdir)
@@ -82,7 +96,7 @@ def test_plot_annotations(tmpdir):
     assert os.path.exists(os.path.join(tmpdir, "OSBS_029.png"))
 
 
-def test_plot_results_box(m, tmpdir):
+def test_plot_results_box(tmpdir):
     # Create a mock DataFrame with box annotations
     data = {
         'xmin': [10, 20],
@@ -103,7 +117,7 @@ def test_plot_results_box(m, tmpdir):
     # Assertions
     assert os.path.exists(os.path.join(tmpdir, "OSBS_029.png"))
 
-def test_plot_results_point(m, tmpdir):
+def test_plot_results_point(tmpdir):
     # Create a mock DataFrame with point annotations
     data = {
         'x': [15, 25],
@@ -122,7 +136,7 @@ def test_plot_results_point(m, tmpdir):
     # Assertions
     assert os.path.exists(os.path.join(tmpdir, "OSBS_029.png"))
 
-def test_plot_results_point_no_label(m, tmpdir):
+def test_plot_results_point_no_label(tmpdir):
     # Create a mock DataFrame with point annotations
     data = {
         'x': [15, 25],
@@ -140,7 +154,7 @@ def test_plot_results_point_no_label(m, tmpdir):
     # Assertions
     assert os.path.exists(os.path.join(tmpdir, "OSBS_029.png"))
 
-def test_plot_results_polygon(m, tmpdir):
+def test_plot_results_polygon(tmpdir):
     # Create a mock DataFrame with polygon annotations
     data = {
         'geometry': [geometry.Polygon([(10, 10), (20, 10), (20, 20), (10, 20), (15, 25)]),
@@ -162,3 +176,29 @@ def test_plot_results_polygon(m, tmpdir):
 
     # Assertions
     assert os.path.exists(os.path.join(tmpdir, "OSBS_029.png"))
+
+def test_draw_points():
+    image = visualize._load_image(get_data("OSBS_029.tif"))
+    points = np.array([[10, 10], [20, 20]])
+
+    image = visualize.draw_points(image, points)
+    assert image is not None
+
+def test_draw_objects(gdf):
+    image = visualize._load_image(get_data("OSBS_029.tif"))
+    image = visualize.draw_objects(image, gdf)
+    assert image is not None
+
+def test_image_from_array():
+    image = visualize._load_image(get_data("OSBS_029.tif"))
+    assert image is not None
+
+def test_image_from_path():
+    image_path = get_data("OSBS_029.tif")
+    image = visualize._load_image(image_path)
+    assert image is not None
+
+@pytest.mark.xfail
+def test_image_empty():
+    image = visualize._load_image()
+    assert image is not None
