@@ -112,29 +112,28 @@ class deepforest(pl.LightningModule):
 
         self.save_hyperparameters({"config": self.config})
 
-
     def on_train_start(self):
         """Log sample images from training and validation datasets at training start."""
-        
+
         if self.trainer.fast_dev_run:
             return
-        
+
         # Get training dataset
         train_ds = self.train_dataloader().dataset
-        
+
         # Sample up to 5 indices from training dataset
         n_samples = min(5, len(train_ds))
         sample_indices = torch.randperm(len(train_ds))[:n_samples]
-        
+
         # Create temporary directory for images
         tmpdir = tempfile.mkdtemp()
-        
+
         # Get images, targets and paths for sampled indices
         sample_data = [train_ds[idx] for idx in sample_indices]
         sample_images = [data[0] for data in sample_data]
-        sample_targets = [data[1] for data in sample_data] 
+        sample_targets = [data[1] for data in sample_data]
         sample_paths = [data[2] for data in sample_data]
-        
+
         for image, target, path in zip(sample_images, sample_targets, sample_paths):
             # Get annotations for this image
             image_annotations = target.copy()
@@ -143,50 +142,52 @@ class deepforest(pl.LightningModule):
 
             # Plot and save
             save_path = os.path.join(tmpdir, f"train_{os.path.basename(path)}")
-            visualize.plot_annotations(image_annotations, savedir=tmpdir, image=image.numpy(), basename=path)
-            
+            visualize.plot_annotations(image_annotations,
+                                       savedir=tmpdir,
+                                       image=image.numpy(),
+                                       basename=path)
+
             # Log to available loggers
             for logger in self.trainer.loggers:
                 if hasattr(logger.experiment, 'log_image'):
-                    logger.experiment.log_image(
-                        save_path,
-                        metadata={
-                            "name": path,
-                            "context": "detection_train",
-                            "step": self.global_step
-                        }
-                    )
-        
+                    logger.experiment.log_image(save_path,
+                                                metadata={
+                                                    "name": path,
+                                                    "context": "detection_train",
+                                                    "step": self.global_step
+                                                })
+
         # Also log validation images if available
         if self.config.validation.csv_file is not None:
             val_ds = self.val_dataloader().dataset
-            
+
             n_samples = min(5, len(val_ds))
             sample_indices = torch.randperm(len(val_ds))[:n_samples]
-            
+
             sample_data = [val_ds[idx] for idx in sample_indices]
             sample_images = [data[0] for data in sample_data]
-            sample_targets = [data[1] for data in sample_data] 
+            sample_targets = [data[1] for data in sample_data]
             sample_paths = [data[2] for data in sample_data]
-                
+
             for image, target, path in zip(sample_images, sample_targets, sample_paths):
                 image_annotations = target.copy()
                 image_annotations = utilities.format_geometry(image_annotations)
                 image_annotations.root_dir = self.config.validation.root_dir
-                
+
                 save_path = os.path.join(tmpdir, f"val_{os.path.basename(path)}")
-                visualize.plot_annotations(image_annotations, savedir=tmpdir, image=image.numpy(), basename=path)
-                
+                visualize.plot_annotations(image_annotations,
+                                           savedir=tmpdir,
+                                           image=image.numpy(),
+                                           basename=path)
+
                 for logger in self.trainer.loggers:
                     if hasattr(logger.experiment, 'log_image'):
-                        logger.experiment.log_image(
-                            save_path,
-                            metadata={
-                                "name": path,
-                                "context": "detection_val",
-                                "step": self.global_step
-                            }
-                        )
+                        logger.experiment.log_image(save_path,
+                                                    metadata={
+                                                        "name": path,
+                                                        "context": "detection_val",
+                                                        "step": self.global_step
+                                                    })
 
     def load_model(self, model_name=None, revision=None):
         """Loads a model that has already been pretrained for a specific task,
