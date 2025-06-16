@@ -568,6 +568,10 @@ def _plot_image_with_geometry(df,
     geom_type = determine_geometry_type(df)
     detections = convert_to_sv_format(df, height=height, width=width)
 
+    # switch channel last to channel first if needed
+    if image.shape[0] == 3:
+        image = np.rollaxis(image, 0, 3)
+
     if geom_type == "box":
         bounding_box_annotator = sv.BoxAnnotator(color=sv_color, thickness=thickness)
         annotated_frame = bounding_box_annotator.annotate(
