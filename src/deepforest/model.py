@@ -186,38 +186,36 @@ class CropModel(LightningModule):
             self.num_classes = len(self.label_dict)
             self.create_model(num_classes=self.num_classes)
 
-    def create_dataloaders(self):
-        """Create train and validation dataloaders from the datasets.
-        
-        Returns:
-            tuple: (train_loader, val_loader)
-        """
+    def train_dataloader(self):
+        """Train data loader."""
+
         train_loader = torch.utils.data.DataLoader(
-            self.train_ds,
-            batch_size=self.batch_size,
-            shuffle=True,
-            num_workers=self.num_workers
-        )
-        
+                    self.train_ds,
+                    batch_size=self.batch_size,
+                    shuffle=True,
+                    num_workers=self.num_workers
+                )
+        return train_loader
+
+    def val_dataloader(self):
+        """Validation data loader."""
         val_loader = torch.utils.data.DataLoader(
             self.val_ds,
             batch_size=self.batch_size,
             shuffle=False,
             num_workers=self.num_workers
         )
-        
-        return train_loader, val_loader
-
-    def train_dataloader(self):
-        """Train data loader."""
-        train_loader, _ = self.create_dataloaders()
-        return train_loader
-
-    def val_dataloader(self):
-        """Validation data loader."""
-        _, val_loader = self.create_dataloaders()
         return val_loader
 
+    def predict_dataloader(self, ds):
+        """Prediction data loader."""
+        loader = torch.utils.data.DataLoader(ds,
+                                             batch_size=self.batch_size,
+                                             shuffle=False,
+                                             num_workers=self.num_workers)
+
+        return loader
+    
     def get_transform(self, augment):
         """Returns the data transformation pipeline for the model.
 
