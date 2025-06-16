@@ -72,7 +72,7 @@ def _load_image(image: Optional[Union[np.typing.NDArray, str, Image.Image]] = No
 def draw_points(image, points, color=None, radius=5, thickness=1):
     """Draw points on an image, returns a copy of the array
     Args:
-        image: a numpy array in RGB order, CHW format
+        image: a numpy array in RGB order, HWC format
         points: a numpy array of shape (N, 2) representing the coordinates of the points
         color: color of the points as a tuple of BGR color, e.g. orange points is (0, 165, 255)
         radius: radius of the points in px
@@ -98,7 +98,7 @@ def draw_objects(image, df, color=None, thickness=1):
     """Draw geometries on an image, returns a copy of the array.
 
     Args:
-        image: a numpy array in RGB order, CHW format
+        image: a numpy array in RGB order, HWC format
         df: a pandas dataframe with xmin, xmax, ymin, ymax and label column
         color: color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255)
         thickness: thickness of the rectangle border line in px
