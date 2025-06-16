@@ -14,12 +14,12 @@ from typing import Optional, Union
 from deepforest.utilities import determine_geometry_type
 
 
-def _load_image(image: Optional[Union[np.typing.NDArray, str]] = None,
+def _load_image(image: Optional[Union[np.typing.NDArray, str, Image.Image]] = None,
                 df: Optional[pd.DataFrame] = None) -> np.typing.NDArray:
     """Utility function to load an image from either a path or a
     prediction/annotation dataframe.
 
-    Returns an image in RGB format with CHW channel ordering.
+    Returns an image in RGB format with HWC channel ordering.
 
     Args:
         image (optional): Numpy array or string
@@ -46,7 +46,9 @@ def _load_image(image: Optional[Union[np.typing.NDArray, str]] = None,
         image = np.array(Image.open(image_path))
     elif isinstance(image, str):
         image = np.array(Image.open(image))
-    elif not isinstance(image, np.typing.NDArray):
+    elif isinstance(image, Image.Image):
+        image = np.array(image)
+    elif not isinstance(image, np.ndarray):
         raise ValueError("Image")
 
     # Fix channel ordering

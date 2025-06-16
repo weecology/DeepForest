@@ -6,7 +6,7 @@ import os
 import pytest
 import numpy as np
 import pandas as pd
-
+from PIL import Image
 import geopandas as gpd
 from shapely import geometry
 import cv2
@@ -189,13 +189,27 @@ def test_draw_objects(gdf):
     image = visualize.draw_objects(image, gdf)
     assert image is not None
 
-def test_image_from_array():
-    image = visualize._load_image(get_data("OSBS_029.tif"))
+def test_image_from_path_or_array():
+    image_path = visualize._load_image(np.array(Image.open(get_data("OSBS_029.tif"))))
+    image_array = visualize._load_image(get_data("OSBS_029.tif"))
+    assert np.allclose(image_path, image_array)
+
+def test_image_from_pil():
+    image = visualize._load_image(Image.open(get_data("OSBS_029.tif")))
     assert image is not None
 
-def test_image_from_path():
-    image_path = get_data("OSBS_029.tif")
-    image = visualize._load_image(image_path)
+def test_load_chw_to_hwc():
+    image = np.random.randint(0, 255, size=(3, 100, 100), dtype=np.uint8)
+    image = visualize._load_image(image)
+    assert image.shape == (100, 100, 3)
+
+def test_load_drop_alpha():
+    image = np.random.randint(0, 255, size=(100, 100, 4), dtype=np.uint8)
+    image = visualize._load_image(image)
+    assert image.shape == (100, 100, 3)
+
+def test_image_from_gdf(gdf):
+    image = visualize._load_image(df=gdf)
     assert image is not None
 
 @pytest.mark.xfail
