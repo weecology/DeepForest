@@ -430,7 +430,7 @@ def plot_results(results,
     image = _load_image(image, results)
 
     # Plot the results following https://supervision.roboflow.com/annotators/
-    plt.subplots()
+    _, ax = plt.subplots()
     annotated_scene = _plot_image_with_geometry(df=results,
                                                 image=image,
                                                 sv_color=results_color_sv,
