@@ -379,7 +379,7 @@ def plot_results(results,
         thickness: thickness of the rectangle border line in px
         basename: optional basename for the saved figure. If None (default), the basename will be extracted from the image path.
         radius: radius of the points in px
-        image: an optional numpy array of an image to annotate. If None (default), the image will be loaded from the results dataframe.
+        image: an optional numpy array or path to an image to annotate. If None (default), the image will be loaded from the results dataframe.
         axes: returns matplotlib axes object if True
     Returns:
         Matplotlib axes object if axes=True, otherwise None
@@ -396,11 +396,17 @@ def plot_results(results,
         root_dir = root_dir.iloc[0] if isinstance(root_dir, pd.Series) else root_dir
         image_path = os.path.join(root_dir, results.image_path.unique()[0])
         image = np.array(Image.open(image_path))
+    elif isinstance(image, str):
+        image = np.array(Image.open(image))
+    elif not isinstance(image, np.typing.NDArray):
+        raise ValueError(
+            "Unable to load image, please provide either a Numpy array, a string path or a suitable dataframe"
+        )
 
-        # Drop alpha channel if present and warn
-        if image.shape[2] == 4:
-            warnings.warn("Image has an alpha channel. Dropping alpha channel.")
-            image = image[:, :, :3]
+    # Drop alpha channel if present and warn
+    if image.shape[2] == 4:
+        warnings.warn("Image has an alpha channel. Dropping alpha channel.")
+        image = image[:, :, :3]
 
     # Plot the results following https://supervision.roboflow.com/annotators/
     fig, ax = plt.subplots()
