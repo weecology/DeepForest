@@ -7,12 +7,12 @@ from torch import nn
 logging.set_verbosity_error()
 
 
-class TransformersWrapper(nn.Module):
-    """This class wraps a transformers AutoModelForObjectDetection model so
-    that input pre- and post-processing happens transparently."""
+class DeformableDetrWrapper(nn.Module):
+    """This class wraps a transformers DeformableDetrForObjectDetection model
+    so that input pre- and post-processing happens transparently."""
 
     def __init__(self, config, name, revision):
-        """Initialize an AutoModelForObjectDetection model.
+        """Initialize a DeformableDetrForObjectDetection model.
 
         We assume that the provided name applies to both model and
         processor. By default this function creates a model with MS-COCO
@@ -34,7 +34,7 @@ class TransformersWrapper(nn.Module):
             self.processor = DeformableDetrImageProcessor.from_pretrained(
                 name, revision=revision)
 
-    def prepare_targets(self, targets):
+    def _prepare_targets(self, targets):
 
         if not isinstance(targets, list):
             targets = [targets]
@@ -70,7 +70,7 @@ class TransformersWrapper(nn.Module):
         """
 
         if targets and prepare_targets:
-            targets = self.prepare_targets(targets)
+            targets = self._prepare_targets(targets)
 
         encoded_inputs = self.processor.preprocess(images=images,
                                                    annotations=targets,
@@ -101,7 +101,7 @@ class Model(Model):
         """Create a Deformable DETR model from pretrained weights.
 
         The number of classes set via config and will override the
-        downloaded checkpoint, which is expected if training from a
-        model derived from MS-COCO.
+        downloaded checkpoint. The default weights will load a model
+        trained on MS-COCO that should fine-tune well on other tasks.
         """
-        return TransformersWrapper(self.config, name, revision)
+        return DeformableDetrWrapper(self.config, name, revision)
