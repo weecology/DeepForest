@@ -62,8 +62,15 @@ def _load_image(image: Optional[Union[np.typing.NDArray, str, Image.Image]] = No
         warnings.warn("Image has an alpha channel. Dropping alpha channel.")
         image = image[:, :, :3]
 
-    if image.dtype == "float32":
-        warnings.warn("Image provided as float array, casting to usnsign")
+    if image.dtype != np.uint8:
+
+        warnings.warn(f"Image is {image.dtype}. Will be cast to 8-bit unsigned")
+
+        # Images in [0,1] are allowed, but should be rescaled
+        if image.max() < 1:
+            warnings.warn(f"Assuming image is in [0,1, scalingg to [0,255]")
+            image *= 255
+
         image = image.astype("uint8")
 
     return image

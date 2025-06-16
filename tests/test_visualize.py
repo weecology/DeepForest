@@ -212,6 +212,13 @@ def test_image_from_gdf(gdf):
     image = visualize._load_image(df=gdf)
     assert image is not None
 
+def test_check_dtype_rescale():
+    image = np.random.random((100, 100, 3))
+    assert image.dtype != np.uint8
+    image = visualize._load_image(image)
+    assert image.dtype == np.uint8
+    assert image.max() > 1 and image.max() <= 255
+
 @pytest.mark.xfail
 def test_image_empty():
     image = visualize._load_image()
