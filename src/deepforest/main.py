@@ -113,7 +113,8 @@ class deepforest(pl.LightningModule):
         self.save_hyperparameters({"config": self.config})
 
     def on_train_start(self):
-        """Log sample images from training and validation datasets at training start."""
+        """Log sample images from training and validation datasets at training
+        start."""
 
         if self.trainer.fast_dev_run:
             return
