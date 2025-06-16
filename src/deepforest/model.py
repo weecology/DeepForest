@@ -177,7 +177,7 @@ class CropModel(LightningModule):
                                     transform=self.get_transform(augment=True))
         self.val_ds = ImageFolder(root=val_dir,
                                   transform=self.get_transform(augment=False))
-        
+
         # Set up label dictionary
         self.label_dict = self.train_ds.class_to_idx
         self.numeric_to_label_dict = {v: k for k, v in self.label_dict.items()}
@@ -189,22 +189,18 @@ class CropModel(LightningModule):
     def train_dataloader(self):
         """Train data loader."""
 
-        train_loader = torch.utils.data.DataLoader(
-                    self.train_ds,
-                    batch_size=self.batch_size,
-                    shuffle=True,
-                    num_workers=self.num_workers
-                )
+        train_loader = torch.utils.data.DataLoader(self.train_ds,
+                                                   batch_size=self.batch_size,
+                                                   shuffle=True,
+                                                   num_workers=self.num_workers)
         return train_loader
 
     def val_dataloader(self):
         """Validation data loader."""
-        val_loader = torch.utils.data.DataLoader(
-            self.val_ds,
-            batch_size=self.batch_size,
-            shuffle=False,
-            num_workers=self.num_workers
-        )
+        val_loader = torch.utils.data.DataLoader(self.val_ds,
+                                                 batch_size=self.batch_size,
+                                                 shuffle=False,
+                                                 num_workers=self.num_workers)
         return val_loader
 
     def predict_dataloader(self, ds):
@@ -215,7 +211,7 @@ class CropModel(LightningModule):
                                              num_workers=self.num_workers)
 
         return loader
-    
+
     def get_transform(self, augment):
         """Returns the data transformation pipeline for the model.
 

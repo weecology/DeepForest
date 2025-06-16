@@ -333,7 +333,7 @@ def format_boxes(prediction):
 
     df['geometry'] = df.apply(
         lambda x: shapely.geometry.box(x.xmin, x.ymin, x.xmax, x.ymax), axis=1)
-    
+
     return df
 
 
