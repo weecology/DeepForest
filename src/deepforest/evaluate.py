@@ -46,8 +46,8 @@ def evaluate_image_boxes(predictions, ground_df, iou_tensor):
         )
         return pd.DataFrame(
             {
-                "prediction_id": row_ind,
-                "truth_id": col_ind,
+                "prediction_id": predictions.iloc[row_ind].index,
+                "truth_id": ground_df.iloc[col_ind].index,
                 "IoU": iou_tensor[row_ind, col_ind],
             },
         ).sort_values("truth_id", ascending=True)
@@ -160,7 +160,8 @@ def __evaluate_wrapper__(predictions, ground_df, iou_threshold, label_dict):
         results["results"]["true_label"] = results["results"]["true_label"].apply(
             lambda x: label_dict[x]
         )
-        results["predictions"] = predictions
+        # avoid modifying a view
+        results["predictions"] = predictions.copy()
         results["predictions"]["label"] = results["predictions"]["label"].apply(
             lambda x: label_dict[x]
         )
@@ -300,17 +301,16 @@ def evaluate_boxes(predictions, ground_df, iou_threshold=0.4):
         axis="rows",
         ignore_index=True,
     )
-
-    # TODO: does this work even if we shuffle the data frames?
-    results_df["image_path"] = ground_df["image_path"]
-    # set true labels
-    results_df["true_label"] = ground_df["label"]  # .map(label_dict)
-    # set the geometry
-    results_df["geometry"] = ground_df["geometry"]
-    # set the score and predicted label
-    # TODO: how to best manage the prediction_id-to-index of `predictions` mapping?
+    # set the ground truth columns
     results_df = results_df.merge(
-        predictions[["score", "label"]].reset_index(drop=True),
+        ground_df[["image_path", "label", "geometry"]],
+        left_on="truth_id",
+        right_index=True,
+    )
+    results_df = results_df.rename(columns={"label": "true_label"})
+    # set the score and predicted label
+    results_df = results_df.merge(
+        predictions[["score", "label"]],
         left_on="prediction_id",
         right_index=True,
     )
