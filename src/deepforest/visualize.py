@@ -15,7 +15,8 @@ from deepforest.utilities import determine_geometry_type
 
 
 def _load_image(image: Optional[Union[np.typing.NDArray, str, Image.Image]] = None,
-                df: Optional[pd.DataFrame] = None) -> np.typing.NDArray:
+                df: Optional[pd.DataFrame] = None,
+                root_dir: Optional[str] = None) -> np.typing.NDArray:
     """Utility function to load an image from either a path or a
     prediction/annotation dataframe.
 
@@ -33,15 +34,16 @@ def _load_image(image: Optional[Union[np.typing.NDArray, str, Image.Image]] = No
         raise ValueError(
             "Either an image or a valid dataframe must be provided for plotting.")
     elif df is not None:
-        if not hasattr(df, 'root_dir'):
+        if not root_dir and not hasattr(df, 'root_dir'):
             raise ValueError(
                 "The 'root_dir' attribute does not exist in the dataframe. Please specify the 'root_dir' argument."
             )
         else:
             root_dir = df.root_dir
+            # expected str, bytes or os.PathLike object, not Series
+            root_dir = df.root_dir.iloc[0] if isinstance(root_dir,
+                                                         pd.Series) else root_dir
 
-        # expected str, bytes or os.PathLike object, not Series
-        root_dir = df.root_dir.iloc[0] if isinstance(root_dir, pd.Series) else root_dir
         image_path = os.path.join(root_dir, df.image_path.unique()[0])
         image = np.array(Image.open(image_path))
     elif isinstance(image, str):
@@ -76,8 +78,26 @@ def _load_image(image: Optional[Union[np.typing.NDArray, str, Image.Image]] = No
     return image
 
 
-def draw_points(image, points, color=None, radius=5, thickness=1):
+def plot_points(image, points, color=None, radius=5, thickness=1):
     """Draw points on an image, returns a copy of the array
+    Args:
+        image: a numpy array in RGB order, HWC format
+        points: a numpy array of shape (N, 2) representing the coordinates of the points
+        color: color of the points as a tuple of BGR color, e.g. orange points is (0, 165, 255)
+        radius: radius of the points in px
+        thickness: thickness of the point border line in px
+    Returns:
+        image: a numpy array with drawn points
+    """
+    warnings.warn(
+        "plot_points will be deprecated in 2.0, please use draw_points instead.",
+        DeprecationWarning)
+    draw_points(image, points, color, radius, thickness)
+
+
+def draw_points(image, points, color=None, radius=5, thickness=1):
+    """Draw points on an image, returns a copy of the array.
+
     Args:
         image: a numpy array in RGB order, HWC format
         points: a numpy array of shape (N, 2) representing the coordinates of the points
@@ -101,8 +121,29 @@ def draw_points(image, points, color=None, radius=5, thickness=1):
     return image
 
 
-def draw_objects(image, df, color=None, thickness=1):
-    """Draw geometries on an image, returns a copy of the array.
+def plot_predictions(image, df, color=None, thickness=1):
+    """Draw geometries on an image, which can be polygons, boxes or points.
+
+    Returns a copy of the array.
+
+    Args:
+        image: a numpy array in RGB order, HWC format
+        df: a pandas dataframe with xmin, xmax, ymin, ymax and label column
+        color: color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255)
+        thickness: thickness of the rectangle border line in px
+    Returns:
+        image: a numpy array with drawn annotations
+    """
+    warnings.warn(
+        "plot_predictions will be deprecated in 2.0, please use draw_predictions instead. Or plot_results if you need a figure.",
+        DeprecationWarning)
+    draw_predictions(image, df, color, thickness)
+
+
+def draw_predictions(image, df, color=None, thickness=1):
+    """Draw geometries on an image, which can be polygons, boxes or points.
+
+    Returns a copy of the array.
 
     Args:
         image: a numpy array in RGB order, HWC format
@@ -347,7 +388,10 @@ def plot_annotations(annotations,
                      root_dir=None,
                      radius=3,
                      image=None):
-    """Plot the prediction results.
+    """Plot prediction results or ground truth annotations for a single image.
+
+    This function can be used to create a figure which can be saved or shown. If you wish
+    to do further plotting, you can return the axis object by passing axes=True.
 
     Args:
         annotations: a pandas dataframe with prediction results
@@ -357,7 +401,7 @@ def plot_annotations(annotations,
         results_color (list or sv.ColorPalette): color of the results annotations as a tuple of RGB color (if a single color), e.g. orange annotations is [245, 135, 66], or an supervision.ColorPalette if multiple labels and specifying colors for each label
         thickness: thickness of the rectangle border line in px
         basename: optional basename for the saved figure. If None (default), the basename will be extracted from the image path.
-        root_dir: optional path to the root directory of the images. If None (default), the root directory will be extracted from the annotations dataframe.root_dir attribute.
+        root_dir: optional path to the root directory of the image. If None (default), the root directory will be extracted from the annotations dataframe.root_dir attribute.
         radius: radius of the points in px
     Returns:
         None
@@ -366,7 +410,7 @@ def plot_annotations(annotations,
     num_labels = len(annotations.label.unique())
     annotation_color = __check_color__(color, num_labels)
 
-    image = _load_image(image, annotations)
+    image = _load_image(image, annotations, root_dir)
 
     # Plot the results following https://supervision.roboflow.com/annotators/
     plt.subplots()
@@ -404,7 +448,10 @@ def plot_results(results,
                  radius=3,
                  image=None,
                  axes=False):
-    """Plot the prediction results.
+    """Plot prediction results and optionally ground truth annotations.
+
+    This function can be used to create a figure which can be saved or shown. If you wish
+    to do further plotting, you can return the axis object by passing axes=True.
 
     Args:
         results: a pandas dataframe with prediction results
