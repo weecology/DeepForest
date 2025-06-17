@@ -10,6 +10,7 @@ import numpy as np
 import rasterio
 import torch.nn.functional as F
 import cv2
+from PIL import Image
 
 
 class Model():
@@ -332,10 +333,23 @@ class CropModel(LightningModule):
         return loss
 
     def predict_step(self, batch, batch_idx):
-        outputs = self.forward(batch)
+        # Check if batch is a tuple for validation_dataloader
+        if isinstance(batch, list):
+            x, y = batch
+        else:
+            x = batch
+        outputs = self.forward(x)
         yhat = F.softmax(outputs, 1)
 
         return yhat
+
+    def postprocess_predictions(self, predictions):
+        """Postprocess predictions to get class labels and scores."""
+        stacked_outputs = np.vstack(np.concatenate(predictions))
+        label = np.argmax(stacked_outputs, axis=1)  # Get class with highest probability
+        score = np.max(stacked_outputs, axis=1)  # Get confidence score
+
+        return label, score
 
     def validation_step(self, batch, batch_idx):
         x, y = batch
@@ -366,18 +380,17 @@ class CropModel(LightningModule):
         # Monitor rate is val data is used
         return {'optimizer': optimizer, 'lr_scheduler': scheduler, "monitor": 'val_loss'}
 
-    def dataset_confusion(self, loader):
-        """Create a confusion matrix from a data loader."""
-        true_class = []
-        predicted_class = []
-        self.eval()
-        for batch in loader:
-            x, y = batch
-            true_class.append(F.one_hot(y, num_classes=self.num_classes).detach().numpy())
-            prediction = self(x)
-            predicted_class.append(prediction.detach().numpy())
-
-        true_class = np.concatenate(true_class)
-        predicted_class = np.concatenate(predicted_class)
-
-        return true_class, predicted_class
+    def val_dataset_confusion(self, return_images=False):
+        """Create a labels and predictions from the validation dataset to be
+        created into a confusion matrix."""
+        dl = self.predict_dataloader(self.val_ds)
+        predictions = self.trainer.predict(self, dl)
+        predicted_label, _ = self.postprocess_predictions(predictions)
+        true_label = [self.val_ds.imgs[i][1] for i in range(len(self.val_ds.imgs))]
+        if return_images:
+            images = [
+                Image.open(self.val_ds.imgs[i][0]) for i in range(len(self.val_ds.imgs))
+            ]
+            return images, true_label, predicted_label
+        else:
+            return true_label, predicted_label
