@@ -157,7 +157,7 @@ def test_draw_points():
 
 def test_draw_objects(gdf_poly):
     image = visualize._load_image(get_data("OSBS_029.tif"))
-    image = visualize.draw_objects(image, gdf_poly)
+    image = visualize.draw_predictions(image, gdf_poly)
     assert image is not None
 
 def test_image_from_path_or_array():
