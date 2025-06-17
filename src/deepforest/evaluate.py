@@ -66,7 +66,7 @@ def compute_class_recall(results):
     # Per class recall and precision
     class_recall_dict = {}
     class_precision_dict = {}
-    class_size = {}
+    class_size_dict = {}
 
     box_results = results[results.predicted_label.notna()]
     if box_results.empty:
@@ -74,29 +74,37 @@ def compute_class_recall(results):
         class_recall = None
         return class_recall
 
-    for name, group in box_results.groupby("true_label"):
-        class_recall_dict[name] = (
-            sum(group.true_label == group.predicted_label) / group.shape[0]
-        )
-        number_of_predictions = box_results[box_results.predicted_label == name].shape[
-            0
-        ]
-        if number_of_predictions == 0:
-            class_precision_dict[name] = 0
-        else:
-            class_precision_dict[name] = (
-                sum(group.true_label == group.predicted_label) / number_of_predictions
+    labels = set(box_results["predicted_label"].unique()).union(
+        box_results["true_label"].unique()
+    )
+    for label in labels:
+        ground_df = box_results[box_results["true_label"] == label]
+        n_ground_boxes = ground_df.shape[0]
+        if n_ground_boxes > 0:
+            class_recall_dict[label] = (
+                sum(ground_df.true_label == ground_df.predicted_label) / n_ground_boxes
             )
-        class_size[name] = group.shape[0]
+        pred_df = box_results[box_results["true_label"] == label]
+        n_pred_boxes = pred_df.shape[0]
+        if n_pred_boxes > 0:
+            class_precision_dict[label] = (
+                sum(pred_df.true_label == pred_df.predicted_label) / pred_df.shape[0]
+            )
+        class_size_dict[label] = n_ground_boxes
 
-    class_recall = pd.DataFrame(
-        {
-            "label": class_recall_dict.keys(),
-            "recall": pd.Series(class_recall_dict),
-            "precision": pd.Series(class_precision_dict),
-            "size": pd.Series(class_size),
-        }
-    ).reset_index(drop=True)
+    # the fillna is needed for the missing labels with 0 ground truths or 0 predictions
+    class_recall = (
+        pd.DataFrame(
+            {
+                # "label": class_recall_dict.keys(),
+                "recall": pd.Series(class_recall_dict),
+                "precision": pd.Series(class_precision_dict),
+                "size": pd.Series(class_size_dict),
+            }
+        )
+        .reset_index(names="label")
+        .fillna(0)
+    )
 
     return class_recall
 
@@ -160,9 +168,16 @@ def __evaluate_wrapper__(predictions, ground_df, iou_threshold, label_dict):
         results["results"]["true_label"] = results["results"]["true_label"].apply(
             lambda x: label_dict[x]
         )
+        # TODO: do we need to return the "predictions" in the results?
+        # TODO: DRY getting the proper predicted label column with `evaluate_boxes`
+        # set the score and predicted label
+        if "cropmodel_label" in predictions.columns:
+            pred_label_col = "cropmodel_label"
+        else:
+            pred_label_col = "label"
         # avoid modifying a view
         results["predictions"] = predictions.copy()
-        results["predictions"]["label"] = results["predictions"]["label"].apply(
+        results["predictions"]["label"] = results["predictions"][pred_label_col].apply(
             lambda x: label_dict[x]
         )
 
@@ -309,12 +324,16 @@ def evaluate_boxes(predictions, ground_df, iou_threshold=0.4):
     )
     results_df = results_df.rename(columns={"label": "true_label"})
     # set the score and predicted label
+    if "cropmodel_label" in predictions.columns:
+        pred_label_col = "cropmodel_label"
+    else:
+        pred_label_col = "label"
     results_df = results_df.merge(
-        predictions[["score", "label"]],
+        predictions[["score", pred_label_col]],
         left_on="prediction_id",
         right_index=True,
     )
-    results_df = results_df.rename(columns={"label": "predicted_label"})
+    results_df = results_df.rename(columns={pred_label_col: "predicted_label"})
     # set whether it is a match
     results_df["match"] = results_df["IoU"] >= iou_threshold
 
