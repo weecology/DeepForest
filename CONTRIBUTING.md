@@ -1,6 +1,6 @@
 # Developer's Guide
 
-Depends on Python 3.5+
+Depends on Python 3.9+
 
 ## Getting started
 
@@ -9,7 +9,7 @@ Depends on Python 3.5+
 2. Clone your copy of the repository.
 
    - **Using ssh**:
-   
+
      ```bash
      git clone git@github.com:[your user name]/DeepForest.git
      ```
@@ -83,7 +83,7 @@ $ pytest -v
 
 We use [yapf](https://github.com/google/yapf) for code formatting and style checking.
 
-The easiest way to make sure your code is formatted correctly is to integrate it into your editor.  
+The easiest way to make sure your code is formatted correctly is to integrate it into your editor.
 See [EDITOR SUPPORT](https://github.com/google/yapf/blob/main/EDITOR%20SUPPORT.md).
 
 You can also run yapf from the command line to cleanup the style in your changes:
@@ -111,7 +111,7 @@ $ conda build conda_recipe/meta.yaml -c conda-forge -c defaults
 
 Update the Conda recipe after every release.
 
-Clone the [Weecology staged recipes](https://github.com/weecology/staged-recipes).  
+Clone the [Weecology staged recipes](https://github.com/weecology/staged-recipes).
 Checkout the deepforest branch, update the `deepforest/meta.yaml` with the new version and the sha256 values. Sha256 values are obtained from the source on [PYPI download files](https://pypi.org/project/deepforest/#files) using the deepforest-{version-number}.tar.gz.
 
 ```jinja
@@ -131,7 +131,7 @@ $ docformatter --in-place --recursive src/deepforest/
 
 ### Update Documentation
 
-The documentation is automatically updated for changes in functions.  
+The documentation is automatically updated for changes in functions.
 However, the documentation should be updated after the addition of new functions or modules.
 
 Change to the docs directory and use `sphinx-apidoc` to update the doc's `source`. Exclude the tests and setup.py documentation.
