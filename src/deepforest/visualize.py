@@ -59,29 +59,34 @@ def _load_image(image: Optional[Union[np.typing.NDArray, str, Image.Image]] = No
     elif isinstance(image, Image.Image):
         image = np.array(image)
     elif not isinstance(image, np.ndarray):
-        raise ValueError("Image")
+        raise ValueError("Image should be a numpy array, path or PIL Image.")
 
     # Fix channel ordering
-    if image.shape[0] == 3:
+    if image.ndim == 3 and image.shape[0] == 3 and image.shape[2] != 3:
         warnings.warn("Input images must be channels last format [h, w, 3] not channels "
-                      "first [3, h, w], using np.rollaxis(image, 0, 3) to invert!")
-        image = np.rollaxis(image, 0, 3)
+                      "first [3, h, w], using np.transpose(1,2,0) to invert!")
+        image = image.transpose(1, 2, 0)
 
     # Drop alpha channel if present and warn
-    if image.shape[2] == 4:
-        warnings.warn("Image has an alpha channel. Dropping alpha channel.")
+    if image.ndim == 3 and image.shape[2] == 4:
+        warnings.warn(
+            f"Image has {image.ndim} bands (may have an alpha channel). Only keeping first 3."
+        )
         image = image[:, :, :3]
 
     if image.dtype != np.uint8:
 
-        warnings.warn(f"Image is {image.dtype}. Will be cast to 8-bit unsigned")
+        warnings.warn(
+            f"Image is {image.dtype}. Will be cast to 8-bit unsigned and clipped to [0,255]"
+        )
 
         # Images in [0,1] are allowed, but should be rescaled
-        if image.max() < 1:
-            warnings.warn(f"Assuming image is in [0,1, scalingg to [0,255]")
+        if image.max() <= 1 and image.min() >= 0:
+            warnings.warn(
+                f"Image is in [0,1], multiplying by 255. If this is not expected")
             image *= 255
 
-        image = image.astype("uint8")
+        image = np.clip(image, 0, 255).astype('uint8')
 
     return image
 
