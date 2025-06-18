@@ -17,7 +17,7 @@ from albumentations.pytorch import ToTensorV2
 from deepforest import main, get_data, model
 from deepforest.utilities import read_file, format_geometry
 from deepforest.datasets import prediction
-from deepforest.visualize import plot_results 
+from deepforest.visualize import plot_results
 
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import Callback
@@ -222,7 +222,7 @@ def test_validate(m):
 
 
 # Test train with each architecture
-@pytest.mark.parametrize("architecture", ["retinanet", "FasterRCNN"])
+@pytest.mark.parametrize("architecture", ["retinanet", "FasterRCNN", "DeformableDetr"])
 def test_train_single(m_without_release, architecture):
     m_without_release.config.architecture = architecture
     m_without_release.create_model()
@@ -417,7 +417,7 @@ def test_predict_tile_from_array(m, path):
     m.create_trainer()
     prediction = m.predict_tile(image=image, patch_size=300)
 
-    assert not prediction.empty    
+    assert not prediction.empty
 
 def test_evaluate(m, tmpdir):
     csv_file = get_data("OSBS_029.csv")
@@ -468,7 +468,7 @@ def test_checkpoint_label_dict(m, tmpdir):
     m.config["train"]["root_dir"] = os.path.dirname(csv_file)
     m.config["validation"]["csv_file"] = os.path.join(tmpdir, "example.csv")
     m.config["validation"]["root_dir"] = os.path.dirname(csv_file)
-    
+
     m.config.train.fast_dev_run = True
     m.create_trainer()
     m.label_dict = {"Object": 0}
@@ -763,10 +763,10 @@ def test_predict_tile_with_crop_model_empty():
     """If the model return is empty, the crop model should return an empty dataframe"""
     path = get_data("SOAP_061.png")
     m = main.deepforest()
-    
+
     # Set up the crop model
     crop_model = model.CropModel(num_classes=2, label_dict = {"Dead": 0, "Alive": 1})
-    
+
     # Call the predict_tile method with the crop_model
     m.config.train.fast_dev_run = False
     m.create_trainer()
@@ -775,7 +775,7 @@ def test_predict_tile_with_crop_model_empty():
                             patch_overlap=0.05,
                             iou_threshold=0.15,
                             crop_model=crop_model)
-    
+
 
     # Assert the result
     assert result is None or result.empty
@@ -841,7 +841,7 @@ def test_batch_prediction(m, path):
         batch_predictions = m.predict_batch(batch)
         predictions.extend(batch_predictions)
 
-    # Check results  
+    # Check results
     assert len(predictions) == len(ds)
     for image_pred in predictions:
         assert isinstance(image_pred, pd.DataFrame)
@@ -944,7 +944,7 @@ def test_empty_frame_accuracy_all_empty_with_predictions(m, tmpdir):
 
     m.create_trainer()
     results = m.trainer.validate(m)
-    
+
     # This is bit of a preference, if there are no predictions, the empty frame accuracy should be 0, precision is 0, and accuracy is None.
     assert results[0]["empty_frame_accuracy"] == 0.0
     assert results[0]["box_precision"] == 0.0
