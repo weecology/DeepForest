@@ -25,6 +25,7 @@ def _load_image(image: Optional[Union[np.typing.NDArray, str, Image.Image]] = No
     Args:
         image (optional): Numpy array or string
         df (optiona): Pandas dataframe
+        root_dir (optional): Root directory of the image, will override dataframe root_dir attribute
 
     Returns:
         image: Numpy array
@@ -33,21 +34,28 @@ def _load_image(image: Optional[Union[np.typing.NDArray, str, Image.Image]] = No
     if image is None and df is None:
         raise ValueError(
             "Either an image or a valid dataframe must be provided for plotting.")
-    elif df is not None:
-        if not root_dir and not hasattr(df, 'root_dir'):
-            raise ValueError(
-                "The 'root_dir' attribute does not exist in the dataframe. Please specify the 'root_dir' argument."
-            )
-        else:
+
+    if df is not None:
+        # Resolve image root
+        if hasattr(df, 'root_dir') and root_dir is None:
             root_dir = df.root_dir
             # expected str, bytes or os.PathLike object, not Series
             root_dir = df.root_dir.iloc[0] if isinstance(root_dir,
                                                          pd.Series) else root_dir
+        elif root_dir is None:
+            raise ValueError(
+                "Neither root_dir nor a dataframe with the root_dir attribute was provided."
+            )
 
         image_path = os.path.join(root_dir, df.image_path.unique()[0])
         image = np.array(Image.open(image_path))
     elif isinstance(image, str):
-        image = np.array(Image.open(image))
+        if root_dir is not None:
+            image_path = os.path.join(root_dir, image)
+        else:
+            image_path = image
+
+        image = np.array(Image.open(image_path))
     elif isinstance(image, Image.Image):
         image = np.array(image)
     elif not isinstance(image, np.ndarray):
@@ -78,7 +86,11 @@ def _load_image(image: Optional[Union[np.typing.NDArray, str, Image.Image]] = No
     return image
 
 
-def plot_points(image, points, color=None, radius=5, thickness=1):
+def plot_points(image: np.typing.NDArray,
+                points: np.typing.NDArray,
+                color: Optional[tuple] = None,
+                radius: int = 5,
+                thickness: int = 1) -> np.typing.NDArray:
     """Draw points on an image, returns a copy of the array
     Args:
         image: a numpy array in RGB order, HWC format
@@ -95,7 +107,11 @@ def plot_points(image, points, color=None, radius=5, thickness=1):
     draw_points(image, points, color, radius, thickness)
 
 
-def draw_points(image, points, color=None, radius=5, thickness=1):
+def draw_points(image: np.typing.NDArray,
+                points: np.typing.NDArray,
+                color: Optional[tuple] = None,
+                radius: int = 5,
+                thickness: int = 1) -> np.typing.NDArray:
     """Draw points on an image, returns a copy of the array.
 
     Args:
@@ -121,7 +137,10 @@ def draw_points(image, points, color=None, radius=5, thickness=1):
     return image
 
 
-def plot_predictions(image, df, color=None, thickness=1):
+def plot_predictions(image: np.typing.NDArray,
+                     df: pd.DataFrame,
+                     color: tuple = None,
+                     thickness: int = 1) -> np.typing.NDArray:
     """Draw geometries on an image, which can be polygons, boxes or points.
 
     Returns a copy of the array.
@@ -140,7 +159,10 @@ def plot_predictions(image, df, color=None, thickness=1):
     draw_predictions(image, df, color, thickness)
 
 
-def draw_predictions(image, df, color=None, thickness=1):
+def draw_predictions(image: np.typing.NDArray,
+                     df: pd.DataFrame,
+                     color: Optional[tuple] = None,
+                     thickness: int = 1) -> np.typing.NDArray:
     """Draw geometries on an image, which can be polygons, boxes or points.
 
     Returns a copy of the array.
@@ -201,7 +223,8 @@ def draw_predictions(image, df, color=None, thickness=1):
     return image
 
 
-def label_to_color(label):
+def label_to_color(label: int) -> tuple:
+    """Return an RGB color tuple for a given (integer) label."""
     color_dict = {}
 
     random.seed(1)
@@ -229,7 +252,10 @@ def label_to_color(label):
     return color_dict[label]
 
 
-def convert_to_sv_format(df, width=None, height=None):
+def convert_to_sv_format(
+        df: pd.DataFrame,
+        width: Optional[int] = None,
+        height: Optional[int] = None) -> Union[sv.Detections, sv.KeyPoints]:
     """Convert DeepForest prediction results to a supervision Detections
     object.
 
@@ -347,7 +373,8 @@ def convert_to_sv_format(df, width=None, height=None):
     return detections
 
 
-def __check_color__(color, num_labels):
+def __check_color__(color: Union[list, tuple, sv.ColorPalette],
+                    num_labels: int) -> Union[sv.Color, sv.ColorPalette]:
     if isinstance(color, list) and len(color) == 3:
         if num_labels > 1:
             warnings.warn(
@@ -378,16 +405,17 @@ def __check_color__(color, num_labels):
         )
 
 
-def plot_annotations(annotations,
-                     savedir=None,
-                     height=None,
-                     width=None,
-                     color=[245, 135, 66],
-                     thickness=2,
-                     basename=None,
-                     root_dir=None,
-                     radius=3,
-                     image=None):
+def plot_annotations(
+        annotations: pd.DataFrame,
+        savedir: Optional[str] = None,
+        height: Optional[int] = None,
+        width: Optional[int] = None,
+        color: Union[list, sv.ColorPalette] = [245, 135, 66],
+        thickness: int = 2,
+        basename: Optional[str] = None,
+        root_dir: Optional[str] = None,
+        radius: int = 3,
+        image: Optional[Union[np.typing.NDArray, str, Image.Image]] = None) -> None:
     """Plot prediction results or ground truth annotations for a single image.
 
     This function can be used to create a figure which can be saved or shown. If you wish
@@ -403,6 +431,7 @@ def plot_annotations(annotations,
         basename: optional basename for the saved figure. If None (default), the basename will be extracted from the image path.
         root_dir: optional path to the root directory of the image. If None (default), the root directory will be extracted from the annotations dataframe.root_dir attribute.
         radius: radius of the points in px
+        image: image (numpy array, string, PIL image)
     Returns:
         None
     """
@@ -436,18 +465,18 @@ def plot_annotations(annotations,
         plt.show()
 
 
-def plot_results(results,
-                 ground_truth=None,
-                 savedir=None,
-                 height=None,
-                 width=None,
-                 results_color=[245, 135, 66],
-                 ground_truth_color=[0, 165, 255],
-                 thickness=2,
-                 basename=None,
-                 radius=3,
-                 image=None,
-                 axes=False):
+def plot_results(results: pd.DataFrame,
+                 ground_truth: Optional[pd.DataFrame] = None,
+                 savedir: Optional[str] = None,
+                 height: Optional[int] = None,
+                 width: Optional[int] = None,
+                 results_color: Union[list, sv.ColorPalette] = [245, 135, 66],
+                 ground_truth_color: Union[list, sv.ColorPalette] = [0, 165, 255],
+                 thickness: int = 2,
+                 basename: Optional[str] = None,
+                 radius: int = 3,
+                 image: Optional[Union[np.typing.NDArray, str, Image.Image]] = None,
+                 axes: bool = False):
     """Plot prediction results and optionally ground truth annotations.
 
     This function can be used to create a figure which can be saved or shown. If you wish
