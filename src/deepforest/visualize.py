@@ -109,7 +109,7 @@ def plot_points(image: np.typing.NDArray,
     warnings.warn(
         "plot_points will be deprecated in 2.0, please use draw_points instead.",
         DeprecationWarning)
-    draw_points(image, points, color, radius, thickness)
+    return draw_points(image, points, color, radius, thickness)
 
 
 def draw_points(image: np.typing.NDArray,
@@ -139,7 +139,7 @@ def draw_points(image: np.typing.NDArray,
                    radius=radius,
                    thickness=thickness)
 
-    return image
+    return cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
 
 def plot_predictions(image: np.typing.NDArray,
@@ -161,7 +161,7 @@ def plot_predictions(image: np.typing.NDArray,
     warnings.warn(
         "plot_predictions will be deprecated in 2.0, please use draw_predictions instead. Or plot_results if you need a figure.",
         DeprecationWarning)
-    draw_predictions(image, df, color, thickness)
+    return draw_predictions(image, df, color, thickness)
 
 
 def draw_predictions(image: np.typing.NDArray,
@@ -225,7 +225,7 @@ def draw_predictions(image: np.typing.NDArray,
             polygon = np.array(row["polygon"])
             cv2.polylines(image, [polygon], True, color, thickness=thickness)
 
-    return image
+    return cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
 
 def label_to_color(label: int) -> tuple:

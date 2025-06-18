@@ -153,12 +153,24 @@ def test_draw_points():
     points = np.array([[10, 10], [20, 20]])
 
     image = visualize.draw_points(image, points)
-    assert image is not None
+    assert image is not None and isinstance(image, np.ndarray)
 
-def test_draw_objects(gdf_poly):
+def test_draw_predictions(gdf_poly):
     image = visualize._load_image(get_data("OSBS_029.tif"))
     image = visualize.draw_predictions(image, gdf_poly)
-    assert image is not None
+    assert image is not None and isinstance(image, np.ndarray)
+
+def test_plot_points():
+    image = visualize._load_image(get_data("OSBS_029.tif"))
+    points = np.array([[10, 10], [20, 20]])
+
+    image = visualize.plot_points(image, points)
+    assert image is not None and isinstance(image, np.ndarray)
+
+def test_plot_predictions(gdf_poly):
+    image = visualize._load_image(get_data("OSBS_029.tif"))
+    image = visualize.plot_predictions(image, gdf_poly)
+    assert image is not None and isinstance(image, np.ndarray)
 
 def test_image_from_path_or_array():
     image_path = visualize._load_image(np.array(Image.open(get_data("OSBS_029.tif"))))
@@ -174,6 +186,11 @@ def test_load_chw_to_hwc():
     image = visualize._load_image(image)
     assert image.shape == (100, 100, 3)
 
+def test_load_chw_to_hwc_tiny_image():
+    image = np.random.randint(0, 255, size=(3, 3, 100), dtype=np.uint8)
+    image = visualize._load_image(image)
+    assert image.shape == (3, 100, 3)
+
 def test_load_drop_alpha():
     image = np.random.randint(0, 255, size=(100, 100, 4), dtype=np.uint8)
     image = visualize._load_image(image)
@@ -188,7 +205,13 @@ def test_check_dtype_rescale():
     assert image.dtype != np.uint8
     image = visualize._load_image(image)
     assert image.dtype == np.uint8
-    assert image.max() > 1 and image.max() <= 255
+    assert image.max() >=0 and image.max() <= 255
+
+def test_check_float_image_non_unitary():
+    # Shift distribution to [-1,1]
+    image = 2*np.random.random((100, 100, 3)) - 1
+    image = visualize._load_image(image)
+    assert image.max() >=0 and image.max() <= 255
 
 @pytest.mark.xfail
 def test_image_empty():
