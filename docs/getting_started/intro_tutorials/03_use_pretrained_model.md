@@ -1,19 +1,32 @@
 # How do I use a pretrained model to predict an image?
 
+1.5
+# Predict a single image with a pretrained model
+
+Below is the shortest path from a fresh install to plotted predictions on your screen.
+
 ```python
-from deepforest import main
-from deepforest import get_data
-from deepforest.visualize import plot_results
-# Initialize the model class
+from deepforest import main, visualize
+from importlib import resources
+
+# 1️⃣  Load the pretrained tree-crown detector
 model = main.deepforest()
+model.use_release()  # one-time download and caching
 
-# Load a pretrained tree detection model from Hugging Face
-model.load_model(model_name="weecology/deepforest-tree", revision="main")
+# 2️⃣  Get the bundled demo image
+img_path = resources.files("deepforest.data") / "OSBS_029.png"
 
-sample_image_path = get_data("OSBS_029.png")
-img = model.predict_image(path=sample_image_path)
-plot_results(img)
+# 3️⃣  Run the detector
+crowns = model.predict_image(path=str(img_path))
+print(crowns.head())  # pandas DataFrame (xmin, ymin, xmax, ymax, label, score)
+
+# 4️⃣  Visualise results (opens a matplotlib window or inline in Jupyter)
+visualize.plot_results(crowns)
 ```
+
+Prediction uses CPU by default; add `model.to("cuda")` beforehand if you have a compatible GPU.
+
+---
 
 ```{image} ../../../www/getting_started1.png
 :align: center
