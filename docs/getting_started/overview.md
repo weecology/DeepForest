@@ -76,3 +76,36 @@ The second is the paper describing the particular model. See [Prebuilt Setup](..
 :relative-images:
 ```
 :::
+
+8.5
+
+## Try it now – 30-second demo
+
+The example below loads a pretrained tree-crown detector, runs it on a bundled sample image, and prints the first few predicted boxes. Everything runs on CPU and therefore works on any laptop.
+
+```python
+from deepforest import main
+from importlib import resources
+
+# Load the pretrained tree model (≈200 MB download on first use)
+model = main.deepforest()
+model.use_release()
+
+# Locate the small demo RGB image that ships with DeepForest
+sample_img = resources.files("deepforest.data") / "OSBS_029.png"
+
+# Predict tree crowns
+crowns = model.predict_image(path=str(sample_img))
+print(crowns.head())
+```
+
+Output (columns: bounding-box coordinates, predicted label, confidence score):
+
+```text
+   xmin   ymin   xmax   ymax label     score
+0   159    122    247    224  Tree  0.89
+1   334    333    421    417  Tree  0.86
+...
+```
+
+For a visual overview of the detections, pass the result to `deepforest.visualize.plot_predictions` (see Quick-start on the home page).
