@@ -42,3 +42,41 @@ sample_image_path = get_data("OSBS_029.png")
 img = model.predict_image(path=sample_image_path)
 plot_results(img)
 ```
+
+1.5
+# Load pretrained models – three common patterns
+
+DeepForest ships with a small *model zoo* hosted on Hugging Face.  Below are the **three most frequent ways** to obtain a model object.
+
+## 1. One-liner for the default tree model
+```python
+from deepforest import main
+model = main.deepforest()
+model.use_release()           # ≈200 MB download first time, then cached
+```
+
+## 2. Explicit repo / revision
+```python
+from deepforest import main
+m = main.deepforest()
+# Any public or private model on Hugging Face works
+m.load_model("weecology/deepforest-tree", revision="v1.5.0")
+```
+
+## 3. Local checkpoint – resume training or inference
+```python
+from deepforest import main
+ckpt_path = "checkpoints/epoch=4-step=500.ckpt"
+model = main.deepforest()
+model = model.load_from_checkpoint(ckpt_path)  # retains training config
+```
+
+Once loaded, the same prediction API is used:
+```python
+from deepforest import get_data
+img_path = get_data("OSBS_029.png")
+preds = model.predict_image(path=img_path)
+print(preds.head())
+```
+
+---
