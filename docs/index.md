@@ -10,6 +10,36 @@
 
 `DeepForest` is an open-source library providing tools for object detection and geospatial analysis in ecology, specifically for analyzing forest canopy data.
 
+11.5
+## Quick-start: detect tree crowns in seconds
+
+Below is the shortest path from *zero* to predictions. Everything runs on a CPU-only laptop; a GPU just makes it faster.
+
+```python
+# Install once (uncomment if you have not installed DeepForest yet)
+# !pip install deepforest
+
+from deepforest import main, visualize
+from importlib import resources
+from pathlib import Path
+import matplotlib.pyplot as plt
+
+# 1) Load a pretrained tree-crown detector (≈200 MB download on first use)
+model = main.deepforest()
+model.use_release()  # or: model.load_model("weecology/deepforest-tree")
+
+# 2) Grab a tiny demo image that ships with the package
+sample_img = Path(resources.files("deepforest.data")) / "OSBS_029.png"
+
+# 3) Predict crowns and visualise
+crowns = model.predict_image(path=str(sample_img))
+fig, ax = plt.subplots(figsize=(5, 5))
+_ = visualize.plot_predictions(image_path=str(sample_img), pred_df=crowns, ax=ax)
+plt.show()
+```
+
+👉 The code above downloads a single pretrained model the first time it is run and caches it locally for future sessions.
+
 ::::{grid} 1 2 2 2
 :gutter: 1 1 1 2
 :margin: 0 0 0 0
