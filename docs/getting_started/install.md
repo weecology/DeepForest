@@ -1,5 +1,37 @@
+1.5
 (install)=
 # Installation
+
+## TL;DR – one-liner install
+
+```bash
+# CPU-only
+pip install deepforest
+
+# OR – GPU (PyTorch/cuDNN installed separately)
+# pip install deepforest  # then install the appropriate torch wheel
+```
+
+DeepForest supports **Python 3.9 – 3.12** on Linux, macOS and Windows. We strongly recommend installing inside a fresh virtual environment – either `venv` or `conda` – to avoid dependency clashes.
+
+```bash
+python -m venv .venv          # or: conda create -n deepforest python=3.11
+source .venv/bin/activate     # conda activate deepforest
+pip install --upgrade pip
+pip install deepforest
+```
+
+Verify the installation works (downloads the ~200 MB pretrained model on first run):
+
+```bash
+python - <<'PY'
+from deepforest import main
+m = main.deepforest(); m.use_release()
+print("DeepForest ready – num classes:", m.config.num_classes)
+PY
+```
+
+---
 
 DeepForest has Windows, Linux, and OSX prebuilt wheels on PyPI. We *strongly* recommend using a conda or virtualenv to create a clean installation container.
 
