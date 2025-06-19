@@ -20,4 +20,5 @@ tests/__pycache__
 tests/data/*
 .vscode/
 *ipynb_checkpoints/
-docs/user_guide/deepforestr.md
+docs/user_guide/deepforestr.md.env
+.env
