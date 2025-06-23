@@ -22,7 +22,7 @@ An incomplete list of annotation tools DeepForest users have reported success wi
 - AWS Ground Truth
 - LabelBox
 - Roboflow
-- and many more  
+- and many more
 
 We intentionally do not create our own annotation tools, but rather focus on supporting community-created tools. Look for exports in `.xml`, `.json`, or `.csv` formats, which are all common in the above tools.
 
@@ -142,9 +142,7 @@ for path in files:
     if boxes is None:
         continue
 
-    image = np.rollaxis(image, 0, 3)
-    fig = plot_predictions(df=boxes, image=image)
-    plt.imshow(fig)
+    plot_results(results=boxes, image=image)
 
     basename = os.path.splitext(os.path.basename(path))[0]
     shp = boxes_to_shapefile(boxes, root_dir=PATH_TO_DIR, projected=False)
