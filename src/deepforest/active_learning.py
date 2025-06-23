@@ -1,159 +1,278 @@
-"""
-Active Learning module for DeepForest 
-
-[WIP] This module provides simple active learning capabilities for selecting
-the most informative samples for annotation.
-"""
-
-import random
 import logging
-from typing import List, Tuple
+import os
+import glob
+import random
+from typing import List, Optional, Tuple
+
 import pandas as pd
+import geopandas as gpd
+from omegaconf import OmegaConf
+
+from deepforest.label_studio import get_api_key
+from label_studio_sdk import Client
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
 
+class Detection:
+    """
+    Stub class for detection functionality. 
+    Created only to satisfy syntax requirements. I will write this part later.
+    """
+    @staticmethod
+    def load(model_name: str):
+        """
+        Load and return a detection model by name.
+        """
+        # TODO: implement actual model loading
+        logger.info(f"Loading detection model '{model_name}'")
+        return None
+
+    @staticmethod
+    def predict(
+        m,
+        model_path: Optional[str],
+        image_paths: List[str],
+        patch_size: int,
+        patch_overlap: float,
+        batch_size: int,
+    ) -> List[pd.DataFrame]:
+        """
+        Run detection on the list of image paths and return a list of
+        pandas DataFrames with prediction results. Each DataFrame should
+        include at least columns ['image_path', 'geometry', 'score', ...].
+        """
+        # TODO: implement actual prediction logic
+        logger.info(
+            f"Running detection on {len(image_paths)} images with patch_size={patch_size}, "
+            f"patch_overlap={patch_overlap}, batch_size={batch_size}"
+        )
+        return []
+
+class Pipeline:
+    """
+    Minimal in-script pipeline to push selected images to a Label Studio project.
+    """
+    # TODO: Implement a pipeline that integrates with Label Studio
 
 class ActiveLearning:
     """
-    Active learning class for DeepForest with multiple sampling strategies.
-    
-    Handles sample selection and human review workflows.
+    Active learning pipeline for DeepForest: predictions, human review,
+    sampling and annotation.
     """
-
-    def __init__(self, confidence_threshold: float = 0.5):
-        """
-        Initialize Active Learning.
-        
-        Args:
-            confidence_threshold: Threshold for confident vs uncertain predictions
-        """
+    def __init__(
+        self,
+        confidence_threshold: float = 0.5,
+        min_detection_score: float = 0.6,
+        min_score: float = 0.1,
+    ):
         self.confidence_threshold = confidence_threshold
-        logger.info(f"ActiveLearning initialized with threshold: {confidence_threshold}")
+        self.min_detection_score = min_detection_score
+        self.min_score = min_score
+        logger.info(
+            f"Initialized ActiveLearning with "
+            f"confidence_threshold={confidence_threshold}, "
+            f"min_detection_score={min_detection_score}, "
+            f"min_score={min_score}"
+        )
 
-    def _random_sampling(self, predictions: pd.DataFrame, n_samples: int) -> List[str]:
-        """Randomly select image paths."""
-        available_images = predictions["image_path"].unique().tolist()
-        n_to_select = min(n_samples, len(available_images))
-        return random.sample(available_images, n_to_select)
+    def generate_predictions(
+        self,
+        images: List[str],
+        patch_size: int = 512,
+        patch_overlap: float = 0.1,
+        batch_size: int = 16,
+        pool_limit: int = 1000,
+        model_path: Optional[str] = None,
+    ) -> Optional[gpd.GeoDataFrame]:
+        pool = images.copy()
+        if len(pool) > pool_limit:
+            pool = random.sample(pool, pool_limit)
 
-    def _uncertainty_sampling(self, predictions: pd.DataFrame,
-                              n_samples: int) -> List[str]:
-        """Select images with most uncertain predictions."""
-        # Calculate uncertainty as (1 - confidence score)
-        predictions = predictions.copy()
-        predictions['uncertainty'] = 1 - predictions['score']
+        model = None
+        if not model_path:
+            logger.info("Loading default 'tree' model")
+            model = Detection.load("tree")
 
-        # Group by image and get mean uncertainty per image
-        image_uncertainty = (
-            predictions.groupby('image_path')['uncertainty'].mean().sort_values(
-                ascending=False))
+        preds = Detection.predict(
+            m=model,
+            model_path=model_path,
+            image_paths=pool,
+            patch_size=patch_size,
+            patch_overlap=patch_overlap,
+            batch_size=batch_size,
+        )
+        if not preds:
+            return None
 
-        return image_uncertainty.head(n_samples).index.tolist()
+        df = pd.concat(preds, ignore_index=True)
+        if df.empty:
+            return None
 
-    def _high_density_sampling(self, predictions: pd.DataFrame,
-                               n_samples: int) -> List[str]:
-        """Select images with highest number of detections."""
-        # Count detections per image
-        detection_counts = (predictions.groupby('image_path').size().sort_values(
-            ascending=False))
-
-        return detection_counts.head(n_samples).index.tolist()
+        gdf = gpd.GeoDataFrame(df, geometry="geometry")
+        return gdf[gdf["score"] >= self.min_score]
 
     def human_review_split(
-            self, predictions: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
-        """
-        Split predictions into confident and uncertain for human review.
-        
-        Args:
-            predictions: DataFrame with model predictions containing 'score' column
-            
-        Returns:
-            Tuple of (confident_predictions, uncertain_predictions)
-        """
+        self,
+        predictions: gpd.GeoDataFrame
+    ) -> Tuple[pd.DataFrame, pd.DataFrame]:
         if predictions.empty:
-            logger.warning("Empty predictions provided")
+            logger.warning("Empty predictions for human review split")
             return pd.DataFrame(), pd.DataFrame()
 
-        # Split based on confidence threshold
-        confident = predictions[predictions['score'] >= self.confidence_threshold]
-        uncertain = predictions[predictions['score'] < self.confidence_threshold]
+        if "cropmodel_score" in predictions.columns:
+            mask = (
+                (predictions["score"] >= self.min_detection_score)
+                & (predictions["cropmodel_score"] < self.confidence_threshold)
+            )
+            filtered = predictions[mask]
+            uncertain = filtered[filtered["cropmodel_score"] < self.confidence_threshold]
+            confident = filtered.drop(uncertain.index)
+        else:
+            confident = predictions[predictions["score"] >= self.confidence_threshold]
+            uncertain = predictions.drop(confident.index)
 
         logger.info(
-            f"Split: {len(confident)} confident, {len(uncertain)} uncertain predictions")
-
+            f"Human review split -> confident: {len(confident)}, uncertain: {len(uncertain)}"
+        )
         return confident, uncertain
 
-    def select_samples(self,
-                       predictions: pd.DataFrame,
-                       strategy: str = 'uncertainty',
-                       n_samples: int = 10) -> List[str]:
-        """
-        Select samples for annotation using specified strategy.
-        
-        Args:
-            predictions: DataFrame with predictions
-            strategy: Sampling strategy ('random', 'uncertainty', 'high_density')
-            n_samples: Number of samples to select
-            
-        Returns:
-            List of selected image paths
-        """
+    def select_samples(
+        self,
+        predictions: pd.DataFrame,
+        strategy: str = "uncertainty",
+        n_samples: int = 10,
+        target_labels: Optional[List[str]] = None,
+    ) -> Tuple[List[str], pd.DataFrame]:
         if predictions.empty:
-            logger.warning("No predictions provided for sample selection")
-            return []
+            logger.warning("No predictions for sample selection")
+            return [], pd.DataFrame()
 
-        # Map strategy names to methods
-        strategy_methods = {
-            'random': self._random_sampling,
-            'uncertainty': self._uncertainty_sampling,
-            'high_density': self._high_density_sampling
-        }
+        df = predictions.copy()
 
-        if strategy not in strategy_methods:
-            available = list(strategy_methods.keys())
-            raise ValueError(f"Unknown strategy '{strategy}'. Available: {available}")
+        if strategy == "random":
+            candidates = df["image_path"].unique().tolist()
+            chosen = random.sample(candidates, min(n_samples, len(candidates)))
+        else:
+            df = df[df["score"] >= self.min_score]
+            if strategy == "most-detections":
+                counts = df.groupby("image_path").size().nlargest(n_samples)
+                chosen = counts.index.tolist()
+            elif strategy == "uncertainty":
+                df["uncertainty"] = 1 - df["score"]
+                mean_unc = (
+                    df.groupby("image_path")["uncertainty"]
+                    .mean()
+                    .nlargest(n_samples)
+                )
+                chosen = mean_unc.index.tolist()
+            elif strategy == "rarest":
+                if "cropmodel_label" not in df.columns:
+                    raise ValueError("'rarest' requires 'cropmodel_label' column")
+                counts = df["cropmodel_label"].value_counts()
+                df["label_count"] = df["cropmodel_label"].map(counts)
+                sorted_df = df.sort_values("label_count")
+                chosen = (
+                    sorted_df.drop_duplicates("image_path")
+                    .head(n_samples)["image_path"]
+                    .tolist()
+                )
+            elif strategy == "target-labels":
+                if not target_labels:
+                    raise ValueError("'target-labels' requires target_labels list")
+                filtered = df[df["cropmodel_label"].isin(target_labels)]
+                avg_score = (
+                    filtered.groupby("image_path")["score"]
+                    .mean()
+                    .nlargest(n_samples)
+                )
+                chosen = avg_score.index.tolist()
+            else:
+                raise ValueError(f"Unknown strategy '{strategy}'")
 
-        selected = strategy_methods[strategy](predictions, n_samples)
+        chosen_df = predictions[predictions["image_path"].isin(chosen)]
+        logger.info(f"Selected {len(chosen)} images with strategy '{strategy}'")
+        return chosen, chosen_df
 
-        logger.info(f"Selected {len(selected)} samples using '{strategy}' strategy")
+    def run(
+        self,
+        image_folder: str,
+        ls_project_id: str,
+        annotations_csv: Optional[str] = None,
+        strategy: str = "uncertainty",
+        n: int = 10,
+        **kwargs,
+    ):
+        if annotations_csv:
+            logger.info(f"Loading preannotations from {annotations_csv}")
+            predictions = pd.read_csv(annotations_csv)
+        else:
+            exts = ["*.jpg", "*.jpeg", "*.png", "*.tif", "*.tiff"]
+            pool: List[str] = []
+            for ext in exts:
+                pool.extend(glob.glob(os.path.join(image_folder, ext)))
+            if not pool:
+                logger.error(f"No images found in {image_folder}")
+                return
+            logger.info(f"Found {len(pool)} images; generating predictions...")
+            predictions = self.generate_predictions(pool, **kwargs)
 
-        return selected
+        if predictions is None or predictions.empty:
+            logger.info("No valid predictions; exiting.")
+            return
 
-    def run_iteration(self,
-                      predictions: pd.DataFrame,
-                      strategy: str = 'uncertainty',
-                      n_samples: int = 10) -> dict:
-        """
-        Run a complete active learning iteration.
-        
-        Args:
-            predictions: DataFrame with model predictions
-            strategy: Sampling strategy to use
-            n_samples: Number of samples to select
-            
-        Returns:
-            Dictionary with iteration results
-        """
-        logger.info(
-            f"Running active learning iteration with {len(predictions)} predictions")
-
-        # Split predictions
         confident, uncertain = self.human_review_split(predictions)
+        target_df = uncertain if not uncertain.empty else predictions
+        chosen, chosen_df = self.select_samples(
+            target_df, strategy=strategy, n_samples=n
+        )
 
-        # Select samples from uncertain predictions (or all if no uncertain ones)
-        target_predictions = uncertain if not uncertain.empty else predictions
-        selected_images = self.select_samples(target_predictions, strategy, n_samples)
+        out_images = kwargs.get("output_images", "selected_images.txt")
+        out_csv = kwargs.get("output_csv", "selected_preannotations.csv")
+        with open(out_images, "w") as f:
+            for img in chosen:
+                f.write(f"{img}\n")
+        chosen_df.to_csv(out_csv, index=False)
+        logger.info(
+            f"Saved {len(chosen)} images to {out_images} and details to {out_csv}"
+        )
 
-        results = {
-            'total_predictions': len(predictions),
-            'confident_predictions': len(confident),
-            'uncertain_predictions': len(uncertain),
-            'selected_images': selected_images,
-            'strategy_used': strategy
-        }
+        api_key = get_api_key()
+        if api_key:
+            os.environ["LABEL_STUDIO_API_KEY"] = api_key
+            cfg = OmegaConf.create({
+                "label_studio": {"project_id": ls_project_id},
+                "pipeline": {"images_to_annotate": chosen, "gpus": 1},
+            })
+            Pipeline(cfg=cfg).run()
+        else:
+            logger.warning("No Label Studio API key; skipping push.")
 
-        logger.info(f"Iteration complete: selected {len(selected_images)} images")
-
-        return results
+def run_active_learning(
+    image_folder: str,
+    ls_project_id: str,
+    annotations_csv: Optional[str] = None,
+    strategy: str = "uncertainty",
+    n: int = 10,
+    confidence_threshold: float = 0.5,
+    min_detection_score: float = 0.6,
+    min_score: float = 0.1,
+    **kwargs,
+):
+    al = ActiveLearning(
+        confidence_threshold=confidence_threshold,
+        min_detection_score=min_detection_score,
+        min_score=min_score,
+    )
+    al.run(
+        image_folder=image_folder,
+        ls_project_id=ls_project_id,
+        annotations_csv=annotations_csv,
+        strategy=strategy,
+        n=n,
+        **kwargs,
+    )
