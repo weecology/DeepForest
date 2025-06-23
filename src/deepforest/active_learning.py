@@ -13,21 +13,20 @@ from label_studio_sdk import Client
 
 # Configure logging
 logger = logging.getLogger(__name__)
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO,
+                    format="%(asctime)s - %(levelname)s - %(message)s")
+
 
 class Detection:
+    """Stub class for detection functionality.
+
+    Created only to satisfy syntax requirements. I will write this part
+    later.
     """
-    Stub class for detection functionality. 
-    Created only to satisfy syntax requirements. I will write this part later.
-    """
+
     @staticmethod
     def load(model_name: str):
-        """
-        Load and return a detection model by name.
-        """
+        """Load and return a detection model by name."""
         # TODO: implement actual model loading
         logger.info(f"Loading detection model '{model_name}'")
         return None
@@ -41,29 +40,31 @@ class Detection:
         patch_overlap: float,
         batch_size: int,
     ) -> List[pd.DataFrame]:
-        """
-        Run detection on the list of image paths and return a list of
-        pandas DataFrames with prediction results. Each DataFrame should
+        """Run detection on the list of image paths and return a list of pandas
+        DataFrames with prediction results.
+
+        Each DataFrame should
         include at least columns ['image_path', 'geometry', 'score', ...].
         """
         # TODO: implement actual prediction logic
         logger.info(
             f"Running detection on {len(image_paths)} images with patch_size={patch_size}, "
-            f"patch_overlap={patch_overlap}, batch_size={batch_size}"
-        )
+            f"patch_overlap={patch_overlap}, batch_size={batch_size}")
         return []
 
+
 class Pipeline:
-    """
-    Minimal in-script pipeline to push selected images to a Label Studio project.
-    """
+    """Minimal in-script pipeline to push selected images to a Label Studio
+    project."""
     # TODO: Implement a pipeline that integrates with Label Studio
+
 
 class ActiveLearning:
     """
     Active learning pipeline for DeepForest: predictions, human review,
     sampling and annotation.
     """
+
     def __init__(
         self,
         confidence_threshold: float = 0.5,
@@ -73,12 +74,10 @@ class ActiveLearning:
         self.confidence_threshold = confidence_threshold
         self.min_detection_score = min_detection_score
         self.min_score = min_score
-        logger.info(
-            f"Initialized ActiveLearning with "
-            f"confidence_threshold={confidence_threshold}, "
-            f"min_detection_score={min_detection_score}, "
-            f"min_score={min_score}"
-        )
+        logger.info(f"Initialized ActiveLearning with "
+                    f"confidence_threshold={confidence_threshold}, "
+                    f"min_detection_score={min_detection_score}, "
+                    f"min_score={min_score}")
 
     def generate_predictions(
         self,
@@ -117,18 +116,14 @@ class ActiveLearning:
         return gdf[gdf["score"] >= self.min_score]
 
     def human_review_split(
-        self,
-        predictions: gpd.GeoDataFrame
-    ) -> Tuple[pd.DataFrame, pd.DataFrame]:
+            self, predictions: gpd.GeoDataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
         if predictions.empty:
             logger.warning("Empty predictions for human review split")
             return pd.DataFrame(), pd.DataFrame()
 
         if "cropmodel_score" in predictions.columns:
-            mask = (
-                (predictions["score"] >= self.min_detection_score)
-                & (predictions["cropmodel_score"] < self.confidence_threshold)
-            )
+            mask = ((predictions["score"] >= self.min_detection_score) &
+                    (predictions["cropmodel_score"] < self.confidence_threshold))
             filtered = predictions[mask]
             uncertain = filtered[filtered["cropmodel_score"] < self.confidence_threshold]
             confident = filtered.drop(uncertain.index)
@@ -165,10 +160,7 @@ class ActiveLearning:
             elif strategy == "uncertainty":
                 df["uncertainty"] = 1 - df["score"]
                 mean_unc = (
-                    df.groupby("image_path")["uncertainty"]
-                    .mean()
-                    .nlargest(n_samples)
-                )
+                    df.groupby("image_path")["uncertainty"].mean().nlargest(n_samples))
                 chosen = mean_unc.index.tolist()
             elif strategy == "rarest":
                 if "cropmodel_label" not in df.columns:
@@ -176,20 +168,14 @@ class ActiveLearning:
                 counts = df["cropmodel_label"].value_counts()
                 df["label_count"] = df["cropmodel_label"].map(counts)
                 sorted_df = df.sort_values("label_count")
-                chosen = (
-                    sorted_df.drop_duplicates("image_path")
-                    .head(n_samples)["image_path"]
-                    .tolist()
-                )
+                chosen = (sorted_df.drop_duplicates("image_path").head(n_samples)
+                          ["image_path"].tolist())
             elif strategy == "target-labels":
                 if not target_labels:
                     raise ValueError("'target-labels' requires target_labels list")
                 filtered = df[df["cropmodel_label"].isin(target_labels)]
                 avg_score = (
-                    filtered.groupby("image_path")["score"]
-                    .mean()
-                    .nlargest(n_samples)
-                )
+                    filtered.groupby("image_path")["score"].mean().nlargest(n_samples))
                 chosen = avg_score.index.tolist()
             else:
                 raise ValueError(f"Unknown strategy '{strategy}'")
@@ -227,9 +213,7 @@ class ActiveLearning:
 
         confident, uncertain = self.human_review_split(predictions)
         target_df = uncertain if not uncertain.empty else predictions
-        chosen, chosen_df = self.select_samples(
-            target_df, strategy=strategy, n_samples=n
-        )
+        chosen, chosen_df = self.select_samples(target_df, strategy=strategy, n_samples=n)
 
         out_images = kwargs.get("output_images", "selected_images.txt")
         out_csv = kwargs.get("output_csv", "selected_preannotations.csv")
@@ -238,19 +222,24 @@ class ActiveLearning:
                 f.write(f"{img}\n")
         chosen_df.to_csv(out_csv, index=False)
         logger.info(
-            f"Saved {len(chosen)} images to {out_images} and details to {out_csv}"
-        )
+            f"Saved {len(chosen)} images to {out_images} and details to {out_csv}")
 
         api_key = get_api_key()
         if api_key:
             os.environ["LABEL_STUDIO_API_KEY"] = api_key
             cfg = OmegaConf.create({
-                "label_studio": {"project_id": ls_project_id},
-                "pipeline": {"images_to_annotate": chosen, "gpus": 1},
+                "label_studio": {
+                    "project_id": ls_project_id
+                },
+                "pipeline": {
+                    "images_to_annotate": chosen,
+                    "gpus": 1
+                },
             })
             Pipeline(cfg=cfg).run()
         else:
             logger.warning("No Label Studio API key; skipping push.")
+
 
 def run_active_learning(
     image_folder: str,
