@@ -32,6 +32,9 @@ class RetinaNetHub(RetinaNet, PyTorchModelHubMixin):
                          nms_thresh=nms_thresh,
                          **kwargs)
 
+        #See docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module.register_load_state_dict_pre_hook
+        self.register_load_state_dict_pre_hook(RetinaNetHub._strip_legacy_prefix)
+
         self.label_dict = label_dict
 
         # Stored as config on HF
@@ -42,6 +45,33 @@ class RetinaNetHub(RetinaNet, PyTorchModelHubMixin):
             "label_dict": label_dict,
             **kwargs
         }
+
+    @staticmethod
+    def _strip_legacy_prefix(module, state_dict, prefix, local_metadata, strict,
+                             missing_keys, unexpected_keys, error_msgs):
+        """Static method to fixup state dict keys from older DeepForest
+        checkpoints. The method simply renames keys that start with "model."
+        and the hook is called before from_pretrained (and load_state_dict) is
+        called.
+
+        The function signature is required by PyTorch but most of the
+        arguments are undocumented and we don't use them.
+        """
+
+        if prefix:
+            return
+
+        to_add = {}
+        to_delete = []
+        for k, v in state_dict.items():
+            if k.startswith("model."):
+                new_k = k.replace("model.", "", 1)  # -> "backbone.*"
+                to_add[new_k] = v
+                to_delete.append(k)
+
+        for k in to_delete:
+            del state_dict[k]
+        state_dict.update(to_add)
 
 
 class Model(BaseModel):

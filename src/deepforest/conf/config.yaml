@@ -13,8 +13,8 @@ num_classes: 1
 nms_thresh: 0.05
 
 model:
-    name: 'joshvm/deepforest-tree'
-    revision: 'v2'
+    name: 'weecology/deepforest-tree'
+    revision: 'main'
 
 label_dict:
     Tree: 0
