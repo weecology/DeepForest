@@ -11,6 +11,7 @@ from deepforest.visualize import plot_results
 
 def train(config: DictConfig) -> None:
     m = deepforest(config=config)
+    m.create_model()
     m.trainer.fit(m)
 
 
