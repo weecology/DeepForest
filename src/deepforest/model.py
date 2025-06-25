@@ -13,7 +13,7 @@ import cv2
 from PIL import Image
 
 
-class Model():
+class BaseModel():
     """A architecture agnostic class that controls the basic train, eval and
     predict functions. A model should optionally allow a backbone for
     pretraining. To add new architectures, simply create a new module in

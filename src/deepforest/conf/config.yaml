@@ -13,8 +13,11 @@ num_classes: 1
 nms_thresh: 0.05
 
 model:
-    name: 'weecology/deepforest-tree'
-    revision: 'main'
+    name: 'joshvm/deepforest-tree'
+    revision: 'v2'
+
+label_dict:
+    Tree: 0
 
 # Pre-processing parameters
 path_to_raster:

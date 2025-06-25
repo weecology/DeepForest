@@ -1,22 +1,53 @@
 # Model
+from pathlib import Path
+import torch
 import torchvision
 from torchvision.models.detection.retinanet import RetinaNet
 from torchvision.models.detection.retinanet import AnchorGenerator
 from torchvision.models.detection.retinanet import RetinaNet_ResNet50_FPN_Weights
-from deepforest.model import Model
+from deepforest.model import BaseModel
+from huggingface_hub import PyTorchModelHubMixin
 
 
-class Model(Model):
+class RetinaNetHub(RetinaNet, PyTorchModelHubMixin):
+    """RetinaNet extension that allows the use of push_to_hub."""
+
+    def __init__(self,
+                 backbone_weights: str | None = None,
+                 num_classes: int = 1,
+                 nms_thresh: float = 0.05,
+                 score_thresh: float = 0.1,
+                 label_dict: dict = {"Tree": 0},
+                 **kwargs):
+
+        if len(label_dict) != num_classes:
+            raise ValueError("The length of label_dict must match the number of classes.")
+
+        backbone = torchvision.models.detection.retinanet_resnet50_fpn(
+            weights=backbone_weights).backbone
+
+        super().__init__(backbone=backbone,
+                         num_classes=num_classes,
+                         score_thresh=score_thresh,
+                         nms_thresh=nms_thresh,
+                         **kwargs)
+
+        self.label_dict = label_dict
+
+        # Stored as config on HF
+        self.config = {
+            "num_classes": num_classes,
+            "nms_thresh": nms_thresh,
+            "score_thresh": score_thresh,
+            "label_dict": label_dict,
+            **kwargs
+        }
+
+
+class Model(BaseModel):
 
     def __init__(self, config, **kwargs):
         super().__init__(config)
-
-    def load_backbone(self):
-        """A torch vision retinanet model."""
-        backbone = torchvision.models.detection.retinanet_resnet50_fpn(
-            weights=RetinaNet_ResNet50_FPN_Weights.COCO_V1)
-
-        return backbone
 
     def create_anchor_generator(self,
                                 sizes=((8, 16, 32, 64, 128, 256, 400),),
@@ -40,23 +71,32 @@ class Model(Model):
 
         return anchor_generator
 
-    def create_model(self):
+    def create_model(self,
+                     pretrained: str | Path | None = None,
+                     *,
+                     revision: str | None = None,
+                     map_location: str | torch.device | None = None,
+                     **hf_args) -> RetinaNetHub:
         """Create a retinanet model
         Args:
-            num_classes (int): number of classes in the model
-            nms_thresh (float): non-max suppression threshold for intersection-over-union [0,1]
-            score_thresh (float): minimum prediction score to keep during prediction  [0,1]
+            pretrained (str | Path | None): If supplied, specifies repository ID for weight download, otherwise use default COCO weights
+            revision (str | None): Repository revision
+            map_location (str | torch.device | None): Device to load weights onto
+            **hf_args: Any other arguments to load_pretrained
         Returns:
             model: a pytorch nn module
         """
-        resnet = self.load_backbone()
-        backbone = resnet.backbone
 
-        model = RetinaNet(backbone=backbone, num_classes=self.config.num_classes)
-        model.nms_thresh = self.config.nms_thresh
-        model.score_thresh = self.config.retinanet.score_thresh
-
-        # Optionally allow anchor generator parameters to be created here
-        # https://pytorch.org/vision/stable/_modules/torchvision/models/detection/retinanet.html
+        if pretrained is None:
+            model = RetinaNetHub(backbone_weights="COCO_V1",
+                                 num_classes=self.config.num_classes,
+                                 nms_thresh=self.config.nms_thresh,
+                                 score_thresh=self.config.retinanet.score_thresh,
+                                 label_dict=self.config.label_dict)
+        else:
+            model = RetinaNetHub.from_pretrained(pretrained,
+                                                 revision=revision,
+                                                 map_location=map_location,
+                                                 **hf_args)
 
         return model
