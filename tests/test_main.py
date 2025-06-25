@@ -117,6 +117,21 @@ def big_file():
 
     return "{}/annotations.csv".format(tmpdir)
 
+def state_dicts_equal(model_a, model_b):
+    state_dict_a = model_a.state_dict()
+    state_dict_b = model_b.state_dict()
+
+    assert state_dict_a.keys() == state_dict_b.keys(), "State dict keys do not match"
+
+    for key in state_dict_a:
+        tensor_a = state_dict_a[key]
+        tensor_b = state_dict_b[key]
+
+        assert torch.equal(tensor_a, tensor_b), f"Mismatch found in key: {key}"
+
+    return True
+
+
 def test_m_has_tree_model_loaded(m):
     boxes = m.predict_image(path=get_data("OSBS_029.tif"))
     assert not boxes.empty
@@ -497,6 +512,8 @@ def test_save_and_reload_checkpoint(m, tmpdir):
 
     assert not pred_after_train.empty
     assert not pred_after_reload.empty
+    assert m.config == after.config
+    assert state_dicts_equal(m.model, after.model)
     pd.testing.assert_frame_equal(pred_after_train, pred_after_reload)
 
 

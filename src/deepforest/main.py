@@ -16,7 +16,6 @@ from torch import optim
 from torchmetrics.detection import IntersectionOverUnion, MeanAveragePrecision
 from torchmetrics.classification import BinaryAccuracy
 
-from huggingface_hub import PyTorchModelHubMixin
 from deepforest import utilities, predict
 
 from deepforest import evaluate as evaluate_iou
@@ -30,7 +29,7 @@ from omegaconf import DictConfig
 from lightning_fabric.utilities.exceptions import MisconfigurationException
 
 
-class deepforest(pl.LightningModule, PyTorchModelHubMixin):
+class deepforest(pl.LightningModule):
     """Class for training and predicting tree crowns in RGB images.
 
     Args:
@@ -48,8 +47,8 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
     def __init__(
         self,
-        num_classes: int = 1,
-        label_dict: dict = {"Tree": 0},
+        num_classes: int = None,
+        label_dict: dict = None,
         model=None,
         transforms=None,
         existing_train_dataloader=None,
@@ -60,7 +59,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
         super().__init__()
 
-        # If not provided, load default config via hydra.
+        # If not provided, load default config via OmegaConf.
         if config is None:
             config = utilities.load_config(overrides=config_args)
         elif 'config_file' in config:
@@ -71,14 +70,15 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
         self.config = config
 
-        # If num classes is specified, overwrite config
-        if not num_classes == 1:
+        # Parse overrides from constructor arguments and assign to config:
+        if num_classes is not None:
             warnings.warn(
-                "Directly specifying the num_classes arg in deepforest.main will be deprecated in 2.0 in favor of config_args. Use main.deepforest(config_args={'num_classes':value})"
+                "Directly specifying the num_classes arg in deepforest.main will be deprecated in 2.0 in favor of using a config file or config_args. Use main.deepforest(config_args={'num_classes':value})"
             )
             self.config.num_classes = num_classes
 
-        self.model = model
+        if label_dict is not None:
+            self.config.label_dict = label_dict
 
         # release version id to flag if release is being used
         self.__release_version__ = None
@@ -97,13 +97,12 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         # Create a default trainer.
         self.create_trainer()
 
-        if not self.config.get('label_dict'):
-            warnings.warn(
-                "Passing label dict directly to the deepforest constructor is deprecated, please specify your label_dict in your configuration file or overrides."
-            )
-            self.set_labels(self.config.label_dict)
-        else:
-            self.set_labels(label_dict)
+        self.set_labels(self.config.label_dict)
+
+        #TODO: Remove this call unless needed, or plan to replace
+        # with load_model.
+        self.model = model
+        self.create_model()
 
         # Add user supplied transforms
         if transforms is None:
@@ -138,6 +137,9 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         if revision is None:
             revision = self.config.model.revision
 
+        if self.model is not None:
+            warnings.warn("Reloading model weights from {}:{} over an existing model.")
+
         model_class = importlib.import_module("deepforest.models.{}".format(
             self.config.architecture))
         self.model = model_class.Model(config=self.config).create_model(
@@ -160,6 +162,11 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         Args:
             label_dict (dict): Dictionary mapping class names to numeric IDs.
         """
+        if label_dict is None:
+            raise ValueError(
+                "Label dictionary not found. Check it was set in your config file or config_args."
+            )
+
         # Label encoder and decoder
         if not len(label_dict) == self.config.num_classes:
             raise ValueError('label_dict {} does not match requested number of '

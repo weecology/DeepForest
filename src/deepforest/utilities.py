@@ -17,7 +17,7 @@ from omegaconf import DictConfig, OmegaConf
 
 def load_config(config_name: str = "config.yaml",
                 overrides: Union[DictConfig, dict] = {}) -> DictConfig:
-    """Load yaml configuration file via Hydra."""
+    """Load yaml configuration file via OmegaConf."""
 
     if not config_name.endswith('yaml'):
         config_name += '.yaml'
