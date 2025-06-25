@@ -10,6 +10,8 @@ from omegaconf import OmegaConf
 
 from deepforest.label_studio import get_api_key
 from label_studio_sdk import Client
+from deepforest import main as m
+from shapely.geometry import box
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -18,39 +20,79 @@ logging.basicConfig(level=logging.INFO,
 
 
 class Detection:
-    """Stub class for detection functionality.
-
-    Created only to satisfy syntax requirements. I will write this part
-    later.
-    """
+    """Class for detection functionality."""
 
     @staticmethod
-    def load(model_name: str):
-        """Load and return a detection model by name."""
-        # TODO: implement actual model loading
-        logger.info(f"Loading detection model '{model_name}'")
-        return None
-
-    @staticmethod
-    def predict(
-        m,
-        model_path: Optional[str],
-        image_paths: List[str],
-        patch_size: int,
-        patch_overlap: float,
-        batch_size: int,
-    ) -> List[pd.DataFrame]:
-        """Run detection on the list of image paths and return a list of pandas
-        DataFrames with prediction results.
-
-        Each DataFrame should
-        include at least columns ['image_path', 'geometry', 'score', ...].
-        """
-        # TODO: implement actual prediction logic
+    def load(model_name: str = "weecology/deepforest-tree",
+             revision: str = "main") -> "m.deepforest":
+        """Load and return a DeepForest model instance."""
         logger.info(
-            f"Running detection on {len(image_paths)} images with patch_size={patch_size}, "
-            f"patch_overlap={patch_overlap}, batch_size={batch_size}")
-        return []
+            f"Initializing DeepForest model from '{model_name}' (revision='{revision}')")
+        model = m.deepforest()
+        # Using the built-in loader from main.py
+        model.load_model(model_name, revision=revision)
+        return model
+
+    @staticmethod
+    def predict(m: m.deepforest,
+                image_paths: list,
+                patch_size: int = None,
+                patch_overlap: float = 0.1,
+                nms_thresh: float = 0.1,
+                return_plot: bool = False,
+                color: tuple = None,
+                thickness: int = 1) -> list:
+        """Run detection on images using a DeepForest model."""
+        results = []
+        for img_path in image_paths:
+            logger.info(f"Predicting on {img_path}")
+            # Choose appropriate option between tiled vs single-image
+            if patch_size:
+                df = m.predict_tile(path=img_path,
+                                    patch_size=patch_size,
+                                    patch_overlap=patch_overlap,
+                                    iou_threshold=nms_thresh,
+                                    return_plot=return_plot,
+                                    color=color,
+                                    thickness=thickness)
+            else:
+                df = m.predict_image(path=img_path,
+                                     return_plot=return_plot,
+                                     color=color,
+                                     thickness=thickness)
+
+            #no detection case
+            if df is None or df.empty:
+                logger.warning(f"No detections for {img_path}")
+                continue
+
+            # for tuple case
+            if isinstance(df, tuple):
+                df = df[0]
+
+            # In our df we need xmin, ymin, xmax, ymax to create shapely.geometry.box
+            # df should have score, label
+            # our final df should have ["image_path", "geometry", "score", "crop_label"]
+            required = {"xmin", "ymin", "xmax",
+                        "ymax"}  # bounding-box columns are necessary here
+            if not required.issubset(df.columns):
+                logger.warning(f"Missing bbox columns in predictions for {img_path}")
+                continue
+
+            df["geometry"] = df.apply(
+                lambda row: box(row["xmin"], row["ymin"], row["xmax"], row["ymax"]),
+                axis=1)
+            df["image_path"] = img_path
+            gdf = gpd.GeoDataFrame(df, geometry="geometry")
+            # Rename label column to match ActiveLearning class
+            if "label" in gdf.columns:
+                gdf = gdf.rename(columns={"label": "cropmodel_label"})
+            elif "cropmodel_label" not in gdf.columns:
+                gdf["cropmodel_label"] = None
+
+            results.append(gdf[["image_path", "geometry", "score", "cropmodel_label"]])
+
+        return results
 
 
 class Pipeline:
