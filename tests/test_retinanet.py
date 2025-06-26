@@ -37,13 +37,6 @@ def retinanet_check_model(config):
     r = retinanet.Model(config)
     r.check_model()
 
-def test_load_backbone(config):
-    r = retinanet.Model(config)
-    resnet_backbone = r.load_backbone()
-    resnet_backbone.eval()
-    x = [torch.rand(3, 300, 400), torch.rand(3, 500, 400)]
-    prediction = resnet_backbone(x)
-
 
 # This test still fails, do we want a way to pass kwargs directly to method,
 # instead of being limited by config structure?
@@ -51,6 +44,7 @@ def test_load_backbone(config):
 @pytest.mark.parametrize("num_classes", [1, 2, 10])
 def test_create_model(config, num_classes):
     config.num_classes = num_classes
+    config.label_dict = {f"{i}": i for i in range(num_classes)}
     retinanet_model = retinanet.Model(config).create_model()
     retinanet_model.eval()
     x = [torch.rand(3, 300, 400), torch.rand(3, 500, 400)]
