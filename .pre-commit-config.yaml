@@ -9,28 +9,9 @@ repos:
     - id: check-json
       files: citation_count.json
 
-- repo: https://github.com/google/yapf
-  rev: v0.40.1
+- repo: https://github.com/astral-sh/ruff-pre-commit
+  rev: v0.12.0
   hooks:
-    - id: yapf
-      language: python
-      additional_dependencies: [toml]
-      args: ['-i', '--style', '.style.yapf']
-      files: |
-        (?x)^(
-          src/deepforest.*\.py|
-          fetch_google_scholar\.py
-        )$
-
-- repo: local
-  hooks:
-    - id: docformatter
-      name: docformatter
-      entry: docformatter
-      language: system
-      types: [python]
-      args: ['--in-place']
-      files: |
-        (?x)^(
-          src/deepforest.*\.py
-        )$
+    - id: ruff
+      args: ["--fix"]
+    - id: ruff-format
