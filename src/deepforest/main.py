@@ -16,7 +16,6 @@ from torch import optim
 from torchmetrics.detection import IntersectionOverUnion, MeanAveragePrecision
 from torchmetrics.classification import BinaryAccuracy
 
-from huggingface_hub import PyTorchModelHubMixin
 from deepforest import utilities, predict
 
 from deepforest import evaluate as evaluate_iou
@@ -30,7 +29,7 @@ from omegaconf import DictConfig
 from lightning_fabric.utilities.exceptions import MisconfigurationException
 
 
-class deepforest(pl.LightningModule, PyTorchModelHubMixin):
+class deepforest(pl.LightningModule):
     """Class for training and predicting tree crowns in RGB images.
 
     Args:
@@ -48,8 +47,8 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
     def __init__(
         self,
-        num_classes: int = 1,
-        label_dict: dict = {"Tree": 0},
+        num_classes: int = None,
+        label_dict: dict = None,
         model=None,
         transforms=None,
         existing_train_dataloader=None,
@@ -60,7 +59,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
         super().__init__()
 
-        # If not provided, load default config via hydra.
+        # If not provided, load default config via OmegaConf.
         if config is None:
             config = utilities.load_config(overrides=config_args)
         elif 'config_file' in config:
@@ -71,22 +70,21 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
         self.config = config
 
-        # If num classes is specified, overwrite config
-        if not num_classes == 1:
+        # Parse overrides from constructor arguments and assign to config:
+        if num_classes is not None:
             warnings.warn(
-                "Directly specifying the num_classes arg in deepforest.main will be deprecated in 2.0 in favor of config_args. Use main.deepforest(config_args={'num_classes':value})"
+                "Directly specifying the num_classes arg in deepforest.main will be deprecated in 2.0 in favor of using a config file or config_args. Use main.deepforest(config_args={'num_classes':value})"
             )
             self.config.num_classes = num_classes
 
-        self.model = model
+        if label_dict is not None:
+            self.config.label_dict = label_dict
 
         # release version id to flag if release is being used
         self.__release_version__ = None
 
         self.existing_train_dataloader = existing_train_dataloader
         self.existing_val_dataloader = existing_val_dataloader
-
-        self.create_model()
 
         # Metrics
         self.iou_metric = IntersectionOverUnion(
@@ -99,16 +97,12 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         # Create a default trainer.
         self.create_trainer()
 
-        # Label encoder and decoder
-        if not len(label_dict) == self.config.num_classes:
-            raise ValueError('label_dict {} does not match requested number of '
-                             'classes {}, please supply a label_dict argument '
-                             '{{"label1":0, "label2":1, "label3":2 ... etc}} '
-                             'for each label in the '
-                             'dataset'.format(label_dict, self.config.num_classes))
+        self.set_labels(self.config.label_dict)
 
-        self.label_dict = label_dict
-        self.numeric_to_label_dict = {v: k for k, v in label_dict.items()}
+        #TODO: Remove this call unless needed, or plan to replace
+        # with load_model.
+        self.model = model
+        self.create_model()
 
         # Add user supplied transforms
         if transforms is None:
@@ -118,7 +112,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
         self.save_hyperparameters()
 
-    def load_model(self, model_name="weecology/deepforest-tree", revision='main'):
+    def load_model(self, model_name=None, revision=None):
         """Loads a model that has already been pretrained for a specific task,
         like tree crown detection.
 
@@ -136,18 +130,30 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         Returns:
             None
         """
-        # Load the model using from_pretrained
-        self.create_model()
-        loaded_model = self.from_pretrained(model_name, revision=revision)
-        self.label_dict = loaded_model.label_dict
-        self.model = loaded_model.model
-        self.numeric_to_label_dict = loaded_model.numeric_to_label_dict
+
+        if model_name is None:
+            model_name = self.config.model.name
+
+        if revision is None:
+            revision = self.config.model.revision
+
+        if self.model is not None:
+            warnings.warn("Reloading model weights from {}:{} over an existing model.")
+
+        model_class = importlib.import_module("deepforest.models.{}".format(
+            self.config.architecture))
+        self.model = model_class.Model(config=self.config).create_model(
+            pretrained=model_name, revision=revision, strict=True)
 
         # Set bird-specific settings if loading the bird model
+        # TODO: Hub model should store this mapping.
         if model_name == "weecology/deepforest-bird":
             self.config.retinanet.score_thresh = 0.3
-            self.label_dict = {"Bird": 0}
-            self.numeric_to_label_dict = {v: k for k, v in self.label_dict.items()}
+            self.set_labels({"Bird": 0})
+        else:
+            self.set_labels(self.model.label_dict)
+
+        return
 
     def set_labels(self, label_dict):
         """Set new label mapping, updating both the label dictionary (str ->
@@ -156,8 +162,18 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         Args:
             label_dict (dict): Dictionary mapping class names to numeric IDs.
         """
-        if len(label_dict) != self.config.num_classes:
-            raise ValueError("The length of label_dict must match the number of classes.")
+        if label_dict is None:
+            raise ValueError(
+                "Label dictionary not found. Check it was set in your config file or config_args."
+            )
+
+        # Label encoder and decoder
+        if not len(label_dict) == self.config.num_classes:
+            raise ValueError('label_dict {} does not match requested number of '
+                             'classes {}, please supply a label_dict argument '
+                             '{{"label1":0, "label2":1, "label3":2 ... etc}} '
+                             'for each label in the '
+                             'dataset'.format(label_dict, self.config.num_classes))
 
         self.label_dict = label_dict
         self.numeric_to_label_dict = {v: k for k, v in label_dict.items()}

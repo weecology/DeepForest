@@ -3,10 +3,10 @@ from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 from torchvision.models.detection import FasterRCNN
 from torchvision.models.detection.rpn import AnchorGenerator, RPNHead, RegionProposalNetwork
 import torch
-from deepforest.model import Model
+from deepforest.model import BaseModel
 
 
-class Model(Model):
+class Model(BaseModel):
 
     def __init__(self, config, **kwargs):
         super().__init__(config)

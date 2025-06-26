@@ -15,7 +15,7 @@ collect_ignore = ['setup.py']
 def config():
     config = utilities.load_config()
     config.train.fast_dev_run = True
-    config.batch_size = 1 #True Why is this true?
+    config.batch_size = 1
     return config
 
 

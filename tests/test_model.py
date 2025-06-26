@@ -9,12 +9,12 @@ from torchvision import transforms
 # The model object is architecture agnostic container.
 def test_model_no_args(config):
     with pytest.raises(ValueError):
-        model.Model.create_model(config)
+        model.BaseModel.create_model(config)
 
 @pytest.fixture()
 def crop_model():
     crop_model = model.CropModel(num_classes=2)
-    
+
     return crop_model
 
 @pytest.fixture()
@@ -145,14 +145,14 @@ def test_crop_model_maintain_label_dict(tmpdir, crop_model_data):
     crop_model.trainer.fit(crop_model)
     checkpoint_path = os.path.join(tmpdir, "epoch=0-step=0.ckpt")
     crop_model.trainer.save_checkpoint(checkpoint_path)
-    
+
     # Load from checkpoint
     loaded_model = model.CropModel.load_from_checkpoint(checkpoint_path)
-    
+
     # Check that the label dictionary is maintained
     assert crop_model.label_dict == loaded_model.label_dict
-    
-    
+
+
 def test_crop_model_init_no_num_classes():
     """
     Test that initializing CropModel() without num_classes
@@ -202,7 +202,7 @@ def test_crop_model_load_checkpoint_with_explicit_num_classes(tmpdir, crop_model
 def test_expand_bbox_to_square_edge_cases():
     """Test cases for the expand_bbox_to_square function."""
     crop_model = model.CropModel(num_classes=2)
-    
+
     # Test Case 1: Bounding box at the image edge (0,0)
     bbox = [0, 0, 20, 30]
     image_width, image_height = 100, 100
@@ -212,13 +212,13 @@ def test_expand_bbox_to_square_edge_cases():
     assert result == expected
 
     # Test Case 2: Side length exceeds both image dimensions
-    bbox = [10, 10, 180, 180] 
+    bbox = [10, 10, 180, 180]
     image_width, image_height = 100, 100
     # Expected to be clamped to the size of the image: full image bounding box
     expected = [0.0, 0.0, 100.0, 100.0]
     result = crop_model.expand_bbox_to_square(bbox, image_width, image_height)
     assert result == expected
-    
+
     # Test Case 3: Basic case - bounding box well within image boundaries
     bbox = [40, 30, 60, 70]
     image_width, image_height = 100, 100
@@ -233,10 +233,10 @@ def test_crop_model_val_dataset_confusion(tmpdir, crop_model_data):
     crop_model.load_from_disk(train_dir=tmpdir, val_dir=tmpdir, recreate_model=True)
     crop_model.trainer.fit(crop_model)
     images, labels, predictions = crop_model.val_dataset_confusion(return_images=True)
-    
+
     # There are 37 images in the testfile_multi.csv
     assert len(images) == 37
 
     # There was just one batch in the fast_dev_run
-    assert len(labels) ==37 
+    assert len(labels) ==37
     assert len(predictions) == 4
