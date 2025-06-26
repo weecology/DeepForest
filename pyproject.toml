@@ -43,12 +43,10 @@ dependencies = [
     "albumentations>=2.0.0",
     "aiolimiter",
     "aiohttp",
-    "docformatter",
     "huggingface_hub>=0.25.0",
     "hydra-core",
     "geopandas",
     "matplotlib",
-    "nbqa",
     "numpy",
     "opencv-python-headless>=4.5.4",
     "pandas",
@@ -75,28 +73,27 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "black",
     "bump-my-version",
-    "docformatter",
-    "flake8",
     "mypy",
     "nbmake",
     "nbsphinx",
-    "nbqa",
     "pytest",
     "pytest-cov",
     "pytest-mock",
     "pytest-xdist",
+    "ruff",
     "sphinx_design",
     "sphinx_markdown_tables",
     "sphinx_rtd_theme",
     "twine",
-    "yapf",
     "myst-parser",
 ]
 
 [project.scripts]
 deepforest = "deepforest.scripts.cli:main"
+
+[tool.ruff]
+line-length = 90
 
 [tool.setuptools.packages.find]
 where = ["src"]
