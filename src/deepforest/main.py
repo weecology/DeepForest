@@ -144,6 +144,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             image_annotations = target.copy()
             image_annotations = utilities.format_geometry(image_annotations)
             image_annotations.root_dir = self.config.train.root_dir
+            image_annotations["image_path"] = path
 
             # Plot and save
             save_path = os.path.join(tmpdir, f"train_{os.path.basename(path)}")
@@ -178,6 +179,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                 image_annotations = target.copy()
                 image_annotations = utilities.format_geometry(image_annotations)
                 image_annotations.root_dir = self.config.validation.root_dir
+                image_annotations["image_path"] = path
 
                 save_path = os.path.join(tmpdir, f"val_{os.path.basename(path)}")
                 visualize.plot_annotations(image_annotations,
