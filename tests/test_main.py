@@ -10,6 +10,7 @@ import torch
 import tempfile
 import copy
 import importlib.util
+from unittest.mock import MagicMock, Mock
 
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
@@ -255,11 +256,22 @@ def test_train_single(m_without_release, architecture, accelerator):
     m_without_release.create_trainer(limit_train_batches=1)
     m_without_release.trainer.fit(m_without_release)
 
-
 def test_on_train_start_basic(m):
     """Test that on_train_start runs without error and logs images using the default logger."""
-    m.create_trainer(fast_dev_run=False, limit_train_batches=2, limit_val_batches=2)
+    # Create a mock logger
+    class MockLogger:
+        def __init__(self):
+            self.experiment = Mock()
+            self.experiment.log_image = self.log_image
+            self.images = []
+
+        def log_image(self, image, metadata):
+            self.images.append(image)
+
+    m.create_trainer(fast_dev_run=False, limit_train_batches=2, limit_val_batches=2, logger=MockLogger())
     m.on_train_start()
+
+    assert len(m.logger.images) == 2
 
 def test_train_preload_images(m):
     m.create_trainer(fast_dev_run=True)

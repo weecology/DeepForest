@@ -168,45 +168,18 @@ class CropModel(LightningModule):
         Returns:
             None
         """
-        # Create datasets
         self.train_ds = ImageFolder(root=train_dir,
                                     transform=self.get_transform(augment=True))
         self.val_ds = ImageFolder(root=val_dir,
                                   transform=self.get_transform(augment=False))
-
-        # Set up label dictionary
         self.label_dict = self.train_ds.class_to_idx
+
+        # Create a reverse mapping from numeric indices to class labels
         self.numeric_to_label_dict = {v: k for k, v in self.label_dict.items()}
 
         if recreate_model:
             self.num_classes = len(self.label_dict)
             self.create_model(num_classes=self.num_classes)
-
-    def train_dataloader(self):
-        """Train data loader."""
-
-        train_loader = torch.utils.data.DataLoader(self.train_ds,
-                                                   batch_size=self.batch_size,
-                                                   shuffle=True,
-                                                   num_workers=self.num_workers)
-        return train_loader
-
-    def val_dataloader(self):
-        """Validation data loader."""
-        val_loader = torch.utils.data.DataLoader(self.val_ds,
-                                                 batch_size=self.batch_size,
-                                                 shuffle=False,
-                                                 num_workers=self.num_workers)
-        return val_loader
-
-    def predict_dataloader(self, ds):
-        """Prediction data loader."""
-        loader = torch.utils.data.DataLoader(ds,
-                                             batch_size=self.batch_size,
-                                             shuffle=False,
-                                             num_workers=self.num_workers)
-
-        return loader
 
     def get_transform(self, augment):
         """Returns the data transformation pipeline for the model.
@@ -320,6 +293,32 @@ class CropModel(LightningModule):
         output = self.model(x)
 
         return output
+
+    def train_dataloader(self):
+        """Train data loader."""
+        train_loader = torch.utils.data.DataLoader(self.train_ds,
+                                                   batch_size=self.batch_size,
+                                                   shuffle=True,
+                                                   num_workers=self.num_workers)
+
+        return train_loader
+
+    def predict_dataloader(self, ds):
+        """Prediction data loader."""
+        loader = torch.utils.data.DataLoader(ds,
+                                             batch_size=self.batch_size,
+                                             shuffle=False,
+                                             num_workers=self.num_workers)
+
+        return loader
+
+    def val_dataloader(self):
+        """Validation data loader."""
+        val_loader = torch.utils.data.DataLoader(self.val_ds,
+                                                 batch_size=self.batch_size,
+                                                 num_workers=self.num_workers)
+
+        return val_loader
 
     def training_step(self, batch, batch_idx):
         x, y = batch
