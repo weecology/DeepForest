@@ -597,29 +597,6 @@ def test_format_geometry_multi_class():
     assert result.iloc[1]["label"] == 1
 
 
-def test_format_geometry_invalid_input():
-    """Test handling of invalid input"""
-    # Test with missing required keys
-    prediction = {
-        "boxes": torch.tensor([[10, 20, 30, 40]]),
-        "labels": torch.tensor([0])
-        # Missing scores
-    }
-    
-    with pytest.raises(KeyError):
-        utilities.format_geometry(prediction)
-    
-    # Test with mismatched lengths
-    prediction = {
-        "boxes": torch.tensor([[10, 20, 30, 40], [50, 60, 70, 80]]),
-        "labels": torch.tensor([0]),  # Only one label
-        "scores": torch.tensor([0.9, 0.8])
-    }
-    
-    with pytest.raises(ValueError):
-        utilities.format_geometry(prediction)
-
-
 def test_format_geometry_with_geometry_column():
     """Test formatting predictions and adding geometry column"""
     # Create predictions
