@@ -220,9 +220,9 @@ class deepforest(pl.LightningModule):
             None
         """
         if self.model is None:
-            model_name = importlib.import_module("deepforest.models.{}".format(
+            model_class = importlib.import_module("deepforest.models.{}".format(
                 self.config.architecture))
-            self.model = model_name.Model(config=self.config).create_model()
+            self.model = model_class.Model(config=self.config).create_model(strict=True)
 
     def create_trainer(self, logger=None, callbacks=[], **kwargs):
         """Create a pytorch lightning training by reading config files.
@@ -649,10 +649,10 @@ class deepforest(pl.LightningModule):
 
         # Log loss
         for key, value in loss_dict.items():
-            self.log("train_{}".format(key), value, on_epoch=True)
+            self.log("train_{}".format(key), value, on_epoch=True, batch_size=len(images))
 
         # Log sum of losses
-        self.log("train_loss", losses, on_epoch=True)
+        self.log("train_loss", losses, on_epoch=True, batch_size=len(images))
 
         return losses
 
@@ -671,9 +671,14 @@ class deepforest(pl.LightningModule):
         # Log loss
         for key, value in loss_dict.items():
             try:
-                self.log("val_{}".format(key), value, on_epoch=True)
+                self.log("val_{}".format(key),
+                         value,
+                         on_epoch=True,
+                         batch_size=len(images))
             except MisconfigurationException:
                 pass
+
+        self.log("val_loss", losses, on_epoch=True, batch_size=len(images))
 
         # In eval model, return predictions to calculate prediction metrics
         preds = self.model.eval()

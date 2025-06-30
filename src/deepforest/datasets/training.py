@@ -22,7 +22,7 @@ def get_transform(augment: bool) -> A.Compose:
     if augment:
         return A.Compose([A.HorizontalFlip(p=0.5), ToTensorV2()], bbox_params=bbox_params)
     else:
-        return A.Compose([ToTensorV2()], bbox_params=bbox_params)
+        return A.Compose([ToTensorV2()])
 
 
 class BoxDataset(Dataset):

@@ -10,7 +10,7 @@ from huggingface_hub import PyTorchModelHubMixin
 
 
 class RetinaNetHub(RetinaNet, PyTorchModelHubMixin):
-    """RetinaNet extension that allows the use of push_to_hub."""
+    """RetinaNet extension that allows the use of the HF Hub API."""
 
     def __init__(self,
                  backbone_weights: str | None = None,
