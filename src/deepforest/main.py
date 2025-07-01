@@ -99,16 +99,11 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         # Create a default trainer.
         self.create_trainer()
 
-        # Label encoder and decoder
-        if not len(label_dict) == self.config.num_classes:
-            raise ValueError('label_dict {} does not match requested number of '
-                             'classes {}, please supply a label_dict argument '
-                             '{{"label1":0, "label2":1, "label3":2 ... etc}} '
-                             'for each label in the '
-                             'dataset'.format(label_dict, self.config.num_classes))
+        # Set label mapping
+        if self.config.label_dict is None:
+            self.config.label_dict = label_dict
 
-        self.label_dict = label_dict
-        self.numeric_to_label_dict = {v: k for k, v in label_dict.items()}
+        self.set_labels(label_dict=self.config.label_dict)
 
         # Add user supplied transforms
         if transforms is None:
@@ -139,15 +134,17 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         # Load the model using from_pretrained
         self.create_model()
         loaded_model = self.from_pretrained(model_name, revision=revision)
-        self.label_dict = loaded_model.label_dict
+
         self.model = loaded_model.model
-        self.numeric_to_label_dict = loaded_model.numeric_to_label_dict
 
         # Set bird-specific settings if loading the bird model
         if model_name == "weecology/deepforest-bird":
             self.config.retinanet.score_thresh = 0.3
-            self.label_dict = {"Bird": 0}
-            self.numeric_to_label_dict = {v: k for k, v in self.label_dict.items()}
+            self.config.label_dict = {"Bird": 0}
+        else:
+            self.config.label_dict = loaded_model.label_dict
+
+        self.set_labels(label_dict=self.config.label_dict)
 
     def set_labels(self, label_dict):
         """Set new label mapping, updating both the label dictionary (str ->
@@ -156,11 +153,21 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         Args:
             label_dict (dict): Dictionary mapping class names to numeric IDs.
         """
-        if len(label_dict) != self.config.num_classes:
-            raise ValueError("The length of label_dict must match the number of classes.")
+
+        # Label encoder and decoder
+        if not len(label_dict) == self.config.num_classes:
+            raise ValueError('label_dict {} does not match requested number of '
+                             'classes {}, please supply a label_dict argument '
+                             '{{"label1":0, "label2":1, "label3":2 ... etc}} '
+                             'for each label in the '
+                             'dataset'.format(label_dict, self.config.num_classes))
 
         self.label_dict = label_dict
         self.numeric_to_label_dict = {v: k for k, v in label_dict.items()}
+
+        # Check for duplicate values in label_dict:
+        if len(set(label_dict.values())) != len(label_dict):
+            raise ValueError('Found duplicate class IDs in label_dict.')
 
     def use_release(self, check_release=True):
         """Use the latest DeepForest model release from Hugging Face,

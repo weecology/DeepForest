@@ -64,7 +64,6 @@ train:
     preload_images: False
 
 validation:
-    # callback args
     csv_file:
     root_dir:
     preload_images: False

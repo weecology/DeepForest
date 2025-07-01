@@ -14,20 +14,43 @@ from deepforest import _ROOT
 import json
 from omegaconf import DictConfig, OmegaConf
 
+from deepforest.conf.schema import Config as StructuredConfig
+
 
 def load_config(config_name: str = "config.yaml",
-                overrides: Union[DictConfig, dict] = {}) -> DictConfig:
-    """Load yaml configuration file via Hydra."""
+                overrides: Union[DictConfig, dict] = None,
+                strict: bool = False) -> DictConfig:
+    """Loads the DeepForest structured config, merges with YAML and overrides.
 
-    if not config_name.endswith('yaml'):
-        config_name += '.yaml'
+    Args:
+        config_name (str): Path to config file, assumed in package folder
+        overrides (DictConfig or dict): Overrides to config
+
+
+    Returns:
+        config (DictConfig): composed configuration
+    """
+
+    if not config_name.endswith(".yaml"):
+        config_name += ".yaml"
 
     if overrides is None:
         overrides = {}
 
     config_root = os.path.abspath(os.path.join(_ROOT, "conf"))
-    config = OmegaConf.load(os.path.join(config_root, config_name))
-    config.merge_with(overrides)
+    yaml_path = os.path.join(config_root, config_name)
+
+    # Config schema
+    base = OmegaConf.structured(StructuredConfig)
+
+    yaml_cfg = OmegaConf.load(yaml_path)
+
+    # Merge in sequence (overrides last)
+    config = OmegaConf.merge(base, yaml_cfg, overrides)
+
+    # Check for unexpected config entries
+    if strict:
+        OmegaConf.set_struct(config, True)
 
     return config
 
