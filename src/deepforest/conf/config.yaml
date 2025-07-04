@@ -11,6 +11,7 @@ batch_size: 1
 architecture: 'retinanet'
 num_classes: 1
 nms_thresh: 0.05
+score_thresh: 0.1
 
 model:
     name: 'weecology/deepforest-tree'
@@ -23,11 +24,6 @@ patch_overlap: 0.05
 annotations_xml:
 rgb_dir:
 path_to_rgb:
-
-# Architecture specific params
-retinanet:
-    # Non-max suppression of overlapping predictions
-    score_thresh: 0.1
 
 train:
     csv_file:
