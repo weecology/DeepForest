@@ -669,7 +669,10 @@ class deepforest(pl.LightningModule):
         # Log losses
         try:
             for key, value in loss_dict.items():
-                self.log("val_{}".format(key), value, on_epoch=True)
+                self.log("val_{}".format(key),
+                         value,
+                         on_epoch=True,
+                         batch_size=len(images))
 
             self.log("val_loss", losses, on_epoch=True, batch_size=len(images))
         except MisconfigurationException:
