@@ -78,6 +78,9 @@ class deepforest(pl.LightningModule):
             self.config.num_classes = num_classes
 
         if label_dict is not None:
+            warnings.warn(
+                "Directly specifying the label_dict arg in deepforest.main will be deprecated in 2.0 in favor of using a config file or config_args. Use main.deepforest(config_args={'label_dict': ... })"
+            )
             self.config.label_dict = label_dict
 
         # release version id to flag if release is being used
