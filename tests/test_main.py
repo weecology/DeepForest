@@ -238,7 +238,7 @@ def test_validate(m):
 
 
 # Test train with each architecture
-@pytest.mark.parametrize("architecture", ["retinanet", "FasterRCNN"])
+@pytest.mark.parametrize("architecture", ["retinanet", "FasterRCNN", "DeformableDetr"])
 def test_train_single(m_without_release, architecture):
     m_without_release.config.architecture = architecture
     m_without_release.create_model()

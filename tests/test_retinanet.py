@@ -61,13 +61,13 @@ def test_forward_empty(config):
 
 # Can we update parameters after training
 def test_maintain_parameters(config):
-    config.retinanet.score_thresh = 0.4
+    config.score_thresh = 0.4
     retinanet_model = retinanet.Model(config).create_model()
-    assert retinanet_model.score_thresh == config.retinanet.score_thresh
+    assert retinanet_model.score_thresh == config.score_thresh
     retinanet_model.eval()
     x = [torch.rand(3, 300, 400), torch.rand(3, 500, 400)]
     predictions = retinanet_model(x)
-    assert retinanet_model.score_thresh == config.retinanet.score_thresh
+    assert retinanet_model.score_thresh == config.score_thresh
 
     retinanet_model.score_thresh = 0.9
     retinanet_model.eval()

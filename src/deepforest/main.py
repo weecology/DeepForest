@@ -62,7 +62,8 @@ class deepforest(pl.LightningModule):
         # If not provided, load default config via OmegaConf.
         if config is None:
             config = utilities.load_config(overrides=config_args)
-        elif 'config_file' in config:
+        # Hub overrides
+        elif 'config_file' in config or 'config_args' in config:
             config = utilities.load_config(overrides=config['config_args'])
         elif config_args is not None:
             warnings.warn(

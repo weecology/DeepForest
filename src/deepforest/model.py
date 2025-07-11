@@ -21,17 +21,14 @@ class BaseModel():
     statement below.
 
     Args:
-        num_classes (int): number of classes in the model
-        nms_thresh (float): non-max suppression threshold for intersection-over-union [0,1]
-        score_thresh (float): minimum prediction score to keep during prediction  [0,1]
-    Returns:
-        model: a pytorch nn module
+        config (DictConfig): DeepForest config settings object
     """
 
     def __init__(self, config):
 
         # Check for required properties and formats
         self.config = config
+        self.nms_thresh = None  # Required for some models but not all
 
     def create_model(self):
         """This function converts a deepforest config file into a model.
