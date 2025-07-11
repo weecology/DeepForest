@@ -1,10 +1,11 @@
 # Model
 from pathlib import Path
+import warnings
+
 import torch
 import torchvision
 from torchvision.models.detection.retinanet import RetinaNet
 from torchvision.models.detection.retinanet import AnchorGenerator
-from torchvision.models.detection.retinanet import RetinaNet_ResNet50_FPN_Weights
 from deepforest.model import BaseModel
 from huggingface_hub import PyTorchModelHubMixin
 
@@ -16,12 +17,9 @@ class RetinaNetHub(RetinaNet, PyTorchModelHubMixin):
                  backbone_weights: str | None = None,
                  num_classes: int = 1,
                  nms_thresh: float = 0.05,
-                 score_thresh: float = 0.1,
+                 score_thresh: float = 0.5,
                  label_dict: dict = {"Tree": 0},
                  **kwargs):
-
-        if len(label_dict) != num_classes:
-            raise ValueError("The length of label_dict must match the number of classes.")
 
         backbone = torchvision.models.detection.retinanet_resnet50_fpn(
             weights=backbone_weights).backbone
@@ -35,15 +33,63 @@ class RetinaNetHub(RetinaNet, PyTorchModelHubMixin):
         #See docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module.register_load_state_dict_pre_hook
         self.register_load_state_dict_pre_hook(RetinaNetHub._strip_legacy_prefix)
 
+        self.num_classes = num_classes
         self.label_dict = label_dict
+        self.kwargs = kwargs
+
+        self.update_config()
+
+    @classmethod
+    def from_pretrained(cls,
+                        pretrained_model_name_or_path,
+                        num_classes=None,
+                        label_dict=None,
+                        **kwargs):
+        """This function overrides the default from_pretrained method to better
+        support overriding the number of classes in a pretrained model.
+
+        If the target num_classes differs from the model's num_classes,
+        then the model heads are reinitialized to compensate.
+        """
+        model = super().from_pretrained(pretrained_model_name_or_path, **kwargs)
+
+        # Override class info if specified
+        if num_classes is not None and label_dict is not None:
+            if num_classes != model.num_classes:
+                warnings.warn(
+                    f"The number of classes in your config differs compared to the model checkpoint (which has {model.num_classes} classes)."
+                    f"If you are fine-tuning on a new dataset that has {num_classes} then this is expected."
+                )
+                model._adjust_classes(num_classes=num_classes, label_dict=label_dict)
+
+        return model
+
+    def _adjust_classes(self, num_classes, label_dict):
+        if num_classes != len(label_dict):
+            raise ValueError("Number of classes must match label dict entries.")
+
+        self.num_classes = num_classes
+        self.label_dict = label_dict
+
+        self.head.classification_head = torchvision.models.detection.retinanet.RetinaNetClassificationHead(
+            in_channels=self.backbone.out_channels,
+            num_classes=num_classes,
+            num_anchors=self.head.classification_head.num_anchors)
+        self.head.regression_head = torchvision.models.detection.retinanet.RetinaNetRegressionHead(
+            in_channels=self.backbone.out_channels,
+            num_anchors=self.head.classification_head.num_anchors)
+
+        self.update_config()
+
+    def update_config(self):
 
         # Stored as config on HF
         self.config = {
-            "num_classes": num_classes,
-            "nms_thresh": nms_thresh,
-            "score_thresh": score_thresh,
-            "label_dict": label_dict,
-            **kwargs
+            "num_classes": self.num_classes,
+            "nms_thresh": self.nms_thresh,
+            "score_thresh": self.score_thresh,
+            "label_dict": self.label_dict,
+            **self.kwargs
         }
 
     @staticmethod
@@ -127,6 +173,7 @@ class Model(BaseModel):
             model = RetinaNetHub.from_pretrained(pretrained,
                                                  revision=revision,
                                                  map_location=map_location,
+                                                 num_classes=self.config.num_classes,
+                                                 label_dict=self.config.label_dict,
                                                  **hf_args)
-
         return model

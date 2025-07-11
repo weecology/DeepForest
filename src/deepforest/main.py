@@ -99,8 +99,6 @@ class deepforest(pl.LightningModule):
 
         self.set_labels(self.config.label_dict)
 
-        #TODO: Remove this call unless needed, or plan to replace
-        # with load_model.
         self.model = model
         self.create_model()
 
@@ -671,14 +669,13 @@ class deepforest(pl.LightningModule):
         # Log loss
         for key, value in loss_dict.items():
             try:
-                self.log("val_{}".format(key),
-                         value,
-                         on_epoch=True,
-                         batch_size=len(images))
+                self.log("val_{}".format(key), value, on_epoch=True)
             except MisconfigurationException:
                 pass
-
-        self.log("val_loss", losses, on_epoch=True, batch_size=len(images))
+        try:
+            self.log("val_loss", losses, on_epoch=True, batch_size=len(images))
+        except MisconfigurationException:
+            pass
 
         # In eval model, return predictions to calculate prediction metrics
         preds = self.model.eval()
