@@ -1,6 +1,6 @@
 import warnings
 from transformers import DeformableDetrForObjectDetection, DeformableDetrImageProcessor, logging
-from deepforest.model import Model
+from deepforest.model import BaseModel
 from torch import nn
 
 # Suppress huge amounts of unnecessary warnings from transformers.
@@ -89,7 +89,7 @@ class DeformableDetrWrapper(nn.Module):
             return preds.loss_dict
 
 
-class Model(Model):
+class Model(BaseModel):
 
     def __init__(self, config, **kwargs):
         """
