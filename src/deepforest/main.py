@@ -666,13 +666,11 @@ class deepforest(pl.LightningModule):
         # sum of regression and classification loss
         losses = sum([loss for loss in loss_dict.values()])
 
-        # Log loss
-        for key, value in loss_dict.items():
-            try:
-                self.log("val_{}".format(key), value, on_epoch=True)
-            except MisconfigurationException:
-                pass
+        # Log losses
         try:
+            for key, value in loss_dict.items():
+                self.log("val_{}".format(key), value, on_epoch=True)
+
             self.log("val_loss", losses, on_epoch=True, batch_size=len(images))
         except MisconfigurationException:
             pass
