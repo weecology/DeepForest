@@ -3,6 +3,7 @@ from pathlib import Path
 import warnings
 
 import torch
+import torch.version
 import torchvision
 from torchvision.models.detection.retinanet import RetinaNet
 from torchvision.models.detection.retinanet import AnchorGenerator
@@ -31,7 +32,9 @@ class RetinaNetHub(RetinaNet, PyTorchModelHubMixin):
                          **kwargs)
 
         #See docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module.register_load_state_dict_pre_hook
-        self.register_load_state_dict_pre_hook(RetinaNetHub._strip_legacy_prefix)
+        #For backwards compatibility with earlier versions of torch, call the _ method
+        self._register_load_state_dict_pre_hook(RetinaNetHub._strip_legacy_prefix,
+                                                with_module=True)
 
         self.num_classes = num_classes
         self.label_dict = label_dict
