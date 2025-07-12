@@ -3,7 +3,6 @@ from pathlib import Path
 import warnings
 
 import torch
-import torch.version
 import torchvision
 from torchvision.models.detection.retinanet import RetinaNet
 from torchvision.models.detection.retinanet import AnchorGenerator
@@ -170,7 +169,7 @@ class Model(BaseModel):
             model = RetinaNetHub(backbone_weights="COCO_V1",
                                  num_classes=self.config.num_classes,
                                  nms_thresh=self.config.nms_thresh,
-                                 score_thresh=self.config.retinanet.score_thresh,
+                                 score_thresh=self.config.score_thresh,
                                  label_dict=self.config.label_dict)
         else:
             model = RetinaNetHub.from_pretrained(pretrained,

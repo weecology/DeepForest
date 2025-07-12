@@ -63,7 +63,7 @@ class deepforest(pl.LightningModule):
         if config is None:
             config = utilities.load_config(overrides=config_args)
         # Hub overrides
-        elif 'config_file' in config or 'config_args' in config:
+        elif 'config_args' in config:
             config = utilities.load_config(overrides=config['config_args'])
         elif config_args is not None:
             warnings.warn(
@@ -139,8 +139,7 @@ class deepforest(pl.LightningModule):
         if revision is None:
             revision = self.config.model.revision
 
-        if self.model is not None:
-            warnings.warn("Reloading model weights from {}:{} over an existing model.")
+        print(f"Loading model weights from {model_name}:{revision}.")
 
         model_class = importlib.import_module("deepforest.models.{}".format(
             self.config.architecture))
@@ -150,7 +149,7 @@ class deepforest(pl.LightningModule):
         # Set bird-specific settings if loading the bird model
         # TODO: Hub model should store this mapping.
         if model_name == "weecology/deepforest-bird":
-            self.config.retinanet.score_thresh = 0.3
+            self.config.score_thresh = 0.3
             self.set_labels({"Bird": 0})
         else:
             self.set_labels(self.model.label_dict)
