@@ -10,133 +10,95 @@ import cv2
 import random
 import warnings
 import supervision as sv
-import shapely
+from typing import Optional, Union
 from deepforest.utilities import determine_geometry_type
 
 
-def view_dataset(ds, savedir=None, color=None, thickness=1):
-    """Plot annotations on images for debugging purposes.
+def _load_image(image: Optional[Union[np.typing.NDArray, str, Image.Image]] = None,
+                df: Optional[pd.DataFrame] = None,
+                root_dir: Optional[str] = None) -> np.typing.NDArray:
+    """Utility function to load an image from either a path or a
+    prediction/annotation dataframe.
+
+    Returns an image in RGB format with HWC channel ordering.
 
     Args:
-        ds: a deepforest pytorch dataset, see deepforest.dataset or deepforest.load_dataset() to start from a csv file
-        savedir: optional path to save figures. If none (default) images will be interactively plotted
-        color: color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255)
-        thickness: thickness of the rectangle border line in px
-    """
-    for i in iter(ds):
-        image_path, image, targets = i
-        df = format_boxes(targets[0], scores=False)
-        image = np.moveaxis(image[0].numpy(), 0, 2)
-        image = plot_predictions(image, df, color=color, thickness=thickness)
+        image (optional): Numpy array or string
+        df (optiona): Pandas dataframe
+        root_dir (optional): Root directory of the image, will override dataframe root_dir attribute
 
-    if savedir:
-        cv2.imwrite("{}/{}".format(savedir, image_path[0]), image)
-    else:
-        plt.imshow(image)
-
-
-def format_geometry(predictions, scores=True):
-    """Format a retinanet prediction into a pandas dataframe for a batch of images
-    Args:
-        predictions: a list of dictionaries with keys 'boxes' and 'labels' coming from a retinanet
-        scores: Whether boxes come with scores, during prediction, or without scores, as in during training.
     Returns:
-        df: a pandas dataframe
+        image: Numpy array
     """
-    # Detect geometry type
-    geom_type = determine_geometry_type(predictions)
 
-    if geom_type == "box":
-        df = format_boxes(predictions, scores=scores)
-        df['geometry'] = df.apply(
-            lambda x: shapely.geometry.box(x.xmin, x.ymin, x.xmax, x.ymax), axis=1)
-    elif geom_type == "polygon":
-        raise ValueError("Polygon predictions are not yet supported for formatting")
-    elif geom_type == "point":
-        raise ValueError("Point predictions are not yet supported for formatting")
+    if image is None and df is None:
+        raise ValueError(
+            "Either an image or a valid dataframe must be provided for plotting.")
 
-    return df
+    if df is not None:
+        # Resolve image root
+        if hasattr(df, 'root_dir') and root_dir is None:
+            root_dir = df.root_dir
+            # expected str, bytes or os.PathLike object, not Series
+            root_dir = df.root_dir.iloc[0] if isinstance(root_dir,
+                                                         pd.Series) else root_dir
+        elif root_dir is None:
+            raise ValueError(
+                "Neither root_dir nor a dataframe with the root_dir attribute was provided."
+            )
+
+        image_path = os.path.join(root_dir, df.image_path.unique()[0])
+        image = np.array(Image.open(image_path))
+    elif isinstance(image, str):
+        if root_dir is not None:
+            image_path = os.path.join(root_dir, image)
+        else:
+            image_path = image
+
+        image = np.array(Image.open(image_path))
+    elif isinstance(image, Image.Image):
+        image = np.array(image)
+    elif not isinstance(image, np.ndarray):
+        raise ValueError("Image should be a numpy array, path or PIL Image.")
+
+    # Fix channel ordering
+    if image.ndim == 3 and image.shape[0] == 3 and image.shape[2] != 3:
+        warnings.warn("Input images must be channels last format [h, w, 3] not channels "
+                      "first [3, h, w], using np.transpose(1,2,0) to invert!")
+        image = image.transpose(1, 2, 0)
+
+    # Drop alpha channel if present and warn
+    if image.ndim == 3 and image.shape[2] == 4:
+        warnings.warn(
+            f"Image has {image.ndim} bands (may have an alpha channel). Only keeping first 3."
+        )
+        image = image[:, :, :3]
+
+    if image.dtype != np.uint8:
+
+        warnings.warn(
+            f"Image is {image.dtype}. Will be cast to 8-bit unsigned and clipped to [0,255]"
+        )
+
+        # Images in [0,1] are allowed, but should be rescaled
+        if image.max() <= 1 and image.min() >= 0:
+            warnings.warn(
+                f"Image is in [0,1], multiplying by 255. If this is not expected")
+            image *= 255
+
+        image = np.clip(image, 0, 255).astype('uint8')
+
+    return image
 
 
-def format_boxes(prediction, scores=True):
-    """Format a retinanet prediction into a pandas dataframe for a single
-    image.
-
+def plot_points(image: np.typing.NDArray,
+                points: np.typing.NDArray,
+                color: Optional[tuple] = None,
+                radius: int = 5,
+                thickness: int = 1) -> np.typing.NDArray:
+    """Draw points on an image, returns a copy of the array
     Args:
-        prediction: a dictionary with keys 'boxes' and 'labels' coming from a retinanet
-        scores: Whether boxes come with scores, during prediction, or without scores, as in during training.
-    Returns:
-        df: a pandas dataframe
-    """
-    df = pd.DataFrame(prediction["boxes"].cpu().detach().numpy(),
-                      columns=["xmin", "ymin", "xmax", "ymax"])
-    df["label"] = prediction["labels"].cpu().detach().numpy()
-
-    if scores:
-        df["score"] = prediction["scores"].cpu().detach().numpy()
-
-    return df
-
-
-def plot_prediction_and_targets(image, predictions, targets, image_name, savedir):
-    """Plot an image, its predictions, and its ground truth targets for
-    debugging.
-
-    Args:
-        image: torch tensor, RGB color order
-        targets: torch tensor
-    Returns:
-        figure_path: path on disk with saved figure
-    """
-    image = np.array(image)[:, :, ::-1].copy()
-    prediction_df = format_boxes(predictions)
-    image = plot_predictions(image, prediction_df)
-    target_df = format_boxes(targets, scores=False)
-    image = plot_predictions(image, target_df)
-    figure_path = "{}/{}.png".format(savedir, image_name)
-    cv2.imwrite(figure_path, image)
-
-    return figure_path
-
-
-def plot_prediction_dataframe(df,
-                              root_dir,
-                              savedir,
-                              color=None,
-                              thickness=1,
-                              ground_truth=None):
-    """For each row in dataframe, call plot predictions and save plot files to
-    disk. For multi-class labels, boxes will be colored by labels. Ground truth
-    boxes will all be same color, regardless of class.
-
-    Args:
-        df: a pandas dataframe with image_path, xmin, xmax, ymin, ymax and label columns. The image_path column should be the relative path from root_dir, not the full path.
-        root_dir: relative dir to look for image names from df.image_path
-        ground_truth: an optional pandas dataframe in same format as df holding ground_truth boxes
-        savedir: save the plot to an optional directory path.
-    Returns:
-        written_figures: list of filenames written
-    """
-    written_figures = []
-    for name, group in df.groupby("image_path"):
-        image = np.array(Image.open("{}/{}".format(root_dir, name)))[:, :, ::-1].copy()
-        image = plot_predictions(image, group)
-
-        if ground_truth is not None:
-            annotations = ground_truth[ground_truth.image_path == name]
-            image = plot_predictions(image, annotations, color=color, thickness=thickness)
-
-        figure_name = "{}/{}.png".format(savedir, os.path.splitext(name)[0])
-        written_figures.append(figure_name)
-        cv2.imwrite(figure_name, image)
-
-    return written_figures
-
-
-def plot_points(image, points, color=None, radius=5, thickness=1):
-    """Plot points on an image
-    Args:
-        image: a numpy array in *BGR* color order! Channel order is channels first
+        image: a numpy array in RGB order, HWC format
         points: a numpy array of shape (N, 2) representing the coordinates of the points
         color: color of the points as a tuple of BGR color, e.g. orange points is (0, 165, 255)
         radius: radius of the points in px
@@ -144,13 +106,30 @@ def plot_points(image, points, color=None, radius=5, thickness=1):
     Returns:
         image: a numpy array with drawn points
     """
-    if image.shape[0] == 3:
-        warnings.warn("Input images must be channels last format [h, w, 3] not channels "
-                      "first [3, h, w], using np.rollaxis(image, 0, 3) to invert!")
-        image = np.rollaxis(image, 0, 3)
-    if image.dtype == "float32":
-        image = image.astype("uint8")
-    image = image.copy()
+    warnings.warn(
+        "plot_points will be deprecated in 2.0, please use draw_points instead.",
+        DeprecationWarning)
+    return draw_points(image, points, color, radius, thickness)
+
+
+def draw_points(image: np.typing.NDArray,
+                points: np.typing.NDArray,
+                color: Optional[tuple] = None,
+                radius: int = 5,
+                thickness: int = 1) -> np.typing.NDArray:
+    """Draw points on an image, returns a copy of the array.
+
+    Args:
+        image: a numpy array in RGB order, HWC format
+        points: a numpy array of shape (N, 2) representing the coordinates of the points
+        color: color of the points as a tuple of BGR color, e.g. orange points is (0, 165, 255)
+        radius: radius of the points in px
+        thickness: thickness of the point border line in px
+    Returns:
+        image: a numpy array with drawn points
+    """
+    image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR).copy()
+
     if not color:
         color = (0, 165, 255)  # Default color is orange
 
@@ -160,29 +139,49 @@ def plot_points(image, points, color=None, radius=5, thickness=1):
                    radius=radius,
                    thickness=thickness)
 
-    return image
+    return cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
 
-def plot_predictions(image, df, color=None, thickness=1):
-    """Plot a set of boxes on an image By default this function does not show,
-    but only plots an axis Label column must be numeric! Image must be BGR
-    color order!
+def plot_predictions(image: np.typing.NDArray,
+                     df: pd.DataFrame,
+                     color: tuple = None,
+                     thickness: int = 1) -> np.typing.NDArray:
+    """Draw geometries on an image, which can be polygons, boxes or points.
+
+    Returns a copy of the array.
 
     Args:
-        image: a numpy array in *BGR* color order! Channel order is channels first
+        image: a numpy array in RGB order, HWC format
         df: a pandas dataframe with xmin, xmax, ymin, ymax and label column
         color: color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255)
         thickness: thickness of the rectangle border line in px
     Returns:
         image: a numpy array with drawn annotations
     """
-    if image.shape[0] == 3:
-        warnings.warn("Input images must be channels last format [h, w, 3] not channels "
-                      "first [3, h, w], using np.rollaxis(image, 0, 3) to invert!")
-        image = np.rollaxis(image, 0, 3)
-    if image.dtype == "float32":
-        image = image.astype("uint8")
-    image = image.copy()
+    warnings.warn(
+        "plot_predictions will be deprecated in 2.0, please use draw_predictions instead. Or plot_results if you need a figure.",
+        DeprecationWarning)
+    return draw_predictions(image, df, color, thickness)
+
+
+def draw_predictions(image: np.typing.NDArray,
+                     df: pd.DataFrame,
+                     color: Optional[tuple] = None,
+                     thickness: int = 1) -> np.typing.NDArray:
+    """Draw geometries on an image, which can be polygons, boxes or points.
+
+    Returns a copy of the array.
+
+    Args:
+        image: a numpy array in RGB order, HWC format
+        df: a pandas dataframe with xmin, xmax, ymin, ymax and label column
+        color: color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255)
+        thickness: thickness of the rectangle border line in px
+    Returns:
+        image: a numpy array with drawn annotations
+    """
+    image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR).copy()
+
     if not color:
         if not ptypes.is_numeric_dtype(df.label):
             warnings.warn("No color was provided and the label column is not numeric. "
@@ -226,10 +225,11 @@ def plot_predictions(image, df, color=None, thickness=1):
             polygon = np.array(row["polygon"])
             cv2.polylines(image, [polygon], True, color, thickness=thickness)
 
-    return image
+    return cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
 
-def label_to_color(label):
+def label_to_color(label: int) -> tuple:
+    """Return an RGB color tuple for a given (integer) label."""
     color_dict = {}
 
     random.seed(1)
@@ -257,7 +257,10 @@ def label_to_color(label):
     return color_dict[label]
 
 
-def convert_to_sv_format(df, width=None, height=None):
+def convert_to_sv_format(
+        df: pd.DataFrame,
+        width: Optional[int] = None,
+        height: Optional[int] = None) -> Union[sv.Detections, sv.KeyPoints]:
     """Convert DeepForest prediction results to a supervision Detections
     object.
 
@@ -375,7 +378,8 @@ def convert_to_sv_format(df, width=None, height=None):
     return detections
 
 
-def __check_color__(color, num_labels):
+def __check_color__(color: Union[list, tuple, sv.ColorPalette],
+                    num_labels: int) -> Union[sv.Color, sv.ColorPalette]:
     if isinstance(color, list) and len(color) == 3:
         if num_labels > 1:
             warnings.warn(
@@ -406,17 +410,21 @@ def __check_color__(color, num_labels):
         )
 
 
-def plot_annotations(annotations,
-                     savedir=None,
-                     height=None,
-                     width=None,
-                     color=[245, 135, 66],
-                     thickness=2,
-                     basename=None,
-                     root_dir=None,
-                     radius=3,
-                     image=None):
-    """Plot the prediction results.
+def plot_annotations(
+        annotations: pd.DataFrame,
+        savedir: Optional[str] = None,
+        height: Optional[int] = None,
+        width: Optional[int] = None,
+        color: Union[list, sv.ColorPalette] = [245, 135, 66],
+        thickness: int = 2,
+        basename: Optional[str] = None,
+        root_dir: Optional[str] = None,
+        radius: int = 3,
+        image: Optional[Union[np.typing.NDArray, str, Image.Image]] = None) -> None:
+    """Plot prediction results or ground truth annotations for a single image.
+
+    This function can be used to create a figure which can be saved or shown. If you wish
+    to do further plotting, you can return the axis object by passing axes=True.
 
     Args:
         annotations: a pandas dataframe with prediction results
@@ -426,8 +434,9 @@ def plot_annotations(annotations,
         results_color (list or sv.ColorPalette): color of the results annotations as a tuple of RGB color (if a single color), e.g. orange annotations is [245, 135, 66], or an supervision.ColorPalette if multiple labels and specifying colors for each label
         thickness: thickness of the rectangle border line in px
         basename: optional basename for the saved figure. If None (default), the basename will be extracted from the image path.
-        root_dir: optional path to the root directory of the images. If None (default), the root directory will be extracted from the annotations dataframe.root_dir attribute.
+        root_dir: optional path to the root directory of the image. If None (default), the root directory will be extracted from the annotations dataframe.root_dir attribute.
         radius: radius of the points in px
+        image: image (numpy array, string, PIL image)
     Returns:
         None
     """
@@ -435,23 +444,10 @@ def plot_annotations(annotations,
     num_labels = len(annotations.label.unique())
     annotation_color = __check_color__(color, num_labels)
 
-    # Read images
-    if not hasattr(annotations, 'root_dir'):
-        if root_dir is None:
-            raise ValueError(
-                "The 'annotations.root_dir' attribute does not exist. Please specify the 'root_dir' argument."
-            )
-        else:
-            root_dir = root_dir
-    else:
-        root_dir = annotations.root_dir
-
-    if image is None:
-        image_path = os.path.join(root_dir, annotations.image_path.unique()[0])
-        image = np.array(Image.open(image_path))
+    image = _load_image(image, annotations, root_dir)
 
     # Plot the results following https://supervision.roboflow.com/annotators/
-    fig, ax = plt.subplots()
+    plt.subplots()
     annotated_scene = _plot_image_with_geometry(df=annotations,
                                                 image=image,
                                                 sv_color=annotation_color,
@@ -474,19 +470,22 @@ def plot_annotations(annotations,
         plt.show()
 
 
-def plot_results(results,
-                 ground_truth=None,
-                 savedir=None,
-                 height=None,
-                 width=None,
-                 results_color=[245, 135, 66],
-                 ground_truth_color=[0, 165, 255],
-                 thickness=2,
-                 basename=None,
-                 radius=3,
-                 image=None,
-                 axes=False):
-    """Plot the prediction results.
+def plot_results(results: pd.DataFrame,
+                 ground_truth: Optional[pd.DataFrame] = None,
+                 savedir: Optional[str] = None,
+                 height: Optional[int] = None,
+                 width: Optional[int] = None,
+                 results_color: Union[list, sv.ColorPalette] = [245, 135, 66],
+                 ground_truth_color: Union[list, sv.ColorPalette] = [0, 165, 255],
+                 thickness: int = 2,
+                 basename: Optional[str] = None,
+                 radius: int = 3,
+                 image: Optional[Union[np.typing.NDArray, str, Image.Image]] = None,
+                 axes: bool = False):
+    """Plot prediction results and optionally ground truth annotations.
+
+    This function can be used to create a figure which can be saved or shown. If you wish
+    to do further plotting, you can return the axis object by passing axes=True.
 
     Args:
         results: a pandas dataframe with prediction results
@@ -499,7 +498,7 @@ def plot_results(results,
         thickness: thickness of the rectangle border line in px
         basename: optional basename for the saved figure. If None (default), the basename will be extracted from the image path.
         radius: radius of the points in px
-        image: an optional numpy array of an image to annotate. If None (default), the image will be loaded from the results dataframe.
+        image: an optional numpy array or path to an image to annotate. If None (default), the image will be loaded from the results dataframe.
         axes: returns matplotlib axes object if True
     Returns:
         Matplotlib axes object if axes=True, otherwise None
@@ -509,21 +508,10 @@ def plot_results(results,
     results_color_sv = __check_color__(results_color, num_labels)
     ground_truth_color_sv = __check_color__(ground_truth_color, num_labels)
 
-    # Read images
-    if image is None:
-        root_dir = results.root_dir
-        # expected str, bytes or os.PathLike object, not Series
-        root_dir = root_dir.iloc[0] if isinstance(root_dir, pd.Series) else root_dir
-        image_path = os.path.join(root_dir, results.image_path.unique()[0])
-        image = np.array(Image.open(image_path))
-
-        # Drop alpha channel if present and warn
-        if image.shape[2] == 4:
-            warnings.warn("Image has an alpha channel. Dropping alpha channel.")
-            image = image[:, :, :3]
+    image = _load_image(image, results)
 
     # Plot the results following https://supervision.roboflow.com/annotators/
-    fig, ax = plt.subplots()
+    _, ax = plt.subplots()
     annotated_scene = _plot_image_with_geometry(df=results,
                                                 image=image,
                                                 sv_color=results_color_sv,
@@ -548,8 +536,6 @@ def plot_results(results,
                 results.image_path.unique()[0]))[0]
         image_name = "{}.png".format(basename)
         image_path = os.path.join(savedir, image_name)
-        # Flip RGB to BGR
-        annotated_scene = annotated_scene[:, :, ::-1]
         cv2.imwrite(image_path, annotated_scene)
     else:
         # Display the image using Matplotlib

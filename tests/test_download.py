@@ -1,4 +1,5 @@
 from deepforest import download
+import io
 import os
 import asyncio
 from aiolimiter import AsyncLimiter
@@ -7,6 +8,7 @@ import cv2
 import rasterio as rio
 import pytest
 from rasterio.errors import RasterioIOError
+from unittest.mock import patch, AsyncMock
 
 def url():
     return [
@@ -30,6 +32,23 @@ def download_service():
 url_box_pairs = list(zip(["NY.png"], url(), boxes(), additional_params(), download_service()))
 
 
+def mock_arcgis_response_json():
+    mock_json_resp = AsyncMock()
+    mock_json_resp.__aenter__.return_value = mock_json_resp
+    mock_json_resp.read = AsyncMock(return_value=b'{"spatialReference": {"latestWkid": 4326}}')
+    mock_json_resp.headers = {"Content-Type": "application/json"}
+    return mock_json_resp
+
+
+def mock_arcgis_response_image():
+    mock_img_resp = AsyncMock()
+    mock_img_resp.__aenter__.return_value = mock_img_resp
+    mock_img_resp.status = 200
+    with open(os.path.join(os.path.dirname(__file__), "data", "NY.png"), "rb") as f:
+        mock_img_resp.read = AsyncMock(return_value=f.read())
+
+    return mock_img_resp
+
 @pytest.mark.parametrize("image_name, url, box, params, download_service_name", url_box_pairs)
 def test_download_arcgis_rest(tmpdir, image_name, url, box, params, download_service_name):
     async def run_test():
@@ -38,9 +57,15 @@ def test_download_arcgis_rest(tmpdir, image_name, url, box, params, download_ser
         xmin, ymin, xmax, ymax = box
         bbox_crs = "EPSG:4326"  # Assuming WGS84 for bounding box CRS
         savedir = tmpdir
-        filename = await download.download_web_server(semaphore, limiter, url, xmin, ymin, xmax, ymax, bbox_crs,
-                                                      savedir, additional_params=params, image_name=image_name,
-                                                      download_service=download_service_name)
+
+        # Mock network requests to prevent flakes
+        with patch("aiohttp.ClientSession.get", side_effect=[mock_arcgis_response_json(), mock_arcgis_response_image()]):
+            filename = await download.download_web_server(
+                semaphore, limiter, url, xmin, ymin, xmax, ymax, bbox_crs,
+                savedir=savedir, additional_params=params, image_name=image_name,
+                download_service=download_service_name
+            )
+
         # Check the saved file
         assert os.path.exists(filename)
 

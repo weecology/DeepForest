@@ -8,9 +8,9 @@ from torchvision import models, transforms
 from torchvision.datasets import ImageFolder
 import numpy as np
 import rasterio
-from torch.utils.data import Dataset
 import torch.nn.functional as F
 import cv2
+from PIL import Image
 
 
 class Model():
@@ -21,20 +21,14 @@ class Model():
     statement below.
 
     Args:
-        num_classes (int): number of classes in the model
-        nms_thresh (float): non-max suppression threshold for intersection-over-union [0,1]
-        score_thresh (float): minimum prediction score to keep during prediction  [0,1]
-    Returns:
-        model: a pytorch nn module
+        config (DictConfig): DeepForest config settings object
     """
 
     def __init__(self, config):
 
         # Check for required properties and formats
         self.config = config
-
-        # Check input output format:
-        self.check_model()
+        self.nms_thresh = None  # Required for some models but not all
 
     def create_model(self):
         """This function converts a deepforest config file into a model.
@@ -114,30 +108,18 @@ class CropModel(LightningModule):
         self.num_classes = num_classes
         self.num_workers = num_workers
         self.label_dict = label_dict
+
         if label_dict is not None:
             self.numeric_to_label_dict = {v: k for k, v in label_dict.items()}
         else:
             self.numeric_to_label_dict = None
-        self.save_hyperparameters()
-
-        if num_classes is not None:
-            if model is None:
-                self.model = simple_resnet_50(num_classes=num_classes)
+        if model is None:
+            if num_classes is not None:
+                self.create_model(num_classes)
             else:
-                self.model = model
-
-            self.accuracy = torchmetrics.Accuracy(average='none',
-                                                  num_classes=num_classes,
-                                                  task="multiclass")
-            self.total_accuracy = torchmetrics.Accuracy(num_classes=num_classes,
-                                                        task="multiclass")
-            self.precision_metric = torchmetrics.Precision(num_classes=num_classes,
-                                                           task="multiclass")
-            self.metrics = torchmetrics.MetricCollection({
-                "Class Accuracy": self.accuracy,
-                "Accuracy": self.total_accuracy,
-                "Precision": self.precision_metric
-            })
+                print(
+                    "No model created if model or num_classes is not provided, use load_from_disk to create a model from data directory."
+                )
         else:
             self.model = model
 
@@ -145,42 +127,60 @@ class CropModel(LightningModule):
         self.batch_size = batch_size
         self.lr = lr
 
-    def on_save_checkpoint(self, checkpoint):
-        checkpoint['label_dict'] = self.label_dict
-
-    def create_trainer(self, **kwargs):
-        """Create a pytorch lightning trainer object."""
-        self.trainer = Trainer(**kwargs)
-
-    def on_load_checkpoint(self, checkpoint):
-        # Now that self.num_classes always exists, this check won't error
-        if self.num_classes is None:
-            self.num_classes = checkpoint['hyper_parameters']['num_classes']
-        if self.model is None:
-            self.model = simple_resnet_50(num_classes=self.num_classes)
+    def create_model(self, num_classes):
+        """Create a model with the given number of classes."""
         self.accuracy = torchmetrics.Accuracy(average='none',
-                                              num_classes=self.num_classes,
+                                              num_classes=num_classes,
                                               task="multiclass")
-        self.total_accuracy = torchmetrics.Accuracy(num_classes=self.num_classes,
+        self.total_accuracy = torchmetrics.Accuracy(num_classes=num_classes,
                                                     task="multiclass")
-        self.precision_metric = torchmetrics.Precision(num_classes=self.num_classes,
+        self.precision_metric = torchmetrics.Precision(num_classes=num_classes,
                                                        task="multiclass")
         self.metrics = torchmetrics.MetricCollection({
             "Class Accuracy": self.accuracy,
             "Accuracy": self.total_accuracy,
             "Precision": self.precision_metric
         })
+
+        self.model = simple_resnet_50(num_classes=num_classes)
+
+    def on_save_checkpoint(self, checkpoint):
+        checkpoint['label_dict'] = self.label_dict
+        checkpoint["num_classes"] = self.num_classes
+
+    def create_trainer(self, **kwargs):
+        """Create a pytorch lightning trainer object."""
+        self.trainer = Trainer(**kwargs)
+
+    def on_load_checkpoint(self, checkpoint):
         self.label_dict = checkpoint['label_dict']
         self.numeric_to_label_dict = {v: k for k, v in self.label_dict.items()}
+        self.create_model(checkpoint['num_classes'])
+        self.load_state_dict(checkpoint['state_dict'])
 
-    def load_from_disk(self, train_dir, val_dir):
+    def load_from_disk(self, train_dir, val_dir, recreate_model=False):
+        """Load the training and validation datasets from disk.
+
+        Args:
+            train_dir (str): The directory containing the training dataset.
+            val_dir (str): The directory containing the validation dataset.
+            recreate_model (bool): Whether to recreate the model with the new number of classes.
+
+        Returns:
+            None
+        """
         self.train_ds = ImageFolder(root=train_dir,
                                     transform=self.get_transform(augment=True))
         self.val_ds = ImageFolder(root=val_dir,
                                   transform=self.get_transform(augment=False))
         self.label_dict = self.train_ds.class_to_idx
+
         # Create a reverse mapping from numeric indices to class labels
         self.numeric_to_label_dict = {v: k for k, v in self.label_dict.items()}
+
+        if recreate_model:
+            self.num_classes = len(self.label_dict)
+            self.create_model(num_classes=self.num_classes)
 
     def get_transform(self, augment):
         """Returns the data transformation pipeline for the model.
@@ -330,10 +330,23 @@ class CropModel(LightningModule):
         return loss
 
     def predict_step(self, batch, batch_idx):
-        outputs = self.forward(batch)
+        # Check if batch is a tuple for validation_dataloader
+        if isinstance(batch, list):
+            x, y = batch
+        else:
+            x = batch
+        outputs = self.forward(x)
         yhat = F.softmax(outputs, 1)
 
         return yhat
+
+    def postprocess_predictions(self, predictions):
+        """Postprocess predictions to get class labels and scores."""
+        stacked_outputs = np.vstack(np.concatenate(predictions))
+        label = np.argmax(stacked_outputs, axis=1)  # Get class with highest probability
+        score = np.max(stacked_outputs, axis=1)  # Get confidence score
+
+        return label, score
 
     def validation_step(self, batch, batch_idx):
         x, y = batch
@@ -364,18 +377,17 @@ class CropModel(LightningModule):
         # Monitor rate is val data is used
         return {'optimizer': optimizer, 'lr_scheduler': scheduler, "monitor": 'val_loss'}
 
-    def dataset_confusion(self, loader):
-        """Create a confusion matrix from a data loader."""
-        true_class = []
-        predicted_class = []
-        self.eval()
-        for batch in loader:
-            x, y = batch
-            true_class.append(F.one_hot(y, num_classes=self.num_classes).detach().numpy())
-            prediction = self(x)
-            predicted_class.append(prediction.detach().numpy())
-
-        true_class = np.concatenate(true_class)
-        predicted_class = np.concatenate(predicted_class)
-
-        return true_class, predicted_class
+    def val_dataset_confusion(self, return_images=False):
+        """Create a labels and predictions from the validation dataset to be
+        created into a confusion matrix."""
+        dl = self.predict_dataloader(self.val_ds)
+        predictions = self.trainer.predict(self, dl)
+        predicted_label, _ = self.postprocess_predictions(predictions)
+        true_label = [self.val_ds.imgs[i][1] for i in range(len(self.val_ds.imgs))]
+        if return_images:
+            images = [
+                Image.open(self.val_ds.imgs[i][0]) for i in range(len(self.val_ds.imgs))
+            ]
+            return images, true_label, predicted_label
+        else:
+            return true_label, predicted_label

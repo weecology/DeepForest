@@ -41,11 +41,8 @@ class Model(Model):
         return anchor_generator
 
     def create_model(self):
-        """Create a retinanet model
-        Args:
-            num_classes (int): number of classes in the model
-            nms_thresh (float): non-max suppression threshold for intersection-over-union [0,1]
-            score_thresh (float): minimum prediction score to keep during prediction  [0,1]
+        """Create a retinanet model.
+
         Returns:
             model: a pytorch nn module
         """
@@ -54,7 +51,7 @@ class Model(Model):
 
         model = RetinaNet(backbone=backbone, num_classes=self.config.num_classes)
         model.nms_thresh = self.config.nms_thresh
-        model.score_thresh = self.config.retinanet.score_thresh
+        model.score_thresh = self.config.score_thresh
 
         # Optionally allow anchor generator parameters to be created here
         # https://pytorch.org/vision/stable/_modules/torchvision/models/detection/retinanet.html

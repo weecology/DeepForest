@@ -8,6 +8,7 @@ Subpackages
    :maxdepth: 4
 
    deepforest.data
+   deepforest.datasets
 
 Submodules
 ----------
@@ -24,14 +25,6 @@ deepforest.callbacks module
 ---------------------------
 
 .. automodule:: deepforest.callbacks
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-deepforest.dataset module
--------------------------
-
-.. automodule:: deepforest.dataset
    :members:
    :undoc-members:
    :show-inheritance:

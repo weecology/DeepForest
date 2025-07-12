@@ -37,8 +37,7 @@ def evaluate_image_boxes(predictions, ground_df, iou_tensor):
         # Additionally, how to access the matches would depend on the backend used
         # (i.e., pycocotools or faster_coco_eval).
         cost_arr = predictions.geometry.apply(
-            lambda pred_geom: ground_df.intersection(pred_geom).area
-        ).values
+            lambda pred_geom: ground_df.intersection(pred_geom).area).values
 
         row_ind, col_ind = optimize.linear_sum_assignment(
             cost_arr,
@@ -49,8 +48,7 @@ def evaluate_image_boxes(predictions, ground_df, iou_tensor):
                 "prediction_id": predictions.iloc[row_ind].index,
                 "truth_id": ground_df.iloc[col_ind].index,
                 "IoU": iou_tensor[row_ind, col_ind],
-            },
-        ).sort_values("truth_id", ascending=True)
+            },).sort_values("truth_id", ascending=True)
     else:
         # when iou_dict[(image_key, class_val)] is [], aka, no predictions
         # except ValueError, IndexError:
@@ -75,45 +73,35 @@ def compute_class_recall(results):
         return class_recall
 
     labels = set(box_results["predicted_label"].unique()).union(
-        box_results["true_label"].unique()
-    )
+        box_results["true_label"].unique())
     for label in labels:
         ground_df = box_results[box_results["true_label"] == label]
         n_ground_boxes = ground_df.shape[0]
         if n_ground_boxes > 0:
             class_recall_dict[label] = (
-                sum(ground_df.true_label == ground_df.predicted_label) / n_ground_boxes
-            )
+                sum(ground_df.true_label == ground_df.predicted_label) / n_ground_boxes)
         pred_df = box_results[box_results["true_label"] == label]
         n_pred_boxes = pred_df.shape[0]
         if n_pred_boxes > 0:
             class_precision_dict[label] = (
-                sum(pred_df.true_label == pred_df.predicted_label) / pred_df.shape[0]
-            )
+                sum(pred_df.true_label == pred_df.predicted_label) / pred_df.shape[0])
         class_size_dict[label] = n_ground_boxes
 
     # the fillna is needed for the missing labels with 0 ground truths or 0 predictions
     class_recall = (
-        pd.DataFrame(
-            {
-                # "label": class_recall_dict.keys(),
-                "recall": pd.Series(class_recall_dict),
-                "precision": pd.Series(class_precision_dict),
-                "size": pd.Series(class_size_dict),
-            }
-        )
-        .reset_index(names="label")
-        .fillna(0)
-    )
+        pd.DataFrame({
+            # "label": class_recall_dict.keys(),
+            "recall": pd.Series(class_recall_dict),
+            "precision": pd.Series(class_precision_dict),
+            "size": pd.Series(class_size_dict),
+        }).reset_index(names="label").fillna(0))
 
     return class_recall
 
 
 def _torch_dict_from_df(df, label_dict):
     d = {}
-    d["boxes"] = torch.tensor(
-        df[["xmin", "ymin", "xmax", "ymax"]].astype(int).values,
-    )
+    d["boxes"] = torch.tensor(df[["xmin", "ymin", "xmax", "ymax"]].astype(int).values,)
     if "score" in df.columns:
         d["scores"] = torch.tensor(df["score"].values)
     d["labels"] = torch.tensor(df["label"].map(label_dict).astype(int).values)
@@ -139,6 +127,8 @@ def __evaluate_wrapper__(predictions, ground_df, iou_threshold, label_dict):
             "box_recall": 0,
             "box_precision": np.nan,
             "class_recall": None,
+            "predictions": predictions,
+            "ground_df": ground_df,
         }
         return results
 
@@ -151,23 +141,20 @@ def __evaluate_wrapper__(predictions, ground_df, iou_threshold, label_dict):
     if prediction_geometry == "point":
         raise NotImplementedError("Point evaluation is not yet implemented")
     elif prediction_geometry == "box":
-        results = evaluate_boxes(
-            predictions=predictions, ground_df=ground_df, iou_threshold=iou_threshold
-        )
+        results = evaluate_boxes(predictions=predictions,
+                                 ground_df=ground_df,
+                                 iou_threshold=iou_threshold)
 
     else:
         raise NotImplementedError(
-            "Geometry type {} not implemented".format(prediction_geometry)
-        )
+            "Geometry type {} not implemented".format(prediction_geometry))
 
     # replace classes if not NUll
-    if results is not None:
+    if results["results"] is not None:
         results["results"]["predicted_label"] = results["results"][
-            "predicted_label"
-        ].apply(lambda x: label_dict[x] if not pd.isnull(x) else x)
+            "predicted_label"].apply(lambda x: label_dict[x] if not pd.isnull(x) else x)
         results["results"]["true_label"] = results["results"]["true_label"].apply(
-            lambda x: label_dict[x]
-        )
+            lambda x: label_dict[x])
         # TODO: do we need to return the "predictions" in the results?
         # TODO: DRY getting the proper predicted label column with `evaluate_boxes`
         # set the score and predicted label
@@ -178,8 +165,7 @@ def __evaluate_wrapper__(predictions, ground_df, iou_threshold, label_dict):
         # avoid modifying a view
         results["predictions"] = predictions.copy()
         results["predictions"]["label"] = results["predictions"][pred_label_col].apply(
-            lambda x: label_dict[x]
-        )
+            lambda x: label_dict[x])
 
     return results
 
@@ -198,8 +184,19 @@ def evaluate_boxes(predictions, ground_df, iou_threshold=0.4):
         box_recall: proportion of true positives of box position, regardless of class
         box_precision: proportion of predictions that are true positive, regardless of class
         class_recall: a pandas dataframe of class level recall and precision with class sizes
-
     """
+
+    # If all empty ground truth, return 0 recall and precision
+    if ground_df.empty:
+        return {
+            "results": None,
+            "box_recall": None,
+            "box_precision": 0,
+            "class_recall": None,
+            "predictions": predictions,
+            "ground_df": ground_df,
+        }
+
     # TODO: add `label_dict`, `rec_sep`/`rec_thresholds` and `max_detection_threshold`/
     # `max_detection_thresholds` as keyword arguments?
 
@@ -232,9 +229,7 @@ def evaluate_boxes(predictions, ground_df, iou_threshold=0.4):
         extended_summary=True,
     )
 
-    metric = MeanAveragePrecision(
-        **mean_ap_kwargs,
-    )
+    metric = MeanAveragePrecision(**mean_ap_kwargs,)
     metric.update(
         [
             _torch_dict_from_df(_pred_df, label_dict)
@@ -261,7 +256,7 @@ def evaluate_boxes(predictions, ground_df, iou_threshold=0.4):
     # - first area, i.e., 'all' https://github.com/cocodataset/cocoapi/blob/master/
     #   PythonAPI/pycocotools/cocoeval.py#L509
     # - last max_detection_threshold
-    recall = mean_ap_dict["recall"][0, :, 0, -1].item()
+    box_recall = mean_ap_dict["recall"][0, :, 0, -1].item()
 
     # precision
     # shape: n_iou_thresholds, n_recall_thresholds, n_classes, n_areas, n_max_detections
@@ -271,7 +266,7 @@ def evaluate_boxes(predictions, ground_df, iou_threshold=0.4):
     # - all classes
     # - first area, i.e., 'all'
     # - last max_detection_threshold
-    precision = mean_ap_dict["precision"][
+    box_precision = mean_ap_dict["precision"][
         0,
         :,
         :,
@@ -290,7 +285,7 @@ def evaluate_boxes(predictions, ground_df, iou_threshold=0.4):
     # see https://stackoverflow.com/questions/44526121/
     # finding-closest-values-in-two-numpy-arrays
     # 3. get the precision as the latest non-zero value of the precision-recall curve:
-    precision = precision[np.nonzero(precision)[-1]][0].item()
+    box_precision = box_precision[np.nonzero(box_precision)[-1]][0].item()
 
     # build the evaluation data frame
     # TODO: are keys in `ious` sorted based on preds or targets? does that depend on the
@@ -342,9 +337,11 @@ def evaluate_boxes(predictions, ground_df, iou_threshold=0.4):
 
     return {
         "results": results_df,
-        "box_precision": precision,
-        "box_recall": recall,
+        "box_precision": box_precision,
+        "box_recall": box_recall,
         "class_recall": class_recall,
+        "predictions": predictions,
+        "ground_df": ground_df,
     }
 
 
@@ -367,13 +364,11 @@ def _point_recall_image_(predictions, ground_df):
         plot_name = plot_names[0]
 
     predictions["geometry"] = predictions.apply(
-        lambda x: shapely.geometry.box(x.xmin, x.ymin, x.xmax, x.ymax), axis=1
-    )
+        lambda x: shapely.geometry.box(x.xmin, x.ymin, x.xmax, x.ymax), axis=1)
     predictions = gpd.GeoDataFrame(predictions, geometry="geometry")
 
-    ground_df["geometry"] = ground_df.apply(
-        lambda x: shapely.geometry.Point(x.x, x.y), axis=1
-    )
+    ground_df["geometry"] = ground_df.apply(lambda x: shapely.geometry.Point(x.x, x.y),
+                                            axis=1)
     ground_df = gpd.GeoDataFrame(ground_df, geometry="geometry")
 
     # Which points in boxes
@@ -383,8 +378,7 @@ def _point_recall_image_(predictions, ground_df):
             "label_left": "true_label",
             "label_right": "predicted_label",
             "image_path_left": "image_path",
-        }
-    )
+        })
     result = result.drop(columns=["index_right"])
 
     return result
@@ -409,29 +403,24 @@ def point_recall(predictions, ground_df):
     results = []
     box_recalls = []
     for image_path, group in ground_df.groupby("image_path"):
-        image_predictions = predictions[
-            predictions["image_path"] == image_path
-        ].reset_index(drop=True)
+        image_predictions = predictions[predictions["image_path"] ==
+                                        image_path].reset_index(drop=True)
 
         # If empty, add to list without computing recall
         if image_predictions.empty:
-            result = pd.DataFrame(
-                {
-                    "recall": 0,
-                    "predicted_label": None,
-                    "score": None,
-                    "true_label": group.label,
-                }
-            )
+            result = pd.DataFrame({
+                "recall": 0,
+                "predicted_label": None,
+                "score": None,
+                "true_label": group.label,
+            })
             # An empty prediction set has recall of 0, precision of NA.
             box_recalls.append(0)
             results.append(result)
             continue
         else:
             group = group.reset_index(drop=True)
-            result = _point_recall_image_(
-                predictions=image_predictions, ground_df=group
-            )
+            result = _point_recall_image_(predictions=image_predictions, ground_df=group)
 
         result["image_path"] = image_path
 

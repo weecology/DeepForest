@@ -7,17 +7,15 @@ import torch
 from torchvision.ops import nms
 import typing
 
-from deepforest import visualize, dataset
+from deepforest import utilities
+from deepforest.datasets import cropmodel
 from deepforest.utilities import read_file
 
 
 def _predict_image_(model,
                     image: typing.Optional[np.ndarray] = None,
                     path: typing.Optional[str] = None,
-                    nms_thresh: float = 0.15,
-                    return_plot: bool = False,
-                    thickness: int = 1,
-                    color: typing.Optional[tuple] = (0, 165, 255)):
+                    nms_thresh: float = 0.15):
     """Predict a single image with a deepforest model.
 
     Args:
@@ -25,13 +23,14 @@ def _predict_image_(model,
         image: a tensor of shape (channels, height, width)
         path: optional path to read image from disk instead of passing image arg
         nms_thresh: Non-max suppression threshold, see config.nms_thresh
-        return_plot: Return image with plotted detections
-        thickness: thickness of the rectangle border line in px
-        color: color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255)
     Returns:
         df: A pandas dataframe of predictions (Default)
         img: The input with predictions overlaid (Optional)
     """
+
+    image = torch.tensor(image).permute(2, 0, 1)
+    image = image / 255
+
     with torch.no_grad():
         prediction = model(image.unsqueeze(0))
 
@@ -39,53 +38,54 @@ def _predict_image_(model,
     if len(prediction[0]["boxes"]) == 0:
         return None
 
-    df = visualize.format_boxes(prediction[0])
-    df = across_class_nms(df, iou_threshold=nms_thresh)
+    df = utilities.format_boxes(prediction[0])
 
-    if return_plot:
-        # Bring to gpu
-        image = image.cpu()
+    if df.label.nunique() > 1:
+        df = across_class_nms(df, iou_threshold=nms_thresh)
 
-        # Cv2 likes no batch dim, BGR image and channels last, 0-255
-        image = np.array(image.squeeze(0))
-        image = np.rollaxis(image, 0, 3)
-        image = image[:, :, ::-1] * 255
-        image = image.astype("uint8")
-        image = visualize.plot_predictions(image, df, color=color, thickness=thickness)
-
-        return image
-    else:
-        if path:
-            df["image_path"] = os.path.basename(path)
+    # Add image path if provided
+    if path is not None:
+        df["image_path"] = os.path.basename(path)
 
     return df
 
 
-def mosiac(boxes, windows, sigma=0.5, thresh=0.001, iou_threshold=0.1):
-    # transform the coordinates to original system
-    for index, _ in enumerate(boxes):
-        xmin, ymin, xmax, ymax = windows[index].getRect()
-        boxes[index].xmin += xmin
-        boxes[index].xmax += xmin
-        boxes[index].ymin += ymin
-        boxes[index].ymax += ymin
+def transform_coordinates(boxes):
+    """Transform box coordinates from window space to original image space.
 
-    predicted_boxes = pd.concat(boxes)
-    print(
-        f"{predicted_boxes.shape[0]} predictions in overlapping windows, applying non-max suppression"
-    )
-    # move prediciton to tensor
-    boxes = torch.tensor(predicted_boxes[["xmin", "ymin", "xmax", "ymax"]].values,
-                         dtype=torch.float32)
-    scores = torch.tensor(predicted_boxes.score.values, dtype=torch.float32)
-    labels = predicted_boxes.label.values
-    # Performs non-maximum suppression (NMS) on the boxes according to
-    # their intersection-over-union (IoU).
+    Args:
+        boxes: DataFrame of predictions with xmin, ymin, xmax, ymax, window_xmin, window_ymin columns
+
+    Returns:
+        DataFrame with transformed coordinates
+    """
+    boxes = boxes.copy()
+    boxes["xmin"] += boxes["window_xmin"]
+    boxes["xmax"] += boxes["window_xmin"]
+    boxes["ymin"] += boxes["window_ymin"]
+    boxes["ymax"] += boxes["window_ymin"]
+
+    return boxes
+
+
+def apply_nms(boxes, scores, labels, iou_threshold):
+    """Apply non-maximum suppression to boxes.
+
+    Args:
+        boxes: tensor of shape (N, 4) containing box coordinates
+        scores: tensor of shape (N,) containing confidence scores
+        labels: array of shape (N,) containing labels
+        iou_threshold: IoU threshold for NMS
+
+    Returns:
+        DataFrame with filtered boxes
+    """
     bbox_left_idx = nms(boxes=boxes, scores=scores, iou_threshold=iou_threshold)
-
     bbox_left_idx = bbox_left_idx.numpy()
-    new_boxes, new_labels, new_scores = boxes[bbox_left_idx].type(
-        torch.int), labels[bbox_left_idx], scores[bbox_left_idx]
+
+    new_boxes = boxes[bbox_left_idx].type(torch.int)
+    new_labels = labels[bbox_left_idx]
+    new_scores = scores[bbox_left_idx]
 
     # Recreate box dataframe
     image_detections = np.concatenate([
@@ -95,12 +95,36 @@ def mosiac(boxes, windows, sigma=0.5, thresh=0.001, iou_threshold=0.1):
     ],
                                       axis=1)
 
-    mosaic_df = pd.DataFrame(image_detections,
-                             columns=["xmin", "ymin", "xmax", "ymax", "label", "score"])
+    return pd.DataFrame(image_detections,
+                        columns=["xmin", "ymin", "xmax", "ymax", "label", "score"])
 
-    print(f"{mosaic_df.shape[0]} predictions kept after non-max suppression")
 
-    return mosaic_df
+def mosiac(predictions, iou_threshold=0.1):
+    """Mosaic predictions from overlapping windows.
+
+    Args:
+        predictions: A pandas dataframe containing predictions from overlapping windows from a single image.
+        iou_threshold: The IoU threshold for non-max suppression.
+
+    Returns:
+        A pandas dataframe of predictions.
+    """
+    predicted_boxes = transform_coordinates(predictions)
+    print(
+        f"{predicted_boxes.shape[0]} predictions in overlapping windows, applying non-max suppression"
+    )
+
+    # Convert to tensors
+    boxes = torch.tensor(predicted_boxes[["xmin", "ymin", "xmax", "ymax"]].values,
+                         dtype=torch.float32)
+    scores = torch.tensor(predicted_boxes.score.values, dtype=torch.float32)
+    labels = predicted_boxes.label.values
+
+    # Apply NMS
+    filtered_boxes = apply_nms(boxes, scores, labels, iou_threshold)
+    print(f"{filtered_boxes.shape[0]} predictions kept after non-max suppression")
+
+    return filtered_boxes
 
 
 def across_class_nms(predicted_boxes, iou_threshold=0.15):
@@ -133,34 +157,19 @@ def across_class_nms(predicted_boxes, iou_threshold=0.15):
     return new_df
 
 
-def _dataloader_wrapper_(model,
-                         trainer,
-                         dataloader,
-                         root_dir,
-                         annotations,
-                         nms_thresh,
-                         savedir=None,
-                         color=None,
-                         thickness=1):
-    """Create a dataset and predict entire annotation file.
-
-    Csv file format is .csv file with the columns "image_path", "xmin","ymin","xmax","ymax" for the image name and bounding box position.
-    Image_path is the relative filename, not absolute path, which is in the root_dir directory. One bounding box per line.
+def _dataloader_wrapper_(model, trainer, dataloader, root_dir, crop_model):
+    """
 
     Args:
         model: deepforest.main object
         trainer: a pytorch lightning trainer object
         dataloader: pytorch dataloader object
         root_dir: directory of images. If none, uses "image_dir" in config
-        annotations: a pandas dataframe of annotations
         nms_thresh: Non-max suppression threshold, see config.nms_thresh
-        savedir: Optional. Directory to save image plots.
-        color: color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255)
-        thickness: thickness of the rectangle border line in px
+        crop_model: Optional. A list of crop models to be used for prediction.
     Returns:
         results: pandas dataframe with bounding boxes, label and scores for each image in the csv file
     """
-    paths = annotations.image_path.unique()
     batched_results = trainer.predict(model, dataloader)
 
     # Flatten list from batched prediction
@@ -169,28 +178,32 @@ def _dataloader_wrapper_(model,
         for images in batch:
             prediction_list.append(images)
 
-    results = []
-    for index, prediction in enumerate(prediction_list):
-        # If there is more than one class, apply NMS Loop through images and apply cross
-        if len(prediction.label.unique()) > 1:
-            prediction = across_class_nms(prediction, iou_threshold=nms_thresh)
+    # Postprocess predictions
+    results = dataloader.dataset.postprocess(prediction_list)
 
-        prediction["image_path"] = paths[index]
-        results.append(prediction)
-
-    results = pd.concat(results, ignore_index=True)
     if results.empty:
-        results["geometry"] = None
         return results
 
-    results = read_file(results, root_dir)
+    # Apply across class NMS for each image
+    processed_results = []
+    for image_path in results.image_path.unique():
+        image_results = results[results.image_path == image_path].copy()
 
-    if savedir:
-        visualize.plot_prediction_dataframe(results,
-                                            root_dir=root_dir,
-                                            savedir=savedir,
-                                            color=color,
-                                            thickness=thickness)
+        if crop_model:
+            # Flag to check if only one model is passed
+            is_single_model = len(crop_model) == 1
+
+            for i, crop_model in enumerate(crop_model):
+                crop_model_results = _predict_crop_model_(crop_model=crop_model,
+                                                          results=image_results,
+                                                          path=image_path,
+                                                          trainer=trainer,
+                                                          model_index=i,
+                                                          is_single_model=is_single_model)
+
+            processed_results.append(crop_model_results)
+
+    results = read_file(results, root_dir)
 
     return results
 
@@ -198,7 +211,7 @@ def _dataloader_wrapper_(model,
 def _predict_crop_model_(crop_model,
                          trainer,
                          results,
-                         raster_path,
+                         path,
                          transform=None,
                          augment=False,
                          model_index=0,
@@ -209,7 +222,7 @@ def _predict_crop_model_(crop_model,
         crop_model: The crop model to be used for prediction.
         trainer: The PyTorch Lightning trainer object for prediction.
         results: The results dataframe to store the predicted labels and scores.
-        raster_path: The path to the raster file.
+        path: The path to the raster file.
         is_single_model: Boolean flag to determine column naming.
 
     Returns:
@@ -224,11 +237,10 @@ def _predict_crop_model_(crop_model,
     results = results[results.ymin != results.ymax]
 
     # Create dataset
-    bounding_box_dataset = dataset.BoundingBoxDataset(
-        results,
-        root_dir=os.path.dirname(raster_path),
-        transform=transform,
-        augment=augment)
+    bounding_box_dataset = cropmodel.BoundingBoxDataset(results,
+                                                        root_dir=os.path.dirname(path),
+                                                        transform=transform,
+                                                        augment=augment)
 
     # Create dataloader
     crop_dataloader = crop_model.predict_dataloader(bounding_box_dataset)
@@ -237,9 +249,7 @@ def _predict_crop_model_(crop_model,
     crop_results = trainer.predict(crop_model, crop_dataloader)
 
     # Process results
-    stacked_outputs = np.vstack(np.concatenate(crop_results))
-    label = np.argmax(stacked_outputs, axis=1)  # Get class with highest probability
-    score = np.max(stacked_outputs, axis=1)  # Get confidence score
+    label, score = crop_model.postprocess_predictions(crop_results)
 
     # Determine column names
     if is_single_model:
@@ -259,3 +269,31 @@ def _predict_crop_model_(crop_model,
     results[score_column] = score
 
     return results
+
+
+def _crop_models_wrapper_(crop_models, trainer, results, transform=None, augment=False):
+    if crop_models is not None and not isinstance(crop_models, list):
+        crop_models = [crop_models]
+
+    # Run predictions
+    crop_results = []
+    if crop_models:
+        is_single_model = len(
+            crop_models) == 1  # Flag to check if only one model is passed
+        for i, crop_model in enumerate(crop_models):
+            for path in results.image_path.unique():
+                path = os.path.join(results.root_dir, path)
+                crop_result = _predict_crop_model_(crop_model=crop_model,
+                                                   results=results,
+                                                   path=path,
+                                                   trainer=trainer,
+                                                   model_index=i,
+                                                   transform=transform,
+                                                   augment=augment,
+                                                   is_single_model=is_single_model)
+                crop_results.append(crop_result)
+
+    # Concatenate results
+    crop_results = pd.concat(crop_results)
+
+    return crop_results

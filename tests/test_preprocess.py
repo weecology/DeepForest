@@ -42,7 +42,11 @@ def geodataframe():
 @pytest.fixture()
 def image(config):
     raster = Image.open(config.path_to_raster)
-    return np.array(raster)
+
+    # Convert to channels first
+    raster = np.array(raster)
+    raster = np.moveaxis(raster, 2, 0)
+    return raster
 
 
 def test_compute_windows(config, image):
@@ -287,15 +291,6 @@ def test_split_raster_from_csv(tmpdir):
                                                 patch_size=300)
     assert not split_annotations.empty
 
-    # Plot labels
-    images = visualize.plot_prediction_dataframe(split_annotations,
-                                                 root_dir=tmpdir,
-                                                 savedir=tmpdir)
-
-    for image in images:
-        im = Image.open(image)
-        im.show()
-
 
 def test_split_raster_from_shp(tmpdir):
     annotations = get_data("2018_SJER_3_252000_4107000_image_477.csv")
@@ -313,25 +308,3 @@ def test_split_raster_from_shp(tmpdir):
                                                 patch_size=300)
 
     assert not split_annotations.empty
-
-    # Plot labels
-    images = visualize.plot_prediction_dataframe(split_annotations,
-                                                 root_dir=tmpdir,
-                                                 savedir=tmpdir)
-
-    for image in images:
-        im = Image.open(image)
-        im.show()
-
-
-# def test_view_annotation_split(tmpdir, config):
-#     """Test that the split annotations can be visualized and mantain location, turn show to True for debugging interactively"""
-#     annotations = get_data("2019_YELL_2_541000_4977000_image_crop.xml")
-#     gdf = utilities.read_file(annotations)
-#     path_to_raster = get_data("2019_YELL_2_541000_4977000_image_crop.png")
-#     split_annotations = preprocess.split_raster(gdf, path_to_raster=path_to_raster, save_dir=tmpdir, patch_size=300, patch_overlap=0.5)
-#     images = visualize.plot_prediction_dataframe(split_annotations, root_dir=tmpdir, savedir=tmpdir)
-#     # View the images
-#     for image in images:
-#         im = Image.open(image)
-#         im.show()

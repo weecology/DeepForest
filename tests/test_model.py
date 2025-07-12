@@ -5,19 +5,16 @@ from deepforest import get_data
 import pandas as pd
 import os
 from torchvision import transforms
-import pytorch_lightning as pl
-import numpy as np
-from deepforest.predict import _predict_crop_model_
 
 # The model object is architecture agnostic container.
 def test_model_no_args(config):
     with pytest.raises(ValueError):
-        model.Model(config)
+        model.Model.create_model(config)
 
 @pytest.fixture()
 def crop_model():
     crop_model = model.CropModel(num_classes=2)
-
+    
     return crop_model
 
 @pytest.fixture()
@@ -35,8 +32,7 @@ def crop_model_data(crop_model, tmpdir):
 
     return None
 
-def test_crop_model(
-        crop_model):  # Use pytest tempdir fixture to create a temporary directory
+def test_crop_model(crop_model):
     # Test forward pass
     x = torch.rand(4, 3, 224, 224)
     output = crop_model.forward(x)
@@ -69,6 +65,11 @@ def test_crop_model_train(crop_model, tmpdir, crop_model_data):
     crop_model.trainer.fit(crop_model)
     crop_model.trainer.validate(crop_model)
 
+def test_crop_model_recreate_model(tmpdir, crop_model_data):
+    crop_model = model.CropModel()
+    crop_model.load_from_disk(train_dir=tmpdir, val_dir=tmpdir, recreate_model=True)
+    assert crop_model.model is not None
+    assert crop_model.model.fc.out_features == 2
 
 def test_crop_model_custom_transform():
     # Create a dummy instance of CropModel
@@ -116,6 +117,22 @@ def test_crop_model_load_checkpoint(tmpdir, crop_model_data):
         # Check model parameters were loaded
         for p1, p2 in zip(crop_model.parameters(), loaded_model.parameters()):
             assert torch.equal(p1, p2)
+
+def test_crop_model_load_checkpoint_from_disk(tmpdir, crop_model_data):
+    """Test loading crop model from checkpoint with different numbers of classes"""
+    # Create initial model and save checkpoint
+    crop_model = model.CropModel()
+    crop_model.create_trainer(fast_dev_run=True)
+    crop_model.load_from_disk(train_dir=tmpdir, val_dir=tmpdir, recreate_model=True)
+
+    crop_model.trainer.fit(crop_model)
+    checkpoint_path = os.path.join(tmpdir, "epoch=0-step=0.ckpt")
+
+    crop_model.trainer.save_checkpoint(checkpoint_path)
+
+    # Load from checkpoint
+    loaded_model = model.CropModel.load_from_checkpoint(checkpoint_path)
+    assert loaded_model.label_dict == crop_model.label_dict
 
 def test_crop_model_maintain_label_dict(tmpdir, crop_model_data):
     """
@@ -209,3 +226,17 @@ def test_expand_bbox_to_square_edge_cases():
     expected = [30.0, 30.0, 70.0, 70.0]
     result = crop_model.expand_bbox_to_square(bbox, image_width, image_height)
     assert result == expected
+
+def test_crop_model_val_dataset_confusion(tmpdir, crop_model_data):
+    crop_model = model.CropModel()
+    crop_model.create_trainer(fast_dev_run=True)
+    crop_model.load_from_disk(train_dir=tmpdir, val_dir=tmpdir, recreate_model=True)
+    crop_model.trainer.fit(crop_model)
+    images, labels, predictions = crop_model.val_dataset_confusion(return_images=True)
+    
+    # There are 37 images in the testfile_multi.csv
+    assert len(images) == 37
+
+    # There was just one batch in the fast_dev_run
+    assert len(labels) ==37 
+    assert len(predictions) == 4

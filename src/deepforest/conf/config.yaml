@@ -11,6 +11,7 @@ batch_size: 1
 architecture: 'retinanet'
 num_classes: 1
 nms_thresh: 0.05
+score_thresh: 0.1
 
 model:
     name: 'weecology/deepforest-tree'
@@ -23,11 +24,6 @@ patch_overlap: 0.05
 annotations_xml:
 rgb_dir:
 path_to_rgb:
-
-# Architecture specific params
-retinanet:
-    # Non-max suppression of overlapping predictions
-    score_thresh: 0.1
 
 train:
     csv_file:
@@ -60,14 +56,19 @@ train:
     epochs: 1
     # Useful debugging flag in pytorch lightning, set to True to get a single batch of training to test settings.
     fast_dev_run: False
-    # pin images to GPU memory for fast training. This depends on GPU size and number of images.
+    # preload images to GPU memory for fast training. This depends on GPU size and number of images.
     preload_images: False
 
 validation:
     # callback args
     csv_file:
     root_dir:
+    preload_images: False
+    size:
 
     # Intersection over union evaluation
     iou_threshold: 0.4
     val_accuracy_interval: 20
+
+predict:
+    pin_memory: False

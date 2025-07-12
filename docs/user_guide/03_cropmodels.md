@@ -14,7 +14,7 @@ Why would you want to apply a model directly to each crop? Why not train a multi
 
 While that approach is certainly valid, there are a few key benefits to using CropModels, especially in common use cases:  
 
-- **Flexible Labeling**: Object detection models require that all objects of a particular class be annotated within an image, which can be impossible for detailed category labels. For example, you might have bounding boxes for all ‘trees’ in an image, but only have species or health labels for a small portion of them based on ground surveys. Training a multi-class object detection model would mean training on only a portion of your available data. 
+- **Flexible Labeling**: Object detection models require that all objects of a particular class be annotated within an image, which can be impossible for detailed category labels. For example, you might have bounding boxes for all 'trees' in an image, but only have species or health labels for a small portion of them based on ground surveys. Training a multi-class object detection model would mean training on only a portion of your available data. 
 - **Simpler and Extendable**: CropModels decouple detection and classification workflows, allowing separate handling of challenges like class imbalance and incomplete labels, without reducing the quality of the detections. Two-stage object detection models can be finicky with similar classes and often require expertise in managing learning rates. 
 - **New Data and Multi-sensor Learning**: In many applications, the data needed for detection and classification may differ. The CropModel concept provides an extendable piece that allows for advanced pipelines.
 
@@ -177,4 +177,225 @@ class CustomCropModel(CropModel):
 
 # Create an instance of the custom CropModel
 model = CustomCropModel()
+```
+
+## Making Predictions Outside of predict_tile
+
+While `predict_tile` provides a convenient way to run predictions on detected objects, you can also use the CropModel directly for classification tasks. This is useful when you have pre-cropped images or want to run classification independently.
+
+### Loading a Trained Model
+
+```python
+from deepforest.model import CropModel
+from pytorch_lightning import Trainer
+from torchvision.datasets import ImageFolder
+import numpy as np
+
+# Load a trained model from checkpoint
+cropmodel = CropModel.load_from_checkpoint("path/to/checkpoint.ckpt")
+
+# The model will automatically load:
+# - The model architecture and weights
+# - The label dictionary mapping class names to indices
+# - The number of classes
+# - Any hyperparameters saved during training
+```
+
+### Making Predictions on a Dataset
+
+```python
+# Create a validation dataset
+from torchvision.datasets import ImageFolder
+val_ds = ImageFolder(root=root_dir, transform=cropmodel.get_transform(augment=False))
+
+# Get predictions and labels
+images, labels, predictions = cropmodel.val_dataset_confusion(return_images=True)
+
+# Create dataloader
+crop_dataloader = cropmodel.predict_dataloader(val_ds)
+
+# Run prediction
+trainer = Trainer(
+    gpus=1, 
+    accelerator="gpu", 
+    max_epochs=1, 
+    logger=False, 
+    enable_checkpointing=False
+)
+crop_results = trainer.predict(cropmodel, crop_dataloader)
+
+# Process results using the built-in postprocessing method
+label, score = cropmodel.postprocess_predictions(crop_results)
+
+# Convert numeric labels to class names
+label_names = [cropmodel.numeric_to_label_dict[x] for x in label]
+```
+
+### Making Predictions on Single Images
+
+You can also make predictions on individual images or batches:
+
+```python
+import torch
+from PIL import Image
+
+# Load and preprocess a single image
+image = Image.open("path/to/image.jpg")
+transform = cropmodel.get_transform(augment=False)
+tensor = transform(image).unsqueeze(0)  # Add batch dimension
+
+# Make prediction
+with torch.no_grad():
+    output = cropmodel(tensor)
+    # Convert to numpy for postprocessing
+    output = output.cpu().numpy()
+    # Use the same postprocessing method
+    label, score = cropmodel.postprocess_predictions([output])
+    class_name = cropmodel.numeric_to_label_dict[label[0]]
+    confidence = score[0]
+```
+
+## Model Architecture and Training
+
+The CropModel uses a ResNet-50 backbone by default, but can be customized with any PyTorch model. The model includes:
+
+- A classification head with the specified number of classes
+- Standard image preprocessing (resize to 224x224, normalization)
+- Data augmentation during training (random horizontal flips)
+- Accuracy and precision metrics for evaluation
+
+### Training Process
+
+```python
+# Initialize model
+crop_model = CropModel(num_classes=2)
+
+# Create trainer
+crop_model.create_trainer(
+    max_epochs=10,
+    accelerator="gpu",
+    devices=1
+)
+
+# Load data
+crop_model.load_from_disk(
+    train_dir="path/to/train",
+    val_dir="path/to/val"
+)
+
+# Train
+crop_model.trainer.fit(crop_model)
+
+# Validate
+crop_model.trainer.validate(crop_model)
+
+# Save checkpoint
+crop_model.trainer.save_checkpoint("model.ckpt")
+```
+
+### Evaluation
+
+The model provides several evaluation metrics:
+
+```python
+# Get validation metrics
+metrics = crop_model.trainer.validate(crop_model)
+
+# Get confusion matrix
+images, labels, predictions = crop_model.val_dataset_confusion(return_images=True)
+```
+
+### Confusion Matrix Visualization
+
+You can visualize the confusion matrix in several ways:
+
+```python
+import matplotlib.pyplot as plt
+from torchmetrics.classification import MulticlassConfusionMatrix
+import seaborn as sns
+
+# Method 1: Using torchmetrics
+metric = MulticlassConfusionMatrix(num_classes=crop_model.num_classes)
+metric.update(preds=predictions, target=labels)
+fig, ax = metric.plot()
+plt.title("Confusion Matrix")
+plt.show()
+
+# Method 2: Using seaborn with val_dataset_confusion
+images, labels, predictions = crop_model.val_dataset_confusion(return_images=True)
+confusion_matrix = np.zeros((crop_model.num_classes, crop_model.num_classes))
+for true, pred in zip(labels, predictions):
+    confusion_matrix[true][pred] += 1
+
+# Plot with seaborn
+plt.figure(figsize=(10, 8))
+sns.heatmap(confusion_matrix, 
+            annot=True, 
+            fmt='g',
+            xticklabels=list(crop_model.label_dict.keys()),
+            yticklabels=list(crop_model.label_dict.keys()))
+plt.title("Confusion Matrix")
+plt.xlabel("Predicted")
+plt.ylabel("True")
+plt.show()
+
+# Get per-class metrics
+from torchmetrics.classification import MulticlassPrecision, MulticlassRecall, MulticlassF1Score
+
+precision = MulticlassPrecision(num_classes=crop_model.num_classes)
+recall = MulticlassRecall(num_classes=crop_model.num_classes)
+f1 = MulticlassF1Score(num_classes=crop_model.num_classes)
+
+precision_score = precision(torch.tensor(predictions), torch.tensor(labels))
+recall_score = recall(torch.tensor(predictions), torch.tensor(labels))
+f1_score = f1(torch.tensor(predictions), torch.tensor(labels))
+
+print(f"Precision: {precision_score:.3f}")
+print(f"Recall: {recall_score:.3f}")
+print(f"F1 Score: {f1_score:.3f}")
+```
+
+This will give you a comprehensive view of your model's performance, including:
+- A visual confusion matrix showing true vs predicted classes
+- Per-class precision, recall, and F1 scores
+- The ability to identify which classes are most commonly confused with each other
+
+The confusion matrix is particularly useful for:
+- Identifying class imbalance issues
+- Finding classes that are frequently confused
+- Understanding the model's strengths and weaknesses
+- Guiding decisions about data collection and model improvement
+
+## Advanced Usage
+
+### Custom Model Architecture
+
+You can use any PyTorch model as the backbone:
+
+```python
+from torchvision.models import resnet101
+
+# Initialize with custom model
+backbone = resnet101(weights='DEFAULT')
+crop_model = CropModel(
+    num_classes=2,
+    model=backbone
+)
+```
+
+### Custom Training Loop
+
+You can subclass CropModel to customize the training process:
+
+```python
+class CustomCropModel(CropModel):
+    def training_step(self, batch, batch_idx):
+        x, y = batch
+        outputs = self.forward(x)
+        loss = F.cross_entropy(outputs, y)
+        
+        # Add custom metrics
+        self.log("custom_metric", value)
+        
+        return loss
 ```
