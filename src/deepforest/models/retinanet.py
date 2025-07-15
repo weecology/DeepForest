@@ -178,4 +178,7 @@ class Model(BaseModel):
                                                  num_classes=self.config.num_classes,
                                                  label_dict=self.config.label_dict,
                                                  **hf_args)
-        return model
+            model.score_thresh = self.config.score_thresh
+            model.nms_thresh = self.config.nms_thresh
+
+        return model.to(map_location)
