@@ -66,7 +66,7 @@ def test_boxes_in_output(config):
     include boxes, scores and labels. This model should have
     trained weights.
     """
-    detr_model = DeformableDetr.Model(config).create_model(config.model.name, config.model.revision)
+    detr_model = DeformableDetr.Model(config).create_model(config.model.name, revision=config.model.revision)
     detr_model.eval()
 
     image_path = get_data("OSBS_029.png")

@@ -144,7 +144,7 @@ class deepforest(pl.LightningModule):
         model_class = importlib.import_module("deepforest.models.{}".format(
             self.config.architecture))
         self.model = model_class.Model(config=self.config).create_model(
-            pretrained=model_name, revision=revision, strict=True)
+            pretrained=model_name, revision=revision)
 
         # Set bird-specific settings if loading the bird model
         # TODO: Hub model should store this mapping.
@@ -223,7 +223,7 @@ class deepforest(pl.LightningModule):
         if self.model is None:
             model_class = importlib.import_module("deepforest.models.{}".format(
                 self.config.architecture))
-            self.model = model_class.Model(config=self.config).create_model(strict=True)
+            self.model = model_class.Model(config=self.config).create_model()
 
     def create_trainer(self, logger=None, callbacks=[], **kwargs):
         """Create a pytorch lightning training by reading config files.
