@@ -1,8 +1,10 @@
 import warnings
 from transformers import DeformableDetrForObjectDetection, DeformableDetrImageProcessor, logging
 from deepforest.model import BaseModel
+import torch
+from pathlib import Path
 from torch import nn
-
+from torchvision.ops import nms
 # Suppress huge amounts of unnecessary warnings from transformers.
 logging.set_verbosity_error()
 
@@ -11,7 +13,7 @@ class DeformableDetrWrapper(nn.Module):
     """This class wraps a transformers DeformableDetrForObjectDetection model
     so that input pre- and post-processing happens transparently."""
 
-    def __init__(self, config, name, revision):
+    def __init__(self, config, name, revision, **hf_args):
         """Initialize a DeformableDetrForObjectDetection model.
 
         We assume that the provided name applies to both model and
@@ -30,9 +32,12 @@ class DeformableDetrWrapper(nn.Module):
                 name,
                 revision=revision,
                 num_labels=self.config.num_classes,
-                ignore_mismatched_sizes=True)
+                ignore_mismatched_sizes=True,
+                **hf_args)
             self.processor = DeformableDetrImageProcessor.from_pretrained(
-                name, revision=revision)
+                name, revision=revision, **hf_args)
+
+            self.label_dict = self.net.config.label2id
 
     def _prepare_targets(self, targets):
 
@@ -58,11 +63,44 @@ class DeformableDetrWrapper(nn.Module):
 
         return coco_targets
 
+    def _apply_nms(self, predictions, iou_thresh):
+        """Apply class-wise NMS to a list of predictions."""
+        filtered = []
+        for pred in predictions:
+            boxes = pred["boxes"]
+            scores = pred["scores"]
+            labels = pred["labels"]
+
+            keep = []
+            for cls in labels.unique():
+                cls_mask = labels == cls
+                cls_boxes = boxes[cls_mask]
+                cls_scores = scores[cls_mask]
+                cls_keep = nms(cls_boxes, cls_scores, iou_thresh)
+                cls_indices = torch.nonzero(cls_mask).squeeze(1)[cls_keep]
+                keep.append(cls_indices)
+
+            if keep:
+                keep = torch.cat(keep)
+                filtered.append({
+                    "boxes": boxes[keep],
+                    "scores": scores[keep],
+                    "labels": labels[keep],
+                })
+            else:
+                filtered.append({
+                    "boxes": boxes,
+                    "scores": scores,
+                    "labels": labels,
+                })
+
+        return filtered
+
     def forward(self, images, targets=None, prepare_targets=True):
-        """AutoModelForObjectDetection forward pass. If targets are provided
-        the function returns a loss dictionary, otherwise it returns processed
-        predictions. For details, see the transformers documentation for
-        "post_process_object_detection".
+        """DeformableDetrForObjectDetection forward pass. If targets are
+        provided the function returns a loss dictionary, otherwise it returns
+        processed predictions. For details, see the transformers documentation
+        for "post_process_object_detection".
 
         Returns:
             predictions: list of dictionaries with "score", "boxes" and "labels", or
@@ -80,11 +118,14 @@ class DeformableDetrWrapper(nn.Module):
         preds = self.net(**encoded_inputs)
 
         if targets is None:
-            return self.processor.post_process_object_detection(
+            results = self.processor.post_process_object_detection(
                 preds,
                 threshold=self.config.score_thresh,
                 target_sizes=[i.shape[-2:] for i in images]
                 if isinstance(images, list) else [images.shape[-2:]])
+
+            return self._apply_nms(results, iou_thresh=self.config.nms_thresh)
+
         else:
             return preds.loss_dict
 
@@ -97,11 +138,25 @@ class Model(BaseModel):
         """
         super().__init__(config)
 
-    def create_model(self, name="SenseTime/deformable-detr", revision="main"):
+    def create_model(self,
+                     pretrained: str | Path | None = "SenseTime/deformable-detr",
+                     *,
+                     revision: str | None = "main",
+                     map_location: str | torch.device | None = None,
+                     **hf_args) -> DeformableDetrWrapper:
         """Create a Deformable DETR model from pretrained weights.
 
         The number of classes set via config and will override the
         downloaded checkpoint. The default weights will load a model
         trained on MS-COCO that should fine-tune well on other tasks.
         """
-        return DeformableDetrWrapper(self.config, name, revision)
+
+        # Take class mapping from config if the user plans to pretrain,
+        # otherwise it should be defined by the hub model.
+        if pretrained is None:
+            hf_args.setdefault('id2label', self.config.numeric_to_label_dict)
+
+        return DeformableDetrWrapper(self.config,
+                                     name=pretrained,
+                                     revision=revision,
+                                     **hf_args).to(map_location)
