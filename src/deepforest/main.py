@@ -104,7 +104,9 @@ class deepforest(pl.LightningModule):
         self.set_labels(self.config.label_dict)
 
         self.model = model
-        self.create_model()
+
+        if self.model is None:
+            self.create_model(self.config.train.from_scratch)
 
         # Add user supplied transforms
         if transforms is None:
@@ -112,7 +114,7 @@ class deepforest(pl.LightningModule):
         else:
             self.transforms = transforms
 
-        self.save_hyperparameters()
+        self.save_hyperparameters({"config": self.config})
 
     def load_model(self, model_name=None, revision=None):
         """Loads a model that has already been pretrained for a specific task,
@@ -210,7 +212,7 @@ class deepforest(pl.LightningModule):
             DeprecationWarning)
         self.load_model('weecology/deepforest-bird')
 
-    def create_model(self):
+    def create_model(self, from_scratch=False):
         """Define a deepforest architecture. This can be done in two ways.
         Passed as the model argument to deepforest __init__(), or as a named
         architecture in config.architecture, which corresponds to a file in
@@ -220,10 +222,12 @@ class deepforest(pl.LightningModule):
         Returns:
             None
         """
-        if self.model is None:
+        if from_scratch:
             model_class = importlib.import_module("deepforest.models.{}".format(
                 self.config.architecture))
             self.model = model_class.Model(config=self.config).create_model()
+        else:
+            self.load_model()
 
     def create_trainer(self, logger=None, callbacks=[], **kwargs):
         """Create a pytorch lightning training by reading config files.

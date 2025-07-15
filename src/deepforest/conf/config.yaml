@@ -32,6 +32,9 @@ train:
     csv_file:
     root_dir:
 
+    # Set true to train from generic weights, and not what is defined in model.name / model.revision
+    from_scratch: False
+
     # Optimizer initial learning rate
     lr: 0.001
     scheduler:

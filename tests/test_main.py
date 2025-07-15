@@ -214,10 +214,9 @@ def test_validation_step(m):
 
 def test_validation_step_empty():
     """If the model returns an empty prediction, the metrics should not fail"""
-    m = main.deepforest()
+    m = main.deepforest(config_args={"train.from_scratch": True})
     m.config.validation["csv_file"] = get_data("example.csv")
     m.config.validation["root_dir"] = os.path.dirname(get_data("example.csv"))
-    m.create_model()
     m.create_trainer()
 
     val_dataloader = m.val_dataloader()
@@ -360,8 +359,7 @@ def test_predict_dataloader(m, batch_size, path):
 
 def test_predict_tile_empty(path):
     # Random weights
-    m = main.deepforest()
-    m.create_model()
+    m = main.deepforest(config_args={"train.from_scratch": True})
     predictions = m.predict_tile(path=path, patch_size=300, patch_overlap=0)
     assert predictions is None
 
@@ -536,7 +534,6 @@ def test_save_and_reload_weights(m, tmpdir):
     assert not pred_after_train.empty
     assert not pred_after_reload.empty
     pd.testing.assert_frame_equal(pred_after_train, pred_after_reload)
-
 
 def test_reload_multi_class(two_class_m, tmpdir):
     two_class_m.config.train.fast_dev_run = True
@@ -781,7 +778,7 @@ def test_predict_tile_with_crop_model(m, config):
 def test_predict_tile_with_crop_model_empty():
     """If the model return is empty, the crop model should return an empty dataframe"""
     path = get_data("SOAP_061.png")
-    m = main.deepforest()
+    m = main.deepforest(config_args={"train.from_scratch": True})
 
     # Set up the crop model
     crop_model = model.CropModel(num_classes=2, label_dict = {"Dead": 0, "Alive": 1})
@@ -833,7 +830,7 @@ def test_predict_tile_with_multiple_crop_models(m, config):
 def test_predict_tile_with_multiple_crop_models_empty():
     """If no predictions are made, result should be empty"""
     path = get_data("SOAP_061.png")
-    m = main.deepforest()
+    m = main.deepforest(config_args={"train.from_scratch": True})
 
     # Create multiple crop models
     crop_model_1 = model.CropModel(num_classes=2, label_dict={"Dead":0, "Alive":1})
@@ -996,7 +993,8 @@ def test_empty_frame_accuracy_mixed_frames_with_predictions(m, tmpdir):
 
 def test_empty_frame_accuracy_without_predictions(tmpdir):
     """Create a ground truth with empty frames, the accuracy should be 1 with a random model"""
-    m = main.deepforest()
+    m = main.deepforest(config_args={"train.from_scratch": True})
+
     # Create ground truth with empty frames
     ground_df = pd.read_csv(get_data("testfile_deepforest.csv"))
     # Set all xmin, ymin, xmax, ymax to 0

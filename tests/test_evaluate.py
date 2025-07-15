@@ -73,7 +73,7 @@ def test_evaluate_boxes_save_images(tmpdir):
 
 def test_evaluate_empty(m):
     # Evaluate with an empty model which should return no predictions.
-    m = main.deepforest()
+    m = main.deepforest(config_args={"train.from_scratch": True})
     csv_file = get_data("OSBS_029.csv")
     results = m.evaluate(csv_file, iou_threshold=0.4)
 
