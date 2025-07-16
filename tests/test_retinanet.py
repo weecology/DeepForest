@@ -38,9 +38,6 @@ def retinanet_check_model(config):
     r.check_model()
 
 
-# This test still fails, do we want a way to pass kwargs directly to method,
-# instead of being limited by config structure?
-# Need to create issue when I get online.
 @pytest.mark.parametrize("num_classes", [1, 2, 10])
 def test_create_model(config, num_classes):
     config.num_classes = num_classes
