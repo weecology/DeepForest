@@ -13,7 +13,7 @@ class DeformableDetrWrapper(nn.Module):
     """This class wraps a transformers DeformableDetrForObjectDetection model
     so that input pre- and post-processing happens transparently."""
 
-    def __init__(self, config, name, revision, **hf_args):
+    def __init__(self, config, name, revision, use_nms=False, **hf_args):
         """Initialize a DeformableDetrForObjectDetection model.
 
         We assume that the provided name applies to both model and
@@ -22,6 +22,7 @@ class DeformableDetrWrapper(nn.Module):
         """
         super().__init__()
         self.config = config
+        self.use_nms = use_nms
 
         # This suppresses a bunch of messages which are specific to DETR,
         # but do not impact model function.
@@ -117,15 +118,19 @@ class DeformableDetrWrapper(nn.Module):
 
         preds = self.net(**encoded_inputs)
 
-        if targets is None:
+        if targets is None or not self.training:
             results = self.processor.post_process_object_detection(
                 preds,
                 threshold=self.config.score_thresh,
                 target_sizes=[i.shape[-2:] for i in images]
                 if isinstance(images, list) else [images.shape[-2:]])
 
-            return self._apply_nms(results, iou_thresh=self.config.nms_thresh)
+            # DETR is specifically designed to be NMS-free, however we've seen cases
+            # where it still predicts duplicate boxes
+            if self.use_nms:
+                results = self._apply_nms(results, iou_thresh=self.config.nms_thresh)
 
+            return results
         else:
             return preds.loss_dict
 

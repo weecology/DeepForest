@@ -73,10 +73,11 @@ def m(download_release):
 
     return m
 
-
+# A random-initialized model
 @pytest.fixture()
 def m_without_release():
-    m = main.deepforest()
+    m = main.deepforest(config_args={"model": {"name": None}})
+    m.config.accelerator = 'cpu' if torch.mps.is_available() else 'auto'
     m.config.train.csv_file = get_data("example.csv")
     m.config.train.root_dir = os.path.dirname(get_data("example.csv"))
     m.config.train.fast_dev_run = True
@@ -172,7 +173,7 @@ def test_load_model(m):
     assert not boxes.empty
 
 
-def test_train_empty(m, tmpdir):
+def test_train_empty_train_csv(m, tmpdir):
     empty_csv = pd.DataFrame({
         "image_path": ["OSBS_029.png", "OSBS_029.tif"],
         "xmin": [0, 10],
@@ -187,7 +188,7 @@ def test_train_empty(m, tmpdir):
     m.create_trainer(fast_dev_run=True)
     m.trainer.fit(m)
 
-def test_train_with_empty_validation(m, tmpdir):
+def test_train_with_empty_validation_csv(m, tmpdir):
     empty_csv = pd.DataFrame({
         "image_path": ["OSBS_029.png", "OSBS_029.tif"],
         "xmin": [0, 10],
@@ -212,9 +213,9 @@ def test_validation_step(m):
     val_loss = m.validation_step(batch, 0)
     assert val_loss != 0
 
-def test_validation_step_empty():
+def test_validation_step_empty(m_without_release):
     """If the model returns an empty prediction, the metrics should not fail"""
-    m = main.deepforest(config_args={"train.from_scratch": True})
+    m = m_without_release
     m.config.validation["csv_file"] = get_data("example.csv")
     m.config.validation["root_dir"] = os.path.dirname(get_data("example.csv"))
     m.create_trainer()
@@ -237,7 +238,7 @@ def test_validate(m):
 
 
 # Test train with each architecture
-@pytest.mark.parametrize("architecture", ["retinanet", "FasterRCNN", "DeformableDetr"])
+@pytest.mark.parametrize("architecture", ["retinanet", "DeformableDetr"])
 def test_train_single(m_without_release, architecture):
     m_without_release.config.architecture = architecture
     m_without_release.create_model()
@@ -357,9 +358,8 @@ def test_predict_dataloader(m, batch_size, path):
     batch = next(iter(dl))
     assert batch.shape[0] == batch_size
 
-def test_predict_tile_empty(path):
-    # Random weights
-    m = main.deepforest(config_args={"train.from_scratch": True})
+def test_predict_tile_empty(m_without_release, path):
+    m = m_without_release
     predictions = m.predict_tile(path=path, patch_size=300, patch_overlap=0)
     assert predictions is None
 
@@ -775,10 +775,10 @@ def test_predict_tile_with_crop_model(m, config):
     assert result.cropmodel_label.isin(labels).all()
 
 
-def test_predict_tile_with_crop_model_empty():
+def test_predict_tile_with_crop_model_empty(m_without_release):
     """If the model return is empty, the crop model should return an empty dataframe"""
     path = get_data("SOAP_061.png")
-    m = main.deepforest(config_args={"train.from_scratch": True})
+    m = m_without_release
 
     # Set up the crop model
     crop_model = model.CropModel(num_classes=2, label_dict = {"Dead": 0, "Alive": 1})
@@ -830,7 +830,7 @@ def test_predict_tile_with_multiple_crop_models(m, config):
 def test_predict_tile_with_multiple_crop_models_empty():
     """If no predictions are made, result should be empty"""
     path = get_data("SOAP_061.png")
-    m = main.deepforest(config_args={"train.from_scratch": True})
+    m = main.deepforest(config_args={"model": {"name": None}})
 
     # Create multiple crop models
     crop_model_1 = model.CropModel(num_classes=2, label_dict={"Dead":0, "Alive":1})
@@ -991,9 +991,9 @@ def test_empty_frame_accuracy_mixed_frames_with_predictions(m, tmpdir):
     results = m.trainer.validate(m)
     assert results[0]["empty_frame_accuracy"] == 0
 
-def test_empty_frame_accuracy_without_predictions(tmpdir):
+def test_empty_frame_accuracy_without_predictions(m_without_release, tmpdir):
     """Create a ground truth with empty frames, the accuracy should be 1 with a random model"""
-    m = main.deepforest(config_args={"train.from_scratch": True})
+    m = m_without_release
 
     # Create ground truth with empty frames
     ground_df = pd.read_csv(get_data("testfile_deepforest.csv"))

@@ -106,7 +106,7 @@ class deepforest(pl.LightningModule):
         self.model = model
 
         if self.model is None:
-            self.create_model(self.config.train.from_scratch)
+            self.create_model()
 
         # Add user supplied transforms
         if transforms is None:
@@ -140,8 +140,6 @@ class deepforest(pl.LightningModule):
 
         if revision is None:
             revision = self.config.model.revision
-
-        print(f"Loading model weights from {model_name}:{revision}.")
 
         model_class = importlib.import_module("deepforest.models.{}".format(
             self.config.architecture))
@@ -212,8 +210,8 @@ class deepforest(pl.LightningModule):
             DeprecationWarning)
         self.load_model('weecology/deepforest-bird')
 
-    def create_model(self, from_scratch=False):
-        """Define a deepforest architecture. This can be done in two ways.
+    def create_model(self, empty_model=False):
+        """Initialize a deepforest architecture. This can be done in two ways.
         Passed as the model argument to deepforest __init__(), or as a named
         architecture in config.architecture, which corresponds to a file in
         models/, as is a subclass of model.Model(). The config args in the
@@ -222,7 +220,7 @@ class deepforest(pl.LightningModule):
         Returns:
             None
         """
-        if from_scratch:
+        if self.config.model.name is None or empty_model:
             model_class = importlib.import_module("deepforest.models.{}".format(
                 self.config.architecture))
             self.model = model_class.Model(config=self.config).create_model()
@@ -946,7 +944,7 @@ class deepforest(pl.LightningModule):
             return {
                 'optimizer': optimizer,
                 'lr_scheduler': scheduler,
-                "monitor": 'val_classification'
+                "monitor": self.config.validation.lr_plateau_target
             }
         else:
             return optimizer

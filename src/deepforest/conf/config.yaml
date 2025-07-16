@@ -13,6 +13,7 @@ num_classes: 1
 nms_thresh: 0.05
 score_thresh: 0.1
 
+# Set model name to None to initialize from scratch
 model:
     name: 'weecology/deepforest-tree'
     revision: 'main'
@@ -31,9 +32,6 @@ path_to_rgb:
 train:
     csv_file:
     root_dir:
-
-    # Set true to train from generic weights, and not what is defined in model.name / model.revision
-    from_scratch: False
 
     # Optimizer initial learning rate
     lr: 0.001
@@ -70,6 +68,10 @@ validation:
     root_dir:
     preload_images: False
     size:
+
+    # For retinanet you may prefer val_classification, but the default val_loss
+    # should work with all models
+    lr_plateau_target: val_loss
 
     # Intersection over union evaluation
     iou_threshold: 0.4
