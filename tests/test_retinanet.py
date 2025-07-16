@@ -74,5 +74,3 @@ def test_maintain_parameters(config):
     x = [torch.rand(3, 300, 400), torch.rand(3, 500, 400)]
     predictions = retinanet_model(x)
     assert retinanet_model.score_thresh == 0.9
-
-    #TODO: Check that updating the score threshold affects prediction count.

@@ -577,21 +577,18 @@ def test_override_transforms():
     image, target, path = next(iter(train_ds))
     assert m.transforms.__doc__ == "This is the new transform"
 
-#TODO: Fix this test to check that predictions change as checking
-# if the threshold is changed in the config is probably not what
-# we actually want to test.
-@pytest.mark.xfail
 def test_over_score_thresh(m):
     """A user might want to change the config after model training and update the score thresh"""
     img = get_data("OSBS_029.png")
     original_score_thresh = m.model.score_thresh
-    m.model.score_thresh = 0.8
+    high_thresh = 0.6
+    m.model.score_thresh = high_thresh
 
     # trigger update
     boxes = m.predict_image(path=img)
 
-    assert all(boxes.score > 0.8)
-    assert m.model.score_thresh == 0.8
+    assert all(boxes.score > high_thresh)
+    assert m.model.score_thresh == high_thresh
     assert not m.model.score_thresh == original_score_thresh
 
 
@@ -827,10 +824,10 @@ def test_predict_tile_with_multiple_crop_models(m, config):
     assert not result.empty
 
 
-def test_predict_tile_with_multiple_crop_models_empty():
+def test_predict_tile_with_multiple_crop_models_empty(m_without_release):
     """If no predictions are made, result should be empty"""
     path = get_data("SOAP_061.png")
-    m = main.deepforest(config_args={"model": {"name": None}})
+    m = m_without_release
 
     # Create multiple crop models
     crop_model_1 = model.CropModel(num_classes=2, label_dict={"Dead":0, "Alive":1})
