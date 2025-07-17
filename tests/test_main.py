@@ -77,7 +77,6 @@ def m(download_release):
 @pytest.fixture()
 def m_without_release():
     m = main.deepforest(config_args={"model": {"name": None}})
-    m.config.accelerator = 'cpu' if torch.mps.is_available() else 'auto'
     m.config.train.csv_file = get_data("example.csv")
     m.config.train.root_dir = os.path.dirname(get_data("example.csv"))
     m.config.train.fast_dev_run = True
@@ -237,10 +236,19 @@ def test_validate(m):
         assert p1[1].ne(p2[1]).sum() == 0
 
 
-# Test train with each architecture
-@pytest.mark.parametrize("architecture", ["retinanet", "DeformableDetr"])
-def test_train_single(m_without_release, architecture):
+# Test train with each architecture and available accelerators:
+@pytest.mark.parametrize(
+    "architecture, accelerator",
+    [
+        ("retinanet", "cpu"),
+        ("retinanet", "auto"),
+        ("DeformableDetr", "cpu"),
+        ("DeformableDetr", "auto"),
+    ],
+)
+def test_train_single(m_without_release, architecture, accelerator):
     m_without_release.config.architecture = architecture
+    m_without_release.config.accelerator = accelerator
     m_without_release.create_model()
     m_without_release.config.train.fast_dev_run = False
     m_without_release.create_trainer(limit_train_batches=1)

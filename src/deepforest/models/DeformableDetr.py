@@ -41,26 +41,33 @@ class DeformableDetrWrapper(nn.Module):
             self.label_dict = self.net.config.label2id
 
     def _prepare_targets(self, targets):
-
+        """This is an internal function which translates BoxDataset targets
+        into MS-COCO format, for use with transformers-like models."""
         if not isinstance(targets, list):
             targets = [targets]
 
         coco_targets = []
 
         for target in targets:
-            coco_targets.append({
-                "image_id":
-                    0,
-                "annotations": [{
+            annotations_for_target = []
+            for i, (label, box) in enumerate(zip(target["labels"], target["boxes"])):
+
+                if isinstance(box, torch.Tensor):
+                    box = box.tolist()
+
+                if isinstance(label, torch.Tensor):
+                    label = label.item()
+
+                annotations_for_target.append({
                     "id": i,
                     "image_id": i,
                     "category_id": label,
-                    "bbox": box.tolist(),
+                    "bbox": box,
                     "area": (box[3] - box[1]) * (box[2] - box[0]),
                     "iscrowd": 0,
-                } for i, (label, box) in enumerate(zip(target["labels"], target["boxes"]))
-                               ]
-            })
+                })
+
+            coco_targets.append({"image_id": 0, "annotations": annotations_for_target})
 
         return coco_targets
 
@@ -107,7 +114,6 @@ class DeformableDetrWrapper(nn.Module):
             predictions: list of dictionaries with "score", "boxes" and "labels", or
                           a loss dict for training.
         """
-
         if targets and prepare_targets:
             targets = self._prepare_targets(targets)
 
@@ -115,6 +121,16 @@ class DeformableDetrWrapper(nn.Module):
                                                    annotations=targets,
                                                    return_tensors="pt",
                                                    do_rescale=False)
+
+        # Tensor "movement" is not automatic here, this
+        # could be refactored to the dataloader (collate_fn)
+        # later.
+        for k, v in encoded_inputs.items():
+            if isinstance(v, torch.Tensor):
+                encoded_inputs[k] = v.to(self.net.device)
+
+        if isinstance(encoded_inputs.get("labels"), list):
+            [target.to(self.net.device) for target in encoded_inputs["labels"]]
 
         preds = self.net(**encoded_inputs)
 
