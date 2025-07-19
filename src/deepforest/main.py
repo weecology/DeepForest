@@ -181,6 +181,10 @@ class deepforest(pl.LightningModule):
                              'for each label in the '
                              'dataset'.format(label_dict, self.config.num_classes))
 
+        # Check for duplicate values in label_dict:
+        if len(set(label_dict.values())) != len(label_dict):
+            raise ValueError('Found duplicate label IDs in label_dict.')
+
         self.label_dict = label_dict
         self.numeric_to_label_dict = {v: k for k, v in label_dict.items()}
 
