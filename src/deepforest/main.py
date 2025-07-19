@@ -212,7 +212,7 @@ class deepforest(pl.LightningModule):
             DeprecationWarning)
         self.load_model('weecology/deepforest-bird')
 
-    def create_model(self, empty_model=False):
+    def create_model(self, initialize_model=False):
         """Initialize a deepforest architecture. This can be done in two ways.
         Passed as the model argument to deepforest __init__(), or as a named
         architecture in config.architecture, which corresponds to a file in
@@ -222,7 +222,7 @@ class deepforest(pl.LightningModule):
         Returns:
             None
         """
-        if self.config.model.name is None or empty_model:
+        if self.config.model.name is None or initialize_model:
             model_class = importlib.import_module("deepforest.models.{}".format(
                 self.config.architecture))
             self.model = model_class.Model(config=self.config).create_model()
