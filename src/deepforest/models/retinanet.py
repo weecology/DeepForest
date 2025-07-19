@@ -18,7 +18,7 @@ class RetinaNetHub(RetinaNet, PyTorchModelHubMixin):
                  num_classes: int = 1,
                  nms_thresh: float = 0.05,
                  score_thresh: float = 0.5,
-                 label_dict: dict = {"Tree": 0},
+                 label_dict: dict = None,
                  **kwargs):
 
         backbone = torchvision.models.detection.retinanet_resnet50_fpn(
@@ -44,6 +44,7 @@ class RetinaNetHub(RetinaNet, PyTorchModelHubMixin):
     @classmethod
     def from_pretrained(cls,
                         pretrained_model_name_or_path,
+                        *,
                         num_classes=None,
                         label_dict=None,
                         **kwargs):
@@ -59,19 +60,20 @@ class RetinaNetHub(RetinaNet, PyTorchModelHubMixin):
         if num_classes is not None and label_dict is not None:
             if num_classes != model.num_classes:
                 warnings.warn(
-                    f"The number of classes in your config differs compared to the model checkpoint (which has {model.num_classes} classes)."
-                    f"If you are fine-tuning on a new dataset that has {num_classes} then this is expected."
+                    f"The number of classes in your config differs compared to the model checkpoint ({model.num_classes}-class)."
+                    f" If you are fine-tuning on a new dataset that has {num_classes} then this is expected."
                 )
-                model._adjust_classes(num_classes=num_classes, label_dict=label_dict)
+
+                model._adjust_classes(num_classes)
+
+            model.label_dict = label_dict
+            model.update_config()
 
         return model
 
-    def _adjust_classes(self, num_classes, label_dict):
-        if num_classes != len(label_dict):
-            raise ValueError("Number of classes must match label dict entries.")
+    def _adjust_classes(self, num_classes):
 
         self.num_classes = num_classes
-        self.label_dict = label_dict
 
         self.head.classification_head = torchvision.models.detection.retinanet.RetinaNetClassificationHead(
             in_channels=self.backbone.out_channels,
@@ -80,8 +82,6 @@ class RetinaNetHub(RetinaNet, PyTorchModelHubMixin):
         self.head.regression_head = torchvision.models.detection.retinanet.RetinaNetRegressionHead(
             in_channels=self.backbone.out_channels,
             num_anchors=self.head.classification_head.num_anchors)
-
-        self.update_config()
 
     def update_config(self):
 
@@ -174,7 +174,6 @@ class Model(BaseModel):
         else:
             model = RetinaNetHub.from_pretrained(pretrained,
                                                  revision=revision,
-                                                 map_location=map_location,
                                                  num_classes=self.config.num_classes,
                                                  label_dict=self.config.label_dict,
                                                  nms_thresh=self.config.nms_thresh,
