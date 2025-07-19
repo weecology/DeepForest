@@ -150,6 +150,9 @@ class deepforest(pl.LightningModule):
 
         # If user specified labels, and they differ from the model:
         if cfg_labels != model_labels:
+            warnings.warn(
+                "Your supplied label dict differs from the model. This is expected if you plan to fine-tune this model on your own data."
+            )
             label_dict = cfg_labels
         else:
             label_dict = model_labels
