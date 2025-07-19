@@ -15,7 +15,7 @@ def run_inference(config):
      "model": {"name": "weecology/deepforest-tree"}},
 
     {"architecture": "DeformableDetr",
-     "model": {"name": "joshvm/milliontrees-detr"}}
+     "model": {"name": "joshvm/milliontrees-detr"}},
 ])
 def test_model_inference(overrides):
     config = utilities.load_config(overrides=overrides)

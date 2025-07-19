@@ -29,6 +29,9 @@ class DeformableDetrWrapper(nn.Module):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=UserWarning)
 
+            # If the user passed in a different number of classes to the model,
+            # then the model will be modified on load. So we ignore
+            # mismatched sizes here.
             self.net = DeformableDetrForObjectDetection.from_pretrained(
                 name,
                 revision=revision,

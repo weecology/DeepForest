@@ -32,6 +32,7 @@ import shapely
 # Just download once.
 from .conftest import download_release
 
+ALL_ARCHITECTURES = ["retinanet", "DeformableDetr"]
 
 @pytest.fixture()
 def two_class_m():
@@ -298,6 +299,79 @@ def test_train_geometry_column(m, tmpdir):
 def test_train_multi(two_class_m):
     two_class_m.create_trainer(fast_dev_run=True)
     two_class_m.trainer.fit(two_class_m)
+
+def test_model_multi_from_single():
+    # Check we can go from a single-class model to multi
+    labels = {
+        "Alive": 0,
+        "Dead": 1
+    }
+    # Explicitly load a single-class tree model
+    m = main.deepforest(config_args={"architecture": "retinanet",
+                         "num_classes": 2,
+                         "model": {"name": "weecology/deepforest-tree"}
+                         "label_dict": labels
+                        })
+
+    # Check model shape is correct:
+    assert m.model.num_classes == 2
+
+    # Check our label dict was not overriden
+    assert m.label_dict == labels
+
+def test_model_single_from_multi(architecture):
+    # Check we can go from a multi-class model to a single-class.
+    labels = {
+        "Test": 0,
+    }
+    m = main.deepforest(config_args={"architecture": "retinanet",
+                                     "num_classes": 1,
+                                    "label_dict": labels,
+                                    "model": {"name": "weecology/everglades-bird-species-detector"}
+                                    })
+
+    # Check model shape is correct:
+    assert m.model.num_classes == 1
+
+    # Check label dict is as expected
+    assert m.label_dict == labels
+
+@pytest.mark.parametrize("architecture", ALL_ARCHITECTURES)
+def test_empty_model_labels_single(architecture):
+    # Verify that we can set up a single class model from scratch with custom labels
+    labels = {
+        "Test": 0,
+    }
+    m = main.deepforest(config_args={"architecture": architecture,
+                                     "num_classes": 1,
+                                    "label_dict": labels,
+                                    "model": {"name": None}
+                                    })
+
+    # Check model shape is correct:
+    assert m.model.num_classes == 1
+
+    # Check label dict is as expected
+    assert m.label_dict == labels
+
+@pytest.mark.parametrize("architecture", ALL_ARCHITECTURES)
+def test_empty_model_labels_multi(architecture):
+    # Verify that we can set up a single class model from scratch with custom labels
+    labels = {
+        "Test": 0,
+        "Test_2": 1,
+    }
+    m = main.deepforest(config_args={"architecture": architecture,
+                                     "num_classes": 1,
+                                    "label_dict": labels,
+                                    "model": {"name": None}
+                                    })
+
+    # Check model shape is correct:
+    assert m.model.num_classes == 1
+
+    # Check label dict is as expected
+    assert m.label_dict == labels
 
 def test_train_no_validation(m):
     m.config.train.fast_dev_run = False
