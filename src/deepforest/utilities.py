@@ -29,6 +29,11 @@ def load_config(config_name: str = "config.yaml",
     config = OmegaConf.load(os.path.join(config_root, config_name))
     config.merge_with(overrides)
 
+    # Force override label dict, don't merge.
+    override_label_dict = overrides.get('label_dict', None)
+    if override_label_dict:
+        config.label_dict = override_label_dict
+
     return config
 
 
