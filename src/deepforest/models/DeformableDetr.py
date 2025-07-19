@@ -41,7 +41,19 @@ class DeformableDetrWrapper(nn.Module):
             self.processor = DeformableDetrImageProcessor.from_pretrained(
                 name, revision=revision, **hf_args)
 
+            # If user-provided label_dict doesn't match the model's id2label:
+            if self.net.config.label2id != self.config.label_dict:
+                warnings.warn(
+                    "Your supplied label dict differs from the model. This is expected if you plan to fine-tune this model on your own data."
+                )
+                self.net.config.label2id = self.config.label_dict
+                self.net.config.id2label = {
+                    v: k for k, v in self.config.label_dict.items()
+                }
+
+            # For consistency with other DeepForest components
             self.label_dict = self.net.config.label2id
+            self.num_classes = self.net.config.num_labels
 
     def _prepare_targets(self, targets):
         """This is an internal function which translates BoxDataset targets

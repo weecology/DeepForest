@@ -309,7 +309,7 @@ def test_model_multi_from_single():
     # Explicitly load a single-class tree model
     m = main.deepforest(config_args={"architecture": "retinanet",
                          "num_classes": 2,
-                         "model": {"name": "weecology/deepforest-tree"}
+                         "model": {"name": "weecology/deepforest-tree"},
                          "label_dict": labels
                         })
 
@@ -319,7 +319,7 @@ def test_model_multi_from_single():
     # Check our label dict was not overriden
     assert m.label_dict == labels
 
-def test_model_single_from_multi(architecture):
+def test_model_single_from_multi():
     # Check we can go from a multi-class model to a single-class.
     labels = {
         "Test": 0,
@@ -356,19 +356,19 @@ def test_empty_model_labels_single(architecture):
 
 @pytest.mark.parametrize("architecture", ALL_ARCHITECTURES)
 def test_empty_model_labels_multi(architecture):
-    # Verify that we can set up a single class model from scratch with custom labels
+    # Verify that we can set up a multi-class model from scratch with custom labels
     labels = {
         "Test": 0,
         "Test_2": 1,
     }
     m = main.deepforest(config_args={"architecture": architecture,
-                                     "num_classes": 1,
+                                     "num_classes": 2,
                                     "label_dict": labels,
                                     "model": {"name": None}
                                     })
 
     # Check model shape is correct:
-    assert m.model.num_classes == 1
+    assert m.model.num_classes == 2
 
     # Check label dict is as expected
     assert m.label_dict == labels

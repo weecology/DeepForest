@@ -55,10 +55,13 @@ def test_create_model(config, num_classes):
     of classes and that we can pass images through.
     """
     config.num_classes = num_classes
+    config.label_dict = {f"{i}": i for i in range(num_classes)}
     detr_model = DeformableDetr.Model(config).create_model()
     detr_model.eval()
     x = [torch.rand(3, 300, 400), torch.rand(3, 500, 400)]
     _ = detr_model(x)
+
+    assert detr_model.label_dict == config.label_dict
 
 def test_boxes_in_output(config):
     """
