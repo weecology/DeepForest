@@ -101,8 +101,6 @@ class deepforest(pl.LightningModule):
         # Create a default trainer.
         self.create_trainer()
 
-        self.set_labels(self.config.label_dict)
-
         self.model = model
 
         if self.model is None:
@@ -146,13 +144,17 @@ class deepforest(pl.LightningModule):
         self.model = model_class.Model(config=self.config).create_model(
             pretrained=model_name, revision=revision)
 
-        # Set bird-specific settings if loading the bird model
-        # TODO: Hub model should store this mapping.
-        if model_name == "weecology/deepforest-bird":
-            self.config.score_thresh = 0.3
-            self.set_labels({"Bird": 0})
+        # Handle label override
+        cfg_labels = self.config.label_dict
+        model_labels = self.model.label_dict
+
+        # If user specified labels, and they differ from the model:
+        if cfg_labels != model_labels:
+            label_dict = cfg_labels
         else:
-            self.set_labels(self.model.label_dict)
+            label_dict = model_labels
+
+        self.set_labels(label_dict)
 
         return
 
@@ -224,6 +226,7 @@ class deepforest(pl.LightningModule):
             model_class = importlib.import_module("deepforest.models.{}".format(
                 self.config.architecture))
             self.model = model_class.Model(config=self.config).create_model()
+            self.set_labels(self.config.label_dict)
         else:
             self.load_model()
 
