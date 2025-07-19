@@ -30,6 +30,9 @@ from deepforest import get_data
 # Example run with short training
 annotations_file = get_data("testfile_deepforest.csv")
 
+# Load the default model
+m = main.deepforest()
+
 m.config.epochs = 1
 m.config.save-snapshot = False
 m.config.train.csv_file = annotations_file
@@ -54,6 +57,56 @@ m.trainer.fit(model)
 ```
 
 [For more, see Google colab demo on model training](https://colab.research.google.com/drive/1gKUiocwfCvcvVfiKzAaf6voiUVL2KK_r?usp=sharing)
+
+## Fine-tuning vs from-scratch training
+
+Depending on your task, you might want to fine-tune an existing DeepForest model. This is probably the case if you want to detect trees in a region where the default model performs poorly. If your detection task is very different, like detecting wildlife or non-aerial images then you may wish to train "from scratch". Within DeepForest, this means starting from a generic pretrained model, typically trained on a large dataset like MS-COCO (and usually, on Imagenet as well). This is almost always more efficient than truly training from random weights.
+
+To specify that you don't want to use a prebuilt model, set `model.name = None`. For example:
+
+```python
+m = main.deepforest(config_args{"num_classes": 3,
+                                "label_dict": {
+                                    "Tree": 0,
+                                    "Bird": 1,
+                                    "Animal": 2
+                                }
+                                "model":{"name":None}})
+```
+
+which will create an initialized RetinaNet model with 3 classes, ready for training. You must always specify your class count and label map.
+
+## Custom datasets with other classes
+
+If you need to re-train a "tree" detection model to work in your specific survey area or ecosystem, you don't need to do anything. Models themselves have no understanding of the label "tree", they output predictions corresponding to numerical class IDs (starting at 0). The default config sets `{"Tree": 0}`.
+
+However, if you want to train on multiple classes or detect something that isn't a tree (for example we host a model for multiple Everglades bird species), you need to specify:
+
+1. The number of classes you want to train on (this may be 1, unchanged)
+2. The label_dict that specifies what your classes are called.
+
+For example:
+
+```python
+config_args = {
+    "num_classes": 2,
+    "label_dict": {
+        "Alive": 0,
+        "Dead": 1
+    }
+}
+
+m = main.deepforest(config_args=config_args)
+```
+
+Under the hood, the following steps are taken:
+
+1. DeepForest loads a model from a checkpoint (for fine-tuning), or it initializes a model ready for training.
+2. If your class count and label dict are the same, nothing happens
+3. If the class count is the same, but your label dict differs (e.g. you set `{"Bird": 0}` over a tree model) then the model will be modified to reflect the new class list. At this point your model is technically unmodified, but the assumption is that you will re-train it.
+4. If the class count differs, then the model is modified with the desired number of classes (and it will not provide good predictions until re-trained).
+
+If you modify the defaulf configuration, we assume that you intend to train on your own data, and we will respect your overrides.
 
 ## Disable the progress bar
 
@@ -160,11 +213,13 @@ model.trainer.fit(model)
 ```python
 import tempfile
 import pandas as pd
-from deepforest import model
+from deepforest import main
 
 tmpdir = tempfile.TemporaryDirectory()
 
-model.load_model("weecology/deepforest-tree")
+# Create a deepforest model and load the latest release
+m = main.deepforest()
+m.load_model("weecology/deepforest-tree")
 
 #save the prediction dataframe after training and compare with prediction after reload checkpoint
 img_path = get_data("OSBS_029.png")
@@ -172,7 +227,7 @@ model.create_trainer()
 model.trainer.fit(model)
 pred_after_train = model.predict_image(path = img_path)
 
-#Create a trainer to make a checkpoint
+#Save a checkpoint via the trainer
 model.trainer.save_checkpoint("{}/checkpoint.pl".format(tmpdir))
 
 #reload the checkpoint to model object
