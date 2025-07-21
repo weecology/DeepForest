@@ -17,7 +17,7 @@ from albumentations.pytorch import ToTensorV2
 from deepforest import main, get_data, model
 from deepforest.utilities import read_file, format_geometry
 from deepforest.datasets import prediction
-from deepforest.visualize import plot_results 
+from deepforest.visualize import plot_results
 
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import Callback
@@ -32,6 +32,7 @@ import shapely
 # Just download once.
 from .conftest import download_release
 
+ALL_ARCHITECTURES = ["retinanet", "DeformableDetr"]
 
 @pytest.fixture()
 def two_class_m():
@@ -73,10 +74,10 @@ def m(download_release):
 
     return m
 
-
+# A random-initialized model
 @pytest.fixture()
 def m_without_release():
-    m = main.deepforest()
+    m = main.deepforest(config_args={"model": {"name": None}})
     m.config.train.csv_file = get_data("example.csv")
     m.config.train.root_dir = os.path.dirname(get_data("example.csv"))
     m.config.train.fast_dev_run = True
@@ -116,6 +117,21 @@ def big_file():
     big_frame.to_csv("{}/annotations.csv".format(tmpdir))
 
     return "{}/annotations.csv".format(tmpdir)
+
+def state_dicts_equal(model_a, model_b):
+    state_dict_a = model_a.state_dict()
+    state_dict_b = model_b.state_dict()
+
+    assert state_dict_a.keys() == state_dict_b.keys(), "State dict keys do not match"
+
+    for key in state_dict_a:
+        tensor_a = state_dict_a[key]
+        tensor_b = state_dict_b[key]
+
+        assert torch.equal(tensor_a, tensor_b), f"Mismatch found in key: {key}"
+
+    return True
+
 
 def test_m_has_tree_model_loaded(m):
     boxes = m.predict_image(path=get_data("OSBS_029.tif"))
@@ -157,7 +173,7 @@ def test_load_model(m):
     assert not boxes.empty
 
 
-def test_train_empty(m, tmpdir):
+def test_train_empty_train_csv(m, tmpdir):
     empty_csv = pd.DataFrame({
         "image_path": ["OSBS_029.png", "OSBS_029.tif"],
         "xmin": [0, 10],
@@ -172,7 +188,7 @@ def test_train_empty(m, tmpdir):
     m.create_trainer(fast_dev_run=True)
     m.trainer.fit(m)
 
-def test_train_with_empty_validation(m, tmpdir):
+def test_train_with_empty_validation_csv(m, tmpdir):
     empty_csv = pd.DataFrame({
         "image_path": ["OSBS_029.png", "OSBS_029.tif"],
         "xmin": [0, 10],
@@ -197,9 +213,9 @@ def test_validation_step(m):
     val_loss = m.validation_step(batch, 0)
     assert val_loss != 0
 
-def test_validation_step_empty():
+def test_validation_step_empty(m_without_release):
     """If the model returns an empty prediction, the metrics should not fail"""
-    m = main.deepforest()
+    m = m_without_release
     m.config.validation["csv_file"] = get_data("example.csv")
     m.config.validation["root_dir"] = os.path.dirname(get_data("example.csv"))
     m.create_trainer()
@@ -221,10 +237,19 @@ def test_validate(m):
         assert p1[1].ne(p2[1]).sum() == 0
 
 
-# Test train with each architecture
-@pytest.mark.parametrize("architecture", ["retinanet", "FasterRCNN"])
-def test_train_single(m_without_release, architecture):
+# Test train with each architecture and available accelerators:
+@pytest.mark.parametrize(
+    "architecture, accelerator",
+    [
+        ("retinanet", "cpu"),
+        ("retinanet", "auto"),
+        ("DeformableDetr", "cpu"),
+        ("DeformableDetr", "auto"),
+    ],
+)
+def test_train_single(m_without_release, architecture, accelerator):
     m_without_release.config.architecture = architecture
+    m_without_release.config.accelerator = accelerator
     m_without_release.create_model()
     m_without_release.config.train.fast_dev_run = False
     m_without_release.create_trainer(limit_train_batches=1)
@@ -274,6 +299,79 @@ def test_train_geometry_column(m, tmpdir):
 def test_train_multi(two_class_m):
     two_class_m.create_trainer(fast_dev_run=True)
     two_class_m.trainer.fit(two_class_m)
+
+def test_model_multi_from_single():
+    # Check we can go from a single-class model to multi
+    labels = {
+        "Alive": 0,
+        "Dead": 1
+    }
+    # Explicitly load a single-class tree model
+    m = main.deepforest(config_args={"architecture": "retinanet",
+                         "num_classes": 2,
+                         "model": {"name": "weecology/deepforest-tree"},
+                         "label_dict": labels
+                        })
+
+    # Check model shape is correct:
+    assert m.model.num_classes == 2
+
+    # Check our label dict was not overriden
+    assert m.label_dict == labels
+
+def test_model_single_from_multi():
+    # Check we can go from a multi-class model to a single-class.
+    labels = {
+        "Test": 0,
+    }
+    m = main.deepforest(config_args={"architecture": "retinanet",
+                                     "num_classes": 1,
+                                    "label_dict": labels,
+                                    "model": {"name": "weecology/everglades-bird-species-detector"}
+                                    })
+
+    # Check model shape is correct:
+    assert m.model.num_classes == 1
+
+    # Check label dict is as expected
+    assert m.label_dict == labels
+
+@pytest.mark.parametrize("architecture", ALL_ARCHITECTURES)
+def test_empty_model_labels_single(architecture):
+    # Verify that we can set up a single class model from scratch with custom labels
+    labels = {
+        "Test": 0,
+    }
+    m = main.deepforest(config_args={"architecture": architecture,
+                                     "num_classes": 1,
+                                    "label_dict": labels,
+                                    "model": {"name": None}
+                                    })
+
+    # Check model shape is correct:
+    assert m.model.num_classes == 1
+
+    # Check label dict is as expected
+    assert m.label_dict == labels
+
+@pytest.mark.parametrize("architecture", ALL_ARCHITECTURES)
+def test_empty_model_labels_multi(architecture):
+    # Verify that we can set up a multi-class model from scratch with custom labels
+    labels = {
+        "Test": 0,
+        "Test_2": 1,
+    }
+    m = main.deepforest(config_args={"architecture": architecture,
+                                     "num_classes": 2,
+                                    "label_dict": labels,
+                                    "model": {"name": None}
+                                    })
+
+    # Check model shape is correct:
+    assert m.model.num_classes == 2
+
+    # Check label dict is as expected
+    assert m.label_dict == labels
 
 def test_train_no_validation(m):
     m.config.train.fast_dev_run = False
@@ -342,9 +440,8 @@ def test_predict_dataloader(m, batch_size, path):
     batch = next(iter(dl))
     assert batch.shape[0] == batch_size
 
-def test_predict_tile_empty(path):
-    # Random weights
-    m = main.deepforest()
+def test_predict_tile_empty(m_without_release, path):
+    m = m_without_release
     predictions = m.predict_tile(path=path, patch_size=300, patch_overlap=0)
     assert predictions is None
 
@@ -417,7 +514,7 @@ def test_predict_tile_from_array(m, path):
     m.create_trainer()
     prediction = m.predict_tile(image=image, patch_size=300)
 
-    assert not prediction.empty    
+    assert not prediction.empty
 
 def test_evaluate(m, tmpdir):
     csv_file = get_data("OSBS_029.csv")
@@ -468,7 +565,7 @@ def test_checkpoint_label_dict(m, tmpdir):
     m.config["train"]["root_dir"] = os.path.dirname(csv_file)
     m.config["validation"]["csv_file"] = os.path.join(tmpdir, "example.csv")
     m.config["validation"]["root_dir"] = os.path.dirname(csv_file)
-    
+
     m.config.train.fast_dev_run = True
     m.create_trainer()
     m.label_dict = {"Object": 0}
@@ -495,6 +592,8 @@ def test_save_and_reload_checkpoint(m, tmpdir):
 
     assert not pred_after_train.empty
     assert not pred_after_reload.empty
+    assert m.config == after.config
+    assert state_dicts_equal(m.model, after.model)
     pd.testing.assert_frame_equal(pred_after_train, pred_after_reload)
 
 
@@ -517,7 +616,6 @@ def test_save_and_reload_weights(m, tmpdir):
     assert not pred_after_train.empty
     assert not pred_after_reload.empty
     pd.testing.assert_frame_equal(pred_after_train, pred_after_reload)
-
 
 def test_reload_multi_class(two_class_m, tmpdir):
     two_class_m.config.train.fast_dev_run = True
@@ -561,21 +659,18 @@ def test_override_transforms():
     image, target, path = next(iter(train_ds))
     assert m.transforms.__doc__ == "This is the new transform"
 
-#TODO: Fix this test to check that predictions change as checking
-# if the threshold is changed in the config is probably not what
-# we actually want to test.
-@pytest.mark.xfail
 def test_over_score_thresh(m):
     """A user might want to change the config after model training and update the score thresh"""
     img = get_data("OSBS_029.png")
     original_score_thresh = m.model.score_thresh
-    m.model.score_thresh = 0.8
+    high_thresh = 0.6
+    m.model.score_thresh = high_thresh
 
     # trigger update
     boxes = m.predict_image(path=img)
 
-    assert all(boxes.score > 0.8)
-    assert m.model.score_thresh == 0.8
+    assert all(boxes.score > high_thresh)
+    assert m.model.score_thresh == high_thresh
     assert not m.model.score_thresh == original_score_thresh
 
 
@@ -759,14 +854,14 @@ def test_predict_tile_with_crop_model(m, config):
     assert result.cropmodel_label.isin(labels).all()
 
 
-def test_predict_tile_with_crop_model_empty():
+def test_predict_tile_with_crop_model_empty(m_without_release):
     """If the model return is empty, the crop model should return an empty dataframe"""
     path = get_data("SOAP_061.png")
-    m = main.deepforest()
-    
+    m = m_without_release
+
     # Set up the crop model
     crop_model = model.CropModel(num_classes=2, label_dict = {"Dead": 0, "Alive": 1})
-    
+
     # Call the predict_tile method with the crop_model
     m.config.train.fast_dev_run = False
     m.create_trainer()
@@ -775,7 +870,7 @@ def test_predict_tile_with_crop_model_empty():
                             patch_overlap=0.05,
                             iou_threshold=0.15,
                             crop_model=crop_model)
-    
+
 
     # Assert the result
     assert result is None or result.empty
@@ -811,10 +906,10 @@ def test_predict_tile_with_multiple_crop_models(m, config):
     assert not result.empty
 
 
-def test_predict_tile_with_multiple_crop_models_empty():
+def test_predict_tile_with_multiple_crop_models_empty(m_without_release):
     """If no predictions are made, result should be empty"""
     path = get_data("SOAP_061.png")
-    m = main.deepforest()
+    m = m_without_release
 
     # Create multiple crop models
     crop_model_1 = model.CropModel(num_classes=2, label_dict={"Dead":0, "Alive":1})
@@ -841,7 +936,7 @@ def test_batch_prediction(m, path):
         batch_predictions = m.predict_batch(batch)
         predictions.extend(batch_predictions)
 
-    # Check results  
+    # Check results
     assert len(predictions) == len(ds)
     for image_pred in predictions:
         assert isinstance(image_pred, pd.DataFrame)
@@ -944,7 +1039,7 @@ def test_empty_frame_accuracy_all_empty_with_predictions(m, tmpdir):
 
     m.create_trainer()
     results = m.trainer.validate(m)
-    
+
     # This is bit of a preference, if there are no predictions, the empty frame accuracy should be 0, precision is 0, and accuracy is None.
     assert results[0]["empty_frame_accuracy"] == 0.0
     assert results[0]["box_precision"] == 0.0
@@ -975,9 +1070,10 @@ def test_empty_frame_accuracy_mixed_frames_with_predictions(m, tmpdir):
     results = m.trainer.validate(m)
     assert results[0]["empty_frame_accuracy"] == 0
 
-def test_empty_frame_accuracy_without_predictions(tmpdir):
+def test_empty_frame_accuracy_without_predictions(m_without_release, tmpdir):
     """Create a ground truth with empty frames, the accuracy should be 1 with a random model"""
-    m = main.deepforest()
+    m = m_without_release
+
     # Create ground truth with empty frames
     ground_df = pd.read_csv(get_data("testfile_deepforest.csv"))
     # Set all xmin, ymin, xmax, ymax to 0

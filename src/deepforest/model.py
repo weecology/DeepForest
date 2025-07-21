@@ -13,7 +13,7 @@ import cv2
 from PIL import Image
 
 
-class Model():
+class BaseModel():
     """A architecture agnostic class that controls the basic train, eval and
     predict functions. A model should optionally allow a backbone for
     pretraining. To add new architectures, simply create a new module in
@@ -21,11 +21,7 @@ class Model():
     statement below.
 
     Args:
-        num_classes (int): number of classes in the model
-        nms_thresh (float): non-max suppression threshold for intersection-over-union [0,1]
-        score_thresh (float): minimum prediction score to keep during prediction  [0,1]
-    Returns:
-        model: a pytorch nn module
+        config (DictConfig): DeepForest config settings object
     """
 
     def __init__(self, config):

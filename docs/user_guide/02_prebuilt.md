@@ -21,6 +21,8 @@ m = main.deepforest()
 m.load_model(model_name="weecology/deepforest-tree")
 ```
 
+The model that is specified in the configuration (see [Configuration](09_configuration_file.md)) will be loaded when you create a `deepforest` object. By default, this is `weecology/deepforest-tree`. However here we've explicitly called `load_model` for demonstration.
+
 ### Citation
 > Weinstein, B.G.; Marconi, S.; Bohlman, S.; Zare, A.; White, E. Individual Tree-Crown Detection in RGB Imagery Using Semi-Supervised Deep Learning Neural Networks. Remote Sens. 2019, 11, 1309
 
@@ -44,6 +46,13 @@ from deepforest import main
 # Load deepforest model and set bird label
 m = main.deepforest()
 m.load_model(model_name="weecology/deepforest-bird")
+
+# Alternatively, via configuration:
+config_args = {
+  "model": {"name": "weecology/deepforest-bird"}
+}
+m = main.deepforest(config_args=config_args)
+
 ```
 
 ![](../../www/bird_panel.jpg)
@@ -85,9 +94,18 @@ from deepforest import main
 # Load deepforest model and set bird label
 m = main.deepforest()
 m.load_model(model_name="weecology/deepforest-livestock")
+
+# Alternatively, via configuration:
+config_args = {
+  "model": {"name": "weecology/deepforest-livestock"}
+}
+m = main.deepforest(config_args=config_args)
 ```
 
 ## Crop Classifiers model
+
+Crop models are classification models (e.g. ResNets) that are applied to cropped predictions as a secondary processing step. Although you could train a single object detection model for fine-grained classification, it is often much easier to take a prebuilt model for tree detection and then train a classifier on a smaller high-quality dataset. For information on how to use crop models, see the Crop Models section.
+
 
 ### Alive/Dead trees model
 To provide a simple filter for trees that appear dead in the RGB data we collected 6,342 image crops from the prediction landscape, as well as other NEON sites, and hand annotated them as either alive or dead. We finetuned a resnet-50 pre-trained on ImageNet to classify alive or dead trees before passing them to the species classification model. The model was trained with an ADAM optimizer with a learning rate of 0.001 and batch size of 128 for 40 epochs, and was evaluated on a randomly held out of 10% of the crops. The evaluation accuracy of the alive-dead model was 95.8% (Table S1).

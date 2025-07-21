@@ -26,7 +26,6 @@ def load_config(config_name: str = "config.yaml",
         config_name (str): Path to config file, assumed in package folder
         overrides (DictConfig or dict): Overrides to config
 
-
     Returns:
         config (DictConfig): composed configuration
     """
@@ -51,6 +50,11 @@ def load_config(config_name: str = "config.yaml",
     # Check for unexpected config entries
     if strict:
         OmegaConf.set_struct(config, True)
+
+    # Force override label dict, don't merge.
+    override_label_dict = overrides.get('label_dict', None)
+    if override_label_dict:
+        config.label_dict = override_label_dict
 
     return config
 

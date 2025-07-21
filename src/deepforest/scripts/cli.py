@@ -32,7 +32,6 @@ def predict(config: DictConfig,
         None
     """
     m = deepforest(config=config)
-    m.load_model(model_name=config.model.name, revision=config.model.revision)
     res = m.predict_tile(path=input_path,
                          patch_size=config.patch_size,
                          patch_overlap=config.patch_overlap,

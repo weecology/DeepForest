@@ -11,16 +11,12 @@ batch_size: 1
 architecture: 'retinanet'
 num_classes: 1
 nms_thresh: 0.05
-
-# Architecture specific params
-retinanet:
-    # Non-max suppression of overlapping predictions
-    score_thresh: 0.1
+score_thresh: 0.1
 
 train:
     csv_file:
     root_dir:
-    
+
     # Optimizer initial learning rate
     lr: 0.001
     scheduler:
@@ -50,10 +46,10 @@ train:
     fast_dev_run: False
     # pin images to GPU memory for fast training. This depends on GPU size and number of images.
     preload_images: False
-    
+
 validation:
     # callback args
-    csv_file: 
+    csv_file:
     root_dir:
     # Intersection over union evaluation
     iou_threshold: 0.4

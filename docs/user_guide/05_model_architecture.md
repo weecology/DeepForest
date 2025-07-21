@@ -31,7 +31,7 @@ class Model():
         # Check input output format:
         self.check_model()
 
-    def create_model():
+    def create_model() -> torch.nn.Module:
         """This function converts a deepforest config file into a model. An architecture should have a list of nested arguments in config that match this function"""
         raise ValueError("The create_model class method needs to be implemented. Take in args and return a pytorch nn module.")
 
