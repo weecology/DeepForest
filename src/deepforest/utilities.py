@@ -17,7 +17,7 @@ from omegaconf import DictConfig, OmegaConf
 
 def load_config(config_name: str = "config.yaml",
                 overrides: Union[DictConfig, dict] = {}) -> DictConfig:
-    """Load yaml configuration file via Hydra."""
+    """Load yaml configuration file via OmegaConf."""
 
     if not config_name.endswith('yaml'):
         config_name += '.yaml'
@@ -28,6 +28,11 @@ def load_config(config_name: str = "config.yaml",
     config_root = os.path.abspath(os.path.join(_ROOT, "conf"))
     config = OmegaConf.load(os.path.join(config_root, config_name))
     config.merge_with(overrides)
+
+    # Force override label dict, don't merge.
+    override_label_dict = overrides.get('label_dict', None)
+    if override_label_dict:
+        config.label_dict = override_label_dict
 
     return config
 

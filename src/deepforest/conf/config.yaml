@@ -13,9 +13,13 @@ num_classes: 1
 nms_thresh: 0.05
 score_thresh: 0.1
 
+# Set model name to None to initialize from scratch
 model:
     name: 'weecology/deepforest-tree'
     revision: 'main'
+
+label_dict:
+    Tree: 0
 
 # Pre-processing parameters
 path_to_raster:
@@ -52,7 +56,7 @@ train:
             min_lr: 0
             eps: 0.00000001
 
-    # Print loss every n epochs
+    # How many epochs to run for
     epochs: 1
     # Useful debugging flag in pytorch lightning, set to True to get a single batch of training to test settings.
     fast_dev_run: False
@@ -60,11 +64,14 @@ train:
     preload_images: False
 
 validation:
-    # callback args
     csv_file:
     root_dir:
     preload_images: False
     size:
+
+    # For retinanet you may prefer val_classification, but the default val_loss
+    # should work with all models
+    lr_plateau_target: val_loss
 
     # Intersection over union evaluation
     iou_threshold: 0.4

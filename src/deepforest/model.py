@@ -13,7 +13,7 @@ import cv2
 from PIL import Image
 
 
-class Model():
+class BaseModel():
     """A architecture agnostic class that controls the basic train, eval and
     predict functions. A model should optionally allow a backbone for
     pretraining. To add new architectures, simply create a new module in
@@ -28,7 +28,6 @@ class Model():
 
         # Check for required properties and formats
         self.config = config
-        self.nms_thresh = None  # Required for some models but not all
 
     def create_model(self):
         """This function converts a deepforest config file into a model.
