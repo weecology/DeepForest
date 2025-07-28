@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Optional, List, Dict, Union
+from typing import Optional, List, Dict, Union, Any
 from omegaconf import MISSING
 
 
@@ -63,7 +63,7 @@ class TrainConfig:
     epochs: int = 1
     fast_dev_run: bool = False
     preload_images: bool = False
-    augmentations: Optional[Union[List[str], Dict[str, Dict[str, Union[str, float, int]]]]] = None
+    augmentations: Optional[Any] = None
 
 
 @dataclass
