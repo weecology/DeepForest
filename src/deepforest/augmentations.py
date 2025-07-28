@@ -113,14 +113,19 @@ def _create_augmentation(name: str, params: Dict[str, Any]) -> Optional[A.BasicT
             "scale_range": (0.25, 0.5),
             "p": 0.5
         },
+        "RandomCrop": {
+            "height": 200,
+            "width": 200,
+            "p": 0.5
+        },
         "RandomSizedBBoxSafeCrop": {
-            "height": 400,
-            "width": 400,
+            "height": 200,
+            "width": 200,
             "p": 0.5
         },
         "PadIfNeeded": {
-            "min_height": 400,
-            "min_width": 400,
+            "min_height": 800,
+            "min_width": 800,
             "p": 1.0
         },
         "Rotate": {
@@ -150,20 +155,12 @@ def _create_augmentation(name: str, params: Dict[str, Any]) -> Optional[A.BasicT
             "blur_limit": 2,
             "p": 0.3
         },
-        "MedianBlur": {
-            "blur_limit": 2,
-            "p": 0.3
-        },
         "MotionBlur": {
             "blur_limit": 2,
             "p": 0.3
         },
         "ZoomBlur": {
             "max_factor": 1.05,
-            "p": 0.3
-        },
-        "AdvancedBlur": {
-            "blur_limit": 2,
             "p": 0.3
         },
     }
@@ -173,6 +170,7 @@ def _create_augmentation(name: str, params: Dict[str, Any]) -> Optional[A.BasicT
         "HorizontalFlip": A.HorizontalFlip,
         "VerticalFlip": A.VerticalFlip,
         "Downscale": A.Downscale,
+        "RandomCrop": A.RandomCrop,
         "RandomSizedBBoxSafeCrop": A.RandomSizedBBoxSafeCrop,
         "PadIfNeeded": A.PadIfNeeded,
         "Rotate": A.Rotate,
@@ -181,10 +179,8 @@ def _create_augmentation(name: str, params: Dict[str, Any]) -> Optional[A.BasicT
         "GaussNoise": A.GaussNoise,
         "Blur": A.Blur,
         "GaussianBlur": A.GaussianBlur,
-        "MedianBlur": A.MedianBlur,
         "MotionBlur": A.MotionBlur,
         "ZoomBlur": A.ZoomBlur,
-        "AdvancedBlur": A.AdvancedBlur,
     }
 
     if name not in augmentation_classes:
@@ -213,6 +209,7 @@ def get_available_augmentations() -> List[str]:
         "HorizontalFlip",
         "VerticalFlip",
         "Downscale",
+        "RandomCrop",
         "RandomSizedBBoxSafeCrop",
         "PadIfNeeded",
         "Rotate",
@@ -221,8 +218,6 @@ def get_available_augmentations() -> List[str]:
         "GaussNoise",
         "Blur",
         "GaussianBlur",
-        "MedianBlur",
         "MotionBlur",
         "ZoomBlur",
-        "AdvancedBlur",
     ]
