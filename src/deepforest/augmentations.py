@@ -65,7 +65,6 @@ def get_transform(
     # Always add ToTensorV2 at the end
     transforms_list.append(ToTensorV2())
 
-    # Only set bbox_params when transforms that can modify boxes are present
     bbox_params = A.BboxParams(format='pascal_voc', label_fields=["category_ids"])
     return A.Compose(transforms_list, bbox_params=bbox_params)
 
