@@ -13,16 +13,7 @@ from PIL import Image
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 import shapely
-
-
-def get_transform(augment: bool) -> A.Compose:
-    """Create Albumentations transformation for bounding boxes."""
-    bbox_params = A.BboxParams(format='pascal_voc', label_fields=["category_ids"])
-
-    if augment:
-        return A.Compose([A.HorizontalFlip(p=0.5), ToTensorV2()], bbox_params=bbox_params)
-    else:
-        return A.Compose([ToTensorV2()])
+from deepforest.augmentations import get_transform
 
 
 class BoxDataset(Dataset):
@@ -32,6 +23,7 @@ class BoxDataset(Dataset):
                  root_dir,
                  transforms=None,
                  augment=True,
+                 augmentations=None,
                  label_dict={"Tree": 0},
                  preload_images=False):
         """
@@ -42,6 +34,7 @@ class BoxDataset(Dataset):
                 on a sample.
             label_dict: a dictionary where keys are labels from the csv column and values are numeric labels "Tree" -> 0
             augment: if True, apply augmentations to the images
+            augmentations: augmentation configuration (str, list, or dict)
             preload_images: if True, preload the images into memory
         Returns:
             List of images and targets. Targets are dictionaries with keys "boxes" and "labels". Boxes are numpy arrays with shape (N, 4) and labels are numpy arrays with shape (N,).
@@ -49,7 +42,7 @@ class BoxDataset(Dataset):
         self.annotations = pd.read_csv(csv_file)
         self.root_dir = root_dir
         if transforms is None:
-            self.transform = get_transform(augment=augment)
+            self.transform = get_transform(augment=augment, augmentations=augmentations)
         else:
             self.transform = transforms
         self.image_names = self.annotations.image_path.unique()

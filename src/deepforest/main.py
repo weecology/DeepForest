@@ -317,6 +317,7 @@ class deepforest(pl.LightningModule):
                      shuffle=True,
                      transforms=None,
                      augment=True,
+                     augmentations=None,
                      preload_images=False,
                      batch_size=1):
         """Create a dataset for inference or training. Csv file format is .csv
@@ -332,6 +333,7 @@ class deepforest(pl.LightningModule):
             batch_size: batch size
             preload_images: if True, preload the images into memory
             augment: if True, apply augmentations to the images
+            augmentations: augmentation configuration (str, list, or dict)
         Returns:
             ds: a pytorch dataset
         """
@@ -340,6 +342,7 @@ class deepforest(pl.LightningModule):
                                  transforms=transforms,
                                  label_dict=self.label_dict,
                                  augment=augment,
+                                 augmentations=augmentations,
                                  preload_images=preload_images)
         if len(ds) == 0:
             raise ValueError(
@@ -365,9 +368,13 @@ class deepforest(pl.LightningModule):
         if self.existing_train_dataloader:
             return self.existing_train_dataloader
 
+        # Get augmentations from config
+        augmentations = getattr(self.config.train, 'augmentations', None)
+
         loader = self.load_dataset(csv_file=self.config.train.csv_file,
                                    root_dir=self.config.train.root_dir,
                                    augment=True,
+                                   augmentations=augmentations,
                                    preload_images=self.config.train.preload_images,
                                    shuffle=True,
                                    transforms=self.transforms,
