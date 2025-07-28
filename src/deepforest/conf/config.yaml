@@ -43,7 +43,8 @@ train:
     # augmentations: 
     #   HorizontalFlip: {p: 0.5}
     #   Downscale: {scale_min: 0.25, scale_max: 0.75, p: 0.5}
-    augmentations: Optional[list] = None
+    augmentations: 
+        - HorizontalFlip
     scheduler:
         type:
         params:
