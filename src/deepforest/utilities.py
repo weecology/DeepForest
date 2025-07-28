@@ -56,10 +56,6 @@ def load_config(config_name: str = "config.yaml",
     if override_label_dict:
         config.label_dict = override_label_dict
 
-    # Ensure augmentations field is always present in train config
-    if not hasattr(config.train, 'augmentations'):
-        config.train.augmentations = None
-
     return config
 
 
