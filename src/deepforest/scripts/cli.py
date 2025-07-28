@@ -7,6 +7,7 @@ from omegaconf import DictConfig, OmegaConf
 
 from deepforest.main import deepforest
 from deepforest.visualize import plot_results
+from deepforest.conf.schema import Config as StructuredConfig
 
 
 def train(config: DictConfig) -> None:
@@ -83,7 +84,9 @@ def main():
     else:
         initialize(version_base=None, config_path="pkg://deepforest.conf")
 
+    base = OmegaConf.structured(StructuredConfig)
     cfg = compose(config_name=args.config_name, overrides=overrides)
+    cfg = OmegaConf.merge(base, cfg)
 
     if args.command == "predict":
         predict(cfg, input_path=args.input, output_path=args.output, plot=args.plot)
