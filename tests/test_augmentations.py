@@ -96,7 +96,7 @@ def test_parse_augmentations_empty():
 
 def test_parse_augmentations_invalid_multiple_key():
     # Invalid list with multiple keys in dict
-    with pytest.raises(ValueError, match="exactly one key-value pair"):
+    with pytest.raises(ValueError, match="one key"):
         _parse_augmentations([{"HorizontalFlip": {"p": 0.5}, "Downscale": {"scale_min": 0.25}}])
 
 def test_parse_augmentations_invalid_non_string():

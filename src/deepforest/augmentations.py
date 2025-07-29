@@ -8,6 +8,7 @@ parameters.
 from typing import List, Optional, Union, Dict, Any
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
+from omegaconf import OmegaConf
 from omegaconf.listconfig import ListConfig
 from omegaconf.dictconfig import DictConfig
 
@@ -48,13 +49,14 @@ def get_transform(
         ...                          })
     """
     if not augment:
+        # bbox_params not required as no geometric transforms applied.
         return A.Compose([ToTensorV2()])
 
     # Build list of transforms
     transforms_list = []
 
     if augmentations is None:
-        # Default augmentations for backward compatibility
+        # Default augmentations for backward compatibility.
         transforms_list.append(A.HorizontalFlip(p=0.5))
     else:
         # Parse augmentations parameter
@@ -76,6 +78,12 @@ def _parse_augmentations(
 ) -> Dict[str, Dict[str, Any]]:
     """Parse augmentations parameter into a standardized dict format.
 
+    Examples:
+        - "HorizontalFlip" -> {"HorizontalFlip": {}}
+        - ["HorizontalFlip", "Downscale"] -> {"HorizontalFlip": {}, "Downscale": {}}
+        - {"HorizontalFlip": {"p": 0.5}}
+        - [{"HorizontalFlip": {"p": 0.5}}, {"Downscale": {"scale_min": 0.25}}] -> {"HorizontalFlip": {"p": 0.5}, "Downscale": {"scale_min": 0.25}}
+
     Args:
         augmentations: Augmentation specification in various formats:
             - str: Single augmentation name
@@ -85,28 +93,34 @@ def _parse_augmentations(
     Returns:
         Dict mapping augmentation names to their parameters
     """
+
+    # Convert OmegaConf to primitives
+    if isinstance(augmentations, (DictConfig, ListConfig)):
+        augmentations = OmegaConf.to_container(augmentations, resolve=True)
+
     if isinstance(augmentations, str):
         return {augmentations: {}}
 
-    if isinstance(augmentations, (dict, DictConfig)):
-        return dict(augmentations)
-
-    if isinstance(augmentations, (list, ListConfig)):
+    if isinstance(augmentations, dict):
+        return augmentations
+    elif isinstance(augmentations, list):
         result = {}
-        for item in augmentations:
-            if isinstance(item, str):
-                result[item] = {}
-            elif isinstance(item, (dict, DictConfig)):
-                if len(item) != 1:
+        for augmentation in augmentations:
+            if isinstance(augmentation, str):
+                result[augmentation] = {}
+            elif isinstance(augmentation, dict):
+                if len(augmentation) != 1:
                     raise ValueError(
-                        f"Each augmentation dict must have exactly one key-value pair, got {len(item)} keys"
+                        f"Each augmentation dict must have exactly one key (corresponding to a single operation), got {len(augmentation)}."
                     )
-                name, params = next(iter(item.items()))
+                name, params = next(iter(augmentation.items()))
                 result[name] = params
             else:
                 raise ValueError(
-                    f"List elements must be strings or dicts, got {type(item)}")
+                    f"List elements must be strings or dicts, got {type(augmentation)}")
         return result
+    else:
+        raise ValueError(f"Unable to parse augmentation parameters: {augmentations}")
 
 
 def _create_augmentation(name: str, params: Dict[str, Any]) -> Optional[A.BasicTransform]:
