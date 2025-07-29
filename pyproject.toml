@@ -44,7 +44,7 @@ dependencies = [
     "aiolimiter",
     "aiohttp",
     "docformatter",
-    "huggingface_hub>=0.25.0",
+    "huggingface_hub",
     "hydra-core",
     "geopandas",
     "matplotlib",
@@ -71,7 +71,7 @@ dependencies = [
     "torchvision>=0.13",
     "tqdm",
     "xmltodict",
-    "transformers>=4.46.3",
+    "transformers",
     "timm>=1.0.15",
 ]
 
