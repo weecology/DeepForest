@@ -667,14 +667,14 @@ def test_config_augmentations():
             "augmentations": ["HorizontalFlip", "Downscale"]
         }
     }
-    
+
     m = main.deepforest(config_args=config_args)
     csv_file = get_data("example.csv")
     root_dir = os.path.dirname(csv_file)
-    
+
     # Load dataset with config-based augmentations
     train_ds = m.load_dataset(csv_file, root_dir=root_dir, augment=True)
-    
+
     # Check that we can iterate over the dataset
     image, target, path = next(iter(train_ds))
     assert image is not None
@@ -685,20 +685,20 @@ def test_config_augmentations_with_params():
     # Test with config args containing augmentations with parameters
     config_args = {
         "train": {
-            "augmentations": {
-                "HorizontalFlip": {"p": 0.8},
-                "Downscale": {"scale_range": (0.5, 0.9), "p": 0.3}
-            }
+            "augmentations": [
+                {"HorizontalFlip": {"p": 0.8}},
+                {"Downscale": {"scale_range": (0.5, 0.9), "p": 0.3}}
+            ]
         }
     }
-    
+
     m = main.deepforest(config_args=config_args)
     csv_file = get_data("example.csv")
     root_dir = os.path.dirname(csv_file)
-    
+
     # Load dataset with config-based augmentations
     train_ds = m.load_dataset(csv_file, root_dir=root_dir, augment=True)
-    
+
     # Check that we can iterate over the dataset
     image, target, path = next(iter(train_ds))
     assert image is not None
@@ -710,10 +710,10 @@ def test_config_no_augmentations():
     m = main.deepforest()
     csv_file = get_data("example.csv")
     root_dir = os.path.dirname(csv_file)
-    
+
     # Load dataset - should use default augmentations
     train_ds = m.load_dataset(csv_file, root_dir=root_dir, augment=True)
-    
+
     # Check that we can iterate over the dataset
     image, target, path = next(iter(train_ds))
     assert image is not None

@@ -9,6 +9,7 @@ from typing import List, Optional, Union, Dict, Any
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 from omegaconf.listconfig import ListConfig
+from omegaconf.dictconfig import DictConfig
 
 
 def get_transform(
@@ -71,24 +72,41 @@ def get_transform(
 
 
 def _parse_augmentations(
-        augmentations: Union[str, List[str], Dict[str,
-                                                  Any]]) -> Dict[str, Dict[str, Any]]:
+    augmentations: Union[str, List, Dict, ListConfig, DictConfig]
+) -> Dict[str, Dict[str, Any]]:
     """Parse augmentations parameter into a standardized dict format.
 
     Args:
-        augmentations: Augmentation specification in various formats
+        augmentations: Augmentation specification in various formats:
+            - str: Single augmentation name
+            - List: List of strings or dicts with augmentation configs
+            - Dict: Dict with augmentation names as keys and parameters as values
 
     Returns:
         Dict mapping augmentation names to their parameters
     """
     if isinstance(augmentations, str):
         return {augmentations: {}}
-    elif isinstance(augmentations, list) or isinstance(augmentations, ListConfig):
-        return {aug: {} for aug in augmentations}
-    elif isinstance(augmentations, dict):
-        return augmentations
-    else:
-        raise ValueError(f"Unsupported augmentations type: {type(augmentations)}")
+
+    if isinstance(augmentations, (dict, DictConfig)):
+        return dict(augmentations)
+
+    if isinstance(augmentations, (list, ListConfig)):
+        result = {}
+        for item in augmentations:
+            if isinstance(item, str):
+                result[item] = {}
+            elif isinstance(item, (dict, DictConfig)):
+                if len(item) != 1:
+                    raise ValueError(
+                        f"Each augmentation dict must have exactly one key-value pair, got {len(item)} keys"
+                    )
+                name, params = next(iter(item.items()))
+                result[name] = params
+            else:
+                raise ValueError(
+                    f"List elements must be strings or dicts, got {type(item)}")
+        return result
 
 
 def _create_augmentation(name: str, params: Dict[str, Any]) -> Optional[A.BasicTransform]:

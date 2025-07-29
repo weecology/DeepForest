@@ -3,6 +3,7 @@ import pytest
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 import numpy as np
+import io
 
 from deepforest.augmentations import get_transform, get_available_augmentations, _parse_augmentations, _create_augmentation
 
@@ -14,7 +15,7 @@ def test_get_transform_default():
     assert isinstance(transform, A.Compose)
     assert len(transform.transforms) == 1
     assert isinstance(transform.transforms[0], ToTensorV2)
-    
+
     # Test with default augmentations
     transform = get_transform(augment=True)
     assert isinstance(transform, A.Compose)
@@ -33,7 +34,7 @@ def test_get_transform_single_augmentation():
 
 
 def test_get_transform_multiple_augmentations():
-    """Test with list of augmentation names."""
+    """Test with list of augmentation names (strings)."""
     transform = get_transform(augment=True, augmentations=["HorizontalFlip", "Downscale"])
     assert isinstance(transform, A.Compose)
     assert len(transform.transforms) == 3  # HorizontalFlip + Downscale + ToTensorV2
@@ -51,27 +52,87 @@ def test_get_transform_with_parameters():
     transform = get_transform(augment=True, augmentations=augmentations)
     assert isinstance(transform, A.Compose)
     assert len(transform.transforms) == 3  # HorizontalFlip + Downscale + ToTensorV2
-    
+
     # Check parameters were applied
     assert transform.transforms[0].p == 0.8  # HorizontalFlip
     assert transform.transforms[1].scale_range == (0.5, 0.9)  # Downscale
     assert transform.transforms[1].p == 0.3
 
 
-def test_parse_augmentations():
+def test_parse_augmentations_string():
     """Test _parse_augmentations function."""
     # String input
     result = _parse_augmentations("HorizontalFlip")
     assert result == {"HorizontalFlip": {}}
-    
-    # List input
-    result = _parse_augmentations(["HorizontalFlip", "Downscale"])
-    assert result == {"HorizontalFlip": {}, "Downscale": {}}
-    
+def test_parse_augmentations_dict():
     # Dict input
     input_dict = {"HorizontalFlip": {"p": 0.5}, "Downscale": {"scale_min": 0.25}}
     result = _parse_augmentations(input_dict)
     assert result == input_dict
+
+def test_parse_augmentations_string_list():
+    # List of strings (simple augmentations)
+    result = _parse_augmentations(["HorizontalFlip", "Downscale"])
+    assert result == {"HorizontalFlip": {}, "Downscale": {}}
+
+def test_parse_augmentations_list_of_dict():
+    # List of dicts format (for YAML support)
+    list_of_dicts = [{"HorizontalFlip": {"p": 0.5}}, {"Downscale": {"scale_min": 0.25, "scale_max": 0.75}}]
+    result = _parse_augmentations(list_of_dicts)
+    expected = {"HorizontalFlip": {"p": 0.5}, "Downscale": {"scale_min": 0.25, "scale_max": 0.75}}
+    assert result == expected
+
+def test_parse_augmentations_string_and_dict():
+    # Mixed list (strings and dicts)
+    mixed_list = ["HorizontalFlip", {"Blur": {"blur_limit": 3}}, "Downscale"]
+    result = _parse_augmentations(mixed_list)
+    expected = {"HorizontalFlip": {}, "Blur": {"blur_limit": 3}, "Downscale": {}}
+    assert result == expected
+
+def test_parse_augmentations_empty():
+    # Empty list
+    result = _parse_augmentations([])
+    assert result == {}
+
+def test_parse_augmentations_invalid_multiple_key():
+    # Invalid list with multiple keys in dict
+    with pytest.raises(ValueError, match="exactly one key-value pair"):
+        _parse_augmentations([{"HorizontalFlip": {"p": 0.5}, "Downscale": {"scale_min": 0.25}}])
+
+def test_parse_augmentations_invalid_non_string():
+    # Invalid list with non-string/non-dict elements
+    with pytest.raises(ValueError, match="List elements must be strings or dicts"):
+        _parse_augmentations([{"HorizontalFlip": {"p": 0.5}}, 123])
+
+def test_parse_augmentations_omegaconf():
+    # Test OmegaConf types (ListConfig and DictConfig)
+    from omegaconf import OmegaConf
+
+    # Test ListConfig
+    yaml_config = """
+    augmentations:
+      - HorizontalFlip:
+          p: 0.7
+      - Blur:
+          blur_limit: 3
+    """
+    config = OmegaConf.load(io.StringIO(yaml_config))
+    result = _parse_augmentations(config.augmentations)
+    expected = {"HorizontalFlip": {"p": 0.7}, "Blur": {"blur_limit": 3}}
+    assert result == expected
+
+    # Test DictConfig
+    yaml_config2 = """
+    augmentations:
+      HorizontalFlip:
+        p: 0.7
+      Blur:
+        blur_limit: 3
+    """
+    config2 = OmegaConf.load(io.StringIO(yaml_config2))
+    result2 = _parse_augmentations(config2.augmentations)
+    expected2 = {"HorizontalFlip": {"p": 0.7}, "Blur": {"blur_limit": 3}}
+    assert result2 == expected2
 
 
 def test_create_augmentation():
@@ -80,7 +141,7 @@ def test_create_augmentation():
     aug = _create_augmentation("HorizontalFlip", {"p": 0.7})
     assert isinstance(aug, A.HorizontalFlip)
     assert aug.p == 0.7
-    
+
     # Invalid augmentation should raise ValueError
     with pytest.raises(ValueError, match="Unknown augmentation 'InvalidAugmentation'"):
         _create_augmentation("InvalidAugmentation", {})
@@ -99,7 +160,7 @@ def test_get_available_augmentations():
 def test_bbox_params():
     """Test that bbox_params are properly set."""
     transform = get_transform(augment=True, augmentations="HorizontalFlip")
-    
+
     # Check that bbox_params is configured in the transform repr
     transform_repr = repr(transform)
     assert "bbox_params" in transform_repr
@@ -110,9 +171,9 @@ def test_bbox_params():
 def test_blur_augmentations():
     """Test that all blur augmentations can be created successfully."""
     blur_augmentations = ["Blur", "GaussianBlur"]
-    
+
     for blur_aug in blur_augmentations:
-        transform = get_transform(augment=True, augmentations=[blur_aug])
+        transform = get_transform(augment=True, augmentations=[{blur_aug: {}}])
         assert isinstance(transform, A.Compose)
         assert len(transform.transforms) == 2  # Blur augmentation + ToTensorV2
         assert isinstance(transform.transforms[1], ToTensorV2)
@@ -125,7 +186,7 @@ def test_blur_augmentations_with_parameters():
         "MotionBlur": {"blur_limit": 7, "p": 0.6},
         "ZoomBlur": {"max_factor": 1.3, "p": 0.4}
     }
-    
+
     transform = get_transform(augment=True, augmentations=blur_configs)
     assert isinstance(transform, A.Compose)
     assert len(transform.transforms) == 4  # 3 blur augmentations + ToTensorV2
@@ -133,9 +194,9 @@ def test_blur_augmentations_with_parameters():
 
 
 def test_mixed_blur_and_other_augmentations():
-    """Test combining blur augmentations with other augmentations."""
-    mixed_augmentations = ["HorizontalFlip", "GaussianBlur", "Downscale", "MotionBlur"]
-    
+    """Test combining blur augmentations with other augmentations using mixed format."""
+    mixed_augmentations = ["HorizontalFlip", {"GaussianBlur": {"blur_limit": 3}}, "Downscale", {"MotionBlur": {"blur_limit": 5}}]
+
     transform = get_transform(augment=True, augmentations=mixed_augmentations)
     assert isinstance(transform, A.Compose)
     assert len(transform.transforms) == 5  # 4 augmentations + ToTensorV2

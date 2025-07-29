@@ -35,16 +35,16 @@ train:
 
     # Optimizer initial learning rate
     lr: 0.001
-    
+
     # Data augmentations for training
-    # Can be null (use defaults), list of names, or dict with parameters
+    # Can be list of names, or dict with parameters
     # Examples:
-    # augmentations: ["HorizontalFlip", "Downscale"]
-    # augmentations: 
+    # augmentations:
     #   HorizontalFlip: {p: 0.5}
     #   Downscale: {scale_min: 0.25, scale_max: 0.75, p: 0.5}
-    augmentations: 
-        - HorizontalFlip
+    augmentations:
+        - HorizontalFlip:
+            p: 0.5
     scheduler:
         type:
         params:
