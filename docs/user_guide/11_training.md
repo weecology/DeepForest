@@ -271,7 +271,7 @@ Note that if you trained on GPU and restore on cpu, you will need the map_locati
 
 ### Data Augmentations
 
-DeepForest supports configurable data augmentations using albumentations to improve model generalization across different sensors and acquisition conditions. Augmentations can be specified through the configuration file or passed directly to the model.
+DeepForest supports configurable data augmentations using [Albumentations](https://albumentations.ai/docs/3-basic-usage/bounding-boxes-augmentations/) to improve model generalization across different sensors and acquisition conditions. Augmentations can be specified through the configuration file or passed directly to the model.
 
 #### Configuration-based Augmentations
 
@@ -281,14 +281,16 @@ The easiest way to specify augmentations is through the config file:
 train:
   # Simple list of augmentation names
   augmentations: ["HorizontalFlip", "Downscale", "RandomBrightnessContrast"]
-  
-  # Or with custom parameters
+
+  # Or as a list of custom parameters
   augmentations:
-    HorizontalFlip: {p: 0.5}
-    Downscale: {scale_range: [0.25, 0.75], p: 0.5}
-    RandomSizedBBoxSafeCrop: {height: 400, width: 400, p: 0.3}
-    PadIfNeeded: {min_height: 400, min_width: 400, p: 1.0}
+    - HorizontalFlip: {p: 0.5}
+    - Downscale: {scale_range: [0.25, 0.75], p: 0.5}
+    - RandomSizedBBoxSafeCrop: {height: 400, width: 400, p: 0.3}
+    - PadIfNeeded: {min_height: 400, min_width: 400, p: 1.0}
 ```
+
+Note that augmentations are provided as a list (prepended with a `-` in YAML). If you omit this, the parameter will be interpreted as a dictionary and the config parser may fail. If you provide only the augmentation name, default settings will be used. These have been chosen to reflect sensible parameters for different transformations, as it's quite easy to "over augment" which can make models harder to train. By default, if you enable augmentation and do not specify a transform explicitly, only `HorizontalFlip` will be used.
 
 You can also specify augmentations programmatically:
 
@@ -306,10 +308,10 @@ model = main.deepforest(config_args=config_args)
 # Or with parameters
 config_args = {
     "train": {
-        "augmentations": {
+        "augmentations": [
             "HorizontalFlip": {"p": 0.8},
             "Downscale": {"scale_range": (0.5, 0.9), "p": 0.3}
-        }
+        ]
     }
 }
 model = main.deepforest(config_args=config_args)
@@ -319,16 +321,16 @@ model = main.deepforest(config_args=config_args)
 
 DeepForest supports the following augmentations optimized for object detection:
 
-- **HorizontalFlip**: Randomly flip images horizontally
-- **VerticalFlip**: Randomly flip images vertically  
-- **Downscale**: Randomly downscale images to simulate different resolutions
-- **RandomSizedBBoxSafeCrop**: Crop image while preserving bounding boxes
-- **PadIfNeeded**: Pad images to minimum size
-- **Rotate**: Rotate images by small angles
-- **RandomBrightnessContrast**: Adjust brightness and contrast
-- **HueSaturationValue**: Adjust color properties
-- **GaussNoise**: Add gaussian noise
-- **Blur**: Apply blur effect
+- **[HorizontalFlip](https://albumentations.ai/docs/api-reference/albumentations/augmentations/geometric/flip/#HorizontalFlip)**: Randomly flip images horizontally
+- **[VerticalFlip](https://albumentations.ai/docs/api-reference/albumentations/augmentations/geometric/flip/#VerticalFlip)**: Randomly flip images vertically
+- **[Downscale](https://albumentations.ai/docs/api-reference/albumentations/augmentations/pixel/transforms/#Downscale)**: Randomly downscale images to simulate different resolutions
+- **[RandomSizedBBoxSafeCrop](https://albumentations.ai/docs/api-reference/albumentations/augmentations/crops/transforms/#RandomSizedBBoxSafeCrop)**: Crop image while preserving bounding boxes
+- **[PadIfNeeded](https://albumentations.ai/docs/api-reference/albumentations/augmentations/geometric/pad/#PadIfNeeded)**: Pad images to minimum size
+- **[Rotate](https://albumentations.ai/docs/api-reference/albumentations/augmentations/geometric/rotate/#Rotate)**: Rotate images by small angles
+- **[RandomBrightnessContrast](https://albumentations.ai/docs/api-reference/albumentations/augmentations/pixel/transforms/#RandomBrightnessContrast)**: Adjust brightness and contrast
+- **[HueSaturationValue](https://albumentations.ai/docs/api-reference/albumentations/augmentations/pixel/transforms/#HueSaturationValue)**: Adjust color properties
+- **[GaussNoise](https://albumentations.ai/docs/api-reference/albumentations/augmentations/pixel/transforms/#GaussNoise)**: Add gaussian noise
+- **[Blur](https://albumentations.ai/docs/api-reference/albumentations/augmentations/blur/transforms/#Blur)**: Apply blur effect
 
 #### Zoom Augmentations for Multi-Resolution Training
 
@@ -338,19 +340,19 @@ For improved generalization across different image resolutions and scales:
 # Configuration for zoom/scale augmentations
 config_args = {
     "train": {
-        "augmentations": {
+        "augmentations": [
             # Simulate different acquisition heights/resolutions
             "Downscale": {"scale_range": (0.25, 0.75), "p": 0.5},
-            
+
             # Crop at different scales while preserving objects
             "RandomSizedBBoxSafeCrop": {"height": 400, "width": 400, "p": 0.3},
-            
+
             # Ensure minimum image size
             "PadIfNeeded": {"min_height": 400, "min_width": 400, "p": 1.0},
-            
+
             # Basic data augmentation
             "HorizontalFlip": {"p": 0.5}
-        }
+        ]
     }
 }
 
@@ -374,14 +376,14 @@ def get_transform(augment):
             ToTensorV2()
         ], bbox_params=A.BboxParams(format='pascal_voc', label_fields=["category_ids"]))
     else:
-        transform = A.Compose([ToTensorV2()], 
+        transform = A.Compose([ToTensorV2()],
                              bbox_params=A.BboxParams(format='pascal_voc', label_fields=["category_ids"]))
     return transform
 
 model = main.deepforest(transforms=get_transform)
 ```
 
-**Note**: When creating custom transforms, always include `ToTensorV2()` and properly configure `bbox_params` for object detection.
+**Note**: When creating custom transforms, always include `ToTensorV2()` and properly configure `bbox_params` for object detection. If your augmentation pipeline does not contain any geometric transformations, `bbox_params` is not required. Otherwise it's important that you keep the format as `pascal_voc` so that the boxes are correctly interpreted by Albumentations.
 
 **How do I make training faster?**
 

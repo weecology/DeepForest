@@ -63,7 +63,7 @@ class TrainConfig:
     epochs: int = 1
     fast_dev_run: bool = False
     preload_images: bool = False
-    augmentations: Optional[Any] = None
+    augmentations: Optional[List[Any]] = None
 
 
 @dataclass

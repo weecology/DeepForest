@@ -4,7 +4,8 @@ import albumentations as A
 from albumentations.pytorch import ToTensorV2
 import numpy as np
 import io
-
+import os
+from deepforest import main, get_data
 from deepforest.augmentations import get_transform, get_available_augmentations, _parse_augmentations, _create_augmentation
 
 
@@ -212,6 +213,89 @@ def test_unknown_augmentation_error():
     with pytest.raises(ValueError, match="Unknown augmentation 'UnknownAugmentation'"):
         get_transform(augment=True, augmentations="UnknownAugmentation")
 
+
+def test_override_transforms():
+
+    def get_transform(augment):
+        """This is the new transform"""
+        if augment:
+            print("I'm a new augmentation!")
+            transform = A.Compose(
+                [A.HorizontalFlip(p=0.5), ToTensorV2()],
+                bbox_params=A.BboxParams(format='pascal_voc',
+                                         label_fields=["category_ids"]))
+
+        else:
+            transform = ToTensorV2()
+        return transform
+
+    m = main.deepforest(transforms=get_transform)
+
+    csv_file = get_data("example.csv")
+    root_dir = os.path.dirname(csv_file)
+    train_ds = m.load_dataset(csv_file, root_dir=root_dir, augment=True)
+
+    image, target, path = next(iter(train_ds))
+    assert m.transforms.__doc__ == "This is the new transform"
+
+def test_config_augmentations():
+    """Test that augmentations can be configured via config."""
+    # Test with config args containing augmentations
+    config_args = {
+        "train": {
+            "augmentations": ["HorizontalFlip", "Downscale"]
+        }
+    }
+
+    m = main.deepforest(config_args=config_args)
+    csv_file = get_data("example.csv")
+    root_dir = os.path.dirname(csv_file)
+
+    # Load dataset with config-based augmentations
+    train_ds = m.load_dataset(csv_file, root_dir=root_dir, augment=True)
+
+    # Check that we can iterate over the dataset
+    image, target, path = next(iter(train_ds))
+    assert image is not None
+
+
+def test_config_augmentations_with_params():
+    """Test that augmentations with parameters can be configured via config."""
+    # Test with config args containing augmentations with parameters
+    config_args = {
+        "train": {
+            "augmentations": [
+                {"HorizontalFlip": {"p": 0.8}},
+                {"Downscale": {"scale_range": (0.5, 0.9), "p": 0.3}}
+            ]
+        }
+    }
+
+    m = main.deepforest(config_args=config_args)
+    csv_file = get_data("example.csv")
+    root_dir = os.path.dirname(csv_file)
+
+    # Load dataset with config-based augmentations
+    train_ds = m.load_dataset(csv_file, root_dir=root_dir, augment=True)
+
+    # Check that we can iterate over the dataset
+    image, target, path = next(iter(train_ds))
+    assert image is not None
+
+
+def test_config_no_augmentations():
+    """Test that default behavior works when no augmentations are specified in config."""
+    # Test with no augmentations in config (should use defaults)
+    m = main.deepforest()
+    csv_file = get_data("example.csv")
+    root_dir = os.path.dirname(csv_file)
+
+    # Load dataset - should use default augmentations
+    train_ds = m.load_dataset(csv_file, root_dir=root_dir, augment=True)
+
+    # Check that we can iterate over the dataset
+    image, target, path = next(iter(train_ds))
+    assert image is not None
 
 if __name__ == "__main__":
     pytest.main([__file__])

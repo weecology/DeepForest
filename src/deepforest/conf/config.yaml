@@ -37,14 +37,14 @@ train:
     lr: 0.001
 
     # Data augmentations for training
-    # Can be list of names, or dict with parameters
+    # Augmentations must be a list of augmentation names, or a list
+    # of dicts with augmentation names and parameters.
     # Examples:
     # augmentations:
-    #   HorizontalFlip: {p: 0.5}
-    #   Downscale: {scale_min: 0.25, scale_max: 0.75, p: 0.5}
+    #   - HorizontalFlip: {p: 0.5}
+    #   - Downscale: {scale_min: 0.25, scale_max: 0.75, p: 0.5}
     augmentations:
-        HorizontalFlip:
-            p: 0.5
+        - HorizontalFlip: {p: 0.5}
     scheduler:
         type:
         params:
