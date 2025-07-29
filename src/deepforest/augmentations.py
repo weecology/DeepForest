@@ -8,6 +8,7 @@ parameters.
 from typing import List, Optional, Union, Dict, Any
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
+from omegaconf.listconfig import ListConfig
 
 
 def get_transform(
@@ -23,23 +24,23 @@ def get_transform(
             - If list: List of augmentation names
             - If dict: Dict with augmentation names as keys and parameters as values
             - If None: Uses default augmentations when augment=True
-            
+
     Returns:
         A.Compose: Composed albumentations transform with bbox parameters
-        
+
     Examples:
         >>> # Default behavior (backward compatible)
         >>> transform = get_transform(augment=True)
-        
+
         >>> # Single augmentation
         >>> transform = get_transform(augment=True, augmentations="Downscale")
-        
+
         >>> # Multiple augmentations
-        >>> transform = get_transform(augment=True, 
+        >>> transform = get_transform(augment=True,
         ...                          augmentations=["HorizontalFlip", "Downscale"])
-        
+
         >>> # Augmentations with parameters
-        >>> transform = get_transform(augment=True, 
+        >>> transform = get_transform(augment=True,
         ...                          augmentations={
         ...                              "HorizontalFlip": {"p": 0.5},
         ...                              "Downscale": {"scale_min": 0.25, "scale_max": 0.75}
@@ -82,7 +83,7 @@ def _parse_augmentations(
     """
     if isinstance(augmentations, str):
         return {augmentations: {}}
-    elif isinstance(augmentations, list):
+    elif isinstance(augmentations, list) or isinstance(augmentations, ListConfig):
         return {aug: {} for aug in augmentations}
     elif isinstance(augmentations, dict):
         return augmentations
