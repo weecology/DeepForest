@@ -43,7 +43,7 @@ train:
     #   HorizontalFlip: {p: 0.5}
     #   Downscale: {scale_min: 0.25, scale_max: 0.75, p: 0.5}
     augmentations:
-        - HorizontalFlip:
+        HorizontalFlip:
             p: 0.5
     scheduler:
         type:
