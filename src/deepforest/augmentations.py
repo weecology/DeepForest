@@ -111,7 +111,7 @@ def _parse_augmentations(
             elif isinstance(augmentation, dict):
                 if len(augmentation) != 1:
                     raise ValueError(
-                        f"Each augmentation dict must have exactly one key (corresponding to a single operation), got {len(augmentation)}."
+                        f"Each augmentation dict must have exactly one key (corresponding to a single operation), got {len(augmentation)} for {augmentation}."
                     )
                 name, params = next(iter(augmentation.items()))
                 result[name] = params
