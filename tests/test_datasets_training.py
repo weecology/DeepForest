@@ -1,5 +1,5 @@
 # test dataset model
-from deepforest import get_data
+from deepforest import get_data, main
 from deepforest import utilities
 import os
 import pytest
@@ -125,7 +125,7 @@ def test_BoxDataset_format():
     root_dir = os.path.dirname(csv_file)
     ds = BoxDataset(csv_file=csv_file, root_dir=root_dir)
     image, targets, path = next(iter(ds))
-    
+
     # Assert image is channels first format
     assert image.shape[0] == 3
 
@@ -148,3 +148,42 @@ def test_multi_image_warning():
         batch = ds[i]
         collated_batch = utilities.collate_fn([None, batch, batch])
         len(collated_batch[0]) == 2
+
+def test_label_validation__training_csv():
+    """Test training CSV labels are validated against label_dict"""
+    m = main.deepforest(config_args={"num_classes": 1}, label_dict={"Bird": 0})
+    m.config.train.csv_file = get_data("example.csv")  # contains 'Tree' label
+    m.config.train.root_dir = os.path.dirname(get_data("example.csv"))
+    m.create_trainer()
+
+    with pytest.raises(ValueError, match="Labels \\['Tree'\\] are missing from label_dict"):
+        m.trainer.fit(m)
+
+
+def test_csv_label_validation__validation_csv(m):
+    """Test validation CSV labels are validated against label_dict"""
+    m = main.deepforest(config_args={"num_classes": 1}, label_dict={"Tree": 0})
+    m.config.train.csv_file = get_data("example.csv")  # contains 'Tree' label
+    m.config.train.root_dir = os.path.dirname(get_data("example.csv"))
+    m.config.validation.csv_file = get_data("testfile_multi.csv")  # contains 'Dead', 'Alive' labels
+    m.config.validation.root_dir = os.path.dirname(get_data("testfile_multi.csv"))
+    m.create_trainer()
+
+    with pytest.raises(ValueError, match="Labels \\['Dead', 'Alive'\\] are missing from label_dict"):
+        m.trainer.fit(m)
+
+
+def test_BoxDataset_validate_labels():
+    """Test that BoxDataset validates labels correctly"""
+    from deepforest.datasets.training import BoxDataset
+
+    csv_file = get_data("example.csv")  # contains 'Tree' label
+    root_dir = os.path.dirname(csv_file)
+
+    # Valid case: CSV labels are in label_dict
+    ds = BoxDataset(csv_file=csv_file, root_dir=root_dir, label_dict={"Tree": 0})
+    # Should not raise an error
+
+    # Invalid case: CSV labels are not in label_dict
+    with pytest.raises(ValueError, match="Labels \\['Tree'\\] are missing from label_dict"):
+        BoxDataset(csv_file=csv_file, root_dir=root_dir, label_dict={"Bird": 0})
