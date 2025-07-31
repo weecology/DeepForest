@@ -56,12 +56,29 @@ class BoxDataset(Dataset):
         self.label_dict = label_dict
         self.preload_images = preload_images
 
+        self._validate_labels()
+
         # Pin data to memory if desired
         if self.preload_images:
             print("Pinning dataset to GPU memory")
             self.image_dict = {}
             for idx, x in enumerate(self.image_names):
                 self.image_dict[idx] = self.load_image(idx)
+
+    def _validate_labels(self):
+        """Validate that all labels in annotations exist in label_dict.
+
+        Raises:
+            ValueError: If any label in annotations is missing from label_dict
+        """
+        csv_labels = self.annotations['label'].unique()
+        missing_labels = [label for label in csv_labels if label not in self.label_dict]
+
+        if missing_labels:
+            raise ValueError(
+                f"Labels {missing_labels} are missing from label_dict. "
+                f"Please ensure all labels in the annotations exist as keys in label_dict."
+            )
 
     def __len__(self):
         return len(self.image_names)
