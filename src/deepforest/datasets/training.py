@@ -3,6 +3,7 @@
 # Standard library imports
 import os
 from typing import Dict, List, Optional, Union
+import warnings
 
 # Third party imports
 import numpy as np
@@ -21,8 +22,9 @@ class BoxDataset(Dataset):
     def __init__(self,
                  csv_file,
                  root_dir,
+                 *,
                  transforms=None,
-                 augment=True,
+                 augment=None,
                  augmentations=None,
                  label_dict={"Tree": 0},
                  preload_images=False):
@@ -42,7 +44,15 @@ class BoxDataset(Dataset):
         self.annotations = pd.read_csv(csv_file)
         self.root_dir = root_dir
         if transforms is None:
-            self.transform = get_transform(augment=augment, augmentations=augmentations)
+
+            if augment is not None:
+                warnings.warn(
+                    "The `augment` parameter is deprecated. Please use `augmentations` instead and provide an empty list or None to disable augmentations."
+                )
+                if not augment:
+                    augmentations = None
+
+            self.transform = get_transform(augmentations=augmentations)
         else:
             self.transform = transforms
         self.image_names = self.annotations.image_path.unique()

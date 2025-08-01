@@ -87,5 +87,9 @@ validation:
     iou_threshold: 0.4
     val_accuracy_interval: 20
 
+    # Data augmentation is none by default for validation, but you can specify:
+    # augmentations:
+    # if you need to apply augmentations during the val stage.
+
 predict:
     pin_memory: False

@@ -6,6 +6,7 @@ parameters.
 """
 
 from typing import List, Optional, Union, Dict, Any
+import warnings
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 from omegaconf import OmegaConf
@@ -86,13 +87,13 @@ def get_available_augmentations() -> List[str]:
 
 
 def get_transform(
-        augment: bool = True,
+        augment: Optional[bool] = None,
         augmentations: Optional[Union[str, List[str], Dict[str,
                                                            Any]]] = None) -> A.Compose:
     """Create Albumentations transformation for bounding boxes.
 
     Args:
-        augment (bool): Whether to apply augmentations. If False, only ToTensorV2 is applied.
+        augment (bool): Deprecated. Whether to apply augmentations. If False, only ToTensorV2 is applied.
         augmentations (str, list, dict, optional): Augmentation configuration.
             - If str: Single augmentation name (e.g., "HorizontalFlip")
             - If list: List of augmentation names
@@ -103,45 +104,41 @@ def get_transform(
         A.Compose: Composed albumentations transform with bbox parameters
 
     Examples:
-        >>> # Default behavior (backward compatible)
-        >>> transform = get_transform(augment=True)
+        >>> # Default behavior, returns a ToTensorV2 transform
+        >>> transform = get_transform()
 
         >>> # Single augmentation
-        >>> transform = get_transform(augment=True, augmentations="Downscale")
+        >>> transform = get_transform(augmentations="Downscale")
 
         >>> # Multiple augmentations
-        >>> transform = get_transform(augment=True,
-        ...                          augmentations=["HorizontalFlip", "Downscale"])
+        >>> transform = get_transform(augmentations=["HorizontalFlip", "Downscale"])
 
         >>> # Augmentations with parameters
-        >>> transform = get_transform(augment=True,
-        ...                          augmentations={
+        >>> transform = get_transform(augmentations={
         ...                              "HorizontalFlip": {"p": 0.5},
         ...                              "Downscale": {"scale_min": 0.25, "scale_max": 0.75}
         ...                          })
     """
-    if not augment:
-        # bbox_params not required as no geometric transforms applied.
-        return A.Compose([ToTensorV2()])
-
-    # Build list of transforms
     transforms_list = []
+    bbox_params = None
 
-    if augmentations is None:
-        # Default augmentations for backward compatibility.
-        transforms_list.append(A.HorizontalFlip(p=0.5))
-    else:
-        # Parse augmentations parameter
+    if augment is not None:
+        warnings.warn(
+            "The `augment` parameter is deprecated. Please use `augmentations` instead, providing an empty list or None to disable augmentations."
+        )
+
+    if augmentations is not None:
         augment_configs = _parse_augmentations(augmentations)
 
         for aug_name, aug_params in augment_configs.items():
             aug_transform = _create_augmentation(aug_name, aug_params)
             transforms_list.append(aug_transform)
 
+        bbox_params = A.BboxParams(format='pascal_voc', label_fields=["category_ids"])
+
     # Always add ToTensorV2 at the end
     transforms_list.append(ToTensorV2())
 
-    bbox_params = A.BboxParams(format='pascal_voc', label_fields=["category_ids"])
     return A.Compose(transforms_list, bbox_params=bbox_params)
 
 

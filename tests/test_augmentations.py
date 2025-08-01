@@ -12,22 +12,15 @@ from deepforest.augmentations import get_transform, get_available_augmentations,
 def test_get_transform_default():
     """Test default behavior (backward compatibility)."""
     # Test without augmentations
-    transform = get_transform(augment=False)
+    transform = get_transform()
     assert isinstance(transform, A.Compose)
     assert len(transform.transforms) == 1
     assert isinstance(transform.transforms[0], ToTensorV2)
 
-    # Test with default augmentations
-    transform = get_transform(augment=True)
-    assert isinstance(transform, A.Compose)
-    assert len(transform.transforms) == 2  # HorizontalFlip + ToTensorV2
-    assert isinstance(transform.transforms[0], A.HorizontalFlip)
-    assert isinstance(transform.transforms[1], ToTensorV2)
-
 
 def test_get_transform_single_augmentation():
     """Test with single augmentation name."""
-    transform = get_transform(augment=True, augmentations="Downscale")
+    transform = get_transform(augmentations="Downscale")
     assert isinstance(transform, A.Compose)
     assert len(transform.transforms) == 2  # Downscale + ToTensorV2
     assert isinstance(transform.transforms[0], A.Downscale)
@@ -36,7 +29,7 @@ def test_get_transform_single_augmentation():
 
 def test_get_transform_multiple_augmentations():
     """Test with list of augmentation names (strings)."""
-    transform = get_transform(augment=True, augmentations=["HorizontalFlip", "Downscale"])
+    transform = get_transform(augmentations=["HorizontalFlip", "Downscale"])
     assert isinstance(transform, A.Compose)
     assert len(transform.transforms) == 3  # HorizontalFlip + Downscale + ToTensorV2
     assert isinstance(transform.transforms[0], A.HorizontalFlip)
@@ -50,7 +43,7 @@ def test_get_transform_with_parameters():
         "HorizontalFlip": {"p": 0.8},
         "Downscale": {"scale_range": (0.5, 0.9), "p": 0.3}
     }
-    transform = get_transform(augment=True, augmentations=augmentations)
+    transform = get_transform(augmentations=augmentations)
     assert isinstance(transform, A.Compose)
     assert len(transform.transforms) == 3  # HorizontalFlip + Downscale + ToTensorV2
 
@@ -160,7 +153,7 @@ def test_get_available_augmentations():
 
 def test_bbox_params():
     """Test that bbox_params are properly set."""
-    transform = get_transform(augment=True, augmentations="HorizontalFlip")
+    transform = get_transform(augmentations="HorizontalFlip")
 
     # Check that bbox_params is configured in the transform repr
     transform_repr = repr(transform)
@@ -174,7 +167,7 @@ def test_blur_augmentations():
     blur_augmentations = ["Blur", "GaussianBlur"]
 
     for blur_aug in blur_augmentations:
-        transform = get_transform(augment=True, augmentations=[{blur_aug: {}}])
+        transform = get_transform(augmentations=[{blur_aug: {}}])
         assert isinstance(transform, A.Compose)
         assert len(transform.transforms) == 2  # Blur augmentation + ToTensorV2
         assert isinstance(transform.transforms[1], ToTensorV2)
@@ -188,7 +181,7 @@ def test_blur_augmentations_with_parameters():
         "ZoomBlur": {"max_factor": 1.3, "p": 0.4}
     }
 
-    transform = get_transform(augment=True, augmentations=blur_configs)
+    transform = get_transform(augmentations=blur_configs)
     assert isinstance(transform, A.Compose)
     assert len(transform.transforms) == 4  # 3 blur augmentations + ToTensorV2
     assert isinstance(transform.transforms[3], ToTensorV2)
@@ -198,7 +191,7 @@ def test_mixed_blur_and_other_augmentations():
     """Test combining blur augmentations with other augmentations using mixed format."""
     mixed_augmentations = ["HorizontalFlip", {"GaussianBlur": {"blur_limit": 3}}, "Downscale", {"MotionBlur": {"blur_limit": 5}}]
 
-    transform = get_transform(augment=True, augmentations=mixed_augmentations)
+    transform = get_transform(augmentations=mixed_augmentations)
     assert isinstance(transform, A.Compose)
     assert len(transform.transforms) == 5  # 4 augmentations + ToTensorV2
     assert isinstance(transform.transforms[0], A.HorizontalFlip)
@@ -211,7 +204,7 @@ def test_mixed_blur_and_other_augmentations():
 def test_unknown_augmentation_error():
     """Test that unknown augmentations raise ValueError."""
     with pytest.raises(ValueError, match="Unknown augmentation 'UnknownAugmentation'"):
-        get_transform(augment=True, augmentations="UnknownAugmentation")
+        get_transform(augmentations="UnknownAugmentation")
 
 
 def test_override_transforms():
@@ -267,6 +260,11 @@ def test_config_augmentations_with_params():
             "augmentations": [
                 {"HorizontalFlip": {"p": 0.8}},
                 {"Downscale": {"scale_range": (0.5, 0.9), "p": 0.3}}
+            ]
+        },
+        "validation": {
+            "augmentations": [
+                {"VerticalFlip": {"p": 0.8}},
             ]
         }
     }

@@ -316,7 +316,7 @@ class deepforest(pl.LightningModule):
                      root_dir=None,
                      shuffle=True,
                      transforms=None,
-                     augment=True,
+                     augment=None,
                      augmentations=None,
                      preload_images=False,
                      batch_size=1):
@@ -332,16 +332,24 @@ class deepforest(pl.LightningModule):
             transforms: Albumentations transforms
             batch_size: batch size
             preload_images: if True, preload the images into memory
-            augment: if True, apply augmentations to the images
+            augment: deprecated. If True, apply augmentations to the images
             augmentations: augmentation configuration (str, list, or dict)
         Returns:
             ds: a pytorch dataset
         """
+
+        if augment is not None:
+            warnings.warn(
+                "The `augment` parameter is deprecated. Please use `augmentations` instead and provide an empty list or None to disable augmentations."
+            )
+
+            if not augment:
+                augmentations = None
+
         ds = training.BoxDataset(csv_file=csv_file,
                                  root_dir=root_dir,
                                  transforms=transforms,
                                  label_dict=self.label_dict,
-                                 augment=augment,
                                  augmentations=augmentations,
                                  preload_images=preload_images)
         if len(ds) == 0:
@@ -368,13 +376,9 @@ class deepforest(pl.LightningModule):
         if self.existing_train_dataloader:
             return self.existing_train_dataloader
 
-        # Get augmentations from config
-        augmentations = getattr(self.config.train, 'augmentations', None)
-
         loader = self.load_dataset(csv_file=self.config.train.csv_file,
                                    root_dir=self.config.train.root_dir,
-                                   augment=True,
-                                   augmentations=augmentations,
+                                   augmentations=self.config.train.augmentations,
                                    preload_images=self.config.train.preload_images,
                                    shuffle=True,
                                    transforms=self.transforms,
@@ -399,7 +403,7 @@ class deepforest(pl.LightningModule):
             loader = self.load_dataset(
                 csv_file=self.config.validation.csv_file,
                 root_dir=self.config.validation.root_dir,
-                augment=False,
+                augmentations=self.config.validation.augmentations,
                 shuffle=False,
                 preload_images=self.config.validation.preload_images,
                 batch_size=self.config.batch_size)
