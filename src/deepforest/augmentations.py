@@ -12,6 +12,78 @@ from omegaconf import OmegaConf
 from omegaconf.listconfig import ListConfig
 from omegaconf.dictconfig import DictConfig
 
+_SUPPORTED_TRANSFORMS = {
+    "HorizontalFlip": (A.HorizontalFlip, {
+        "p": 0.5
+    }),
+    "VerticalFlip": (A.VerticalFlip, {
+        "p": 0.5
+    }),
+    "Downscale": (A.Downscale, {
+        "scale_range": (0.25, 0.5),
+        "p": 0.5
+    }),
+    "RandomCrop": (A.RandomCrop, {
+        "height": 200,
+        "width": 200,
+        "p": 0.5
+    }),
+    "RandomSizedBBoxSafeCrop": (A.RandomSizedBBoxSafeCrop, {
+        "height": 200,
+        "width": 200,
+        "p": 0.5
+    }),
+    "PadIfNeeded": (A.PadIfNeeded, {
+        "min_height": 800,
+        "min_width": 800,
+        "p": 1.0
+    }),
+    "Rotate": (A.Rotate, {
+        "limit": 15,
+        "p": 0.5
+    }),
+    "RandomBrightnessContrast": (A.RandomBrightnessContrast, {
+        "brightness_limit": 0.2,
+        "contrast_limit": 0.2,
+        "p": 0.5
+    }),
+    "HueSaturationValue": (A.HueSaturationValue, {
+        "hue_shift_limit": 10,
+        "sat_shift_limit": 10,
+        "val_shift_limit": 10,
+        "p": 0.5
+    }),
+    "GaussNoise": (A.GaussNoise, {
+        "var_limit": (5.0, 20.0),
+        "p": 0.3
+    }),
+    "Blur": (A.Blur, {
+        "blur_limit": 2,
+        "p": 0.3
+    }),
+    "GaussianBlur": (A.GaussianBlur, {
+        "blur_limit": 2,
+        "p": 0.3
+    }),
+    "MotionBlur": (A.MotionBlur, {
+        "blur_limit": 2,
+        "p": 0.3
+    }),
+    "ZoomBlur": (A.ZoomBlur, {
+        "max_factor": 1.05,
+        "p": 0.3
+    }),
+}
+
+
+def get_available_augmentations() -> List[str]:
+    """Get list of available augmentation names.
+
+    Returns:
+        List of available augmentation names
+    """
+    return sorted(list(_SUPPORTED_TRANSFORMS.keys()))
+
 
 def get_transform(
         augment: bool = True,
@@ -133,123 +205,19 @@ def _create_augmentation(name: str, params: Dict[str, Any]) -> Optional[A.BasicT
     Returns:
         Albumentations transform or None if name not recognized
     """
-    # Default parameters for each augmentation
-    default_params = {
-        "HorizontalFlip": {
-            "p": 0.5
-        },
-        "VerticalFlip": {
-            "p": 0.5
-        },
-        "Downscale": {
-            "scale_range": (0.25, 0.5),
-            "p": 0.5
-        },
-        "RandomCrop": {
-            "height": 200,
-            "width": 200,
-            "p": 0.5
-        },
-        "RandomSizedBBoxSafeCrop": {
-            "height": 200,
-            "width": 200,
-            "p": 0.5
-        },
-        "PadIfNeeded": {
-            "min_height": 800,
-            "min_width": 800,
-            "p": 1.0
-        },
-        "Rotate": {
-            "limit": 15,
-            "p": 0.5
-        },
-        "RandomBrightnessContrast": {
-            "brightness_limit": 0.2,
-            "contrast_limit": 0.2,
-            "p": 0.5
-        },
-        "HueSaturationValue": {
-            "hue_shift_limit": 10,
-            "sat_shift_limit": 10,
-            "val_shift_limit": 10,
-            "p": 0.5
-        },
-        "GaussNoise": {
-            "var_limit": (5.0, 20.0),
-            "p": 0.3
-        },
-        "Blur": {
-            "blur_limit": 2,
-            "p": 0.3
-        },
-        "GaussianBlur": {
-            "blur_limit": 2,
-            "p": 0.3
-        },
-        "MotionBlur": {
-            "blur_limit": 2,
-            "p": 0.3
-        },
-        "ZoomBlur": {
-            "max_factor": 1.05,
-            "p": 0.3
-        },
-    }
 
-    # Available augmentations mapping
-    augmentation_classes = {
-        "HorizontalFlip": A.HorizontalFlip,
-        "VerticalFlip": A.VerticalFlip,
-        "Downscale": A.Downscale,
-        "RandomCrop": A.RandomCrop,
-        "RandomSizedBBoxSafeCrop": A.RandomSizedBBoxSafeCrop,
-        "PadIfNeeded": A.PadIfNeeded,
-        "Rotate": A.Rotate,
-        "RandomBrightnessContrast": A.RandomBrightnessContrast,
-        "HueSaturationValue": A.HueSaturationValue,
-        "GaussNoise": A.GaussNoise,
-        "Blur": A.Blur,
-        "GaussianBlur": A.GaussianBlur,
-        "MotionBlur": A.MotionBlur,
-        "ZoomBlur": A.ZoomBlur,
-    }
-
-    if name not in augmentation_classes:
+    if name not in get_available_augmentations():
         raise ValueError(
-            f"Unknown augmentation '{name}'. Available augmentations: {list(augmentation_classes.keys())}"
+            f"Unknown augmentation '{name}'. Available augmentations: {get_available_augmentations()}"
         )
 
-    # Merge default params with user params
-    final_params = default_params.get(name, {}).copy()
+    # Retrieve factory and defaults, merge with user-provided params
+    transform, base_params = _SUPPORTED_TRANSFORMS[name]
+    final_params = base_params.copy()
     final_params.update(params)
 
     try:
-        return augmentation_classes[name](**final_params)
+        return transform(**final_params)
     except Exception as e:
         raise ValueError(
             f"Failed to create augmentation '{name}' with params {final_params}: {e}")
-
-
-def get_available_augmentations() -> List[str]:
-    """Get list of available augmentation names.
-
-    Returns:
-        List of available augmentation names
-    """
-    return [
-        "HorizontalFlip",
-        "VerticalFlip",
-        "Downscale",
-        "RandomCrop",
-        "RandomSizedBBoxSafeCrop",
-        "PadIfNeeded",
-        "Rotate",
-        "RandomBrightnessContrast",
-        "HueSaturationValue",
-        "GaussNoise",
-        "Blur",
-        "GaussianBlur",
-        "MotionBlur",
-        "ZoomBlur",
-    ]
