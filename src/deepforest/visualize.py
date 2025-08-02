@@ -447,7 +447,7 @@ def plot_annotations(
     image = _load_image(image, annotations, root_dir)
 
     # Plot the results following https://supervision.roboflow.com/annotators/
-    plt.subplots()
+    fig, _ = plt.subplots()
     annotated_scene = _plot_image_with_geometry(df=annotations,
                                                 image=image,
                                                 sv_color=annotation_color,
@@ -463,6 +463,7 @@ def plot_annotations(
         image_name = "{}.png".format(basename)
         image_path = os.path.join(savedir, image_name)
         cv2.imwrite(image_path, annotated_scene)
+        plt.close(fig)
     else:
         # Display the image using Matplotlib
         plt.imshow(annotated_scene)
@@ -511,7 +512,7 @@ def plot_results(results: pd.DataFrame,
     image = _load_image(image, results)
 
     # Plot the results following https://supervision.roboflow.com/annotators/
-    _, ax = plt.subplots()
+    fig, ax = plt.subplots()
     annotated_scene = _plot_image_with_geometry(df=results,
                                                 image=image,
                                                 sv_color=results_color_sv,
@@ -537,6 +538,7 @@ def plot_results(results: pd.DataFrame,
         image_name = "{}.png".format(basename)
         image_path = os.path.join(savedir, image_name)
         cv2.imwrite(image_path, annotated_scene)
+        plt.close(fig)
     else:
         # Display the image using Matplotlib
         plt.imshow(annotated_scene)
@@ -567,10 +569,6 @@ def _plot_image_with_geometry(df,
     # Determine the geometry type
     geom_type = determine_geometry_type(df)
     detections = convert_to_sv_format(df, height=height, width=width)
-
-    # switch channel last to channel first if needed
-    if image.shape[0] == 3:
-        image = np.rollaxis(image, 0, 3)
 
     if geom_type == "box":
         bounding_box_annotator = sv.BoxAnnotator(color=sv_color, thickness=thickness)
