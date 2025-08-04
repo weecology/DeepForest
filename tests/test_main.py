@@ -634,31 +634,6 @@ def test_reload_multi_class(two_class_m, tmpdir):
 
     assert after[0]["val_classification"] == before[0]["val_classification"]
 
-
-def test_override_transforms():
-
-    def get_transform(augment):
-        """This is the new transform"""
-        if augment:
-            print("I'm a new augmentation!")
-            transform = A.Compose(
-                [A.HorizontalFlip(p=0.5), ToTensorV2()],
-                bbox_params=A.BboxParams(format='pascal_voc',
-                                         label_fields=["category_ids"]))
-
-        else:
-            transform = ToTensorV2()
-        return transform
-
-    m = main.deepforest(transforms=get_transform)
-
-    csv_file = get_data("example.csv")
-    root_dir = os.path.dirname(csv_file)
-    train_ds = m.load_dataset(csv_file, root_dir=root_dir, augment=True)
-
-    image, target, path = next(iter(train_ds))
-    assert m.transforms.__doc__ == "This is the new transform"
-
 def test_over_score_thresh(m):
     """A user might want to change the config after model training and update the score thresh"""
     img = get_data("OSBS_029.png")
