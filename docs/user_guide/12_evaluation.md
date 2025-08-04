@@ -270,7 +270,7 @@ psuedo_code:
 output_annotations = deepforest.preprocess.split_raster(
     path_to_raster = <path>,
     annotations_file = <original_annotation_path>,
-    base_dir = <location to save crops>
+    save_dir = <location to save crops>
     patch_size = <size of each crop>
 
 )
@@ -279,6 +279,6 @@ output_annotations.to_csv("new_annotations.csv")
 
 results = model.evaluate(
     csv_file="new_annotations.csv",
-    root_dir=<base_dir from above>
+    root_dir=<save_dir from above>
 )
 ```
