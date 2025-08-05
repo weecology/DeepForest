@@ -63,16 +63,10 @@ jobs:
         run: uv run deepforest train train.csv_file=src/deepforest/data/OSBS_029.csv train.root_dir=src/deepforest/data train.fast_dev_run=True
 
       - name: Check style
-        run: uv run yapf -d --recursive src/deepforest/ --style=.style.yapf
-
-      - name: Check notebook style
-        run: uv run nbqa yapf --in-place docs/user_guide/examples/*.ipynb --style=.style.yapf
+        uses: pre-commit/action@v3.0.1
 
       - name: Check notebook build
         run: uv run pytest --nbmake docs/**/*_test.ipynb
-
-      - name: Run docformatter
-        run: uv run docformatter --check --recursive src/deepforest/
 
       - name: Test Docs
         run: |
