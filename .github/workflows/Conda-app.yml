@@ -35,7 +35,7 @@ jobs:
       - name: Install opencv dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgl1 and libglx-mesa0
+          sudo apt-get install -y libgl1 libglx-mesa0
 
       - name: Install ipynb dependencies (pandoc)
         run: |
@@ -52,6 +52,9 @@ jobs:
 
       - name: Install package
         run: uv sync --all-extras --dev
+
+      - name: Clear Hugging Face cache for deepforest weights
+        run: rm -rf ~/.cache/huggingface/hub/models--weecology--deepforest-tree || true
 
       - name: Run pytest
         run: uv run pytest -v
