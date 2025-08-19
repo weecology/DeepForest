@@ -1,18 +1,17 @@
 # Config
 
-Deepforest uses a config.yml to control hyperparameters related to model training and evaluation. This allows all the relevant parameters to live in one location and be easily changed when exploring new models.
+DeepForest uses a config.yaml file to control hyperparameters related to model training and evaluation. This allows all the relevant parameters to live in one location and be easily changed when exploring new models. This file is packaged with DeepForest is loaded via the OmegaConf library when you create a `deepforest` instance.
 
-DeepForest includes a default sample config file named config.yml. Users have the option to override this file by creating their own custom config file. Initially, DeepForest scans the current working directory for the file. If it's not found there, it automatically resorts to using the default configuration.
+DeepForest includes a default sample config file named config.yaml (at `src/conf/config.yaml`). Users have the option to override this file by creating their own custom config file. OmegaConf will look in this folder first, but if you provide a path to a config, that one will be overlaid on top of the default. This means you don't need to specify every parameter, but it is best practice to copy the full configuration.
 
-You can edit this file to change settings while developing models. Please note that if you would like for deepforest to save the config file on reload (using deepforest.save_model),
-the config.yml must be updated instead of updating the dictionary of an already loaded model.
+Please note that if you would like for deepforest to save the config file on reload (using deepforest.save_model), the config.yaml must be updated instead of updating the dictionary of an already loaded model.
 
-```
+```yaml
 # Config file for DeepForest pytorch module
 
 # Cpu workers for data loaders
 # Dataloaders
-workers: 1
+workers: 0
 devices: auto
 accelerator: auto
 batch_size: 1
@@ -21,11 +20,26 @@ batch_size: 1
 architecture: 'retinanet'
 num_classes: 1
 nms_thresh: 0.05
+score_thresh: 0.1
 
-# Architecture specific params
-retinanet:
-    # Non-max suppression of overlapping predictions
-    score_thresh: 0.1
+# Set model name to None to initialize from scratch
+model:
+    name: 'weecology/deepforest-tree'
+    revision: 'main'
+
+# If this label dict is specified, and it differs
+# from the model downloaded from the hub, the model
+# will be updated to reflect the new class list.
+label_dict:
+    Tree: 0
+
+# Pre-processing parameters
+path_to_raster:
+patch_size: 400
+patch_overlap: 0.05
+annotations_xml:
+rgb_dir:
+path_to_rgb:
 
 train:
     csv_file:
@@ -52,22 +66,31 @@ train:
             threshold_mode: "rel"
             cooldown: 0
             min_lr: 0
-            eps: 1e-08
+            eps: 0.00000001
 
-    # Print loss every n epochs
+    # How many epochs to run for
     epochs: 1
     # Useful debugging flag in pytorch lightning, set to True to get a single batch of training to test settings.
     fast_dev_run: False
-    # pin images to GPU memory for fast training. This depends on GPU size and number of images.
+    # preload images to GPU memory for fast training. This depends on GPU size and number of images.
     preload_images: False
 
 validation:
-    # callback args
     csv_file:
     root_dir:
+    preload_images: False
+    size:
+
+    # For retinanet you may prefer val_classification, but the default val_loss
+    # should work with all models
+    lr_plateau_target: val_loss
+
     # Intersection over union evaluation
     iou_threshold: 0.4
     val_accuracy_interval: 20
+
+predict:
+    pin_memory: False
 
 ```
 ## Passing config arguments at runtime using a dict
