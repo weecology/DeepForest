@@ -316,7 +316,7 @@ class deepforest(pl.LightningModule):
         for image, target, path in zip(sample_images, sample_targets, sample_paths):
             # Get annotations for this image
             image_annotations = target.copy()
-            image_annotations = utilities.format_geometry(image_annotations)
+            image_annotations = utilities.format_geometry(image_annotations, scores=False)
             image_annotations.root_dir = self.config.train.root_dir
             image_annotations["image_path"] = path
 
@@ -351,7 +351,7 @@ class deepforest(pl.LightningModule):
 
             for image, target, path in zip(sample_images, sample_targets, sample_paths):
                 image_annotations = target.copy()
-                image_annotations = utilities.format_geometry(image_annotations)
+                image_annotations = utilities.format_geometry(image_annotations, scores=False)
                 image_annotations.root_dir = self.config.validation.root_dir
                 image_annotations["image_path"] = path
 

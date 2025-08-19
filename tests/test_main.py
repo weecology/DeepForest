@@ -11,9 +11,6 @@ import tempfile
 import copy
 import importlib.util
 
-import albumentations as A
-from albumentations.pytorch import ToTensorV2
-
 from deepforest import main, get_data, model
 from deepforest.utilities import read_file, format_geometry
 from deepforest.datasets import prediction
@@ -31,6 +28,7 @@ import shapely
 # Import release model from global script to avoid thrasing github during testing.
 # Just download once.
 from .conftest import download_release
+from unittest.mock import Mock
 
 ALL_ARCHITECTURES = ["retinanet", "DeformableDetr"]
 
@@ -1110,3 +1108,20 @@ def test_set_labels_invalid_length(m): # Expect a ValueError when setting an inv
     invalid_mapping = {"Object": 0, "Extra": 1}
     with pytest.raises(ValueError):
         m.set_labels(invalid_mapping)
+
+def test_on_train_start_basic(m):
+    """Test that on_train_start runs without error and logs images using the default logger."""
+    # Create a mock logger
+    class MockLogger:
+        def __init__(self):
+            self.experiment = Mock()
+            self.experiment.log_image = self.log_image
+            self.images = []
+
+        def log_image(self, image, metadata):
+            self.images.append(image)
+
+    m.create_trainer(fast_dev_run=False, limit_train_batches=2, limit_val_batches=2, logger=MockLogger())
+    m.on_train_start()
+
+    assert len(m.logger.images) == 2
