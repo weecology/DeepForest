@@ -56,6 +56,7 @@ class TrainConfig:
     manage the training loop and you can set fast_dev_run to True for
     sanity checking.
     """
+    log_root: str = "logs"
     csv_file: Optional[str] = MISSING
     root_dir: Optional[str] = MISSING
     lr: float = 0.001
