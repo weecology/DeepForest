@@ -61,7 +61,7 @@ dependencies = [
     "rasterio",
     "recommonmark",
     "rtree",
-    "safetensors",
+    "safetensors<0.6.0",
     "scipy>1.5",
     "six",
     "slidingwindow",
