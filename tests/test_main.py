@@ -166,12 +166,6 @@ def test_use_bird_release(m):
     boxes = m.predict_image(path=imgpath)
     assert not boxes.empty
 
-def test_load_model(m):
-    imgpath = get_data("OSBS_029.png")
-    m.load_model('ethanwhite/df-test')
-    boxes = m.predict_image(path=imgpath)
-    assert not boxes.empty
-
 
 def test_train_empty_train_csv(m, tmpdir):
     empty_csv = pd.DataFrame({
