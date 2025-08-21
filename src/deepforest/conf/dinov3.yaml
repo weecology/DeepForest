@@ -1,0 +1,8 @@
+# RetinaNet Base Configuration - Shared parameters for all folds
+defaults:
+  - config
+  - _self_
+
+model:
+  name: "dinov3"
+  revision: 'main'

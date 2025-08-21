@@ -78,7 +78,10 @@ class BoxDataset(Dataset):
             self.transform = get_transform(augmentations=augmentations)
         else:
             self.transform = transforms
-        self.image_names = self.annotations.image_path.unique()
+        self.image_names = [
+            os.path.basename(path) for path in self.annotations.image_path.unique()
+        ]
+        self.label_dict = label_dict
         self.preload_images = preload_images
 
         self._validate_labels()

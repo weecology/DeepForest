@@ -3,6 +3,13 @@ from pathlib import Path
 
 import torch
 import torchvision
+<<<<<<< HEAD
+=======
+from torchvision.models.detection.retinanet import RetinaNet
+from torchvision.models.detection.retinanet import AnchorGenerator
+from deepforest.model import BaseModel
+from deepforest.models.dinov3 import Dinov3Model
+>>>>>>> 241ecc8b (experimental dinov3 retinanet backbone)
 from huggingface_hub import PyTorchModelHubMixin
 from torchvision.models.detection.retinanet import AnchorGenerator, RetinaNet
 
@@ -12,36 +19,64 @@ from deepforest.model import BaseModel
 class RetinaNetHub(RetinaNet, PyTorchModelHubMixin):
     """RetinaNet extension that allows the use of the HF Hub API."""
 
-    def __init__(
-        self,
-        backbone_weights: str | None = None,
-        num_classes: int = 1,
-        nms_thresh: float = 0.05,
-        score_thresh: float = 0.5,
-        label_dict: dict = None,
-        **kwargs,
-    ):
-        backbone = torchvision.models.detection.retinanet_resnet50_fpn(
-            weights=backbone_weights
-        ).backbone
+    def __init__(self,
+                 backbone_weights: str | None = None,
+                 num_classes: int = 1,
+                 nms_thresh: float = 0.05,
+                 score_thresh: float = 0.5,
+                 label_dict: dict = None,
+                 use_conv_pyramid: bool = True,
+                 fpn_out_channels: int = 256,
+                 freeze_backbone: bool = True,
+                 **kwargs):
+
+        if backbone_weights == "dinov3":
+            backbone = Dinov3Model(
+                use_conv_pyramid=use_conv_pyramid,
+                fpn_out_channels=fpn_out_channels,
+                frozen=freeze_backbone,
+            )
+            anchor_sizes = tuple((x, int(x * 2**(1.0 / 3)), int(x * 2**(2.0 / 3)))
+                                 for x in [32, 64, 128, 256])
+            aspect_ratios = ((0.5, 1.0, 2.0),) * len(anchor_sizes)
+            anchor_generator = AnchorGenerator(anchor_sizes, aspect_ratios)
+
+            # Can vary with model, e.g. sat does not use ImageNet
+            image_mean = backbone.image_mean
+            image_std = backbone.image_std
+        else:
+            if freeze_backbone:
+                warnings.warn(
+                    "Frozen backbone is currently not enabled for ResNet, but you can set the learning rate to zero."
+                )
+            backbone = torchvision.models.detection.retinanet_resnet50_fpn(
+                weights=backbone_weights).backbone
+            anchor_generator = None  # Use default
+
+            # Explicitly use ImageNet
+            image_mean = torch.tensor([0.485, 0.456, 0.406])
+            image_std = torch.tensor([0.229, 0.224, 0.225])
 
         super().__init__(
             backbone=backbone,
             num_classes=num_classes,
+            anchor_generator=anchor_generator,
             score_thresh=score_thresh,
             nms_thresh=nms_thresh,
+            image_mean=image_mean,
+            image_std=image_std,
             **kwargs,
-        )
-
-        # See docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module.register_load_state_dict_pre_hook
-        # For backwards compatibility with earlier versions of torch, call the _ method
-        self._register_load_state_dict_pre_hook(
-            RetinaNetHub._strip_legacy_prefix, with_module=True
         )
 
         self.num_classes = num_classes
         self.label_dict = label_dict
+        self.use_conv_pyramid = use_conv_pyramid
+        self.fpn_out_channels = fpn_out_channels
         self.kwargs = kwargs
+
+        # Store normalization parameters for denormalization
+        self.image_mean = image_mean
+        self.image_std = image_std
 
         self.update_config()
 
@@ -183,13 +218,18 @@ class Model(BaseModel):
         """
 
         if pretrained is None:
-            model = RetinaNetHub(
-                backbone_weights="COCO_V1",
-                num_classes=self.config.num_classes,
-                nms_thresh=self.config.nms_thresh,
-                score_thresh=self.config.score_thresh,
-                label_dict=self.config.label_dict,
-            )
+            model = RetinaNetHub(backbone_weights="COCO_V1",
+                                 num_classes=self.config.num_classes,
+                                 nms_thresh=self.config.nms_thresh,
+                                 score_thresh=self.config.score_thresh,
+                                 label_dict=self.config.label_dict)
+        elif pretrained == "dinov3":
+            model = RetinaNetHub(backbone_weights="dinov3",
+                                 num_classes=self.config.num_classes,
+                                 nms_thresh=self.config.nms_thresh,
+                                 score_thresh=self.config.score_thresh,
+                                 label_dict=self.config.label_dict,
+                                 freeze_backbone=True)
         else:
             model = RetinaNetHub.from_pretrained(
                 pretrained,

@@ -30,6 +30,7 @@ rgb_dir:
 path_to_rgb:
 
 train:
+    log_root: logs
     csv_file:
     root_dir:
 
