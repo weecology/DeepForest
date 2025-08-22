@@ -360,19 +360,20 @@ class MultiImage(PredictionDataset):
         patch_overlap_size = int(self.patch_size * self.patch_overlap)
         step = self.patch_size - patch_overlap_size
 
-        # Calculate number of patches needed in each dimension
+        # Calculate number of patches needed in each dimension to match unfold + padding
         n_patches_h = (H - patch_overlap_size) // step + 1
         n_patches_w = (W - patch_overlap_size) // step + 1
 
-        # Generate window coordinates matching the unfolded tensor views
+        # Generate window coordinates matching the unfolded tensor views (including padded areas)
+        # Clamp coordinates so that each window is anchored within the image bounds
+        max_y = max(0, H - self.patch_size)
+        max_x = max(0, W - self.patch_size)
         windows = []
         for i in range(n_patches_h):
             for j in range(n_patches_w):
-                y = i * step
-                x = j * step
-                # Only add window if it contains any real data
-                if (x < W and y < H):
-                    windows.append((x, y, self.patch_size, self.patch_size))
+                y = min(i * step, max_y)
+                x = min(j * step, max_x)
+                windows.append((x, y, self.patch_size, self.patch_size))
 
         return windows
 
