@@ -50,5 +50,5 @@ dependencies:
     - Pygments
     - docformatter
     - opencv-python-headless
-    - safetensors
+    - safetensors<0.6.0
     - myst-parser
