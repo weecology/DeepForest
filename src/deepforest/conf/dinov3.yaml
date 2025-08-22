@@ -6,3 +6,12 @@ defaults:
 model:
   name: "dinov3"
   revision: 'main'
+
+train:
+  epochs: 75
+  lr: 0.01
+  scheduler:
+    type: cosine
+    params:
+      T_max: 75
+      eta_min: 0.0001
