@@ -289,7 +289,6 @@ class deepforest(pl.LightningModule):
                 "Cannot train with a train annotations file, please set 'config['train']['csv_file'] before calling deepforest.create_trainer()'"
             )
 
-
     def on_train_start(self):
         """Log sample images from training and validation datasets at training
         start."""
@@ -351,7 +350,8 @@ class deepforest(pl.LightningModule):
 
             for image, target, path in zip(sample_images, sample_targets, sample_paths):
                 image_annotations = target.copy()
-                image_annotations = utilities.format_geometry(image_annotations, scores=False)
+                image_annotations = utilities.format_geometry(image_annotations,
+                                                              scores=False)
                 image_annotations.root_dir = self.config.validation.root_dir
                 image_annotations["image_path"] = path
 
