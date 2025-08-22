@@ -32,7 +32,9 @@ def train(config: DictConfig, checkpoint=True) -> None:
     try:
         comet_logger = CometLogger(api_key=os.environ.get("COMET_API_KEY"),
                                    workspace=os.environ.get("COMET_WORKSPACE"),
-                                   project="DeepForest")
+                                   project="DeepForest",
+                                   save_dir=config.train.log_root)
+
         comet_experiment_name = comet_logger.experiment.get_name()
         loggers.append(comet_logger)
 
@@ -126,7 +128,7 @@ def main():
     if args.command == "predict":
         predict(cfg, input_path=args.input, output_path=args.output, plot=args.plot)
     elif args.command == "train":
-        train(cfg, not args.no_checkpoint)
+        train(cfg)
     elif args.command == "config":
         print(OmegaConf.to_yaml(cfg, resolve=True))
 
