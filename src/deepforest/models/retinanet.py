@@ -217,13 +217,18 @@ class Model(BaseModel):
             model: a pytorch nn module
         """
 
-        if pretrained is None:
+        if pretrained == "resnet50":
+            if revision is not None:
+                warnings.warn(
+                    "Ignoring revision and fine-tuning from ResNet50 MS-COCO checkpoint.")
             model = RetinaNetHub(backbone_weights="COCO_V1",
                                  num_classes=self.config.num_classes,
                                  nms_thresh=self.config.nms_thresh,
                                  score_thresh=self.config.score_thresh,
                                  label_dict=self.config.label_dict)
         elif pretrained == "dinov3":
+            warnings.warn(
+                "Ignoring revision and fine-tuning from DinoV3 Sat-493M checkpoint.")
             model = RetinaNetHub(backbone_weights="dinov3",
                                  num_classes=self.config.num_classes,
                                  nms_thresh=self.config.nms_thresh,
