@@ -17,8 +17,7 @@ def test_evaluate_image(m):
     predictions = m.predict_file(csv_file=csv_file, root_dir=os.path.dirname(csv_file))
     ground_truth = read_file(csv_file)
     predictions.label = 0
-    result = evaluate.evaluate_image_boxes(predictions=predictions,
-                                           ground_df=ground_truth)
+    result = evaluate.evaluate_boxes(predictions=predictions, ground_df=ground_truth)
 
     assert result.shape[0] == ground_truth.shape[0]
     assert sum(result.IoU) > 10

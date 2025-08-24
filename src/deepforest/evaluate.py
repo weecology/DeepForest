@@ -1,39 +1,58 @@
 """Evaluation module."""
-import pandas as pd
-import geopandas as gpd
-import shapely
-import numpy as np
+
 import warnings
 
-from deepforest import IoU
+import geopandas as gpd
+import numpy as np
+import pandas as pd
+import shapely
+import torch
+from scipy import optimize
+from torchmetrics.detection.mean_ap import MeanAveragePrecision
+
 from deepforest.utilities import determine_geometry_type
 
 
-def evaluate_image_boxes(predictions, ground_df):
-    """Compute intersection-over-union matching among prediction and ground
-    truth boxes for one image.
+def evaluate_image_boxes(predictions, ground_df, iou_tensor):
+    # check that `iou_tensor` is a two-dimensional tensor
+    if iou_tensor != [] and len(iou_tensor.shape) == 2:
+        # create cost matrix for assignment, with rows and columns respectively
+        # representing predictions and ground truths and the cost being the area of
+        # the intersection
+        # ACHTUNG: since in most cases images are tiles (hence are rather small),
+        # using the spatial index is slower
+        # annot_sindex = annot_df.sindex
+        # cost_arr = pred_df.geometry.apply(
+        #     lambda pred_geom: annot_df.iloc[
+        #         annot_sindex.intersection(pred_geom.bounds)
+        #     ]
+        #     .intersection(pred_geom)
+        #     .area
+        # ).fillna(0)
+        # TODO: can we get the ground truth-prediction matches from torchmetrics?
+        # we'd need to access the `coco_eval` variable within the
+        # `MeanAveragePrecision.compute` method (see https://github.com/
+        # Lightning-AI/torchmetrics/blob/master/src/torchmetrics/detection/
+        # mean_ap.py#L522), but this would require modifying torchmetrics.
+        # Additionally, how to access the matches would depend on the backend used
+        # (i.e., pycocotools or faster_coco_eval).
+        cost_arr = predictions.geometry.apply(
+            lambda pred_geom: ground_df.intersection(pred_geom).area).values
 
-    Args:
-        predictions: a geopandas dataframe with geometry columns
-        ground_df: a geopandas dataframe with geometry columns
-
-    Returns:
-        result: pandas dataframe with crown ids of prediction and ground truth and the IoU score.
-    """
-    plot_names = predictions["image_path"].unique()
-    if len(plot_names) > 1:
-        raise ValueError(
-            "More than one plot passed to image crown: {}".format(plot_names))
-
-    # match
-    result = IoU.compute_IoU(ground_df, predictions)
-
-    # add the label classes
-    result["predicted_label"] = result.prediction_id.apply(
-        lambda x: predictions.label.loc[x] if pd.notnull(x) else x)
-    result["true_label"] = result.truth_id.apply(lambda x: ground_df.label.loc[x])
-
-    return result
+        row_ind, col_ind = optimize.linear_sum_assignment(
+            cost_arr,
+            maximize=True,
+        )
+        return pd.DataFrame(
+            {
+                "prediction_id": predictions.iloc[row_ind].index,
+                "truth_id": ground_df.iloc[col_ind].index,
+                "IoU": iou_tensor[row_ind, col_ind],
+            },).sort_values("truth_id", ascending=True)
+    else:
+        # when iou_dict[(image_key, class_val)] is [], aka, no predictions
+        # except ValueError, IndexError:
+        return None
 
 
 def compute_class_recall(results):
@@ -45,7 +64,7 @@ def compute_class_recall(results):
     # Per class recall and precision
     class_recall_dict = {}
     class_precision_dict = {}
-    class_size = {}
+    class_size_dict = {}
 
     box_results = results[results.predicted_label.notna()]
     if box_results.empty:
@@ -53,36 +72,51 @@ def compute_class_recall(results):
         class_recall = None
         return class_recall
 
-    for name, group in box_results.groupby("true_label"):
-        class_recall_dict[name] = sum(
-            group.true_label == group.predicted_label) / group.shape[0]
-        number_of_predictions = box_results[box_results.predicted_label == name].shape[0]
-        if number_of_predictions == 0:
-            class_precision_dict[name] = 0
-        else:
-            class_precision_dict[name] = sum(
-                group.true_label == group.predicted_label) / number_of_predictions
-        class_size[name] = group.shape[0]
+    labels = set(box_results["predicted_label"].unique()).union(
+        box_results["true_label"].unique())
+    for label in labels:
+        ground_df = box_results[box_results["true_label"] == label]
+        n_ground_boxes = ground_df.shape[0]
+        if n_ground_boxes > 0:
+            class_recall_dict[label] = (
+                sum(ground_df.true_label == ground_df.predicted_label) / n_ground_boxes)
+        pred_df = box_results[box_results["true_label"] == label]
+        n_pred_boxes = pred_df.shape[0]
+        if n_pred_boxes > 0:
+            class_precision_dict[label] = (
+                sum(pred_df.true_label == pred_df.predicted_label) / pred_df.shape[0])
+        class_size_dict[label] = n_ground_boxes
 
-    class_recall = pd.DataFrame({
-        "label": class_recall_dict.keys(),
-        "recall": pd.Series(class_recall_dict),
-        "precision": pd.Series(class_precision_dict),
-        "size": pd.Series(class_size)
-    }).reset_index(drop=True)
+    # the fillna is needed for the missing labels with 0 ground truths or 0 predictions
+    class_recall = (
+        pd.DataFrame({
+            # "label": class_recall_dict.keys(),
+            "recall": pd.Series(class_recall_dict),
+            "precision": pd.Series(class_precision_dict),
+            "size": pd.Series(class_size_dict),
+        }).reset_index(names="label").fillna(0))
 
     return class_recall
 
 
-def __evaluate_wrapper__(predictions, ground_df, iou_threshold, numeric_to_label_dict):
+def _torch_dict_from_df(df, label_dict):
+    d = {}
+    d["boxes"] = torch.tensor(df[["xmin", "ymin", "xmax", "ymax"]].astype(int).values,)
+    if "score" in df.columns:
+        d["scores"] = torch.tensor(df["score"].values)
+    d["labels"] = torch.tensor(df["label"].map(label_dict).astype(int).values)
+    return d
+
+
+def __evaluate_wrapper__(predictions, ground_df, iou_threshold, label_dict):
     """Evaluate a set of predictions against a ground truth csv file
-        Args:   
-            predictions: a pandas dataframe, if supplied a root dir is needed to give the relative path of files in df.name. The labels in ground truth and predictions must match. If one is numeric, the other must be numeric.
-            ground_df: a pandas dataframe, if supplied a root dir is needed to give the relative path of files in df.name
-            iou_threshold: intersection-over-union threshold, see deepforest.evaluate
-        Returns:
-            results: a dictionary of results with keys, results, box_recall, box_precision, class_recall
-        """
+    Args:
+        predictions: a pandas dataframe, if supplied a root dir is needed to give the relative path of files in df.name. The labels in ground truth and predictions must match. If one is numeric, the other must be numeric.
+        ground_df: a pandas dataframe, if supplied a root dir is needed to give the relative path of files in df.name
+        iou_threshold: intersection-over-union threshold, see deepforest.evaluate
+    Returns:
+        results: a dictionary of results with keys, results, box_recall, box_precision, class_recall
+    """
     # remove empty samples from ground truth
     ground_df = ground_df[~((ground_df.xmin == 0) & (ground_df.xmax == 0))]
 
@@ -94,7 +128,7 @@ def __evaluate_wrapper__(predictions, ground_df, iou_threshold, numeric_to_label
             "box_precision": np.nan,
             "class_recall": None,
             "predictions": predictions,
-            "ground_df": ground_df
+            "ground_df": ground_df,
         }
         return results
 
@@ -110,20 +144,28 @@ def __evaluate_wrapper__(predictions, ground_df, iou_threshold, numeric_to_label
         results = evaluate_boxes(predictions=predictions,
                                  ground_df=ground_df,
                                  iou_threshold=iou_threshold)
+
     else:
         raise NotImplementedError(
             "Geometry type {} not implemented".format(prediction_geometry))
 
     # replace classes if not NUll
-    if not results["results"] is None:
+    if results["results"] is not None:
         results["results"]["predicted_label"] = results["results"][
-            "predicted_label"].apply(lambda x: numeric_to_label_dict[x]
-                                     if not pd.isnull(x) else x)
+            "predicted_label"].apply(lambda x: label_dict[x] if not pd.isnull(x) else x)
         results["results"]["true_label"] = results["results"]["true_label"].apply(
-            lambda x: numeric_to_label_dict[x])
-        results["predictions"] = predictions
-        results["predictions"]["label"] = results["predictions"]["label"].apply(
-            lambda x: numeric_to_label_dict[x])
+            lambda x: label_dict[x])
+        # TODO: do we need to return the "predictions" in the results?
+        # TODO: DRY getting the proper predicted label column with `evaluate_boxes`
+        # set the score and predicted label
+        if "cropmodel_label" in predictions.columns:
+            pred_label_col = "cropmodel_label"
+        else:
+            pred_label_col = "label"
+        # avoid modifying a view
+        results["predictions"] = predictions.copy()
+        results["predictions"]["label"] = results["predictions"][pred_label_col].apply(
+            lambda x: label_dict[x])
 
     return results
 
@@ -152,62 +194,154 @@ def evaluate_boxes(predictions, ground_df, iou_threshold=0.4):
             "box_precision": 0,
             "class_recall": None,
             "predictions": predictions,
-            "ground_df": ground_df
+            "ground_df": ground_df,
         }
 
-    # Run evaluation on all plots
-    results = []
-    box_recalls = []
-    box_precisions = []
-    for image_path, group in ground_df.groupby("image_path"):
-        # clean indices
-        image_predictions = predictions[predictions["image_path"] ==
-                                        image_path].reset_index(drop=True)
+    # TODO: add `label_dict`, `rec_sep`/`rec_thresholds` and `max_detection_threshold`/
+    # `max_detection_thresholds` as keyword arguments?
 
-        # If empty, add to list without computing IoU
-        if image_predictions.empty:
-            result = pd.DataFrame({
-                "truth_id": group.index.values,
-                "prediction_id": None,
-                "IoU": 0,
-                "predicted_label": None,
-                "score": None,
-                "match": None,
-                "true_label": group.label
-            })
-            # An empty prediction set has recall of 0, precision of NA.
-            box_recalls.append(0)
-            results.append(result)
-            continue
-        else:
-            group = group.reset_index(drop=True)
-            result = evaluate_image_boxes(predictions=image_predictions, ground_df=group)
+    # get a label dictionary mapping the integer ids to the class names, from the
+    # "label" column of `predictions` and `ground_df`
+    # label_dict = {
+    #     label: i
+    #     for i, label in enumerate(set(predictions["label"]).union(ground_df["label"]))
+    # }
+    # we need to match all tree bounding boxes, so we will ignore the classes first
+    label_dict = {
+        label: 0
+        for i, label in enumerate(set(predictions["label"]).union(ground_df["label"]))
+    }
 
-        result["image_path"] = image_path
-        result["match"] = result.IoU > iou_threshold
-        true_positive = sum(result["match"])
-        recall = true_positive / result.shape[0]
-        precision = true_positive / image_predictions.shape[0]
+    # torchmetrics will compute the metrics at multiple recall thresholds, so in order
+    # to emulate the previous deepforest metrics, we need it to be small enough so that
+    # we can get the precision for the recall threshold closest ot the actual recall
+    # value
+    rec_sep = 0.01
+    rec_thresholds = np.arange(0, 1 + rec_sep, rec_sep).tolist()
 
-        box_recalls.append(recall)
-        box_precisions.append(precision)
-        results.append(result)
+    max_detection_threshold = 1000
+    max_detection_thresholds = [0, 0, max_detection_threshold]
+    mean_ap_kwargs = dict(
+        iou_type="bbox",
+        iou_thresholds=[iou_threshold],
+        rec_thresholds=rec_thresholds,
+        max_detection_thresholds=max_detection_thresholds,
+        extended_summary=True,
+    )
 
-    results = pd.concat(results)
-    box_precision = np.mean(box_precisions)
-    box_recall = np.mean(box_recalls)
+    metric = MeanAveragePrecision(**mean_ap_kwargs,)
+    metric.update(
+        [
+            _torch_dict_from_df(_pred_df, label_dict)
+            for _, _pred_df in predictions.groupby("image_path")
+        ],
+        [
+            _torch_dict_from_df(_annot_df, label_dict)
+            for _, _annot_df in ground_df.groupby("image_path")
+        ],
+    )
+    mean_ap_dict = metric.compute()
 
-    # Only matching boxes are considered in class recall
-    matched_results = results[results.match == True]
-    class_recall = compute_class_recall(matched_results)
+    # ious
+    # shape: dict with keys of the form (image, class) and values with the corresponding
+    # ious for each detection (row) and ground truth (column)
+    # TODO: support multi-image predictions and annotations
+    # ious = mean_ap_dict["ious"]  # [(0, 0)].max(dim=0).values
+
+    # recall
+    # shape: n_iou_thresholds, n_classes, n_areas, n_max_detections
+    # selection:
+    # - one iou_threshold
+    # - all classes
+    # - first area, i.e., 'all' https://github.com/cocodataset/cocoapi/blob/master/
+    #   PythonAPI/pycocotools/cocoeval.py#L509
+    # - last max_detection_threshold
+    box_recall = mean_ap_dict["recall"][0, :, 0, -1].item()
+
+    # precision
+    # shape: n_iou_thresholds, n_recall_thresholds, n_classes, n_areas, n_max_detections
+    # selection:
+    # - one iou_threshold
+    # - all recall_thresholds
+    # - all classes
+    # - first area, i.e., 'all'
+    # - last max_detection_threshold
+    box_precision = mean_ap_dict["precision"][
+        0,
+        :,
+        :,
+        0,
+        -1,
+    ]
+    # idea: emulate deepforest and
+    # three options:
+    # 1. get the recall_threshold closest to the actual recall using argmin
+    # note that we'd need to ensure that rec_thresholds is a numpy array
+    # np.argmin(
+    #     np.abs(np.array(rec_thresholds)[:, np.newaxis] - recall.numpy()), axis=0
+    # ),
+    # 2. same but using np.searchsorted, which would be quicker than argmin, but
+    # performance should not be an issue here
+    # see https://stackoverflow.com/questions/44526121/
+    # finding-closest-values-in-two-numpy-arrays
+    # 3. get the precision as the latest non-zero value of the precision-recall curve:
+    box_precision = box_precision[np.nonzero(box_precision)[-1]][0].item()
+
+    # build the evaluation data frame
+    # TODO: are keys in `ious` sorted based on preds or targets? does that depend on the
+    # backend used (i.e., pycocotools or faster_coco_eval)?
+    image_path_dict = {
+        image_key: image_path
+        for image_key, (image_path, _) in enumerate(ground_df.groupby("image_path"))
+    }
+    # numeric_to_label_dict = {val: label for label, val in label_dict.items()}
+    iou_dict = mean_ap_dict["ious"]
+
+    results_df = pd.concat(
+        [
+            evaluate_image_boxes(
+                *[
+                    df[df["image_path"] == image_path_dict[image_key]]
+                    for df in [predictions, ground_df]
+                ],
+                iou_dict[(image_key, class_val)],
+            )
+            for image_key, class_val in iou_dict.keys()
+        ],
+        axis="rows",
+        ignore_index=True,
+    )
+    # set the ground truth columns
+    results_df = results_df.merge(
+        ground_df[["image_path", "label", "geometry"]],
+        left_on="truth_id",
+        right_index=True,
+    )
+    results_df = results_df.rename(columns={"label": "true_label"})
+    # set the score and predicted label
+    if "cropmodel_label" in predictions.columns:
+        pred_label_col = "cropmodel_label"
+    else:
+        pred_label_col = "label"
+    results_df = results_df.merge(
+        predictions[["score", pred_label_col]],
+        left_on="prediction_id",
+        right_index=True,
+    )
+    results_df = results_df.rename(columns={pred_label_col: "predicted_label"})
+    # set whether it is a match
+    results_df["match"] = results_df["IoU"] >= iou_threshold
+
+    # only matching boxes are considered in class recall
+    class_recall = compute_class_recall(results_df[results_df["match"] == True])
 
     return {
-        "results": results,
+        "results": results_df,
         "box_precision": box_precision,
         "box_recall": box_recall,
         "class_recall": class_recall,
         "predictions": predictions,
-        "ground_df": ground_df
+        "ground_df": ground_df,
     }
 
 
@@ -221,6 +355,7 @@ def _point_recall_image_(predictions, ground_df):
 
     Returns:
         result: pandas dataframe with crown ids of prediciton and ground truth and the IoU score.
+
     """
     plot_names = predictions["image_path"].unique()
     if len(plot_names) > 1:
@@ -228,21 +363,21 @@ def _point_recall_image_(predictions, ground_df):
     else:
         plot_name = plot_names[0]
 
-    predictions['geometry'] = predictions.apply(
+    predictions["geometry"] = predictions.apply(
         lambda x: shapely.geometry.box(x.xmin, x.ymin, x.xmax, x.ymax), axis=1)
-    predictions = gpd.GeoDataFrame(predictions, geometry='geometry')
+    predictions = gpd.GeoDataFrame(predictions, geometry="geometry")
 
-    ground_df['geometry'] = ground_df.apply(lambda x: shapely.geometry.Point(x.x, x.y),
+    ground_df["geometry"] = ground_df.apply(lambda x: shapely.geometry.Point(x.x, x.y),
                                             axis=1)
-    ground_df = gpd.GeoDataFrame(ground_df, geometry='geometry')
+    ground_df = gpd.GeoDataFrame(ground_df, geometry="geometry")
 
     # Which points in boxes
-    result = gpd.sjoin(ground_df, predictions, predicate='within', how="left")
+    result = gpd.sjoin(ground_df, predictions, predicate="within", how="left")
     result = result.rename(
         columns={
             "label_left": "true_label",
             "label_right": "predicted_label",
-            "image_path_left": "image_path"
+            "image_path_left": "image_path",
         })
     result = result.drop(columns=["index_right"])
 
@@ -262,6 +397,7 @@ def point_recall(predictions, ground_df):
         results: a dataframe of matched bounding boxes and ground truth labels
         box_recall: proportion of true positives between predicted boxes and ground truth points, regardless of class
         class_recall: a pandas dataframe of class level recall and precision with class sizes
+
     """
     # Run evaluation on all images
     results = []
@@ -276,7 +412,7 @@ def point_recall(predictions, ground_df):
                 "recall": 0,
                 "predicted_label": None,
                 "score": None,
-                "true_label": group.label
+                "true_label": group.label,
             })
             # An empty prediction set has recall of 0, precision of NA.
             box_recalls.append(0)
