@@ -4,7 +4,7 @@ defaults:
   - _self_
 
 model:
-  name: "dinov3"
+  name: "facebook/dinov3-vitl16-pretrain-sat493m"
   revision: 'main'
 
 train:
