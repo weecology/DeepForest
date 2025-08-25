@@ -3,13 +3,10 @@ from pathlib import Path
 
 import torch
 import torchvision
-<<<<<<< HEAD
-=======
-from torchvision.models.detection.retinanet import RetinaNet
+from torchvision.models.detection.retinanet import RetinaNet, RetinaNet_ResNet50_FPN_Weights
 from torchvision.models.detection.retinanet import AnchorGenerator
 from deepforest.model import BaseModel
 from deepforest.models.dinov3 import Dinov3Model
->>>>>>> 241ecc8b (experimental dinov3 retinanet backbone)
 from huggingface_hub import PyTorchModelHubMixin
 from torchvision.models.detection.retinanet import AnchorGenerator, RetinaNet
 
@@ -20,6 +17,7 @@ class RetinaNetHub(RetinaNet, PyTorchModelHubMixin):
     """RetinaNet extension that allows the use of the HF Hub API."""
 
     def __init__(self,
+                 weights: str | None = None,
                  backbone_weights: str | None = None,
                  num_classes: int = 1,
                  nms_thresh: float = 0.05,
@@ -30,8 +28,9 @@ class RetinaNetHub(RetinaNet, PyTorchModelHubMixin):
                  freeze_backbone: bool = True,
                  **kwargs):
 
-        if backbone_weights == "dinov3":
+        if isinstance(weights, str) and "dinov3" in weights:
             backbone = Dinov3Model(
+                repo_id=weights,
                 use_conv_pyramid=use_conv_pyramid,
                 fpn_out_channels=fpn_out_channels,
                 frozen=freeze_backbone,
@@ -50,7 +49,7 @@ class RetinaNetHub(RetinaNet, PyTorchModelHubMixin):
                     "Frozen backbone is currently not enabled for ResNet, but you can set the learning rate to zero."
                 )
             backbone = torchvision.models.detection.retinanet_resnet50_fpn(
-                weights=backbone_weights).backbone
+                weights=weights, backbone_weights=backbone_weights).backbone
             anchor_generator = None  # Use default
 
             # Explicitly use ImageNet
@@ -217,19 +216,32 @@ class Model(BaseModel):
             model: a pytorch nn module
         """
 
-        if pretrained == "resnet50":
+        if pretrained == "resnet50-imagenet":
             if revision is not None:
                 warnings.warn(
-                    "Ignoring revision and fine-tuning from ResNet50 MS-COCO checkpoint.")
-            model = RetinaNetHub(backbone_weights="COCO_V1",
+                    "Ignoring revision and using an un-initialized RetinaNet head, ImageNet backbone."
+                )
+            model = RetinaNetHub(weights=None,
+                                 backbone_weights=ResNet50_Weights.IMAGENET1K_V2,
                                  num_classes=self.config.num_classes,
                                  nms_thresh=self.config.nms_thresh,
                                  score_thresh=self.config.score_thresh,
                                  label_dict=self.config.label_dict)
-        elif pretrained == "dinov3":
-            warnings.warn(
-                "Ignoring revision and fine-tuning from DinoV3 Sat-493M checkpoint.")
-            model = RetinaNetHub(backbone_weights="dinov3",
+        elif pretrained == "resnet50-mscoco":
+            if revision is not None:
+                warnings.warn(
+                    "Ignoring revision and fine-tuning from ResNet50 MS-COCO checkpoint.")
+            model = RetinaNetHub(weights=RetinaNet_ResNet50_FPN_Weights.COCO_V1,
+                                 num_classes=self.config.num_classes,
+                                 nms_thresh=self.config.nms_thresh,
+                                 score_thresh=self.config.score_thresh,
+                                 label_dict=self.config.label_dict)
+        elif "dinov3" in pretrained:
+            if revision is not None:
+                warnings.warn(
+                    f"Ignoring revision and fine-tuning from DinoV3 {pretrained} checkpoint."
+                )
+            model = RetinaNetHub(weights=pretrained,
                                  num_classes=self.config.num_classes,
                                  nms_thresh=self.config.nms_thresh,
                                  score_thresh=self.config.score_thresh,
