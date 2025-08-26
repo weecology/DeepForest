@@ -83,7 +83,7 @@ def _load_image(image: Optional[Union[np.typing.NDArray, str, Image.Image]] = No
         # Images in [0,1] are allowed, but should be rescaled
         if image.max() <= 1 and image.min() >= 0:
             warnings.warn(
-                f"Image is in [0,1], multiplying by 255. If this is not expected")
+                "Image is in [0,1], multiplying by 255. If this is not expected")
             image *= 255
 
         image = np.clip(image, 0, 255).astype('uint8')

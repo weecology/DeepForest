@@ -10,8 +10,6 @@ import pytorch_lightning as pl
 import torch
 from PIL import Image
 from pytorch_lightning.callbacks import LearningRateMonitor
-from copy import deepcopy
-import pytorch_lightning as L
 from torch import optim
 from torchmetrics.detection import IntersectionOverUnion, MeanAveragePrecision
 from torchmetrics.classification import BinaryAccuracy
@@ -249,7 +247,7 @@ class deepforest(pl.LightningModule):
             None
         """
         # If val data is passed, monitor learning rate and setup classification metrics
-        if not self.config.validation.csv_file is None:
+        if self.config.validation.csv_file is not None:
             if logger is not None:
                 lr_monitor = LearningRateMonitor(logging_interval='epoch')
                 callbacks.append(lr_monitor)
@@ -1117,7 +1115,7 @@ class deepforest(pl.LightningModule):
                     pass
 
         # Log each key value pair of the results dict
-        if not results["class_recall"] is None:
+        if results["class_recall"] is not None:
             for key, value in results.items():
                 if key in ["class_recall"]:
                     for index, row in value.iterrows():

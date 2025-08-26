@@ -76,7 +76,7 @@ def compute_class_recall(results):
 
 def __evaluate_wrapper__(predictions, ground_df, iou_threshold, numeric_to_label_dict):
     """Evaluate a set of predictions against a ground truth csv file
-        Args:   
+        Args:
             predictions: a pandas dataframe, if supplied a root dir is needed to give the relative path of files in df.name. The labels in ground truth and predictions must match. If one is numeric, the other must be numeric.
             ground_df: a pandas dataframe, if supplied a root dir is needed to give the relative path of files in df.name
             iou_threshold: intersection-over-union threshold, see deepforest.evaluate
@@ -115,7 +115,7 @@ def __evaluate_wrapper__(predictions, ground_df, iou_threshold, numeric_to_label
             "Geometry type {} not implemented".format(prediction_geometry))
 
     # replace classes if not NUll
-    if not results["results"] is None:
+    if results["results"] is not None:
         results["results"]["predicted_label"] = results["results"][
             "predicted_label"].apply(lambda x: numeric_to_label_dict[x]
                                      if not pd.isnull(x) else x)

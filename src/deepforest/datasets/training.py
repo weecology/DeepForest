@@ -2,7 +2,6 @@
 
 # Standard library imports
 import os
-from typing import Dict, List, Optional, Union
 import warnings
 
 # Third party imports
@@ -11,8 +10,6 @@ import pandas as pd
 import torch
 from torch.utils.data import Dataset
 from PIL import Image
-import albumentations as A
-from albumentations.pytorch import ToTensorV2
 import shapely
 from deepforest.augmentations import get_transform
 

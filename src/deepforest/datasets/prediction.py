@@ -111,7 +111,7 @@ class PredictionDataset(Dataset):
         # Check if all images in batch have same dimensions
         try:
             return default_collate(batch)
-        except RuntimeError as e:
+        except RuntimeError:
             raise RuntimeError(
                 "Images in batch have different dimensions. Set validation.size in config.yaml to resize all images to a common size."
             )
