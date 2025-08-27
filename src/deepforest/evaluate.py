@@ -76,7 +76,7 @@ def compute_class_recall(results):
 
 def __evaluate_wrapper__(predictions, ground_df, iou_threshold, numeric_to_label_dict):
     """Evaluate a set of predictions against a ground truth csv file
-        Args:   
+        Args:
             predictions: a pandas dataframe, if supplied a root dir is needed to give the relative path of files in df.name. The labels in ground truth and predictions must match. If one is numeric, the other must be numeric.
             ground_df: a pandas dataframe, if supplied a root dir is needed to give the relative path of files in df.name
             iou_threshold: intersection-over-union threshold, see deepforest.evaluate
@@ -115,7 +115,7 @@ def __evaluate_wrapper__(predictions, ground_df, iou_threshold, numeric_to_label
             "Geometry type {} not implemented".format(prediction_geometry))
 
     # replace classes if not NUll
-    if not results["results"] is None:
+    if results["results"] is not None:
         results["results"]["predicted_label"] = results["results"][
             "predicted_label"].apply(lambda x: numeric_to_label_dict[x]
                                      if not pd.isnull(x) else x)
@@ -172,7 +172,7 @@ def evaluate_boxes(predictions, ground_df, iou_threshold=0.4):
                 "IoU": 0,
                 "predicted_label": None,
                 "score": None,
-                "match": None,
+                "match": False,
                 "true_label": group.label
             })
             # An empty prediction set has recall of 0, precision of NA.
@@ -185,6 +185,8 @@ def evaluate_boxes(predictions, ground_df, iou_threshold=0.4):
 
         result["image_path"] = image_path
         result["match"] = result.IoU > iou_threshold
+        # Convert None to False for boolean consistency
+        result["match"] = result["match"].fillna(False)
         true_positive = sum(result["match"])
         recall = true_positive / result.shape[0]
         precision = true_positive / image_predictions.shape[0]
@@ -198,7 +200,7 @@ def evaluate_boxes(predictions, ground_df, iou_threshold=0.4):
     box_recall = np.mean(box_recalls)
 
     # Only matching boxes are considered in class recall
-    matched_results = results[results.match == True]
+    matched_results = results[results.match]
     class_recall = compute_class_recall(matched_results)
 
     return {
@@ -224,9 +226,8 @@ def _point_recall_image_(predictions, ground_df):
     """
     plot_names = predictions["image_path"].unique()
     if len(plot_names) > 1:
-        raise ValueError("More than one image passed to function: {}".format(plot_name))
-    else:
-        plot_name = plot_names[0]
+        raise ValueError("More than one image passed to function: {}".format(
+            plot_names[0]))
 
     predictions['geometry'] = predictions.apply(
         lambda x: shapely.geometry.box(x.xmin, x.ymin, x.xmax, x.ymax), axis=1)

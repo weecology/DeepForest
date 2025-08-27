@@ -19,3 +19,6 @@ def get_data(path):
         return os.path.join(_ROOT, "conf", "config.yaml")
     else:
         return os.path.join(_ROOT, "data", path)
+
+
+__all__ = ["__version__"]

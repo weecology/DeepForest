@@ -10,8 +10,6 @@ import pytorch_lightning as pl
 import torch
 from PIL import Image
 from pytorch_lightning.callbacks import LearningRateMonitor
-from copy import deepcopy
-import pytorch_lightning as L
 from torch import optim
 from torchmetrics.detection import IntersectionOverUnion, MeanAveragePrecision
 from torchmetrics.classification import BinaryAccuracy
@@ -249,7 +247,7 @@ class deepforest(pl.LightningModule):
             None
         """
         # If val data is passed, monitor learning rate and setup classification metrics
-        if not self.config.validation.csv_file is None:
+        if self.config.validation.csv_file is not None:
             if logger is not None:
                 lr_monitor = LearningRateMonitor(logging_interval='epoch')
                 callbacks.append(lr_monitor)
@@ -530,7 +528,7 @@ class deepforest(pl.LightningModule):
             image = np.array(Image.open(path).convert("RGB")).astype("float32")
 
         # sanity checks on input images
-        if not type(image) == np.ndarray:
+        if not isinstance(image, np.ndarray):
             raise TypeError("Input image is of type {}, expected numpy, if reading "
                             "from PIL, wrap in "
                             "np.array(image).astype(float32)".format(type(image)))
@@ -871,10 +869,10 @@ class deepforest(pl.LightningModule):
     def log_epoch_metrics(self):
         if len(self.iou_metric.groundtruth_labels) > 0:
             output = self.iou_metric.compute()
+            # This is a bug in lightning, it claims this is a warning but it is not. https://github.com/Lightning-AI/pytorch-lightning/issues/16218
             try:
-                # This is a bug in lightning, it claims this is a warning but it is not. https://github.com/Lightning-AI/pytorch-lightning/pull/9733/files
                 self.log_dict(output)
-            except:
+            except Exception:
                 pass
 
             self.iou_metric.reset()
@@ -1001,7 +999,8 @@ class deepforest(pl.LightningModule):
         params = scheduler_config.params
 
         # Assume the lambda is a function of epoch
-        lr_lambda = lambda epoch: eval(params.lr_lambda)
+        def lr_lambda(epoch):
+            return eval(params.lr_lambda)
 
         if scheduler_type == "cosine":
             scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,
@@ -1117,7 +1116,7 @@ class deepforest(pl.LightningModule):
                     pass
 
         # Log each key value pair of the results dict
-        if not results["class_recall"] is None:
+        if results["class_recall"] is not None:
             for key, value in results.items():
                 if key in ["class_recall"]:
                     for index, row in value.iterrows():

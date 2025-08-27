@@ -149,7 +149,6 @@ async def download_ArcGIS_REST(semaphore,
                     elif 'wkt' in spatialReference:
                         crs = CRS.from_wkt(spatialReference['wkt'])
 
-                bbox = f"{xmin},{ymin},{xmax},{ymax}"
                 bounds = gpd.GeoDataFrame(geometry=[
                     shapely.geometry.box(xmin, ymin, xmax, ymax)
                 ],
