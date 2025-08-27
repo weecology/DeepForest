@@ -1,5 +1,4 @@
 # Model - common class
-from deepforest.models import *
 import torch
 from pytorch_lightning import LightningModule, Trainer
 import os

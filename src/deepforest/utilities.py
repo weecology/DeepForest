@@ -300,7 +300,7 @@ def determine_geometry_type(df):
             raise ValueError(
                 "Could not determine geometry type from columns {}".format(columns))
 
-    elif type(df) == dict:
+    elif isinstance(df, dict):
         if 'boxes' in df.keys():
             geometry_type = "box"
         elif 'polygon' in df.keys():
@@ -785,7 +785,6 @@ def boxes_to_shapefile(df, root_dir, projected=True, flip_y_axis=False):
 
     rgb_path = "{}/{}".format(root_dir, plot_name)
     with rasterio.open(rgb_path) as dataset:
-        bounds = dataset.bounds
         pixelSizeX, pixelSizeY = dataset.res
         crs = dataset.crs
         transform = dataset.transform
@@ -805,11 +804,9 @@ def boxes_to_shapefile(df, root_dir, projected=True, flip_y_axis=False):
         # One box polygon for each tree bounding box
         # Careful of single row edge case where
         # xmin_coords comes out not as a list, but as a float
-        if type(xmin_coords) == float:
+        if isinstance(xmin_coords, float):
             xmin_coords = [xmin_coords]
             ymin_coords = [ymin_coords]
-            xmax_coords = [xmax_coords]
-            ymax_coords = [ymax_coords]
 
         box_coords = zip(xmin_coords, ymin_coords, xmax_coords, ymax_coords)
         box_geoms = [

@@ -528,7 +528,7 @@ class deepforest(pl.LightningModule):
             image = np.array(Image.open(path).convert("RGB")).astype("float32")
 
         # sanity checks on input images
-        if not type(image) == np.ndarray:
+        if not isinstance(image, np.ndarray):
             raise TypeError("Input image is of type {}, expected numpy, if reading "
                             "from PIL, wrap in "
                             "np.array(image).astype(float32)".format(type(image)))
@@ -869,10 +869,10 @@ class deepforest(pl.LightningModule):
     def log_epoch_metrics(self):
         if len(self.iou_metric.groundtruth_labels) > 0:
             output = self.iou_metric.compute()
+            # This is a bug in lightning, it claims this is a warning but it is not. https://github.com/Lightning-AI/pytorch-lightning/issues/16218
             try:
-                # This is a bug in lightning, it claims this is a warning but it is not. https://github.com/Lightning-AI/pytorch-lightning/pull/9733/files
                 self.log_dict(output)
-            except:
+            except Exception:
                 pass
 
             self.iou_metric.reset()
@@ -999,7 +999,8 @@ class deepforest(pl.LightningModule):
         params = scheduler_config.params
 
         # Assume the lambda is a function of epoch
-        lr_lambda = lambda epoch: eval(params.lr_lambda)
+        def lr_lambda(epoch):
+            return eval(params.lr_lambda)
 
         if scheduler_type == "cosine":
             scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,

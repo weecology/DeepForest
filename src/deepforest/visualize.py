@@ -198,11 +198,16 @@ def draw_predictions(image: np.typing.NDArray,
             geometry_type = row["geometry"].geom_type
             if geometry_type == "Polygon":
                 # convert to int32 and numpy array
-                int_coords = lambda x: np.array(x).round().astype(np.int32)
+                def int_coords(x):
+                    return np.array(x).round().astype(np.int32)
+
                 polygon = [int_coords(row["geometry"].exterior.coords)]
                 cv2.polylines(image, polygon, True, color, thickness=thickness)
             elif geometry_type == "Point":
-                int_coords = lambda x: np.array(x).round().astype(np.int32)
+
+                def int_coords(x):
+                    return np.array(x).round().astype(np.int32)
+
                 cv2.circle(image,
                            (int_coords(row["geometry"].x), int_coords(row["geometry"].y)),
                            color=color,
