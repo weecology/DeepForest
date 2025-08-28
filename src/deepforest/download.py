@@ -17,7 +17,7 @@ Image.MAX_IMAGE_PIXELS = None
 
 def deg2num(lat, lon, zoom):
     n = 2**zoom
-    xtile = ((lon + 180) / 360 * n)
+    xtile = (lon + 180) / 360 * n
     ytile = (1 - math.asinh(math.tan(math.radians(lat))) / math.pi) * n / 2
     return (xtile, ytile)
 
@@ -26,8 +26,8 @@ async def fetch_tile(url, session, x, y):
     try:
         async with session.get(url) as resp:
             if resp.status == 200:
-                content_type = resp.headers.get('Content-Type', '').lower()
-                if 'image' in content_type:
+                content_type = resp.headers.get("Content-Type", "").lower()
+                if "image" in content_type:
                     return await resp.read(), (x, y)
                 else:
                     print(f"Warning: Non-image content received for tile ({x}, {y})")
@@ -53,20 +53,21 @@ def paste_tile(bigim, base_size, tile, corner_xy, bbox):
     if tile is None:
         return bigim
     im = Image.open(io.BytesIO(tile))
-    mode = 'RGB' if im.mode == 'RGB' else 'RGBA'
+    mode = "RGB" if im.mode == "RGB" else "RGBA"
     size = im.size
     if bigim is None:
         base_size[0] = size[0]
         base_size[1] = size[1]
-        newim = Image.new(mode,
-                          (size[0] * (bbox[2] - bbox[0]), size[1] * (bbox[3] - bbox[1])))
+        newim = Image.new(
+            mode, (size[0] * (bbox[2] - bbox[0]), size[1] * (bbox[3] - bbox[1]))
+        )
     else:
         newim = bigim
 
     dx = abs(corner_xy[0] - bbox[0])
     dy = abs(corner_xy[1] - bbox[1])
     xy0 = (size[0] * dx, size[1] * dy)
-    if mode == 'RGB':
+    if mode == "RGB":
         newim.paste(im, xy0)
     else:
         if im.mode != mode:
@@ -77,18 +78,20 @@ def paste_tile(bigim, base_size, tile, corner_xy, bbox):
     return newim
 
 
-async def download_ArcGIS_REST(semaphore,
-                               limiter,
-                               url,
-                               xmin,
-                               ymin,
-                               xmax,
-                               ymax,
-                               bbox_crs,
-                               savedir,
-                               additional_params=None,
-                               image_name="image.tiff",
-                               download_service="exportImage"):
+async def download_ArcGIS_REST(
+    semaphore,
+    limiter,
+    url,
+    xmin,
+    ymin,
+    xmax,
+    ymax,
+    bbox_crs,
+    savedir,
+    additional_params=None,
+    image_name="image.tiff",
+    download_service="exportImage",
+):
     """Fetch data from a web server using geographic boundaries and save it as
     a GeoTIFF file. This function is used to download data from an ArcGIS REST
     service, not WMTS or WMS services. Example url: https://gis.calgary.ca/arcg
@@ -146,22 +149,25 @@ async def download_ArcGIS_REST(semaphore,
                     if "latestWkid" in spatialReference:
                         wkid = spatialReference["latestWkid"]
                         crs = CRS.from_epsg(wkid)
-                    elif 'wkt' in spatialReference:
-                        crs = CRS.from_wkt(spatialReference['wkt'])
+                    elif "wkt" in spatialReference:
+                        crs = CRS.from_wkt(spatialReference["wkt"])
 
-                bounds = gpd.GeoDataFrame(geometry=[
-                    shapely.geometry.box(xmin, ymin, xmax, ymax)
-                ],
-                                          crs=bbox_crs).to_crs(crs).bounds
+                bounds = (
+                    gpd.GeoDataFrame(
+                        geometry=[shapely.geometry.box(xmin, ymin, xmax, ymax)],
+                        crs=bbox_crs,
+                    )
+                    .to_crs(crs)
+                    .bounds
+                )
 
-                params.update({
-                    "bbox":
-                        f"{bounds.minx[0]},{bounds.miny[0]},{bounds.maxx[0]},{bounds.maxy[0]}",
-                    "f":
-                        "image",
-                    'format':
-                        'tiff',
-                })
+                params.update(
+                    {
+                        "bbox": f"{bounds.minx[0]},{bounds.miny[0]},{bounds.maxx[0]},{bounds.maxy[0]}",
+                        "f": "image",
+                        "format": "tiff",
+                    }
+                )
 
                 if additional_params:
                     params.update(additional_params)
@@ -183,17 +189,19 @@ async def download_ArcGIS_REST(semaphore,
                 semaphore.release()
 
 
-async def download_TileMapServer(semaphore,
-                                 limiter,
-                                 source,
-                                 lat0,
-                                 lon0,
-                                 lat1,
-                                 lon1,
-                                 zoom,
-                                 save_image=True,
-                                 save_dir=None,
-                                 image_name='image.tiff'):
+async def download_TileMapServer(
+    semaphore,
+    limiter,
+    source,
+    lat0,
+    lon0,
+    lat1,
+    lon1,
+    zoom,
+    save_image=True,
+    save_dir=None,
+    image_name="image.tiff",
+):
     """Download map tiles from a Tile Map Server (TMS) and optionally save them
     as a single image.
 
@@ -238,14 +246,13 @@ async def download_TileMapServer(semaphore,
         await semaphore.acquire()
         async with limiter:
             try:
-                session.headers.update({
-                    "Accept":
-                        "*/*",
-                    "Accept-Encoding":
-                        "gzip, deflate",
-                    "User-Agent":
-                        "Mozilla/5.0 (Windows NT 10.0; rv:91.0) Gecko/20100101 Firefox/91.0",
-                })
+                session.headers.update(
+                    {
+                        "Accept": "*/*",
+                        "Accept-Encoding": "gzip, deflate",
+                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; rv:91.0) Gecko/20100101 Firefox/91.0",
+                    }
+                )
                 x0, y0 = deg2num(lat0, lon0, zoom)
                 x1, y1 = deg2num(lat1, lon1, zoom)
                 if x0 > x1:
@@ -254,8 +261,11 @@ async def download_TileMapServer(semaphore,
                     y0, y1 = y1, y0
 
                 corners = tuple(
-                    itertools.product(range(math.floor(x0), math.ceil(x1)),
-                                      range(math.floor(y0), math.ceil(y1))))
+                    itertools.product(
+                        range(math.floor(x0), math.ceil(x1)),
+                        range(math.floor(y0), math.ceil(y1)),
+                    )
+                )
                 totalnum = len(corners)
                 done_num = 0
                 tasks = []
@@ -286,12 +296,12 @@ async def download_TileMapServer(semaphore,
                 imgw = round(base_size[0] * (x1 - x0))
                 imgh = round(base_size[1] * (y1 - y0))
                 retim = bigim.crop((x2, y2, x2 + imgw, y2 + imgh))
-                if retim.mode == 'RGBA' and retim.getextrema()[3] == (255, 255):
-                    retim = retim.convert('RGB')
+                if retim.mode == "RGBA" and retim.getextrema()[3] == (255, 255):
+                    retim = retim.convert("RGB")
                 bigim.close()
 
                 os.makedirs(save_dir, exist_ok=True)
-                retim.save(os.path.join(save_dir, image_name), format='TIFF')
+                retim.save(os.path.join(save_dir, image_name), format="TIFF")
                 return retim
 
             except Exception as e:
@@ -314,9 +324,9 @@ async def download_web_server(semaphore, limiter, url, *args, **kwargs):
     Returns:
     - The result of the specific download function.
     """
-    if re.search(r'/arcgis/rest/services/', url, re.IGNORECASE):
+    if re.search(r"/arcgis/rest/services/", url, re.IGNORECASE):
         return await download_ArcGIS_REST(semaphore, limiter, url, *args, **kwargs)
-    elif re.search(r'/{z}/{x}/{y}', url, re.IGNORECASE):
+    elif re.search(r"/{z}/{x}/{y}", url, re.IGNORECASE):
         return await download_TileMapServer(semaphore, limiter, url, *args, **kwargs)
     else:
         raise ValueError("Unsupported URL pattern for download.")

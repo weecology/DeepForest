@@ -14,9 +14,11 @@ from typing import Optional, Union
 from deepforest.utilities import determine_geometry_type
 
 
-def _load_image(image: Optional[Union[np.typing.NDArray, str, Image.Image]] = None,
-                df: Optional[pd.DataFrame] = None,
-                root_dir: Optional[str] = None) -> np.typing.NDArray:
+def _load_image(
+    image: Optional[Union[np.typing.NDArray, str, Image.Image]] = None,
+    df: Optional[pd.DataFrame] = None,
+    root_dir: Optional[str] = None,
+) -> np.typing.NDArray:
     """Utility function to load an image from either a path or a
     prediction/annotation dataframe.
 
@@ -33,15 +35,17 @@ def _load_image(image: Optional[Union[np.typing.NDArray, str, Image.Image]] = No
 
     if image is None and df is None:
         raise ValueError(
-            "Either an image or a valid dataframe must be provided for plotting.")
+            "Either an image or a valid dataframe must be provided for plotting."
+        )
 
     if df is not None:
         # Resolve image root
-        if hasattr(df, 'root_dir') and root_dir is None:
+        if hasattr(df, "root_dir") and root_dir is None:
             root_dir = df.root_dir
             # expected str, bytes or os.PathLike object, not Series
-            root_dir = df.root_dir.iloc[0] if isinstance(root_dir,
-                                                         pd.Series) else root_dir
+            root_dir = (
+                df.root_dir.iloc[0] if isinstance(root_dir, pd.Series) else root_dir
+            )
         elif root_dir is None:
             raise ValueError(
                 "Neither root_dir nor a dataframe with the root_dir attribute was provided."
@@ -63,8 +67,10 @@ def _load_image(image: Optional[Union[np.typing.NDArray, str, Image.Image]] = No
 
     # Fix channel ordering
     if image.ndim == 3 and image.shape[0] == 3 and image.shape[2] != 3:
-        warnings.warn("Input images must be channels last format [h, w, 3] not channels "
-                      "first [3, h, w], using np.transpose(1,2,0) to invert!")
+        warnings.warn(
+            "Input images must be channels last format [h, w, 3] not channels "
+            "first [3, h, w], using np.transpose(1,2,0) to invert!"
+        )
         image = image.transpose(1, 2, 0)
 
     # Drop alpha channel if present and warn
@@ -75,7 +81,6 @@ def _load_image(image: Optional[Union[np.typing.NDArray, str, Image.Image]] = No
         image = image[:, :, :3]
 
     if image.dtype != np.uint8:
-
         warnings.warn(
             f"Image is {image.dtype}. Will be cast to 8-bit unsigned and clipped to [0,255]"
         )
@@ -83,19 +88,22 @@ def _load_image(image: Optional[Union[np.typing.NDArray, str, Image.Image]] = No
         # Images in [0,1] are allowed, but should be rescaled
         if image.max() <= 1 and image.min() >= 0:
             warnings.warn(
-                "Image is in [0,1], multiplying by 255. If this is not expected")
+                "Image is in [0,1], multiplying by 255. If this is not expected"
+            )
             image *= 255
 
-        image = np.clip(image, 0, 255).astype('uint8')
+        image = np.clip(image, 0, 255).astype("uint8")
 
     return image
 
 
-def plot_points(image: np.typing.NDArray,
-                points: np.typing.NDArray,
-                color: Optional[tuple] = None,
-                radius: int = 5,
-                thickness: int = 1) -> np.typing.NDArray:
+def plot_points(
+    image: np.typing.NDArray,
+    points: np.typing.NDArray,
+    color: Optional[tuple] = None,
+    radius: int = 5,
+    thickness: int = 1,
+) -> np.typing.NDArray:
     """Draw points on an image, returns a copy of the array
     Args:
         image: a numpy array in RGB order, HWC format
@@ -108,15 +116,18 @@ def plot_points(image: np.typing.NDArray,
     """
     warnings.warn(
         "plot_points will be deprecated in 2.0, please use draw_points instead.",
-        DeprecationWarning)
+        DeprecationWarning,
+    )
     return draw_points(image, points, color, radius, thickness)
 
 
-def draw_points(image: np.typing.NDArray,
-                points: np.typing.NDArray,
-                color: Optional[tuple] = None,
-                radius: int = 5,
-                thickness: int = 1) -> np.typing.NDArray:
+def draw_points(
+    image: np.typing.NDArray,
+    points: np.typing.NDArray,
+    color: Optional[tuple] = None,
+    radius: int = 5,
+    thickness: int = 1,
+) -> np.typing.NDArray:
     """Draw points on an image, returns a copy of the array.
 
     Args:
@@ -134,18 +145,20 @@ def draw_points(image: np.typing.NDArray,
         color = (0, 165, 255)  # Default color is orange
 
     for point in points:
-        cv2.circle(image, (int(point[0]), int(point[1])),
-                   color=color,
-                   radius=radius,
-                   thickness=thickness)
+        cv2.circle(
+            image,
+            (int(point[0]), int(point[1])),
+            color=color,
+            radius=radius,
+            thickness=thickness,
+        )
 
     return cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
 
-def plot_predictions(image: np.typing.NDArray,
-                     df: pd.DataFrame,
-                     color: tuple = None,
-                     thickness: int = 1) -> np.typing.NDArray:
+def plot_predictions(
+    image: np.typing.NDArray, df: pd.DataFrame, color: tuple = None, thickness: int = 1
+) -> np.typing.NDArray:
     """Draw geometries on an image, which can be polygons, boxes or points.
 
     Returns a copy of the array.
@@ -159,15 +172,19 @@ def plot_predictions(image: np.typing.NDArray,
         image: a numpy array with drawn annotations
     """
     warnings.warn(
-        "plot_predictions will be deprecated in 2.0, please use draw_predictions instead. Or plot_results if you need a figure.",
-        DeprecationWarning)
+        "plot_predictions will be deprecated in 2.0, "
+        "Please use draw_predictions instead. Or plot_results if you need a figure.",
+        DeprecationWarning,
+    )
     return draw_predictions(image, df, color, thickness)
 
 
-def draw_predictions(image: np.typing.NDArray,
-                     df: pd.DataFrame,
-                     color: Optional[tuple] = None,
-                     thickness: int = 1) -> np.typing.NDArray:
+def draw_predictions(
+    image: np.typing.NDArray,
+    df: pd.DataFrame,
+    color: Optional[tuple] = None,
+    thickness: int = 1,
+) -> np.typing.NDArray:
     """Draw geometries on an image, which can be polygons, boxes or points.
 
     Returns a copy of the array.
@@ -184,8 +201,10 @@ def draw_predictions(image: np.typing.NDArray,
 
     if not color:
         if not ptypes.is_numeric_dtype(df.label):
-            warnings.warn("No color was provided and the label column is not numeric. "
-                          "Using a single default color.")
+            warnings.warn(
+                "No color was provided and the label column is not numeric. "
+                "Using a single default color."
+            )
             color = (0, 165, 255)
 
     for index, row in df.iterrows():
@@ -208,24 +227,28 @@ def draw_predictions(image: np.typing.NDArray,
                 def int_coords(x):
                     return np.array(x).round().astype(np.int32)
 
-                cv2.circle(image,
-                           (int_coords(row["geometry"].x), int_coords(row["geometry"].y)),
-                           color=color,
-                           radius=5,
-                           thickness=thickness)
+                cv2.circle(
+                    image,
+                    (int_coords(row["geometry"].x), int_coords(row["geometry"].y)),
+                    color=color,
+                    radius=5,
+                    thickness=thickness,
+                )
             else:
                 raise ValueError("Only polygons and points are supported")
         elif "xmin" in df.columns:
-            cv2.rectangle(image, (int(row["xmin"]), int(row["ymin"])),
-                          (int(row["xmax"]), int(row["ymax"])),
-                          color=color,
-                          thickness=thickness,
-                          lineType=cv2.LINE_AA)
+            cv2.rectangle(
+                image,
+                (int(row["xmin"]), int(row["ymin"])),
+                (int(row["xmax"]), int(row["ymax"])),
+                color=color,
+                thickness=thickness,
+                lineType=cv2.LINE_AA,
+            )
         elif "x" in df.columns:
-            cv2.circle(image, (row["x"], row["y"]),
-                       color=color,
-                       radius=5,
-                       thickness=thickness)
+            cv2.circle(
+                image, (row["x"], row["y"]), color=color, radius=5, thickness=thickness
+            )
         elif "polygon" in df.columns:
             polygon = np.array(row["polygon"])
             cv2.polylines(image, [polygon], True, color, thickness=thickness)
@@ -263,9 +286,8 @@ def label_to_color(label: int) -> tuple:
 
 
 def convert_to_sv_format(
-        df: pd.DataFrame,
-        width: Optional[int] = None,
-        height: Optional[int] = None) -> Union[sv.Detections, sv.KeyPoints]:
+    df: pd.DataFrame, width: Optional[int] = None, height: Optional[int] = None
+) -> Union[sv.Detections, sv.KeyPoints]:
     """Convert DeepForest prediction results to a supervision Detections
     object.
 
@@ -275,25 +297,25 @@ def convert_to_sv_format(
         width (int): The width of the image in pixels. Only required if the geometry type is 'polygon'.
         height (int): The height of the image in pixels. Only required if the geometry type is 'polygon'.
 
-    Returns:
-        Depending on the geometry type, the function returns either a Detections or a KeyPoints object from the supervision library.
+    Returns: A supervision.Detections or supervision.KeyPoints object based on geometry type.
     """
     geom_type = determine_geometry_type(df)
 
     if geom_type == "box":
         # Extract bounding boxes as a 2D numpy array with shape (_, 4)
         boxes = df.geometry.apply(
-            lambda x: (x.bounds[0], x.bounds[1], x.bounds[2], x.bounds[3])).values
+            lambda x: (x.bounds[0], x.bounds[1], x.bounds[2], x.bounds[3])
+        ).values
         boxes = np.stack(boxes)
 
-        label_mapping = {label: idx for idx, label in enumerate(df['label'].unique())}
+        label_mapping = {label: idx for idx, label in enumerate(df["label"].unique())}
 
         # Extract labels as a numpy array
-        labels = df['label'].map(label_mapping).values.astype(int)
+        labels = df["label"].map(label_mapping).values.astype(int)
 
         # Extract scores as a numpy array
         try:
-            scores = np.array(df['score'].tolist())
+            scores = np.array(df["score"].tolist())
         except KeyError:
             scores = np.ones(len(labels))
 
@@ -304,22 +326,24 @@ def convert_to_sv_format(
             xyxy=boxes,
             class_id=labels,
             confidence=scores,
-            data={"class_name": [class_name[class_id] for class_id in labels]})
+            data={"class_name": [class_name[class_id] for class_id in labels]},
+        )
 
     elif geom_type == "polygon":
         # Extract bounding boxes as a 2D numpy array with shape (_, 4)
         boxes = df.geometry.apply(
-            lambda x: (x.bounds[0], x.bounds[1], x.bounds[2], x.bounds[3])).values
+            lambda x: (x.bounds[0], x.bounds[1], x.bounds[2], x.bounds[3])
+        ).values
         boxes = np.stack(boxes)
 
-        label_mapping = {label: idx for idx, label in enumerate(df['label'].unique())}
+        label_mapping = {label: idx for idx, label in enumerate(df["label"].unique())}
 
         # Extract labels as a numpy array
-        labels = df['label'].map(label_mapping).values.astype(int)
+        labels = df["label"].map(label_mapping).values.astype(int)
 
         # Extract scores as a numpy array
         try:
-            scores = np.array(df['score'].tolist())
+            scores = np.array(df["score"].tolist())
         except KeyError:
             scores = np.ones(len(labels))
 
@@ -328,17 +352,18 @@ def convert_to_sv_format(
 
         # Auto-detect width/height if missing
         if width is None or height is None:
-            if 'image_path' not in df.columns:
+            if "image_path" not in df.columns:
                 raise ValueError("'image_path' column required for polygons.")
 
             # Use the first image_path entry
-            image_path = df['image_path'].iloc[0]
+            image_path = df["image_path"].iloc[0]
             try:
                 with Image.open(image_path) as img:
                     width, height = img.size  # Get dimensions
             except Exception as e:
                 raise ValueError(
-                    f"Could not read image dimensions from {image_path}: {e}")
+                    f"Could not read image dimensions from {image_path}: {e}"
+                )
 
         polygons = df.geometry.apply(lambda x: np.array(x.exterior.coords)).values
         # as integers
@@ -351,21 +376,22 @@ def convert_to_sv_format(
             mask=masks,
             class_id=labels,
             confidence=scores,
-            data={"class_name": [class_name[class_id] for class_id in labels]})
+            data={"class_name": [class_name[class_id] for class_id in labels]},
+        )
 
     elif geom_type == "point":
         points = df.geometry.apply(lambda x: (x.x, x.y)).values
         points = np.stack(points)
         points = np.expand_dims(points, axis=1)
 
-        label_mapping = {label: idx for idx, label in enumerate(df['label'].unique())}
+        label_mapping = {label: idx for idx, label in enumerate(df["label"].unique())}
 
         # Extract labels as a numpy array
-        labels = df['label'].map(label_mapping).values.astype(int)
+        labels = df["label"].map(label_mapping).values.astype(int)
 
         # Extract scores as a numpy array
         try:
-            scores = np.array(df['score'].tolist())
+            scores = np.array(df["score"].tolist())
         except KeyError:
             scores = np.ones(len(labels))
 
@@ -378,13 +404,15 @@ def convert_to_sv_format(
             xy=points,
             class_id=labels,
             confidence=scores,
-            data={"class_name": [class_name[class_id] for class_id in labels]})
+            data={"class_name": [class_name[class_id] for class_id in labels]},
+        )
 
     return detections
 
 
-def __check_color__(color: Union[list, tuple, sv.ColorPalette],
-                    num_labels: int) -> Union[sv.Color, sv.ColorPalette]:
+def __check_color__(
+    color: Union[list, tuple, sv.ColorPalette], num_labels: int
+) -> Union[sv.Color, sv.ColorPalette]:
     if isinstance(color, list) and len(color) == 3:
         if num_labels > 1:
             warnings.warn(
@@ -392,7 +420,7 @@ def __check_color__(color: Union[list, tuple, sv.ColorPalette],
                 Each label will be plotted with a different color using a built-in color ramp.
                 If you want to customize colors with multiple labels pass a supervision.ColorPalette object to results_color with the appropriate number of labels"""
             )
-            return sv.ColorPalette.from_matplotlib('viridis', num_labels)
+            return sv.ColorPalette.from_matplotlib("viridis", num_labels)
         else:
             return sv.Color(color[0], color[1], color[2])
     elif isinstance(color, sv.draw.color.ColorPalette):
@@ -402,7 +430,7 @@ def __check_color__(color: Union[list, tuple, sv.ColorPalette],
                 Replacing the provided color palette with a built-in built-in color palette.
                 To use a custom color palette make sure the number of values matches the number of labels"""
             )
-            return sv.ColorPalette.from_matplotlib('viridis', num_labels)
+            return sv.ColorPalette.from_matplotlib("viridis", num_labels)
         else:
             return color
     elif isinstance(color, list):
@@ -416,16 +444,17 @@ def __check_color__(color: Union[list, tuple, sv.ColorPalette],
 
 
 def plot_annotations(
-        annotations: pd.DataFrame,
-        savedir: Optional[str] = None,
-        height: Optional[int] = None,
-        width: Optional[int] = None,
-        color: Union[list, sv.ColorPalette] = [245, 135, 66],
-        thickness: int = 2,
-        basename: Optional[str] = None,
-        root_dir: Optional[str] = None,
-        radius: int = 3,
-        image: Optional[Union[np.typing.NDArray, str, Image.Image]] = None) -> None:
+    annotations: pd.DataFrame,
+    savedir: Optional[str] = None,
+    height: Optional[int] = None,
+    width: Optional[int] = None,
+    color: Union[list, sv.ColorPalette] = [245, 135, 66],
+    thickness: int = 2,
+    basename: Optional[str] = None,
+    root_dir: Optional[str] = None,
+    radius: int = 3,
+    image: Optional[Union[np.typing.NDArray, str, Image.Image]] = None,
+) -> None:
     """Plot prediction results or ground truth annotations for a single image.
 
     This function can be used to create a figure which can be saved or shown. If you wish
@@ -453,40 +482,45 @@ def plot_annotations(
 
     # Plot the results following https://supervision.roboflow.com/annotators/
     plt.subplots()
-    annotated_scene = _plot_image_with_geometry(df=annotations,
-                                                image=image,
-                                                sv_color=annotation_color,
-                                                height=height,
-                                                width=width,
-                                                thickness=thickness,
-                                                radius=radius)
+    annotated_scene = _plot_image_with_geometry(
+        df=annotations,
+        image=image,
+        sv_color=annotation_color,
+        height=height,
+        width=width,
+        thickness=thickness,
+        radius=radius,
+    )
 
     if savedir:
         if basename is None:
             basename = os.path.splitext(
-                os.path.basename(annotations.image_path.unique()[0]))[0]
+                os.path.basename(annotations.image_path.unique()[0])
+            )[0]
         image_name = "{}.png".format(basename)
         image_path = os.path.join(savedir, image_name)
         cv2.imwrite(image_path, annotated_scene)
     else:
         # Display the image using Matplotlib
         plt.imshow(annotated_scene)
-        plt.axis('off')  # Hide axes for a cleaner look
+        plt.axis("off")  # Hide axes for a cleaner look
         plt.show()
 
 
-def plot_results(results: pd.DataFrame,
-                 ground_truth: Optional[pd.DataFrame] = None,
-                 savedir: Optional[str] = None,
-                 height: Optional[int] = None,
-                 width: Optional[int] = None,
-                 results_color: Union[list, sv.ColorPalette] = [245, 135, 66],
-                 ground_truth_color: Union[list, sv.ColorPalette] = [0, 165, 255],
-                 thickness: int = 2,
-                 basename: Optional[str] = None,
-                 radius: int = 3,
-                 image: Optional[Union[np.typing.NDArray, str, Image.Image]] = None,
-                 axes: bool = False):
+def plot_results(
+    results: pd.DataFrame,
+    ground_truth: Optional[pd.DataFrame] = None,
+    savedir: Optional[str] = None,
+    height: Optional[int] = None,
+    width: Optional[int] = None,
+    results_color: Union[list, sv.ColorPalette] = [245, 135, 66],
+    ground_truth_color: Union[list, sv.ColorPalette] = [0, 165, 255],
+    thickness: int = 2,
+    basename: Optional[str] = None,
+    radius: int = 3,
+    image: Optional[Union[np.typing.NDArray, str, Image.Image]] = None,
+    axes: bool = False,
+):
     """Plot prediction results and optionally ground truth annotations.
 
     This function can be used to create a figure which can be saved or shown. If you wish
@@ -517,28 +551,33 @@ def plot_results(results: pd.DataFrame,
 
     # Plot the results following https://supervision.roboflow.com/annotators/
     _, ax = plt.subplots()
-    annotated_scene = _plot_image_with_geometry(df=results,
-                                                image=image,
-                                                sv_color=results_color_sv,
-                                                height=height,
-                                                width=width,
-                                                thickness=thickness,
-                                                radius=radius)
+    annotated_scene = _plot_image_with_geometry(
+        df=results,
+        image=image,
+        sv_color=results_color_sv,
+        height=height,
+        width=width,
+        thickness=thickness,
+        radius=radius,
+    )
 
     if ground_truth is not None:
         # Plot the ground truth annotations
-        annotated_scene = _plot_image_with_geometry(df=ground_truth,
-                                                    image=annotated_scene,
-                                                    sv_color=ground_truth_color_sv,
-                                                    height=height,
-                                                    width=width,
-                                                    thickness=thickness,
-                                                    radius=radius)
+        annotated_scene = _plot_image_with_geometry(
+            df=ground_truth,
+            image=annotated_scene,
+            sv_color=ground_truth_color_sv,
+            height=height,
+            width=width,
+            thickness=thickness,
+            radius=radius,
+        )
 
     if savedir:
         if basename is None:
-            basename = os.path.splitext(os.path.basename(
-                results.image_path.unique()[0]))[0]
+            basename = os.path.splitext(os.path.basename(results.image_path.unique()[0]))[
+                0
+            ]
         image_name = "{}.png".format(basename)
         image_path = os.path.join(savedir, image_name)
         cv2.imwrite(image_path, annotated_scene)
@@ -547,17 +586,13 @@ def plot_results(results: pd.DataFrame,
         plt.imshow(annotated_scene)
         if axes:
             return ax
-        plt.axis('off')  # Hide axes for a cleaner look
+        plt.axis("off")  # Hide axes for a cleaner look
         plt.show()
 
 
-def _plot_image_with_geometry(df,
-                              image,
-                              sv_color,
-                              thickness=1,
-                              radius=3,
-                              height=None,
-                              width=None):
+def _plot_image_with_geometry(
+    df, image, sv_color, thickness=1, radius=3, height=None, width=None
+):
     """Annotates an image with the given results.
 
     Args:
@@ -587,6 +622,7 @@ def _plot_image_with_geometry(df,
         )
     elif geom_type == "point":
         point_annotator = sv.VertexAnnotator(color=sv_color, radius=radius)
-        annotated_frame = point_annotator.annotate(scene=image.copy(),
-                                                   key_points=detections)
+        annotated_frame = point_annotator.annotate(
+            scene=image.copy(), key_points=detections
+        )
     return annotated_frame

@@ -1,10 +1,15 @@
 import warnings
-from transformers import DeformableDetrForObjectDetection, DeformableDetrImageProcessor, logging
+from transformers import (
+    DeformableDetrForObjectDetection,
+    DeformableDetrImageProcessor,
+    logging,
+)
 from deepforest.model import BaseModel
 import torch
 from pathlib import Path
 from torch import nn
 from torchvision.ops import nms
+
 # Suppress huge amounts of unnecessary warnings from transformers.
 logging.set_verbosity_error()
 
@@ -37,9 +42,11 @@ class DeformableDetrWrapper(nn.Module):
                 revision=revision,
                 num_labels=self.config.num_classes,
                 ignore_mismatched_sizes=True,
-                **hf_args)
+                **hf_args,
+            )
             self.processor = DeformableDetrImageProcessor.from_pretrained(
-                name, revision=revision, **hf_args)
+                name, revision=revision, **hf_args
+            )
 
             # If user-provided label_dict doesn't match the model's id2label:
             if self.net.config.label2id != self.config.label_dict:
@@ -66,21 +73,22 @@ class DeformableDetrWrapper(nn.Module):
         for target in targets:
             annotations_for_target = []
             for i, (label, box) in enumerate(zip(target["labels"], target["boxes"])):
-
                 if isinstance(box, torch.Tensor):
                     box = box.tolist()
 
                 if isinstance(label, torch.Tensor):
                     label = label.item()
 
-                annotations_for_target.append({
-                    "id": i,
-                    "image_id": i,
-                    "category_id": label,
-                    "bbox": box,
-                    "area": (box[3] - box[1]) * (box[2] - box[0]),
-                    "iscrowd": 0,
-                })
+                annotations_for_target.append(
+                    {
+                        "id": i,
+                        "image_id": i,
+                        "category_id": label,
+                        "bbox": box,
+                        "area": (box[3] - box[1]) * (box[2] - box[0]),
+                        "iscrowd": 0,
+                    }
+                )
 
             coco_targets.append({"image_id": 0, "annotations": annotations_for_target})
 
@@ -105,17 +113,21 @@ class DeformableDetrWrapper(nn.Module):
 
             if keep:
                 keep = torch.cat(keep)
-                filtered.append({
-                    "boxes": boxes[keep],
-                    "scores": scores[keep],
-                    "labels": labels[keep],
-                })
+                filtered.append(
+                    {
+                        "boxes": boxes[keep],
+                        "scores": scores[keep],
+                        "labels": labels[keep],
+                    }
+                )
             else:
-                filtered.append({
-                    "boxes": boxes,
-                    "scores": scores,
-                    "labels": labels,
-                })
+                filtered.append(
+                    {
+                        "boxes": boxes,
+                        "scores": scores,
+                        "labels": labels,
+                    }
+                )
 
         return filtered
 
@@ -132,10 +144,9 @@ class DeformableDetrWrapper(nn.Module):
         if targets and prepare_targets:
             targets = self._prepare_targets(targets)
 
-        encoded_inputs = self.processor.preprocess(images=images,
-                                                   annotations=targets,
-                                                   return_tensors="pt",
-                                                   do_rescale=False)
+        encoded_inputs = self.processor.preprocess(
+            images=images, annotations=targets, return_tensors="pt", do_rescale=False
+        )
 
         # Tensor "movement" is not automatic here, this
         # could be refactored to the dataloader (collate_fn)
@@ -154,7 +165,9 @@ class DeformableDetrWrapper(nn.Module):
                 preds,
                 threshold=self.config.score_thresh,
                 target_sizes=[i.shape[-2:] for i in images]
-                if isinstance(images, list) else [images.shape[-2:]])
+                if isinstance(images, list)
+                else [images.shape[-2:]],
+            )
 
             # DETR is specifically designed to be NMS-free, however we've seen cases
             # where it still predicts duplicate boxes
@@ -167,19 +180,20 @@ class DeformableDetrWrapper(nn.Module):
 
 
 class Model(BaseModel):
-
     def __init__(self, config, **kwargs):
         """
         Args:
         """
         super().__init__(config)
 
-    def create_model(self,
-                     pretrained: str | Path | None = "SenseTime/deformable-detr",
-                     *,
-                     revision: str | None = "main",
-                     map_location: str | torch.device | None = None,
-                     **hf_args) -> DeformableDetrWrapper:
+    def create_model(
+        self,
+        pretrained: str | Path | None = "SenseTime/deformable-detr",
+        *,
+        revision: str | None = "main",
+        map_location: str | torch.device | None = None,
+        **hf_args,
+    ) -> DeformableDetrWrapper:
         """Create a Deformable DETR model from pretrained weights.
 
         The number of classes set via config and will override the
@@ -190,9 +204,8 @@ class Model(BaseModel):
         # Take class mapping from config if the user plans to pretrain,
         # otherwise it should be defined by the hub model.
         if pretrained is None:
-            hf_args.setdefault('id2label', self.config.numeric_to_label_dict)
+            hf_args.setdefault("id2label", self.config.numeric_to_label_dict)
 
-        return DeformableDetrWrapper(self.config,
-                                     name=pretrained,
-                                     revision=revision,
-                                     **hf_args).to(map_location)
+        return DeformableDetrWrapper(
+            self.config, name=pretrained, revision=revision, **hf_args
+        ).to(map_location)

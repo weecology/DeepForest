@@ -37,14 +37,16 @@ class PredictionDataset(Dataset):
         size (int): The size of the image to resize to. Optional, if not provided, the image is not resized.
     """
 
-    def __init__(self,
-                 image=None,
-                 path=None,
-                 images=None,
-                 paths=None,
-                 patch_size=400,
-                 patch_overlap=0,
-                 size=None):
+    def __init__(
+        self,
+        image=None,
+        path=None,
+        images=None,
+        paths=None,
+        patch_size=400,
+        patch_overlap=0,
+        size=None,
+    ):
         self.image = image
         self.images = images
         self.path = path
@@ -67,8 +69,10 @@ class PredictionDataset(Dataset):
         image = np.array(image)
         if not image.shape[2] == 3:
             raise ValueError(
-                "Only three band raster are accepted. Input tile has shape {}. Check for transparent alpha channel and remove if present"
-                .format(image.shape))
+                "Only three band raster are accepted. Input tile has shape {}. Check for transparent alpha channel and remove if present".format(
+                    image.shape
+                )
+            )
 
         image = np.transpose(image, (2, 0, 1))
         image = self.preprocess_crop(image, size)
@@ -139,8 +143,11 @@ class PredictionDataset(Dataset):
         elif "polygons" in batched_result.keys():
             geom_type = "polygon"
         else:
-            raise ValueError("Unknown geometry type, prediction keys are {}".format(
-                batched_result.keys()))
+            raise ValueError(
+                "Unknown geometry type, prediction keys are {}".format(
+                    batched_result.keys()
+                )
+            )
 
         return geom_type
 
@@ -196,15 +203,15 @@ class SingleImage(PredictionDataset):
     """Take in a single image path, preprocess and batch together."""
 
     def __init__(self, path=None, image=None, patch_size=400, patch_overlap=0):
-        super().__init__(path=path,
-                         image=image,
-                         patch_size=patch_size,
-                         patch_overlap=patch_overlap)
+        super().__init__(
+            path=path, image=image, patch_size=patch_size, patch_overlap=patch_overlap
+        )
 
     def prepare_items(self):
         self.image = self._load_and_preprocess_image(self.path, self.image)
-        self.windows = preprocess.compute_windows(self.image, self.patch_size,
-                                                  self.patch_overlap)
+        self.windows = preprocess.compute_windows(
+            self.image, self.patch_size, self.patch_overlap
+        )
 
     def __len__(self):
         return len(self.windows)
@@ -343,8 +350,9 @@ class MultiImage(PredictionDataset):
     def _create_patches(self, image):
         image_tensor = torch.tensor(image).unsqueeze(0)  # Convert to (N, C, H, W)
         patch_overlap_size = int(self.patch_size * self.patch_overlap)
-        patches = self.create_overlapping_views(image_tensor, self.patch_size,
-                                                patch_overlap_size)
+        patches = self.create_overlapping_views(
+            image_tensor, self.patch_size, patch_overlap_size
+        )
 
         return patches
 
@@ -371,7 +379,7 @@ class MultiImage(PredictionDataset):
                 y = i * step
                 x = j * step
                 # Only add window if it contains any real data
-                if (x < W and y < H):
+                if x < W and y < H:
                     windows.append((x, y, self.patch_size, self.patch_size))
 
         return windows
@@ -430,7 +438,8 @@ class TiledRaster(PredictionDataset):
                     "the purpose of an out-of-memory dataset. "
                     "\nPlease run: "
                     "\ngdal_translate -of GTiff -co TILED=YES <input> <output> "
-                    "to create a tiled raster")
+                    "to create a tiled raster"
+                )
 
         # Generate sliding windows
         self.windows = slidingwindow.generateForSize(
@@ -438,7 +447,8 @@ class TiledRaster(PredictionDataset):
             width,
             dimOrder=slidingwindow.DimOrder.ChannelHeightWidth,
             maxWindowSize=self.patch_size,
-            overlapPercent=self.patch_overlap)
+            overlapPercent=self.patch_overlap,
+        )
 
     def __len__(self):
         return len(self.windows)
