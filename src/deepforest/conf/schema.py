@@ -7,6 +7,7 @@ from omegaconf import MISSING
 class ModelConfig:
     """Model configuration that defines the repository ID on HuggingFace and
     the revision (tag)."""
+
     name: Optional[str] = "weecology/deepforest-tree"
     revision: str = "main"
 
@@ -17,6 +18,7 @@ class SchedulerParamsConfig:
 
     In most cases users should not need to change these."
     """
+
     T_max: int = 10
     eta_min: float = 1e-5
     lr_lambda: str = "0.95 ** epoch"
@@ -37,6 +39,7 @@ class SchedulerParamsConfig:
 class SchedulerConfig:
     """Set the type of scheduler, by default DeepForest uses a stepped learning
     function reducing at "milestones" during training."""
+
     type: Optional[str] = "StepLR"
     params: SchedulerParamsConfig = field(default_factory=SchedulerParamsConfig)
 
@@ -56,6 +59,7 @@ class TrainConfig:
     manage the training loop and you can set fast_dev_run to True for
     sanity checking.
     """
+
     csv_file: Optional[str] = MISSING
     root_dir: Optional[str] = MISSING
     lr: float = 0.001
@@ -74,6 +78,7 @@ class ValidationConfig:
     Validation during training is important to identify if the model has
     converged or is overfitting.
     """
+
     csv_file: Optional[str] = MISSING
     root_dir: Optional[str] = MISSING
     preload_images: bool = False
@@ -105,6 +110,7 @@ class Config:
     For most users the default setting of 1-class, "tree" should be
     sufficient.
     """
+
     workers: int = 0
     devices: Union[int, str] = "auto"
     accelerator: str = "auto"

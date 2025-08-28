@@ -26,13 +26,9 @@ class images_callback(Callback):
         None: either prints validation scores or logs them to the pytorch-lightning logger
     """
 
-    def __init__(self,
-                 savedir,
-                 n=2,
-                 every_n_epochs=5,
-                 select_random=False,
-                 color=None,
-                 thickness=1):
+    def __init__(
+        self, savedir, n=2, every_n_epochs=5, select_random=False, color=None, thickness=1
+    ):
         self.savedir = savedir
         self.n = n
         self.color = color
@@ -48,7 +44,7 @@ class images_callback(Callback):
         if self.select_random:
             selected_images = np.random.choice(df.image_path.unique(), self.n)
         else:
-            selected_images = df.image_path.unique()[:self.n]
+            selected_images = df.image_path.unique()[: self.n]
         df = df[df.image_path.isin(selected_images)]
 
         # Add root_dir to the dataframe
@@ -59,7 +55,8 @@ class images_callback(Callback):
         if self.color is None:
             num_classes = len(df["label"].unique())  # Determine number of classes
             results_color = sv.ColorPalette.from_matplotlib(
-                'viridis', num_classes)  # Generate color palette
+                "viridis", num_classes
+            )  # Generate color palette
         else:
             results_color = self.color
 
@@ -68,16 +65,19 @@ class images_callback(Callback):
             results=df,
             savedir=self.savedir,
             results_color=results_color,  # Use ColorPalette for multi-class labels
-            thickness=self.thickness)
+            thickness=self.thickness,
+        )
 
         try:
             saved_plots = glob.glob("{}/*.png".format(self.savedir))
             for x in saved_plots:
                 pl_module.logger.experiment.log_image(x)
         except Exception as e:
-            print("Could not find comet logger in lightning module, "
-                  "skipping upload, images were saved to {}, "
-                  "error was raised {}".format(self.savedir, e))
+            print(
+                "Could not find comet logger in lightning module, "
+                "skipping upload, images were saved to {}, "
+                "error was raised {}".format(self.savedir, e)
+            )
 
     def on_validation_end(self, trainer, pl_module):
         if trainer.sanity_checking:  # optional skip

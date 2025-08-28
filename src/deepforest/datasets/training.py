@@ -15,16 +15,17 @@ from deepforest.augmentations import get_transform
 
 
 class BoxDataset(Dataset):
-
-    def __init__(self,
-                 csv_file,
-                 root_dir,
-                 *,
-                 transforms=None,
-                 augment=None,
-                 augmentations=None,
-                 label_dict={"Tree": 0},
-                 preload_images=False):
+    def __init__(
+        self,
+        csv_file,
+        root_dir,
+        *,
+        transforms=None,
+        augment=None,
+        augmentations=None,
+        label_dict={"Tree": 0},
+        preload_images=False,
+    ):
         """
         Args:
             csv_file (string): Path to a single csv file with annotations.
@@ -41,7 +42,6 @@ class BoxDataset(Dataset):
         self.annotations = pd.read_csv(csv_file)
         self.root_dir = root_dir
         if transforms is None:
-
             if augment is not None:
                 warnings.warn(
                     "The `augment` parameter is deprecated. Please use `augmentations` instead and provide an empty list or None to disable augmentations."
@@ -71,7 +71,7 @@ class BoxDataset(Dataset):
         Raises:
             ValueError: If any label in annotations is missing from label_dict
         """
-        csv_labels = self.annotations['label'].unique()
+        csv_labels = self.annotations["label"].unique()
         missing_labels = [label for label in csv_labels if label not in self.label_dict]
 
         if missing_labels:
@@ -98,7 +98,6 @@ class BoxDataset(Dataset):
         return image
 
     def __getitem__(self, idx):
-
         # Read image if not in memory
         if self.preload_images:
             image = self.image_dict[idx]
@@ -106,21 +105,24 @@ class BoxDataset(Dataset):
             image = self.load_image(idx)
 
         # select annotations
-        image_annotations = self.annotations[self.annotations.image_path ==
-                                             self.image_names[idx]]
+        image_annotations = self.annotations[
+            self.annotations.image_path == self.image_names[idx]
+        ]
         targets = {}
 
         if "geometry" in image_annotations.columns:
-            targets["boxes"] = np.array([
-                shapely.wkt.loads(x).bounds for x in image_annotations.geometry
-            ]).astype("float32")
+            targets["boxes"] = np.array(
+                [shapely.wkt.loads(x).bounds for x in image_annotations.geometry]
+            ).astype("float32")
         else:
-            targets["boxes"] = image_annotations[["xmin", "ymin", "xmax",
-                                                  "ymax"]].values.astype("float32")
+            targets["boxes"] = image_annotations[
+                ["xmin", "ymin", "xmax", "ymax"]
+            ].values.astype("float32")
 
         # Labels need to be encoded
         targets["labels"] = image_annotations.label.apply(
-            lambda x: self.label_dict[x]).values.astype(np.int64)
+            lambda x: self.label_dict[x]
+        ).values.astype(np.int64)
 
         # If image has no annotations, don't augment
         if np.sum(targets["boxes"]) == 0:
@@ -134,9 +136,11 @@ class BoxDataset(Dataset):
             return image, targets, self.image_names[idx]
 
         # Apply augmentations
-        augmented = self.transform(image=image,
-                                   bboxes=targets["boxes"],
-                                   category_ids=targets["labels"].astype(np.int64))
+        augmented = self.transform(
+            image=image,
+            bboxes=targets["boxes"],
+            category_ids=targets["labels"].astype(np.int64),
+        )
         image = augmented["image"]
 
         # Convert boxes to tensor

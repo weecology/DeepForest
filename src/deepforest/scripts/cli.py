@@ -15,10 +15,12 @@ def train(config: DictConfig) -> None:
     m.trainer.fit(m)
 
 
-def predict(config: DictConfig,
-            input_path: str,
-            output_path: Optional[str] = None,
-            plot: Optional[bool] = False) -> None:
+def predict(
+    config: DictConfig,
+    input_path: str,
+    output_path: Optional[str] = None,
+    plot: Optional[bool] = False,
+) -> None:
     """Run prediction for the given image, optionally saving the results to the
     provided path and optionally visualizing the results.
 
@@ -32,10 +34,12 @@ def predict(config: DictConfig,
         None
     """
     m = deepforest(config=config)
-    res = m.predict_tile(path=input_path,
-                         patch_size=config.patch_size,
-                         patch_overlap=config.patch_overlap,
-                         iou_threshold=config.nms_thresh)
+    res = m.predict_tile(
+        path=input_path,
+        patch_size=config.patch_size,
+        patch_overlap=config.patch_overlap,
+        iou_threshold=config.nms_thresh,
+    )
 
     if output_path is not None:
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
@@ -46,23 +50,21 @@ def predict(config: DictConfig,
 
 
 def main():
-    parser = argparse.ArgumentParser(description='DeepForest CLI')
+    parser = argparse.ArgumentParser(description="DeepForest CLI")
     subparsers = parser.add_subparsers(dest="command")
 
     # Train subcommand
     _ = subparsers.add_parser(
         "train",
         help="Train a model",
-        epilog=
-        'Any remaining arguments <key>=<value> will be passed to Hydra to override the current config.'
+        epilog="Any remaining arguments <key>=<value> will be passed to Hydra to override the current config.",
     )
 
     # Predict subcommand
     predict_parser = subparsers.add_parser(
         "predict",
         help="Run prediction on input",
-        epilog=
-        'Any remaining arguments <key>=<value> will be passed to Hydra to override the current config.'
+        epilog="Any remaining arguments <key>=<value> will be passed to Hydra to override the current config.",
     )
     predict_parser.add_argument("input", help="Path to input raster")
     predict_parser.add_argument("-o", "--output", help="Path to prediction results")
@@ -73,9 +75,9 @@ def main():
 
     # Config options for Hydra
     parser.add_argument("--config-dir", help="Show available config overrides and exit")
-    parser.add_argument("--config-name",
-                        help="Show available config overrides and exit",
-                        default="config")
+    parser.add_argument(
+        "--config-name", help="Show available config overrides and exit", default="config"
+    )
 
     args, overrides = parser.parse_known_args()
 

@@ -17,9 +17,11 @@ from omegaconf import DictConfig, OmegaConf
 from deepforest.conf.schema import Config as StructuredConfig
 
 
-def load_config(config_name: str = "config.yaml",
-                overrides: Union[DictConfig, dict] = None,
-                strict: bool = False) -> DictConfig:
+def load_config(
+    config_name: str = "config.yaml",
+    overrides: Union[DictConfig, dict] = None,
+    strict: bool = False,
+) -> DictConfig:
     """Loads the DeepForest structured config, merges with YAML and overrides.
 
     Args:
@@ -52,7 +54,7 @@ def load_config(config_name: str = "config.yaml",
         OmegaConf.set_struct(config, True)
 
     # Force override label dict, don't merge.
-    override_label_dict = overrides.get('label_dict', None)
+    override_label_dict = overrides.get("label_dict", None)
     if override_label_dict:
         config.label_dict = override_label_dict
 
@@ -96,8 +98,11 @@ def read_pascal_voc(xml_path):
     try:
         tile_xml = doc["annotation"]["object"]
     except Exception as e:
-        raise Exception("error {} for path {} with doc annotation{}".format(
-            e, xml_path, doc["annotation"]))
+        raise Exception(
+            "error {} for path {} with doc annotation{}".format(
+                e, xml_path, doc["annotation"]
+            )
+        )
 
     xmin = []
     xmax = []
@@ -112,13 +117,13 @@ def read_pascal_voc(xml_path):
             xmax.append(tree["bndbox"]["xmax"])
             ymin.append(tree["bndbox"]["ymin"])
             ymax.append(tree["bndbox"]["ymax"])
-            label.append(tree['name'])
+            label.append(tree["name"])
     else:
         xmin.append(tile_xml["bndbox"]["xmin"])
         xmax.append(tile_xml["bndbox"]["xmax"])
         ymin.append(tile_xml["bndbox"]["ymin"])
         ymax.append(tile_xml["bndbox"]["ymax"])
-        label.append(tile_xml['name'])
+        label.append(tile_xml["name"])
 
     rgb_name = os.path.basename(doc["annotation"]["filename"])
 
@@ -128,14 +133,16 @@ def read_pascal_voc(xml_path):
     ymin = [round_with_floats(x) for x in ymin]
     ymax = [round_with_floats(x) for x in ymax]
 
-    annotations = pd.DataFrame({
-        "image_path": rgb_name,
-        "xmin": xmin,
-        "ymin": ymin,
-        "xmax": xmax,
-        "ymax": ymax,
-        "label": label
-    })
+    annotations = pd.DataFrame(
+        {
+            "image_path": rgb_name,
+            "xmin": xmin,
+            "ymin": ymin,
+            "xmax": xmax,
+            "ymax": ymax,
+            "label": label,
+        }
+    )
 
     return annotations
 
@@ -165,21 +172,23 @@ def convert_point_to_bbox(gdf, buffer_size):
 
 
 def xml_to_annotations(xml_path):
-
     warnings.warn(
         "xml_to_annotations will be deprecated in 2.0. Please use read_pascal_voc instead.",
-        DeprecationWarning)
+        DeprecationWarning,
+    )
 
     return read_pascal_voc(xml_path)
 
 
-def shapefile_to_annotations(shapefile,
-                             rgb=None,
-                             root_dir=None,
-                             buffer_size=None,
-                             convert_point=False,
-                             geometry_type=None,
-                             save_dir=None):
+def shapefile_to_annotations(
+    shapefile,
+    rgb=None,
+    root_dir=None,
+    buffer_size=None,
+    convert_point=False,
+    geometry_type=None,
+    save_dir=None,
+):
     """Convert a shapefile of annotations into annotations csv file for
     DeepForest training and evaluation.
 
@@ -194,11 +203,13 @@ def shapefile_to_annotations(shapefile,
     if geometry_type:
         warnings.warn(
             "geometry_type argument is deprecated and will be removed in DeepForest 2.0. The function will infer geometry from the shapefile directly.",
-            DeprecationWarning)
+            DeprecationWarning,
+        )
     if save_dir:
         warnings.warn(
             "save_dir argument is deprecated and will be removed in DeepForest 2.0. The function will return a pandas dataframe instead of saving to disk.",
-            DeprecationWarning)
+            DeprecationWarning,
+        )
 
     # Read shapefile
     if isinstance(shapefile, str):
@@ -209,7 +220,8 @@ def shapefile_to_annotations(shapefile,
     if rgb is None:
         if "image_path" not in gdf.columns:
             raise ValueError(
-                "No image_path column found in shapefile, please specify rgb path")
+                "No image_path column found in shapefile, please specify rgb path"
+            )
         else:
             rgb = gdf.image_path.unique()[0]
             print("Found image_path column in shapefile, using {}".format(rgb))
@@ -228,7 +240,8 @@ def shapefile_to_annotations(shapefile,
         if geometry_type == "Point":
             if buffer_size is None:
                 raise ValueError(
-                    "buffer_size must be specified to convert point to bounding box")
+                    "buffer_size must be specified to convert point to bounding box"
+                )
             gdf = convert_point_to_bbox(gdf, buffer_size)
         else:
             raise ValueError("convert_point is True, but geometry type is not Point")
@@ -250,7 +263,10 @@ def shapefile_to_annotations(shapefile,
         if not gdf.crs.to_string() == raster_crs.to_string():
             warnings.warn(
                 "The shapefile crs {} does not match the image crs {}".format(
-                    gdf.crs.to_string(), src.crs.to_string()), UserWarning)
+                    gdf.crs.to_string(), src.crs.to_string()
+                ),
+                UserWarning,
+            )
 
         if src.crs is not None:
             print("CRS of shapefile is {}".format(gdf.crs))
@@ -281,31 +297,37 @@ def determine_geometry_type(df):
     if type(df) in [pd.DataFrame, gpd.GeoDataFrame]:
         columns = df.columns
         if "geometry" in columns:
-            df = gpd.GeoDataFrame(geometry=df['geometry'])
+            df = gpd.GeoDataFrame(geometry=df["geometry"])
             geometry_type = df.geometry.type.unique()[0]
             if geometry_type == "Polygon":
                 if (df.geometry.area == df.envelope.area).all():
-                    return 'box'
+                    return "box"
                 else:
-                    return 'polygon'
+                    return "polygon"
             else:
-                return 'point'
-        elif "xmin" in columns and "ymin" in columns and "xmax" in columns and "ymax" in columns:
+                return "point"
+        elif (
+            "xmin" in columns
+            and "ymin" in columns
+            and "xmax" in columns
+            and "ymax" in columns
+        ):
             geometry_type = "box"
         elif "polygon" in columns:
             geometry_type = "polygon"
         elif "x" in columns and "y" in columns:
-            geometry_type = 'point'
+            geometry_type = "point"
         else:
             raise ValueError(
-                "Could not determine geometry type from columns {}".format(columns))
+                "Could not determine geometry type from columns {}".format(columns)
+            )
 
     elif isinstance(df, dict):
-        if 'boxes' in df.keys():
+        if "boxes" in df.keys():
             geometry_type = "box"
-        elif 'polygon' in df.keys():
+        elif "polygon" in df.keys():
             geometry_type = "polygon"
-        elif 'points' in df.keys():
+        elif "points" in df.keys():
             geometry_type = "point"
 
     return geometry_type
@@ -351,15 +373,18 @@ def format_boxes(prediction, scores=True):
     if len(prediction["boxes"]) == 0:
         return None
 
-    df = pd.DataFrame(prediction["boxes"].cpu().detach().numpy(),
-                      columns=["xmin", "ymin", "xmax", "ymax"])
+    df = pd.DataFrame(
+        prediction["boxes"].cpu().detach().numpy(),
+        columns=["xmin", "ymin", "xmax", "ymax"],
+    )
     df["label"] = prediction["labels"].cpu().detach().numpy()
 
     if scores:
         df["score"] = prediction["scores"].cpu().detach().numpy()
 
-    df['geometry'] = df.apply(
-        lambda x: shapely.geometry.box(x.xmin, x.ymin, x.xmax, x.ymax), axis=1)
+    df["geometry"] = df.apply(
+        lambda x: shapely.geometry.box(x.xmin, x.ymin, x.xmax, x.ymax), axis=1
+    )
     return df
 
 
@@ -381,8 +406,10 @@ def read_coco(json_file):
         for annotation in coco_data["annotations"]:
             segmentation_mask = annotation["segmentation"][0]
             # Convert flat list to coordinate pairs
-            pairs = [(segmentation_mask[i], segmentation_mask[i + 1])
-                     for i in range(0, len(segmentation_mask), 2)]
+            pairs = [
+                (segmentation_mask[i], segmentation_mask[i + 1])
+                for i in range(0, len(segmentation_mask), 2)
+            ]
             polygon = shapely.geometry.Polygon(pairs)
             filenames.append(image_ids[annotation["image_id"]])
             polygons.append(polygon.wkt)
@@ -408,12 +435,15 @@ def read_file(input, root_dir=None, image_path=None, label=None):
         warnings.warn(
             "You have passed an image_path. This value will be assigned to every row in the dataframe. "
             "Only use this if the file contains annotations for a single image.",
-            UserWarning)
+            UserWarning,
+        )
 
     if label is not None:
         warnings.warn(
             "You have passed a label. This value will be assigned to every row in the dataframe. "
-            "Only use this if all annotations share the same label.", UserWarning)
+            "Only use this if all annotations share the same label.",
+            UserWarning,
+        )
 
     # read file
     if isinstance(input, str):
@@ -427,8 +457,10 @@ def read_file(input, root_dir=None, image_path=None, label=None):
             df = read_pascal_voc(input)
         else:
             raise ValueError(
-                "File type {} not supported. DeepForest currently supports .csv, .shp, .gpkg, .xml, and .json files. See https://deepforest.readthedocs.io/en/latest/annotation.html "
-                .format(df))
+                "File type {} not supported. DeepForest currently supports .csv, .shp, .gpkg, .xml, and .json files. See https://deepforest.readthedocs.io/en/latest/annotation.html ".format(
+                    df
+                )
+            )
     else:
         # Explicitly check for GeoDataFrame first
         if isinstance(input, gpd.GeoDataFrame):
@@ -437,15 +469,16 @@ def read_file(input, root_dir=None, image_path=None, label=None):
             df = input.copy(deep=True)
         else:
             raise ValueError(
-                "Input must be a path to a file, geopandas or a pandas dataframe")
+                "Input must be a path to a file, geopandas or a pandas dataframe"
+            )
 
     if isinstance(df, pd.DataFrame):
         if df.empty:
             raise ValueError("No annotations in dataframe")
         # If the geometry column is present, convert to geodataframe directly
         if "geometry" in df.columns:
-            if pd.api.types.infer_dtype(df['geometry']) == 'string':
-                df['geometry'] = gpd.GeoSeries.from_wkt(df['geometry'])
+            if pd.api.types.infer_dtype(df["geometry"]) == "string":
+                df["geometry"] = gpd.GeoSeries.from_wkt(df["geometry"])
         else:
             # Detect geometry type
             geom_type = determine_geometry_type(df)
@@ -455,24 +488,26 @@ def read_file(input, root_dir=None, image_path=None, label=None):
 
             # convert to geodataframe
             if geom_type == "box":
-                df['geometry'] = df.apply(
-                    lambda x: shapely.geometry.box(x.xmin, x.ymin, x.xmax, x.ymax),
-                    axis=1)
-                df = gpd.GeoDataFrame(df, geometry='geometry')
+                df["geometry"] = df.apply(
+                    lambda x: shapely.geometry.box(x.xmin, x.ymin, x.xmax, x.ymax), axis=1
+                )
+                df = gpd.GeoDataFrame(df, geometry="geometry")
             elif geom_type == "polygon":
-                df['geometry'] = gpd.GeoSeries.from_wkt(df["polygon"])
-                df = gpd.GeoDataFrame(df, geometry='geometry')
+                df["geometry"] = gpd.GeoSeries.from_wkt(df["polygon"])
+                df = gpd.GeoDataFrame(df, geometry="geometry")
             elif geom_type == "point":
-                df["geometry"] = gpd.GeoSeries([
-                    shapely.geometry.Point(x, y)
-                    for x, y in zip(df.x.astype(float), df.y.astype(float))
-                ])
-                df = gpd.GeoDataFrame(df, geometry='geometry')
+                df["geometry"] = gpd.GeoSeries(
+                    [
+                        shapely.geometry.Point(x, y)
+                        for x, y in zip(df.x.astype(float), df.y.astype(float))
+                    ]
+                )
+                df = gpd.GeoDataFrame(df, geometry="geometry")
             else:
                 raise ValueError("Geometry type {} not supported".format(geom_type))
 
     # convert to geodataframe
-    df = gpd.GeoDataFrame(df, geometry='geometry')
+    df = gpd.GeoDataFrame(df, geometry="geometry")
 
     # Handle missing 'image_path' and 'label' columns if not provided in the shapefile
     if "image_path" not in df.columns and image_path is not None:
@@ -480,13 +515,15 @@ def read_file(input, root_dir=None, image_path=None, label=None):
     elif "image_path" not in df.columns:
         warnings.warn(
             "'image_path' column is missing from shapefile, please specify the image path",
-            UserWarning)
+            UserWarning,
+        )
 
     if "label" not in df.columns and label is not None:
         df["label"] = label
     elif "label" not in df.columns:
-        warnings.warn("'label' column is missing from shapefile, using default label",
-                      UserWarning)
+        warnings.warn(
+            "'label' column is missing from shapefile, using default label", UserWarning
+        )
         df["label"] = "Unknown"  # Set default label if not provided
 
     # If root_dir is specified, add as attribute
@@ -498,7 +535,8 @@ def read_file(input, root_dir=None, image_path=None, label=None):
         except TypeError:
             warnings.warn(
                 "root_dir argument for the location of images should be specified if input is not a path, returning without results.root_dir attribute",
-                UserWarning)
+                UserWarning,
+            )
 
     return df
 
@@ -527,21 +565,30 @@ def crop_raster(bounds, rgb_path=None, savedir=None, filename=None, driver="GTif
         if driver == "GTiff":
             warnings.warn(
                 "Driver {} not supported for unprojected data, setting to 'PNG',".format(
-                    driver), UserWarning)
+                    driver
+                ),
+                UserWarning,
+            )
             driver = "PNG"
     else:
         # Read projected data using rasterio and crop
-        img = src.read(window=rasterio.windows.from_bounds(
-            left, bottom, right, top, transform=src.transform))
+        img = src.read(
+            window=rasterio.windows.from_bounds(
+                left, bottom, right, top, transform=src.transform
+            )
+        )
         cropped_transform = rasterio.windows.transform(
-            rasterio.windows.from_bounds(left,
-                                         bottom,
-                                         right,
-                                         top,
-                                         transform=src.transform), src.transform)
+            rasterio.windows.from_bounds(
+                left, bottom, right, top, transform=src.transform
+            ),
+            src.transform,
+        )
     if img.size == 0:
-        raise ValueError("Bounds {} does not create a valid crop for source {}".format(
-            bounds, src.transform))
+        raise ValueError(
+            "Bounds {} does not create a valid crop for source {}".format(
+                bounds, src.transform
+            )
+        )
     if savedir:
         res = src.res[0]
         height = (top - bottom) / res
@@ -553,25 +600,29 @@ def crop_raster(bounds, rgb_path=None, savedir=None, filename=None, driver="GTif
 
         if driver == "GTiff":
             filename = "{}/{}.tif".format(savedir, filename)
-            with rasterio.open(filename,
-                               "w",
-                               driver="GTiff",
-                               height=height,
-                               width=width,
-                               count=img.shape[0],
-                               dtype=img.dtype,
-                               transform=cropped_transform) as dst:
+            with rasterio.open(
+                filename,
+                "w",
+                driver="GTiff",
+                height=height,
+                width=width,
+                count=img.shape[0],
+                dtype=img.dtype,
+                transform=cropped_transform,
+            ) as dst:
                 dst.write(img)
         elif driver == "PNG":
             # PNG driver does not support transform
             filename = "{}/{}.png".format(savedir, filename)
-            with rasterio.open(filename,
-                               "w",
-                               driver="PNG",
-                               height=height,
-                               width=width,
-                               count=img.shape[0],
-                               dtype=img.dtype) as dst:
+            with rasterio.open(
+                filename,
+                "w",
+                driver="PNG",
+                height=height,
+                width=width,
+                count=img.shape[0],
+                dtype=img.dtype,
+            ) as dst:
                 dst.write(img)
         else:
             raise ValueError("Driver {} not supported".format(driver))
@@ -609,7 +660,7 @@ def geo_to_image_coordinates(gdf, image_bounds, image_resolution):
         image_resolution: resolution of the image
     Returns:
         gdf: a geopandas dataframe with the transformed to image origin. CRS is removed
-        """
+    """
 
     if len(image_bounds) != 4:
         raise ValueError("image_bounds must be a tuple of (left, bottom, right, top)")
@@ -619,9 +670,9 @@ def geo_to_image_coordinates(gdf, image_bounds, image_resolution):
     left, bottom, right, top = image_bounds
 
     transformed_gdf.geometry = transformed_gdf.geometry.translate(xoff=-left, yoff=-top)
-    transformed_gdf.geometry = transformed_gdf.geometry.scale(xfact=1 / image_resolution,
-                                                              yfact=-1 / image_resolution,
-                                                              origin=(0, 0))
+    transformed_gdf.geometry = transformed_gdf.geometry.scale(
+        xfact=1 / image_resolution, yfact=-1 / image_resolution, origin=(0, 0)
+    )
     transformed_gdf.crs = None
 
     return transformed_gdf
@@ -638,7 +689,8 @@ def round_with_floats(x):
             "These coordinates were rounded to nearest int. "
             "All coordinates must correspond to pixels in the image coordinate system. "
             "If you are attempting to use projected data, "
-            "first convert it into image coordinates see FAQ for suggestions.")
+            "first convert it into image coordinates see FAQ for suggestions."
+        )
         result = int(np.round(float(x)))
 
     return result
@@ -646,13 +698,15 @@ def round_with_floats(x):
 
 def check_image(image):
     """Check an image is three channel, channel last format
-        Args:
-           image: numpy array
-        Returns: None, throws error on assert
+    Args:
+       image: numpy array
+    Returns: None, throws error on assert
     """
     if not image.shape[2] == 3:
-        raise ValueError("image is expected have three channels, channel last format, "
-                         "found image with shape {}".format(image.shape))
+        raise ValueError(
+            "image is expected have three channels, channel last format, "
+            "found image with shape {}".format(image.shape)
+        )
 
 
 def image_to_geo_coordinates(gdf, root_dir=None, flip_y_axis=False):
@@ -681,8 +735,10 @@ def image_to_geo_coordinates(gdf, root_dir=None, flip_y_axis=False):
     plot_names = transformed_gdf.image_path.unique()
     if len(plot_names) > 1:
         raise ValueError(
-            "This function projects a single plot's worth of data. Multiple plot names found: {}"
-            .format(plot_names))
+            "This function projects a single plot's worth of data. Multiple plot names found: {}".format(
+                plot_names
+            )
+        )
     else:
         plot_name = plot_names[0]
 
@@ -698,17 +754,22 @@ def image_to_geo_coordinates(gdf, root_dir=None, flip_y_axis=False):
     if geom_type == "box":
         # Convert image pixel locations to geographic coordinates
         coordinates = transformed_gdf.geometry.bounds
-        xmin_coords, ymin_coords = rasterio.transform.xy(transform=transform,
-                                                         rows=coordinates.miny,
-                                                         cols=coordinates.minx,
-                                                         offset='center')
-        xmax_coords, ymax_coords = rasterio.transform.xy(transform=transform,
-                                                         rows=coordinates.maxy,
-                                                         cols=coordinates.maxx,
-                                                         offset='center')
+        xmin_coords, ymin_coords = rasterio.transform.xy(
+            transform=transform,
+            rows=coordinates.miny,
+            cols=coordinates.minx,
+            offset="center",
+        )
+        xmax_coords, ymax_coords = rasterio.transform.xy(
+            transform=transform,
+            rows=coordinates.maxy,
+            cols=coordinates.maxx,
+            offset="center",
+        )
 
-        for left, bottom, right, top in zip(xmin_coords, ymin_coords, xmax_coords,
-                                            ymax_coords):
+        for left, bottom, right, top in zip(
+            xmin_coords, ymin_coords, xmax_coords, ymax_coords
+        ):
             geom = shapely.geometry.box(left, bottom, right, top)
             projected_geometry.append(geom)
 
@@ -716,19 +777,20 @@ def image_to_geo_coordinates(gdf, root_dir=None, flip_y_axis=False):
         for geom in transformed_gdf.geometry:
             polygon_vertices = []
             for x, y in geom.exterior.coords:
-                projected_vertices = rasterio.transform.xy(transform=transform,
-                                                           rows=y,
-                                                           cols=x,
-                                                           offset='center')
+                projected_vertices = rasterio.transform.xy(
+                    transform=transform, rows=y, cols=x, offset="center"
+                )
                 polygon_vertices.append(projected_vertices)
             geom = shapely.geometry.Polygon(polygon_vertices)
             projected_geometry.append(geom)
 
     elif geom_type == "point":
-        x_coords, y_coords = rasterio.transform.xy(transform=transform,
-                                                   rows=transformed_gdf.geometry.y,
-                                                   cols=transformed_gdf.geometry.x,
-                                                   offset='center')
+        x_coords, y_coords = rasterio.transform.xy(
+            transform=transform,
+            rows=transformed_gdf.geometry.y,
+            cols=transformed_gdf.geometry.x,
+            offset="center",
+        )
         for x, y in zip(x_coords, y_coords):
             geom = shapely.geometry.Point(x, y)
             projected_geometry.append(geom)
@@ -737,9 +799,9 @@ def image_to_geo_coordinates(gdf, root_dir=None, flip_y_axis=False):
     if flip_y_axis:
         # Numpy uses top left 0,0 origin, flip along y axis.
         # See https://gis.stackexchange.com/questions/306684/why-does-qgis-use-negative-y-spacing-in-the-default-raster-geotransform
-        transformed_gdf.geometry = transformed_gdf.geometry.scale(xfact=1,
-                                                                  yfact=-1,
-                                                                  origin=(0, 0))
+        transformed_gdf.geometry = transformed_gdf.geometry.scale(
+            xfact=1, yfact=-1, origin=(0, 0)
+        )
 
     # Assign crs
     transformed_gdf.crs = crs
@@ -767,19 +829,25 @@ def boxes_to_shapefile(df, root_dir, projected=True, flip_y_axis=False):
 
     warnings.warn(
         "This function will be deprecated in DeepForest 2.0, as it only can process boxes and the API now includes point and polygon annotations. Please use image_to_geo_coordinates instead.",
-        DeprecationWarning)
+        DeprecationWarning,
+    )
 
     # Raise a warning and confirm if a user sets projected to True when flip_y_axis is True.
     if flip_y_axis and projected:
         warnings.warn(
-            "flip_y_axis is {}, and projected is {}. In most cases, projected should be False when inverting y axis. Setting projected=False"
-            .format(flip_y_axis, projected), UserWarning)
+            "flip_y_axis is {}, and projected is {}. In most cases, projected should be False when inverting y axis. Setting projected=False".format(
+                flip_y_axis, projected
+            ),
+            UserWarning,
+        )
         projected = False
 
     plot_names = df.image_path.unique()
     if len(plot_names) > 1:
-        raise ValueError("This function projects a single plots worth of data. "
-                         "Multiple plot names found {}".format(plot_names))
+        raise ValueError(
+            "This function projects a single plots worth of data. "
+            "Multiple plot names found {}".format(plot_names)
+        )
     else:
         plot_name = plot_names[0]
 
@@ -791,15 +859,13 @@ def boxes_to_shapefile(df, root_dir, projected=True, flip_y_axis=False):
 
     if projected:
         # Convert image pixel locations to geographic coordinates
-        xmin_coords, ymin_coords = rasterio.transform.xy(transform=transform,
-                                                         rows=df.ymin,
-                                                         cols=df.xmin,
-                                                         offset='center')
+        xmin_coords, ymin_coords = rasterio.transform.xy(
+            transform=transform, rows=df.ymin, cols=df.xmin, offset="center"
+        )
 
-        xmax_coords, ymax_coords = rasterio.transform.xy(transform=transform,
-                                                         rows=df.ymax,
-                                                         cols=df.xmax,
-                                                         offset='center')
+        xmax_coords, ymax_coords = rasterio.transform.xy(
+            transform=transform, rows=df.ymax, cols=df.xmax, offset="center"
+        )
 
         # One box polygon for each tree bounding box
         # Careful of single row edge case where
@@ -823,11 +889,13 @@ def boxes_to_shapefile(df, root_dir, projected=True, flip_y_axis=False):
         if flip_y_axis:
             # See https://gis.stackexchange.com/questions/306684/why-does-qgis-use-negative-y-spacing-in-the-default-raster-geotransform
             # Numpy uses top left 0,0 origin, flip along y axis.
-            df['geometry'] = df.apply(
-                lambda x: shapely.geometry.box(x.xmin, -x.ymin, x.xmax, -x.ymax), axis=1)
+            df["geometry"] = df.apply(
+                lambda x: shapely.geometry.box(x.xmin, -x.ymin, x.xmax, -x.ymax), axis=1
+            )
         else:
-            df['geometry'] = df.apply(
-                lambda x: shapely.geometry.box(x.xmin, x.ymin, x.xmax, x.ymax), axis=1)
+            df["geometry"] = df.apply(
+                lambda x: shapely.geometry.box(x.xmin, x.ymin, x.xmax, x.ymax), axis=1
+            )
         df = gpd.GeoDataFrame(df, geometry="geometry")
 
         return df
@@ -846,7 +914,8 @@ def annotations_to_shapefile(df, transform, crs):
     """
 
     raise NotImplementedError(
-        "This function is deprecated. Please use image_to_geo_coordinates instead.")
+        "This function is deprecated. Please use image_to_geo_coordinates instead."
+    )
 
 
 def project_boxes(df, root_dir, transform=True):
@@ -859,6 +928,7 @@ def project_boxes(df, root_dir, transform=True):
     transform: If true, convert from image to geographic coordinates
     """
     raise NotImplementedError(
-        "This function is deprecated. Please use image_to_geo_coordinates instead.")
+        "This function is deprecated. Please use image_to_geo_coordinates instead."
+    )
 
     return df

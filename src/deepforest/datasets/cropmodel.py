@@ -19,8 +19,9 @@ def bounding_box_transform(augment=False):
     return transforms.Compose(data_transforms)
 
 
-resnet_normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                        std=[0.229, 0.224, 0.225])
+resnet_normalize = transforms.Normalize(
+    mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+)
 
 
 class BoundingBoxDataset(Dataset):
@@ -43,9 +44,10 @@ class BoundingBoxDataset(Dataset):
         else:
             self.transform = transform
 
-        unique_image = self.df['image_path'].unique()
-        assert len(unique_image
-                  ) == 1, "There should be only one unique image for this class object"
+        unique_image = self.df["image_path"].unique()
+        assert (
+            len(unique_image) == 1
+        ), "There should be only one unique image for this class object"
 
         # Open the image using rasterio
         self.src = rio.open(os.path.join(root_dir, unique_image[0]))
@@ -55,10 +57,10 @@ class BoundingBoxDataset(Dataset):
 
     def __getitem__(self, idx):
         row = self.df.iloc[idx]
-        xmin = row['xmin']
-        xmax = row['xmax']
-        ymin = row['ymin']
-        ymax = row['ymax']
+        xmin = row["xmin"]
+        xmax = row["xmax"]
+        ymin = row["ymin"]
+        ymax = row["ymax"]
 
         # Read the RGB data
         box = self.src.read(window=Window(xmin, ymin, xmax - xmin, ymax - ymin))
