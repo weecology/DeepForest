@@ -1,36 +1,55 @@
 repos:
-- repo: https://github.com/pre-commit/pre-commit-hooks
-  rev: v4.4.0
-  hooks:
-    - id: trailing-whitespace
-    - id: end-of-file-fixer
-    - id: check-yaml
-    - id: check-added-large-files
-    - id: check-json
-      files: citation_count.json
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+      - id: check-json
+        files: citation_count.json
 
-- repo: https://github.com/google/yapf
-  rev: v0.40.1
-  hooks:
-    - id: yapf
-      language: python
-      additional_dependencies: [toml]
-      args: ['-i', '--style', '.style.yapf']
-      files: |
-        (?x)^(
-          src/deepforest.*\.py|
-          fetch_google_scholar\.py
-        )$
+  # Notebooks: run Ruff via nbQA inside .ipynb
+  - repo: https://github.com/nbQA-dev/nbQA
+    rev: 1.9.0
+    hooks:
+      - id: nbqa-ruff-format
+        additional_dependencies: [ruff]
+        files: ^docs/user_guide/examples/.*\.ipynb$
+      - id: nbqa-ruff
+        args: ["--fix"]
+        additional_dependencies: [ruff]
+        files: ^docs/user_guide/examples/.*\.ipynb$
 
-- repo: local
-  hooks:
-    - id: docformatter
-      name: docformatter
-      entry: docformatter
-      language: system
-      types: [python]
-      args: ['--in-place']
-      files: |
-        (?x)^(
-          src/deepforest.*\.py
-        )$
+  # Docstrings: auto-format
+  - repo: local
+    hooks:
+      - id: docformatter
+        name: docformatter
+        entry: docformatter
+        language: python
+        additional_dependencies: [docformatter]
+        types: [python]
+        args: ["--in-place"]
+        files: |
+          (?x)^(
+            src/deepforest.*\.py|
+            fetch_google_scholar\.py
+          )$
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.5.0
+    hooks:
+      - id: ruff-format
+        files: |
+          (?x)^(
+            src/deepforest.*\.py|
+            fetch_google_scholar\.py
+          )$
+      - id: ruff
+        args: ["--fix"]
+        files: |
+          (?x)^(
+            src/deepforest.*\.py|
+            fetch_google_scholar\.py
+          )$

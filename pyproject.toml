@@ -89,11 +89,11 @@ dev = [
     "pytest-cov",
     "pytest-mock",
     "pytest-xdist",
+    "ruff",
     "sphinx_design",
     "sphinx_markdown_tables",
     "sphinx_rtd_theme",
     "twine",
-    "yapf",
     "myst-parser",
 ]
 
@@ -102,3 +102,6 @@ deepforest = "deepforest.scripts.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.ruff]
+line-length = 90
