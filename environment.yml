@@ -26,6 +26,7 @@ dependencies:
   - rasterio
   - recommonmark
   - rtree
+  - ruff
   - slidingwindow
   - setuptools
   - sphinx
@@ -36,7 +37,6 @@ dependencies:
   - tensorboard
   - twine
   - xmltodict
-  - yapf
   - pip:
     - sphinx-markdown-tables
     - albumentations>=2.0.0

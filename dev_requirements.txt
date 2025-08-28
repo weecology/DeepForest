@@ -29,6 +29,7 @@ pyyaml>=5.1.0
 rasterio
 recommonmark
 rtree
+ruff
 safetensors<0.6.0
 slidingwindow
 sphinx
@@ -42,5 +43,4 @@ torchvision>=0.13
 tqdm
 twine
 xmltodict
-yapf
 myst-parser
