@@ -83,8 +83,8 @@ model = main.deepforest()
 model.load_model(model_name="weecology/deepforest-tree", revision="main")
 
 # Predict on large geospatial tiles using overlapping windows
-raster_path = get_data("OSBS_029.tif")
-predicted_raster = model.predict_tile(raster_path, patch_size=300, patch_overlap=0.25)
+path = get_data("OSBS_029.tif")
+predicted_raster = model.predict_tile(path=path, patch_size=300, patch_overlap=0.25)
 plot_results(predicted_raster)
 ```
 
@@ -143,8 +143,8 @@ from torch.utils.data import DataLoader
 import numpy as np
 from PIL import Image
 
-raster_path = get_data("OSBS_029.tif")
-tile = np.array(Image.open(raster_path))
+path = get_data("OSBS_029.tif")
+tile = np.array(Image.open(path))
 ds = BoxDataset(tile=tile, patch_overlap=0.1, patch_size=100)
 dl = DataLoader(ds, batch_size=3)
 
