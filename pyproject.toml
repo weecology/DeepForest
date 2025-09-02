@@ -1,7 +1,10 @@
 [project]
 name = "deepforest"
 version = "1.5.3-dev0"
-description = "DeepForest: A deep learning approach for forest canopy prediction"
+description = [
+    "Platform for individual detection from airborne remote sensing including trees, birds, and livestock. ",
+    "Supports multiple detection models, adding models for species classification, and easy fine tuning to particular ecosystems."
+]
 readme = "README.md"
 requires-python = ">=3.10,<3.13"
 license = {text = "MIT"}
@@ -114,6 +117,8 @@ where = ["src"]
 [tool.ruff]
 target-version = "py311"
 line-length = 90
+
+[tool.ruff.lint]
 select = [
     "E",  # pycodestyle errors
     "W",  # pycodestyle warnings
@@ -127,12 +132,13 @@ ignore = [
     "E501",  # line too long, handled by black
     "B008",  # do not perform function calls in argument defaults
     "C901",  # too complex
+    "UP038", # Use X | Y in isinstance call - this is incorrect for runtime
 ]
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]
 
-[tool.ruff.isort]
+[tool.ruff.lint.isort]
 known-first-party = ["deepforest"]
 
 [tool.pytest.ini_options]
@@ -141,3 +147,11 @@ python_files = ["test_*.py", "*_test.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 addopts = "-v --tb=short"
+filterwarnings = [
+    "ignore::pytorch_lightning.utilities.warnings.PossibleUserWarning"
+]
+markers = [
+    "visualization: marks tests that generate plots or visualizations",
+    "slow: marks tests that are slow to run",
+    "integration: marks integration tests"
+]
