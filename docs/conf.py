@@ -6,8 +6,9 @@ import sys
 import urllib.request
 from typing import Any, Dict
 
-from sphinx.highlighting import lexers
 from pygments.lexers.python import PythonLexer
+from sphinx.highlighting import lexers
+
 from deepforest._version import __version__
 
 # ----------------------------------
@@ -175,7 +176,7 @@ suppress_warnings = ["config.cache", "toc.not_readable"]
 # MyST Configuration
 # ----------------------------------
 myst_enable_extensions = [
-    "colon_fence", 
+    "colon_fence",
     "deflist",
     "dollarmath",
     "html_admonition",
@@ -184,6 +185,7 @@ myst_enable_extensions = [
     "smartquotes",
     "substitution",
 ]
+
 
 # ----------------------------------
 # Custom Setup Function
