@@ -311,14 +311,34 @@ def determine_geometry_type(df):
     return geometry_type
 
 
+def format_prediction(prediction, scores=True):
+    """Format a single prediction dictionary into a pandas dataframe, handling empty predictions gracefully.
+    
+    This function combines determine_geometry_type and format_geometry to provide a single interface
+    that handles both empty and non-empty predictions consistently.
+    
+    Args:
+        prediction: a dictionary with prediction results (e.g., 'boxes', 'labels', 'scores')
+        scores: Whether prediction comes with scores, during prediction, or without scores, as in during training.
+    Returns:
+        df: a pandas dataframe with predictions (empty DataFrame if no predictions)
+    """
+    # Determine geometry type
+    geom_type = determine_geometry_type(prediction)
+    
+    # Format geometry using existing function
+    df = format_geometry(prediction, scores=scores, geom_type=geom_type)
+    
+    return df
+
+
 def format_geometry(predictions, scores=True, geom_type=None):
     """Format a retinanet prediction into a pandas dataframe for a batch of images
     Args:
         predictions: a list of dictionaries with keys 'boxes' and 'labels' coming from a retinanet
         scores: Whether boxes come with scores, during prediction, or without scores, as in during training.
     Returns:
-        df: a pandas dataframe
-        None if the dataframe is empty
+        df: a pandas dataframe (empty DataFrame if no predictions)
     """
 
     # Detect geometry type
@@ -327,8 +347,6 @@ def format_geometry(predictions, scores=True, geom_type=None):
 
     if geom_type == "box":
         df = format_boxes(predictions, scores=scores)
-        if df is None:
-            return None
 
     elif geom_type == "polygon":
         raise ValueError("Polygon predictions are not yet supported for formatting")
@@ -349,7 +367,26 @@ def format_boxes(prediction, scores=True):
         df: a pandas dataframe
     """
     if len(prediction["boxes"]) == 0:
-        return None
+        # Return empty DataFrame with correct structure
+        columns = ["xmin", "ymin", "xmax", "ymax", "label"]
+        if scores:
+            columns.append("score")
+        columns.append("geometry")
+        
+        empty_df = pd.DataFrame(columns=columns)
+        # Set proper dtypes for empty DataFrame
+        dtype_dict = {
+            'xmin': 'float64',
+            'ymin': 'float64', 
+            'xmax': 'float64',
+            'ymax': 'float64',
+            'label': 'int64'
+        }
+        if scores:
+            dtype_dict['score'] = 'float64'
+        
+        empty_df = empty_df.astype(dtype_dict)
+        return empty_df
 
     df = pd.DataFrame(prediction["boxes"].cpu().detach().numpy(),
                       columns=["xmin", "ymin", "xmax", "ymax"])

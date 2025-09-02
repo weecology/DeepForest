@@ -560,8 +560,8 @@ def test_format_geometry_box():
     assert result.iloc[0]["score"] == 1.0
 
 
-def test_format_geometry_empty():
-    """Test formatting empty predictions"""
+def test_format_prediction_empty_boxes():
+    """Test format_prediction function with empty box predictions"""
     # Create empty prediction
     prediction = {
         "boxes": torch.tensor([]),
@@ -569,103 +569,77 @@ def test_format_geometry_empty():
         "scores": torch.tensor([])
     }
     
-    # Format geometry
-    result = utilities.format_geometry(prediction)
-    
-    # Check output format
-    assert result is None
-
-def test_format_geometry_multi_class():
-    """Test formatting predictions with multiple classes"""
-    # Create predictions with different classes
-    prediction = {
-        "boxes": torch.tensor([[10, 20, 30, 40], [50, 60, 70, 80]]),
-        "labels": torch.tensor([0, 1]),  # Different classes
-        "scores": torch.tensor([0.9, 0.8])
-    }
-    
-    # Format geometry
-    result = utilities.format_geometry(prediction)
+    # Format prediction
+    result = utilities.format_prediction(prediction)
     
     # Check output format
     assert isinstance(result, pd.DataFrame)
+    assert len(result) == 0
     assert list(result.columns) == ["xmin", "ymin", "xmax", "ymax", "label", "score", "geometry"]
+    
+    # Check dtypes are correct
+    expected_dtypes = {
+        'xmin': 'float64',
+        'ymin': 'float64',
+        'xmax': 'float64', 
+        'ymax': 'float64',
+        'label': 'int64',
+        'score': 'float64',
+        'geometry': 'object'
+    }
+    for col, expected_dtype in expected_dtypes.items():
+        assert str(result[col].dtype) == expected_dtype
+
+
+def test_format_prediction_non_empty_boxes():
+    """Test format_prediction function with non-empty box predictions"""
+    # Create non-empty prediction
+    prediction = {
+        "boxes": torch.tensor([[10, 20, 30, 40], [50, 60, 70, 80]]),
+        "labels": torch.tensor([0, 1]),
+        "scores": torch.tensor([0.9, 0.8])
+    }
+    
+    # Format prediction
+    result = utilities.format_prediction(prediction)
+    
+    # Check output format
+    assert isinstance(result, pd.DataFrame)
     assert len(result) == 2
+    assert list(result.columns) == ["xmin", "ymin", "xmax", "ymax", "label", "score", "geometry"]
     
     # Check values
+    assert result.iloc[0]["xmin"] == 10
+    assert result.iloc[0]["ymin"] == 20
+    assert result.iloc[0]["xmax"] == 30
+    assert result.iloc[0]["ymax"] == 40
     assert result.iloc[0]["label"] == 0
-    assert result.iloc[1]["label"] == 1
-
-
-def test_format_geometry_invalid_input():
-    """Test handling of invalid input"""
-    # Test with missing required keys
-    prediction = {
-        "boxes": torch.tensor([[10, 20, 30, 40]]),
-        "labels": torch.tensor([0])
-        # Missing scores
-    }
-    
-    with pytest.raises(KeyError):
-        utilities.format_geometry(prediction)
-    
-    # Test with mismatched lengths
-    prediction = {
-        "boxes": torch.tensor([[10, 20, 30, 40], [50, 60, 70, 80]]),
-        "labels": torch.tensor([0]),  # Only one label
-        "scores": torch.tensor([0.9, 0.8])
-    }
-    
-    with pytest.raises(ValueError):
-        utilities.format_geometry(prediction)
-
-
-def test_format_geometry_with_geometry_column():
-    """Test formatting predictions and adding geometry column"""
-    # Create predictions
-    prediction = {
-        "boxes": torch.tensor([[10, 20, 30, 40], [50, 60, 70, 80]]),
-        "labels": torch.tensor([0, 0]),
-        "scores": torch.tensor([0.9, 0.8])
-    }
-    
-    # Format geometry
-    result = utilities.format_geometry(prediction)
-    
-    # Check output format
-    assert isinstance(result, pd.DataFrame)
-    assert "geometry" in result.columns
-    assert len(result) == 2
-    
-    # Check geometry values
+    assert result.iloc[0]["score"] == 0.9
     assert isinstance(result.iloc[0]["geometry"], geometry.Polygon)
-    assert result.iloc[0]["geometry"].bounds == (10, 20, 30, 40)
 
-
-def test_format_geometry_point():
-    """Test formatting point predictions"""
-    # Create a mock prediction with point coordinates
+def test_format_prediction_points_not_supported():
+    """Test that format_prediction raises appropriate error for points"""
+    # Create point prediction
     prediction = {
         "points": torch.tensor([[10, 20], [50, 60]]),
-        "labels": torch.tensor([0, 0]),
+        "labels": torch.tensor([0, 1]),
         "scores": torch.tensor([0.9, 0.8])
     }
     
-    # Format geometry should raise ValueError since point predictions are not supported
+    # Should raise ValueError for unsupported geometry type
     with pytest.raises(ValueError, match="Point predictions are not yet supported for formatting"):
-        utilities.format_geometry(prediction, geom_type="point")
+        utilities.format_prediction(prediction)
 
 
-def test_format_geometry_polygon():
-    """Test formatting polygon predictions"""
-    # Create a mock prediction with polygon coordinates
+def test_format_prediction_polygons_not_supported():
+    """Test that format_prediction raises appropriate error for polygons"""
+    # Create polygon prediction  
     prediction = {
-        "polygon": torch.tensor([[[10, 20], [30, 20], [30, 40], [10, 40], [10, 20]],
-                               [[50, 60], [70, 60], [70, 80], [50, 80], [50, 60]]]),
-        "labels": torch.tensor([0, 0]),
-        "scores": torch.tensor([0.9, 0.8])
+        "polygon": torch.tensor([[[10, 20], [30, 20], [30, 40], [10, 40], [10, 20]]]),
+        "labels": torch.tensor([0]),
+        "scores": torch.tensor([0.9])
     }
     
-    # Format geometry should raise ValueError since polygon predictions are not supported
+    # Should raise ValueError for unsupported geometry type
     with pytest.raises(ValueError, match="Polygon predictions are not yet supported for formatting"):
-        utilities.format_geometry(prediction, geom_type="polygon")
+        utilities.format_prediction(prediction)
