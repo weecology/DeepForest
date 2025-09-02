@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Optional, List, Dict, Union, Any
+
 from omegaconf import MISSING
 
 
@@ -7,7 +7,8 @@ from omegaconf import MISSING
 class ModelConfig:
     """Model configuration that defines the repository ID on HuggingFace and
     the revision (tag)."""
-    name: Optional[str] = "weecology/deepforest-tree"
+
+    name: str | None = "weecology/deepforest-tree"
     revision: str = "main"
 
 
@@ -17,12 +18,13 @@ class SchedulerParamsConfig:
 
     In most cases users should not need to change these."
     """
+
     T_max: int = 10
     eta_min: float = 1e-5
     lr_lambda: str = "0.95 ** epoch"
     step_size: int = 30
     gamma: float = 0.1
-    milestones: List[int] = field(default_factory=lambda: [50, 100])
+    milestones: list[int] = field(default_factory=lambda: [50, 100])
     mode: str = "min"
     factor: float = 0.1
     patience: int = 10
@@ -37,7 +39,8 @@ class SchedulerParamsConfig:
 class SchedulerConfig:
     """Set the type of scheduler, by default DeepForest uses a stepped learning
     function reducing at "milestones" during training."""
-    type: Optional[str] = "StepLR"
+
+    type: str | None = "StepLR"
     params: SchedulerParamsConfig = field(default_factory=SchedulerParamsConfig)
 
 
@@ -56,14 +59,15 @@ class TrainConfig:
     manage the training loop and you can set fast_dev_run to True for
     sanity checking.
     """
-    csv_file: Optional[str] = MISSING
-    root_dir: Optional[str] = MISSING
+
+    csv_file: str | None = MISSING
+    root_dir: str | None = MISSING
     lr: float = 0.001
     scheduler: SchedulerConfig = field(default_factory=SchedulerConfig)
     epochs: int = 1
     fast_dev_run: bool = False
     preload_images: bool = False
-    augmentations: Optional[List[Any]] = field(default_factory=lambda: ["HorizontalFlip"])
+    augmentations: list[str] | None = field(default_factory=lambda: ["HorizontalFlip"])
 
 
 @dataclass
@@ -74,14 +78,15 @@ class ValidationConfig:
     Validation during training is important to identify if the model has
     converged or is overfitting.
     """
-    csv_file: Optional[str] = MISSING
-    root_dir: Optional[str] = MISSING
+
+    csv_file: str | None = MISSING
+    root_dir: str | None = MISSING
     preload_images: bool = False
-    size: Optional[int] = None
+    size: int | None = None
     iou_threshold: float = 0.4
     val_accuracy_interval: int = 20
     lr_plateau_target: str = "val_loss"
-    augmentations: Optional[List[Any]] = field(default_factory=lambda: [])
+    augmentations: list[str] | None = field(default_factory=lambda: [])
 
 
 @dataclass
@@ -105,26 +110,27 @@ class Config:
     For most users the default setting of 1-class, "tree" should be
     sufficient.
     """
+
     workers: int = 0
-    devices: Union[int, str] = "auto"
+    devices: int | str = "auto"
     accelerator: str = "auto"
     batch_size: int = 1
 
     architecture: str = "retinanet"
     num_classes: int = 1
-    label_dict: Dict[str, int] = field(default_factory=lambda: {"Tree": 0})
+    label_dict: dict[str, int] = field(default_factory=lambda: {"Tree": 0})
 
     nms_thresh: float = 0.05
     score_thresh: float = 0.1
     model: ModelConfig = field(default_factory=ModelConfig)
 
     # Preprocessing
-    path_to_raster: Optional[str] = MISSING
+    path_to_raster: str | None = MISSING
     patch_size: int = 400
     patch_overlap: float = 0.05
-    annotations_xml: Optional[str] = MISSING
-    rgb_dir: Optional[str] = MISSING
-    path_to_rgb: Optional[str] = MISSING
+    annotations_xml: str | None = MISSING
+    rgb_dir: str | None = MISSING
+    path_to_rgb: str | None = MISSING
 
     train: TrainConfig = field(default_factory=TrainConfig)
     validation: ValidationConfig = field(default_factory=ValidationConfig)
