@@ -42,10 +42,7 @@ dependencies = [
     "h5py",
     "huggingface_hub>=0.25.0",
     "hydra-core",
-<<<<<<< HEAD
-=======
     "geopandas>=1.0.0",
->>>>>>> 241ecc8b (experimental dinov3 retinanet backbone)
     "matplotlib",
     "numpy<2.0",
     "omegaconf",
@@ -116,7 +113,6 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.packages.find]
 where = ["src"]
 
-<<<<<<< HEAD
 [tool.setuptools.package-dir]
 "" = "src"
 
@@ -161,7 +157,5 @@ markers = [
     "slow: marks tests that are slow to run",
     "integration: marks integration tests"
 ]
-=======
 [tool.uv.sources]
 transformers = { git = "https://github.com/huggingface/transformers.git" }
->>>>>>> 241ecc8b (experimental dinov3 retinanet backbone)

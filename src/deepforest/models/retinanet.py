@@ -3,31 +3,34 @@ from pathlib import Path
 
 import torch
 import torchvision
-from torchvision.models.detection.retinanet import RetinaNet, RetinaNet_ResNet50_FPN_Weights
-from torchvision.models.detection.retinanet import AnchorGenerator
-from deepforest.model import BaseModel
-from deepforest.models.dinov3 import Dinov3Model
 from huggingface_hub import PyTorchModelHubMixin
-from torchvision.models.detection.retinanet import AnchorGenerator, RetinaNet
+from torchvision.models.detection.retinanet import (
+    AnchorGenerator,
+    ResNet50_Weights,
+    RetinaNet,
+    RetinaNet_ResNet50_FPN_Weights,
+)
 
 from deepforest.model import BaseModel
+from deepforest.models.dinov3 import Dinov3Model
 
 
 class RetinaNetHub(RetinaNet, PyTorchModelHubMixin):
     """RetinaNet extension that allows the use of the HF Hub API."""
 
-    def __init__(self,
-                 weights: str | None = None,
-                 backbone_weights: str | None = None,
-                 num_classes: int = 1,
-                 nms_thresh: float = 0.05,
-                 score_thresh: float = 0.5,
-                 label_dict: dict = None,
-                 use_conv_pyramid: bool = True,
-                 fpn_out_channels: int = 256,
-                 freeze_backbone: bool = True,
-                 **kwargs):
-
+    def __init__(
+        self,
+        weights: str | None = None,
+        backbone_weights: str | None = None,
+        num_classes: int = 1,
+        nms_thresh: float = 0.05,
+        score_thresh: float = 0.5,
+        label_dict: dict = None,
+        use_conv_pyramid: bool = True,
+        fpn_out_channels: int = 256,
+        freeze_backbone: bool = True,
+        **kwargs,
+    ):
         if isinstance(weights, str) and "dinov3" in weights:
             backbone = Dinov3Model(
                 repo_id=weights,
@@ -35,8 +38,10 @@ class RetinaNetHub(RetinaNet, PyTorchModelHubMixin):
                 fpn_out_channels=fpn_out_channels,
                 frozen=freeze_backbone,
             )
-            anchor_sizes = tuple((x, int(x * 2**(1.0 / 3)), int(x * 2**(2.0 / 3)))
-                                 for x in [32, 64, 128, 256])
+            anchor_sizes = tuple(
+                (x, int(x * 2 ** (1.0 / 3)), int(x * 2 ** (2.0 / 3)))
+                for x in [32, 64, 128, 256]
+            )
             aspect_ratios = ((0.5, 1.0, 2.0),) * len(anchor_sizes)
             anchor_generator = AnchorGenerator(anchor_sizes, aspect_ratios)
 
@@ -46,10 +51,12 @@ class RetinaNetHub(RetinaNet, PyTorchModelHubMixin):
         else:
             if freeze_backbone:
                 warnings.warn(
-                    "Frozen backbone is currently not enabled for ResNet, but you can set the learning rate to zero."
+                    "Frozen backbone is currently not enabled for ResNet, but you can set the learning rate to zero.",
+                    stacklevel=2,
                 )
             backbone = torchvision.models.detection.retinanet_resnet50_fpn(
-                weights=weights, backbone_weights=backbone_weights).backbone
+                weights=weights, backbone_weights=backbone_weights
+            ).backbone
             anchor_generator = None  # Use default
 
             # Explicitly use ImageNet
@@ -65,6 +72,12 @@ class RetinaNetHub(RetinaNet, PyTorchModelHubMixin):
             image_mean=image_mean,
             image_std=image_std,
             **kwargs,
+        )
+
+        # See docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module.register_load_state_dict_pre_hook
+        # For backwards compatibility with earlier versions of torch, call the _ method
+        self._register_load_state_dict_pre_hook(
+            RetinaNetHub._strip_legacy_prefix, with_module=True
         )
 
         self.num_classes = num_classes
@@ -200,7 +213,7 @@ class Model(BaseModel):
 
     def create_model(
         self,
-        pretrained: str | Path | None = None,
+        pretrained: str | Path = "resnet50-mscoco",
         *,
         revision: str | None = None,
         map_location: str | torch.device | None = None,
@@ -208,7 +221,7 @@ class Model(BaseModel):
     ) -> RetinaNetHub:
         """Create a retinanet model
         Args:
-            pretrained (str | Path | None): If supplied, specifies repository ID for weight download, otherwise use default COCO weights
+            pretrained (str | Path): Specifies repository ID for weight download or predefined model type. Defaults to "resnet50-mscoco"
             revision (str | None): Repository revision
             map_location (str | torch.device | None): Device to load weights onto
             **hf_args: Any other arguments to load_pretrained
@@ -216,46 +229,58 @@ class Model(BaseModel):
             model: a pytorch nn module
         """
 
-        if pretrained is None:
-            model = RetinaNetHub.from_pretrained(pretrained,
-                                                 revision=revision,
-                                                 num_classes=self.config.num_classes,
-                                                 label_dict=self.config.label_dict,
-                                                 nms_thresh=self.config.nms_thresh,
-                                                 score_thresh=self.config.score_thresh,
-                                                 **hf_args)
-        elif pretrained == "resnet50-imagenet":
+        if pretrained == "resnet50-imagenet":
             if revision is not None:
                 warnings.warn(
-                    "Ignoring revision and using an un-initialized RetinaNet head, ImageNet backbone."
+                    "Ignoring revision and using an un-initialized RetinaNet head, ImageNet backbone.",
+                    stacklevel=2,
                 )
-            model = RetinaNetHub(weights=None,
-                                 backbone_weights=ResNet50_Weights.IMAGENET1K_V2,
-                                 num_classes=self.config.num_classes,
-                                 nms_thresh=self.config.nms_thresh,
-                                 score_thresh=self.config.score_thresh,
-                                 label_dict=self.config.label_dict)
+            model = RetinaNetHub(
+                weights=None,
+                backbone_weights=ResNet50_Weights.IMAGENET1K_V2,
+                num_classes=self.config.num_classes,
+                nms_thresh=self.config.nms_thresh,
+                score_thresh=self.config.score_thresh,
+                label_dict=self.config.label_dict,
+            )
         elif pretrained == "resnet50-mscoco":
             if revision is not None:
                 warnings.warn(
-                    "Ignoring revision and fine-tuning from ResNet50 MS-COCO checkpoint.")
-            model = RetinaNetHub(weights=RetinaNet_ResNet50_FPN_Weights.COCO_V1,
-                                 num_classes=self.config.num_classes,
-                                 nms_thresh=self.config.nms_thresh,
-                                 score_thresh=self.config.score_thresh,
-                                 label_dict=self.config.label_dict)
-        elif "dinov3" in pretrained:
+                    "Ignoring revision and fine-tuning from ResNet50 MS-COCO checkpoint.",
+                    stacklevel=2,
+                )
+            model = RetinaNetHub(
+                weights=RetinaNet_ResNet50_FPN_Weights.COCO_V1,
+                num_classes=self.config.num_classes,
+                nms_thresh=self.config.nms_thresh,
+                score_thresh=self.config.score_thresh,
+                label_dict=self.config.label_dict,
+            )
+        elif (
+            isinstance(pretrained, str) or isinstance(pretrained, Path)
+        ) and "dinov3" in pretrained:
             if revision is not None:
                 warnings.warn(
-                    f"Ignoring revision and fine-tuning from DinoV3 {pretrained} checkpoint."
+                    f"Ignoring revision and fine-tuning from DinoV3 {pretrained} checkpoint.",
+                    stacklevel=2,
                 )
-            model = RetinaNetHub(weights=pretrained,
-                                 num_classes=self.config.num_classes,
-                                 nms_thresh=self.config.nms_thresh,
-                                 score_thresh=self.config.score_thresh,
-                                 label_dict=self.config.label_dict,
-                                 freeze_backbone=True)
+            model = RetinaNetHub(
+                weights=pretrained,
+                num_classes=self.config.num_classes,
+                nms_thresh=self.config.nms_thresh,
+                score_thresh=self.config.score_thresh,
+                label_dict=self.config.label_dict,
+                freeze_backbone=True,
+            )
         else:
-            raise ValueError("Pretrained model type is not recognized.")
+            model = RetinaNetHub.from_pretrained(
+                pretrained,
+                revision=revision,
+                num_classes=self.config.num_classes,
+                label_dict=self.config.label_dict,
+                nms_thresh=self.config.nms_thresh,
+                score_thresh=self.config.score_thresh,
+                **hf_args,
+            )
 
         return model.to(map_location)
