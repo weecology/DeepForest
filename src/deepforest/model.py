@@ -154,6 +154,7 @@ class CropModel(LightningModule):
     def on_load_checkpoint(self, checkpoint):
         self.label_dict = checkpoint['label_dict']
         self.numeric_to_label_dict = {v: k for k, v in self.label_dict.items()}
+        self.num_classes = checkpoint['num_classes']
         self.create_model(checkpoint['num_classes'])
         self.load_state_dict(checkpoint['state_dict'])
 
