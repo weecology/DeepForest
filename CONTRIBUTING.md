@@ -187,13 +187,13 @@ For example:
 from deepforest import main
 
 # Load model from checkpoint
-model = main.deepforest.load_from_checkpoint("path/to/checkpoint.ckpt")
+m = main.deepforest.load_from_checkpoint("path/to/checkpoint.ckpt")
 
 # Set label dictionary mapping class names to indices
-model.label_dict = {"Livestock": 0}
+m.label_dict = {"Livestock": 0}
 
 # Push to weecology organization space
-model.push_to_hub("weecology/deepforest-livestock")
+m.model = push_to_hub("weecology/deepforest-livestock")
 ```
 
 The model will be uploaded to [https://huggingface.co/weecology/[model-name]](https://huggingface.co/weecology/[model-name])
