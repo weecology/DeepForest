@@ -423,17 +423,6 @@ class CropModel(LightningModule):
                 "huggingface_hub is required for load_model. Install with `pip install huggingface_hub`."
             ) from exc
 
-        # Auto-discover a plausible checkpoint name if not supplied
-        if filename is None:
-            api = HfApi(token=token)
-            files = api.list_repo_files(repo_id=repo_id, repo_type="model", revision=revision)
-            candidates = [f for f in files if f.endswith((".pl", ".ckpt"))]
-            if not candidates:
-                raise FileNotFoundError(
-                    f"No checkpoint file ending with .pl or .ckpt found in repo {repo_id}."
-                )
-            filename = candidates[0]
-
         ckpt_path = hf_hub_download(
             repo_id=repo_id,
             filename=filename,
