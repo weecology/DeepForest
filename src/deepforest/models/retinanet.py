@@ -216,7 +216,15 @@ class Model(BaseModel):
             model: a pytorch nn module
         """
 
-        if pretrained == "resnet50-imagenet":
+        if pretrained is None:
+            model = RetinaNetHub.from_pretrained(pretrained,
+                                                 revision=revision,
+                                                 num_classes=self.config.num_classes,
+                                                 label_dict=self.config.label_dict,
+                                                 nms_thresh=self.config.nms_thresh,
+                                                 score_thresh=self.config.score_thresh,
+                                                 **hf_args)
+        elif pretrained == "resnet50-imagenet":
             if revision is not None:
                 warnings.warn(
                     "Ignoring revision and using an un-initialized RetinaNet head, ImageNet backbone."
@@ -248,14 +256,6 @@ class Model(BaseModel):
                                  label_dict=self.config.label_dict,
                                  freeze_backbone=True)
         else:
-            model = RetinaNetHub.from_pretrained(
-                pretrained,
-                revision=revision,
-                num_classes=self.config.num_classes,
-                label_dict=self.config.label_dict,
-                nms_thresh=self.config.nms_thresh,
-                score_thresh=self.config.score_thresh,
-                **hf_args,
-            )
+            raise ValueError("Pretrained model type is not recognized.")
 
         return model.to(map_location)
