@@ -3,6 +3,7 @@ import torch
 from pytorch_lightning import LightningModule, Trainer
 import os
 import torchmetrics
+from typing import Optional, Union
 from torchvision import models, transforms
 from torchvision.datasets import ImageFolder
 import numpy as np
@@ -389,3 +390,154 @@ class CropModel(LightningModule):
             return images, true_label, predicted_label
         else:
             return true_label, predicted_label
+
+    @classmethod
+    def load_model(
+        cls,
+        repo_id: str,
+        filename: Optional[str] = None,
+        revision: Optional[str] = None,
+        map_location: Union[str, torch.device] = "cpu",
+        token: Optional[str] = None,
+    ):
+        """Download a checkpoint from Hugging Face and load it as a CropModel.
+
+        Args:
+            repo_id: Hugging Face repo id, e.g. "username/my-cropmodel".
+            filename: Optional specific checkpoint filename in the repo. If not
+                provided, will auto-discover a ``.pl`` or ``.ckpt`` file.
+            revision: Optional git revision/branch/tag. Defaults to repo default.
+            map_location: Device mapping for loading the checkpoint (e.g. "cpu").
+            token: Optional Hugging Face token for private repos.
+
+        Returns:
+            CropModel: The loaded and eval-mode model instance.
+        """
+
+        try:
+            # Local import to avoid hard dependency when feature not used.
+            from huggingface_hub import hf_hub_download, HfApi
+        except ImportError as exc:
+            raise ImportError(
+                "huggingface_hub is required for load_model. Install with `pip install huggingface_hub`."
+            ) from exc
+
+        # Auto-discover a plausible checkpoint name if not supplied
+        if filename is None:
+            api = HfApi(token=token)
+            files = api.list_repo_files(repo_id=repo_id, repo_type="model", revision=revision)
+            candidates = [f for f in files if f.endswith((".pl", ".ckpt"))]
+            if not candidates:
+                raise FileNotFoundError(
+                    f"No checkpoint file ending with .pl or .ckpt found in repo {repo_id}."
+                )
+            filename = candidates[0]
+
+        ckpt_path = hf_hub_download(
+            repo_id=repo_id,
+            filename=filename,
+            repo_type="model",
+            revision=revision,
+            token=token,
+        )
+
+        model = cls.load_from_checkpoint(ckpt_path, map_location=map_location)
+        model.eval()
+        return model
+
+    def push_to_huggingface(
+        self,
+        repo_id: str,
+        filename: Optional[str] = None,
+        *,
+        private: Optional[bool] = None,
+        commit_message: Optional[str] = None,
+        exist_ok: bool = True,
+        revision: Optional[str] = None,
+        token: Optional[str] = None,
+    ) -> str:
+        """Save this model to a Hugging Face Hub repo as a Lightning checkpoint.
+
+        The saved checkpoint will include ``state_dict``, ``label_dict`` and
+        ``num_classes`` so it can be loaded with
+        :py:meth:`CropModel.load_from_checkpoint` or :py:meth:`CropModel.load_model`.
+
+        Args:
+            repo_id: Target repo id, e.g. "username/my-cropmodel".
+            filename: Name to store in the repo (defaults to "cropmodel.pl").
+            private: If creating the repo, whether it should be private.
+            commit_message: Commit message for the upload.
+            exist_ok: Create repo if it doesn't exist.
+            revision: Optional target branch/tag to commit to.
+            token: Optional Hugging Face token (for auth/private repos).
+
+        Returns:
+            str: The path (filename) used inside the repo.
+        """
+
+        try:
+            # Local import to avoid hard dependency when feature not used.
+            from huggingface_hub import HfApi, create_repo
+        except ImportError as exc:
+            raise ImportError(
+                "huggingface_hub is required for push_to_huggingface. Install with `pip install huggingface_hub`."
+            ) from exc
+
+        # Validate metadata needed for proper checkpoint reload
+        num_classes = getattr(self, "num_classes", None)
+        if num_classes is None:
+            # Attempt to infer from final layer when using default resnet head
+            try:
+                num_classes = int(getattr(self.model, "fc").out_features)  # type: ignore[attr-defined]
+            except Exception:
+                pass
+        if num_classes is None:
+            raise ValueError(
+                "num_classes is not set and could not be inferred. Set self.num_classes before saving."
+            )
+
+        if getattr(self, "label_dict", None) is None:
+            raise ValueError(
+                "label_dict is not set. Set self.label_dict (e.g., {'classA':0,...}) before saving."
+            )
+
+        if filename is None:
+            filename = "cropmodel.pl"
+
+        import tempfile
+        import torch
+        import os as _os
+
+        # Serialize a minimal, Lightning-compatible checkpoint
+        with tempfile.TemporaryDirectory() as tmpdir:
+            ckpt_path = _os.path.join(tmpdir, filename)
+            torch.save(
+                {
+                    "state_dict": self.state_dict(),
+                    "label_dict": self.label_dict,
+                    "num_classes": int(num_classes),
+                },
+                ckpt_path,
+            )
+
+            # Ensure destination repo exists
+            if exist_ok:
+                create_repo(
+                    repo_id=repo_id,
+                    repo_type="model",
+                    private=private,
+                    exist_ok=True,
+                    token=token,
+                )
+
+            api = HfApi(token=token)
+            api.upload_file(
+                path_or_fileobj=ckpt_path,
+                path_in_repo=filename,
+                repo_id=repo_id,
+                repo_type="model",
+                commit_message=commit_message or f"Add checkpoint {filename}",
+                revision=revision,
+            )
+
+        return filename
