@@ -3,11 +3,10 @@ import os
 
 from hydra import compose, initialize, initialize_config_dir
 from omegaconf import DictConfig, OmegaConf
+from pytorch_lightning.callbacks import ModelCheckpoint
+from pytorch_lightning.loggers import CSVLogger
 
 from deepforest.conf.schema import Config as StructuredConfig
-from pytorch_lightning.callbacks import ModelCheckpoint
-from pytorch_lightning.loggers import CSVLogger, CometLogger
-
 from deepforest.main import deepforest
 from deepforest.visualize import plot_results
 
@@ -29,17 +28,21 @@ def train(config: DictConfig, checkpoint=True) -> None:
     loggers = []
 
     try:
-        comet_logger = CometLogger(api_key=os.environ.get("COMET_API_KEY"),
-                                   workspace=os.environ.get("COMET_WORKSPACE"),
-                                   project="DeepForest",
-                                   save_dir=config.train.log_root)
+        from pytorch_lightning.loggers import CometLogger
+
+        comet_logger = CometLogger(
+            api_key=os.environ.get("COMET_API_KEY"),
+            workspace=os.environ.get("COMET_WORKSPACE"),
+            project="DeepForest",
+            save_dir=config.train.log_root,
+        )
 
         comet_experiment_name = comet_logger.experiment.get_name()
         loggers.append(comet_logger)
 
-        full_log_dir = (f"{config.train.log_root}/{comet_experiment_name}")
+        full_log_dir = f"{config.train.log_root}/{comet_experiment_name}"
         csv_logger = CSVLogger(save_dir=full_log_dir, name="", version="")
-    except ModuleNotFoundError:
+    except (ModuleNotFoundError, ValueError):
         csv_logger = CSVLogger(save_dir=config.train.log_root)
 
     loggers.append(csv_logger)
@@ -92,9 +95,9 @@ def main():
         help="Train a model",
         epilog="Any remaining arguments <key>=<value> will be passed to Hydra to override the current config.",
     )
-    train_parser.add_argument("--no-checkpoint",
-                              help="Path to log folder",
-                              action='store_true')
+    train_parser.add_argument(
+        "--no-checkpoint", help="Path to log folder", action="store_true"
+    )
 
     # Predict subcommand
     predict_parser = subparsers.add_parser(
