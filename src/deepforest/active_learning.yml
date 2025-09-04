@@ -1,0 +1,26 @@
+# Active learning config for DeepForest
+# Fill in the required paths and class labels for your project.
+workdir: ./workdir
+images_dir: ./images
+train_csv: ./train.csv
+val_csv: ./val.csv
+classes:  # List of class labels
+  - tree
+
+# Training
+epochs_per_round: 10
+batch_size: 4
+lr: 0.0001
+weight_decay: 0.0001
+precision: 32            # Can be 16/32 or "bf16" depending on your PL install
+device: auto             # "auto", "cpu", or "cuda:0"
+num_workers: 4
+seed: 42
+use_release_weights: false  # Warm start from NEON release weights
+
+# Evaluation
+iou_eval: 0.5
+
+# Acquisition
+k_per_round: 50
+score_threshold_pred: 0.2
