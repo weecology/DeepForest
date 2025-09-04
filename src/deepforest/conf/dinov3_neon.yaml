@@ -1,0 +1,12 @@
+defaults:
+  - dinov3
+  - _self_
+
+train:
+    csv_file: /Volumes/tessier/data/Neon_benchmark/cv_splits/fold_1_train.csv
+    root_dir: /Volumes/tessier/data/Neon_benchmark/images
+
+
+validation:
+    csv_file: /Volumes/tessier/data/Neon_benchmark/cv_splits/fold_1_val.csv
+    root_dir: /Volumes/tessier/data/Neon_benchmark/images

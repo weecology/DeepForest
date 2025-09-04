@@ -62,6 +62,7 @@ class TrainConfig:
 
     csv_file: str | None = MISSING
     root_dir: str | None = MISSING
+    log_root: str = "logs"
     lr: float = 0.001
     scheduler: SchedulerConfig = field(default_factory=SchedulerConfig)
     epochs: int = 1

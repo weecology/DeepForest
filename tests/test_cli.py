@@ -5,6 +5,8 @@ import os
 from omegaconf import OmegaConf
 from deepforest import get_data
 
+os.environ['COMET_MODE'] = 'offline'
+
 SCRIPT = files("deepforest.scripts").joinpath("cli.py")
 
 def test_train_cli(tmpdir):
