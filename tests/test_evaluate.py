@@ -1,15 +1,16 @@
 # Test evaluate
 # Test IoU
-from .conftest import download_release
-from deepforest.utilities import read_file
-from deepforest import evaluate
-from deepforest import main
-from deepforest import get_data
 import os
-import pytest
-import pandas as pd
-import numpy as np
+
 import geopandas as gpd
+import numpy as np
+import pandas as pd
+import pytest
+
+from deepforest import evaluate
+from deepforest import get_data
+from deepforest import main
+from deepforest.utilities import read_file
 
 
 def test_evaluate_image(m):
@@ -17,11 +18,11 @@ def test_evaluate_image(m):
     predictions = m.predict_file(csv_file=csv_file, root_dir=os.path.dirname(csv_file))
     ground_truth = read_file(csv_file)
     predictions.label = 0
-    result = evaluate.evaluate_image_boxes(predictions=predictions,
-                                           ground_df=ground_truth)
+    result = evaluate.evaluate_boxes(predictions=predictions,
+                                     ground_df=ground_truth)
 
-    assert result.shape[0] == ground_truth.shape[0]
-    assert sum(result.IoU) > 10
+    assert result["results"].shape[0] == ground_truth.shape[0]
+    assert sum(result["results"].IoU) > 10
 
 
 def test_evaluate_boxes(m, tmpdir):
