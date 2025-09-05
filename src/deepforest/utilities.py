@@ -165,11 +165,7 @@ def convert_point_to_bbox(gdf, buffer_size):
 
 
 def xml_to_annotations(xml_path):
-
-    warnings.warn(
-        "xml_to_annotations will be deprecated in 2.0. Please use read_pascal_voc instead.",
-        DeprecationWarning)
-
+    """Backward-compat alias for read_pascal_voc."""
     return read_pascal_voc(xml_path)
 
 
@@ -190,15 +186,7 @@ def shapefile_to_annotations(shapefile,
     Returns:
         results: a pandas dataframe
     """
-    # Deprecation of previous arguments
-    if geometry_type:
-        warnings.warn(
-            "geometry_type argument is deprecated and will be removed in DeepForest 2.0. The function will infer geometry from the shapefile directly.",
-            DeprecationWarning)
-    if save_dir:
-        warnings.warn(
-            "save_dir argument is deprecated and will be removed in DeepForest 2.0. The function will return a pandas dataframe instead of saving to disk.",
-            DeprecationWarning)
+    # Handle legacy arguments silently for 2.0+
 
     # Read shapefile
     if isinstance(shapefile, str):

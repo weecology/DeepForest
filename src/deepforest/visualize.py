@@ -96,19 +96,7 @@ def plot_points(image: np.typing.NDArray,
                 color: Optional[tuple] = None,
                 radius: int = 5,
                 thickness: int = 1) -> np.typing.NDArray:
-    """Draw points on an image, returns a copy of the array
-    Args:
-        image: a numpy array in RGB order, HWC format
-        points: a numpy array of shape (N, 2) representing the coordinates of the points
-        color: color of the points as a tuple of BGR color, e.g. orange points is (0, 165, 255)
-        radius: radius of the points in px
-        thickness: thickness of the point border line in px
-    Returns:
-        image: a numpy array with drawn points
-    """
-    warnings.warn(
-        "plot_points will be deprecated in 2.0, please use draw_points instead.",
-        DeprecationWarning)
+    """Deprecated alias for draw_points (kept for backward compatibility)."""
     return draw_points(image, points, color, radius, thickness)
 
 
@@ -146,21 +134,7 @@ def plot_predictions(image: np.typing.NDArray,
                      df: pd.DataFrame,
                      color: tuple = None,
                      thickness: int = 1) -> np.typing.NDArray:
-    """Draw geometries on an image, which can be polygons, boxes or points.
-
-    Returns a copy of the array.
-
-    Args:
-        image: a numpy array in RGB order, HWC format
-        df: a pandas dataframe with xmin, xmax, ymin, ymax and label column
-        color: color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255)
-        thickness: thickness of the rectangle border line in px
-    Returns:
-        image: a numpy array with drawn annotations
-    """
-    warnings.warn(
-        "plot_predictions will be deprecated in 2.0, please use draw_predictions instead. Or plot_results if you need a figure.",
-        DeprecationWarning)
+    """Deprecated alias for draw_predictions (kept for backward compatibility)."""
     return draw_predictions(image, df, color, thickness)
 
 

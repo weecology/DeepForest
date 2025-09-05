@@ -71,15 +71,9 @@ class deepforest(pl.LightningModule):
 
         # Parse overrides from constructor arguments and assign to config:
         if num_classes is not None:
-            warnings.warn(
-                "Directly specifying the num_classes arg in deepforest.main will be deprecated in 2.0 in favor of using a config file or config_args. Use main.deepforest(config_args={'num_classes':value})"
-            )
             self.config.num_classes = num_classes
 
         if label_dict is not None:
-            warnings.warn(
-                "Directly specifying the label_dict arg in deepforest.main will be deprecated in 2.0 in favor of using a config file or config_args. Use main.deepforest(config_args={'label_dict': ... })"
-            )
             self.config.label_dict = label_dict
 
         # release version id to flag if release is being used
@@ -187,34 +181,11 @@ class deepforest(pl.LightningModule):
         self.numeric_to_label_dict = {v: k for k, v in label_dict.items()}
 
     def use_release(self, check_release=True):
-        """Use the latest DeepForest model release from Hugging Face,
-        downloading if necessary. Optionally download if release doesn't exist.
-
-        Args:
-            check_release (logical): Deprecated, not in use.
-        Returns:
-            model (object): A trained PyTorch model
-        """
-
-        warnings.warn(
-            "use_release will be deprecated in 2.0. use load_model('weecology/deepforest-tree') instead",
-            DeprecationWarning)
+        """Backward-compat shim: load the default tree model from the Hub."""
         self.load_model('weecology/deepforest-tree')
 
     def use_bird_release(self, check_release=True):
-        """Use the latest DeepForest bird model release from Hugging Face,
-        downloading if necessary. model. Optionally download if release doesn't
-        exist.
-
-        Args:
-            check_release (logical): Deprecated, not in use.
-        Returns:
-            model (object): A trained pytorch model
-        """
-
-        warnings.warn(
-            "use_bird_release will be deprecated in 2.0. use load_model('bird') instead",
-            DeprecationWarning)
+        """Backward-compat shim: load the default bird model from the Hub."""
         self.load_model('weecology/deepforest-bird')
 
     def create_model(self, initialize_model=False):
@@ -411,19 +382,14 @@ class deepforest(pl.LightningModule):
             transforms: Albumentations transforms
             batch_size: batch size
             preload_images: if True, preload the images into memory
-            augment: deprecated. If True, apply augmentations to the images
+            augment: If True, apply augmentations (deprecated; use augmentations)
             augmentations: augmentation configuration (str, list, or dict)
         Returns:
             ds: a pytorch dataset
         """
 
-        if augment is not None:
-            warnings.warn(
-                "The `augment` parameter is deprecated. Please use `augmentations` instead and provide an empty list or None to disable augmentations."
-            )
-
-            if not augment:
-                augmentations = None
+        if augment is not None and not augment:
+            augmentations = None
 
         ds = training.BoxDataset(csv_file=csv_file,
                                  root_dir=root_dir,
