@@ -4,6 +4,7 @@ from pytorch_lightning import LightningModule, Trainer
 import os
 import torchmetrics
 from typing import Optional, Union
+from huggingface_hub import PyTorchModelHubMixin
 from torchvision import models, transforms
 from torchvision.datasets import ImageFolder
 import numpy as np
@@ -68,7 +69,7 @@ def simple_resnet_50(num_classes=2):
     return m
 
 
-class CropModel(LightningModule):
+class CropModel(LightningModule, PyTorchModelHubMixin):
     """A PyTorch Lightning module for classifying image crops from object
     detection models.
 
@@ -126,6 +127,19 @@ class CropModel(LightningModule):
         self.batch_size = batch_size
         self.lr = lr
 
+        # sync hub config
+        self.update_config()
+
+    def update_config(self):
+        """Update config used by HF Hub mixin for save/load."""
+        self.config = {
+            "num_classes": self.num_classes,
+            "label_dict": self.label_dict,
+            "batch_size": self.batch_size,
+            "num_workers": self.num_workers,
+            "lr": self.lr,
+        }
+
     def create_model(self, num_classes):
         """Create a model with the given number of classes."""
         self.accuracy = torchmetrics.Accuracy(average='none',
@@ -157,6 +171,7 @@ class CropModel(LightningModule):
         self.num_classes = checkpoint['num_classes']
         self.create_model(checkpoint['num_classes'])
         self.load_state_dict(checkpoint['state_dict'])
+        self.update_config()
 
     def load_from_disk(self, train_dir, val_dir, recreate_model=False):
         """Load the training and validation datasets from disk.
@@ -401,12 +416,10 @@ class CropModel(LightningModule):
         map_location: Union[str, torch.device] = "cpu",
         token: Optional[str] = None,
     ):
-        """Download a checkpoint from Hugging Face and load it as a CropModel.
+        """Load a model from the Hugging Face Hub.
 
         Args:
             repo_id: Hugging Face repo id, e.g. "username/my-cropmodel".
-            filename: Optional specific checkpoint filename in the repo. If not
-                provided, will auto-discover a ``.pl`` or ``.ckpt`` file.
             revision: Optional git revision/branch/tag. Defaults to repo default.
             map_location: Device mapping for loading the checkpoint (e.g. "cpu").
             token: Optional Hugging Face token for private repos.
@@ -423,111 +436,51 @@ class CropModel(LightningModule):
                 "huggingface_hub is required for load_model. Install with `pip install huggingface_hub`."
             ) from exc
 
-        ckpt_path = hf_hub_download(
-            repo_id=repo_id,
-            filename=filename,
-            repo_type="model",
+        # Try to auto-discover a Lightning checkpoint first if not specified
+        if filename is None:
+            api = HfApi(token=token)
+            try:
+                files = api.list_repo_files(repo_id=repo_id, repo_type="model", revision=revision)
+            except Exception:
+                files = []
+            candidates = [f for f in files if f.endswith((".pl", ".ckpt"))]
+            if candidates:
+                filename = candidates[0]
+
+        if filename is not None:
+            ckpt_path = hf_hub_download(
+                repo_id=repo_id,
+                filename=filename,
+                repo_type="model",
+                revision=revision,
+                token=token,
+            )
+            model = cls.load_from_checkpoint(ckpt_path, map_location=map_location)
+            model.eval()
+            return model
+
+        # Fallback: use Hub-native format managed by the PyTorchModelHubMixin
+        model = cls.from_pretrained(
+            repo_id,
             revision=revision,
+            map_location=map_location,
             token=token,
         )
-
-        model = cls.load_from_checkpoint(ckpt_path, map_location=map_location)
         model.eval()
         return model
 
-    def push_to_huggingface(
-        self,
-        repo_id: str,
-        filename: Optional[str] = None,
-        *,
-        private: Optional[bool] = None,
-        commit_message: Optional[str] = None,
-        exist_ok: bool = True,
-        revision: Optional[str] = None,
-        token: Optional[str] = None,
-    ) -> str:
-        """Save this model to a Hugging Face Hub repo as a Lightning checkpoint.
+    @classmethod
+    def from_config(cls, config):
+        """Recreate instance from Hub config (PyTorchModelHubMixin hook)."""
+        instance = cls(
+            num_classes=config.get("num_classes"),
+            batch_size=config.get("batch_size", 4),
+            num_workers=config.get("num_workers", 0),
+            lr=config.get("lr", 0.0001),
+            label_dict=config.get("label_dict"),
+            model=None,
+        )
+        instance.update_config()
+        return instance
 
-        The saved checkpoint will include ``state_dict``, ``label_dict`` and
-        ``num_classes`` so it can be loaded with
-        :py:meth:`CropModel.load_from_checkpoint` or :py:meth:`CropModel.load_model`.
-
-        Args:
-            repo_id: Target repo id, e.g. "username/my-cropmodel".
-            filename: Name to store in the repo (defaults to "cropmodel.pl").
-            private: If creating the repo, whether it should be private.
-            commit_message: Commit message for the upload.
-            exist_ok: Create repo if it doesn't exist.
-            revision: Optional target branch/tag to commit to.
-            token: Optional Hugging Face token (for auth/private repos).
-
-        Returns:
-            str: The path (filename) used inside the repo.
-        """
-
-        try:
-            # Local import to avoid hard dependency when feature not used.
-            from huggingface_hub import HfApi, create_repo
-        except ImportError as exc:
-            raise ImportError(
-                "huggingface_hub is required for push_to_huggingface. Install with `pip install huggingface_hub`."
-            ) from exc
-
-        # Validate metadata needed for proper checkpoint reload
-        num_classes = getattr(self, "num_classes", None)
-        if num_classes is None:
-            # Attempt to infer from final layer when using default resnet head
-            try:
-                num_classes = int(getattr(self.model, "fc").out_features)  # type: ignore[attr-defined]
-            except Exception:
-                pass
-        if num_classes is None:
-            raise ValueError(
-                "num_classes is not set and could not be inferred. Set self.num_classes before saving."
-            )
-
-        if getattr(self, "label_dict", None) is None:
-            raise ValueError(
-                "label_dict is not set. Set self.label_dict (e.g., {'classA':0,...}) before saving."
-            )
-
-        if filename is None:
-            filename = "cropmodel.pl"
-
-        import tempfile
-        import torch
-        import os as _os
-
-        # Serialize a minimal, Lightning-compatible checkpoint
-        with tempfile.TemporaryDirectory() as tmpdir:
-            ckpt_path = _os.path.join(tmpdir, filename)
-            torch.save(
-                {
-                    "state_dict": self.state_dict(),
-                    "label_dict": self.label_dict,
-                    "num_classes": int(num_classes),
-                },
-                ckpt_path,
-            )
-
-            # Ensure destination repo exists
-            if exist_ok:
-                create_repo(
-                    repo_id=repo_id,
-                    repo_type="model",
-                    private=private,
-                    exist_ok=True,
-                    token=token,
-                )
-
-            api = HfApi(token=token)
-            api.upload_file(
-                path_or_fileobj=ckpt_path,
-                path_in_repo=filename,
-                repo_id=repo_id,
-                repo_type="model",
-                commit_message=commit_message or f"Add checkpoint {filename}",
-                revision=revision,
-            )
-
-        return filename
+    # push_to_hub/from_pretrained are inherited from PyTorchModelHubMixin

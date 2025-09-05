@@ -194,23 +194,24 @@ m.label_dict = {"Livestock": 0}
 
 # Push to weecology organization space
 m.model = push_to_hub("weecology/deepforest-livestock")
+
+# reload later
+m.from_pretrained("weecology/deepforest-livestock")
 ```
 
 The model will be uploaded to [https://huggingface.co/weecology/[model-name]](https://huggingface.co/weecology/[model-name])
 
 ### CropModel
 
-A crop model is applied to use detection to classify objects within that region. To upload a new CropModel.
-
 ```python```
 from deepforest.model import CropModel
 
-# Train, load or create a new model. For example
+cm = CropModel(num_classes=2)
+# Train, load and create model. 
+cm.push_to_hub("weecology/cropmodel-deadtrees")
 
-crop_model = CropModel.load_from_checkpoint("/Users/benweinstein/Downloads/cropmodel-deadtrees.pl")
-model.push_to_hub("weecology/cropmodel-<new_name>")
+# Reload it later
+cm.from_pretrained("Weecology/cropmodel-deadtrees")
 ```
 Please name the cropmodel based on what is being classified within the region. 
-
-
-Note: You must have appropriate permissions in the weecology organization to upload models.
+Note: You must have appropriate permissions in the weecology organization to upload models. Any repo on hf will work.
