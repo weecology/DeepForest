@@ -187,16 +187,16 @@ For example:
 from deepforest import main
 
 # Load model from checkpoint
-m = main.deepforest.load_from_checkpoint("path/to/checkpoint.ckpt")
+model = main.deepforest.load_from_checkpoint("path/to/checkpoint.ckpt")
 
 # Set label dictionary mapping class names to indices
-m.label_dict = {"Livestock": 0}
+model.label_dict = {"Livestock": 0}
 
 # Push to weecology organization space
-m.model = push_to_hub("weecology/deepforest-livestock")
+model.model = push_to_hub("weecology/deepforest-livestock")
 
 # reload later
-m.from_pretrained("weecology/deepforest-livestock")
+model.from_pretrained("weecology/deepforest-livestock")
 ```
 
 The model will be uploaded to [https://huggingface.co/weecology/[model-name]](https://huggingface.co/weecology/[model-name])
@@ -206,12 +206,13 @@ The model will be uploaded to [https://huggingface.co/weecology/[model-name]](ht
 ```python```
 from deepforest.model import CropModel
 
-cm = CropModel(num_classes=2)
+crop_model = CropModel(num_classes=2)
 # Train, load and create model. 
-cm.push_to_hub("weecology/cropmodel-deadtrees")
+crop_model.push_to_hub("weecology/cropmodel-deadtrees")
 
 # Reload it later
-cm.from_pretrained("Weecology/cropmodel-deadtrees")
+crop_model.from_pretrained("Weecology/cropmodel-deadtrees")
 ```
-Please name the cropmodel based on what is being classified within the region. 
-Note: You must have appropriate permissions in the weecology organization to upload models. Any repo on hf will work.
+Please name the cropmodel based on what is being classified. 
+
+Note: You must have appropriate permissions in the weecology organization to upload models to weecology. If you aren't already an active collaborator we recommend initially uploading new models to your own huggingface account and then letting us know and the model and whether or not you are interested in having them hosted on weecology's account.

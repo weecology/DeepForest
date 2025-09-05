@@ -1,4 +1,6 @@
 import pytest
+from deepforest import main
+from deepforest.model import CropModel
 
 
 ORG = "weecology"
@@ -33,12 +35,8 @@ def _list_org_models():
 @pytest.mark.parametrize("repo_id", _list_org_models())
 def test_load_all_weecology_models(repo_id):
     """Load all public models in the weecology org from the HF Hub.
-
-    - For cropmodels: use CropModel.load_model
-    - For deepforest detection models: use main.deepforest.load_model
     """
     if "cropmodel" in repo_id.lower():
-        from deepforest.model import CropModel
 
         model = CropModel.load_model(repo_id=repo_id)
         assert model is not None
@@ -46,8 +44,6 @@ def test_load_all_weecology_models(repo_id):
         assert getattr(model, "label_dict", None) is not None
         assert getattr(model, "num_classes", None) is not None
     else:
-        from deepforest import main
-
         df = main.deepforest()
         df.load_model(model_name=repo_id)
         assert df.model is not None
