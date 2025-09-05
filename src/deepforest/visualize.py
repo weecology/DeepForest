@@ -440,41 +440,7 @@ def convert_to_sv_format(
 def __check_color__(
     color: list | tuple | sv.ColorPalette | None, num_labels: int
 ) -> sv.Color | sv.ColorPalette:
-    if color is None:
-        random.seed(1)
-        colors = [
-            list((matplotlib.colors.hsv_to_rgb([x, 1.0, 1.0]) * 255).astype(int))
-            for x in np.arange(0, 1, 1 / 80)
-        ]
-        colors = [tuple([int(y) for y in x]) for x in colors]
-        random.shuffle(colors)
-
-        color_dict = {}
-        for index, c in enumerate(colors):
-            color_dict[index] = c
-
-        # hand pick the first few colors
-        color_dict[0] = (255, 255, 0)
-        color_dict[1] = (71, 99, 255)
-        color_dict[2] = (255, 0, 0)
-        color_dict[3] = (50, 205, 50)
-        color_dict[4] = (214, 112, 214)
-        color_dict[5] = (60, 20, 220)
-        color_dict[6] = (63, 133, 205)
-        color_dict[7] = (255, 144, 30)
-        color_dict[8] = (0, 215, 255)
-
-        if num_labels > 1:
-            warnings.warn(
-                "Multiple labels detected, but results_color provides a single color. "
-                "Using a built-in color ramp. To customize, pass a ColorPalette with the "
-                "same number of labels.",
-                stacklevel=2,
-            )
-            return sv.ColorPalette.from_matplotlib("viridis", num_labels)
-        else:
-            return sv.Color(color_dict[0][0], color_dict[0][1], color_dict[0][2])
-    elif isinstance(color, sv.draw.color.ColorPalette):
+    if isinstance(color, sv.draw.color.ColorPalette):
         if num_labels > len(color.colors):
             warnings.warn(
                 "results_color count does not match label count. Replacing with a built-in "
@@ -487,17 +453,19 @@ def __check_color__(
     elif isinstance(color, list):
         if len(color) == 3:
             if num_labels > 1:
-                warnings.warn(
-                    "Multiple labels detected, but results_color provides a single color. "
-                    "Using a built-in color ramp. To customize, pass a ColorPalette with the "
-                    "same number of labels.",
-                    stacklevel=2,
-                )
+                # For multiple labels with a single color, use a color palette
+                # without showing a warning since this is expected behavior
                 return sv.ColorPalette.from_matplotlib("viridis", num_labels)
             else:
                 return sv.Color(color[0], color[1], color[2])
         else:
             raise ValueError("results_color list must contain exactly 3 RGB values")
+    elif color is None:
+        # Fallback case - should not happen as calling functions provide defaults
+        if num_labels > 1:
+            return sv.ColorPalette.from_matplotlib("viridis", num_labels)
+        else:
+            return sv.Color(245, 135, 66)  # Default orange color
     else:
         raise TypeError(
             "results_color must be either a list of RGB values "
