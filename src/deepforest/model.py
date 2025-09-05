@@ -428,38 +428,6 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
             CropModel: The loaded and eval-mode model instance.
         """
 
-        try:
-            # Local import to avoid hard dependency when feature not used.
-            from huggingface_hub import hf_hub_download, HfApi
-        except ImportError as exc:
-            raise ImportError(
-                "huggingface_hub is required for load_model. Install with `pip install huggingface_hub`."
-            ) from exc
-
-        # Try to auto-discover a Lightning checkpoint first if not specified
-        if filename is None:
-            api = HfApi(token=token)
-            try:
-                files = api.list_repo_files(repo_id=repo_id, repo_type="model", revision=revision)
-            except Exception:
-                files = []
-            candidates = [f for f in files if f.endswith((".pl", ".ckpt"))]
-            if candidates:
-                filename = candidates[0]
-
-        if filename is not None:
-            ckpt_path = hf_hub_download(
-                repo_id=repo_id,
-                filename=filename,
-                repo_type="model",
-                revision=revision,
-                token=token,
-            )
-            model = cls.load_from_checkpoint(ckpt_path, map_location=map_location)
-            model.eval()
-            return model
-
-        # Fallback: use Hub-native format managed by the PyTorchModelHubMixin
         model = cls.from_pretrained(
             repo_id,
             revision=revision,
@@ -467,20 +435,5 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
             token=token,
         )
         model.eval()
+
         return model
-
-    @classmethod
-    def from_config(cls, config):
-        """Recreate instance from Hub config (PyTorchModelHubMixin hook)."""
-        instance = cls(
-            num_classes=config.get("num_classes"),
-            batch_size=config.get("batch_size", 4),
-            num_workers=config.get("num_workers", 0),
-            lr=config.get("lr", 0.0001),
-            label_dict=config.get("label_dict"),
-            model=None,
-        )
-        instance.update_config()
-        return instance
-
-    # push_to_hub/from_pretrained are inherited from PyTorchModelHubMixin
