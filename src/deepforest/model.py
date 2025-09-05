@@ -3,6 +3,8 @@ import torch
 from pytorch_lightning import LightningModule, Trainer
 import os
 import torchmetrics
+from typing import Optional, Union
+from huggingface_hub import PyTorchModelHubMixin
 from torchvision import models, transforms
 from torchvision.datasets import ImageFolder
 import numpy as np
@@ -67,7 +69,7 @@ def simple_resnet_50(num_classes=2):
     return m
 
 
-class CropModel(LightningModule):
+class CropModel(LightningModule, PyTorchModelHubMixin):
     """A PyTorch Lightning module for classifying image crops from object
     detection models.
 
@@ -125,6 +127,19 @@ class CropModel(LightningModule):
         self.batch_size = batch_size
         self.lr = lr
 
+        # sync hub config
+        self.update_config()
+
+    def update_config(self):
+        """Update config used by HF Hub mixin for save/load."""
+        self.config = {
+            "num_classes": self.num_classes,
+            "label_dict": self.label_dict,
+            "batch_size": self.batch_size,
+            "num_workers": self.num_workers,
+            "lr": self.lr,
+        }
+
     def create_model(self, num_classes):
         """Create a model with the given number of classes."""
         self.accuracy = torchmetrics.Accuracy(average='none',
@@ -153,8 +168,10 @@ class CropModel(LightningModule):
     def on_load_checkpoint(self, checkpoint):
         self.label_dict = checkpoint['label_dict']
         self.numeric_to_label_dict = {v: k for k, v in self.label_dict.items()}
+        self.num_classes = checkpoint['num_classes']
         self.create_model(checkpoint['num_classes'])
         self.load_state_dict(checkpoint['state_dict'])
+        self.update_config()
 
     def load_from_disk(self, train_dir, val_dir, recreate_model=False):
         """Load the training and validation datasets from disk.
@@ -389,3 +406,65 @@ class CropModel(LightningModule):
             return images, true_label, predicted_label
         else:
             return true_label, predicted_label
+
+    @classmethod
+    def load_model(
+        cls,
+        repo_id: str,
+        filename: Optional[str] = None,
+        revision: Optional[str] = None,
+        map_location: Union[str, torch.device] = "cpu",
+        token: Optional[str] = None,
+    ):
+        """Load a model from the Hugging Face Hub.
+
+        Args:
+            repo_id: Hugging Face repo id, e.g. "username/my-cropmodel".
+            revision: Optional git revision/branch/tag. Defaults to repo default.
+            map_location: Device mapping for loading the checkpoint (e.g. "cpu").
+            token: Optional Hugging Face token for private repos.
+
+        Returns:
+            CropModel: The loaded and eval-mode model instance.
+        """
+
+        model = cls.from_pretrained(
+            repo_id,
+            revision=revision,
+            map_location=map_location,
+            token=token,
+        )
+        model.eval()
+
+        return model
+
+    @classmethod
+    def from_config(cls, config):
+        """Recreate instance from Hub config (used by from_pretrained)."""
+        num_classes = config.get("num_classes")
+        label_dict = config.get("label_dict")
+
+        instance = cls(
+            num_classes=num_classes,
+            batch_size=config.get("batch_size", 4),
+            num_workers=config.get("num_workers", 0),
+            lr=config.get("lr", 0.0001),
+            label_dict=label_dict,
+            model=None,
+        )
+
+        # Ensure underlying model is created with correct number of classes
+        if num_classes is not None and getattr(instance, "model", None) is None:
+            instance.create_model(num_classes)
+
+        # Keep reverse mapping
+        if label_dict is not None:
+            instance.numeric_to_label_dict = {v: k for k, v in label_dict.items()}
+
+        instance.update_config()
+        return instance
+
+    # Ensure config is up-to-date when pushing to Hub
+    def push_to_hub(self, *args, **kwargs):
+        self.update_config()
+        return super().push_to_hub(*args, **kwargs)
