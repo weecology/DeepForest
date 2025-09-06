@@ -1,11 +1,13 @@
-# pip install --upgrade requests pillow
-
 import os
 import json
+import csv
 import pathlib
+from pathlib import Path
+from typing import Dict, Any, List, Tuple, Optional, Iterable
+
 import requests
+from PIL import Image
 from urllib.parse import urlparse, parse_qs
-from typing import Dict, Any, List, Tuple, Optional
 
 BASE_URL = "http://localhost:8080"
 REFRESH_TOKEN = ("your_refresh_token_here")  # Replace with your actual refresh token
@@ -116,45 +118,132 @@ def list_tasks(access: str, project_id: int) -> List[Dict[str, Any]]:
     return paginate(url, Health_check(access))
 
 
-def get_task(access: str, task_id: int) -> Dict[str, Any]:
-    """Retrieve the annotation payload for a specific task from the Label
-    Studio API.
+def _filter_finished_only(tasks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Keep tasks that have at least one annotation with a non-empty result."""
+    finished = []
+    for t in tasks:
+        anns = t.get("annotations") or []
+        if any((a.get("result") for a in anns)):
+            finished.append(t)
+    return finished
 
-    Args:
-        access (str): Access token or authentication string for API authorization.
-        task_id (int): The unique identifier of the task to retrieve.
 
-    Returns:
-        Dict[str, Any]: The JSON response containing the task's annotations and metadata.
+def ls_json_to_deepforest_csv(
+    tasks: Iterable[Dict[str, Any]],
+    images_dir: str,
+    classes: List[str],
+    out_csv: str,
+    round_id: Optional[int] = None,
+    strict_labels: bool = True,
+) -> Tuple[int, int]:
+    """Convert Label Studio rectanglelabels annotations to a DeepForest CSV.
 
-    Raises:
-        requests.HTTPError: If the HTTP request to the API fails.
+    Returns (n_boxes_written, n_unique_images_written).
     """
-    # returns annotations inside the payload
-    url = f"{BASE_URL}/api/tasks/{task_id}/"
-    r = requests.get(url, headers=Health_check(access), timeout=15)
-    r.raise_for_status()
-    return r.json()
+    Path(out_csv).parent.mkdir(parents=True, exist_ok=True)
+    size_cache: Dict[str, Tuple[int, int]] = {}
+
+    def _img_size(p: str) -> Optional[Tuple[int, int]]:
+        if p in size_cache:
+            return size_cache[p]
+        try:
+            with Image.open(p) as im:
+                size_cache[p] = im.size  # (W, H)
+            return size_cache[p]
+        except Exception:
+            return None
+
+    rows: List[List[Any]] = []
+    images_used: set = set()
+
+    for task in tasks:
+        data = task.get("data", {}) or {}
+        img_field = find_image_field(data)
+        if not img_field:
+            continue
+
+        # Resolve to a filename under images_dir
+        fname = parse_image_url(absolute_image_url(img_field))
+        img_path = str(Path(images_dir) / fname)
+
+        size = _img_size(img_path)
+        if size is None:
+            # Image is not available locally; skip to keep dataset consistent
+            continue
+        W, H = size
+
+        for ann in task.get("annotations") or []:
+            for res in ann.get("result") or []:
+                if res.get("type") != "rectanglelabels":
+                    continue
+                val = res.get("value") or {}
+                labs = val.get("rectanglelabels") or []
+                if not labs:
+                    continue
+                label = str(labs[0])
+                if strict_labels and label not in classes:
+                    continue
+
+                # LS percentages → pixels
+                try:
+                    x = float(val.get("x", 0.0))
+                    y = float(val.get("y", 0.0))
+                    w = float(val.get("width", 0.0))
+                    h = float(val.get("height", 0.0))
+                except Exception:
+                    continue
+
+                xmin = int(round((x / 100.0) * W))
+                ymin = int(round((y / 100.0) * H))
+                xmax = int(round(((x + w) / 100.0) * W))
+                ymax = int(round(((y + h) / 100.0) * H))
+
+                # Clamp to image bounds
+                xmin = max(0, min(W, xmin))
+                ymin = max(0, min(H, ymin))
+                xmax = max(0, min(W, xmax))
+                ymax = max(0, min(H, ymax))
+
+                # Require positive area
+                if xmax <= xmin or ymax <= ymin:
+                    continue
+
+                if round_id is None:
+                    rows.append([img_path, xmin, ymin, xmax, ymax, label])
+                else:
+                    rows.append([img_path, xmin, ymin, xmax, ymax, label, round_id])
+
+                images_used.add(img_path)
+
+    # Write CSV
+    with open(out_csv, "w", newline="") as f:
+        w = csv.writer(f)
+        header = ["image_path", "xmin", "ymin", "xmax", "ymax", "label"]
+        if round_id is not None:
+            header.append("round")
+        w.writerow(header)
+        w.writerows(rows)
+
+    return len(rows), len(images_used)
 
 
-def export_project_tasks(access: str, project_id: int) -> List[Dict[str, Any]]:
-    """Export all tasks with annotations from a Label Studio project.
+def export_project_tasks(access: str,
+                         project_id: int,
+                         finished_only: bool = True) -> List[Dict[str, Any]]:
+    """Export tasks (with annotations) from a Label Studio project.
 
-    Args:
-        access (str): Access token or authentication credential for API requests.
-        project_id (int): The ID of the Label Studio project to export tasks from.
-
-    Returns:
-        List[Dict[str, Any]]: A list of dictionaries, each representing a task with its annotations.
-
-    Raises:
-        requests.HTTPError: If the API request fails or returns an error response.
+    If finished_only is True, requests the server to return only
+    completed tasks.
     """
-    # Easy Export: returns tasks with annotations
-    url = f"{BASE_URL}/api/projects/{project_id}/export?exportType=JSON&download_all_tasks=true"
+    url = (f"{BASE_URL}/api/projects/{project_id}/export"
+           f"?exportType=JSON&download_all_tasks=true"
+           f"{'&onlyFinished=1' if finished_only else ''}")
     r = requests.get(url, headers=Health_check(access), timeout=60)
     r.raise_for_status()
-    return r.json()
+    data = r.json()
+    if finished_only and isinstance(data, list):
+        data = _filter_finished_only(data)
+    return data
 
 
 def find_image_field(task_data: Dict[str, Any]) -> Optional[str]:

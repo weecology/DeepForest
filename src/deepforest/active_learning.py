@@ -12,9 +12,9 @@ ymax, and label.
 import logging
 import math
 import random
-from dataclasses import dataclass
 from pathlib import Path
 
+import yaml
 import numpy as np
 import pandas as pd
 import torch
@@ -25,59 +25,58 @@ from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
 from deepforest import main as df_main
 
 
-@dataclass(frozen=True)
-class Config:
-    """Configuration for active learning experiments.
+def load_config(yaml_path: str = "active_learning.yml") -> dict:
+    """Load and validate configuration from YAML.
 
-    Attributes:
-        workdir: Working directory for logs, checkpoints, and acquisitions.
-        images_dir: Directory containing all image files.
-        train_csv: CSV with labeled training data (DeepForest format).
-        val_csv: CSV with labeled validation data.
-        classes: List of class labels.
-
-        epochs_per_round: Training epochs per active learning round.
-        batch_size: Training batch size.
-        lr: Learning rate.
-        weight_decay: Weight decay for optimizer.
-        precision: Mixed precision setting (int or str, depending on PL version).
-        device: Device spec, e.g., "auto", "cpu", "cuda:0".
-        num_workers: Dataloader workers.
-        seed: Random seed for reproducibility.
-        use_release_weights: Whether to warm start from NEON release weights.
-
-        iou_eval: IoU threshold for evaluation.
-
-        k_per_round: Number of images to acquire per round.
-        score_threshold_pred: Score threshold when generating predictions.
+    No defaults are applied.
     """
+    p = Path(yaml_path)
+    if not p.exists():
+        raise FileNotFoundError(f"Config YAML not found: {yaml_path}")
+    with p.open("r", encoding="utf-8") as f:
+        cfg = yaml.safe_load(f) or {}
 
-    workdir: str
-    images_dir: str
-    train_csv: str
-    val_csv: str
-    classes: list
+    # Required keys (must all be present in YAML)
+    required = [
+        # Paths & labels
+        "workdir",
+        "images_dir",
+        "train_csv",
+        "val_csv",
+        "classes",
+        # Training
+        "epochs_per_round",
+        "batch_size",
+        "lr",
+        "weight_decay",
+        "precision",
+        "device",
+        "num_workers",
+        "seed",
+        "use_release_weights",
+        # Evaluation
+        "iou_eval",
+        # Acquisition
+        "k_per_round",
+        "score_threshold_pred",
+    ]
+    missing = [k for k in required if k not in cfg]
+    if missing:
+        raise KeyError(f"Missing required config keys in {yaml_path}: {missing}")
 
-    # Training
-    epochs_per_round: int = 10
-    batch_size: int = 4
-    lr: float = 1e-4
-    weight_decay: float = 1e-4
-    precision: int = 32
-    device: str = "auto"
-    num_workers: int = 4
-    seed: int = 42
-    use_release_weights: bool = False
+    if not isinstance(cfg["classes"], (list, tuple)) or not cfg["classes"]:
+        raise ValueError("Config 'classes' must be a non-empty list.")
 
-    # Evaluation
-    iou_eval: float = 0.5
-
-    # Acquisition
-    k_per_round: int = 50
-    score_threshold_pred: float = 0.2
+    return cfg
 
 
-def _seed_everything(seed):
+def learner_from_yaml(yaml_path: str = "active_learning.yml") -> ActiveLearner:
+    """Create an ActiveLearner by loading configuration from a YAML file."""
+    cfg = load_config(yaml_path)
+    return ActiveLearner(cfg)
+
+
+def _seed_everything(seed: int):
     """Seed Python, NumPy, and Torch for reproducibility."""
     random.seed(seed)
     np.random.seed(seed)
@@ -90,11 +89,12 @@ def _seed_everything(seed):
         pass
 
 
-def _resolve_device(device):
+def _resolve_device(device: str):
     """Return (accelerator, devices) tuple understood by PyTorch Lightning."""
-    if device == "auto":
+    dev = str(device).lower()
+    if dev == "auto":
         return ("gpu", 1) if torch.cuda.is_available() else ("cpu", 1)
-    if device.startswith("cuda"):
+    if dev.startswith("cuda"):
         if not torch.cuda.is_available():
             logging.warning("CUDA requested but not available; falling back to CPU.")
             return ("cpu", 1)
@@ -163,18 +163,18 @@ class ActiveLearner:
         select_for_labeling(unlabeled_paths, k) -> DataFrame: Rank images by entropy.
     """
 
-    def __init__(self, cfg):
+    def __init__(self, cfg: dict):
         self.cfg = cfg
-        self.workdir = Path(cfg.workdir)
-        self.images_dir = Path(cfg.images_dir)
-        self.train_csv = Path(cfg.train_csv)
-        self.val_csv = Path(cfg.val_csv)
-        self.classes = list(cfg.classes)
+        self.workdir = Path(cfg["workdir"])
+        self.images_dir = Path(cfg["images_dir"])
+        self.train_csv = Path(cfg["train_csv"])
+        self.val_csv = Path(cfg["val_csv"])
+        self.classes = list(cfg["classes"])
 
         _ensure_dir(self.workdir)
         _ensure_dir(self.workdir / "logs")
         _ensure_dir(self.workdir / "acquisition")
-        _seed_everything(cfg.seed)
+        _seed_everything(int(cfg["seed"]))
 
         self.model = self._build_model(cfg)
         self.trainer, self._ckpt_cb = self._create_trainer(cfg, self.workdir / "logs")
@@ -184,16 +184,18 @@ class ActiveLearner:
     def _build_model(self, cfg):
         """Initialize DeepForest model with correct class count."""
         model = df_main.deepforest()
-        if cfg.use_release_weights:
+        if cfg["use_release_weights"]:
             model.use_release()
-        model.config["num_classes"] = len(cfg.classes)
-        model.config["batch_size"] = cfg.batch_size
+        model.config["num_classes"] = len(cfg["classes"])
+        model.config["batch_size"] = int(cfg["batch_size"])
+        # If desired and supported by your DeepForest version, you may also
+        # set optimizer hyperparameters here using cfg["lr"] / cfg["weight_decay"].
         return model
 
     def _create_trainer(self, cfg, log_dir):
         """Create PyTorch Lightning Trainer with checkpointing and early
         stopping."""
-        accelerator, devices = _resolve_device(cfg.device)
+        accelerator, devices = _resolve_device(cfg["device"])
         ckpt_dir = Path(log_dir) / "checkpoints"
         _ensure_dir(ckpt_dir)
 
@@ -209,10 +211,10 @@ class ActiveLearner:
         es_cb = EarlyStopping(monitor="val_map", mode="max", patience=3)
 
         trainer = pl.Trainer(
-            max_epochs=cfg.epochs_per_round,
+            max_epochs=int(cfg["epochs_per_round"]),
             accelerator=accelerator,
             devices=devices,
-            precision=cfg.precision,
+            precision=cfg["precision"],  # int 16/32 or string "bf16"
             default_root_dir=str(log_dir),
             callbacks=[ckpt_cb, es_cb],
             deterministic=True,
@@ -244,10 +246,12 @@ class ActiveLearner:
     def evaluate(self):
         """Run evaluation on validation CSV and return results dict."""
         try:
-            results = self.model.evaluate(csv_file=str(self.val_csv),
-                                          root_dir=str(self.images_dir),
-                                          iou_threshold=self.cfg.iou_eval,
-                                          predictions=None)
+            results = self.model.evaluate(
+                csv_file=str(self.val_csv),
+                root_dir=str(self.images_dir),
+                iou_threshold=float(self.cfg["iou_eval"]),
+                predictions=None,
+            )
             log_summary = {k: v for k, v in results.items() if not hasattr(v, "head")}
             logging.info("Evaluation: %s", log_summary)
             return dict(results)
@@ -267,7 +271,8 @@ class ActiveLearner:
                     df = self.model.predict_image(
                         image_path=p_str,
                         return_plot=False,
-                        score_threshold=self.cfg.score_threshold_pred)
+                        score_threshold=float(self.cfg["score_threshold_pred"]),
+                    )
                 if df is None:
                     df = pd.DataFrame(columns=[
                         "xmin", "ymin", "xmax", "ymax", "label", "score", "image_path"
@@ -285,13 +290,13 @@ class ActiveLearner:
 
         Args:
             unlabeled_paths: List of image paths or file containing paths.
-            k: Number of images to return (defaults to cfg.k_per_round).
+            k: Number of images to return. If None, uses cfg['k_per_round'].
 
         Returns:
             DataFrame with ranked images and entropy scores.
         """
         if k is None:
-            k = self.cfg.k_per_round
+            k = int(self.cfg["k_per_round"])
 
         paths = _read_paths_file(unlabeled_paths)
         if not paths:
@@ -307,7 +312,7 @@ class ActiveLearner:
                 "image_path": img_path,
                 "entropy": ent,
                 "n_preds": n_preds,
-                "mean_score": mean_score
+                "mean_score": mean_score,
             })
 
         manifest = pd.DataFrame(rows).sort_values("entropy",
@@ -317,3 +322,73 @@ class ActiveLearner:
         logging.info("Wrote acquisition manifest: %s", out_path)
 
         return manifest.head(k).copy()
+
+    def append_and_retrain(self, new_labels_csv: str, round_id=None) -> dict:
+        """Append new DeepForest-format labels to train_csv and retrain.
+
+        new_labels_csv must have columns:
+          image_path, xmin, ymin, xmax, ymax, label
+        It may optionally include a 'round' column; if missing, round_id is used.
+
+        Returns:
+          dict with counts and checkpoint path.
+        """
+        new_path = Path(new_labels_csv)
+        if not new_path.exists():
+            raise FileNotFoundError(f"New labels CSV not found: {new_labels_csv}")
+
+        new_df = pd.read_csv(new_path)
+        required_cols = {"image_path", "xmin", "ymin", "xmax", "ymax", "label"}
+        if not required_cols.issubset(set(new_df.columns)):
+            raise ValueError(
+                f"{new_labels_csv} must contain columns {sorted(required_cols)}")
+
+        # Ensure labels are in cfg.classes
+        before = len(new_df)
+        new_df = new_df[new_df["label"].astype(str).isin(self.classes)].copy()
+        filtered_out = before - len(new_df)
+
+        # Add round column if needed
+        if "round" not in new_df.columns:
+            new_df["round"] = round_id if round_id is not None else 0
+
+        # Clamp to valid bounds if any stray values slipped in
+        def _clamp_row(r):
+            W = None  # optional: could verify against actual image size here
+            r["xmin"] = max(0, int(r["xmin"]))
+            r["ymin"] = max(0, int(r["ymin"]))
+            r["xmax"] = max(int(r["xmin"]) + 1, int(r["xmax"]))
+            r["ymax"] = max(int(r["ymin"]) + 1, int(r["ymax"]))
+            return r
+
+        new_df = new_df.apply(_clamp_row, axis=1)
+
+        # Load existing training CSV if present
+        if Path(self.train_csv).exists():
+            old_df = pd.read_csv(self.train_csv)
+        else:
+            old_df = pd.DataFrame(columns=list(required_cols) + ["round"])
+
+        # Deduplicate on exact geometry and label
+        key_cols = ["image_path", "xmin", "ymin", "xmax", "ymax", "label"]
+        merged = pd.concat([old_df, new_df], ignore_index=True)
+        deduped = merged.drop_duplicates(subset=key_cols, keep="first")
+
+        added_boxes = len(deduped) - len(old_df)
+        added_images = deduped.tail(
+            added_boxes)["image_path"].nunique() if added_boxes > 0 else 0
+
+        deduped.to_csv(self.train_csv, index=False)
+
+        logging.info(
+            "Appended labels: %d boxes (%d images). Filtered-out labels not in classes: %d. New train_csv size: %d",
+            added_boxes, added_images, filtered_out, len(deduped))
+
+        ckpt = self.fit_one_round()
+        return {
+            "added_boxes": int(added_boxes),
+            "added_images": int(added_images),
+            "filtered_out": int(filtered_out),
+            "checkpoint": str(ckpt),
+            "train_csv_size": int(len(deduped)),
+        }

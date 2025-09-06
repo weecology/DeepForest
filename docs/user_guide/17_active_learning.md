@@ -1,135 +1,128 @@
-# Overview
+# Active Learning submodule
 
 Active learning in the context of image object detection is a technique for efficiently selecting the most valuable images and objects to annotate, reducing the labeling effort required for model training while maximizing performance gains. This submodule provides active learning utilities. It wraps DeepForest’s training and inference APIs with a small, reproducible loop that selects informative unlabeled images using an entropy-based acquisition function. It is designed to be extensible, so you can swap selection strategies, wire it to an annotation tool (Label Studio), and run multi-round training.
 
 # Key Features
 
-* Reproducible training rounds with seeds and configurable hardware
-* Minimal configuration via a `Config` dataclass
-* Lightning-based training with checkpointing and early stopping
-* Batch prediction over image lists
-* Entropy-based acquisition that scores each image by uncertainty
-* CSV- and image-path–based I/O fully compatible with DeepForest
-* Ready-to-wire hooks for Label Studio integration (pre-annotations, export/import)
+- Reproducible training rounds via explicit seeding
+- YAML- or dict-based configuration with validation (no `Config` dataclass)
+- PyTorch Lightning training with checkpointing and early stopping
+- Batch prediction over image lists
+- Entropy-based acquisition that scores each image by uncertainty
+- DeepForest-compatible CSV and image-path I/O
+- Label Studio integration `src/deepforest/label_studio.py`. Pre-annotation upload is optional and not included by default
 
-# Directory Layout
+# Basic flow of the submodule
+![alt text](AL_workflow.jpg)
 
-* `workdir/`
 
-  * `logs/` Lightning logs and checkpoints
-  * `acquisition/` acquisition manifests (`selection_round.csv`)
-* `images_dir/` all image files accessible by relative `image_path`
-* `train.csv`, `val.csv` DeepForest-format CSVs with columns: `image_path,xmin,ymin,xmax,ymax,label`
 
 # Quickstart
 
 ```python
-from active_learning import Config, ActiveLearner
+# Recommended: configure via YAML and construct the learner with learner_from_yaml()
+# Your YAML must include all required keys used by load_config()
+from active_learning import learner_from_yaml
 
-cfg = Config(
-    workdir="/tmp/df_active",
-    images_dir="/data/trees/images",
-    train_csv="/data/trees/train.csv",
-    val_csv="/data/trees/val.csv",
-    classes=["Tree"],
-    epochs_per_round=10,
-    batch_size=4,
-    precision=32,
-    device="auto",
-    k_per_round=50,
-)
+learner = learner_from_yaml("active_learning.yml")
 
-al = ActiveLearner(cfg)
-ckpt = al.fit_one_round()                 # train for one round
-metrics = al.evaluate()                   # evaluate on val set
+# Train one round and evaluate
+ckpt_path = learner.fit_one_round()
+metrics = learner.evaluate()
+print("Best checkpoint:", ckpt_path)
+print("Eval metrics:", {k: v for k, v in metrics.items() if not hasattr(v, "head")})
 
-# Select 50 uncertain images from a list or a file of paths
-manifest = al.select_for_labeling("/data/trees/unlabeled_paths.txt")
+# Select uncertain images from a file of paths (one path per line) or a list
+manifest = learner.select_for_labeling("/data/trees/unlabeled_paths.txt", k=50)
 print(manifest.head())
 ```
 
-# How It Works
+If you prefer not to use YAML, you can pass a validated dict directly to `ActiveLearner(cfg_dict)`. The dict must include the same keys that `load_config()` enforces (`workdir`, `images_dir`, `train_csv`, `val_csv`, `classes`, `training/eval/acquisition hyperparams`, etc.).
 
-1. **Training**: `ActiveLearner.fit_one_round()` creates a PL Trainer with checkpointing and early stopping, then trains a DeepForest model for `epochs_per_round`.
-2. **Evaluation**: `ActiveLearner.evaluate()` runs DeepForest’s evaluation over `val_csv` with the configured IoU threshold.
-3. **Prediction**: `ActiveLearner.predict_images(paths)` runs `model.predict_image` on each path and returns a dict of DataFrames.
-4. **Acquisition**: `select_for_labeling()` aggregates per-image predictions into a class-score distribution, computes Shannon entropy, and returns a ranked DataFrame (highest entropy first). It also saves `acquisition/selection_round.csv` for traceability.
+`select_for_labeling()` accepts either a Python list of image paths or a text file with one path per line and ranks images by Shannon entropy of predicted class score mass. And the label Studio usage (exporting tasks and converting to DeepForest CSV) is handled by separate helper functions; they’re not part of ActiveLearner itself.
 
-# Configuration Reference
+## How It Works
 
-`Config` dataclass fields and effects:
+- **Training:** `ActiveLearner.fit_one_round()` uses the PyTorch Lightning `Trainer` that’s created in `__init__` (with checkpointing and early stopping) to train the DeepForest model for `cfg["epochs_per_round"]`.
 
-* **workdir**: Root for logs, checkpoints, acquisition manifests
-* **images\_dir**: Base directory for all images referenced by CSVs
-* **train\_csv, val\_csv**: DeepForest-format CSVs
-* **classes**: List of class labels; sets `model.config["num_classes"]`
-* **epochs\_per\_round**: Max epochs per training round
-* **batch\_size**: Sets `model.config["batch_size"]`
-* **lr, weight\_decay**: Optimizer hyperparameters (reserved for future use if you extend the Trainer/model init)
-* **precision**: PL precision (e.g., 16/32/"bf16")
-* **device**: `"auto"`, `"cpu"`, or `"cuda:0"` etc. Resolved to PL `accelerator`/`devices`
-* **num\_workers**: Dataloader workers (if wired into DataModules in extensions)
-* **seed**: Seeds Python/NumPy/Torch and calls `pl.seed_everything`
-* **use\_release\_weights**: If `True`, calls `model.use_release()` to warm start
-* **iou\_eval**: IoU threshold used by `evaluate()`
-* **k\_per\_round**: Default number of images to acquire
-* **score\_threshold\_pred**: Score threshold for predictions during acquisition
+- **Evaluation:** `ActiveLearner.evaluate()` runs DeepForest’s evaluation on `cfg["val_csv"]` with the IoU threshold `cfg["iou_eval"]`, returning a metrics dict.
 
-# API Reference
+- **Prediction:** `ActiveLearner.predict_images(paths)` calls `model.predict_image` on each path using `cfg["score_threshold_pred"]` and returns a dict `{image_path: DataFrame}` in DeepForest format (`xmin,ymin,xmax,ymax,label,score,image_path`).
+
+- **Acquisition:** `select_for_labeling()` aggregates per-image predictions by **summing detection scores per class/label**, computes Shannon entropy (images with no predictions receive `log(C)`), sorts by entropy (desc), and returns the **top-K** rows. The **full ranked manifest** is written to `workdir/acquisition/selection_round.csv` with columns: `image_path,entropy,n_preds,mean_score`.
+
+# Configuration
 
 ## Utility Functions
 
-* `_seed_everything(seed)`
+- `load_config(yaml_path)` loads a YAML with no defaults. All of these keys must be present:
 
-  * Seeds Python, NumPy, Torch; tries `pl.seed_everything(..., workers=True)`.
+- Paths and labels
+`workdir`, `images_dir`, `train_csv`, `val_csv`, `classes` (non-empty list)
 
-* `_resolve_device(device)`
+- Training hyperparameters
+`epochs_per_round`, `batch_size`, `lr`, `weight_decay`, `precision`, `device`, `num_workers`, `seed`, `use_release_weights`
 
-  * Returns `(accelerator, devices)` for PL Trainer. Supports "auto", explicit CUDA, and CPU fallback.
+- Evaluation
+`iou_eval`
 
-* `_ensure_dir(pathlike)`
+- Acquisition
+`k_per_round`, `score_threshold_pred`
 
-  * Creates the directory path if it doesn’t exist.
+Example of YAML (`active_learning.yml`):
+```YAML
+workdir: /tmp/df_active
+images_dir: /data/trees/images
+train_csv: /data/trees/train.csv
+val_csv: /data/trees/val.csv
+classes: ["Tree"]
 
-* `_read_paths_file(path_or_list)`
+epochs_per_round: 5
+batch_size: 4
+lr: 0.0005
+weight_decay: 0.0001
+precision: 32          # 16, 32, "bf16" are typical
+device: auto           # "auto", "cuda", or "cpu"
+num_workers: 4
+seed: 1337
+use_release_weights: true
 
-  * Accepts a list/tuple of paths, or a text file containing newline-separated paths. Returns a list of string paths.
-
-* `_image_entropy_from_predictions(pred_df, classes)`
-
-  * Aggregates detection `score` per `label` and computes Shannon entropy over the normalized class distribution. Empty predictions are treated as maximally uncertain (`log(C)`). Returns `(entropy, n_preds, mean_score)`.
-
+iou_eval: 0.4
+k_per_round: 50
+score_threshold_pred: 0.05
+```
 ## Class: ActiveLearner
 
-Constructor
+Construct from a YAML 
 
 ```python
-ActiveLearner(cfg: Config)
+from active_learning import learner_from_yaml
+learner = learner_from_yaml("active_learning.yml")
 ```
 
-* Creates work, logs, and acquisition directories
-* Initializes DeepForest model with correct class count and batch size
-* Optionally loads release weights
-* Builds a PL Trainer with ModelCheckpoint and EarlyStopping
-* Attaches train/val CSVs and roots to `model.config`
+For reproducibility `_seed_everything(seed)` seeds Python, NumPy, Torch, and Lightning (if available) & `_resolve_device(device)` accepts "auto", "cuda...", or "cpu". By default it falls back to CPU if CUDA is unavailable.
 
-Methods
+Methods:
 
-* `fit_one_round() -> Path`
+- `fit_one_round() -> Path`
+Trains for one round with checkpointing and early stopping. Returns best checkpoint path.
 
-  * Trains for `epochs_per_round`. Returns best checkpoint path.
+- `evaluate() -> dict`
+Evaluates on val_csv with iou_eval. Returns a dict (metrics + any DataFrame entries DeepForest provides).
 
-* `evaluate() -> dict`
+- `predict_images(paths: list[str] | str) -> dict[str, pd.DataFrame]`
+Runs inference on image paths. Values are DataFrames with DeepForest columns
+["xmin","ymin","xmax","ymax","label","score","image_path"].
 
-  * Runs validation evaluation via DeepForest’s API. Returns a dict with metrics and optional DataFrames.
+- `select_for_labeling(unlabeled_paths, k=None) -> pd.DataFrame`
+Ranks images by Shannon entropy of predicted class score mass.
 
-* `predict_images(paths) -> dict[str, pd.DataFrame]`
+  - unlabeled_paths can be a list or a text file with one path per line.
 
-  * Predicts on each image path. Returns mapping `path -> predictions_df`. Missing or erroring images yield empty DataFrames with proper columns.
+  - Uses k or falls back to cfg["k_per_round"].
 
-* `select_for_labeling(unlabeled_paths, k=None) -> pd.DataFrame`
-
-  * Computes entropy per image from predictions, ranks descending, writes `acquisition/selection_round.csv`, and returns the top `k` rows with columns: `image_path, entropy, n_preds, mean_score`.
+  - Writes workdir/acquisition/selection_round.csv with columns:
+image_path, entropy, n_preds, mean_score.
 
 # Input & Output Formats
 
@@ -176,132 +169,102 @@ for round_id in range(5):
 
 This section outlines how to connect the acquisition outputs to Label Studio for annotation and then flow the results back into DeepForest.
 
-## Workflow
 
-1. **Select images** with `select_for_labeling()` to produce `selection_round.csv`.
-2. **Upload images** to Label Studio using the SDK or UI.
-3. **Create a project** with a bounding-box labeling config and class set derived from `cfg.classes`.
-4. **(Optional) Pre-annotate** by pushing model predictions as prelabels to speed up annotation.
-5. **Annotate** in Label Studio.
-6. **Export annotations** as JSON.
-7. **Convert** Label Studio JSON to DeepForest CSV and append to `train_csv` for the next round.
+## 1. Helpers functions in `src/deepforest/label_studio.py`
 
-## Labeling Config Template (Bounding Boxes)
+- `get_access_token()` refreshes an access token using `REFRESH_TOKEN`.
+- `Health_check(access)` returns the `Authorization` header for subsequent calls.
+- `list_projects(access)` fetches Label Studio projects.
+- `list_tasks(access, project_id)` retrieves tasks for a project with `fields=all` so annotations and predictions are included.
+- `get_task(access, task_id)` pulls a single task and its annotations.
+- `export_project_tasks(access, project_id)` downloads all tasks with annotations in JSON format.
+- `find_image_field(task_data)` finds the first image-like field in a task’s `data`.
+- `absolute_image_url(path_or_url)` converts relative paths to absolute URLs under `BASE_URL`.
+- `parse_image_url(url)` extracts a stable filename from an image URL.
+- `extract_annotation_pairs(task)` returns `(filename, label)` pairs from choices, textarea, and any `*labels` results.
 
-Replace the `choices` with your classes.
+## 2. Locate your project
 
-```xml
-<View>
-  <Image name="img" value="$image" zoom="true" rotateControl="true"/>
-  <RectangleLabels name="label" toName="img" showInline="true">
-    <Label value="Tree" background="#87CEFA"/>
-    <!-- add more classes as needed -->
-  </RectangleLabels>
-</View>
+```python 
+projects = list_projects(access)
+# pick by title or id
+project = next(p for p in projects if p["title"] == "Your Project Name")
+project_id = project["id"]
 ```
 
-## Creating a Project and Uploading Tasks
+## 3. Fetch tasks for inspection
+```python 
+tasks = list_tasks(access, project_id)
+# or fetch a specific task
+one = get_task(access, tasks[0]["id"])
+```
+
+## 4. Export annotations as JSON
+```python 
+export = export_project_tasks(access, project_id)
+# 'export' is a list of task dicts with annotations included
+```
+
+## 5. Resolve image filenames and labels
+```python 
+pairs = []
+for task in export:
+    image_field = find_image_field(task.get("data", {}) or {})
+    if not image_field:
+        continue
+
+    img_url = absolute_image_url(image_field)
+    filename = parse_image_url(img_url)
+
+    # extract_annotation_pairs already returns (filename, label)
+    # but we prefer the resolved 'filename' for consistency
+    for _, label in extract_annotation_pairs(task):
+        pairs.append((filename, label))
+```
+
+## 6. Persist outputs for training (classification/tag use-case)
 
 ```python
-from label_studio_sdk import Client
+import csv, os
+os.makedirs(TRAIN_DIR, exist_ok=True)
+out_csv = os.path.join(TRAIN_DIR, "labels.csv")
 
-ls = Client(url="http://localhost:8080", api_key="YOUR_API_KEY")
-project = ls.start_project(
-    title="DeepForest Active Learning",
-    label_config=open("bbox_config.xml").read(),
-    description="AL round annotations"
-)
+with open(out_csv, "w", newline="") as f:
+    w = csv.writer(f)
+    w.writerow(["filename", "label"])
+    w.writerows(pairs)
 
-# Upload image paths selected for this round
-import pandas as pd
-sel = pd.read_csv("/tmp/df_active/acquisition/selection_round.csv")
-
-# Each task data can point to a local file path or a URL accessible by the server
-tasks = [{"data": {"image": path}} for path in sel.image_path.tolist()]
-project.import_tasks(tasks)
 ```
 
-## Pushing Pre-Annotations (Optional)
+## Minimum example to pull a project export:
+```python 
+from label_studio_helpers import get_access_token, list_projects, export_project_tasks
 
-Use your current model to create prelabels so annotators edit rather than draw from scratch. Convert pixel boxes to Label Studio relative percentages.
+access = get_access_token()
+projects = list_projects(access)
+project_id = next(p["id"] for p in projects if p["title"] == "Your Project Name")
 
-```python
-import json
-from PIL import Image
-
-results = []
-for img_path, df in al.predict_images(sel.image_path.tolist()).items():
-    w, h = Image.open(img_path).size
-    for _, r in df.iterrows():
-        x = 100 * r["xmin"] / w
-        y = 100 * r["ymin"] / h
-        width = 100 * (r["xmax"] - r["xmin"]) / w
-        height = 100 * (r["ymax"] - r["ymin"]) / h
-        results.append({
-            "data": {"image": img_path},
-            "predictions": [{
-                "result": [{
-                    "from_name": "label",
-                    "to_name": "img",
-                    "type": "rectanglelabels",
-                    "value": {
-                        "x": x, "y": y, "width": width, "height": height,
-                        "rotation": 0, "rectanglelabels": [str(r["label"])]
-                    },
-                    "score": float(r.get("score", 0.0))
-                }]
-            }]
-        })
-
-# Bulk import with predictions
-project.import_tasks(results)
+export = export_project_tasks(access, project_id)   # list of task dicts
 ```
+## Converting Label Studio Exports
 
-## Converting Label Studio Export to DeepForest CSV
+The current helper `extract_annotation_pairs` supports classification-like outputs and returns (filename, label) pairs.
 
-Label Studio’s JSON export stores boxes in percentages; convert them back to pixels using the source image size.
+If your Label Studio project collects bounding boxes (DeepForest use-case), you need an extra converter for rectanglelabels, because your current helpers do not compute pixel coordinates. A minimal approach is:
 
-```python
-import json
-import pandas as pd
-from PIL import Image
-from pathlib import Path
+**1. For each task:**
 
-def labelstudio_to_deepforest(ls_export_json: str, out_csv: str):
-    rows = []
-    data = json.load(open(ls_export_json, "r", encoding="utf-8"))
-    for task in data:
-        img_path = task["data"]["image"]
-        # Resolve to filesystem path if needed
-        p = Path(img_path)
-        if not p.exists():
-            # Add your own mapping logic here (e.g., strip URL prefix)
-            continue
-        w, h = Image.open(p).size
-        for ann in task.get("annotations", []):
-            for res in ann.get("result", []):
-                if res.get("type") != "rectanglelabels":
-                    continue
-                v = res["value"]
-                xmin = v["x"] * w / 100.0
-                ymin = v["y"] * h / 100.0
-                xmax = xmin + v["width"] * w / 100.0
-                ymax = ymin + v["height"] * h / 100.0
-                label = v["rectanglelabels"][0]
-                rows.append({
-                    "image_path": str(p),
-                    "xmin": int(round(xmin)),
-                    "ymin": int(round(ymin)),
-                    "xmax": int(round(xmax)),
-                    "ymax": int(round(ymax)),
-                    "label": label,
-                })
-    pd.DataFrame(rows).to_csv(out_csv, index=False)
+Find the image field (`find_image_field`), resolve it (`absolute_image_url`), choose a local filename (`parse_image_url`), and ensure the corresponding image exists under `images_dir`(download if needed).
 
-# Example
-# labelstudio_to_deepforest("/exports/project-1-at-2025-08-25-10-00-00.json",
-#                           "/data/trees/new_round_labels.csv")
+**2. For each `annotation.result` item with `type == "rectanglelabels"`:**
+
+- Convert percent coords to pixels:
+```python 
+xmin = (x/100) * W, ymin = (y/100) * H
+xmax = ((x + width)/100) * W, ymax = ((y + height)/100) * H
 ```
+- Write a DeepForest CSV row: image_path,xmin,ymin,xmax,ymax,label.
+
 
 ## Automating the Round-Trip
 
@@ -319,46 +282,4 @@ The current entropy score uses class-distribution uncertainty from detection sco
 * **Spatial entropy**: weight by number of boxes or box-area variance
 * **Cost-aware**: penalize large, hard-to-annotate images
 * **BALD/MC-Dropout**: approximate Bayesian uncertainty via stochastic forward passes
-
-Tip: return a composite score and store components in the manifest for auditability.
-
-# Submodule Placement in DeepForest
-
-Recommended layout inside the DeepForest repo:
-
-* `deepforest/active_learning/`
-
-  * `__init__.py` exports `Config`, `ActiveLearner`
-  * `acquire.py` selection utilities (entropy, margin, diversity)
-  * `label_studio.py` import/export helpers and SDK wiring
-  * `cli.py` small CLI for common workflows
-  * `README.md` quickstart plus examples
-
-Packaging notes
-
-* Keep Label Studio as an **optional extra**: `pip install deepforest[active]` or `pip install label-studio-sdk`
-* Avoid changing `deepforest.main.deepforest` internals; interact via its public API
-
-# CLI Sketch
-
-```bash
-# Train one round
-python -m deepforest.active_learning.cli \
-  --workdir /tmp/df_active \
-  --images_dir /data/trees/images \
-  --train_csv /data/trees/train.csv \
-  --val_csv /data/trees/val.csv \
-  --classes Tree \
-  fit
-
-# Acquire top-K unlabeled images from a text file
-python -m deepforest.active_learning.cli acquire \
-  --unlabeled /data/unlabeled.txt \
-  --k 50
-
-# Convert Label Studio export to DeepForest CSV
-python -m deepforest.active_learning.cli ls2csv \
-  --export /exports/project.json \
-  --out /data/new_labels.csv
-```
 
