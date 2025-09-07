@@ -18,6 +18,7 @@ import logging
 import math
 import random
 from pathlib import Path
+from omegaconf import open_dict
 
 import yaml
 import numpy as np
@@ -228,14 +229,25 @@ class ActiveLearner:
         )
         return trainer, ckpt_cb
 
-    def _attach_training_data(self):
-        """Attach train/val CSVs and root dirs to model config."""
-        self.model.config["train"] = self.model.config.get("train", {})
-        self.model.config["val"] = self.model.config.get("val", {})
-        self.model.config["train"]["csv_file"] = str(self.train_csv)
-        self.model.config["train"]["root_dir"] = str(self.images_dir)
-        self.model.config["val"]["csv_file"] = str(self.val_csv)
-        self.model.config["val"]["root_dir"] = str(self.images_dir)
+
+def _attach_training_data(self):
+    """Attach train/val CSVs and root dirs to model config."""
+    cfg = self.model.config
+
+    with open_dict(cfg):
+        if "train" not in cfg:
+            cfg["train"] = {}
+        # Some versions might use "validation"; prefer "val" if absent
+        if "val" not in cfg and "validation" not in cfg:
+            cfg["val"] = {}
+
+        train = cfg["train"]
+        vkey = "val" if "val" in cfg else "validation"
+
+        train["csv_file"] = str(self.train_csv)
+        train["root_dir"] = str(self.images_dir)
+        cfg[vkey]["csv_file"] = str(self.val_csv)
+        cfg[vkey]["root_dir"] = str(self.images_dir)
 
     def fit_one_round(self):
         """Train for one active learning round and return best checkpoint
