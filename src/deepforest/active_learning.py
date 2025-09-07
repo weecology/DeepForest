@@ -1,14 +1,19 @@
-"""This module provides active learning utilities for the weecology/deepforest
-library.
+"""This submodule provides active learning utilities for the
+weecology/deepforest library.
 
-It includes a Config dataclass for experiment configuration, an
-ActiveLearner class that wraps DeepForest's model and training routines,
-and an entropy-based acquisition function for selecting unlabeled
-images. Training and validation CSV files are expected to follow the
-DeepForest format, containing columns for image_path, xmin, ymin, xmax,
-ymax, and label.
+Features:
+- Configuration management via YAML files for active learning experiments.
+- ActiveLearner class: wraps DeepForest model training, evaluation, prediction, and acquisition routines.
+- Entropy-based acquisition function for selecting unlabeled images to label next.
+- Utilities for reproducibility, device management, and data handling.
+- Training and validation CSVs must follow DeepForest format: image_path, xmin, ymin, xmax, ymax, label.
+- Supports iterative active learning workflows: model training, evaluation, prediction, selection, and retraining with new labels.
+
+Intended for use in tree detection and similar object detection tasks with DeepForest.
+library.
 """
 
+from __future__ import annotations
 import logging
 import math
 import random
@@ -70,7 +75,7 @@ def load_config(yaml_path: str = "active_learning.yml") -> dict:
     return cfg
 
 
-def learner_from_yaml(yaml_path: str = "active_learning.yml") -> ActiveLearner:
+def learner_from_yaml(yaml_path: str = "active_learning.yml") -> "ActiveLearner":
     """Create an ActiveLearner by loading configuration from a YAML file."""
     cfg = load_config(yaml_path)
     return ActiveLearner(cfg)

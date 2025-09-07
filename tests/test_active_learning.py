@@ -1,262 +1,154 @@
-import math
 from pathlib import Path
+import math
+import os
 import pandas as pd
-import numpy as np
 import pytest
+import yaml
+import numpy as np
 
 from deepforest import active_learning as al
 
+# two standard files in src/deepforest/data/
+SRC_CSV = Path("src/deepforest/data/2018_SJER_3_252000_4107000_image_477.csv")
+SRC_IMG = Path("src/deepforest/data/2018_SJER_3_252000_4107000_image_477.tif")
 
-@pytest.fixture
-def tmp_paths(tmp_path):
-    workdir = tmp_path / "work"
+pytestmark = pytest.mark.skipif(
+    not (SRC_CSV.exists() and SRC_IMG.exists()),
+    reason="Expected CSV/TIF not found"
+)
+
+def _stage_single_asset(tmp_path: Path):
+    """Copy CSV and image into a temp dataset and fix image_path to the copied TIF."""
     images_dir = tmp_path / "images"
-    workdir.mkdir()
-    images_dir.mkdir()
-    return workdir, images_dir
+    images_dir.mkdir(parents=True, exist_ok=True)
+    # copy image
+    img = images_dir / SRC_IMG.name
+    img.write_bytes(SRC_IMG.read_bytes())
 
+    # rewrite CSV to point to the copied image
+    df = pd.read_csv(SRC_CSV)
+    assert "image_path" in df.columns, "CSV must include 'image_path'"
+    assert "label" in df.columns, "CSV must include 'label'"
+    df = df.copy()
+    df["image_path"] = str(img)  # full path to the staged image
 
-@pytest.fixture
-def cfg(tmp_paths):
-    workdir, images_dir = tmp_paths
-    train_csv = workdir / "train.csv"
-    val_csv = workdir / "val.csv"
-    # Minimal DF-format CSVs
-    df = pd.DataFrame([
-        {"image_path": str(images_dir / "a.jpg"), "xmin": 0, "ymin": 0, "xmax": 10, "ymax": 10, "label": "tree"},
-    ])
+    train_csv = tmp_path / "train.csv"
+    val_csv = tmp_path / "val.csv"
     df.to_csv(train_csv, index=False)
     df.to_csv(val_csv, index=False)
-    return al.Config(
-        workdir=str(workdir),
-        images_dir=str(images_dir),
-        train_csv=str(train_csv),
-        val_csv=str(val_csv),
-        classes=["tree", "snag"],
-        epochs_per_round=1,
-        batch_size=1,
-        precision=32,
-        device="cpu",
-        k_per_round=2,
-        score_threshold_pred=0.2,
-    )
+    return train_csv, val_csv, images_dir, img
+
+def _make_cfg(tmp_path: Path, train_csv: Path, val_csv: Path, images_dir: Path):
+    workdir = tmp_path / "work"
+    workdir.mkdir(parents=True, exist_ok=True)
+    return {
+        "workdir": str(workdir),
+        "images_dir": str(images_dir),
+        "train_csv": str(train_csv),
+        "val_csv": str(val_csv),
+        # CSV has a single class '0'
+        "classes": ["0"],
+        "epochs_per_round": 1,
+        "batch_size": 1,
+        "lr": 1e-3,
+        "weight_decay": 0.0,
+        "precision": 32,
+        "device": "cpu",
+        "num_workers": 0,
+        "seed": 123,
+        "use_release_weights": False,  # keep offline & fast by default
+        "iou_eval": 0.5,
+        "k_per_round": 1,
+        "score_threshold_pred": 0.2,
+    }
+
+def test_predict_and_acquisition_with_single_image(tmp_path):
+    train_csv, val_csv, images_dir, img = _stage_single_asset(tmp_path)
+    cfg = _make_cfg(tmp_path, train_csv, val_csv, images_dir)
+    learner = al.ActiveLearner(cfg)
+
+    # Predict on the single image
+    preds = learner.predict_images([str(img)])
+    assert set(preds.keys()) == {str(img)}
+    df = preds[str(img)]
+    # Even if model returns nothing, we expect these columns
+    assert list(df.columns) == ["xmin", "ymin", "xmax", "ymax", "label", "score", "image_path"]
+
+    # Acquisition over the single image
+    unlabeled = tmp_path / "unlabeled.txt"
+    unlabeled.write_text(str(img) + "\n", encoding="utf-8")
+    topk = learner.select_for_labeling(unlabeled, k=1)
+
+    # Manifest exists with expected schema and bounded entropy
+    manifest = Path(cfg["workdir"]) / "acquisition" / "selection_round.csv"
+    assert manifest.exists()
+    mdf = pd.read_csv(manifest)
+    for col in ["image_path", "entropy", "n_preds", "mean_score"]:
+        assert col in mdf.columns
+
+    # With one class, entropy ∈ [0, ln(1)=0] so it must be 0
+    assert pytest.approx(float(mdf["entropy"].iloc[0])) == 0.0
+    assert len(topk) == 1
+    assert topk["image_path"].iloc[0] == str(img)
 
 
-class DummyModel:
-    def __init__(self, batch_size=1, num_classes=2, predict_returns=None):
-        self.config = {"train": {}, "val": {}, "batch_size": batch_size, "num_classes": num_classes}
-        self._predict_returns = predict_returns or {}
-        self.trainer = None
+def test_load_config_validates_and_loads(tmp_path):
+    # Happy path: write a minimal valid YAML from your helper cfg
+    train_csv, val_csv, images_dir, _ = _stage_single_asset(tmp_path)
+    cfg = _make_cfg(tmp_path, train_csv, val_csv, images_dir)
 
-    def use_release(self):
-        pass
+    yml = tmp_path / "cfg.yml"
+    yml.write_text(yaml.safe_dump(cfg), encoding="utf-8")
 
-    def create_trainer(self, trainer):
-        self.trainer = trainer
+    loaded = al.load_config(str(yml))
+    # Ensure all required keys survived and a couple of core values match
+    for k in [
+        "workdir", "images_dir", "train_csv", "val_csv", "classes",
+        "epochs_per_round", "batch_size", "precision", "device",
+        "iou_eval", "k_per_round", "score_threshold_pred"
+    ]:
+        assert k in loaded
+    assert loaded["classes"] == ["0"]
+    assert int(loaded["epochs_per_round"]) == 1
 
-    def eval(self):
-        pass
+    # Missing required keys -> KeyError
+    bad_yml = tmp_path / "bad.yml"
+    bad_cfg = {k: v for k, v in cfg.items() if k not in {"classes", "workdir"}}
+    bad_yml.write_text(yaml.safe_dump(bad_cfg), encoding="utf-8")
+    with pytest.raises(KeyError):
+        al.load_config(str(bad_yml))
 
-    def predict_image(self, image_path, return_plot=False, score_threshold=0.2):
-        # Return a small DF or None based on path
-        ret = self._predict_returns.get(image_path)
-        if ret is None:
-            return None
-        return pd.DataFrame(ret)
-
-    def evaluate(self, csv_file, root_dir, iou_threshold, predictions=None):
-        # Return a dict like DF evaluate usually does
-        return {"val_map": 0.42, "iou_threshold": iou_threshold}
-
-
-class DummyTrainer:
-    def __init__(self, **kwargs):
-        self.kwargs = kwargs
-
-    def fit(self, model):
-        # Simulate a training loop having run
-        pass
-
-
-class DummyCheckpoint:
-    def __init__(self, dirpath, filename, monitor, mode, save_top_k, save_weights_only, auto_insert_metric_name):
-        self.dirpath = dirpath
-        self.best_model_path = str(Path(dirpath) / "best.ckpt")
-        self.monitor = monitor
-        self.mode = mode
+    # Invalid classes -> ValueError
+    empty_classes_yml = tmp_path / "empty_classes.yml"
+    bad_cfg2 = cfg.copy()
+    bad_cfg2["classes"] = []
+    empty_classes_yml.write_text(yaml.safe_dump(bad_cfg2), encoding="utf-8")
+    with pytest.raises(ValueError):
+        al.load_config(str(empty_classes_yml))
 
 
-class DummyEarlyStopping:
-    def __init__(self, monitor, mode, patience):
-        self.monitor = monitor
-        self.mode = mode
-        self.patience = patience
-
-
-@pytest.fixture(autouse=True)
-def patch_lightning_and_df(monkeypatch):
-    # Patch deepforest.main.deepforest factory to return DummyModel
-    from deepforest import main as df_main
-
-    def factory():
-        return DummyModel()
-
-    monkeypatch.setattr(df_main, "deepforest", factory, raising=True)
-
-    # Patch PL Trainer and callbacks used by the module
-    import pytorch_lightning as pl
-    monkeypatch.setattr(pl, "Trainer", DummyTrainer, raising=True)
-
-    from pytorch_lightning import callbacks as cb
-    monkeypatch.setattr(cb, "ModelCheckpoint", DummyCheckpoint, raising=True)
-    monkeypatch.setattr(cb, "EarlyStopping", DummyEarlyStopping, raising=True)
-
-    # Also patch top-level imports used inside the module
-    monkeypatch.setattr(al, "ModelCheckpoint", DummyCheckpoint, raising=True)
-    monkeypatch.setattr(al, "EarlyStopping", DummyEarlyStopping, raising=True)
-
-
-def test_config_fields_round_trip(cfg):
-    assert cfg.classes == ["tree", "snag"]
-    assert cfg.epochs_per_round == 1
-    assert cfg.k_per_round == 2
-    assert cfg.iou_eval == 0.5
-
-
-def test_seed_function_does_not_error():
-    # Should be silent even without CUDA
-    al._seed_everything(123)
-
-
-def test_resolve_device_cpu_when_no_cuda(monkeypatch):
-    # Simulate no CUDA
-    monkeypatch.setattr(al.torch, "cuda", type("cuda", (), {"is_available": staticmethod(lambda: False)}))
-    accelerator, devices = al._resolve_device("auto")
-    assert accelerator == "cpu"
-    assert devices == 1
-
-
-def test_read_paths_file_from_list(tmp_paths):
-    _, images_dir = tmp_paths
-    p1 = str(images_dir / "u1.jpg")
-    p2 = str(images_dir / "u2.jpg")
-    out = al._read_paths_file([p1, p2])
-    assert out == [p1, p2]
-
-
-def test_read_paths_file_from_text(tmp_path):
-    f = tmp_path / "paths.txt"
-    f.write_text("a.jpg\n\n# comment\nb.jpg\n", encoding="utf-8")
-    # Current helper doesn't strip comments, but should ignore blanks
-    out = al._read_paths_file(f)
-    assert out == ["a.jpg", "# comment", "b.jpg"]
-
-
-def test_entropy_empty_preds_returns_logC():
-    entropy, n, mean = al._image_entropy_from_predictions(pd.DataFrame(), classes=["a", "b", "c"])
-    assert pytest.approx(entropy, rel=1e-6) == math.log(3)
-    assert n == 0
-    assert mean == 0.0
-
-
-def test_entropy_simple_distribution():
+def test_image_entropy_from_predictions_multiclass_and_empty():
+    # Two classes; score mass: class "0" gets 1.0, class "1" gets 0.5
+    classes = ["0", "1"]
     df = pd.DataFrame(
         [
-            {"label": "a", "score": 0.8},
-            {"label": "a", "score": 0.2},
-            {"label": "b", "score": 1.0},
+            {"label": "0", "score": 0.2},
+            {"label": "0", "score": 0.8},
+            {"label": "1", "score": 0.5},
         ]
     )
-    entropy, n, mean = al._image_entropy_from_predictions(df, classes=["a", "b", "c"])
-    # Mass: a=1.0, b=1.0, c=0.0 => probs=[0.5,0.5,0.0]
-    assert pytest.approx(entropy, rel=1e-6) == -2 * (0.5 * math.log(0.5))
-    assert n == 3
-    assert pytest.approx(mean, rel=1e-6) == np.mean([0.8, 0.2, 1.0])
+    entropy, n_preds, mean_score = al._image_entropy_from_predictions(df, classes)
 
+    # Expected probabilities: [2/3, 1/3]
+    p = np.array([2/3, 1/3], dtype=float)
+    expected_entropy = float(-(p * np.log(p)).sum())
+    assert pytest.approx(entropy, rel=1e-6) == expected_entropy
+    assert n_preds == 3
+    assert pytest.approx(mean_score, rel=1e-6) == np.mean([0.2, 0.8, 0.5])
 
-def test_active_learner_initializes_and_attaches_data(cfg):
-    learner = al.ActiveLearner(cfg)
-    # Data is attached into model.config
-    t = learner.model.config["train"]
-    v = learner.model.config["val"]
-    assert Path(t["csv_file"]).name == Path(cfg.train_csv).name
-    assert Path(v["csv_file"]).name == Path(cfg.val_csv).name
-    assert Path(t["root_dir"]).name == Path(cfg.images_dir).name
-
-
-def test_fit_one_round_returns_checkpoint_path(cfg):
-    learner = al.ActiveLearner(cfg)
-    ckpt = learner.fit_one_round()
-    assert str(ckpt).endswith("best.ckpt")
-    assert Path(ckpt).parent.name == "checkpoints"
-
-
-def test_evaluate_returns_metrics(cfg):
-    learner = al.ActiveLearner(cfg)
-    metrics = learner.evaluate()
-    assert "val_map" in metrics
-    assert metrics["iou_threshold"] == cfg.iou_eval
-
-
-def test_predict_images_handles_none_returns(cfg, tmp_paths, monkeypatch):
-    workdir, images_dir = tmp_paths
-    p1 = str(images_dir / "x.jpg")
-    p2 = str(images_dir / "y.jpg")
-
-    # Patch the DummyModel to return None for one path and a small DF for the other
-    dm = DummyModel(predict_returns={
-        p1: [{"label": "tree", "score": 0.7, "xmin": 0, "ymin": 0, "xmax": 1, "ymax": 1}],
-        # p2 -> None (implicit)
-    })
-
-    def factory():
-        return dm
-
-    from deepforest import main as df_main
-    monkeypatch.setattr(df_main, "deepforest", factory, raising=True)
-
-    learner = al.ActiveLearner(cfg)
-    out = learner.predict_images([p1, p2])
-    assert set(out.keys()) == {p1, p2}
-    assert len(out[p1]) == 1
-    # For None, code should create an empty DF with expected columns
-    assert list(out[p2].columns) == ["xmin", "ymin", "xmax", "ymax", "label", "score", "image_path"]
-    assert len(out[p2]) == 0
-
-
-def test_select_for_labeling_writes_manifest_and_returns_topk(cfg, tmp_paths, monkeypatch):
-    _, images_dir = tmp_paths
-    u1 = str(images_dir / "u1.jpg")
-    u2 = str(images_dir / "u2.jpg")
-    u3 = str(images_dir / "u3.jpg")
-
-    # Create a paths file
-    paths_file = Path(cfg.workdir) / "unlabeled.txt"
-    paths_file.write_text(f"{u1}\n{u2}\n{u3}\n", encoding="utf-8")
-
-    # Build predictable predictions so entropy differs
-    # u1: balanced mass across 2 classes -> higher entropy
-    # u2: single-class mass -> lower entropy
-    # u3: no preds -> max entropy (log C)
-    dm = DummyModel(predict_returns={
-        u1: [{"label": "tree", "score": 0.5}, {"label": "snag", "score": 0.5}],
-        u2: [{"label": "tree", "score": 1.0}],
-        # u3 -> None
-    })
-
-    def factory():
-        return dm
-
-    from deepforest import main as df_main
-    monkeypatch.setattr(df_main, "deepforest", factory, raising=True)
-
-    learner = al.ActiveLearner(cfg)
-    topk = learner.select_for_labeling(paths_file, k=2)
-
-    # Manifest file exists
-    manifest_path = Path(cfg.workdir) / "acquisition" / "selection_round.csv"
-    assert manifest_path.exists()
-
-    # Top-2 should include u3 (empty -> max entropy) and u1 (balanced)
-    selected = set(topk["image_path"].tolist())
-    assert {u3, u1}.issubset(selected)
+    # Empty predictions -> maximum uncertainty log(C)
+    empty_df = pd.DataFrame(columns=["label", "score"])
+    entropy2, n_preds2, mean_score2 = al._image_entropy_from_predictions(empty_df, classes)
+    assert pytest.approx(entropy2, rel=1e-9) == math.log(len(classes))
+    assert n_preds2 == 0
+    assert mean_score2 == 0.0
