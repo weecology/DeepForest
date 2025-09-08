@@ -1,9 +1,11 @@
 # DeepForest Changelog
 
-## Version x.x.x (Date: )
+## Version 2.0.0
 
-- **Deprecation:** `predict_tile` in `deepforest/main.py`. The `raster_path` argument is deprecated and will be removed in a future version.
-- **Enhancement:** Updated the `predict_tile()` function to use the `path` argument (replacing `raster_path`) across all code, tests, and documentation for consistency.
+- Breaking: Remove legacy `augment` parameter; use `augmentations` configuration instead.
+- Breaking: Consolidate visualization APIs; prefer `visualize.draw_*` and `visualize.plot_results`.
+- Breaking: Replace geospatial utilities with `image_to_geo_coordinates`.
+- Deprecations cleaned: warnings removed or updated; see Migration Guide in docs: whatsnew/migration_2_0.
 
 ## Version 1.5.2 (Date: Feb 7, 2025)
 

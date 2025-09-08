@@ -45,7 +45,6 @@ class deepforest(pl.LightningModule):
 
     def __init__(
         self,
-        num_classes: int = None,
         label_dict: dict = None,
         model=None,
         transforms=None,
@@ -69,16 +68,9 @@ class deepforest(pl.LightningModule):
 
         self.config = config
 
-        # Parse overrides from constructor arguments and assign to config:
-        if num_classes is not None:
-            warnings.warn(
-                "Directly specifying the num_classes arg in deepforest.main will be deprecated in 2.0 in favor of using a config file or config_args. Use main.deepforest(config_args={'num_classes':value})"
-            )
-            self.config.num_classes = num_classes
-
         if label_dict is not None:
             warnings.warn(
-                "Directly specifying the label_dict arg in deepforest.main will be deprecated in 2.0 in favor of using a config file or config_args. Use main.deepforest(config_args={'label_dict': ... })"
+                "Directly specifying the label_dict arg in deepforest.main was deprecated in 2.0 in favor of using a config file or config_args. Use main.deepforest(config_args={'label_dict': ... })"
             )
             self.config.label_dict = label_dict
 
