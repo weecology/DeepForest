@@ -163,23 +163,11 @@ def convert_point_to_bbox(gdf, buffer_size):
 
     return gdf
 
-
-def xml_to_annotations(xml_path):
-
-    warnings.warn(
-        "xml_to_annotations will be deprecated in 2.0. Please use read_pascal_voc instead.",
-        DeprecationWarning)
-
-    return read_pascal_voc(xml_path)
-
-
 def shapefile_to_annotations(shapefile,
                              rgb=None,
                              root_dir=None,
                              buffer_size=None,
-                             convert_point=False,
-                             geometry_type=None,
-                             save_dir=None):
+                             convert_point=False):
     """Convert a shapefile of annotations into annotations csv file for
     DeepForest training and evaluation.
 
@@ -190,16 +178,6 @@ def shapefile_to_annotations(shapefile,
     Returns:
         results: a pandas dataframe
     """
-    # Deprecation of previous arguments
-    if geometry_type:
-        warnings.warn(
-            "geometry_type argument is deprecated and will be removed in DeepForest 2.0. The function will infer geometry from the shapefile directly.",
-            DeprecationWarning)
-    if save_dir:
-        warnings.warn(
-            "save_dir argument is deprecated and will be removed in DeepForest 2.0. The function will return a pandas dataframe instead of saving to disk.",
-            DeprecationWarning)
-
     # Read shapefile
     if isinstance(shapefile, str):
         gdf = gpd.read_file(shapefile)
@@ -750,104 +728,6 @@ def image_to_geo_coordinates(gdf, root_dir=None, flip_y_axis=False):
 def collate_fn(batch):
     batch = list(filter(lambda x: x is not None, batch))
     return tuple(zip(*batch))
-
-
-def boxes_to_shapefile(df, root_dir, projected=True, flip_y_axis=False):
-    """
-    Convert from image coordinates to geographic coordinates
-    Note that this assumes df is just a single plot being passed to this function
-    Args:
-       df: a pandas type dataframe with columns: name, xmin, ymin, xmax, ymax. Name is the relative path to the root_dir arg.
-       root_dir: directory of images to lookup image_path column
-       projected: If True, convert from image to geographic coordinates, if False, keep in image coordinate system
-       flip_y_axis: If True, reflect predictions over y axis to align with raster data in QGIS, which uses a negative y origin compared to numpy. See https://gis.stackexchange.com/questions/306684/why-does-qgis-use-negative-y-spacing-in-the-default-raster-geotransform
-    Returns:
-       df: a geospatial dataframe with the boxes optionally transformed to the target crs
-    """
-
-    warnings.warn(
-        "This function will be deprecated in DeepForest 2.0, as it only can process boxes and the API now includes point and polygon annotations. Please use image_to_geo_coordinates instead.",
-        DeprecationWarning)
-
-    # Raise a warning and confirm if a user sets projected to True when flip_y_axis is True.
-    if flip_y_axis and projected:
-        warnings.warn(
-            "flip_y_axis is {}, and projected is {}. In most cases, projected should be False when inverting y axis. Setting projected=False"
-            .format(flip_y_axis, projected), UserWarning)
-        projected = False
-
-    plot_names = df.image_path.unique()
-    if len(plot_names) > 1:
-        raise ValueError("This function projects a single plots worth of data. "
-                         "Multiple plot names found {}".format(plot_names))
-    else:
-        plot_name = plot_names[0]
-
-    rgb_path = "{}/{}".format(root_dir, plot_name)
-    with rasterio.open(rgb_path) as dataset:
-        pixelSizeX, pixelSizeY = dataset.res
-        crs = dataset.crs
-        transform = dataset.transform
-
-    if projected:
-        # Convert image pixel locations to geographic coordinates
-        xmin_coords, ymin_coords = rasterio.transform.xy(transform=transform,
-                                                         rows=df.ymin,
-                                                         cols=df.xmin,
-                                                         offset='center')
-
-        xmax_coords, ymax_coords = rasterio.transform.xy(transform=transform,
-                                                         rows=df.ymax,
-                                                         cols=df.xmax,
-                                                         offset='center')
-
-        # One box polygon for each tree bounding box
-        # Careful of single row edge case where
-        # xmin_coords comes out not as a list, but as a float
-        if isinstance(xmin_coords, float):
-            xmin_coords = [xmin_coords]
-            ymin_coords = [ymin_coords]
-
-        box_coords = zip(xmin_coords, ymin_coords, xmax_coords, ymax_coords)
-        box_geoms = [
-            shapely.geometry.box(xmin, ymin, xmax, ymax)
-            for xmin, ymin, xmax, ymax in box_coords
-        ]
-
-        geodf = gpd.GeoDataFrame(df, geometry=box_geoms)
-        geodf.crs = crs
-
-        return geodf
-
-    else:
-        if flip_y_axis:
-            # See https://gis.stackexchange.com/questions/306684/why-does-qgis-use-negative-y-spacing-in-the-default-raster-geotransform
-            # Numpy uses top left 0,0 origin, flip along y axis.
-            df['geometry'] = df.apply(
-                lambda x: shapely.geometry.box(x.xmin, -x.ymin, x.xmax, -x.ymax), axis=1)
-        else:
-            df['geometry'] = df.apply(
-                lambda x: shapely.geometry.box(x.xmin, x.ymin, x.xmax, x.ymax), axis=1)
-        df = gpd.GeoDataFrame(df, geometry="geometry")
-
-        return df
-
-
-def annotations_to_shapefile(df, transform, crs):
-    """Convert output from predict_image and  predict_tile to a geopandas
-    data.frame.
-
-    Args:
-        df: prediction data.frame with columns  ['xmin','ymin','xmax','ymax','label','score']
-        transform: A rasterio affine transform object
-        crs: A rasterio crs object
-    Returns:
-        results: a geopandas dataframe where every entry is the bounding box for a detected tree.
-    """
-
-    raise NotImplementedError(
-        "This function is deprecated. Please use image_to_geo_coordinates instead.")
-
 
 def project_boxes(df, root_dir, transform=True):
     """
