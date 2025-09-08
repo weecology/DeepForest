@@ -119,8 +119,8 @@ You can speed up new annotations by starting with model predictions. Below is an
 
 ```python
 from deepforest import main
-from deepforest.visualize import plot_predictions
-from deepforest.utilities import boxes_to_shapefile
+from deepforest.visualize import plot_results
+from deepforest.utilities import image_to_geo_coordinates
 import rasterio as rio
 import geopandas as gpd
 from glob import glob
@@ -142,7 +142,7 @@ for path in files:
     if boxes is None:
         continue
 
-    plot_results(results=boxes, image=image)
+    plot_results(results=boxes)
 
     basename = os.path.splitext(os.path.basename(path))[0]
     shp = boxes_to_shapefile(boxes, root_dir=PATH_TO_DIR, projected=False)

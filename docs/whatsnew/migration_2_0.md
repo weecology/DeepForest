@@ -21,18 +21,13 @@ This guide summarizes breaking changes in 2.0 and how to update your code.
   - Use `utilities.image_to_geo_coordinates(df, root_dir=...)`.
 
 - `visualize.plot_points`
-  - Use `visualize.draw_points(image, points, color=..., radius=..., thickness=...)`.
+  - Use `visualize.plot_results` 
 
 - `visualize.plot_predictions`
-  - Use `visualize.draw_predictions(image, df, color=..., thickness=...)` or
-    `visualize.plot_results(results_df, ground_truth_df=None, savedir=..., image=...)` for figures.
+  - Use `visualize.plot_results(results_df, ground_truth_df=None, savedir=..., image=...)` for figures.
 
 - `main.deepforest(..., augment=...)` and dataset `augment` flag
   - Configure augmentation via `config.train.augmentations` or pass `augmentations` to `load_dataset(...)`.
-
-- Release helpers
-  - Continue to use `m.load_model('weecology/deepforest-tree')` or
-    `m.load_model('weecology/deepforest-bird')` directly.
 
 ## Configuration example
 
@@ -50,14 +45,8 @@ m = deepforest(config_args={
 - Draw predictions in-memory:
 ```python
 from deepforest import visualize
-image = ...  # RGB numpy array (H, W, 3)
-df = results  # dataframe with a geometry column
-out = visualize.draw_predictions(image, df)
-```
-
-- Save a figure with results:
-```python
-visualize.plot_results(results=results_df, savedir='outputs', image='path/to/image.tif')
+# Results  should have a results_df.root_dir property from any deepforest predict function. If image is in memory, use 'image' argument.
+visualize.plot_results(results=results_df)
 ```
 
 ## Geospatial conversion
