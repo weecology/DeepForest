@@ -115,7 +115,7 @@ def plot_points(
         points: a numpy array of shape (N, 2) representing the coordinates of the points
         color: color of the points as a tuple of BGR color, e.g. orange points is (0, 165, 255)
         radius: radius of the points in px
-        thickness: thickness of the point borderline in px
+        thickness: thickness of the point border in px
     Returns:
         image: a numpy array with drawn points
     """
@@ -141,7 +141,7 @@ def draw_points(
         points: a numpy array of shape (N, 2) representing the coordinates of the points
         color: color of the points as a tuple of BGR color, e.g. orange points is (0, 165, 255)
         radius: radius of the points in px
-        thickness: thickness of the point borderline in px
+        thickness: thickness of the point border in px
     Returns:
         image: a numpy array with drawn points
     """
@@ -173,7 +173,7 @@ def plot_predictions(
         image: a numpy array in RGB order, HWC format
         df: a pandas dataframe with xmin, xmax, ymin, ymax and label column
         color: color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255)
-        thickness: thickness of the rectangle borderline in px
+        thickness: thickness of the rectangle border in px
     Returns:
         image: a numpy array with drawn annotations
     """
@@ -200,7 +200,7 @@ def draw_predictions(
         image: a numpy array in RGB order, HWC format
         df: a pandas dataframe with xmin, xmax, ymin, ymax and label column
         color: color of the bounding box as a tuple of BGR color, e.g. orange annotations is (0, 165, 255)
-        thickness: thickness of the rectangle borderline in px
+        thickness: thickness of the rectangle border in px
     Returns:
         image: a numpy array with drawn annotations
     """
