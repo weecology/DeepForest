@@ -1,7 +1,6 @@
 # Visualize module for plotting and handling predictions
 import os
 import random
-import sys
 import warnings
 
 import cv2
@@ -14,24 +13,6 @@ from matplotlib import pyplot as plt
 from PIL import Image
 
 from deepforest.utilities import determine_geometry_type
-
-
-def _is_testing_environment():
-    """Check if we're running in a testing environment."""
-    return (
-        "pytest" in sys.modules
-        or "PYTEST_CURRENT_TEST" in os.environ
-        or "MPLBACKEND" in os.environ
-    )
-
-
-def _safe_show_plot():
-    """Safely show plot, avoiding interactive display during testing."""
-    if not _is_testing_environment():
-        plt.show()
-    else:
-        # In testing, just close the figure to free memory
-        plt.close()
 
 
 def _load_image(
@@ -484,7 +465,8 @@ def plot_annotations(
     root_dir: str | None = None,
     radius: int = 3,
     image: np.typing.NDArray | str | Image.Image | None = None,
-) -> None:
+    show: bool = True,
+) -> plt.Figure:
     """Plot prediction results or ground truth annotations for a single image.
 
     Args:
@@ -498,6 +480,10 @@ def plot_annotations(
         root_dir: Root directory for images
         radius: Point radius
         image: Image array or path
+        show: Whether to display the plot (default: True). Set to False for testing.
+
+    Returns:
+        matplotlib.figure.Figure: The figure object for further customization
     """
     # Initialize default colors if None
     if color is None:
@@ -509,7 +495,7 @@ def plot_annotations(
     image = _load_image(image, annotations, root_dir)
 
     # Plot results using supervision annotators
-    plt.subplots()
+    fig, ax = plt.subplots()
     annotated_scene = _plot_image_with_geometry(
         df=annotations,
         image=image,
@@ -530,9 +516,12 @@ def plot_annotations(
         cv2.imwrite(image_path, annotated_scene)
     else:
         # Display the image using Matplotlib
-        plt.imshow(annotated_scene)
-        plt.axis("off")  # Hide axes for a cleaner look
-        _safe_show_plot()
+        ax.imshow(annotated_scene)
+        ax.axis("off")  # Hide axes for a cleaner look
+        if show:
+            plt.show()
+
+    return fig
 
 
 def plot_results(
@@ -548,6 +537,7 @@ def plot_results(
     radius: int = 3,
     image: np.typing.NDArray | str | Image.Image | None = None,
     axes: bool = False,
+    show: bool = True,
 ):
     """Plot predicted annotations with optional ground truth.
 
@@ -567,9 +557,10 @@ def plot_results(
         radius: Point marker radius in pixels.
         image: Optional NumPy array, image path, or PIL Image to annotate; if None, loaded from the results DataFrame.
         axes: If True, return the Matplotlib Axes object.
+        show: Whether to display the plot (default: True). Set to False for testing.
 
     Returns:
-        matplotlib.axes.Axes | None: The Axes when axes=True; otherwise None.
+        matplotlib.figure.Figure | matplotlib.axes.Axes: The Figure (default) or Axes (when axes=True).
     """
     # Initialize default colors if None
     if results_color is None:
@@ -583,7 +574,7 @@ def plot_results(
 
     image = _load_image(image, results)
 
-    _, ax = plt.subplots()
+    fig, ax = plt.subplots()
     annotated_scene = _plot_image_with_geometry(
         df=results,
         image=image,
@@ -616,11 +607,14 @@ def plot_results(
         cv2.imwrite(image_path, annotated_scene)
     else:
         # Display the image using Matplotlib
-        plt.imshow(annotated_scene)
-        if axes:
-            return ax
-        plt.axis("off")  # Hide axes for a cleaner look
-        _safe_show_plot()
+        ax.imshow(annotated_scene)
+        ax.axis("off")  # Hide axes for a cleaner look
+        if show:
+            plt.show()
+
+    if axes:
+        return ax
+    return fig
 
 
 def _plot_image_with_geometry(
