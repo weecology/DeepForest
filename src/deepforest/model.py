@@ -1,47 +1,49 @@
 # Model - common class
-import torch
-from pytorch_lightning import LightningModule, Trainer
 import os
-import torchmetrics
-from torchvision import models, transforms
-from torchvision.datasets import ImageFolder
+
+import cv2
 import numpy as np
 import rasterio
+import torch
 import torch.nn.functional as F
-import cv2
+import torchmetrics
 from PIL import Image
+from pytorch_lightning import LightningModule, Trainer
+from torchvision import models, transforms
+from torchvision.datasets import ImageFolder
 
 
-class BaseModel():
-    """A architecture agnostic class that controls the basic train, eval and
-    predict functions. A model should optionally allow a backbone for
-    pretraining. To add new architectures, simply create a new module in
-    models/ and write a create_model. Then add the result to the if else
-    statement below.
+class BaseModel:
+    """Base class for DeepForest models.
+
+    Provides common train, eval, and predict functionality.
+    To add new architectures, create a module in models/ and implement create_model().
 
     Args:
-        config (DictConfig): DeepForest config settings object
+        config: DeepForest configuration object
     """
 
     def __init__(self, config):
-
         # Check for required properties and formats
         self.config = config
 
     def create_model(self):
-        """This function converts a deepforest config file into a model.
+        """Create model from configuration.
 
-        An architecture should have a list of nested arguments in config
-        that match this function
+        Must be implemented by subclasses to return a PyTorch nn.Module.
         """
 
         raise ValueError(
-            "The create_model class method needs to be implemented. Take in args and return a pytorch nn module."
+            "The create_model class method needs to be implemented. "
+            "Take in args and return a pytorch nn module."
         )
 
     def check_model(self):
-        """Ensure that model follows deepforest guidelines, see ##### If fails,
-        raise ValueError."""
+        """Validate model follows DeepForest guidelines.
+
+        Tests model with dummy data to ensure proper input/output
+        format. Raises ValueError if validation fails.
+        """
         # This assumes model creation is not expensive
         test_model = self.create_model()
         test_model.eval()
@@ -56,7 +58,7 @@ class BaseModel():
         # Returns a list equal to number of images with proper keys per image
         model_keys = list(predictions[1].keys())
         model_keys.sort()
-        assert model_keys == ['boxes', 'labels', 'scores']
+        assert model_keys == ["boxes", "labels", "scores"]
 
 
 def simple_resnet_50(num_classes=2):
@@ -95,13 +97,15 @@ class CropModel(LightningModule):
         label_dict (dict): Label to index mapping {"Bird": 0, "Mammal": 1}
     """
 
-    def __init__(self,
-                 num_classes=None,
-                 batch_size=4,
-                 num_workers=0,
-                 lr=0.0001,
-                 label_dict=None,
-                 model=None):
+    def __init__(
+        self,
+        num_classes=None,
+        batch_size=4,
+        num_workers=0,
+        lr=0.0001,
+        label_dict=None,
+        model=None,
+    ):
         super().__init__()
         self.num_classes = num_classes
         self.num_workers = num_workers
@@ -116,7 +120,8 @@ class CropModel(LightningModule):
                 self.create_model(num_classes)
             else:
                 print(
-                    "No model created if model or num_classes is not provided, use load_from_disk to create a model from data directory."
+                    "No model created if model or num_classes is not provided, "
+                    "use load_from_disk to create a model from data directory."
                 )
         else:
             self.model = model
@@ -127,23 +132,27 @@ class CropModel(LightningModule):
 
     def create_model(self, num_classes):
         """Create a model with the given number of classes."""
-        self.accuracy = torchmetrics.Accuracy(average='none',
-                                              num_classes=num_classes,
-                                              task="multiclass")
-        self.total_accuracy = torchmetrics.Accuracy(num_classes=num_classes,
-                                                    task="multiclass")
-        self.precision_metric = torchmetrics.Precision(num_classes=num_classes,
-                                                       task="multiclass")
-        self.metrics = torchmetrics.MetricCollection({
-            "Class Accuracy": self.accuracy,
-            "Accuracy": self.total_accuracy,
-            "Precision": self.precision_metric
-        })
+        self.accuracy = torchmetrics.Accuracy(
+            average="none", num_classes=num_classes, task="multiclass"
+        )
+        self.total_accuracy = torchmetrics.Accuracy(
+            num_classes=num_classes, task="multiclass"
+        )
+        self.precision_metric = torchmetrics.Precision(
+            num_classes=num_classes, task="multiclass"
+        )
+        self.metrics = torchmetrics.MetricCollection(
+            {
+                "Class Accuracy": self.accuracy,
+                "Accuracy": self.total_accuracy,
+                "Precision": self.precision_metric,
+            }
+        )
 
         self.model = simple_resnet_50(num_classes=num_classes)
 
     def on_save_checkpoint(self, checkpoint):
-        checkpoint['label_dict'] = self.label_dict
+        checkpoint["label_dict"] = self.label_dict
         checkpoint["num_classes"] = self.num_classes
 
     def create_trainer(self, **kwargs):
@@ -151,10 +160,10 @@ class CropModel(LightningModule):
         self.trainer = Trainer(**kwargs)
 
     def on_load_checkpoint(self, checkpoint):
-        self.label_dict = checkpoint['label_dict']
+        self.label_dict = checkpoint["label_dict"]
         self.numeric_to_label_dict = {v: k for k, v in self.label_dict.items()}
-        self.create_model(checkpoint['num_classes'])
-        self.load_state_dict(checkpoint['state_dict'])
+        self.create_model(checkpoint["num_classes"])
+        self.load_state_dict(checkpoint["state_dict"])
 
     def load_from_disk(self, train_dir, val_dir, recreate_model=False):
         """Load the training and validation datasets from disk.
@@ -167,10 +176,12 @@ class CropModel(LightningModule):
         Returns:
             None
         """
-        self.train_ds = ImageFolder(root=train_dir,
-                                    transform=self.get_transform(augment=True))
-        self.val_ds = ImageFolder(root=val_dir,
-                                  transform=self.get_transform(augment=False))
+        self.train_ds = ImageFolder(
+            root=train_dir, transform=self.get_transform(augment=True)
+        )
+        self.val_ds = ImageFolder(
+            root=val_dir, transform=self.get_transform(augment=False)
+        )
         self.label_dict = self.train_ds.class_to_idx
 
         # Create a reverse mapping from numeric indices to class labels
@@ -295,27 +306,28 @@ class CropModel(LightningModule):
 
     def train_dataloader(self):
         """Train data loader."""
-        train_loader = torch.utils.data.DataLoader(self.train_ds,
-                                                   batch_size=self.batch_size,
-                                                   shuffle=True,
-                                                   num_workers=self.num_workers)
+        train_loader = torch.utils.data.DataLoader(
+            self.train_ds,
+            batch_size=self.batch_size,
+            shuffle=True,
+            num_workers=self.num_workers,
+        )
 
         return train_loader
 
     def predict_dataloader(self, ds):
         """Prediction data loader."""
-        loader = torch.utils.data.DataLoader(ds,
-                                             batch_size=self.batch_size,
-                                             shuffle=False,
-                                             num_workers=self.num_workers)
+        loader = torch.utils.data.DataLoader(
+            ds, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers
+        )
 
         return loader
 
     def val_dataloader(self):
         """Validation data loader."""
-        val_loader = torch.utils.data.DataLoader(self.val_ds,
-                                                 batch_size=self.batch_size,
-                                                 num_workers=self.num_workers)
+        val_loader = torch.utils.data.DataLoader(
+            self.val_ds, batch_size=self.batch_size, num_workers=self.num_workers
+        )
 
         return val_loader
 
@@ -362,18 +374,20 @@ class CropModel(LightningModule):
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.lr)
-        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer,
-                                                               mode='min',
-                                                               factor=0.5,
-                                                               patience=10,
-                                                               threshold=0.0001,
-                                                               threshold_mode='rel',
-                                                               cooldown=0,
-                                                               min_lr=0,
-                                                               eps=1e-08)
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer,
+            mode="min",
+            factor=0.5,
+            patience=10,
+            threshold=0.0001,
+            threshold_mode="rel",
+            cooldown=0,
+            min_lr=0,
+            eps=1e-08,
+        )
 
         # Monitor rate is val data is used
-        return {'optimizer': optimizer, 'lr_scheduler': scheduler, "monitor": 'val_loss'}
+        return {"optimizer": optimizer, "lr_scheduler": scheduler, "monitor": "val_loss"}
 
     def val_dataset_confusion(self, return_images=False):
         """Create a labels and predictions from the validation dataset to be

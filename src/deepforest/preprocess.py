@@ -4,16 +4,19 @@ training or prediction.
 
 For example cutting large tiles into smaller images.
 """
+
 import os
+import warnings
+
+import geopandas as gpd
 import numpy as np
 import pandas as pd
 import slidingwindow
-from PIL import Image
 import torch
-import warnings
-import geopandas as gpd
-from deepforest.utilities import read_file, determine_geometry_type
+from PIL import Image
 from shapely import geometry
+
+from deepforest.utilities import determine_geometry_type, read_file
 
 
 def preprocess_image(image):
@@ -44,19 +47,18 @@ def compute_windows(numpy_image, patch_size, patch_overlap):
     """
 
     if patch_overlap > 1:
-        raise ValueError("Patch overlap {} must be between 0 - 1".format(patch_overlap))
+        raise ValueError(f"Patch overlap {patch_overlap} must be between 0 - 1")
 
     # Check that image is channels first
     if numpy_image.shape[0] != 3:
-        raise ValueError("Image is not channels first, shape is {}".format(
-            numpy_image.shape))
+        raise ValueError(f"Image is not channels first, shape is {numpy_image.shape}")
 
     # Generate overlapping sliding windows
-    windows = slidingwindow.generate(numpy_image,
-                                     slidingwindow.DimOrder.ChannelHeightWidth,
-                                     patch_size, patch_overlap)
+    windows = slidingwindow.generate(
+        numpy_image, slidingwindow.DimOrder.ChannelHeightWidth, patch_size, patch_overlap
+    )
 
-    return (windows)
+    return windows
 
 
 def select_annotations(annotations, window):
@@ -87,21 +89,24 @@ def select_annotations(annotations, window):
         return selected_annotations
 
     else:
-        # Only keep clipped boxes if they are more than 50% of the original size.
+        # Keep clipped boxes if they're more than 50% of original size
         clipped_area = clipped_annotations.geometry.area
         clipped_annotations = clipped_annotations[(clipped_area / original_area) > 0.5]
 
     clipped_annotations.geometry = clipped_annotations.geometry.translate(
-        xoff=-window_xmin, yoff=-window_ymin)
+        xoff=-window_xmin, yoff=-window_ymin
+    )
 
-    # Update xmin, ymin, xmax, ymax based on the clipped annotations' geometry
-    if not clipped_annotations.empty and determine_geometry_type(
-            clipped_annotations) == "box":
+    # Update xmin, ymin, xmax, ymax from clipped geometry
+    if (
+        not clipped_annotations.empty
+        and determine_geometry_type(clipped_annotations) == "box"
+    ):
         if clipped_annotations.shape[0] > 0:
-            clipped_annotations['xmin'] = clipped_annotations.geometry.bounds.minx
-            clipped_annotations['ymin'] = clipped_annotations.geometry.bounds.miny
-            clipped_annotations['xmax'] = clipped_annotations.geometry.bounds.maxx
-            clipped_annotations['ymax'] = clipped_annotations.geometry.bounds.maxy
+            clipped_annotations["xmin"] = clipped_annotations.geometry.bounds.minx
+            clipped_annotations["ymin"] = clipped_annotations.geometry.bounds.miny
+            clipped_annotations["xmax"] = clipped_annotations.geometry.bounds.maxx
+            clipped_annotations["ymax"] = clipped_annotations.geometry.bounds.maxy
 
     return clipped_annotations
 
@@ -130,7 +135,7 @@ def save_crop(base_dir, image_name, index, crop):
     image_basename = os.path.splitext(image_name)[0]
 
     # Generate the filename for the saved image
-    filename = "{}/{}_{}.png".format(base_dir, image_basename, index)
+    filename = f"{base_dir}/{image_basename}_{index}.png"
 
     # Save the image
     im.save(filename)
@@ -138,78 +143,87 @@ def save_crop(base_dir, image_name, index, crop):
     return filename
 
 
-def split_raster(annotations_file=None,
-                 path_to_raster=None,
-                 numpy_image=None,
-                 root_dir=None,
-                 patch_size=400,
-                 patch_overlap=0.05,
-                 allow_empty=False,
-                 image_name=None,
-                 save_dir="."):
-    """Divide a large tile into smaller arrays. Each crop will be saved to
-    file.
+def split_raster(
+    annotations_file=None,
+    path_to_raster=None,
+    numpy_image=None,
+    root_dir=None,
+    patch_size=400,
+    patch_overlap=0.05,
+    allow_empty=False,
+    image_name=None,
+    save_dir=".",
+):
+    """Split a large raster into smaller patches for processing.
 
     Args:
-        numpy_image: a numpy object to be used as a raster, usually opened from rasterio.open.read(), in order (height, width, channels)
-        root_dir: (str): Root directory of annotations file, if not supplied, will be inferred from annotations_file
-        path_to_raster: (str): Path to a tile that can be read by rasterio on disk
-        annotations_file (str or pd.DataFrame): A pandas dataframe or path to annotations csv file to transform to cropped images. In the format -> image_path, xmin, ymin, xmax, ymax, label. If None, allow_empty is ignored and the function will only return the cropped images.
-        save_dir (str): Directory to save images
-        patch_size (int): Maximum dimensions of square window
-        patch_overlap (float): Percent of overlap among windows 0->1
-        allow_empty: If True, include images with no annotations
-            to be included in the dataset. If annotations_file is None, this is ignored.
-        image_name (str): If numpy_image arg is used, what name to give the raster?
-    Note:
-        When allow_empty is True, the function will return 0's for coordinates, following torchvision style, the label will be ignored, so for continuity, the first label in the annotations_file will be used.
+        annotations_file: Path to annotations CSV or DataFrame with columns:
+            image_path, xmin, ymin, xmax, ymax, label
+        path_to_raster: Path to raster file on disk
+        numpy_image: Numpy array in (channels, height, width) order
+        root_dir: Root directory for annotations file
+        patch_size: Size of square patches
+        patch_overlap: Overlap between patches (0-1)
+        allow_empty: Include patches with no annotations
+        image_name: Name for the raster image
+        save_dir: Directory to save patches
+
     Returns:
-        If annotations_file is provided, a pandas dataframe with annotations file for training. A copy of this file is written to save_dir as a side effect.
-        If not, a list of filenames of the cropped images.
+        DataFrame with annotations for training, or list of patch filenames
     """
 
     # Load raster as image
     if numpy_image is None and path_to_raster is None:
-        raise IOError("Supply a raster either as a path_to_raster or if ready "
-                      "from existing in-memory numpy object, as numpy_image=")
+        raise OSError(
+            "Supply a raster either as a path_to_raster or if ready "
+            "from existing in-memory numpy object, as numpy_image="
+        )
 
     if path_to_raster:
         numpy_image = Image.open(path_to_raster)
         numpy_image = np.array(numpy_image)
     else:
         if image_name is None:
-            raise IOError("If passing a numpy_image, please also specify an image_name"
-                          " to match the column in the annotation.csv file")
+            raise OSError(
+                "If passing a numpy_image, please also specify an image_name"
+                " to match the column in the annotation.csv file"
+            )
 
-    # If its channels last H x W x C, convert to channels first C x H x W
+    # Convert from channels-last (H x W x C) to channels-first (C x H x W)
     if numpy_image.shape[2] in [3, 4]:
         print(
-            "Image shape is {}, assuming this is channels last, converting to channels first"
-            .format(numpy_image.shape[2]))
+            f"Image shape is {numpy_image.shape[2]}, assuming this is channels last, "
+            "converting to channels first"
+        )
         numpy_image = numpy_image.transpose(2, 0, 1)
 
     # Check that it's 3 bands
     bands = numpy_image.shape[2]
     if not bands == 3:
         warnings.warn(
-            "Input image had non-3 band shape of {}, selecting first 3 bands".format(
-                numpy_image.shape), UserWarning)
+            f"Input image had non-3 band shape of {numpy_image.shape}, selecting first 3 bands",
+            UserWarning,
+            stacklevel=2,
+        )
         try:
             numpy_image = numpy_image[:3, :, :].astype("uint8")
-        except:
-            raise IOError("Input file {} has {} bands. "
-                          "DeepForest only accepts 3 band RGB rasters in the order "
-                          "(channels, height, width). "
-                          "Selecting the first three bands failed, "
-                          "please reshape manually. If the image was cropped and "
-                          "saved, please ensure that no alpha channel "
-                          "was used.".format(path_to_raster, bands))
+        except Exception:
+            raise OSError(
+                f"Input file {path_to_raster} has {bands} bands. "
+                "DeepForest only accepts 3 band RGB rasters in the order "
+                "(channels, height, width). "
+                "Selecting the first three bands failed, "
+                "please reshape manually. If the image was cropped and "
+                "saved, please ensure that no alpha channel "
+                "was used."
+            ) from None
 
     # Check that patch size is greater than image size
     height, width = numpy_image.shape[1], numpy_image.shape[2]
     if any(np.array([height, width]) < patch_size):
-        raise ValueError("Patch size of {} is larger than the image dimensions {}".format(
-            patch_size, [height, width]))
+        raise ValueError(
+            f"Patch size of {patch_size} is larger than the image dimensions {[height, width]}"
+        )
 
     # Compute sliding window index
     windows = compute_windows(numpy_image, patch_size, patch_overlap)
@@ -230,54 +244,68 @@ def split_raster(annotations_file=None,
 
     if not allow_empty and image_annotations.empty:
         raise ValueError(
-            "No image names match between the file:{} and the image_path: {}. "
+            f"No image names match between the file:{annotations_file} and the image_path: {image_name}. "
             "Reminder that image paths should be the relative "
             "path (e.g. 'image_name.tif'), not the full path "
-            "(e.g. path/to/dir/image_name.tif)".format(annotations_file, image_name))
+            "(e.g. path/to/dir/image_name.tif)"
+        )
 
-    return process_with_annotations(numpy_image=numpy_image,
-                                    windows=windows,
-                                    image_annotations=image_annotations,
-                                    image_name=image_name,
-                                    save_dir=save_dir,
-                                    allow_empty=allow_empty)
+    return process_with_annotations(
+        numpy_image=numpy_image,
+        windows=windows,
+        image_annotations=image_annotations,
+        image_name=image_name,
+        save_dir=save_dir,
+        allow_empty=allow_empty,
+    )
 
 
 def load_annotations(annotations_file, root_dir):
-    """Load and validate annotations file."""
-    if type(annotations_file) == str:
+    """Load and validate annotations file.
+
+    Args:
+        annotations_file: Path to file, DataFrame, or GeoDataFrame
+        root_dir: Root directory for relative paths
+
+    Returns:
+        GeoDataFrame with annotations
+    """
+    if isinstance(annotations_file, str):
         return read_file(annotations_file, root_dir=root_dir)
-    elif type(annotations_file) == pd.DataFrame:
+    elif isinstance(annotations_file, gpd.GeoDataFrame):
+        return annotations_file
+    elif isinstance(annotations_file, pd.DataFrame):
         if root_dir is None:
             raise ValueError(
-                "If passing a pandas DataFrame with relative pathnames in image_path, please also specify a root_dir"
+                "If passing a pandas DataFrame with relative pathnames in "
+                "image_path, please also specify a root_dir"
             )
         return read_file(annotations_file, root_dir=root_dir)
-    elif type(annotations_file) == gpd.GeoDataFrame:
-        return annotations_file
     else:
         raise TypeError(
-            "Annotations file must either be a path, Pandas Dataframe, or Geopandas GeoDataFrame, found {}"
-            .format(type(annotations_file)))
+            f"Annotations file must either be a path, Pandas Dataframe, or Geopandas GeoDataFrame, found {type(annotations_file)}"
+        )
 
 
 def validate_annotations(annotations, numpy_image, path_to_raster):
     """Validate annotation coordinate systems and bounds."""
-    if hasattr(annotations, 'crs'):
+    if hasattr(annotations, "crs"):
         if annotations.crs is not None and annotations.crs.is_geographic:
             raise ValueError(
                 "Annotations appear to be in geographic coordinates (latitude/longitude). "
                 "Please convert your annotations to the same projected coordinate system as your raster."
             )
 
-    if hasattr(annotations, 'total_bounds'):
+    if hasattr(annotations, "total_bounds"):
         raster_height, raster_width = numpy_image.shape[1], numpy_image.shape[2]
         ann_bounds = annotations.total_bounds
 
-        if (ann_bounds[0] < -raster_width * 0.1 or  # xmin
-                ann_bounds[2] > raster_width * 1.1 or  # xmax
-                ann_bounds[1] < -raster_height * 0.1 or  # ymin
-                ann_bounds[3] > raster_height * 1.1):  # ymax
+        if (
+            ann_bounds[0] < -raster_width * 0.1  # xmin
+            or ann_bounds[2] > raster_width * 1.1  # xmax
+            or ann_bounds[1] < -raster_height * 0.1  # ymin
+            or ann_bounds[3] > raster_height * 1.1
+        ):  # ymax
             raise ValueError(
                 f"Annotation bounds {ann_bounds} appear to be outside reasonable range for "
                 f"raster dimensions ({raster_width}, {raster_height}). "
@@ -297,8 +325,9 @@ def process_without_annotations(numpy_image, windows, image_name, save_dir):
     return crop_filenames
 
 
-def process_with_annotations(numpy_image, windows, image_annotations, image_name,
-                             save_dir, allow_empty):
+def process_with_annotations(
+    numpy_image, windows, image_annotations, image_name, save_dir, allow_empty
+):
     """Process raster with annotations."""
     annotations_files = []
     crop_filenames = []
@@ -314,8 +343,9 @@ def process_with_annotations(numpy_image, windows, image_annotations, image_name
 
         if crop_annotations.empty:
             if allow_empty:
-                crop_annotations = create_empty_annotation(image_annotations,
-                                                           image_basename, index)
+                crop_annotations = create_empty_annotation(
+                    image_annotations, image_basename, index
+                )
             else:
                 continue
 
@@ -325,8 +355,8 @@ def process_with_annotations(numpy_image, windows, image_annotations, image_name
 
     if len(annotations_files) == 0:
         raise ValueError(
-            "Input file has no overlapping annotations and allow_empty is {}".format(
-                allow_empty))
+            f"Input file has no overlapping annotations and allow_empty is {allow_empty}"
+        )
 
     annotations_files = pd.concat(annotations_files)
     file_path = os.path.join(save_dir, f"{image_basename}.csv")

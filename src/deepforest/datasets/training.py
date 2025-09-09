@@ -87,7 +87,7 @@ class BoxDataset(Dataset):
         if self.preload_images:
             print("Pinning dataset to GPU memory")
             self.image_dict = {}
-            for idx, _ in enumerate(self.image_names):
+            for idx, _x in enumerate(self.image_names):
                 self.image_dict[idx] = self.load_image(idx)
 
     def _validate_labels(self):
