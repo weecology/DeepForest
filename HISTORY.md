@@ -3,7 +3,7 @@
 ## Version 2.0.0
 
 - Breaking: Remove legacy `augment` parameter; use `augmentations` configuration instead.
-- Breaking: Consolidate visualization APIs; prefer `visualize.draw_*` and `visualize.plot_results`.
+- Breaking: Consolidate visualization APIs; use `visualize.plot_results`.
 - Breaking: Replace geospatial utilities with `image_to_geo_coordinates`.
 - Deprecations cleaned: warnings removed or updated; see Migration Guide in docs: whatsnew/migration_2_0.
 

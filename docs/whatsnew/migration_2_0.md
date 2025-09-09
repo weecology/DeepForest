@@ -4,7 +4,7 @@ This guide summarizes breaking changes in 2.0 and how to update your code.
 
 ## Highlights
 - Unified annotation geometry via `utilities.read_file()` with a `geometry` column.
-- Visualization consolidated around `visualize.draw_*` and `visualize.plot_results`.
+- Visualization consolidated around `visualize.plot_results` or `visualize.plot_annotations`
 - Expanded model backbones including DETR and transformer model integrations
 - Improved installation flexibility and uv support. 
 - Model loading standardized via `deepforest.load_model()`.
@@ -40,15 +40,6 @@ m = deepforest(config_args={
 })
 ```
 
-## Visualization examples
-
-- Draw predictions in-memory:
-```python
-from deepforest import visualize
-# Results  should have a results_df.root_dir property from any deepforest predict function. If image is in memory, use 'image' argument.
-visualize.plot_results(results=results_df)
-```
-
 ## Geospatial conversion
 
 - Convert prediction coordinates from image to geographic CRS:
@@ -60,6 +51,6 @@ geo = image_to_geo_coordinates(results_df, root_dir='/path/to/images')
 ## Common migration steps
 
 - Ensure result/annotation frames include a `geometry` column; use `utilities.read_file` to coerce.
-- Replace `plot_predictions`/`plot_points` with `draw_predictions`/`draw_points` (or `plot_results`).
+- Replace `plot_predictions`/`plot_points` with `plot_results` or `plot_annotations`
 - Replace `boxes_to_shapefile`/`project_boxes` with `image_to_geo_coordinates`.
 - Stop using `augment=True/False`; pass explicit `augmentations` instead and provide an empty list or None to disable augmentations."
