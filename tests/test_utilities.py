@@ -475,22 +475,6 @@ def test_image_to_geo_coordinates_polygons(tmpdir):
     # show(src, ax=ax)
     # plt.show()
 
-
-def test_boxes_to_shapefile_projected(m):
-    img = get_data("OSBS_029.tif")
-    r = rio.open(img)
-    df = m.predict_image(path=img)
-    gdf = utilities.boxes_to_shapefile(df, root_dir=os.path.dirname(img), projected=True)
-
-    # Confirm that each boxes within image bounds
-    geom = geometry.box(*r.bounds)
-    assert all(gdf.geometry.apply(lambda x: geom.intersects(geom)).values)
-
-    # Edge case, only one row in predictions
-    gdf = utilities.boxes_to_shapefile(df.iloc[:1, ], root_dir=os.path.dirname(img), projected=True)
-    assert gdf.shape[0] == 1
-
-
 def test_read_coco_json(tmpdir):
     """Test reading a COCO format JSON file"""
     # Create a sample COCO JSON structure

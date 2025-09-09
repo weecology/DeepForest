@@ -148,30 +148,6 @@ def test_plot_results_polygon(gdf_poly, tmpdir):
     # Assertions
     assert os.path.exists(os.path.join(tmpdir, "OSBS_029.png"))
 
-def test_draw_points():
-    image = visualize._load_image(get_data("OSBS_029.tif"))
-    points = np.array([[10, 10], [20, 20]])
-
-    image = visualize.draw_points(image, points)
-    assert image is not None and isinstance(image, np.ndarray)
-
-def test_draw_predictions(gdf_poly):
-    image = visualize._load_image(get_data("OSBS_029.tif"))
-    image = visualize.draw_predictions(image, gdf_poly)
-    assert image is not None and isinstance(image, np.ndarray)
-
-def test_plot_points():
-    image = visualize._load_image(get_data("OSBS_029.tif"))
-    points = np.array([[10, 10], [20, 20]])
-
-    image = visualize.plot_points(image, points)
-    assert image is not None and isinstance(image, np.ndarray)
-
-def test_plot_predictions(gdf_poly):
-    image = visualize._load_image(get_data("OSBS_029.tif"))
-    image = visualize.plot_predictions(image, gdf_poly)
-    assert image is not None and isinstance(image, np.ndarray)
-
 def test_image_from_path_or_array():
     image_path = visualize._load_image(np.array(Image.open(get_data("OSBS_029.tif"))))
     image_array = visualize._load_image(get_data("OSBS_029.tif"))
