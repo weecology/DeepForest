@@ -1,7 +1,7 @@
-import os
 from omegaconf import OmegaConf
-from deepforest.conf import schema
+
 from deepforest import get_data
+from deepforest.conf import schema
 
 
 # Test that the default configuration can be correctly loaded into the schema template.

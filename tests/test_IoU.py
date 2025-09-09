@@ -1,14 +1,13 @@
 # Test IoU
-from .conftest import download_release
-from deepforest import IoU
-from deepforest import main
-from deepforest import get_data
-from deepforest import visualize
-
 import os
-import shapely
+
 import geopandas as gpd
 import pandas as pd
+import shapely
+
+from deepforest import IoU
+from deepforest import get_data
+
 
 def test_compute_IoU(m):
     csv_file = get_data("OSBS_029.csv")

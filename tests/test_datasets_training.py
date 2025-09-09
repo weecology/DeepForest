@@ -1,14 +1,16 @@
 # test dataset model
-from deepforest import get_data, main
-from deepforest import utilities
 import os
-import pytest
-import torch
-import pandas as pd
-import numpy as np
 import tempfile
 
+import numpy as np
+import pandas as pd
+import pytest
+import torch
+
+from deepforest import get_data, main
+from deepforest import utilities
 from deepforest.datasets.training import BoxDataset
+
 
 def single_class():
     csv_file = get_data("example.csv")
@@ -21,9 +23,11 @@ def multi_class():
 
     return csv_file
 
+
 @pytest.fixture()
 def raster_path():
     return get_data(path='OSBS_029.tif')
+
 
 @pytest.mark.parametrize("csv_file,label_dict", [(single_class(), {"Tree": 0}), (multi_class(), {"Alive": 0, "Dead": 1})])
 def test_BoxDataset(csv_file, label_dict):
@@ -42,6 +46,7 @@ def test_BoxDataset(csv_file, label_dict):
         assert targets["labels"].shape == (raw_data.shape[0],)
         assert targets["labels"].dtype == torch.int64
         assert len(np.unique(targets["labels"])) == len(raw_data.label.unique())
+
 
 def test_single_class_with_empty(tmpdir):
     """Add fake empty annotations to test parsing """
@@ -129,6 +134,7 @@ def test_BoxDataset_format():
     # Assert image is channels first format
     assert image.shape[0] == 3
 
+
 def test_multi_image_warning():
     tmpdir = tempfile.gettempdir()
     csv_file1 = get_data("example.csv")
@@ -148,6 +154,7 @@ def test_multi_image_warning():
         batch = ds[i]
         collated_batch = utilities.collate_fn([None, batch, batch])
         len(collated_batch[0]) == 2
+
 
 def test_label_validation__training_csv():
     """Test training CSV labels are validated against label_dict"""

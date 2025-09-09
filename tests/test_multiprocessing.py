@@ -1,9 +1,11 @@
 # Ensure that multiprocessing is behaving as expected.
-from deepforest import main, get_data
-from deepforest.datasets import prediction
+import os
 
 import pytest
-import os
+
+from deepforest import get_data
+from deepforest.datasets import prediction
+
 
 @pytest.mark.parametrize("num_workers", [2])
 def test_predict_tile_workers(m, num_workers):
@@ -30,7 +32,7 @@ def test_predict_tile_workers(m, num_workers):
 def test_dataset_tile_workers_config(m, num_workers, dataset_class):
     csv_file = get_data("OSBS_029.csv")
     root_dir = os.path.dirname(csv_file)
-    
+
     # Create dataset based on class
     if dataset_class == prediction.FromCSVFile:
         ds = dataset_class(csv_file=csv_file, root_dir=root_dir)
@@ -43,7 +45,7 @@ def test_dataset_tile_workers_config(m, num_workers, dataset_class):
     else:  # TiledRaster
         image_path = os.path.join(root_dir, "test_tiled.tif")
         ds = dataset_class(path=image_path, patch_size=400, patch_overlap=0.1)
-        
+
     dataloader = m.predict_dataloader(ds)
     assert dataloader.num_workers == num_workers
 
@@ -51,7 +53,7 @@ def test_dataset_tile_workers_config(m, num_workers, dataset_class):
 def test_multi_process_dataloader_strategy_single(m):
     root_dir = os.path.dirname(get_data("OSBS_029.csv"))
     image_path = os.path.join(root_dir, "OSBS_029.png")
-    
+
     results = m.predict_tile(
         path=image_path,
         dataloader_strategy="single",
@@ -63,7 +65,7 @@ def test_multi_process_dataloader_strategy_single(m):
 def test_multi_process_dataloader_strategy_batch(m):
     root_dir = os.path.dirname(get_data("OSBS_029.csv"))
     image_path = os.path.join(root_dir, "OSBS_029.png")
-    
+
     results = m.predict_tile(
         path=[image_path],
         dataloader_strategy="batch",
@@ -75,11 +77,11 @@ def test_multi_process_dataloader_strategy_batch(m):
 def test_multi_process_dataloader_strategy_window(m):
     root_dir = os.path.dirname(get_data("OSBS_029.csv"))
     image_path = os.path.join(root_dir, "test_tiled.tif")
-    
+
     with pytest.raises(ValueError):
         results = m.predict_tile(
             path=image_path,
-            dataloader_strategy="window", 
+            dataloader_strategy="window",
             patch_size=400,
             patch_overlap=0,
         )

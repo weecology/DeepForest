@@ -1,19 +1,16 @@
 # test preprocessing
-import glob
 import os
 
 import numpy as np
 import pandas as pd
 import pytest
+import rasterio
 from PIL import Image
+from shapely import geometry
 
 from deepforest import get_data
 from deepforest import preprocess
 from deepforest import utilities
-from deepforest import visualize
-
-import rasterio
-from shapely import geometry
 
 
 @pytest.fixture()

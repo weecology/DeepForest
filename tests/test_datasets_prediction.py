@@ -1,7 +1,9 @@
 # test dataset model
+import os
+
 from deepforest import get_data
 from deepforest.datasets.prediction import TiledRaster, SingleImage, MultiImage, FromCSVFile
-import os
+
 
 def test_TiledRaster():
     tile_path = get_data("test_tiled.tif")
@@ -18,7 +20,7 @@ def test_SingleImage_path():
         path=get_data("OSBS_029.png"),
         patch_size=300,
         patch_overlap=0)
-    
+
     assert len(ds) == 4
     assert ds[0].shape == (3, 300, 300)
 

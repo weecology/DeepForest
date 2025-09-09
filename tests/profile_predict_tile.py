@@ -1,12 +1,15 @@
-import os
-import time
-import torch
-import numpy as np
-from deepforest import main
-import psutil
 import gc
 import glob
+import os
+import time
+
+import numpy as np
+import psutil
+import torch
 from tabulate import tabulate
+
+from deepforest import main
+
 
 def get_memory_usage():
     """Get current memory usage in MB"""
@@ -16,40 +19,40 @@ def get_memory_usage():
 def profile_predict_tile(model, paths, device, workers=0, patch_size=1500, patch_overlap=0.05, num_runs=2, dataloader_strategy="single"):
     """Profile predict_tile function for a given device and worker configuration"""
     print(f"\nProfiling predict_tile on {device} with {workers} workers using {dataloader_strategy} strategy...")
-    
+
     # Update worker configuration
     model.config["workers"] = workers
-    
+
     # Time profiling
     times = []
     for i in range(num_runs):
         start_time = time.time()
         if dataloader_strategy == "batch":
-            #change batch size to 1 for batch strategy
+            # change batch size to 1 for batch strategy
             model.config["batch_size"] = 2
             model.predict_tile(
-                paths=paths, 
-                patch_size=patch_size, 
+                paths=paths,
+                patch_size=patch_size,
                 patch_overlap=patch_overlap,
                 dataloader_strategy=dataloader_strategy
             )
         else:
             for path in paths:
                 model.predict_tile(
-                    path=path, 
-                    patch_size=patch_size, 
+                    path=path,
+                    patch_size=patch_size,
                     patch_overlap=patch_overlap,
                     dataloader_strategy=dataloader_strategy
-                )    
+                )
         end_time = time.time()
         times.append(end_time - start_time)
         print(f"Run {i+1}/{num_runs}: {times[-1]:.2f} seconds")
-    
+
     # Clean up
     gc.collect()
     if device == "cuda":
         torch.cuda.empty_cache()
-    
+
     return {
         "device": device,
         "workers": workers,
@@ -66,14 +69,14 @@ def run():
     m.config["train"]["fast_dev_run"] = False
     m.config["batch_size"] = 3
     strategies = ["single", "batch"]
-    
+
     # Get test data
     paths = glob.glob("/blue/ewhite/b.weinstein/BOEM/JPG_20241220_145900/*.jpg")[:20]
-    
+
     # Test configurations
     worker_configs = [0, 5]
     devices = ["cuda"]
-    
+
     # Run all configurations
     results = []
     for strategy in strategies:
@@ -91,7 +94,7 @@ def run():
     # Create comparison table
     table_data = []
     headers = ["Device", "Workers", "Strategy", "Mean Time (s)", "Std Time (s)"]
-    
+
     for result in results:
         table_data.append([
             result["device"],
@@ -100,12 +103,13 @@ def run():
             f"{result['mean_time']:.2f}",
             f"{result['std_time']:.2f}",
         ])
-    
+
     # Print results
     print("\nProfiling Results Comparison:")
     print("persistant workers")
     print("=" * 140)
     print(tabulate(table_data, headers=headers, tablefmt="grid"))
-    
+
+
 if __name__ == "__main__":
     run()

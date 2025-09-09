@@ -1,7 +1,9 @@
 # test callbacks
-from deepforest import callbacks
 import glob
+
 from pytorch_lightning.callbacks import ModelCheckpoint
+
+from deepforest import callbacks
 
 
 def test_log_images(m, tmpdir):

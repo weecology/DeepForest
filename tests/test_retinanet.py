@@ -1,13 +1,10 @@
 # test retinanet
-from deepforest.models import retinanet
-from deepforest import get_data
-import pytest
-import numpy as np
-import torch
-import torchvision
 import os
-from torchvision.models import resnet50, ResNet50_Weights
-from torchvision.models.detection.retinanet import RetinaNet_ResNet50_FPN_Weights
+
+import pytest
+import torch
+
+from deepforest.models import retinanet
 
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 

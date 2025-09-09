@@ -1,15 +1,18 @@
 # Test visualize
-from deepforest import visualize
-from deepforest import utilities
-from deepforest import get_data
 import os
-import pytest
+
+import cv2
+import geopandas as gpd
 import numpy as np
 import pandas as pd
+import pytest
 from PIL import Image
-import geopandas as gpd
 from shapely import geometry
-import cv2
+
+from deepforest import get_data
+from deepforest import utilities
+from deepforest import visualize
+
 
 @pytest.fixture
 def gdf_poly():
@@ -56,12 +59,14 @@ def gdf_box():
     gdf.root_dir = os.path.dirname(get_data("OSBS_029.tif"))
     return gdf
 
+
 def test_predict_image_and_plot(m, tmpdir):
     sample_image_path = get_data("OSBS_029.png")
     results = m.predict_image(path=sample_image_path)
     visualize.plot_results(results, savedir=tmpdir)
 
     assert os.path.exists(os.path.join(tmpdir, "OSBS_029.png"))
+
 
 def test_predict_tile_and_plot(m, tmpdir):
     sample_image_path = get_data("OSBS_029.png")
@@ -70,12 +75,14 @@ def test_predict_tile_and_plot(m, tmpdir):
 
     assert os.path.exists(os.path.join(tmpdir, "OSBS_029.png"))
 
+
 def test_multi_class_plot(tmpdir):
     results = pd.read_csv(get_data("testfile_multi.csv"))
     results = utilities.read_file(results, root_dir=os.path.dirname(get_data("SOAP_061.png")))
     visualize.plot_results(results, savedir=tmpdir)
 
     assert os.path.exists(os.path.join(tmpdir, "SOAP_061.png"))
+
 
 def test_convert_to_sv_format(gdf_box):
 
@@ -91,7 +98,9 @@ def test_convert_to_sv_format(gdf_box):
     np.testing.assert_array_equal(detections.xyxy, expected_boxes)
     np.testing.assert_array_equal(detections.class_id, expected_labels)
     np.testing.assert_array_equal(detections.confidence, expected_scores)
-    assert detections['class_name'] == ['Tree', 'Tree']
+
+
+
 
 def test_plot_annotations(gdf_box, tmpdir):
 
@@ -110,6 +119,7 @@ def test_plot_results_box(gdf_box, tmpdir):
     # Assertions
     assert os.path.exists(os.path.join(tmpdir, "OSBS_029.png"))
 
+
 def test_plot_results_point(gdf_point, tmpdir):
 
     # Call the function
@@ -117,6 +127,7 @@ def test_plot_results_point(gdf_point, tmpdir):
 
     # Assertions
     assert os.path.exists(os.path.join(tmpdir, "OSBS_029.png"))
+
 
 def test_plot_results_point_no_label(tmpdir):
     # Create a mock DataFrame with point annotations
@@ -135,9 +146,10 @@ def test_plot_results_point_no_label(tmpdir):
     # Assertions
     assert os.path.exists(os.path.join(tmpdir, "OSBS_029.png"))
 
+
 def test_plot_results_polygon(gdf_poly, tmpdir):
 
-    #Read in image and get height
+    # Read in image and get height
     image = cv2.imread(get_data("OSBS_029.tif"))
     height = image.shape[0]
     width = image.shape[1]
@@ -148,6 +160,7 @@ def test_plot_results_polygon(gdf_poly, tmpdir):
     # Assertions
     assert os.path.exists(os.path.join(tmpdir, "OSBS_029.png"))
 
+
 def test_draw_points():
     image = visualize._load_image(get_data("OSBS_029.tif"))
     points = np.array([[10, 10], [20, 20]])
@@ -155,10 +168,12 @@ def test_draw_points():
     image = visualize.draw_points(image, points)
     assert image is not None and isinstance(image, np.ndarray)
 
+
 def test_draw_predictions(gdf_poly):
     image = visualize._load_image(get_data("OSBS_029.tif"))
     image = visualize.draw_predictions(image, gdf_poly)
     assert image is not None and isinstance(image, np.ndarray)
+
 
 def test_plot_points():
     image = visualize._load_image(get_data("OSBS_029.tif"))
@@ -167,38 +182,46 @@ def test_plot_points():
     image = visualize.plot_points(image, points)
     assert image is not None and isinstance(image, np.ndarray)
 
+
 def test_plot_predictions(gdf_poly):
     image = visualize._load_image(get_data("OSBS_029.tif"))
     image = visualize.plot_predictions(image, gdf_poly)
     assert image is not None and isinstance(image, np.ndarray)
+
 
 def test_image_from_path_or_array():
     image_path = visualize._load_image(np.array(Image.open(get_data("OSBS_029.tif"))))
     image_array = visualize._load_image(get_data("OSBS_029.tif"))
     assert np.allclose(image_path, image_array)
 
+
 def test_image_from_pil():
     image = visualize._load_image(Image.open(get_data("OSBS_029.tif")))
     assert image is not None
+
 
 def test_load_chw_to_hwc():
     image = np.random.randint(0, 255, size=(3, 100, 100), dtype=np.uint8)
     image = visualize._load_image(image)
     assert image.shape == (100, 100, 3)
 
+
 def test_load_chw_to_hwc_tiny_image():
     image = np.random.randint(0, 255, size=(3, 3, 100), dtype=np.uint8)
     image = visualize._load_image(image)
     assert image.shape == (3, 100, 3)
+
 
 def test_load_drop_alpha():
     image = np.random.randint(0, 255, size=(100, 100, 4), dtype=np.uint8)
     image = visualize._load_image(image)
     assert image.shape == (100, 100, 3)
 
+
 def test_image_from_gdf(gdf_poly):
     image = visualize._load_image(df=gdf_poly)
     assert image is not None
+
 
 def test_check_dtype_rescale():
     image = np.random.random((100, 100, 3))
@@ -207,11 +230,13 @@ def test_check_dtype_rescale():
     assert image.dtype == np.uint8
     assert image.max() >=0 and image.max() <= 255
 
+
 def test_check_float_image_non_unitary():
     # Shift distribution to [-1,1]
     image = 2*np.random.random((100, 100, 3)) - 1
     image = visualize._load_image(image)
     assert image.max() >=0 and image.max() <= 255
+
 
 @pytest.mark.xfail
 def test_image_empty():

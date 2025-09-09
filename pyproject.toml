@@ -30,10 +30,6 @@ authors = [
     { name = "Ethan White", email = "ethan@weecology.org" },
 ]
 
-urls.Documentation = "http://deepforest.readthedocs.io/en/latest/"
-urls.Source = "https://github.com/Weecology/DeepForest"
-urls.Contributors = "https://github.com/Weecology/DeepForest/graphs/contributors"
-
 dependencies = [
     "aiohttp",
     "aiolimiter",
@@ -66,6 +62,11 @@ dependencies = [
     "transformers",
     "xmltodict",
 ]
+
+[project.urls]
+Documentation = "http://deepforest.readthedocs.io/en/latest/"
+Source = "https://github.com/Weecology/DeepForest"
+Contributors = "https://github.com/Weecology/DeepForest/graphs/contributors"
 
 [project.optional-dependencies]
 dev = [
@@ -148,7 +149,6 @@ filterwarnings = [
     "ignore::pytorch_lightning.utilities.warnings.PossibleUserWarning"
 ]
 markers = [
-    "visualization: marks tests that generate plots or visualizations",
     "slow: marks tests that are slow to run",
     "integration: marks integration tests"
 ]
