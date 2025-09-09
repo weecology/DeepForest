@@ -131,7 +131,7 @@ from shapely import geometry
 
 PATH_TO_DIR = "/path/to/directory"
 files = glob(f"{PATH_TO_DIR}/*.JPG")
-m = main.deepforest(label_dict={"Bird": 0})
+m = main.deepforest(config_args={"label_dict": {"Bird": 0}})
 m.load_model(model_name="weecology/deepforest-bird", revision="main")
 
 for path in files:
