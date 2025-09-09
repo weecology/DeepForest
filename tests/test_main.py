@@ -34,18 +34,21 @@ ALL_ARCHITECTURES = ["retinanet", "DeformableDetr"]
 
 @pytest.fixture()
 def two_class_m():
-    m = main.deepforest(config_args={"num_classes": 2},
-                        label_dict={
-                            "Alive": 0,
-                            "Dead": 1
-                        })
+    m = main.deepforest(config_args={
+        "num_classes": 2,
+        "label_dict": {
+            "Alive": 0,
+            "Dead": 1
+        }
+    })
     m.config.train.csv_file = get_data("testfile_multi.csv")
     m.config.train.root_dir = os.path.dirname(get_data("testfile_multi.csv"))
     m.config.train.fast_dev_run = True
     m.config.batch_size = 2
 
     m.config.validation["csv_file"] = get_data("testfile_multi.csv")
-    m.config.validation["root_dir"] = os.path.dirname(get_data("testfile_multi.csv"))
+    m.config.validation["root_dir"] = os.path.dirname(
+        get_data("testfile_multi.csv"))
     m.config.validation["val_accuracy_interval"] = 1
 
     m.create_trainer()
