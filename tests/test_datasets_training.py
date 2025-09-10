@@ -151,7 +151,7 @@ def test_multi_image_warning():
 
 def test_label_validation__training_csv():
     """Test training CSV labels are validated against label_dict"""
-    m = main.deepforest(config_args={"num_classes": 1}, label_dict={"Bird": 0})
+    m = main.deepforest(config_args={"num_classes": 1, "label_dict": {"Bird": 0}})
     m.config.train.csv_file = get_data("example.csv")  # contains 'Tree' label
     m.config.train.root_dir = os.path.dirname(get_data("example.csv"))
     m.create_trainer()
@@ -162,7 +162,7 @@ def test_label_validation__training_csv():
 
 def test_csv_label_validation__validation_csv(m):
     """Test validation CSV labels are validated against label_dict"""
-    m = main.deepforest(config_args={"num_classes": 1}, label_dict={"Tree": 0})
+    m = main.deepforest(config_args={"num_classes": 1, "label_dict": {"Tree": 0}})
     m.config.train.csv_file = get_data("example.csv")  # contains 'Tree' label
     m.config.train.root_dir = os.path.dirname(get_data("example.csv"))
     m.config.validation.csv_file = get_data("testfile_multi.csv")  # contains 'Dead', 'Alive' labels

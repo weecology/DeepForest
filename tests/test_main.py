@@ -660,11 +660,13 @@ def test_iou_metric(m):
 def test_config_args(m):
     assert not m.config.num_classes == 2
 
-    m = main.deepforest(config_args={"num_classes": 2},
-                        label_dict={
-                            "Alive": 0,
-                            "Dead": 1
-                        })
+    m = main.deepforest(config_args={
+        "num_classes": 2,
+        "label_dict": {
+            "Alive": 0,
+            "Dead": 1
+        }
+    })
     assert m.config.num_classes == 2
 
     # These call also be nested for train and val arguments
