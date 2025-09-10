@@ -477,7 +477,7 @@ def test_predict_tile(m, path, dataloader_strategy):
     assert prediction.ymin.min() < 50
     assert prediction.ymin.max() > 350
 
-    plot_results(prediction)
+    plot_results(prediction, show=False)
 
 
 # Add predict_tile for serial single dataloader strategy
@@ -497,8 +497,8 @@ def test_predict_tile_serial_single(m):
     prediction_2 = prediction[prediction.image_path == os.path.basename(path2)]
     prediction_2.root_dir = os.path.dirname(path2)
 
-    plot_results(prediction_1)
-    plot_results(prediction_2)
+    plot_results(prediction_1, show=False)
+    plot_results(prediction_2, show=False)
 
 # test equivalence for within and out of memory dataset strategies
 def test_predict_tile_equivalence(m):
