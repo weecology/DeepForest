@@ -6,4 +6,5 @@ This is the list of changes to DeepForest.
 :maxdepth: 2
 
 history
+migration_2_0
 ```
