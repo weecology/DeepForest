@@ -98,6 +98,7 @@ def test_convert_to_sv_format(gdf_box):
     np.testing.assert_array_equal(detections.xyxy, expected_boxes)
     np.testing.assert_array_equal(detections.class_id, expected_labels)
     np.testing.assert_array_equal(detections.confidence, expected_scores)
+    assert detections['class_name'] == ['Tree', 'Tree']
 
 
 
