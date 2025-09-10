@@ -28,7 +28,7 @@ def profile_predict_tile(model, paths, device, workers=0, patch_size=1500, patch
     for i in range(num_runs):
         start_time = time.time()
         if dataloader_strategy == "batch":
-            # change batch size to 1 for batch strategy
+            # change batch size to 2 for batch strategy
             model.config["batch_size"] = 2
             model.predict_tile(
                 paths=paths,

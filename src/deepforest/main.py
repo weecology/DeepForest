@@ -32,9 +32,6 @@ class deepforest(pl.LightningModule):
         existing_val_dataloader: PyTorch dataloader for validation data
         config: DeepForest configuration object
         config_args: Dictionary of config overrides
-
-    Returns:
-        DeepForest PyTorch Lightning module
     """
 
     def __init__(
@@ -812,8 +809,8 @@ class deepforest(pl.LightningModule):
         """Evaluate a batch."""
         images, targets, image_names = batch
 
-        # Get loss from "train" mode without optimization. Torchvision
-        # uses 'train' mode for loss and 'eval' mode for predictions.
+        # Set model to train mode to return loss, but disable optimization.
+        # Torchvision does not return loss in eval mode.
         self.model.train()
         with torch.no_grad():
             loss_dict = self.model.forward(images, targets)
@@ -927,7 +924,7 @@ class deepforest(pl.LightningModule):
     def log_epoch_metrics(self):
         if len(self.iou_metric.groundtruth_labels) > 0:
             output = self.iou_metric.compute()
-            # Lightning bug: claims this is a warning but it's not. See issue #16218
+            # Lightning bug: claims this is a warning but it's not. See issue #16218 in Lightning-AI/pytorch-lightning
             try:
                 self.log_dict(output)
             except Exception:
@@ -1026,11 +1023,11 @@ class deepforest(pl.LightningModule):
         """
         self.model.eval()
 
-        # conver to tensor if input is array
+        # convert to tensor if input is array
         if isinstance(images, np.ndarray):
             images = torch.tensor(images, device=self.device)
 
-        # appy preprocessing if available
+        # apply preprocessing if available
         if preprocess_fn:
             images = preprocess_fn(images)
 
@@ -1103,7 +1100,7 @@ class deepforest(pl.LightningModule):
                 eps=params["eps"],
             )
 
-        # Monitor rate is val data is used
+        # Monitor learning rate if val data is used
         if self.config.validation.csv_file is not None:
             return {
                 "optimizer": optimizer,
@@ -1184,7 +1181,7 @@ class deepforest(pl.LightningModule):
         if results["class_recall"] is not None:
             for key, value in results.items():
                 if key in ["class_recall"]:
-                    for _index, row in value.iterrows():
+                    for _, row in value.iterrows():
                         try:
                             self.log(
                                 "{}_Recall".format(

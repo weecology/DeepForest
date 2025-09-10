@@ -89,11 +89,11 @@ def paste_tile(bigim, base_size, tile, corner_xy, bbox):
     """Paste a tile into a larger image.
 
     Args:
-        bigim: Base image to paste into
-        base_size: Size of base image
-        tile: Tile data to paste
-        corner_xy: Corner coordinates
-        bbox: Bounding box coordinates
+        bigim: Base image to paste into (PIL Image or None)
+        base_size: List containing [tile_width, tile_height] in pixels
+        tile: Raw tile data (bytes) to paste
+        corner_xy: Tile coordinates (x, y) in the grid
+        bbox: Bounding box coordinates (xmin, ymin, xmax, ymax) defining the grid
 
     Returns:
         Updated image with tile pasted
