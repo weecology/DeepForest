@@ -114,6 +114,11 @@ def mosiac(predictions, iou_threshold=0.1):
         A pandas dataframe of predictions.
     """
     predicted_boxes = transform_coordinates(predictions)
+    
+    # Skip NMS if there's is one or less prediction
+    if predicted_boxes.shape[0] <= 1:
+        return predicted_boxes
+    
     print(
         f"{predicted_boxes.shape[0]} predictions in overlapping windows, applying non-max suppression"
     )
@@ -136,6 +141,10 @@ def across_class_nms(predicted_boxes, iou_threshold=0.15):
     """Perform non-max suppression for a dataframe of results (see
     visualize.format_boxes) to remove boxes that overlap by iou_thresholdold of
     IoU."""
+    
+    # Skip NMS if there's is one or less prediction
+    if predicted_boxes.shape[0] <= 1:
+        return predicted_boxes
 
     # move prediciton to tensor
     boxes = torch.tensor(
