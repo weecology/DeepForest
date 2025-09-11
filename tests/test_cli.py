@@ -1,11 +1,14 @@
+import os
 import subprocess
 import sys
 from importlib.resources import files
-import os
+
 from omegaconf import OmegaConf
+
 from deepforest import get_data
 
 SCRIPT = files("deepforest.scripts").joinpath("cli.py")
+
 
 def test_train_cli(tmpdir):
     """Check a basic training run, including overrides for unit testing
@@ -31,6 +34,7 @@ def test_train_cli(tmpdir):
 
     assert result.returncode == 0, f"stderr:\n{result.stderr}\nstdout:\n{result.stdout}"
 
+
 def test_train_cli_fail(tmpdir):
     """Check that training fails if no dataset paths are provided"""
 
@@ -49,6 +53,7 @@ def test_train_cli_fail(tmpdir):
     )
 
     assert result.returncode != 0
+
 
 def test_train_cli_user_config(tmpdir):
     """Check whether we can provide a custom YAML file for configuration"""
@@ -81,7 +86,6 @@ def test_train_cli_user_config(tmpdir):
     assert result.returncode == 0, f"stderr:\n{result.stderr}\nstdout:\n{result.stdout}"
 
 
-
 def test_predict_cli(tmp_path):
     """Check we can predict an image and save results"""
     input_path = get_data("OSBS_029.png")
@@ -97,6 +101,7 @@ def test_predict_cli(tmp_path):
 
     assert result.returncode == 0, f"stderr:\n{result.stderr}\nstdout:\n{result.stdout}"
     assert output_path.exists(), f"Expected output file not found: {output_path}"
+
 
 def test_predict_cli_with_opt(tmp_path):
     """Check we can predict an image and save results"""
@@ -114,6 +119,7 @@ def test_predict_cli_with_opt(tmp_path):
     assert result.returncode == 0, f"stderr:\n{result.stderr}\nstdout:\n{result.stdout}"
     assert output_path.exists(), f"Expected output file not found: {output_path}"
 
+
 def test_predict_cli_missing_input(tmp_path):
     # Running the script without any inputs should yield an error
     result = subprocess.run(
@@ -123,6 +129,7 @@ def test_predict_cli_missing_input(tmp_path):
         text=True,
     )
     assert result.returncode != 0
+
 
 def test_predict_cli_config_help(tmp_path):
     # Script should show config without requiring input

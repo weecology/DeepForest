@@ -1,8 +1,10 @@
 # Profile the dataset class
+import cProfile
+import os
+import pstats
+
 from deepforest import dataset
 from deepforest import get_data
-import os
-import cProfile, pstats
 
 
 def run():

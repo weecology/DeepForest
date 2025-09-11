@@ -1,23 +1,19 @@
 # test_utilities
-import numpy as np
-import os
-import pytest
-import pandas as pd
-import rasterio as rio
-from shapely import geometry
-import geopandas as gpd
 import json
+import os
+
+import geopandas as gpd
+import numpy as np
+import pandas as pd
+import pytest
+import rasterio as rio
+# import general model fixture
+import shapely
 import torch
+from shapely import geometry
 
 from deepforest import get_data
-from deepforest import visualize
 from deepforest import utilities
-
-# import general model fixture
-from .conftest import download_release
-import shapely
-
-from PIL import Image
 
 
 @pytest.fixture()
@@ -542,15 +538,15 @@ def test_format_geometry_box():
         "labels": torch.tensor([0, 0]),
         "scores": torch.tensor([1.0, 0.8])
     }
-    
+
     # Format geometry
     result = utilities.format_geometry(prediction)
-    
+
     # Check output format
     assert isinstance(result, pd.DataFrame)
     assert list(result.columns) == ["xmin", "ymin", "xmax", "ymax", "label", "score", "geometry"]
     assert len(result) == 2
-    
+
     # Check values
     assert result.iloc[0]["xmin"] == 10
     assert result.iloc[0]["ymin"] == 20
@@ -568,10 +564,10 @@ def test_format_geometry_empty():
         "labels": torch.tensor([]),
         "scores": torch.tensor([])
     }
-    
+
     # Format geometry
     result = utilities.format_geometry(prediction)
-    
+
     # Check output format
     assert result is None
 
@@ -583,15 +579,15 @@ def test_format_geometry_multi_class():
         "labels": torch.tensor([0, 1]),  # Different classes
         "scores": torch.tensor([0.9, 0.8])
     }
-    
+
     # Format geometry
     result = utilities.format_geometry(prediction)
-    
+
     # Check output format
     assert isinstance(result, pd.DataFrame)
     assert list(result.columns) == ["xmin", "ymin", "xmax", "ymax", "label", "score", "geometry"]
     assert len(result) == 2
-    
+
     # Check values
     assert result.iloc[0]["label"] == 0
     assert result.iloc[1]["label"] == 1
@@ -605,17 +601,17 @@ def test_format_geometry_invalid_input():
         "labels": torch.tensor([0])
         # Missing scores
     }
-    
+
     with pytest.raises(KeyError):
         utilities.format_geometry(prediction)
-    
+
     # Test with mismatched lengths
     prediction = {
         "boxes": torch.tensor([[10, 20, 30, 40], [50, 60, 70, 80]]),
         "labels": torch.tensor([0]),  # Only one label
         "scores": torch.tensor([0.9, 0.8])
     }
-    
+
     with pytest.raises(ValueError):
         utilities.format_geometry(prediction)
 
@@ -628,15 +624,15 @@ def test_format_geometry_with_geometry_column():
         "labels": torch.tensor([0, 0]),
         "scores": torch.tensor([0.9, 0.8])
     }
-    
+
     # Format geometry
     result = utilities.format_geometry(prediction)
-    
+
     # Check output format
     assert isinstance(result, pd.DataFrame)
     assert "geometry" in result.columns
     assert len(result) == 2
-    
+
     # Check geometry values
     assert isinstance(result.iloc[0]["geometry"], geometry.Polygon)
     assert result.iloc[0]["geometry"].bounds == (10, 20, 30, 40)
@@ -650,7 +646,7 @@ def test_format_geometry_point():
         "labels": torch.tensor([0, 0]),
         "scores": torch.tensor([0.9, 0.8])
     }
-    
+
     # Format geometry should raise ValueError since point predictions are not supported
     with pytest.raises(ValueError, match="Point predictions are not yet supported for formatting"):
         utilities.format_geometry(prediction, geom_type="point")
@@ -665,7 +661,7 @@ def test_format_geometry_polygon():
         "labels": torch.tensor([0, 0]),
         "scores": torch.tensor([0.9, 0.8])
     }
-    
+
     # Format geometry should raise ValueError since polygon predictions are not supported
     with pytest.raises(ValueError, match="Polygon predictions are not yet supported for formatting"):
         utilities.format_geometry(prediction, geom_type="polygon")

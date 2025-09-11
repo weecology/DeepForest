@@ -1,7 +1,10 @@
-import pandas as pd
 import os
+
+import pandas as pd
+
 from deepforest import get_data
 from deepforest.datasets.cropmodel import BoundingBoxDataset
+
 
 def test_bounding_box_dataset():
     # Create a sample dataframe

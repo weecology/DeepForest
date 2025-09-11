@@ -1,12 +1,16 @@
 """Test the new augmentations module."""
-import pytest
-import albumentations as A
-from albumentations.pytorch import ToTensorV2
-import numpy as np
 import io
 import os
+
+import albumentations as A
+import pytest
+from albumentations.pytorch import ToTensorV2
+
 from deepforest import main, get_data
-from deepforest.augmentations import get_transform, get_available_augmentations, _parse_augmentations, _create_augmentation
+from deepforest.augmentations import _create_augmentation
+from deepforest.augmentations import _parse_augmentations
+from deepforest.augmentations import get_available_augmentations
+from deepforest.augmentations import get_transform
 
 
 def test_get_transform_default():
@@ -58,16 +62,20 @@ def test_parse_augmentations_string():
     # String input
     result = _parse_augmentations("HorizontalFlip")
     assert result == {"HorizontalFlip": {}}
+
+
 def test_parse_augmentations_dict():
     # Dict input
     input_dict = {"HorizontalFlip": {"p": 0.5}, "Downscale": {"scale_min": 0.25}}
     result = _parse_augmentations(input_dict)
     assert result == input_dict
 
+
 def test_parse_augmentations_string_list():
     # List of strings (simple augmentations)
     result = _parse_augmentations(["HorizontalFlip", "Downscale"])
     assert result == {"HorizontalFlip": {}, "Downscale": {}}
+
 
 def test_parse_augmentations_list_of_dict():
     # List of dicts format (for YAML support)
@@ -76,6 +84,7 @@ def test_parse_augmentations_list_of_dict():
     expected = {"HorizontalFlip": {"p": 0.5}, "Downscale": {"scale_min": 0.25, "scale_max": 0.75}}
     assert result == expected
 
+
 def test_parse_augmentations_string_and_dict():
     # Mixed list (strings and dicts)
     mixed_list = ["HorizontalFlip", {"Blur": {"blur_limit": 3}}, "Downscale"]
@@ -83,20 +92,24 @@ def test_parse_augmentations_string_and_dict():
     expected = {"HorizontalFlip": {}, "Blur": {"blur_limit": 3}, "Downscale": {}}
     assert result == expected
 
+
 def test_parse_augmentations_empty():
     # Empty list
     result = _parse_augmentations([])
     assert result == {}
+
 
 def test_parse_augmentations_invalid_multiple_key():
     # Invalid list with multiple keys in dict
     with pytest.raises(ValueError, match="one key"):
         _parse_augmentations([{"HorizontalFlip": {"p": 0.5}, "Downscale": {"scale_min": 0.25}}])
 
+
 def test_parse_augmentations_invalid_non_string():
     # Invalid list with non-string/non-dict elements
     with pytest.raises(ValueError, match="List elements must be strings or dicts"):
         _parse_augmentations([{"HorizontalFlip": {"p": 0.5}}, 123])
+
 
 def test_parse_augmentations_omegaconf():
     # Test OmegaConf types (ListConfig and DictConfig)
@@ -294,6 +307,7 @@ def test_config_no_augmentations():
     # Check that we can iterate over the dataset
     image, target, path = next(iter(train_ds))
     assert image is not None
+
 
 if __name__ == "__main__":
     pytest.main([__file__])

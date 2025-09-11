@@ -1,14 +1,16 @@
-from deepforest import download
-import io
-import os
 import asyncio
-from aiolimiter import AsyncLimiter
-import matplotlib.pyplot as plt
-import cv2
-import rasterio as rio
-import pytest
-from rasterio.errors import RasterioIOError
+import os
 from unittest.mock import patch, AsyncMock
+
+import cv2
+import matplotlib.pyplot as plt
+import pytest
+import rasterio as rio
+from aiolimiter import AsyncLimiter
+from rasterio.errors import RasterioIOError
+
+from deepforest import download
+
 
 def url():
     return [
@@ -48,6 +50,7 @@ def mock_arcgis_response_image():
         mock_img_resp.read = AsyncMock(return_value=f.read())
 
     return mock_img_resp
+
 
 @pytest.mark.parametrize("image_name, url, box, params, download_service_name", url_box_pairs)
 def test_download_arcgis_rest(tmpdir, image_name, url, box, params, download_service_name):
