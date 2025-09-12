@@ -158,7 +158,7 @@ def test_multi_image_warning():
 
 def test_label_validation__training_csv():
     """Test training CSV labels are validated against label_dict"""
-    m = main.deepforest(config_args={"num_classes": 1}, label_dict={"Bird": 0})
+    m = main.deepforest(config_args={"num_classes": 1, "label_dict": {"Bird": 0}, "train": {"check_annotations": True}})
     m.config.train.csv_file = get_data("example.csv")  # contains 'Tree' label
     m.config.train.root_dir = os.path.dirname(get_data("example.csv"))
     m.create_trainer()
@@ -169,14 +169,15 @@ def test_label_validation__training_csv():
 
 def test_csv_label_validation__validation_csv(m):
     """Test validation CSV labels are validated against label_dict"""
-    m = main.deepforest(config_args={"num_classes": 1}, label_dict={"Tree": 0})
+    m = main.deepforest(config_args={"num_classes": 1, "label_dict": {'Tree': 0},  "train": {"check_annotations": True}})
     m.config.train.csv_file = get_data("example.csv")  # contains 'Tree' label
     m.config.train.root_dir = os.path.dirname(get_data("example.csv"))
     m.config.validation.csv_file = get_data("testfile_multi.csv")  # contains 'Dead', 'Alive' labels
     m.config.validation.root_dir = os.path.dirname(get_data("testfile_multi.csv"))
     m.create_trainer()
 
-    with pytest.raises(ValueError, match="Labels \\['Dead', 'Alive'\\] are missing from label_dict"):
+
+    with pytest.raises(ValueError, match="Labels \\['Alive', 'Dead'\\] are missing from label_dict"):
         m.trainer.fit(m)
 
 
@@ -188,9 +189,9 @@ def test_BoxDataset_validate_labels():
     root_dir = os.path.dirname(csv_file)
 
     # Valid case: CSV labels are in label_dict
-    ds = BoxDataset(csv_file=csv_file, root_dir=root_dir, label_dict={"Tree": 0})
+    _ = BoxDataset(csv_file=csv_file, root_dir=root_dir, label_dict={"Tree": 0}, check_annotations=True)
     # Should not raise an error
 
     # Invalid case: CSV labels are not in label_dict
     with pytest.raises(ValueError, match="Labels \\['Tree'\\] are missing from label_dict"):
-        BoxDataset(csv_file=csv_file, root_dir=root_dir, label_dict={"Bird": 0})
+        BoxDataset(csv_file=csv_file, root_dir=root_dir, label_dict={"Bird": 0}, check_annotations=True)

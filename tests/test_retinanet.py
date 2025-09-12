@@ -24,10 +24,45 @@ def _make_empty_sample():
     targets = [negative_target]
     return images, targets
 
-
-def test_retinanet(config):
+@pytest.mark.parametrize("model_name", [None, "dinov3"])
+def test_retinanet_inference(config, model_name):
+    config.model.name = model_name
     r = retinanet.Model(config)
-    assert r
+    x = [torch.rand(3, 300, 400), torch.rand(3, 500, 400)]
+    retinanet_model = retinanet.Model(config).create_model()
+    retinanet_model.eval()
+
+    # Expect output to be a list for batched input, each
+    # output should have a box, score and label key.
+    with torch.no_grad():
+        predictions = retinanet_model(x)
+        assert isinstance(predictions, list)
+        for pred in predictions:
+            assert "boxes" in pred
+            assert "scores" in pred
+            assert "labels" in pred
+
+@pytest.mark.parametrize("model_name", [None, "dinov3"])
+def test_retinanet_train(config, model_name):
+    config.model.name = model_name
+    r = retinanet.Model(config)
+    x = [torch.rand(3, 300, 400), torch.rand(3, 500, 400)]
+    targets = [{"boxes": torch.tensor([[0,0,50,50], [25,25,90,90]]),
+               "labels": torch.tensor([0,0]).long()},
+               {"boxes": torch.tensor([[10,50,30,80], [100,100, 200,200]]),
+               "labels": torch.tensor([0,0]).long()}]
+
+    retinanet_model = retinanet.Model(config).create_model()
+    retinanet_model.train()
+
+    # Expect output to be a dictionary of loss values for the batch
+    # for bbox regression and classification
+    loss_dict = retinanet_model(x, targets)
+    assert isinstance(loss_dict, dict)
+    assert "bbox_regression" in loss_dict
+    assert "classification" in loss_dict
+    assert loss_dict["bbox_regression"] > 0
+    assert loss_dict["classification"] > 0
 
 
 def retinanet_check_model(config):

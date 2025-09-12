@@ -464,6 +464,19 @@ The added benefits of this is more control over the trainer object.
 The downside is that it doesn't align with the .config pattern where a user now has to look into the config to create the trainer.
 We are open to changing this to be the default pattern in the future and welcome input from users.
 
+#### Visualization during training
+
+Visualizing images during training can be valuable to spot augmentation that isn't working as you expected, label issues and to see if the model is learning anything. To make this easy, we provide a Lightning callback that can be used with the trainer: `deepforest.callbacks.ImagesCallback`. You need to provide a directory path where the images will be saved, which can be a temporary path if you don't want to keep the images. To use, create the callback object and pass it to `create_trainer` along with any other callbacks you need.
+
+```python
+from deepforest import callbacks
+
+im_callback = callbacks.ImagesCallback(save_dir=tmpdir, every_n_epochs=2)
+m.create_trainer(callbacks=[im_callback])
+```
+
+The callback will, by default, log images to disk. When training starts, it will save images for the training and validation dataset (if available). Then at a user-specified interval (`every_n_epochs`), predictions will be logged with ground truth. If you have Comet or Tensorboard loggers (loggers which accept `add_image` or `log_image`) then the callback will attempt to log to those. Due to auto-discovery behavior with Comet, the callback will preferentially log to Tensorboard if present, to avoid images being pushed to Comet twice. To adjust the number of samples saved, modify `dataset_samples` and `prediction_samples` (set to 0 to disable).
+
 #### Training via command line
 
 We provide a basic script to trigger a training run via CLI. This script is installed as part of the standard DeepForest installation is called `deepforest train`. We use [Hydra](https://hydra.cc/docs/intro/) for configuration management and you can pass configuration parameters as command line arguments as follows:

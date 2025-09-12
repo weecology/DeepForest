@@ -1,0 +1,18 @@
+# RetinaNet Base Configuration - Shared parameters for all folds
+defaults:
+  - config
+  - _self_
+
+model:
+  name: "facebook/dinov3-vitl16-pretrain-sat493m"
+  revision: 'main'
+
+train:
+  freeze_backbone: True
+  epochs: 75
+  lr: 0.01
+  scheduler:
+    type: cosine
+    params:
+      T_max: 75
+      eta_min: 0.0001
