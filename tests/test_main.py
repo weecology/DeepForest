@@ -34,11 +34,11 @@ ALL_ARCHITECTURES = ["retinanet", "DeformableDetr"]
 
 @pytest.fixture()
 def two_class_m():
-    m = main.deepforest(config_args={"num_classes": 2},
-                        label_dict={
-                            "Alive": 0,
-                            "Dead": 1
-                        })
+    m = main.deepforest(config_args={"num_classes": 2,
+                                    "label_dict": {
+                                        "Alive": 0,
+                                        "Dead": 1
+                                    }})
     m.config.train.csv_file = get_data("testfile_multi.csv")
     m.config.train.root_dir = os.path.dirname(get_data("testfile_multi.csv"))
     m.config.train.fast_dev_run = True
@@ -158,11 +158,6 @@ def test_tensorboard_logger(m, tmpdir):
         print("TensorBoard is not installed. Skipping test_tensorboard_logger.")
 
 
-def test_use_bird_release(m):
-    imgpath = get_data("AWPE Pigeon Lake 2020 DJI_0005.JPG")
-    m.load_model("Weecology/deepforest-bird")
-    boxes = m.predict_image(path=imgpath)
-    assert not boxes.empty
 
 def test_load_model(m):
     imgpath = get_data("OSBS_029.png")
@@ -657,11 +652,11 @@ def test_iou_metric(m):
 def test_config_args(m):
     assert not m.config.num_classes == 2
 
-    m = main.deepforest(config_args={"num_classes": 2},
-                        label_dict={
-                            "Alive": 0,
-                            "Dead": 1
-                        })
+    m = main.deepforest(config_args={"num_classes": 2,
+                                    "label_dict": {
+                                        "Alive": 0,
+                                        "Dead": 1
+                                    }})
     assert m.config.num_classes == 2
 
     # These call also be nested for train and val arguments

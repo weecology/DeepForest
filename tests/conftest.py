@@ -59,7 +59,7 @@ def ROOT():
 
 @pytest.fixture(scope="session")
 def two_class_m():
-    m = main.deepforest(num_classes=2, label_dict={"Alive": 0, "Dead": 1})
+    m = main.deepforest(config_args={"num_classes": 2, "label_dict": {"Alive": 0, "Dead": 1}})
     m.config.train.csv_file = get_data("testfile_multi.csv")
     m.config.train.root_dir = os.path.dirname(get_data("testfile_multi.csv"))
     m.config.train.fast_dev_run = True

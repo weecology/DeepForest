@@ -13,7 +13,7 @@ def run():
 
     ds = dataset.TreeDataset(csv_file=csv_file,
                              root_dir=root_dir,
-                             transforms=dataset.get_transform(augment=True))
+                             transforms=dataset.get_transform(augmentations=["HorizontalFlip"]))
 
     for x in range(1000):
         next(iter(ds))
