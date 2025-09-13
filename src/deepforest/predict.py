@@ -228,7 +228,7 @@ def _predict_crop_model_(
     results,
     path,
     transform=None,
-    augment=False,
+    augmentations=None,
     model_index=0,
     is_single_model=False,
 ):
@@ -254,7 +254,10 @@ def _predict_crop_model_(
 
     # Create dataset
     bounding_box_dataset = cropmodel.BoundingBoxDataset(
-        results, root_dir=os.path.dirname(path), transform=transform, augment=augment
+        results,
+        root_dir=os.path.dirname(path),
+        transform=transform,
+        augmentations=augmentations,
     )
 
     # Create dataloader
@@ -289,7 +292,9 @@ def _predict_crop_model_(
     return results
 
 
-def _crop_models_wrapper_(crop_models, trainer, results, transform=None, augment=False):
+def _crop_models_wrapper_(
+    crop_models, trainer, results, transform=None, augmentations=None
+):
     if crop_models is not None and not isinstance(crop_models, list):
         crop_models = [crop_models]
 
@@ -309,7 +314,7 @@ def _crop_models_wrapper_(crop_models, trainer, results, transform=None, augment
                     trainer=trainer,
                     model_index=i,
                     transform=transform,
-                    augment=augment,
+                    augmentations=augmentations,
                     is_single_model=is_single_model,
                 )
                 crop_results.append(crop_result)
