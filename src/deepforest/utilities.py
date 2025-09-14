@@ -340,6 +340,13 @@ def determine_geometry_type(df):
             geometry_type = "polygon"
         elif "points" in df.keys():
             geometry_type = "point"
+        else:
+            raise ValueError(
+                f"Could not determine geometry type from keys {list(df.keys())}"
+            )
+
+    else:
+        raise ValueError(f"Unsupported data type: {type(df)}")
 
     return geometry_type
 

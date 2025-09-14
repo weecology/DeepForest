@@ -88,7 +88,8 @@ class ValidationConfig:
     size: int | None = None
     iou_threshold: float = 0.4
     val_accuracy_interval: int = 20
-    first_val_epoch: int = 10
+    batch_size: int = 1
+    workers: int = 0
     lr_plateau_target: str = "val_loss"
     augmentations: list[str] | None = field(default_factory=lambda: [])
 
@@ -119,6 +120,8 @@ class Config:
     devices: int | str = "auto"
     accelerator: str = "auto"
     batch_size: int = 1
+    limit_batches: float | int = 1.0
+    persistent_workers: bool = True
 
     architecture: str = "retinanet"
     num_classes: int = 1

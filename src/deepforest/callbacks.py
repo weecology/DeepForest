@@ -6,12 +6,12 @@ on_fit_begin methods and inject model and epoch kwargs.
 
 import json
 import os
+import random
 import warnings
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 import supervision as sv
 import torch
 from PIL import Image
@@ -36,7 +36,8 @@ class ImagesCallback(Callback):
     def __init__(
         self,
         save_dir,
-        prediction_samples=2,
+        sample_batches=2,
+        images_per_batch=1,
         dataset_samples=5,
         every_n_epochs=5,
         select_random=False,
@@ -44,12 +45,14 @@ class ImagesCallback(Callback):
         thickness=2,
     ):
         self.savedir = save_dir
-        self.prediction_samples = prediction_samples
+        self.sample_batches = sample_batches
         self.dataset_samples = dataset_samples
         self.color = color
         self.thickness = thickness
         self.select_random = select_random
         self.every_n_epochs = every_n_epochs
+        self.num_val_batches = 0
+        self.images_per_batch = images_per_batch
 
     def on_train_start(self, trainer, pl_module):
         """Log sample images from training and validation datasets at training
@@ -71,15 +74,102 @@ class ImagesCallback(Callback):
             pl_module.print("Logging validation dataset samples.")
             val_ds = trainer.val_dataloaders.dataset
             self._log_dataset_sample(val_ds, split="validation")
+            self.num_val_batches = len(trainer.val_dataloaders)
 
-    def on_validation_end(self, trainer, pl_module):
-        """Run callback at validation end."""
+    def on_validation_start(self, trainer, pl_module):
+        """Pick batch indices for plotting, or skip."""
+        self.batch_indices = set()
+
         if trainer.sanity_checking or trainer.fast_dev_run:
             return
 
-        if trainer.current_epoch % self.every_n_epochs == 0:
-            pl_module.print("Logging prediction samples")
-            self._log_last_predictions(trainer, pl_module)
+        if (trainer.current_epoch + 1) % self.every_n_epochs == 0:
+            indices = list(range(self.num_val_batches))
+
+            if self.select_random:
+                random.shuffle(indices)
+
+            self.batch_indices = set(indices[: self.sample_batches])
+
+    def on_validation_batch_end(
+        self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx=0
+    ):
+        """Determine whether to sample predictions from this batch."""
+        # NB: Dataloader idx is the i'th dataloader
+        if batch_idx in self.batch_indices:
+            # Last predictions (validation_step)
+            _, batch_targets, image_names = batch
+            batch_preds = pl_module.last_preds
+
+            # Sample at most self.images_per_batch
+            for idx in list(range(min(len(batch_preds), self.images_per_batch))):
+                targets = utilities.format_geometry(batch_targets[idx], scores=False)
+                preds = batch_preds[idx]
+                image_name = image_names[idx]
+
+                if preds.image_path.unique()[0] != image_name:
+                    warnings.warn(
+                        "Image names and predictions are out of sync, skipping sample.",
+                        stacklevel=2,
+                    )
+                else:
+                    self._log_prediction_sample(
+                        trainer, pl_module, preds, targets, image_name
+                    )
+
+    def _log_prediction_sample(self, trainer, pl_module, preds, targets, image_name):
+        dataset = trainer.val_dataloaders.dataset
+        """Log one sample."""
+        # Add root_dir to the dataframe
+        if "root_dir" not in preds.columns:
+            preds["root_dir"] = dataset.root_dir
+
+        # Ensure color is correctly assigned
+        if self.color is None:
+            num_classes = len(preds["label"].unique())
+            results_color = sv.ColorPalette.from_matplotlib("viridis", num_classes)
+        else:
+            results_color = self.color
+
+        out_dir = os.path.join(self.savedir, "predictions")
+        os.makedirs(out_dir, exist_ok=True)
+
+        basename = Path(image_name).stem + f"_{trainer.global_step}"
+        fig = visualize.plot_results(
+            basename=basename,
+            results=preds,
+            ground_truth=targets,
+            savedir=out_dir,
+            results_color=results_color,
+            thickness=self.thickness,
+            show=False,
+        )
+        plt.close(fig)
+
+        # Pred metadata, if supported.
+        stats = (
+            preds["score"]
+            .agg(
+                mean_confidence="mean",
+                max_confidence="max",
+                min_confidence="min",
+                std_confidence="std",
+            )
+            .to_dict()
+        )
+
+        metadata = {"pred_count": len(preds), "gt_count": len(targets)}
+        metadata.update(stats)
+
+        with open(os.path.join(out_dir, basename + ".json"), "w") as fp:
+            json.dump(metadata, fp, indent=1)
+
+        self._log_to_all(
+            image=os.path.join(out_dir, basename + ".png"),
+            trainer=trainer,
+            tag="prediction sample",
+            metadata=metadata,
+        )
 
     def _log_dataset_sample(self, dataset: BoxDataset, split: str):
         """Log random samples from a DeepForest BoxDataset."""
@@ -122,83 +212,6 @@ class ImagesCallback(Callback):
                 image=os.path.join(out_dir, basename + ".png"),
                 trainer=self.trainer,
                 tag=f"{split} dataset sample",
-            )
-
-    def _log_last_predictions(self, trainer, pl_module):
-        """Log sample of predictions + targets from last validation."""
-        if self.prediction_samples == 0:
-            return
-
-        df = pl_module.predictions
-
-        # Skip if no predictions.
-        if len(df) == 0 or not isinstance(df, pd.DataFrame):
-            return
-
-        out_dir = os.path.join(self.savedir, "predictions")
-        os.makedirs(out_dir, exist_ok=True)
-
-        # Add root_dir to the dataframe
-        if "root_dir" not in df.columns:
-            df["root_dir"] = trainer.val_dataloaders.dataset.root_dir
-
-        # Limit to n images, potentially randomly selected
-        if self.select_random:
-            selected_images = np.random.choice(
-                df.image_path.unique(), self.prediction_samples
-            )
-        else:
-            selected_images = df.image_path.unique()[: self.prediction_samples]
-
-            # Ensure color is correctly assigned
-            if self.color is None:
-                num_classes = len(df["label"].unique())
-                results_color = sv.ColorPalette.from_matplotlib("viridis", num_classes)
-            else:
-                results_color = self.color
-
-        for image_name in selected_images:
-            pred_df = df[df.image_path == image_name]
-            targets = utilities.format_geometry(
-                pl_module.targets[image_name], scores=False
-            )
-
-            # Assume that validation images are un-augmented
-            basename = Path(image_name).stem + f"_{trainer.global_step}"
-            fig = visualize.plot_results(
-                basename=basename,
-                results=pred_df,
-                ground_truth=targets,
-                savedir=out_dir,
-                results_color=results_color,
-                thickness=self.thickness,
-                show=False,
-            )
-            plt.close(fig)
-
-            # Pred metadata, if supported.
-            stats = (
-                pred_df["score"]
-                .agg(
-                    mean_confidence="mean",
-                    max_confidence="max",
-                    min_confidence="min",
-                    std_confidence="std",
-                )
-                .to_dict()
-            )
-
-            metadata = {"pred_count": len(pred_df), "gt_count": len(targets)}
-            metadata.update(stats)
-
-            with open(os.path.join(out_dir, basename + ".json"), "w") as fp:
-                json.dump(metadata, fp, indent=1)
-
-            self._log_to_all(
-                image=os.path.join(out_dir, basename + ".png"),
-                trainer=trainer,
-                tag="prediction sample",
-                metadata=metadata,
             )
 
     def _log_to_all(self, image: str, trainer, tag, metadata: dict | None = None):

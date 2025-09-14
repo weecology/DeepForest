@@ -1,5 +1,6 @@
 # entry point for deepforest model
 import importlib
+import logging
 import os
 import warnings
 
@@ -12,6 +13,7 @@ from lightning_fabric.utilities.exceptions import MisconfigurationException
 from omegaconf import DictConfig
 from PIL import Image
 from pytorch_lightning.callbacks import LearningRateMonitor
+from pytorch_lightning.utilities import rank_zero_only
 from torch import optim
 from torchmetrics.classification import BinaryAccuracy
 from torchmetrics.detection import IntersectionOverUnion, MeanAveragePrecision
@@ -19,6 +21,28 @@ from torchmetrics.detection import IntersectionOverUnion, MeanAveragePrecision
 from deepforest import evaluate as evaluate_iou
 from deepforest import predict, utilities
 from deepforest.datasets import prediction, training
+
+warnings.simplefilter(action="ignore", category=FutureWarning)
+
+
+def setup_logging(level=logging.INFO):
+    fmt = "%(asctime)s | %(levelname)s | %(name)s | %(message)s"
+    datefmt = "%Y-%m-%d %H:%M:%S"
+    h = logging.StreamHandler()
+    h.setFormatter(logging.Formatter(fmt=fmt, datefmt=datefmt))
+    lg = logging.getLogger("lightning.pytorch")
+    lg.handlers.clear()
+    lg.propagate = False
+    lg.addHandler(h)
+    lg.setLevel(level)
+
+
+setup_logging()
+
+
+@rank_zero_only
+def log_info(msg):
+    logging.getLogger("lightning.pytorch").info(msg)
 
 
 class deepforest(pl.LightningModule):
@@ -89,7 +113,12 @@ class deepforest(pl.LightningModule):
         self.iou_metric = IntersectionOverUnion(
             class_metrics=True, iou_threshold=self.config.validation.iou_threshold
         )
-        self.mAP_metric = MeanAveragePrecision()
+
+        # Disable warning for decluttering
+        self.mAP_metric = MeanAveragePrecision(
+            backend="faster_coco_eval",
+            warn_on_many_detections=False,
+        )
 
         # Empty frame accuracy
         self.empty_frame_accuracy = BinaryAccuracy()
@@ -258,7 +287,7 @@ class deepforest(pl.LightningModule):
             if logger is not None:
                 lr_monitor = LearningRateMonitor(logging_interval="epoch")
                 callbacks.append(lr_monitor)
-            limit_val_batches = 1.0
+            limit_val_batches = self.config.limit_batches
             num_sanity_val_steps = 2
         else:
             # Disable validation, don't use trainer defaults
@@ -280,6 +309,7 @@ class deepforest(pl.LightningModule):
             "accelerator": self.config.accelerator,
             "fast_dev_run": self.config.train.fast_dev_run,
             "callbacks": callbacks,
+            "limit_train_batches": self.config.limit_batches,
             "limit_val_batches": limit_val_batches,
             "num_sanity_val_steps": num_sanity_val_steps,
         }
@@ -329,6 +359,7 @@ class deepforest(pl.LightningModule):
         augmentations=None,
         preload_images=False,
         batch_size=1,
+        workers=0,
     ):
         """Create a dataset for inference or training. Csv file format is .csv
         file with the columns "image_path", "xmin","ymin","xmax","ymax" for the
@@ -377,7 +408,8 @@ class deepforest(pl.LightningModule):
             batch_size=batch_size,
             shuffle=shuffle,
             collate_fn=ds.collate_fn,
-            num_workers=self.config.workers,
+            num_workers=workers,
+            persistent_workers=self.config.persistent_workers,
         )
 
         return data_loader
@@ -399,6 +431,7 @@ class deepforest(pl.LightningModule):
             shuffle=True,
             transforms=self.transforms,
             batch_size=self.config.batch_size,
+            workers=self.config.workers,
         )
 
         return loader
@@ -423,7 +456,8 @@ class deepforest(pl.LightningModule):
                 augmentations=self.config.validation.augmentations,
                 shuffle=False,
                 preload_images=self.config.validation.preload_images,
-                batch_size=self.config.batch_size,
+                batch_size=self.config.validation.batch_size,
+                workers=self.config.validation.workers,
             )
 
         return loader
@@ -757,18 +791,29 @@ class deepforest(pl.LightningModule):
             self.mAP_metric.update(filtered_preds, filtered_targets)
 
         # Log the predictions if you want to use them for evaluation logs
+        self.last_preds = []
         for i, result in enumerate(preds):
             formatted_result = utilities.format_geometry(result)
             if formatted_result is not None:
                 formatted_result["image_path"] = image_names[i]
-                self.predictions.append(formatted_result)
-                self.targets[image_names[i]] = targets[i]
+            self.last_preds.append(formatted_result)
+
+        # Force cleanup
+        del preds
+        del filtered_preds
+        del images
+        del targets
+        del filtered_targets
 
         return losses
 
+    def on_train_epoch_start(self):
+        # Ensure prediction array is evicted for next loop
+        if hasattr(self, "predictions"):
+            del self.predictions
+
     def on_validation_epoch_start(self):
         self.predictions = []
-        self.targets = {}
 
     def calculate_empty_frame_accuracy(self, ground_df, predictions_df):
         """Calculate accuracy for empty frames (frames with no objects).
@@ -843,8 +888,8 @@ class deepforest(pl.LightningModule):
                 self.log_dict(output)
             except Exception:
                 pass
-
             self.iou_metric.reset()
+            log_info("Logged IoU")
             output = self.mAP_metric.compute()
 
             # Remove classes from output dict
@@ -854,8 +899,10 @@ class deepforest(pl.LightningModule):
             except MisconfigurationException:
                 pass
             self.mAP_metric.reset()
+            log_info("Logged mAP")
 
         # Log empty frame accuracy if it has been updated
+        log_info("Computing Empty Frame Accuracy")
         if self.empty_frame_accuracy._update_called:
             empty_accuracy = self.empty_frame_accuracy.compute()
 
@@ -865,33 +912,42 @@ class deepforest(pl.LightningModule):
             except MisconfigurationException:
                 pass
 
+    def on_validation_batch_end(self, outputs, batch, batch_idx, dataloader_idx=0):
+        if (self.current_epoch + 1) % self.config.validation.val_accuracy_interval == 0:
+            self.predictions.extend(
+                [pred for pred in self.last_preds if pred is not None]
+            )
+
     def on_validation_epoch_end(self):
         """Compute metrics and predictions at the end of the validation
         epoch."""
         if self.trainer.sanity_checking:  # optional skip
             return
 
-        if len(self.predictions) > 0:
-            self.predictions = pd.concat(self.predictions)
-        else:
-            self.predictions = pd.DataFrame()
+        # Log epoch metrics (calculated for every val loop)
+        log_info("Calculating torchmetrics")
+        self.log_epoch_metrics()
+        log_info(f"Logged epoch {self.current_epoch} metrics")
 
-        if self.config.validation.val_accuracy_interval != 1 and self.current_epoch > 0:
-            return
+        # Epochs are 0-indexed, so this gives expected behaviour. Don't validate on
+        # epoch 0, and val_accuracy_interval can be set to max_epochs.
+        if (self.current_epoch + 1) % self.config.validation.val_accuracy_interval == 0:
+            if len(self.predictions) > 0:
+                predictions = pd.concat(self.predictions)
+            else:
+                predictions = pd.DataFrame()
 
-        if self.current_epoch % self.config.validation.val_accuracy_interval == 0:
-            self.print(f"Beginning evaluation, epoch: {self.current_epoch}")
+            log_info(f"Beginning evaluation, epoch: {self.current_epoch}")
+
+            # Evaluate already logs?
             results = self.evaluate(
                 self.config.validation.csv_file,
                 root_dir=self.config.validation.root_dir,
                 size=self.config.validation.size,
-                predictions=self.predictions,
+                predictions=predictions,
             )
 
-            # Log epoch metrics
-            self.log_epoch_metrics()
-            self.__evaluation_logs__(results)
-
+            del predictions
             return results
 
     def predict_step(self, batch, batch_idx):
@@ -977,7 +1033,19 @@ class deepforest(pl.LightningModule):
         def lr_lambda(epoch):
             return eval(params.lr_lambda)
 
-        if scheduler_type == "cosine":
+        if scheduler_type == "reduceLROnPlateau":
+            scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+                optimizer,
+                mode=params["mode"],
+                factor=params["factor"],
+                patience=params["patience"],
+                threshold=params["threshold"],
+                threshold_mode=params["threshold_mode"],
+                cooldown=params["cooldown"],
+                min_lr=params["min_lr"],
+                eps=params["eps"],
+            )
+        elif scheduler_type == "cosine":
             scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
                 optimizer, T_max=params.T_max, eta_min=params.eta_min
             )
@@ -1004,18 +1072,9 @@ class deepforest(pl.LightningModule):
             scheduler = torch.optim.lr_scheduler.ExponentialLR(
                 optimizer, gamma=params.gamma
             )
-
         else:
-            scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-                optimizer,
-                mode=params["mode"],
-                factor=params["factor"],
-                patience=params["patience"],
-                threshold=params["threshold"],
-                threshold_mode=params["threshold_mode"],
-                cooldown=params["cooldown"],
-                min_lr=params["min_lr"],
-                eps=params["eps"],
+            raise ValueError(
+                f"Unknown learning rate scheduler type in config, got: {scheduler_type}"
             )
 
         # Monitor learning rate if val data is used

@@ -6,6 +6,8 @@ workers: 0
 devices: auto
 accelerator: auto
 batch_size: 1
+limit_batches: 1.0
+persistent_workers: false
 
 # Model Architecture
 architecture: 'retinanet'
@@ -49,7 +51,7 @@ train:
     augmentations:
         - HorizontalFlip: {p: 0.5}
     scheduler:
-        type:
+        type: reduceLROnPlateau
         params:
             # Common parameters
             T_max: 10
@@ -82,6 +84,8 @@ validation:
     root_dir:
     preload_images: False
     size:
+    batch_size: 1
+    workers: 0
 
     # For retinanet you may prefer val_classification, but the default val_loss
     # should work with all models
@@ -90,7 +94,6 @@ validation:
     # Intersection over union evaluation
     iou_threshold: 0.4
     val_accuracy_interval: 20
-    first_val_epoch: 10
 
     # Data augmentation is none by default for validation, but you can specify:
     # augmentations:

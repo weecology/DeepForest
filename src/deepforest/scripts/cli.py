@@ -2,9 +2,12 @@ import argparse
 import datetime
 import glob
 import os
+import sys
+import traceback
 import warnings
 from pathlib import Path
 
+import torch
 from hydra import compose, initialize, initialize_config_dir
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning.callbacks import DeviceStatsMonitor, ModelCheckpoint
@@ -21,6 +24,7 @@ def train(
     checkpoint: bool = True,
     comet: bool = False,
     tensorboard: bool = False,
+    trace: bool = False,
 ) -> None:
     """This training function demonstrates basic setup for the DeepForest
     Trainer.
@@ -29,6 +33,13 @@ def train(
     experimental parameters are defined in the config, but we include some additional
     logic for logging here with sensible defaults: CSV/tensorboard
     """
+
+    if trace:
+        if not torch.cuda.is_available():
+            warnings.warn("Cuda is not available, skipping trace.", stacklevel=2)
+        else:
+            torch.cuda.memory._record_memory_history()
+
     m = deepforest(config=config)
 
     callbacks = []
@@ -63,6 +74,7 @@ def train(
             warnings.warn(f"Failed to set up comet logger. {e}", stacklevel=2)
     else:
         callbacks.append(DeviceStatsMonitor())
+
     # By default, create a CSV logger and monitor stats
     csv_logger = CSVLogger(save_dir=log_root, name=experiment_name, version=version)
     loggers.append(csv_logger)
@@ -92,12 +104,20 @@ def train(
 
     m.create_trainer(logger=loggers, callbacks=callbacks, gradient_clip_val=0.5)
 
+    train_success = False
     try:
         m.trainer.fit(m)
-    except Exception:
+        train_success = True
+    except Exception as e:
         warnings.warn(
-            "Training failed with exception {e}. Will attempt to upload any existing checkpoints if enabled.",
+            f"Training failed with exception {e}. Will attempt to upload any existing checkpoints if enabled.",
             stacklevel=2,
+        )
+        warnings.warn(traceback.format_exc(), stacklevel=2)
+
+    if trace and torch.cuda.is_available():
+        torch.cuda.memory._dump_snapshot(
+            filename=Path(csv_logger.log_dir) / "dump_snapshot.pickle"
         )
 
     if checkpoint:
@@ -110,6 +130,8 @@ def train(
                     logger.experiment.log_model(
                         name=os.path.basename(checkpoint), file_or_folder=str(checkpoint)
                     )
+
+    return train_success
 
 
 def predict(
@@ -169,6 +191,11 @@ def main():
         help="Enable logging to Tensorboard",
         action="store_true",
     )
+    train_parser.add_argument(
+        "--trace",
+        help="Enable PyTorch memory profiling.",
+        action="store_true",
+    )
 
     # Predict subcommand
     predict_parser = subparsers.add_parser(
@@ -203,12 +230,16 @@ def main():
     if args.command == "predict":
         predict(cfg, input_path=args.input, output_path=args.output, plot=args.plot)
     elif args.command == "train":
-        train(
+        res = train(
             cfg,
             checkpoint=not args.disable_checkpoint,
             comet=args.comet,
             tensorboard=args.tensorboard,
+            trace=args.trace,
         )
+
+        sys.exit(0 if res else 1)
+
     elif args.command == "config":
         print(OmegaConf.to_yaml(cfg, resolve=True))
 

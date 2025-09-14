@@ -1,14 +1,19 @@
 """Evaluation module."""
 
+import os
 import warnings
 
 import geopandas as gpd
 import numpy as np
 import pandas as pd
 import shapely
+from pytorch_lightning import Callback
+from tqdm import tqdm
 
-from deepforest import IoU
+from deepforest import IoU, utilities
 from deepforest.utilities import determine_geometry_type
+
+warnings.simplefilter(action="ignore", category=FutureWarning)
 
 
 def evaluate_image_boxes(predictions, ground_df):
@@ -140,6 +145,7 @@ def __evaluate_wrapper__(predictions, ground_df, iou_threshold, numeric_to_label
         results = evaluate_boxes(
             predictions=predictions, ground_df=ground_df, iou_threshold=iou_threshold
         )
+
     else:
         raise NotImplementedError(f"Geometry type {prediction_geometry} not implemented")
 
@@ -215,11 +221,18 @@ def evaluate_boxes(predictions, ground_df, iou_threshold=0.4):
     results = []
     box_recalls = []
     box_precisions = []
-    for image_path, group in ground_df.groupby("image_path"):
+
+    groups = list(ground_df.groupby("image_path"))
+    pbar = tqdm(total=len(groups))
+
+    for image_path, group in groups:
         # clean indices
         image_predictions = predictions[
             predictions["image_path"] == image_path
         ].reset_index(drop=True)
+
+        name = os.path.basename(image_path)
+        pbar.set_description(f"{name[:20]}, {len(image_predictions)} preds")
 
         # If empty, add to list without computing IoU
         if image_predictions.empty:
@@ -237,22 +250,24 @@ def evaluate_boxes(predictions, ground_df, iou_threshold=0.4):
             # An empty prediction set has recall of 0, precision of NA.
             box_recalls.append(0)
             results.append(result)
-            continue
         else:
             group = group.reset_index(drop=True)
             result = evaluate_image_boxes(predictions=image_predictions, ground_df=group)
 
-        result["image_path"] = image_path
-        result["match"] = result.IoU > iou_threshold
-        # Convert None to False for boolean consistency
-        result["match"] = result["match"].fillna(False)
-        true_positive = sum(result["match"])
-        recall = true_positive / result.shape[0]
-        precision = true_positive / image_predictions.shape[0]
+            result["image_path"] = image_path
+            result["match"] = result.IoU > iou_threshold
+            # Convert None to False for boolean consistency
+            result["match"] = result["match"].fillna(False)
+            true_positive = sum(result["match"])
+            recall = true_positive / result.shape[0]
+            precision = true_positive / image_predictions.shape[0]
 
-        box_recalls.append(recall)
-        box_precisions.append(precision)
-        results.append(result)
+            box_recalls.append(recall)
+            box_precisions.append(precision)
+            results.append(result)
+
+        pbar.update(1)
+    pbar.close()
 
     results = pd.concat(results)
     box_precision = np.mean(box_precisions)
@@ -368,3 +383,85 @@ def point_recall(predictions, ground_df):
     class_recall = compute_class_recall(matched_results)
 
     return {"results": results, "box_recall": box_recall, "class_recall": class_recall}
+
+
+class BoxEvaluator(Callback):
+    def __init__(self, every_n_epochs=5, iou_threshold=0.4):
+        self.iou_threshold = 0.4
+        self.every_n_epochs = every_n_epochs
+
+    def on_validation_epoch_start(self, trainer, pl_module):
+        # Init
+        self.results = []
+        self.box_recalls = []
+        self.box_precisions = []
+
+    def on_validation_batch_end(
+        self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx=0
+    ):
+        """Accumulate metrics."""
+        if trainer.sanity_checking or trainer.fast_dev_run:
+            return
+
+        if (trainer.current_epoch + 1) % self.every_n_epochs == 0:
+            self._accumulate_batch(pl_module, outputs, batch)
+
+    def on_validation_epoch_end(self, trainer, pl_module):
+        """Reduce metrics."""
+        if (trainer.current_epoch + 1) % self.every_n_epochs == 0:
+            box_precision = np.mean(self.box_precisions)
+            box_recall = np.mean(self.box_recalls)
+
+            # Only matching boxes are considered in class recall
+            all_results = pd.concat(self.results)
+            matched_results = all_results[all_results.match]
+            class_recall = compute_class_recall(matched_results)
+
+            del self.results
+            del matched_results
+            del self.box_precisions
+            del self.box_recalls
+
+            self.pl_module.log_dict(
+                {
+                    "box_precision": box_precision,
+                    "box_recall": box_recall,
+                    "class_recall": class_recall,
+                }
+            )
+
+    def _accumulate_batch(self, pl_module, outputs, batch):
+        _, targets, _ = batch
+
+        for pred, target in list(zip(pl_module.last_preds, targets, strict=False)):
+            target = utilities.format_geometry(target, scores=False)
+
+            if not pred or pred.empty:
+                result = pd.DataFrame(
+                    {
+                        "truth_id": target.index.values,
+                        "prediction_id": None,
+                        "IoU": 0,
+                        "predicted_label": None,
+                        "score": None,
+                        "match": False,
+                        "true_label": target.label,
+                    }
+                )
+                # An empty prediction set has recall of 0, precision of NA.
+                self.box_recalls.append(0)
+                self.results.append(result)
+            else:
+                target = target.reset_index(drop=True)
+                result = evaluate_image_boxes(predictions=pred, ground_df=target)
+
+                result["match"] = result.IoU > self.iou_threshold
+                # Convert None to False for boolean consistency
+                result["match"] = result["match"].fillna(False)
+                true_positive = sum(result["match"])
+                recall = true_positive / result.shape[0]
+                precision = true_positive / pred.shape[0]
+
+                self.box_recalls.append(recall)
+                self.box_precisions.append(precision)
+                self.results.append(result)
