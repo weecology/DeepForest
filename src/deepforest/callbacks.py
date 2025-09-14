@@ -129,7 +129,10 @@ class ImagesCallback(Callback):
         if self.prediction_samples == 0:
             return
 
-        df = pl_module.predictions
+        if len(pl_module.predictions) > 0:
+            df = pd.concat(pl_module.predictions)
+        else:
+            df = pd.DataFrame()
 
         # Skip if no predictions.
         if len(df) == 0 or not isinstance(df, pd.DataFrame):

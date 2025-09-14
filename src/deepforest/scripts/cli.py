@@ -2,6 +2,7 @@ import argparse
 import datetime
 import glob
 import os
+import traceback
 import warnings
 from pathlib import Path
 
@@ -94,11 +95,12 @@ def train(
 
     try:
         m.trainer.fit(m)
-    except Exception:
+    except Exception as e:
         warnings.warn(
-            "Training failed with exception {e}. Will attempt to upload any existing checkpoints if enabled.",
+            f"Training failed with exception {e}. Will attempt to upload any existing checkpoints if enabled.",
             stacklevel=2,
         )
+        warnings.warn(traceback.format_exc(), stacklevel=2)
 
     if checkpoint:
         for logger in m.trainer.loggers:

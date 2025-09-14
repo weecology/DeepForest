@@ -82,6 +82,8 @@ validation:
     root_dir:
     preload_images: False
     size:
+    batch_size: 1
+    workers: 0
 
     # For retinanet you may prefer val_classification, but the default val_loss
     # should work with all models
@@ -90,7 +92,6 @@ validation:
     # Intersection over union evaluation
     iou_threshold: 0.4
     val_accuracy_interval: 20
-    first_val_epoch: 10
 
     # Data augmentation is none by default for validation, but you can specify:
     # augmentations:

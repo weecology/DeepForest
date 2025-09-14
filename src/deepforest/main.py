@@ -20,6 +20,8 @@ from deepforest import evaluate as evaluate_iou
 from deepforest import predict, utilities
 from deepforest.datasets import prediction, training
 
+warnings.simplefilter(action="ignore", category=FutureWarning)
+
 
 class deepforest(pl.LightningModule):
     """DeepForest model for tree crown detection in RGB images.
@@ -329,6 +331,7 @@ class deepforest(pl.LightningModule):
         augmentations=None,
         preload_images=False,
         batch_size=1,
+        workers=0,
     ):
         """Create a dataset for inference or training. Csv file format is .csv
         file with the columns "image_path", "xmin","ymin","xmax","ymax" for the
@@ -377,7 +380,7 @@ class deepforest(pl.LightningModule):
             batch_size=batch_size,
             shuffle=shuffle,
             collate_fn=ds.collate_fn,
-            num_workers=self.config.workers,
+            num_workers=workers,
         )
 
         return data_loader
@@ -399,6 +402,7 @@ class deepforest(pl.LightningModule):
             shuffle=True,
             transforms=self.transforms,
             batch_size=self.config.batch_size,
+            workers=self.config.workers,
         )
 
         return loader
@@ -423,7 +427,8 @@ class deepforest(pl.LightningModule):
                 augmentations=self.config.validation.augmentations,
                 shuffle=False,
                 preload_images=self.config.validation.preload_images,
-                batch_size=self.config.batch_size,
+                batch_size=self.config.validation.batch_size,
+                workers=self.config.validation.workers,
             )
 
         return loader
@@ -766,6 +771,10 @@ class deepforest(pl.LightningModule):
 
         return losses
 
+    def on_train_epoch_start(self):
+        self.predictions = []
+        self.targets = {}
+
     def on_validation_epoch_start(self):
         self.predictions = []
         self.targets = {}
@@ -871,28 +880,25 @@ class deepforest(pl.LightningModule):
         if self.trainer.sanity_checking:  # optional skip
             return
 
-        if len(self.predictions) > 0:
-            self.predictions = pd.concat(self.predictions)
-        else:
-            self.predictions = pd.DataFrame()
+        # Epochs are 0-indexed, so this gives expected behaviour. Don't validate on
+        # epoch 0, and val_accuracy_interval can be set to max_epochs.
+        if (self.current_epoch + 1) % self.config.validation.val_accuracy_interval == 0:
+            if len(self.predictions) > 0:
+                predictions = pd.concat(self.predictions)
+            else:
+                predictions = pd.DataFrame()
 
-        if self.config.validation.val_accuracy_interval != 1 and self.current_epoch > 0:
-            return
-
-        if self.current_epoch % self.config.validation.val_accuracy_interval == 0:
             self.print(f"Beginning evaluation, epoch: {self.current_epoch}")
             results = self.evaluate(
                 self.config.validation.csv_file,
                 root_dir=self.config.validation.root_dir,
                 size=self.config.validation.size,
-                predictions=self.predictions,
+                predictions=predictions,
             )
 
             # Log epoch metrics
             self.log_epoch_metrics()
             self.__evaluation_logs__(results)
-
-            return results
 
     def predict_step(self, batch, batch_idx):
         """Predict a batch of images with the deepforest model. If batch is a
