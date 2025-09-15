@@ -369,8 +369,11 @@ class CropModel(LightningModule):
                 for i, v in enumerate(value):
                     # Use label names from label_dict 
                     if key == "Class Accuracy":
-                        label_name = self.numeric_to_label_dict.get(i, str(i))
-                        metric_name = f"{key}_{label_name}"
+                        if self.numeric_to_label_dict is not None:
+                            label_name = self.numeric_to_label_dict.get(i, str(i))
+                            metric_name = f"{key}_{label_name}"
+                        else:
+                            metric_name = f"{key}_{i}"
                     else:
                         metric_name = f"{key}_{i}"
                     self.log(metric_name, v, on_step=False, on_epoch=True)
