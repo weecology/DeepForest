@@ -1,17 +1,117 @@
 import argparse
+import datetime
+import glob
 import os
+import traceback
+import warnings
+from pathlib import Path
 
 from hydra import compose, initialize, initialize_config_dir
 from omegaconf import DictConfig, OmegaConf
+from pytorch_lightning.callbacks import DeviceStatsMonitor, ModelCheckpoint
+from pytorch_lightning.loggers import CSVLogger, TensorBoardLogger
 
+from deepforest.callbacks import ImagesCallback
 from deepforest.conf.schema import Config as StructuredConfig
 from deepforest.main import deepforest
 from deepforest.visualize import plot_results
 
 
-def train(config: DictConfig) -> None:
+def train(
+    config: DictConfig,
+    checkpoint: bool = True,
+    comet: bool = False,
+    tensorboard: bool = False,
+) -> None:
+    """This training function demonstrates basic setup for the DeepForest
+    Trainer.
+
+    Most
+    experimental parameters are defined in the config, but we include some additional
+    logic for logging here with sensible defaults: CSV/tensorboard
+    """
     m = deepforest(config=config)
-    m.trainer.fit(m)
+
+    callbacks = []
+    loggers = []
+    log_root = Path(config.train.log_root)
+
+    # Use defaults from Lightning unless overriden by Comet
+    experiment_name = None
+    # Store as %YYYY%mm%ddT%HH:%MM:%SS
+    version = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+
+    # Comet setup requires an external dependency
+    if comet and not m.config.train.fast_dev_run:
+        try:
+            from pytorch_lightning.loggers import CometLogger
+
+            comet_logger = CometLogger(
+                api_key=os.environ.get("COMET_API_KEY"),
+                workspace=os.environ.get("COMET_WORKSPACE"),
+                project=os.environ.get("COMET_PROJECT", default="DeepForest"),
+                offline_directory=config.train.log_root,
+            )
+
+            experiment_name = comet_logger.experiment.get_name()
+            version = ""
+            loggers.append(comet_logger)
+        except ImportError:
+            warnings.warn(
+                "Failed to import Comet, check if comet-ml is installed", stacklevel=2
+            )
+        except Exception as e:
+            warnings.warn(f"Failed to set up comet logger. {e}", stacklevel=2)
+    else:
+        callbacks.append(DeviceStatsMonitor())
+    # By default, create a CSV logger and monitor stats
+    csv_logger = CSVLogger(save_dir=log_root, name=experiment_name, version=version)
+    loggers.append(csv_logger)
+
+    if tensorboard:
+        tensorboard_logger = TensorBoardLogger(
+            save_dir=log_root,
+            sub_dir="tensorboard",
+            name=experiment_name,
+            version=version,
+        )
+        loggers.append(tensorboard_logger)
+
+    callbacks.append(ImagesCallback(save_dir=Path(csv_logger.log_dir) / "images"))
+
+    # Setup checkpoint to store in log directory
+    if checkpoint:
+        checkpoint_callback = ModelCheckpoint(
+            dirpath=Path(csv_logger.log_dir) / "checkpoints",
+            filename=f"{config.architecture}-{{epoch:02d}}-{{val_map_50:.2f}}",
+            monitor="val_loss",
+            mode="min",
+            save_top_k=1,
+            save_last=True,
+        )
+        callbacks.append(checkpoint_callback)
+
+    m.create_trainer(logger=loggers, callbacks=callbacks, gradient_clip_val=0.5)
+
+    try:
+        m.trainer.fit(m)
+    except Exception as e:
+        warnings.warn(
+            f"Training failed with exception {e}. Will attempt to upload any existing checkpoints if enabled.",
+            stacklevel=2,
+        )
+        warnings.warn(traceback.format_exc(), stacklevel=2)
+
+    if checkpoint:
+        for logger in m.trainer.loggers:
+            if hasattr(logger.experiment, "log_model"):
+                for checkpoint in glob.glob(
+                    os.path.join((checkpoint_callback.dirpath), "*.ckpt")
+                ):
+                    m.print(f"Uploading checkpoint {checkpoint}")
+                    logger.experiment.log_model(
+                        name=os.path.basename(checkpoint), file_or_folder=str(checkpoint)
+                    )
 
 
 def predict(
@@ -53,10 +153,23 @@ def main():
     subparsers = parser.add_subparsers(dest="command")
 
     # Train subcommand
-    _ = subparsers.add_parser(
+    train_parser = subparsers.add_parser(
         "train",
-        help="Train a model",
+        help="Train a model. It is strongly recommended that you enable either Tensorboard or Comet logging so you can track your experiment visually.",
         epilog="Any remaining arguments <key>=<value> will be passed to Hydra to override the current config.",
+    )
+    train_parser.add_argument(
+        "--disable-checkpoint", help="Path to log folder", action="store_true"
+    )
+    train_parser.add_argument(
+        "--comet",
+        help="Enable logging to Comet ML, requires comet to be logged in.",
+        action="store_true",
+    )
+    train_parser.add_argument(
+        "--tensorboard",
+        help="Enable logging to Tensorboard",
+        action="store_true",
     )
 
     # Predict subcommand
@@ -92,7 +205,12 @@ def main():
     if args.command == "predict":
         predict(cfg, input_path=args.input, output_path=args.output, plot=args.plot)
     elif args.command == "train":
-        train(cfg)
+        train(
+            cfg,
+            checkpoint=not args.disable_checkpoint,
+            comet=args.comet,
+            tensorboard=args.tensorboard,
+        )
     elif args.command == "config":
         print(OmegaConf.to_yaml(cfg, resolve=True))
 

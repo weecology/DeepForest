@@ -62,12 +62,15 @@ class TrainConfig:
 
     csv_file: str | None = MISSING
     root_dir: str | None = MISSING
+    log_root: str = "logs"
     lr: float = 0.001
     scheduler: SchedulerConfig = field(default_factory=SchedulerConfig)
     epochs: int = 1
     fast_dev_run: bool = False
     preload_images: bool = False
     augmentations: list[str] | None = field(default_factory=lambda: ["HorizontalFlip"])
+    check_annotations: bool = False
+    freeze_backbone: bool = False
 
 
 @dataclass
@@ -85,6 +88,8 @@ class ValidationConfig:
     size: int | None = None
     iou_threshold: float = 0.4
     val_accuracy_interval: int = 20
+    batch_size: int = 1
+    workers: int = 0
     lr_plateau_target: str = "val_loss"
     augmentations: list[str] | None = field(default_factory=lambda: [])
 

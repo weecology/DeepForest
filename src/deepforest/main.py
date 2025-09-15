@@ -1,7 +1,6 @@
 # entry point for deepforest model
 import importlib
 import os
-import tempfile
 import warnings
 
 import geopandas as gpd
@@ -18,8 +17,10 @@ from torchmetrics.classification import BinaryAccuracy
 from torchmetrics.detection import IntersectionOverUnion, MeanAveragePrecision
 
 from deepforest import evaluate as evaluate_iou
-from deepforest import predict, utilities, visualize
+from deepforest import predict, utilities
 from deepforest.datasets import prediction, training
+
+warnings.simplefilter(action="ignore", category=FutureWarning)
 
 
 class deepforest(pl.LightningModule):
@@ -297,94 +298,6 @@ class deepforest(pl.LightningModule):
                 "calling deepforest.create_trainer()'"
             )
 
-    def on_train_start(self):
-        """Log sample images from training and validation datasets at training
-        start."""
-
-        if self.trainer.fast_dev_run:
-            return
-
-        # Get training dataset
-        train_ds = self.train_dataloader().dataset
-
-        # Sample up to 5 indices from training dataset
-        n_samples = min(5, len(train_ds))
-        sample_indices = torch.randperm(len(train_ds))[:n_samples]
-
-        # Create temporary directory for images
-        tmpdir = tempfile.mkdtemp()
-
-        # Get images, targets and paths for sampled indices
-        sample_data = [train_ds[idx] for idx in sample_indices]
-        sample_images = [data[0] for data in sample_data]
-        sample_targets = [data[1] for data in sample_data]
-        sample_paths = [data[2] for data in sample_data]
-
-        for image, target, path in zip(
-            sample_images, sample_targets, sample_paths, strict=False
-        ):
-            # Get annotations for this image
-            image_annotations = target.copy()
-            image_annotations = utilities.format_geometry(image_annotations, scores=False)
-            image_annotations.root_dir = self.config.train.root_dir
-            image_annotations["image_path"] = path
-
-            # Plot and save
-            save_path = os.path.join(tmpdir, f"train_{os.path.basename(path)}")
-            visualize.plot_annotations(
-                image_annotations, savedir=tmpdir, image=image.numpy(), basename=path
-            )
-
-            # Log to available loggers
-            for logger in self.trainer.loggers:
-                if hasattr(logger.experiment, "log_image"):
-                    logger.experiment.log_image(
-                        save_path,
-                        metadata={
-                            "name": path,
-                            "context": "detection_train",
-                            "step": self.global_step,
-                        },
-                    )
-
-        # Also log validation images if available
-        if self.config.validation.csv_file is not None:
-            val_ds = self.val_dataloader().dataset
-
-            n_samples = min(5, len(val_ds))
-            sample_indices = torch.randperm(len(val_ds))[:n_samples]
-
-            sample_data = [val_ds[idx] for idx in sample_indices]
-            sample_images = [data[0] for data in sample_data]
-            sample_targets = [data[1] for data in sample_data]
-            sample_paths = [data[2] for data in sample_data]
-
-            for image, target, path in zip(
-                sample_images, sample_targets, sample_paths, strict=False
-            ):
-                image_annotations = target.copy()
-                image_annotations = utilities.format_geometry(
-                    image_annotations, scores=False
-                )
-                image_annotations.root_dir = self.config.validation.root_dir
-                image_annotations["image_path"] = path
-
-                save_path = os.path.join(tmpdir, f"val_{os.path.basename(path)}")
-                visualize.plot_annotations(
-                    image_annotations, savedir=tmpdir, image=image.numpy(), basename=path
-                )
-
-                for logger in self.trainer.loggers:
-                    if hasattr(logger.experiment, "log_image"):
-                        logger.experiment.log_image(
-                            save_path,
-                            metadata={
-                                "name": path,
-                                "context": "detection_val",
-                                "step": self.global_step,
-                            },
-                        )
-
     def on_save_checkpoint(self, checkpoint):
         checkpoint["label_dict"] = self.label_dict
         checkpoint["numeric_to_label_dict"] = self.numeric_to_label_dict
@@ -418,6 +331,7 @@ class deepforest(pl.LightningModule):
         augmentations=None,
         preload_images=False,
         batch_size=1,
+        workers=0,
     ):
         """Create a dataset for inference or training. Csv file format is .csv
         file with the columns "image_path", "xmin","ymin","xmax","ymax" for the
@@ -454,6 +368,7 @@ class deepforest(pl.LightningModule):
             label_dict=self.label_dict,
             augmentations=augmentations,
             preload_images=preload_images,
+            check_annotations=self.config.train.check_annotations,
         )
         if len(ds) == 0:
             raise ValueError(
@@ -465,7 +380,7 @@ class deepforest(pl.LightningModule):
             batch_size=batch_size,
             shuffle=shuffle,
             collate_fn=ds.collate_fn,
-            num_workers=self.config.workers,
+            num_workers=workers,
         )
 
         return data_loader
@@ -487,6 +402,7 @@ class deepforest(pl.LightningModule):
             shuffle=True,
             transforms=self.transforms,
             batch_size=self.config.batch_size,
+            workers=self.config.workers,
         )
 
         return loader
@@ -511,7 +427,8 @@ class deepforest(pl.LightningModule):
                 augmentations=self.config.validation.augmentations,
                 shuffle=False,
                 preload_images=self.config.validation.preload_images,
-                batch_size=self.config.batch_size,
+                batch_size=self.config.validation.batch_size,
+                workers=self.config.validation.workers,
             )
 
         return loader
@@ -850,11 +767,17 @@ class deepforest(pl.LightningModule):
             if formatted_result is not None:
                 formatted_result["image_path"] = image_names[i]
                 self.predictions.append(formatted_result)
+                self.targets[image_names[i]] = targets[i]
 
         return losses
 
+    def on_train_epoch_start(self):
+        self.predictions = []
+        self.targets = {}
+
     def on_validation_epoch_start(self):
         self.predictions = []
+        self.targets = {}
 
     def calculate_empty_frame_accuracy(self, ground_df, predictions_df):
         """Calculate accuracy for empty frames (frames with no objects).
@@ -957,24 +880,25 @@ class deepforest(pl.LightningModule):
         if self.trainer.sanity_checking:  # optional skip
             return
 
-        if self.current_epoch % self.config.validation.val_accuracy_interval == 0:
+        # Epochs are 0-indexed, so this gives expected behaviour. Don't validate on
+        # epoch 0, and val_accuracy_interval can be set to max_epochs.
+        if (self.current_epoch + 1) % self.config.validation.val_accuracy_interval == 0:
             if len(self.predictions) > 0:
-                self.predictions = pd.concat(self.predictions)
+                predictions = pd.concat(self.predictions)
             else:
-                self.predictions = pd.DataFrame()
+                predictions = pd.DataFrame()
 
+            self.print(f"Beginning evaluation, epoch: {self.current_epoch}")
             results = self.evaluate(
                 self.config.validation.csv_file,
                 root_dir=self.config.validation.root_dir,
                 size=self.config.validation.size,
-                predictions=self.predictions,
+                predictions=predictions,
             )
 
             # Log epoch metrics
             self.log_epoch_metrics()
             self.__evaluation_logs__(results)
-
-            return results
 
     def predict_step(self, batch, batch_idx):
         """Predict a batch of images with the deepforest model. If batch is a

@@ -9,6 +9,7 @@ import shapely
 import torch
 from PIL import Image
 from torch.utils.data import Dataset
+from tqdm.auto import tqdm
 
 from deepforest.augmentations import get_transform
 
@@ -41,6 +42,8 @@ class BoxDataset(Dataset):
         augmentations=None,
         label_dict=None,
         preload_images=False,
+        relative_paths=True,
+        check_annotations=False,
     ):
         """
         Args:
@@ -78,10 +81,18 @@ class BoxDataset(Dataset):
             self.transform = get_transform(augmentations=augmentations)
         else:
             self.transform = transforms
-        self.image_names = self.annotations.image_path.unique()
+
+        if relative_paths:
+            self.image_names = self.annotations.image_path.unique()
+        else:
+            self.image_names = [
+                os.path.basename(path) for path in self.annotations.image_path.unique()
+            ]
+        self.label_dict = label_dict
         self.preload_images = preload_images
 
-        self._validate_labels()
+        if check_annotations:
+            self._validate_annotations()
 
         # Pin data to memory if desired
         if self.preload_images:
@@ -90,20 +101,62 @@ class BoxDataset(Dataset):
             for idx, _ in enumerate(self.image_names):
                 self.image_dict[idx] = self.load_image(idx)
 
-    def _validate_labels(self):
-        """Validate that all labels in annotations exist in label_dict.
+    def _validate_annotations(self):
+        errors = []
+        missing_labels = set()
+        img_sizes = {}  # rel_path -> (w,h)
+        has_geom = "geometry" in self.annotations.columns
+        labels = set(self.label_dict)
 
-        Raises:
-            ValueError: If any label in annotations is missing from label_dict
-        """
-        csv_labels = self.annotations["label"].unique()
-        missing_labels = [label for label in csv_labels if label not in self.label_dict]
+        for row in tqdm(self.annotations.itertuples(index=True)):
+            rel_path = row.image_path
+            size = img_sizes.get(rel_path)
+            if size is None:
+                img_path = os.path.join(self.root_dir, rel_path)
+                try:
+                    with Image.open(img_path) as img:
+                        size = img.size
+                except Exception as e:
+                    errors.append(f"Failed to open image {img_path}: {e}")
+                    img_sizes[rel_path] = None
+                    continue
+                img_sizes[rel_path] = size
+            if size is None:
+                continue
+            width, height = size
+
+            if row.label not in labels:
+                missing_labels.add(row.label)
+
+            try:
+                if has_geom:
+                    xmin, ymin, xmax, ymax = shapely.wkt.loads(row.geometry).bounds
+                else:
+                    xmin, ymin, xmax, ymax = row.xmin, row.ymin, row.xmax, row.ymax
+            except Exception as e:
+                errors.append(f"Invalid box format at index {row.Index}: {e}")
+                continue
+
+            oob = []
+            if xmin < 0:
+                oob.append(f"xmin ({xmin}) < 0")
+            if xmax > width:
+                oob.append(f"xmax ({xmax}) > image width ({width})")
+            if ymin < 0:
+                oob.append(f"ymin ({ymin}) < 0")
+            if ymax > height:
+                oob.append(f"ymax ({ymax}) > image height ({height})")
+            if oob:
+                errors.append(
+                    f"Box ({xmin}, {ymin}, {xmax}, {ymax}) exceeds ({width}, {height}). Issues: {', '.join(oob)}."
+                )
+            if xmin == xmax or ymin == ymax:
+                errors.append(f"Zero area bbox ({xmin}, {ymin}, {xmax}, {ymax}).")
 
         if missing_labels:
-            raise ValueError(
-                f"Labels {missing_labels} are missing from label_dict. "
-                f"Please ensure all labels in the annotations exist as keys in label_dict."
-            )
+            errors.append(f"Labels {sorted(missing_labels)} are missing from label_dict")
+        if errors:
+            raise ValueError("\n".join(errors))
 
     def __len__(self):
         return len(self.image_names)
@@ -161,12 +214,20 @@ class BoxDataset(Dataset):
             return image, targets, self.image_names[idx]
 
         # Apply augmentations
-        augmented = self.transform(
-            image=image,
-            bboxes=targets["boxes"],
-            category_ids=targets["labels"].astype(np.int64),
-        )
-        image = augmented["image"]
+
+        try:
+            augmented = self.transform(
+                image=image,
+                bboxes=targets["boxes"],
+                category_ids=targets["labels"].astype(np.int64),
+            )
+            image = augmented["image"]
+        except Exception as e:
+            print(f"Failed to process image: {self.image_names[idx]}")
+            print(targets["boxes"])
+            print("Annotations:")
+            print(image_annotations)
+            raise e
 
         # Convert boxes to tensor
         boxes = np.array(augmented["bboxes"])

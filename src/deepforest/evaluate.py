@@ -1,14 +1,18 @@
 """Evaluation module."""
 
+import os
 import warnings
 
 import geopandas as gpd
 import numpy as np
 import pandas as pd
 import shapely
+from tqdm import tqdm
 
 from deepforest import IoU
 from deepforest.utilities import determine_geometry_type
+
+warnings.simplefilter(action="ignore", category=FutureWarning)
 
 
 def evaluate_image_boxes(predictions, ground_df):
@@ -140,6 +144,7 @@ def __evaluate_wrapper__(predictions, ground_df, iou_threshold, numeric_to_label
         results = evaluate_boxes(
             predictions=predictions, ground_df=ground_df, iou_threshold=iou_threshold
         )
+
     else:
         raise NotImplementedError(f"Geometry type {prediction_geometry} not implemented")
 
@@ -215,11 +220,18 @@ def evaluate_boxes(predictions, ground_df, iou_threshold=0.4):
     results = []
     box_recalls = []
     box_precisions = []
-    for image_path, group in ground_df.groupby("image_path"):
+
+    groups = list(ground_df.groupby("image_path"))
+    pbar = tqdm(total=len(groups))
+
+    for image_path, group in groups:
         # clean indices
         image_predictions = predictions[
             predictions["image_path"] == image_path
         ].reset_index(drop=True)
+
+        name = os.path.basename(image_path)
+        pbar.set_description(f"{name[:20]}, {len(image_predictions)} preds")
 
         # If empty, add to list without computing IoU
         if image_predictions.empty:
@@ -237,22 +249,24 @@ def evaluate_boxes(predictions, ground_df, iou_threshold=0.4):
             # An empty prediction set has recall of 0, precision of NA.
             box_recalls.append(0)
             results.append(result)
-            continue
         else:
             group = group.reset_index(drop=True)
             result = evaluate_image_boxes(predictions=image_predictions, ground_df=group)
 
-        result["image_path"] = image_path
-        result["match"] = result.IoU > iou_threshold
-        # Convert None to False for boolean consistency
-        result["match"] = result["match"].fillna(False)
-        true_positive = sum(result["match"])
-        recall = true_positive / result.shape[0]
-        precision = true_positive / image_predictions.shape[0]
+            result["image_path"] = image_path
+            result["match"] = result.IoU > iou_threshold
+            # Convert None to False for boolean consistency
+            result["match"] = result["match"].fillna(False)
+            true_positive = sum(result["match"])
+            recall = true_positive / result.shape[0]
+            precision = true_positive / image_predictions.shape[0]
 
-        box_recalls.append(recall)
-        box_precisions.append(precision)
-        results.append(result)
+            box_recalls.append(recall)
+            box_precisions.append(precision)
+            results.append(result)
+
+        pbar.update(1)
+    pbar.close()
 
     results = pd.concat(results)
     box_precision = np.mean(box_precisions)

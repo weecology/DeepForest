@@ -30,6 +30,9 @@ rgb_dir:
 path_to_rgb:
 
 train:
+    # Sanity check annotations on dataset load
+    check_annotations: False
+    log_root: logs
     csv_file:
     root_dir:
 
@@ -72,12 +75,15 @@ train:
     fast_dev_run: False
     # preload images to GPU memory for fast training. This depends on GPU size and number of images.
     preload_images: False
+    freeze_backbone: False
 
 validation:
     csv_file:
     root_dir:
     preload_images: False
     size:
+    batch_size: 1
+    workers: 0
 
     # For retinanet you may prefer val_classification, but the default val_loss
     # should work with all models
