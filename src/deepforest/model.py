@@ -367,7 +367,13 @@ class CropModel(LightningModule):
         for key, value in metric_dict.items():
             if isinstance(value, torch.Tensor) and value.numel() > 1:
                 for i, v in enumerate(value):
-                    self.log(f"{key}_{i}", v, on_step=False, on_epoch=True)
+                    # Use label names from label_dict 
+                    if key == "Class Accuracy":
+                        label_name = self.numeric_to_label_dict.get(i, str(i))
+                        metric_name = f"{key}_{label_name}"
+                    else:
+                        metric_name = f"{key}_{i}"
+                    self.log(metric_name, v, on_step=False, on_epoch=True)
             else:
                 self.log(key, value, on_step=False, on_epoch=True)
         return loss
