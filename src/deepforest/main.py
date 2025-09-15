@@ -957,7 +957,7 @@ class deepforest(pl.LightningModule):
         if self.trainer.sanity_checking:  # optional skip
             return
 
-        if self.current_epoch % self.config.validation.val_accuracy_interval == 0:
+        if (self.current_epoch + 1) % self.config.validation.val_accuracy_interval == 0:
             if len(self.predictions) > 0:
                 self.predictions = pd.concat(self.predictions)
             else:
