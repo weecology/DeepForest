@@ -957,6 +957,9 @@ class deepforest(pl.LightningModule):
         if self.trainer.sanity_checking:  # optional skip
             return
 
+        # Log epoch metrics
+        self.log_epoch_metrics()
+
         if (self.current_epoch + 1) % self.config.validation.val_accuracy_interval == 0:
             if len(self.predictions) > 0:
                 self.predictions = pd.concat(self.predictions)
@@ -970,8 +973,6 @@ class deepforest(pl.LightningModule):
                 predictions=self.predictions,
             )
 
-            # Log epoch metrics
-            self.log_epoch_metrics()
             self.__evaluation_logs__(results)
 
             return results
