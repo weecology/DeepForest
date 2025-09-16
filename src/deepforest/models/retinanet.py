@@ -139,12 +139,13 @@ class RetinaNetHub(RetinaNet, PyTorchModelHubMixin):
 
 
 class Model(BaseModel):
+
     def __init__(self, config, **kwargs):
         super().__init__(config)
 
-    def create_anchor_generator(
-        self, sizes=((8, 16, 32, 64, 128, 256, 400),), aspect_ratios=((0.5, 1.0, 2.0),)
-    ):
+    def create_anchor_generator(self,
+                                sizes=((8, 16, 32, 64, 128, 256, 400), ),
+                                aspect_ratios=((0.5, 1.0, 2.0), )):
         """
         Create anchor box generator as a function of sizes and aspect ratios
         Documented https://github.com/pytorch/vision/blob/67b25288ca202d027e8b06e17111f1bcebd2046c/torchvision/models/detection/anchor_utils.py#L9
@@ -160,7 +161,8 @@ class Model(BaseModel):
         Returns: anchor_generator, a pytorch module
 
         """
-        anchor_generator = AnchorGenerator(sizes=sizes, aspect_ratios=aspect_ratios)
+        anchor_generator = AnchorGenerator(sizes=sizes,
+                                           aspect_ratios=aspect_ratios)
 
         return anchor_generator
 
@@ -191,6 +193,12 @@ class Model(BaseModel):
                 label_dict=self.config.label_dict,
             )
         else:
+            # Pre 2.0 compatibility, the score_threshold used to be stored under retinanet.score_thresh
+            try:
+                self.config.score_thresh = self.config.retinanet.score_thresh
+            except AttributeError:
+                pass
+
             model = RetinaNetHub.from_pretrained(
                 pretrained,
                 revision=revision,
