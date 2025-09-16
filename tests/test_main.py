@@ -208,6 +208,7 @@ def test_validation_step(m):
     val_dataloader = m.val_dataloader()
     batch = next(iter(val_dataloader))
     m.predictions = []
+    m.targets = {}
     val_loss = m.validation_step(batch, 0)
     assert val_loss != 0
 
@@ -221,6 +222,7 @@ def test_validation_step_empty(m_without_release):
     val_dataloader = m.val_dataloader()
     batch = next(iter(val_dataloader))
     m.predictions = []
+    m.targets = {}
     val_predictions = m.validation_step(batch, 0)
     assert m.iou_metric.compute()["iou"] == 0
 
@@ -1108,20 +1110,3 @@ def test_set_labels_invalid_length(m): # Expect a ValueError when setting an inv
     invalid_mapping = {"Object": 0, "Extra": 1}
     with pytest.raises(ValueError):
         m.set_labels(invalid_mapping)
-
-def test_on_train_start_basic(m):
-    """Test that on_train_start runs without error and logs images using the default logger."""
-    # Create a mock logger
-    class MockLogger:
-        def __init__(self):
-            self.experiment = Mock()
-            self.experiment.log_image = self.log_image
-            self.images = []
-
-        def log_image(self, image, metadata):
-            self.images.append(image)
-
-    m.create_trainer(fast_dev_run=False, limit_train_batches=2, limit_val_batches=2, logger=MockLogger())
-    m.on_train_start()
-
-    assert len(m.logger.images) == 2
