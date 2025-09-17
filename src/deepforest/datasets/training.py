@@ -122,17 +122,18 @@ class BoxDataset(Dataset):
         image = image.astype("float32")
         return image
 
-    def __getitem__(self, idx):
-        # Read image if not in memory
-        if self.preload_images:
-            image = self.image_dict[idx]
-        else:
-            image = self.load_image(idx)
+    def annotations_for_path(self, image_path, return_tensor=False):
+        """Construct target dictionary for a given image path, optionally
+        convert to tensor.
 
-        # select annotations
-        image_annotations = self.annotations[
-            self.annotations.image_path == self.image_names[idx]
-        ]
+        Args:
+            image_path (str): Path to image, expected to be in dataframe
+            return_tensor (bool): If true, convert fields from numpy to tensor
+
+        Returns:
+            target dictionary with boxes and labels entries
+        """
+        image_annotations = self.annotations[self.annotations.image_path == image_path]
         targets = {}
 
         if "geometry" in image_annotations.columns:
@@ -148,6 +149,21 @@ class BoxDataset(Dataset):
         targets["labels"] = image_annotations.label.apply(
             lambda x: self.label_dict[x]
         ).values.astype(np.int64)
+
+        if return_tensor:
+            for k, v in targets.items():
+                targets[k] = torch.from_numpy(v)
+
+        return targets
+
+    def __getitem__(self, idx):
+        # Read image if not in memory
+        if self.preload_images:
+            image = self.image_dict[idx]
+        else:
+            image = self.load_image(idx)
+
+        targets = self.annotations_for_path(self.image_names[idx])
 
         # If image has no annotations, don't augment
         if np.sum(targets["boxes"]) == 0:

@@ -1,7 +1,6 @@
 # entry point for deepforest model
 import importlib
 import os
-import tempfile
 import warnings
 
 import geopandas as gpd
@@ -18,7 +17,7 @@ from torchmetrics.classification import BinaryAccuracy
 from torchmetrics.detection import IntersectionOverUnion, MeanAveragePrecision
 
 from deepforest import evaluate as evaluate_iou
-from deepforest import predict, utilities, visualize
+from deepforest import predict, utilities
 from deepforest.datasets import prediction, training
 
 
@@ -296,94 +295,6 @@ class deepforest(pl.LightningModule):
                 "please set 'config['train']['csv_file'] before "
                 "calling deepforest.create_trainer()'"
             )
-
-    def on_train_start(self):
-        """Log sample images from training and validation datasets at training
-        start."""
-
-        if self.trainer.fast_dev_run:
-            return
-
-        # Get training dataset
-        train_ds = self.train_dataloader().dataset
-
-        # Sample up to 5 indices from training dataset
-        n_samples = min(5, len(train_ds))
-        sample_indices = torch.randperm(len(train_ds))[:n_samples]
-
-        # Create temporary directory for images
-        tmpdir = tempfile.mkdtemp()
-
-        # Get images, targets and paths for sampled indices
-        sample_data = [train_ds[idx] for idx in sample_indices]
-        sample_images = [data[0] for data in sample_data]
-        sample_targets = [data[1] for data in sample_data]
-        sample_paths = [data[2] for data in sample_data]
-
-        for image, target, path in zip(
-            sample_images, sample_targets, sample_paths, strict=False
-        ):
-            # Get annotations for this image
-            image_annotations = target.copy()
-            image_annotations = utilities.format_geometry(image_annotations, scores=False)
-            image_annotations.root_dir = self.config.train.root_dir
-            image_annotations["image_path"] = path
-
-            # Plot and save
-            save_path = os.path.join(tmpdir, f"train_{os.path.basename(path)}")
-            visualize.plot_annotations(
-                image_annotations, savedir=tmpdir, image=image.numpy(), basename=path
-            )
-
-            # Log to available loggers
-            for logger in self.trainer.loggers:
-                if hasattr(logger.experiment, "log_image"):
-                    logger.experiment.log_image(
-                        save_path,
-                        metadata={
-                            "name": path,
-                            "context": "detection_train",
-                            "step": self.global_step,
-                        },
-                    )
-
-        # Also log validation images if available
-        if self.config.validation.csv_file is not None:
-            val_ds = self.val_dataloader().dataset
-
-            n_samples = min(5, len(val_ds))
-            sample_indices = torch.randperm(len(val_ds))[:n_samples]
-
-            sample_data = [val_ds[idx] for idx in sample_indices]
-            sample_images = [data[0] for data in sample_data]
-            sample_targets = [data[1] for data in sample_data]
-            sample_paths = [data[2] for data in sample_data]
-
-            for image, target, path in zip(
-                sample_images, sample_targets, sample_paths, strict=False
-            ):
-                image_annotations = target.copy()
-                image_annotations = utilities.format_geometry(
-                    image_annotations, scores=False
-                )
-                image_annotations.root_dir = self.config.validation.root_dir
-                image_annotations["image_path"] = path
-
-                save_path = os.path.join(tmpdir, f"val_{os.path.basename(path)}")
-                visualize.plot_annotations(
-                    image_annotations, savedir=tmpdir, image=image.numpy(), basename=path
-                )
-
-                for logger in self.trainer.loggers:
-                    if hasattr(logger.experiment, "log_image"):
-                        logger.experiment.log_image(
-                            save_path,
-                            metadata={
-                                "name": path,
-                                "context": "detection_val",
-                                "step": self.global_step,
-                            },
-                        )
 
     def on_save_checkpoint(self, checkpoint):
         checkpoint["label_dict"] = self.label_dict
@@ -962,15 +873,15 @@ class deepforest(pl.LightningModule):
 
         if (self.current_epoch + 1) % self.config.validation.val_accuracy_interval == 0:
             if len(self.predictions) > 0:
-                self.predictions = pd.concat(self.predictions)
+                predictions = pd.concat(self.predictions)
             else:
-                self.predictions = pd.DataFrame()
+                predictions = pd.DataFrame()
 
             results = self.evaluate(
                 self.config.validation.csv_file,
                 root_dir=self.config.validation.root_dir,
                 size=self.config.validation.size,
-                predictions=self.predictions,
+                predictions=predictions,
             )
 
             self.__evaluation_logs__(results)
