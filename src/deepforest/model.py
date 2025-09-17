@@ -447,32 +447,6 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
 
         return model
 
-    @classmethod
-    def from_config(cls, config):
-        """Recreate instance from Hub config (used by from_pretrained)."""
-        num_classes = config.get("num_classes")
-        label_dict = config.get("label_dict")
-
-        instance = cls(
-            num_classes=num_classes,
-            batch_size=config.get("batch_size", 4),
-            num_workers=config.get("num_workers", 0),
-            lr=config.get("lr", 0.0001),
-            label_dict=label_dict,
-            model=None,
-        )
-
-        # Ensure underlying model is created with correct number of classes
-        if num_classes is not None and getattr(instance, "model", None) is None:
-            instance.create_model(num_classes)
-
-        # Keep reverse mapping
-        if label_dict is not None:
-            instance.numeric_to_label_dict = {v: k for k, v in label_dict.items()}
-
-        instance.update_config()
-        return instance
-
     # Ensure config is up-to-date when pushing to Hub
     def push_to_hub(self, *args, **kwargs):
         self.update_config()
