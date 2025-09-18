@@ -90,7 +90,7 @@ class deepforest(pl.LightningModule):
         self.iou_metric = IntersectionOverUnion(
             class_metrics=True, iou_threshold=self.config.validation.iou_threshold
         )
-        self.mAP_metric = MeanAveragePrecision()
+        self.mAP_metric = MeanAveragePrecision(backend="faster_coco_eval")
 
         # Empty frame accuracy
         self.empty_frame_accuracy = BinaryAccuracy()
