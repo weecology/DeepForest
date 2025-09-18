@@ -5,7 +5,6 @@ validation that can be specified through configuration files or direct
 parameters.
 """
 
-import warnings
 from typing import Any
 
 import albumentations as A
@@ -51,18 +50,16 @@ def get_available_augmentations() -> list[str]:
 
 
 def get_transform(
-    augment: bool | None = None,
     augmentations: str | list[str] | dict[str, Any] | None = None,
 ) -> A.Compose:
     """Create Albumentations transform for bounding boxes.
 
     Args:
-        augment: Deprecated - use augmentations instead
         augmentations: Augmentation configuration:
             - str: Single augmentation name
             - list: List of augmentation names
             - dict: Dict with names as keys and params as values
-            - None: Default augmentations when augment=True
+            - None: No augmentations
 
     Returns:
         Composed albumentations transform
@@ -85,13 +82,6 @@ def get_transform(
     """
     transforms_list = []
     bbox_params = None
-
-    if augment is not None:
-        warnings.warn(
-            "The `augment` parameter is deprecated. Please use `augmentations` instead, "
-            "providing an empty list or None to disable augmentations.",
-            stacklevel=2,
-        )
 
     if augmentations is not None:
         augment_configs = _parse_augmentations(augmentations)

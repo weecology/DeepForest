@@ -1,9 +1,38 @@
 # DeepForest Changelog
 
-## Version x.x.x (Date: )
+## Version 2.0.0 (Date: TBD)
 
-- **Deprecation:** `predict_tile` in `deepforest/main.py`. The `raster_path` argument is deprecated and will be removed in a future version.
-- **Enhancement:** Updated the `predict_tile()` function to use the `path` argument (replacing `raster_path`) across all code, tests, and documentation for consistency.
+### Breaking Changes - Deprecated Items Removed:
+
+**Removed Functions:**
+- `xml_to_annotations()` - Use `utilities.read_pascal_voc(path)` or the general `utilities.read_file(path)`.
+- `boxes_to_shapefile()` - Use `image_to_geo_coordinates()`.
+- `project_boxes()` - Use `image_to_geo_coordinates()`.
+- `annotations_to_shapefile` - Use `image_to_geo_coordinates()`.
+- `plot_points()` - Use `plot_results`
+- `draw_points()` - Use `plot_results`
+- `plot_predictions()` - Use `plot_results`
+- `draw_predictions()` - Use `plot_results`
+- `use_release()` - Use `load_model('weecology/deepforest-tree')` instead
+- `use_bird_release()` - Use `load_model('weecology/deepforest-bird')` instead
+
+**Removed Parameters:**
+- `geometry_type` and `save_dir` from `shapefile_to_annotations()`
+- `num_classes` and `label_dict` from `deepforest()` constructor - Use config file instead
+- `augment` parameter from all functions - Use `augmentations` parameter instead
+- `raster_path` parameter from predict_tile()  - Use `path` parameter instead
+
+**Migration Guide:**
+- Replace `xml_to_annotations(xml_path)` with `read_pascal_voc(xml_path)`
+- Replace `boxes_to_shapefile(df, root_dir)` with `image_to_geo_coordinates(df, root_dir)`
+- Replace `plot_points(image, points)` with `plot_results(results)`
+- Replace `draw_points(image, points)` with `plot_results(results)`
+- Replace `plot_predictions(image, df)` with `plot_results(results)`
+- Replace `draw_predictions(image, df)` with `plot_results(results)`
+- Replace `use_release()` with `load_model('weecology/deepforest-tree')`
+- Replace `use_bird_release()` with `load_model('weecology/deepforest-bird')`
+- Use config file or `config_args` instead of constructor parameters
+- Use `augmentations` parameter instead of `augment` parameter
 
 ## Version 1.5.2 (Date: Feb 7, 2025)
 
@@ -84,7 +113,7 @@ Additional features and enhancements include:
 ## Version 1.1.1 (Date: Sep 14, 2021)
 
 - **Update:** `project_boxes` now includes output options for both `predict_tile` and `predict_image`.
-- **New Feature:** Introduced `annotations_to_shapefile`, which reverses `shapefile_to_annotations` functionality.  
+- **New Feature:** Introduced `annotations_to_shapefile`, which reverses `shapefile_to_annotations` functionality.
   Thanks to @sdtaylor for this contribution.
 
 ## Version 1.1.0 (Date: Aug 5, 2021)

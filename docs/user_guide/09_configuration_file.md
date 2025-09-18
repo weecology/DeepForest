@@ -105,7 +105,7 @@ m = main.deepforest()
 print(m.config.num_classes)
 
 # But we can override using config args, make sure to specify a new label dict.
-m = main.deepforest(config_args={"num_classes":2}, label_dict={"Alive":0,"Dead":1})
+m = main.deepforest(config_args={"num_classes":2, "label_dict": {"Alive":0,"Dead":1}})
 print(m.config.num_classes)
 
 # These can also be nested for train and val arguments

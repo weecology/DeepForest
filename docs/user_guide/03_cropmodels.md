@@ -2,20 +2,20 @@
 
 ## Classifying Objects After Object Detection
 
-One of the most requested features since the early days of DeepForest was the ability to apply a follow-up model to predicted bounding boxes. For example, if you use the 'tree' or 'bird' backbone, you might want to classify each detection with your own model without retraining the upstream detector.  
+One of the most requested features since the early days of DeepForest was the ability to apply a follow-up model to predicted bounding boxes. For example, if you use the 'tree' or 'bird' backbone, you might want to classify each detection with your own model without retraining the upstream detector.
 
-Beginning in version 1.4.0, the `CropModel` class can be used in conjunction with `predict_tile` and `predict_image` methods. The general workflow involves first applying the object detection model, extracting the prediction locations into images (which can optionally be saved to disk), and then applying a second model on each cropped image.  
+Beginning in version 1.4.0, the `CropModel` class can be used in conjunction with `predict_tile` and `predict_image` methods. The general workflow involves first applying the object detection model, extracting the prediction locations into images (which can optionally be saved to disk), and then applying a second model on each cropped image.
 
-New columns `cropmodel_label` and `cropmodel_score` will appear alongside the object detection model's label and score.  
+New columns `cropmodel_label` and `cropmodel_score` will appear alongside the object detection model's label and score.
 
 ## Benefits
 
-Why would you want to apply a model directly to each crop? Why not train a multi-class object detection model?  
+Why would you want to apply a model directly to each crop? Why not train a multi-class object detection model?
 
-While that approach is certainly valid, there are a few key benefits to using CropModels, especially in common use cases:  
+While that approach is certainly valid, there are a few key benefits to using CropModels, especially in common use cases:
 
-- **Flexible Labeling**: Object detection models require that all objects of a particular class be annotated within an image, which can be impossible for detailed category labels. For example, you might have bounding boxes for all 'trees' in an image, but only have species or health labels for a small portion of them based on ground surveys. Training a multi-class object detection model would mean training on only a portion of your available data. 
-- **Simpler and Extendable**: CropModels decouple detection and classification workflows, allowing separate handling of challenges like class imbalance and incomplete labels, without reducing the quality of the detections. Two-stage object detection models can be finicky with similar classes and often require expertise in managing learning rates. 
+- **Flexible Labeling**: Object detection models require that all objects of a particular class be annotated within an image, which can be impossible for detailed category labels. For example, you might have bounding boxes for all 'trees' in an image, but only have species or health labels for a small portion of them based on ground surveys. Training a multi-class object detection model would mean training on only a portion of your available data.
+- **Simpler and Extendable**: CropModels decouple detection and classification workflows, allowing separate handling of challenges like class imbalance and incomplete labels, without reducing the quality of the detections. Two-stage object detection models can be finicky with similar classes and often require expertise in managing learning rates.
 - **New Data and Multi-sensor Learning**: In many applications, the data needed for detection and classification may differ. The CropModel concept provides an extendable piece that allows for advanced pipelines.
 
 ## Considerations
@@ -68,12 +68,12 @@ result = m.predict_tile(path=path, crop_model=[crop_model1, crop_model2])
 ```python
 result.head()
 # Output:
-#     xmin   ymin   xmax   ymax label     score    image_path  cropmodel_label_0  cropmodel_score_0  cropmodel_label_1  cropmodel_score_1  
-# 0  273.0  230.0  313.0  275.0  Tree  0.882591  SOAP_061.png                   0           0.650223                  1           0.383726   
-# 1   47.0   82.0   81.0  120.0  Tree  0.740889  SOAP_061.png                   0           0.621586                  1           0.376401   
-# 2    0.0   72.0   34.0  116.0  Tree  0.735777  SOAP_061.png                   0           0.614928                  1           0.394649  
-# 3  341.0   40.0  374.0   77.0  Tree  0.668367  SOAP_061.png                   0           0.598883                  1           0.386490  
-# 4    0.0  183.0   26.0  235.0  Tree  0.664668  SOAP_061.png                   0           0.538162                  1           0.439823  
+#     xmin   ymin   xmax   ymax label     score    image_path  cropmodel_label_0  cropmodel_score_0  cropmodel_label_1  cropmodel_score_1
+# 0  273.0  230.0  313.0  275.0  Tree  0.882591  SOAP_061.png                   0           0.650223                  1           0.383726
+# 1   47.0   82.0   81.0  120.0  Tree  0.740889  SOAP_061.png                   0           0.621586                  1           0.376401
+# 2    0.0   72.0   34.0  116.0  Tree  0.735777  SOAP_061.png                   0           0.614928                  1           0.394649
+# 3  341.0   40.0  374.0   77.0  Tree  0.668367  SOAP_061.png                   0           0.598883                  1           0.386490
+# 4    0.0  183.0   26.0  235.0  Tree  0.664668  SOAP_061.png                   0           0.538162                  1           0.439823
 ```
 
 A `CropModel` is a PyTorch Lightning object and can also be used like any other model.
@@ -133,7 +133,7 @@ crop_model = CropModel(num_classes=2, model=backbone)
 One detail to keep in mind is that the preprocessing transform will differ for backbones. Make sure to check the final lines:
 
 ```python
-print(crop_model.get_transform(augment=True))
+print(crop_model.get_transform(augmentations=["HorizontalFlip"]))
 
 # Output:
 # Resize(size=[224, 224], interpolation=bilinear, max_size=None, antialias=None)
@@ -163,7 +163,7 @@ Or, when running from memory crops during prediction, you can pass the transform
 ```python
 from deepforest import main as m
 
-m.predict_tile(..., crop_transform=custom_transform, augment=False)
+m.predict_tile(..., crop_transform=custom_transform, augmentations=None)
 ```
 
 This allows full flexibility over the preprocessing steps. For further customization, you can subclass the `CropModel` object and change methods such as learning rate optimization, evaluation steps, and all other PyTorch Lightning hooks.
@@ -206,7 +206,7 @@ cropmodel = CropModel.load_from_checkpoint("path/to/checkpoint.ckpt")
 ```python
 # Create a validation dataset
 from torchvision.datasets import ImageFolder
-val_ds = ImageFolder(root=root_dir, transform=cropmodel.get_transform(augment=False))
+val_ds = ImageFolder(root=root_dir, transform=cropmodel.get_transform(augmentations=None))
 
 # Get predictions and labels
 images, labels, predictions = cropmodel.val_dataset_confusion(return_images=True)
@@ -216,10 +216,10 @@ crop_dataloader = cropmodel.predict_dataloader(val_ds)
 
 # Run prediction
 trainer = Trainer(
-    gpus=1, 
-    accelerator="gpu", 
-    max_epochs=1, 
-    logger=False, 
+    gpus=1,
+    accelerator="gpu",
+    max_epochs=1,
+    logger=False,
     enable_checkpointing=False
 )
 crop_results = trainer.predict(cropmodel, crop_dataloader)
@@ -241,7 +241,7 @@ from PIL import Image
 
 # Load and preprocess a single image
 image = Image.open("path/to/image.jpg")
-transform = cropmodel.get_transform(augment=False)
+transform = cropmodel.get_transform(augmentations=None)
 tensor = transform(image).unsqueeze(0)  # Add batch dimension
 
 # Make prediction
@@ -329,8 +329,8 @@ for true, pred in zip(labels, predictions):
 
 # Plot with seaborn
 plt.figure(figsize=(10, 8))
-sns.heatmap(confusion_matrix, 
-            annot=True, 
+sns.heatmap(confusion_matrix,
+            annot=True,
             fmt='g',
             xticklabels=list(crop_model.label_dict.keys()),
             yticklabels=list(crop_model.label_dict.keys()))
@@ -393,9 +393,9 @@ class CustomCropModel(CropModel):
         x, y = batch
         outputs = self.forward(x)
         loss = F.cross_entropy(outputs, y)
-        
+
         # Add custom metrics
         self.log("custom_metric", value)
-        
+
         return loss
 ```
