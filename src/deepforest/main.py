@@ -86,9 +86,7 @@ class deepforest(pl.LightningModule):
         self.existing_val_dataloader = existing_val_dataloader
 
         # Metrics
-        self.iou_metric = IntersectionOverUnion(
-            class_metrics=True, iou_threshold=self.config.validation.iou_threshold
-        )
+        self.iou_metric = IntersectionOverUnion(class_metrics=True, iou_threshold=self.config.validation.iou_threshold)
         self.mAP_metric = MeanAveragePrecision(backend="faster_coco_eval")
 
         # Empty frame accuracy
@@ -136,11 +134,9 @@ class deepforest(pl.LightningModule):
             revision = self.config.model.revision
 
         model_class = importlib.import_module(
-            f"deepforest.models.{self.config.architecture}"
-        )
+            f"deepforest.models.{self.config.architecture}")
         self.model = model_class.Model(config=self.config).create_model(
-            pretrained=model_name, revision=revision
-        )
+            pretrained=model_name, revision=revision)
 
         # Handle label override
         cfg_labels = self.config.label_dict
@@ -180,8 +176,7 @@ class deepforest(pl.LightningModule):
                 f"classes {self.config.num_classes}, please supply a label_dict argument "
                 '{"label1":0, "label2":1, "label3":2 ... etc} '
                 "for each label in the "
-                "dataset"
-            )
+                "dataset")
 
         # Check for duplicate values in label_dict:
         if len(set(label_dict.values())) != len(label_dict):
@@ -236,8 +231,7 @@ class deepforest(pl.LightningModule):
         """
         if self.config.model.name is None or initialize_model:
             model_class = importlib.import_module(
-                f"deepforest.models.{self.config.architecture}"
-            )
+                f"deepforest.models.{self.config.architecture}")
             self.model = model_class.Model(config=self.config).create_model()
             self.set_labels(self.config.label_dict)
         else:
@@ -293,8 +287,7 @@ class deepforest(pl.LightningModule):
             raise AttributeError(
                 "Cannot train with a train annotations file, "
                 "please set 'config['train']['csv_file'] before "
-                "calling deepforest.create_trainer()'"
-            )
+                "calling deepforest.create_trainer()'")
 
     def on_save_checkpoint(self, checkpoint):
         checkpoint["label_dict"] = self.label_dict
@@ -309,7 +302,24 @@ class deepforest(pl.LightningModule):
                 "No label_dict found in checkpoint, using default label_dict, "
                 "please use deepforest.set_labels() to set the label_dict after loading the checkpoint."
             )
+        # Pre 2.0 compatibility, the score_threshold used to be stored under retinanet.score_thresh
+        try:
+            self.config.score_thresh = self.config.retinanet.score_thresh
+        except AttributeError:
+            pass
 
+        if not hasattr(self.config.validation, 'lr_plateau_target'):
+            default_config = utilities.load_config()
+            self.config.validation.lr_plateau_target = default_config.validation.lr_plateau_target
+
+        if not hasattr(self.config.train, 'augmentations'):
+            default_config = utilities.load_config()
+            self.config.train.augmentations = default_config.train.augmentations
+
+        if not hasattr(self.config.validation, 'augmentations'):
+            default_config = utilities.load_config()
+            self.config.validation.augmentations = default_config.validation.augmentations
+        
     def save_model(self, path):
         """Save the trainer checkpoint in user defined path, in order to access
         in future.
@@ -449,7 +459,9 @@ class deepforest(pl.LightningModule):
         )
         return loader
 
-    def predict_image(self, image: np.ndarray | None = None, path: str | None = None):
+    def predict_image(self,
+                      image: np.ndarray | None = None,
+                      path: str | None = None):
         """Predict a single image with a deepforest model.
 
         Args:
@@ -470,8 +482,7 @@ class deepforest(pl.LightningModule):
             raise TypeError(
                 f"Input image is of type {type(image)}, expected numpy, if reading "
                 "from PIL, wrap in "
-                "np.array(image).astype(float32)"
-            )
+                "np.array(image).astype(float32)")
 
         if image.dtype != "float32":
             warnings.warn(
@@ -483,15 +494,17 @@ class deepforest(pl.LightningModule):
             )
             image = image.astype("float32")
 
-        result = predict._predict_image_(
-            model=self.model, image=image, path=path, nms_thresh=self.config.nms_thresh
-        )
+        result = predict._predict_image_(model=self.model,
+                                         image=image,
+                                         path=path,
+                                         nms_thresh=self.config.nms_thresh)
 
         # If there were no predictions, return None
         if result is None:
             return None
         else:
-            result["label"] = result.label.apply(lambda x: self.numeric_to_label_dict[x])
+            result["label"] = result.label.apply(
+                lambda x: self.numeric_to_label_dict[x])
 
         if path is None:
             result = utilities.read_file(result)
@@ -507,9 +520,12 @@ class deepforest(pl.LightningModule):
 
         return result
 
-    def predict_file(
-        self, csv_file, root_dir, crop_model=None, size=None, batch_size=None
-    ):
+    def predict_file(self,
+                     csv_file,
+                     root_dir,
+                     crop_model=None,
+                     size=None,
+                     batch_size=None):
         """Create a dataset and predict entire annotation file CSV file format
         is .csv file with the columns "image_path", "xmin","ymin","xmax","ymax"
         for the image name and bounding box position. Image_path is the
@@ -525,7 +541,9 @@ class deepforest(pl.LightningModule):
             df: pandas dataframe with bounding boxes, label and scores for each image in the csv file
         """
 
-        ds = prediction.FromCSVFile(csv_file=csv_file, root_dir=root_dir, size=size)
+        ds = prediction.FromCSVFile(csv_file=csv_file,
+                                    root_dir=root_dir,
+                                    size=size)
         dataloader = self.predict_dataloader(ds, batch_size=batch_size)
         results = predict._dataloader_wrapper_(
             model=self,
@@ -608,15 +626,15 @@ class deepforest(pl.LightningModule):
                         raise ValueError(
                             "workers must be 0 when using out-of-memory dataset "
                             "(dataloader_strategy='window'). Set config['workers']=0 and recreate "
-                            "trainer self.create_trainer()."
-                        )
+                            "trainer self.create_trainer().")
                     ds = prediction.TiledRaster(
                         path=image_path,
                         patch_overlap=patch_overlap,
                         patch_size=patch_size,
                     )
 
-                batched_results = self.trainer.predict(self, self.predict_dataloader(ds))
+                batched_results = self.trainer.predict(
+                    self, self.predict_dataloader(ds))
 
                 # Flatten list from batched prediction
                 prediction_list = []
@@ -628,11 +646,12 @@ class deepforest(pl.LightningModule):
             results = pd.concat(image_results)
 
         elif dataloader_strategy == "batch":
-            ds = prediction.MultiImage(
-                paths=paths, patch_overlap=patch_overlap, patch_size=patch_size
-            )
+            ds = prediction.MultiImage(paths=paths,
+                                       patch_overlap=patch_overlap,
+                                       patch_size=patch_size)
 
-            batched_results = self.trainer.predict(self, self.predict_dataloader(ds))
+            batched_results = self.trainer.predict(self,
+                                                   self.predict_dataloader(ds))
 
             # Flatten list from batched prediction
             prediction_list = []
@@ -643,7 +662,8 @@ class deepforest(pl.LightningModule):
             results = pd.concat(image_results)
 
         else:
-            raise ValueError(f"Invalid dataloader_strategy: {dataloader_strategy}")
+            raise ValueError(
+                f"Invalid dataloader_strategy: {dataloader_strategy}")
 
         if results.empty:
             warnings.warn("No predictions made, returning None", stacklevel=2)
@@ -652,18 +672,19 @@ class deepforest(pl.LightningModule):
         # Perform mosaic for each image_path, or all if image_path is None
         mosaic_results = []
         if results["image_path"].isnull().all():
-            mosaic_results.append(predict.mosiac(results, iou_threshold=iou_threshold))
+            mosaic_results.append(
+                predict.mosiac(results, iou_threshold=iou_threshold))
         else:
             for image_path in results["image_path"].unique():
                 image_results = results[results["image_path"] == image_path]
-                image_mosaic = predict.mosiac(image_results, iou_threshold=iou_threshold)
+                image_mosaic = predict.mosiac(image_results,
+                                              iou_threshold=iou_threshold)
                 image_mosaic["image_path"] = image_path
                 mosaic_results.append(image_mosaic)
 
         mosaic_results = pd.concat(mosaic_results)
         mosaic_results["label"] = mosaic_results.label.apply(
-            lambda x: self.numeric_to_label_dict[x]
-        )
+            lambda x: self.numeric_to_label_dict[x])
 
         if paths[0] is not None:
             root_dir = os.path.dirname(paths[0])
@@ -677,21 +698,20 @@ class deepforest(pl.LightningModule):
         if crop_model is not None:
             cropmodel_results = []
             for path in paths:
-                image_result = mosaic_results[
-                    mosaic_results.image_path == os.path.basename(path)
-                ]
+                image_result = mosaic_results[mosaic_results.image_path ==
+                                              os.path.basename(path)]
                 if image_result.empty:
                     continue
                 image_result.root_dir = os.path.dirname(path)
                 cropmodel_result = predict._crop_models_wrapper_(
-                    crop_model, self.trainer, image_result
-                )
+                    crop_model, self.trainer, image_result)
                 cropmodel_results.append(cropmodel_result)
             cropmodel_results = pd.concat(cropmodel_results)
         else:
             cropmodel_results = mosaic_results
 
-        formatted_results = utilities.read_file(cropmodel_results, root_dir=root_dir)
+        formatted_results = utilities.read_file(cropmodel_results,
+                                                root_dir=root_dir)
 
         return formatted_results
 
@@ -709,7 +729,10 @@ class deepforest(pl.LightningModule):
 
         # Log loss
         for key, value in loss_dict.items():
-            self.log(f"train_{key}", value, on_epoch=True, batch_size=len(images))
+            self.log(f"train_{key}",
+                     value,
+                     on_epoch=True,
+                     batch_size=len(images))
 
         # Log sum of losses
         self.log("train_loss", losses, on_epoch=True, batch_size=len(images))
@@ -732,7 +755,10 @@ class deepforest(pl.LightningModule):
         # Log losses
         try:
             for key, value in loss_dict.items():
-                self.log(f"val_{key}", value, on_epoch=True, batch_size=len(images))
+                self.log(f"val_{key}",
+                         value,
+                         on_epoch=True,
+                         batch_size=len(images))
 
             self.log("val_loss", losses, on_epoch=True, batch_size=len(images))
         except MisconfigurationException:
@@ -798,22 +824,17 @@ class deepforest(pl.LightningModule):
             empty_accuracy = 1
         else:
             # Get non-empty predictions for empty images
-            non_empty_predictions = predictions_df.loc[predictions_df.xmin.notnull()]
+            non_empty_predictions = predictions_df.loc[
+                predictions_df.xmin.notnull()]
             predictions_for_empty_images = non_empty_predictions.loc[
-                non_empty_predictions.image_path.isin(empty_images)
-            ]
+                non_empty_predictions.image_path.isin(empty_images)]
 
             # Create prediction tensor - 1 if model predicted objects, 0 if predicted empty
             predictions = torch.zeros(len(empty_images))
             for index, image in enumerate(empty_images):
-                if (
-                    len(
-                        predictions_for_empty_images.loc[
-                            predictions_for_empty_images.image_path == image
-                        ]
-                    )
-                    > 0
-                ):
+                if (len(predictions_for_empty_images.loc[
+                        predictions_for_empty_images.image_path == image])
+                        > 0):
                     predictions[index] = 1
 
             # Ground truth tensor - all zeros since these are empty frames
@@ -845,7 +866,10 @@ class deepforest(pl.LightningModule):
             output = self.mAP_metric.compute()
 
             # Remove classes from output dict
-            output = {key: value for key, value in output.items() if not key == "classes"}
+            output = {
+                key: value
+                for key, value in output.items() if not key == "classes"
+            }
             try:
                 self.log_dict(output)
             except MisconfigurationException:
@@ -959,9 +983,9 @@ class deepforest(pl.LightningModule):
         return results
 
     def configure_optimizers(self):
-        optimizer = optim.SGD(
-            self.model.parameters(), lr=self.config.train.lr, momentum=0.9
-        )
+        optimizer = optim.SGD(self.model.parameters(),
+                              lr=self.config.train.lr,
+                              momentum=0.9)
 
         scheduler_config = self.config.train.scheduler
         scheduler_type = scheduler_config.type
@@ -973,31 +997,27 @@ class deepforest(pl.LightningModule):
 
         if scheduler_type == "cosine":
             scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-                optimizer, T_max=params.T_max, eta_min=params.eta_min
-            )
+                optimizer, T_max=params.T_max, eta_min=params.eta_min)
 
         elif scheduler_type == "lambdaLR":
-            scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lr_lambda)
+            scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer,
+                                                          lr_lambda=lr_lambda)
 
         elif scheduler_type == "multiplicativeLR":
             scheduler = torch.optim.lr_scheduler.MultiplicativeLR(
-                optimizer, lr_lambda=lr_lambda
-            )
+                optimizer, lr_lambda=lr_lambda)
 
         elif scheduler_type == "stepLR":
             scheduler = torch.optim.lr_scheduler.StepLR(
-                optimizer, step_size=params.step_size, gamma=params.gamma
-            )
+                optimizer, step_size=params.step_size, gamma=params.gamma)
 
         elif scheduler_type == "multistepLR":
             scheduler = torch.optim.lr_scheduler.MultiStepLR(
-                optimizer, milestones=params.milestones, gamma=params.gamma
-            )
+                optimizer, milestones=params.milestones, gamma=params.gamma)
 
         elif scheduler_type == "exponentialLR":
             scheduler = torch.optim.lr_scheduler.ExponentialLR(
-                optimizer, gamma=params.gamma
-            )
+                optimizer, gamma=params.gamma)
 
         else:
             scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
@@ -1046,16 +1066,18 @@ class deepforest(pl.LightningModule):
         """
         self.model.eval()
         ground_df = utilities.read_file(csv_file)
-        ground_df["label"] = ground_df.label.apply(lambda x: self.label_dict[x])
+        ground_df["label"] = ground_df.label.apply(
+            lambda x: self.label_dict[x])
 
         if root_dir is None:
             root_dir = os.path.dirname(csv_file)
 
         if predictions is None:
             # Get the predict dataloader and use predict_batch
-            predictions = self.predict_file(
-                csv_file, root_dir, size=size, batch_size=batch_size
-            )
+            predictions = self.predict_file(csv_file,
+                                            root_dir,
+                                            size=size,
+                                            batch_size=batch_size)
 
         if iou_threshold is None:
             iou_threshold = self.config.validation.iou_threshold
@@ -1068,7 +1090,8 @@ class deepforest(pl.LightningModule):
         )
 
         # empty frame accuracy
-        empty_accuracy = self.calculate_empty_frame_accuracy(ground_df, predictions)
+        empty_accuracy = self.calculate_empty_frame_accuracy(
+            ground_df, predictions)
         results["empty_frame_accuracy"] = empty_accuracy
 
         self.__evaluation_logs__(results)
@@ -1097,14 +1120,12 @@ class deepforest(pl.LightningModule):
                         try:
                             self.log(
                                 "{}_Recall".format(
-                                    self.numeric_to_label_dict[row["label"]]
-                                ),
+                                    self.numeric_to_label_dict[row["label"]]),
                                 row["recall"],
                             )
                             self.log(
                                 "{}_Precision".format(
-                                    self.numeric_to_label_dict[row["label"]]
-                                ),
+                                    self.numeric_to_label_dict[row["label"]]),
                                 row["precision"],
                             )
                         except MisconfigurationException:
