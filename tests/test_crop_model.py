@@ -17,7 +17,7 @@ def test_model_no_args(config):
 
 @pytest.fixture()
 def crop_model():
-    crop_model = model.CropModel(num_classes=2)
+    crop_model = model.CropModel(num_classes=2, label_dict={"Alive": 0, "Dead": 1})
 
     return crop_model
 
