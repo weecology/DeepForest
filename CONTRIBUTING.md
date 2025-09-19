@@ -193,9 +193,26 @@ model = main.deepforest.load_from_checkpoint("path/to/checkpoint.ckpt")
 model.label_dict = {"Livestock": 0}
 
 # Push to weecology organization space
-model.push_to_hub("weecology/deepforest-livestock")
+model.model.push_to_hub("weecology/deepforest-livestock")
+
+# reload later
+model.from_pretrained("weecology/deepforest-livestock")
 ```
 
 The model will be uploaded to [https://huggingface.co/weecology/[model-name]](https://huggingface.co/weecology/[model-name])
 
-Note: You must have appropriate permissions in the weecology organization to upload models.
+### CropModel
+
+```python```
+from deepforest.model import CropModel
+
+crop_model = CropModel(num_classes=2)
+# Train, load and create model. 
+crop_model.push_to_hub("weecology/cropmodel-deadtrees")
+
+# Reload it later
+crop_model.from_pretrained("Weecology/cropmodel-deadtrees")
+```
+Please name the cropmodel based on what is being classified. 
+
+Note: You must have appropriate permissions in the weecology organization to upload models to weecology. If you are not already an active collaborator we recommend initially uploading new models to your own huggingface account and then letting us know and the model and whether or not you are interested in having them hosted on weecology's account.
