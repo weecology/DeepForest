@@ -2,6 +2,10 @@
 import os
 
 import cv2
+import torchmetrics
+from huggingface_hub import PyTorchModelHubMixin
+from torchvision import models, transforms
+from torchvision.datasets import ImageFolder
 import numpy as np
 import rasterio
 import torch
@@ -69,7 +73,7 @@ def simple_resnet_50(num_classes=2):
     return m
 
 
-class CropModel(LightningModule):
+class CropModel(LightningModule, PyTorchModelHubMixin):
     """A PyTorch Lightning module for classifying image crops from object
     detection models.
 
@@ -130,6 +134,19 @@ class CropModel(LightningModule):
         self.batch_size = batch_size
         self.lr = lr
 
+        # sync hub config
+        self.update_config()
+
+    def update_config(self):
+        """Update config used by HF Hub mixin for save/load."""
+        self.config = {
+            "num_classes": self.num_classes,
+            "label_dict": self.label_dict,
+            "batch_size": self.batch_size,
+            "num_workers": self.num_workers,
+            "lr": self.lr,
+        }
+
     def create_model(self, num_classes):
         """Create a model with the given number of classes."""
         self.accuracy = torchmetrics.Accuracy(
@@ -162,8 +179,10 @@ class CropModel(LightningModule):
     def on_load_checkpoint(self, checkpoint):
         self.label_dict = checkpoint["label_dict"]
         self.numeric_to_label_dict = {v: k for k, v in self.label_dict.items()}
-        self.create_model(checkpoint["num_classes"])
-        self.load_state_dict(checkpoint["state_dict"])
+        self.num_classes = checkpoint['num_classes']
+        self.create_model(self.num_classes)
+        self.load_state_dict(checkpoint['state_dict'])
+        self.update_config()
 
     def load_from_disk(self, train_dir, val_dir, recreate_model=False):
         """Load the training and validation datasets from disk.
@@ -403,3 +422,32 @@ class CropModel(LightningModule):
             return images, true_label, predicted_label
         else:
             return true_label, predicted_label
+
+    @classmethod
+    def load_model(
+        cls,
+        repo_id,
+        revision=None,
+    ):
+        """Load a model from the Hugging Face Hub.
+
+        Args:
+            repo_id: Hugging Face repo id, e.g. "username/my-cropmodel".
+            revision: Optional git revision/branch/tag. Defaults to repo default.
+
+        Returns:
+            CropModel: The loaded and eval-mode model instance.
+        """
+
+        model = cls.from_pretrained(
+            repo_id,
+            revision=revision,
+        )
+        model.eval()
+
+        return model
+
+    # Ensure config is up-to-date when pushing to Hub
+    def push_to_hub(self, *args, **kwargs):
+        self.update_config()
+        return super().push_to_hub(*args, **kwargs)
