@@ -4,10 +4,11 @@ import pandas as pd
 import pytest
 import torch
 from torchvision import transforms
+import numpy as np
 
 from deepforest import get_data
 from deepforest import model
-
+from deepforest.model import CropModel
 
 # The model object is architecture agnostic container.
 def test_model_no_args(config):
@@ -252,3 +253,133 @@ def test_crop_model_val_dataset_confusion(tmpdir, crop_model_data):
     # There was just one batch in the fast_dev_run
     assert len(labels) ==37
     assert len(predictions) == 4
+
+
+class _MinimalValDataset:
+    def __init__(self, true_labels):
+        # Create fake file paths grouped by class folder names
+        self.classes = ["A", "B", "C"]
+        self.class_to_idx = {name: idx for idx, name in enumerate(self.classes)}
+
+        self.imgs = []
+        for i, label in enumerate(true_labels):
+            class_name = self.classes[label]
+            path = os.path.join("/data", class_name, f"img_{i}.png")
+            self.imgs.append((path, label))
+
+        # Mirror torchvision.ImageFolder attributes
+        self.samples = list(self.imgs)
+        self.targets = [lbl for _, lbl in self.imgs]
+
+    def __len__(self):
+        return len(self.imgs)
+
+    def __getitem__(self, idx):
+        # Return a dummy tensor as image and the numeric label
+        image = torch.zeros(3, 224, 224, dtype=torch.float32)
+        label = self.imgs[idx][1]
+        return image, label
+
+
+class _FakeTrainer:
+    def predict(self, model, dataloader):
+        # The dataloader is ignored; we return the pre-computed softmax outputs
+        # stored on the model for test purposes
+        return [model.__test_softmax__]
+
+
+def _one_hot_predictions(pred_indices, num_classes=3):
+    # Build a (N, num_classes) array with 1.0 at predicted class
+    arr = np.zeros((len(pred_indices), num_classes), dtype=np.float32)
+    for i, c in enumerate(pred_indices):
+        arr[i, c] = 1.0
+    return arr
+
+
+def test_val_dataset_confusion_simple_three_class():
+    # Known ground-truth for 3 classes (A=0, B=1, C=2)
+    true_labels = [0, 1, 2, 0, 1, 2]
+
+    # Predicted labels (intentionally include a couple of off-diagonals)
+    pred_labels = [0, 1, 1, 2, 1, 2]
+
+    # Create model with mapping
+    model = CropModel(num_classes=3, batch_size=2, num_workers=0)
+    model.label_dict = {"A": 0, "B": 1, "C": 2}
+    model.numeric_to_label_dict = {v: k for k, v in model.label_dict.items()}
+
+    # Attach a minimal validation dataset and a fake trainer
+    model.val_ds = _MinimalValDataset(true_labels)
+    model.trainer = _FakeTrainer()
+
+    # Inject softmax-like predictions to be used by fake trainer
+    model.__test_softmax__ = _one_hot_predictions(pred_labels, num_classes=3)
+
+    # Collect outputs suitable for confusion matrix
+    true_out, pred_out = model.val_dataset_confusion(return_images=False)
+
+    # Compute confusion matrix
+    cm = np.zeros((3, 3), dtype=int)
+    for t, p in zip(true_out, pred_out):
+        cm[t, p] += 1
+
+    # Expected confusion counts
+    # true: [0,1,2,0,1,2]
+    # pred: [0,1,1,2,1,2]
+    # Class 0 (A): 1 correct (0->0), 1 to class 2 (0->2)
+    # Class 1 (B): 2 correct (1->1, 1->1)
+    # Class 2 (C): 1 correct (2->2), 1 to class 1 (2->1)
+    expected = np.array([
+        [1, 0, 1],
+        [0, 2, 0],
+        [0, 1, 1],
+    ])
+
+    assert cm.shape == (3, 3)
+    assert (cm == expected).all(), f"Got cm=\n{cm}\nExpected=\n{expected}"
+
+
+class _TinyClsDataset(torch.utils.data.Dataset):
+    def __init__(self, labels, num_per_class=1):
+        self.samples = []
+        for lbl in labels:
+            # one dummy image per label
+            self.samples.append((torch.zeros(3, 224, 224, dtype=torch.float32), lbl))
+
+    def __len__(self):
+        return len(self.samples)
+
+    def __getitem__(self, idx):
+        return self.samples[idx]
+
+
+def test_cropmodel_trainer_fit_minimal():
+    # Minimal end-to-end fit example, for where validation data is missing class==1
+    model = CropModel(num_classes=3, batch_size=2, num_workers=0)
+    model.label_dict = {"A": 0, "B": 1, "C": 2}
+    model.numeric_to_label_dict = {v: k for k, v in model.label_dict.items()}
+
+    # Tiny datasets
+    train_labels = [0, 1, 2, 1]
+    val_labels = [0, 2]
+    model.train_ds = _TinyClsDataset(train_labels)
+    model.val_ds = _TinyClsDataset(val_labels)
+
+    # Create trainer and run a very short fit
+    model.create_trainer(fast_dev_run=True,
+                         logger=False,
+                         enable_checkpointing=False)
+    model.trainer.fit(model)
+
+    # Minimal end-to-end fit example, for where training data is missing class==1
+    train_labels = [0, 2]
+    val_labels = [0, 1]
+    model = CropModel(num_classes=3, batch_size=2, num_workers=0)
+    model.label_dict = {"A": 0, "B": 1, "C": 2}
+    model.numeric_to_label_dict = {v: k for k, v in model.label_dict.items()}
+    model.train_ds = _TinyClsDataset(train_labels)
+    model.val_ds = _TinyClsDataset(val_labels)
+    model.create_trainer(fast_dev_run=True,
+                         logger=False,
+                         enable_checkpointing=False)
+    model.trainer.fit(model)
