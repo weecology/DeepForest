@@ -11,8 +11,8 @@ from huggingface_hub import PyTorchModelHubMixin
 from PIL import Image
 from pytorch_lightning import LightningModule, Trainer
 from torchvision import models, transforms
-from torchvision.datasets import ImageFolder
 
+from deepforest.datasets.training import create_aligned_image_folders
 
 class BaseModel:
     """Base class for DeepForest models.
@@ -150,22 +150,21 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
 
     def create_model(self, num_classes):
         """Create a model with the given number of classes."""
-        self.accuracy = torchmetrics.Accuracy(
-            average="none", num_classes=num_classes, task="multiclass"
-        )
-        self.total_accuracy = torchmetrics.Accuracy(
-            num_classes=num_classes, task="multiclass"
-        )
-        self.precision_metric = torchmetrics.Precision(
-            num_classes=num_classes, task="multiclass"
-        )
-        self.metrics = torchmetrics.MetricCollection(
-            {
-                "Class Accuracy": self.accuracy,
-                "Accuracy": self.total_accuracy,
-                "Precision": self.precision_metric,
-            }
-        )
+        self.accuracy = torchmetrics.Accuracy(average="none",
+                                              num_classes=num_classes,
+                                              task="multiclass")
+        self.total_accuracy = torchmetrics.Accuracy(num_classes=num_classes,
+                                                    task="multiclass")
+        self.precision_metric = torchmetrics.Precision(num_classes=num_classes,
+                                                       task="multiclass")
+        self.metrics = torchmetrics.MetricCollection({
+            "Class Accuracy":
+            self.accuracy,
+            "Accuracy":
+            self.total_accuracy,
+            "Precision":
+            self.precision_metric,
+        })
 
         self.model = simple_resnet_50(num_classes=num_classes)
 
@@ -196,12 +195,7 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
         Returns:
             None
         """
-        self.train_ds = ImageFolder(
-            root=train_dir, transform=self.get_transform(augment=True)
-        )
-        self.val_ds = ImageFolder(
-            root=val_dir, transform=self.get_transform(augment=False)
-        )
+        self.train_ds, self.val_ds = create_aligned_image_folders(train_dir, val_dir, transform_train=self.get_transform(augment=True), transform_val=self.get_transform(augment=False))
         self.label_dict = self.train_ds.class_to_idx
 
         # Create a reverse mapping from numeric indices to class labels
@@ -301,19 +295,23 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
                 image_height = src.height
 
                 # Expand the bounding box to a square
-                square_box = self.expand_bbox_to_square(box, image_width, image_height)
+                square_box = self.expand_bbox_to_square(
+                    box, image_width, image_height)
                 xmin, ymin, xmax, ymax = square_box
 
                 # Crop the image using the square box coordinates
-                img = src.read(window=((int(ymin), int(ymax)), (int(xmin), int(xmax))))
+                img = src.read(window=((int(ymin), int(ymax)), (int(xmin),
+                                                                int(xmax))))
                 # Save the cropped image as a PNG file using opencv
                 image_basename = os.path.splitext(os.path.basename(image))[0]
-                img_path = os.path.join(savedir, label, f"{image_basename}_{index}.png")
+                img_path = os.path.join(savedir, label,
+                                        f"{image_basename}_{index}.png")
                 img = np.rollaxis(img, 0, 3)
                 cv2.imwrite(img_path, img)
 
     def normalize(self):
-        return transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        return transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                    std=[0.229, 0.224, 0.225])
 
     def forward(self, x):
         if self.model is None:
@@ -337,17 +335,18 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
 
     def predict_dataloader(self, ds):
         """Prediction data loader."""
-        loader = torch.utils.data.DataLoader(
-            ds, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers
-        )
+        loader = torch.utils.data.DataLoader(ds,
+                                             batch_size=self.batch_size,
+                                             shuffle=False,
+                                             num_workers=self.num_workers)
 
         return loader
 
     def val_dataloader(self):
         """Validation data loader."""
-        val_loader = torch.utils.data.DataLoader(
-            self.val_ds, batch_size=self.batch_size, num_workers=self.num_workers
-        )
+        val_loader = torch.utils.data.DataLoader(self.val_ds,
+                                                 batch_size=self.batch_size,
+                                                 num_workers=self.num_workers)
 
         return val_loader
 
@@ -373,7 +372,8 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
     def postprocess_predictions(self, predictions):
         """Postprocess predictions to get class labels and scores."""
         stacked_outputs = np.vstack(np.concatenate(predictions))
-        label = np.argmax(stacked_outputs, axis=1)  # Get class with highest probability
+        label = np.argmax(stacked_outputs,
+                          axis=1)  # Get class with highest probability
         score = np.max(stacked_outputs, axis=1)  # Get confidence score
 
         return label, score
@@ -390,7 +390,8 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
                     # Use label names from label_dict
                     if key == "Class Accuracy":
                         if self.numeric_to_label_dict is not None:
-                            label_name = self.numeric_to_label_dict.get(i, str(i))
+                            label_name = self.numeric_to_label_dict.get(
+                                i, str(i))
                             metric_name = f"{key}_{label_name}"
                         else:
                             metric_name = f"{key}_{i}"
@@ -416,7 +417,11 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
         )
 
         # Monitor rate is val data is used
-        return {"optimizer": optimizer, "lr_scheduler": scheduler, "monitor": "val_loss"}
+        return {
+            "optimizer": optimizer,
+            "lr_scheduler": scheduler,
+            "monitor": "val_loss"
+        }
 
     def val_dataset_confusion(self, return_images=False):
         """Create a labels and predictions from the validation dataset to be
@@ -424,10 +429,13 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
         dl = self.predict_dataloader(self.val_ds)
         predictions = self.trainer.predict(self, dl)
         predicted_label, _ = self.postprocess_predictions(predictions)
-        true_label = [self.val_ds.imgs[i][1] for i in range(len(self.val_ds.imgs))]
+        true_label = [
+            self.val_ds.imgs[i][1] for i in range(len(self.val_ds.imgs))
+        ]
         if return_images:
             images = [
-                Image.open(self.val_ds.imgs[i][0]) for i in range(len(self.val_ds.imgs))
+                Image.open(self.val_ds.imgs[i][0])
+                for i in range(len(self.val_ds.imgs))
             ]
             return images, true_label, predicted_label
         else:
