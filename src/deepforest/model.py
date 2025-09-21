@@ -106,8 +106,24 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
         lr=0.0001,
         label_dict=None,
         model=None,
+        config=None,
     ):
         super().__init__()
+        # Optional Hydra/OmegaConf config (deepforest.conf.schema.Config)
+        self.config = config
+
+        # Training Hyperparameters (prefer config if provided)
+        if self.config is not None and hasattr(self.config, "cropmodel"):
+            cm = self.config.cropmodel
+            batch_size = cm.batch_size
+            num_workers = cm.num_workers
+            lr = cm.lr
+            self._balance_classes = bool(cm.balance_classes)
+            self._sampler_type = getattr(cm, "sampler", "weighted_random")
+        else:
+            self._balance_classes = False
+            self._sampler_type = "weighted_random"
+
         self.num_classes = num_classes
         self.num_workers = num_workers
         self.label_dict = label_dict
@@ -131,7 +147,6 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
         else:
             self.model = model
 
-        # Training Hyperparameters
         self.batch_size = batch_size
         self.lr = lr
 
@@ -326,10 +341,28 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
 
     def train_dataloader(self):
         """Train data loader."""
+        sampler = None
+        shuffle = True
+
+        # Optional class balancing using WeightedRandomSampler
+        if getattr(self, "_balance_classes", False) and hasattr(self, "train_ds"):
+            targets = getattr(self.train_ds, "targets", None)
+            if targets is not None and len(targets) > 0:
+                # Compute class counts and inverse-frequency weights per sample
+                counts = {}
+                for t in targets:
+                    counts[t] = counts.get(t, 0) + 1
+                weights = [1.0 / counts[t] for t in targets]
+                sampler = torch.utils.data.WeightedRandomSampler(
+                    weights=weights, num_samples=len(weights), replacement=True
+                )
+                shuffle = False
+
         train_loader = torch.utils.data.DataLoader(
             self.train_ds,
             batch_size=self.batch_size,
-            shuffle=True,
+            shuffle=shuffle,
+            sampler=sampler,
             num_workers=self.num_workers,
         )
 
