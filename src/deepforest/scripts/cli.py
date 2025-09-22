@@ -25,6 +25,7 @@ def train(
     comet: bool = False,
     tensorboard: bool = False,
     trace: bool = False,
+    compress: bool = False,
 ) -> bool:
     """Train a DeepForest model with configurable logging and experiment
     tracking.
@@ -44,6 +45,8 @@ def train(
             to CSV logging. Defaults to False.
         trace (bool, optional): Whether to enable PyTorch memory profiling for debugging.
             Only works when CUDA is available. Defaults to False.
+        compress (bool, optional): Whether to compress prediction CSV files using gzip for
+            better storage efficiency. Defaults to False.
 
     Returns:
         bool: True if training completed successfully, False if training failed
@@ -113,7 +116,9 @@ def train(
 
     callbacks.append(ImagesCallback(save_dir=Path(csv_logger.log_dir) / "images"))
     callbacks.append(
-        EvaluationCallback(save_dir=Path(csv_logger.log_dir) / "predictions")
+        EvaluationCallback(
+            save_dir=Path(csv_logger.log_dir) / "predictions", compress=compress
+        )
     )
 
     # Setup checkpoint to store in log directory
@@ -330,6 +335,11 @@ def main():
         help="Enable PyTorch memory profiling.",
         action="store_true",
     )
+    train_parser.add_argument(
+        "--compress",
+        help="Compress prediction CSV files using gzip for better storage efficiency.",
+        action="store_true",
+    )
 
     # Predict subcommand
     predict_parser = subparsers.add_parser(
@@ -395,6 +405,7 @@ def main():
             comet=args.comet,
             tensorboard=args.tensorboard,
             trace=args.trace,
+            compress=args.compress,
         )
 
         sys.exit(0 if res else 1)
