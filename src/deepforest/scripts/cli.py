@@ -201,6 +201,107 @@ def predict(
         plot_results(res)
 
 
+def evaluate(
+    config: DictConfig,
+    csv_file: str,
+    root_dir: str | None = None,
+    predictions_csv: str | None = None,
+    iou_threshold: float | None = None,
+    batch_size: int | None = None,
+    size: int | None = None,
+    experiment_id: str | None = None,
+) -> None:
+    """Run evaluation on ground truth annotations, optionally logging to Comet.
+
+    Args:
+        config (DictConfig): Hydra configuration.
+        csv_file (str): Path to ground truth CSV file with annotations.
+        root_dir (Optional[str]): Root directory containing images. If None, uses directory of csv_file.
+        predictions_csv (Optional[str]): Path to predictions CSV file. If None, generates predictions.
+        iou_threshold (Optional[float]): IoU threshold for evaluation. If None, uses config value.
+        batch_size (Optional[int]): Batch size for prediction. If None, uses config value.
+        size (Optional[int]): Size to resize images for prediction. If None, no resizing.
+        experiment_id (Optional[str]): Comet experiment ID to log results to.
+
+    Returns:
+        None
+    """
+    m = deepforest(config=config)
+
+    # Load predictions if provided
+    predictions = None
+    if predictions_csv is not None:
+        import pandas as pd
+
+        predictions = pd.read_csv(predictions_csv)
+
+    # Run evaluation
+    results = m.evaluate(
+        csv_file=csv_file,
+        root_dir=root_dir,
+        iou_threshold=iou_threshold,
+        batch_size=batch_size,
+        size=size,
+        predictions=predictions,
+    )
+
+    # Print results to console
+    print("Evaluation Results:")
+    print("=" * 50)
+    for key, value in results.items():
+        if key not in ["predictions", "results", "ground_df", "class_recall"]:
+            if value is not None:
+                print(f"{key}: {value}")
+
+    # Print class-specific results if available
+    if results.get("class_recall") is not None:
+        print("\nClass-specific Results:")
+        print("-" * 30)
+        for _, row in results["class_recall"].iterrows():
+            label_name = m.numeric_to_label_dict[row["label"]]
+            print(
+                f"{label_name} - Recall: {row['recall']:.4f}, Precision: {row['precision']:.4f}"
+            )
+
+    # Log to Comet if experiment ID provided
+    if experiment_id is not None:
+        try:
+            from pytorch_lightning.loggers import CometLogger
+
+            comet_logger = CometLogger(
+                api_key=os.environ.get("COMET_API_KEY"),
+                workspace=os.environ.get("COMET_WORKSPACE"),
+                project=os.environ.get("COMET_PROJECT", default="DeepForest"),
+                experiment_key=experiment_id,  # Re-log to existing experiment
+            )
+
+            # Log evaluation metrics
+            for key, value in results.items():
+                if key not in ["predictions", "results", "ground_df", "class_recall"]:
+                    if value is not None:
+                        comet_logger.experiment.log_metric(key, value)
+
+            # Log class-specific metrics
+            if results.get("class_recall") is not None:
+                for _, row in results["class_recall"].iterrows():
+                    label_name = m.numeric_to_label_dict[row["label"]]
+                    comet_logger.experiment.log_metric(
+                        f"{label_name}_Recall", row["recall"]
+                    )
+                    comet_logger.experiment.log_metric(
+                        f"{label_name}_Precision", row["precision"]
+                    )
+
+            print(f"\nResults logged to Comet experiment: {experiment_id}")
+
+        except ImportError:
+            warnings.warn(
+                "Failed to import Comet, skipping experiment logging", stacklevel=2
+            )
+        except Exception as e:
+            warnings.warn(f"Failed to log to Comet experiment. {e}", stacklevel=2)
+
+
 def main():
     parser = argparse.ArgumentParser(description="DeepForest CLI")
     subparsers = parser.add_subparsers(dest="command")
@@ -240,6 +341,31 @@ def main():
     predict_parser.add_argument("-o", "--output", help="Path to prediction results")
     predict_parser.add_argument("--plot", action="store_true", help="Plot results")
 
+    # Evaluate subcommand
+    evaluate_parser = subparsers.add_parser(
+        "evaluate",
+        help="Run evaluation on ground truth annotations",
+        epilog="Any remaining arguments <key>=<value> will be passed to Hydra to override the current config.",
+    )
+    evaluate_parser.add_argument("csv_file", help="Path to ground truth CSV file")
+    evaluate_parser.add_argument("--root-dir", help="Root directory containing images")
+    evaluate_parser.add_argument(
+        "--predictions-csv",
+        help="Path to predictions CSV file (if not provided, predictions will be generated)",
+    )
+    evaluate_parser.add_argument(
+        "--iou-threshold", type=float, help="IoU threshold for evaluation"
+    )
+    evaluate_parser.add_argument(
+        "--batch-size", type=int, help="Batch size for prediction"
+    )
+    evaluate_parser.add_argument(
+        "--size", type=int, help="Size to resize images for prediction"
+    )
+    evaluate_parser.add_argument(
+        "--experiment-id", help="Comet experiment ID to log results to"
+    )
+
     # Show config subcommand
     subparsers.add_parser("config", help="Show the current config")
 
@@ -272,6 +398,18 @@ def main():
         )
 
         sys.exit(0 if res else 1)
+
+    elif args.command == "evaluate":
+        evaluate(
+            cfg,
+            csv_file=args.csv_file,
+            root_dir=args.root_dir,
+            predictions_csv=args.predictions_csv,
+            iou_threshold=args.iou_threshold,
+            batch_size=args.batch_size,
+            size=args.size,
+            experiment_id=args.experiment_id,
+        )
 
     elif args.command == "config":
         print(OmegaConf.to_yaml(cfg, resolve=True))
