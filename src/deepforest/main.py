@@ -117,7 +117,6 @@ class deepforest(pl.LightningModule):
         # Disable warning for decluttering
         self.mAP_metric = MeanAveragePrecision(
             backend="faster_coco_eval",
-            warn_on_many_detections=False,
         )
 
         # Empty frame accuracy
@@ -913,7 +912,11 @@ class deepforest(pl.LightningModule):
                 pass
 
     def on_validation_batch_end(self, outputs, batch, batch_idx, dataloader_idx=0):
-        if (self.current_epoch + 1) % self.config.validation.val_accuracy_interval == 0:
+        if (
+            self.config.validation.val_accuracy_interval != -1
+            and (self.current_epoch + 1) % self.config.validation.val_accuracy_interval
+            == 0
+        ):
             self.predictions.extend(
                 [pred for pred in self.last_preds if pred is not None]
             )
@@ -930,8 +933,12 @@ class deepforest(pl.LightningModule):
         log_info(f"Logged epoch {self.current_epoch} metrics")
 
         # Epochs are 0-indexed, so this gives expected behaviour. Don't validate on
-        # epoch 0, and val_accuracy_interval can be set to max_epochs.
-        if (self.current_epoch + 1) % self.config.validation.val_accuracy_interval == 0:
+        # epoch 0, and val_accuracy_interval can be set to max_epochs or -1 to disable.
+        if (
+            self.config.validation.val_accuracy_interval != -1
+            and (self.current_epoch + 1) % self.config.validation.val_accuracy_interval
+            == 0
+        ):
             if len(self.predictions) > 0:
                 predictions = pd.concat(self.predictions)
             else:

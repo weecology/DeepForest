@@ -9,15 +9,18 @@ import os
 import random
 import warnings
 from pathlib import Path
+from typing import TextIO
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import supervision as sv
 import torch
 from PIL import Image
-from pytorch_lightning import Callback
+from pytorch_lightning import Callback, Trainer
+from pytorch_lightning.core import LightningModule
 
-from deepforest import utilities, visualize
+from deepforest import evaluate, utilities, visualize
 from deepforest.datasets.training import BoxDataset
 
 
@@ -267,3 +270,251 @@ class images_callback(ImagesCallback):
             "Please use ImagesCallback instead.", DeprecationWarning, stacklevel=2
         )
         super().__init__(save_dir=savedir, **kwargs)
+
+
+class EvaluationCallback(Callback):
+    """Accumulate validation predictions and save to disk during training.
+
+    This callback accumulates predictions during validation and writes them
+    incrementally to a CSV file. At the end of validation, it saves metadata
+    and optionally runs evaluation. The saved predictions are in the format
+    expected by DeepForest's evaluation functions.
+
+    The callback provides two modes:
+    1. Save mode (default): Saves predictions to CSV with metadata JSON
+    2. Evaluation mode: Additionally runs evaluate_boxes() and logs metrics
+
+    The saved files follow this naming convention:
+    - Predictions: {save_dir}/predictions_epoch_{epoch}.csv
+    - Metadata: {save_dir}/predictions_epoch_{epoch}_metadata.json
+
+    Args:
+        save_dir (str): Directory to save prediction files. Will be created if it doesn't exist.
+        every_n_epochs (int, optional): Run interval in epochs. Set to -1 to disable callback.
+            Defaults to 5.
+        iou_threshold (float, optional): IoU threshold for evaluation when run_evaluation=True.
+            Defaults to 0.4.
+        run_evaluation (bool, optional): Whether to run evaluate_boxes at epoch end and log metrics.
+            Defaults to False.
+
+    Attributes:
+        save_dir (str): Directory where files are saved
+        every_n_epochs (int): Epoch interval for running callback
+        iou_threshold (float): IoU threshold used for evaluation
+        run_evaluation (bool): Whether evaluation is run at epoch end
+        csv_file (Optional[TextIO]): Open file handle for CSV writing
+        csv_path (Optional[str]): Path to current CSV file being written
+        predictions_written (int): Number of predictions written in current epoch
+
+    Note:
+        This callback should be used with `val_accuracy_interval = -1` in the model config
+        to disable the built-in evaluation and avoid duplicate processing.
+    """
+
+    def __init__(
+        self,
+        save_dir: str,
+        every_n_epochs: int = 5,
+        iou_threshold: float = 0.4,
+        run_evaluation: bool = False,
+    ) -> None:
+        super().__init__()
+        self.save_dir = save_dir
+        self.every_n_epochs = every_n_epochs
+        self.iou_threshold = iou_threshold
+        self.run_evaluation = run_evaluation
+        self.csv_file: TextIO | None = None
+        self.csv_path: str | None = None
+        self.predictions_written = 0
+
+    def _should_skip(self, trainer: Trainer) -> bool:
+        """Check if callback should be skipped for current conditions.
+
+        Args:
+            trainer (Trainer): PyTorch Lightning trainer instance
+
+        Returns:
+            bool: True if callback should skip execution, False otherwise
+
+        Note:
+            Callback is skipped during sanity checking, fast dev runs,
+            when disabled (every_n_epochs=-1), or when not on the target epoch.
+        """
+        return (
+            trainer.sanity_checking
+            or trainer.fast_dev_run
+            or self.every_n_epochs == -1
+            or (trainer.current_epoch + 1) % self.every_n_epochs != 0
+        )
+
+    def on_validation_epoch_start(
+        self, trainer: Trainer, pl_module: LightningModule
+    ) -> None:
+        """Initialize CSV file for writing predictions at validation start.
+
+        Creates the save directory if it doesn't exist and opens a CSV file
+        for incremental writing of predictions during validation.
+
+        Args:
+            trainer (Trainer): PyTorch Lightning trainer instance
+            pl_module (LightningModule): The Lightning module being trained
+
+        Note:
+            The CSV header will be written when the first prediction is encountered.
+            File handle is stored in self.csv_file for batch-by-batch writing.
+        """
+        if self._should_skip(trainer):
+            return
+
+        os.makedirs(self.save_dir, exist_ok=True)
+        csv_path = os.path.join(
+            self.save_dir, f"predictions_epoch_{trainer.current_epoch + 1}.csv"
+        )
+
+        # Open CSV file for writing
+        self.csv_file = open(csv_path, "w")
+        self.csv_path = csv_path
+        self.predictions_written = 0
+
+        # We'll write the header when we get the first prediction
+
+    def on_validation_batch_end(
+        self,
+        trainer: Trainer,
+        pl_module: LightningModule,
+        outputs,
+        batch,
+        batch_idx: int,
+        dataloader_idx: int = 0,
+    ) -> None:
+        """Write predictions from current validation batch to CSV file.
+
+        Extracts predictions from pl_module.last_preds and writes them incrementally
+        to the open CSV file. Only evaluation-compatible columns are saved to ensure
+        compatibility with DeepForest evaluation functions.
+
+        Args:
+            trainer (Trainer): PyTorch Lightning trainer instance
+            pl_module (LightningModule): The Lightning module being trained
+            outputs: Output of validation_step (unused)
+            batch: Current validation batch (unused)
+            batch_idx (int): Index of current batch (unused)
+            dataloader_idx (int, optional): Index of dataloader. Defaults to 0.
+
+        Note:
+            Predictions are filtered to include only columns compatible with evaluation:
+            ['xmin', 'ymin', 'xmax', 'ymax', 'label', 'score', 'image_path']
+        """
+        if self._should_skip(trainer) or self.csv_file is None:
+            return
+
+        # Get predictions from this batch
+        batch_preds = pl_module.last_preds
+
+        for pred in batch_preds:
+            if pred is not None and not pred.empty:
+                # Remove geometry column for CSV compatibility - keep only evaluation-compatible columns
+                eval_columns = [
+                    "xmin",
+                    "ymin",
+                    "xmax",
+                    "ymax",
+                    "label",
+                    "score",
+                    "image_path",
+                ]
+                pred_for_csv = pred[eval_columns].copy()
+
+                # Write header on first prediction
+                if self.predictions_written == 0:
+                    pred_for_csv.to_csv(self.csv_file, index=False)
+                else:
+                    pred_for_csv.to_csv(self.csv_file, index=False, header=False)
+                self.predictions_written += len(pred)
+
+    def on_validation_epoch_end(
+        self, trainer: Trainer, pl_module: LightningModule
+    ) -> None:
+        """Close CSV file, save metadata, and optionally run evaluation.
+
+        Finalizes the CSV file writing process by closing the file handle and
+        creating a metadata JSON file with information about the saved predictions.
+        If run_evaluation=True, loads the saved predictions and runs evaluation
+        against the ground truth data.
+
+        Args:
+            trainer (Trainer): PyTorch Lightning trainer instance
+            pl_module (LightningModule): The Lightning module being trained
+
+        Note:
+            Metadata JSON includes epoch number, prediction count, IoU threshold,
+            and paths to target validation data. When evaluation is run, metrics
+            are logged using the same naming convention as the built-in evaluation.
+        """
+        if self._should_skip(trainer):
+            return
+
+        if self.csv_file is not None:
+            # Close CSV file
+            self.csv_file.close()
+            self.csv_file = None
+
+            # Save metadata JSON
+            metadata = {
+                "epoch": trainer.current_epoch + 1,
+                "predictions_count": self.predictions_written,
+                "iou_threshold": self.iou_threshold,
+                "target_csv_file": getattr(pl_module.config.validation, "csv_file", None),
+                "target_root_dir": getattr(pl_module.config.validation, "root_dir", None),
+            }
+
+            metadata_path = os.path.join(
+                self.save_dir,
+                f"predictions_epoch_{trainer.current_epoch + 1}_metadata.json",
+            )
+            with open(metadata_path, "w") as f:
+                json.dump(metadata, f, indent=2)
+
+            # Optionally run evaluation
+            if self.run_evaluation and self.predictions_written > 0:
+                try:
+                    # Load predictions
+                    predictions = pd.read_csv(self.csv_path)
+
+                    # Load ground truth
+                    if metadata["target_csv_file"] and os.path.exists(
+                        metadata["target_csv_file"]
+                    ):
+                        from deepforest.utilities import read_file
+
+                        ground_truth = read_file(metadata["target_csv_file"])
+
+                        # Run evaluation
+                        results = evaluate.evaluate_boxes(
+                            predictions=predictions,
+                            ground_df=ground_truth,
+                            iou_threshold=self.iou_threshold,
+                        )
+
+                        # Log results
+                        pl_module.log_dict(
+                            {
+                                "box_recall": results["box_recall"],
+                                "box_precision": results["box_precision"],
+                            }
+                        )
+
+                        if results["class_recall"] is not None:
+                            # Log per-class recall and precision like main.py does
+                            for _, row in results["class_recall"].iterrows():
+                                pl_module.log(
+                                    f"{pl_module.numeric_to_label_dict[row['label']]}_Recall",
+                                    row["recall"],
+                                )
+                                pl_module.log(
+                                    f"{pl_module.numeric_to_label_dict[row['label']]}_Precision",
+                                    row["precision"],
+                                )
+
+                except Exception as e:
+                    warnings.warn(f"Evaluation failed: {e}", stacklevel=2)

@@ -13,7 +13,7 @@ from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning.callbacks import DeviceStatsMonitor, ModelCheckpoint
 from pytorch_lightning.loggers import CSVLogger, TensorBoardLogger
 
-from deepforest.callbacks import ImagesCallback
+from deepforest.callbacks import EvaluationCallback, ImagesCallback
 from deepforest.conf.schema import Config as StructuredConfig
 from deepforest.main import deepforest
 from deepforest.visualize import plot_results
@@ -25,13 +25,33 @@ def train(
     comet: bool = False,
     tensorboard: bool = False,
     trace: bool = False,
-) -> None:
-    """This training function demonstrates basic setup for the DeepForest
-    Trainer.
+) -> bool:
+    """Train a DeepForest model with configurable logging and experiment
+    tracking.
 
-    Most
-    experimental parameters are defined in the config, but we include some additional
-    logic for logging here with sensible defaults: CSV/tensorboard
+    This training function sets up PyTorch Lightning trainer with various logging
+    options including CSV, TensorBoard, and Comet ML. When Comet logging is enabled,
+    the experiment ID is automatically captured and stored in the model's
+    hyperparameters for later use.
+
+    Args:
+        config (DictConfig): Hydra configuration containing model and training parameters
+        checkpoint (bool, optional): Whether to enable model checkpointing. Defaults to True.
+        comet (bool, optional): Whether to enable Comet ML logging. Requires comet-ml
+            package and proper environment variables (COMET_API_KEY, COMET_WORKSPACE).
+            Defaults to False.
+        tensorboard (bool, optional): Whether to enable TensorBoard logging in addition
+            to CSV logging. Defaults to False.
+        trace (bool, optional): Whether to enable PyTorch memory profiling for debugging.
+            Only works when CUDA is available. Defaults to False.
+
+    Returns:
+        bool: True if training completed successfully, False if training failed
+
+    Note:
+        When Comet logging is enabled, the experiment ID (key) is automatically added
+        to the model's hyperparameters as 'experiment_id' for later re-logging to
+        the same experiment.
     """
 
     if trace:
@@ -48,6 +68,7 @@ def train(
 
     # Use defaults from Lightning unless overriden by Comet
     experiment_name = None
+    experiment_id = None
     # Store as %YYYY%mm%ddT%HH:%MM:%SS
     version = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
 
@@ -64,6 +85,8 @@ def train(
             )
 
             experiment_name = comet_logger.experiment.get_name()
+            # Store experiment ID (key) for later re-logging to comet
+            experiment_id = comet_logger.experiment.get_key()
             version = ""
             loggers.append(comet_logger)
         except ImportError:
@@ -89,6 +112,9 @@ def train(
         loggers.append(tensorboard_logger)
 
     callbacks.append(ImagesCallback(save_dir=Path(csv_logger.log_dir) / "images"))
+    callbacks.append(
+        EvaluationCallback(save_dir=Path(csv_logger.log_dir) / "predictions")
+    )
 
     # Setup checkpoint to store in log directory
     if checkpoint:
@@ -103,6 +129,13 @@ def train(
         callbacks.append(checkpoint_callback)
 
     m.create_trainer(logger=loggers, callbacks=callbacks, gradient_clip_val=0.5)
+
+    # Add experiment ID to hyperparameters if available
+    if experiment_id is not None:
+        # Update the saved hyperparameters to include experiment ID
+        current_hparams = m.hparams.copy()
+        current_hparams["experiment_id"] = experiment_id
+        m.save_hyperparameters(current_hparams)
 
     train_success = False
     try:
