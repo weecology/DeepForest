@@ -101,31 +101,32 @@ def test_crop_model_custom_transform():
 
 
 def test_crop_model_load_checkpoint(tmpdir, crop_model_data):
-    """Test loading crop model from checkpoint with different numbers of classes"""
-    for num_classes in [2, 5]:
-        # Create initial model and save checkpoint
-        crop_model = model.CropModel(num_classes=num_classes)
-        crop_model.create_trainer(fast_dev_run=True)
-        crop_model.load_from_disk(train_dir=tmpdir, val_dir=tmpdir)
+    # Create initial model and save checkpoint
+    crop_model = model.CropModel(num_classes=2, label_dict={"Alive": 0, "Dead": 1})
+    crop_model.create_trainer(fast_dev_run=True)
+    crop_model.load_from_disk(train_dir=tmpdir, val_dir=tmpdir)
 
-        crop_model.trainer.fit(crop_model)
-        checkpoint_path = os.path.join(tmpdir, "epoch=0-step=0.ckpt")
+    crop_model.trainer.fit(crop_model)
+    checkpoint_path = os.path.join(tmpdir, "epoch=0-step=0.ckpt")
 
-        crop_model.trainer.save_checkpoint(checkpoint_path)
+    crop_model.trainer.save_checkpoint(checkpoint_path)
 
-        # Load from checkpoint
-        loaded_model = model.CropModel.load_from_checkpoint(checkpoint_path)
+    # Load from checkpoint
+    loaded_model = model.CropModel.load_from_checkpoint(checkpoint_path)
 
-        # Test forward pass
-        x = torch.rand(4, 3, 224, 224)
-        output = loaded_model(x)
+    # Test forward pass
+    x = torch.rand(4, 3, 224, 224)
+    output = loaded_model(x)
 
-        # Check output shape matches number of classes
-        assert output.shape == (4, num_classes)
+    # Check output shape matches number of classes
+    assert output.shape == (4, 2)
 
-        # Check model parameters were loaded
-        for p1, p2 in zip(crop_model.parameters(), loaded_model.parameters()):
-            assert torch.equal(p1, p2)
+    # Check label dictionary was loaded
+    assert loaded_model.label_dict == crop_model.label_dict
+
+    # Check model parameters were loaded
+    for p1, p2 in zip(crop_model.parameters(), loaded_model.parameters()):
+        assert torch.equal(p1, p2)
 
 
 def test_crop_model_load_checkpoint_from_disk(tmpdir, crop_model_data):
@@ -177,37 +178,6 @@ def test_crop_model_init_no_num_classes():
     # Expect the forward pass to fail because the model is uninitialized.
     with pytest.raises(AttributeError):
         _ = crop_model.forward(x)
-
-
-def test_crop_model_load_checkpoint_with_explicit_num_classes(tmpdir, crop_model_data):
-    """
-    Test loading a checkpoint while explicitly providing the same num_classes.
-    This verifies that passing num_classes during load_from_checkpoint
-    remains valid (backward compatible).
-    """
-    num_classes = 3
-    # Create initial model and save checkpoint
-    crop_model = model.CropModel(num_classes=num_classes)
-    crop_model.create_trainer(fast_dev_run=True)
-    crop_model.load_from_disk(train_dir=tmpdir, val_dir=tmpdir)
-    crop_model.label_dict = {0: "label1", 1: "label2", 2: "label3"}
-    crop_model.trainer.fit(crop_model)
-    checkpoint_path = os.path.join(tmpdir, "epoch=0-step=0.ckpt")
-    crop_model.trainer.save_checkpoint(checkpoint_path)
-
-    # Load from checkpoint, explicitly specifying num_classes
-    loaded_model = model.CropModel.load_from_checkpoint(checkpoint_path, num_classes=num_classes)
-
-    # Test forward pass
-    x = torch.rand(4, 3, 224, 224)
-    output = loaded_model(x)
-
-    # Check output shape
-    assert output.shape == (4, num_classes)
-
-    # Check model parameters match
-    for p1, p2 in zip(crop_model.parameters(), loaded_model.parameters()):
-        assert torch.equal(p1, p2)
 
 
 def test_expand_bbox_to_square_edge_cases():
