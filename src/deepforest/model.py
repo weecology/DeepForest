@@ -195,7 +195,11 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
         Returns:
             None
         """
-        self.train_ds, self.val_ds = create_aligned_image_folders(train_dir, val_dir, transform_train=self.get_transform(augment=True), transform_val=self.get_transform(augment=False))
+        self.train_ds, self.val_ds = create_aligned_image_folders(
+            train_dir,
+            val_dir,
+            transform_train=self.get_transform(augment=True),
+            transform_val=self.get_transform(augment=False))
         self.label_dict = self.train_ds.class_to_idx
 
         # Create a reverse mapping from numeric indices to class labels
@@ -383,24 +387,20 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
         outputs = self(x)
         loss = F.cross_entropy(outputs, y)
         self.log("val_loss", loss)
-        metric_dict = self.metrics(outputs, y)
-        for key, value in metric_dict.items():
-            if isinstance(value, torch.Tensor) and value.numel() > 1:
-                for i, v in enumerate(value):
-                    # Use label names from label_dict
-                    if key == "Class Accuracy":
-                        if self.numeric_to_label_dict is not None:
-                            label_name = self.numeric_to_label_dict.get(
-                                i, str(i))
-                            metric_name = f"{key}_{label_name}"
-                        else:
-                            metric_name = f"{key}_{i}"
-                    else:
-                        metric_name = f"{key}_{i}"
-                    self.log(metric_name, v, on_step=False, on_epoch=True)
-            else:
-                self.log(key, value, on_step=False, on_epoch=True)
+        self.metrics.update(outputs, y)
+
         return loss
+
+    def on_validation_epoch_end(self):
+        metric_dict = self.metrics.compute()
+        for index, value in enumerate(metric_dict["Class Accuracy"]):
+            key = self.numeric_to_label_dict[index]
+            metric_name = f"Class Accuracy_{key}"
+            self.log(metric_name, value, on_step=False, on_epoch=True)
+        self.metrics.reset()
+
+        self.log("Micro-Average Accuracy", metric_dict["Accuracy"], on_step=False, on_epoch=True)
+        self.log("Micro-Average Precision", metric_dict["Precision"], on_step=False, on_epoch=True)
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.lr)
