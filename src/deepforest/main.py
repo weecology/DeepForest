@@ -806,14 +806,6 @@ class deepforest(pl.LightningModule):
 
         return losses
 
-    def on_train_epoch_start(self):
-        # Ensure prediction array is evicted for next loop
-        if hasattr(self, "predictions"):
-            del self.predictions
-
-    def on_validation_epoch_start(self):
-        self.predictions = []
-
     def calculate_empty_frame_accuracy(self, ground_df, predictions_df):
         """Calculate accuracy for empty frames (frames with no objects).
 
@@ -911,19 +903,8 @@ class deepforest(pl.LightningModule):
             except MisconfigurationException:
                 pass
 
-    def on_validation_batch_end(self, outputs, batch, batch_idx, dataloader_idx=0):
-        if (
-            self.config.validation.val_accuracy_interval != -1
-            and (self.current_epoch + 1) % self.config.validation.val_accuracy_interval
-            == 0
-        ):
-            self.predictions.extend(
-                [pred for pred in self.last_preds if pred is not None]
-            )
-
     def on_validation_epoch_end(self):
-        """Compute metrics and predictions at the end of the validation
-        epoch."""
+        """Compute metrics at the end of the validation epoch."""
         if self.trainer.sanity_checking:  # optional skip
             return
 
@@ -931,31 +912,6 @@ class deepforest(pl.LightningModule):
         log_info("Calculating torchmetrics")
         self.log_epoch_metrics()
         log_info(f"Logged epoch {self.current_epoch} metrics")
-
-        # Epochs are 0-indexed, so this gives expected behaviour. Don't validate on
-        # epoch 0, and val_accuracy_interval can be set to max_epochs or -1 to disable.
-        if (
-            self.config.validation.val_accuracy_interval != -1
-            and (self.current_epoch + 1) % self.config.validation.val_accuracy_interval
-            == 0
-        ):
-            if len(self.predictions) > 0:
-                predictions = pd.concat(self.predictions)
-            else:
-                predictions = pd.DataFrame()
-
-            log_info(f"Beginning evaluation, epoch: {self.current_epoch}")
-
-            # Evaluate already logs?
-            results = self.evaluate(
-                self.config.validation.csv_file,
-                root_dir=self.config.validation.root_dir,
-                size=self.config.validation.size,
-                predictions=predictions,
-            )
-
-            del predictions
-            return results
 
     def predict_step(self, batch, batch_idx):
         """Predict a batch of images with the deepforest model. If batch is a
