@@ -399,8 +399,14 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
             self.log(metric_name, value, on_step=False, on_epoch=True)
         self.metrics.reset()
 
-        self.log("Micro-Average Accuracy", metric_dict["Accuracy"], on_step=False, on_epoch=True)
-        self.log("Micro-Average Precision", metric_dict["Precision"], on_step=False, on_epoch=True)
+        self.log("Micro-Average Accuracy",
+                 metric_dict["Accuracy"],
+                 on_step=False,
+                 on_epoch=True)
+        self.log("Micro-Average Precision",
+                 metric_dict["Precision"],
+                 on_step=False,
+                 on_epoch=True)
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.lr)
