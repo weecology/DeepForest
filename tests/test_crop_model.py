@@ -55,7 +55,6 @@ def test_crop_model(crop_model):
     val_loss = crop_model.validation_step(val_batch, batch_idx=0)
     assert isinstance(val_loss, torch.Tensor)
 
-
 def test_crop_model_train(crop_model, tmpdir, crop_model_data):
     # Create a trainer
     crop_model.create_trainer(fast_dev_run=True)
