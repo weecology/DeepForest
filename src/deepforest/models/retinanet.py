@@ -191,6 +191,12 @@ class Model(BaseModel):
                 label_dict=self.config.label_dict,
             )
         else:
+            # Pre 2.0 compatibility, the score_threshold used to be stored under retinanet.score_thresh
+            try:
+                self.config.score_thresh = self.config.retinanet.score_thresh
+            except AttributeError:
+                pass
+
             model = RetinaNetHub.from_pretrained(
                 pretrained,
                 revision=revision,
