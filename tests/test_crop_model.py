@@ -241,7 +241,7 @@ def test_expand_bbox_to_square_edge_cases():
 
 def test_crop_model_val_dataset_confusion(tmpdir, crop_model_data):
     crop_model = model.CropModel()
-    crop_model.create_trainer(fast_dev_run=True)
+    crop_model.create_trainer(fast_dev_run=False)
     crop_model.load_from_disk(train_dir=tmpdir, val_dir=tmpdir, recreate_model=True)
     crop_model.trainer.fit(crop_model)
     images, labels, predictions = crop_model.val_dataset_confusion(return_images=True)
@@ -251,4 +251,4 @@ def test_crop_model_val_dataset_confusion(tmpdir, crop_model_data):
 
     # There was just one batch in the fast_dev_run
     assert len(labels) ==37
-    assert len(predictions) == 4
+    assert len(predictions) == 37
