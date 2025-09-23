@@ -104,6 +104,7 @@ class CropModelConfig:
     batch_size: int = 4
     num_workers: int = 0
     lr: float = 0.0001
+    scheduler: SchedulerConfig = field(default_factory=SchedulerConfig)
     balance_classes: bool = False
     sampler: str | None = "weighted_random"  # or None
 

@@ -80,9 +80,6 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
 
     Args:
         num_classes (int, optional): Number of classes for classification. If None, it will be inferred from the checkpoint during loading.
-        batch_size (int, optional): Batch size for training. Defaults to 4.
-        num_workers (int, optional): Number of worker processes for data loading. Defaults to 0.
-        lr (float, optional): Learning rate for optimization. Defaults to 0.0001.
         model (nn.Module, optional): Custom PyTorch model to use. If None, uses ResNet-50. Defaults to None.
         label_dict (dict, optional): Mapping of class labels to numeric indices. Defaults to None.
 
@@ -92,9 +89,6 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
         total_accuracy (torchmetrics.Accuracy): Overall accuracy metric
         precision_metric (torchmetrics.Precision): Precision metric
         metrics (torchmetrics.MetricCollection): Collection of all metrics
-        batch_size (int): Batch size for training
-        num_workers (int): Number of data loading workers
-        lr (float): Learning rate
         label_dict (dict): Label to index mapping {"Bird": 0, "Mammal": 1}
     """
 
@@ -455,9 +449,11 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
         """Create a labels and predictions from the validation dataset to be
         created into a confusion matrix."""
         dl = self.predict_dataloader(self.val_ds)
+        # ensure fast_dev_run is False
+        self.trainer.fast_dev_run = False
         predictions = self.trainer.predict(self, dl)
         predicted_label, _ = self.postprocess_predictions(predictions)
-        true_label = [self.val_ds.imgs[i][1] for i in range(len(self.val_ds.imgs))]
+        true_label = [self.val_ds[i][1] for i in range(len(self.val_ds))]
         if return_images:
             images = [
                 Image.open(self.val_ds.imgs[i][0]) for i in range(len(self.val_ds.imgs))

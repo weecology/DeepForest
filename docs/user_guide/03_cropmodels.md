@@ -231,6 +231,20 @@ label, score = cropmodel.postprocess_predictions(crop_results)
 label_names = [cropmodel.numeric_to_label_dict[x] for x in label]
 ```
 
+### Reloading a Dataset from Disk for Validation
+
+```python
+from deepforest.model import CropModel
+
+crop_model = CropModel.load_from_checkpoint("/blue/ewhite/b.weinstein/BOEM/UBFAI Images with Detection Data/classification/checkpoints/d7e956055e23433a8892a8928a357385.ckpt")
+crop_model.load_from_disk(
+    train_dir="/blue/ewhite/b.weinstein/BOEM/UBFAI Images with Detection Data/classification/crops/train/d7e956055e23433a8892a8928a357385",
+    val_dir="/blue/ewhite/b.weinstein/BOEM/UBFAI Images with Detection Data/classification/crops/val/d7e956055e23433a8892a8928a357385"
+)
+crop_model.create_trainer()
+true_label, predicted_label = crop_model.val_dataset_confusion()
+```
+
 ### Making Predictions on Single Images
 
 You can also make predictions on individual images or batches:
@@ -413,3 +427,4 @@ pass the num_classes or label_dict to the load_from_checkpoint function.
 
 ```
 >>> cropmodel = model.CropModel.load_from_checkpoint("/Users/benweinstein/3caaa23614c041eaa7edcc1231cf216b.ckpt",num_classes=61)
+```
