@@ -384,7 +384,9 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
         outputs = self(x)
         loss = F.cross_entropy(outputs, y)
         self.log("val_loss", loss)
-        self.metrics.update(outputs, y)
+
+        predictions = torch.argmax(outputs, dim=1)
+        self.metrics.update(predictions, y)
 
         return loss
 
