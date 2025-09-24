@@ -1,6 +1,7 @@
 """Parallelizable evaluation script for DeepForest predictions."""
 
 import argparse
+import json
 import logging
 import multiprocessing as mp
 import os
@@ -11,9 +12,17 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import yaml
 from hydra import compose, initialize, initialize_config_dir
 from omegaconf import OmegaConf
 from tqdm import tqdm
+
+try:
+    import comet_ml
+
+    COMET_AVAILABLE = True
+except ImportError:
+    COMET_AVAILABLE = False
 
 from deepforest import utilities
 from deepforest.conf.schema import Config as StructuredConfig
@@ -28,6 +37,108 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 logger = logging.getLogger(__name__)
+
+
+def discover_prediction_files(log_dir: str) -> tuple[dict, list[tuple[str, str, int]]]:
+    """Discover prediction files in experiment log directory.
+
+    Returns: (hparams_dict, [(prediction_csv, ground_truth_csv, step), ...])
+    """
+    log_path = Path(log_dir)
+
+    # Load hparams
+    with open(log_path / "hparams.yaml") as f:
+        hparams = yaml.safe_load(f)
+
+    # Find metadata files and pair with CSVs
+    file_pairs = []
+    for json_file in (log_path / "predictions").glob("*_metadata.json"):
+        with open(json_file) as f:
+            metadata = json.load(f)
+
+        # Find matching CSV
+        csv_name = json_file.stem.replace("_metadata", "") + ".csv"
+        csv_file = json_file.parent / csv_name
+
+        if csv_file.exists():
+            file_pairs.append(
+                (str(csv_file), metadata["target_csv_file"], metadata["current_step"])
+            )
+
+    return hparams, sorted(file_pairs, key=lambda x: x[2])
+
+
+def log_to_comet(experiment_id: str, metrics: dict, step: int, label_dict: dict = None):
+    """Log metrics to Comet experiment."""
+    if not COMET_AVAILABLE:
+        logger.warning("Comet ML not available, skipping logging")
+        return
+
+    try:
+        experiment = comet_ml.ExistingExperiment(experiment_key=experiment_id)
+
+        # Log basic metrics
+        experiment.log_metric("box_recall", metrics["box_recall"], step=step)
+        experiment.log_metric("box_precision", metrics["box_precision"], step=step)
+
+        # Log class-specific metrics
+        if metrics["class_recall"] is not None and label_dict is not None:
+            numeric_to_label = {v: k for k, v in label_dict.items()}
+            for _, row in metrics["class_recall"].iterrows():
+                label_name = numeric_to_label.get(row["label"], f"class_{row['label']}")
+                experiment.log_metric(f"{label_name}_Recall", row["recall"], step=step)
+                experiment.log_metric(
+                    f"{label_name}_Precision", row["precision"], step=step
+                )
+
+        logger.info(f"Logged metrics to Comet for step {step}")
+
+    except Exception as e:
+        logger.error(f"Failed to log to Comet: {e}")
+
+
+def process_experiment_log(log_dir: str, args):
+    """Process experiment log directory and evaluate all predictions."""
+    try:
+        hparams, file_pairs = discover_prediction_files(log_dir)
+
+        if args.dry_run:
+            logger.info("Dry run mode - would process the following files:")
+            for pred_csv, gt_csv, step in file_pairs:
+                logger.info(f"  Step {step}: {pred_csv} vs {gt_csv}")
+            return
+
+        # Process each file pair
+        experiment_id = hparams.get("experiment_id")
+        label_dict = hparams.get("config", {}).get("label_dict")
+
+        for pred_csv, gt_csv, step in file_pairs:
+            logger.info(f"Processing step {step}: {Path(pred_csv).name}")
+
+            # Load data
+            predictions = pd.read_csv(pred_csv)
+            ground_truth = pd.read_csv(gt_csv)
+
+            # Run evaluation
+            results = evaluate_boxes_parallel(
+                predictions=predictions,
+                ground_df=ground_truth,
+                iou_threshold=args.iou_threshold,
+                num_workers=args.workers,
+                temp_dir=args.working_dir,
+            )
+
+            # Log results
+            logger.info(
+                f"Step {step} - Box Recall: {results['box_recall']:.4f}, Box Precision: {results['box_precision']:.4f}"
+            )
+
+            # Log to Comet if experiment_id available
+            if experiment_id and not args.dry_run:
+                log_to_comet(experiment_id, results, step, label_dict)
+
+    except Exception as e:
+        logger.error(f"Error processing experiment log directory: {e}")
 
 
 def shard_dataframes(
@@ -292,7 +403,7 @@ def evaluate_boxes_parallel(
             with mp.Pool(processes=min(len(worker_args), num_workers)) as pool:
                 worker_results = list(pool.imap(process, worker_args))
         else:
-            worker_results = process(worker_args[0])
+            worker_results = [process(worker_args[0])]
 
         # Reduce over results
         results, box_recall, box_precision, class_recall = reduce(worker_results)
@@ -319,7 +430,10 @@ def main():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
 
-    parser.add_argument("preds", help="Path to predictions CSV file")
+    # Create mutually exclusive group for input modes
+    input_group = parser.add_mutually_exclusive_group(required=True)
+    input_group.add_argument("preds", nargs="?", help="Path to predictions CSV file")
+    input_group.add_argument("--log-dir", help="Path to experiment log directory")
 
     parser.add_argument(
         "--gt",
@@ -337,6 +451,11 @@ def main():
         help="Directory for temporary worker files (default: system temp)",
     )
     parser.add_argument("--output", help="Path to save detailed evaluation results CSV")
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Preview files that would be processed without logging to Comet",
+    )
 
     # Config options for Hydra
     parser.add_argument("--config-dir", help="Show available config overrides and exit")
@@ -345,6 +464,11 @@ def main():
     )
 
     args, overrides = parser.parse_known_args()
+
+    # Handle experiment log mode
+    if args.log_dir:
+        process_experiment_log(args.log_dir, args)
+        return
 
     if args.config_dir is not None:
         initialize_config_dir(version_base=None, config_dir=args.config_dir)
