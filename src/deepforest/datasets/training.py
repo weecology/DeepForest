@@ -9,8 +9,10 @@ import shapely
 import torch
 from PIL import Image
 from torch.utils.data import Dataset
+from torchvision.datasets import ImageFolder
 
 from deepforest.augmentations import get_transform
+
 
 
 class BoxDataset(Dataset):
@@ -192,3 +194,74 @@ class BoxDataset(Dataset):
         targets = {"boxes": boxes, "labels": labels}
 
         return image, targets, self.image_names[idx]
+
+
+# ---------- ImageFolder alignment utilities ----------
+
+class FixedClassImageFolder(ImageFolder):
+    """ImageFolder that enforces a provided class_to_idx mapping.
+
+    Samples and targets are remapped based on the folder names so that the
+    numeric labels strictly follow the supplied mapping. Classes absent in the
+    dataset are simply not represented in samples.
+    """
+
+    def __init__(self, root, class_to_idx, transform=None):
+        # Build with super to scan files
+        super().__init__(root=root, transform=transform)
+
+        # Force mapping and classes order
+        self.class_to_idx = dict(class_to_idx)
+        classes = [None] * len(self.class_to_idx)
+        for name, idx in self.class_to_idx.items():
+            if idx < len(classes):
+                classes[idx] = name
+        self.classes = classes
+
+        # Remap samples/targets by reading class name from path
+        remapped_samples = []
+        remapped_targets = []
+        for path, _ in self.samples:
+            cls_name = os.path.basename(os.path.dirname(path))
+            if cls_name in self.class_to_idx:
+                target = self.class_to_idx[cls_name]
+                remapped_samples.append((path, target))
+                remapped_targets.append(target)
+
+        self.samples = remapped_samples
+        # Torchvision aliases 'imgs' to 'samples' historically
+        self.imgs = list(remapped_samples)
+        self.targets = remapped_targets
+
+
+def create_aligned_image_folders(train_root,
+                                 val_root,
+                                 transform_train=None,
+                                 transform_val=None):
+    """Create train/val ImageFolders that share an aligned class_to_idx.
+
+    - Computes the union of class folder names across train and val roots
+    - Uses a single mapping (sorted by class name) for both datasets
+    - Returns two ImageFolder instances with remapped samples/targets
+    """
+
+    def _classes_in(root):
+        try:
+            return sorted(
+                [e.name for e in os.scandir(root) if e.is_dir()], key=lambda x: x)
+        except FileNotFoundError:
+            return []
+
+    train_classes = set(_classes_in(train_root))
+    val_classes = set(_classes_in(val_root))
+    union_classes = sorted(train_classes.union(val_classes))
+    class_to_idx = {name: idx for idx, name in enumerate(union_classes)}
+
+    train_ds = FixedClassImageFolder(train_root,
+                                     class_to_idx=class_to_idx,
+                                     transform=transform_train)
+    val_ds = FixedClassImageFolder(val_root,
+                                   class_to_idx=class_to_idx,
+                                   transform=transform_val)
+
+    return train_ds, val_ds
