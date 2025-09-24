@@ -114,14 +114,10 @@ def train(
         )
         loggers.append(tensorboard_logger)
 
-    callbacks.append(
-        ImagesCallback(save_dir=Path(csv_logger.log_dir) / "images", every_n_epochs=5)
-    )
-    callbacks.append(
-        EvaluationCallback(
-            save_dir=Path(csv_logger.log_dir) / "predictions", compress=compress
-        )
-    )
+    callbacks.append(ImagesCallback(save_dir=Path(csv_logger.log_dir) / "images"))
+
+    evaluation_path = Path(csv_logger.log_dir) / "predictions"
+    callbacks.append(EvaluationCallback(save_dir=evaluation_path, compress=compress))
 
     # Setup checkpoint to store in log directory
     if checkpoint:
@@ -139,7 +135,9 @@ def train(
         logger=loggers,
         callbacks=callbacks,
         gradient_clip_val=0.5,
-        strategy="ddp_find_unused_parameters_true",
+        strategy="ddp_find_unused_parameters_true"
+        if torch.cuda.is_available()
+        else "auto",
     )
 
     # Add experiment ID to hyperparameters if available
@@ -164,6 +162,14 @@ def train(
         torch.cuda.memory._dump_snapshot(
             filename=Path(csv_logger.log_dir) / "dump_snapshot.pickle"
         )
+
+    # Upload predictions
+    if comet:
+        for logger in m.trainer.loggers:
+            m.print("Uploading predictions")
+
+            if hasattr(logger.experiment, "log_artifact"):
+                logger.experiment.log_asset_folder(evaluation_path, log_file_name=True)
 
     if checkpoint:
         for logger in m.trainer.loggers:
