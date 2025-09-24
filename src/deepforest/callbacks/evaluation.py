@@ -1,114 +1,93 @@
-"""Evaluation callback for prediction saving and evaluation during training."""
-
 import gzip
 import json
 import os
+import shutil
 import tempfile
 import warnings
 from glob import glob
+from pathlib import Path
 
-import pandas as pd
+import torch
 from pytorch_lightning import Callback, Trainer
 from pytorch_lightning.core import LightningModule
 
 
 class EvaluationCallback(Callback):
-    """Accumulate validation predictions and save to disk during training.
+    """Accumulate validation predictions per batch, write one shard per rank,
+    optionally merge shards on rank 0, and optionally run evaluation.
 
-    This callback accumulates predictions during validation and writes them
-    incrementally to a CSV file. At the end of validation, it saves metadata
-    and optionally runs evaluation. The saved predictions are in the format
-    expected by DeepForest's evaluation functions.
-
-    The saved files follow this naming convention:
-    - Predictions: {save_dir}/predictions_epoch_{epoch}.csv (or .csv.gz if compressed)
-    - Metadata: {save_dir}/predictions_epoch_{epoch}_metadata.json
-
-    Args:
-        save_dir (str): Directory to save prediction files. Will be created if it doesn't exist.
-        every_n_epochs (int, optional): Run interval in epochs. Set to -1 to disable callback.
-            Defaults to 5.
-        iou_threshold (float, optional): IoU threshold for evaluation when run_evaluation=True.
-            Defaults to 0.4.
-        run_evaluation (bool, optional): Whether to run evaluate_boxes at epoch end and log metrics.
-            Defaults to False.
-        compress (bool, optional): Whether to compress CSV files using gzip. When True, saves as
-            .csv.gz files for better storage efficiency. When False (default), saves as plain .csv
-            Defaults to False.
-
-    Attributes:
-        save_dir (str): Directory where files are saved
-        every_n_epochs (int): Epoch interval for running callback
-        iou_threshold (float): IoU threshold used for evaluation
-        run_evaluation (bool): Whether evaluation is run at epoch end
-        predictions_written (int): Number of predictions written in current epoch
-
-    Note:
-        This callback should be used with `val_accuracy_interval = -1` in the model config
-        to disable the built-in evaluation and avoid duplicate processing.
+    File names:
+      - Shards: predictions_epoch_{E}_rank{R}.csv[.gz]
+      - Merged: predictions_epoch_{E}.csv[.gz]
+      - Meta:   predictions_epoch_{E}_metadata.json
     """
 
     def __init__(
         self,
-        save_dir: str = None,
+        save_dir: str | None = None,
         every_n_epochs: int = 5,
         iou_threshold: float = 0.4,
         run_evaluation: bool = False,
         compress: bool = False,
     ) -> None:
         super().__init__()
-
-        self.temp_dir_obj = None
-        if not save_dir:
-            self.temp_dir_obj = tempfile.TemporaryDirectory()
-            save_dir = self.temp_dir_obj.name
-
-        self.save_dir = save_dir
+        self._user_save_dir = save_dir
+        self.compress = compress
         self.every_n_epochs = every_n_epochs
         self.iou_threshold = iou_threshold
         self.run_evaluation = run_evaluation
-        self.compress = compress
-        self.predictions_written = 0
 
-    def _should_skip(self, trainer: Trainer) -> bool:
-        """Check if callback should be skipped for the current trainer
-        state."""
+        self.save_dir: Path | None = None
+        self._is_temp = save_dir is None
+        self._rank_base: Path | None = None
+        self.csv_file = None
+        self.csv_path: Path | None = None
+        self.predictions_written = 0  # rows written by *this rank* this epoch
 
-        return (
+    def _active_epoch(self, trainer: Trainer) -> bool:
+        e = trainer.current_epoch + 1
+        return not (
             trainer.sanity_checking
             or trainer.fast_dev_run
             or self.every_n_epochs == -1
-            or (trainer.current_epoch + 1) % self.every_n_epochs != 0
+            or (e % self.every_n_epochs != 0)
         )
+
+    def _open_writer(self, path: Path):
+        if self.compress:
+            return gzip.open(path, "wt", encoding="utf-8")
+        return open(path, "w", encoding="utf-8")
+
+    def setup(
+        self, trainer: Trainer, pl_module: LightningModule, stage: str | None = None
+    ):
+        if self._is_temp:
+            # independent temp base per rank, then a rank subdir for clarity
+            base = Path(tempfile.mkdtemp(prefix="preds_"))
+            self._rank_base = base
+            self.save_dir = base / f"rank{trainer.global_rank}"
+        else:
+            self.save_dir = Path(self._user_save_dir)  # type: ignore[arg-type]
+        self.save_dir.mkdir(parents=True, exist_ok=True)
 
     def on_validation_epoch_start(
         self, trainer: Trainer, pl_module: LightningModule
     ) -> None:
-        if self._should_skip(trainer):
-            return
-
-        # Create once to avoid races
-        if trainer.is_global_zero:
-            os.makedirs(self.save_dir, exist_ok=True)
-        trainer.strategy.barrier()
-
-        # Per-rank shard filename
-        rank = trainer.global_rank
-        csv_filename = f"predictions_epoch_{trainer.current_epoch + 1}_rank{rank}.csv"
-        if self.compress:
-            csv_filename += ".gz"
-        csv_path = os.path.join(self.save_dir, csv_filename)
-
-        self.csv_path = csv_path  # path to this rank's shard
-        self.predictions_written = 0
-
-        if self.compress:
-            self.csv_file = gzip.open(csv_path, "wt", encoding="utf-8")
+        if self._active_epoch(trainer):
+            epoch = trainer.current_epoch + 1
+            rank = trainer.global_rank
+            suffix = ".csv.gz" if self.compress else ".csv"
+            self.csv_path = (
+                self.save_dir / f"predictions_epoch_{epoch}_rank{rank}{suffix}"
+            )
+            self.csv_file = self._open_writer(self.csv_path)
         else:
-            self.csv_file = open(csv_path, "w")
+            self.csv_path = None
+            self.csv_file = None
 
-        self.csv_path = csv_path
         self.predictions_written = 0
+
+        trainer.strategy.barrier()
 
     def on_validation_batch_end(
         self,
@@ -119,104 +98,141 @@ class EvaluationCallback(Callback):
         batch_idx: int,
         dataloader_idx: int = 0,
     ) -> None:
-        """Write predictions from current validation batch to CSV file."""
-        if self._should_skip(trainer) or self.csv_file is None:
+        if not self._active_epoch(trainer) or self.csv_file is None:
             return
-
-        # Get predictions from this batch
-        batch_preds = pl_module.last_preds
-
-        for pred in batch_preds:
-            if pred is not None and not pred.empty:
-                pred.to_csv(
-                    self.csv_file, index=False, header=(self.predictions_written == 0)
-                )
-                self.predictions_written += len(pred)
+        # expected: pl_module.last_preds is list[pd.DataFrame]
+        batch_preds = getattr(pl_module, "last_preds", None)
+        if not batch_preds:
+            return
+        for df in batch_preds:
+            if df is None or df.empty:
+                continue
+            df.to_csv(self.csv_file, index=False, header=(self.predictions_written == 0))
+            self.predictions_written += len(df)
 
     def on_validation_epoch_end(
         self, trainer: Trainer, pl_module: LightningModule
     ) -> None:
-        """Clean up at end of epoch.
-
-        Handles DDP sync and merging of output shards.
-        """
-        if self._should_skip(trainer):
-            return
+        strategy = trainer.strategy
+        world_size = strategy.world_size
 
         if self.csv_file is not None:
             self.csv_file.close()
             self.csv_file = None
 
-        # All ranks finished writing
-        trainer.strategy.barrier()
+        strategy.barrier()  # all ranks finished writing
 
-        # Merge on global rank 0
-        if trainer.is_global_zero:
-            epoch = trainer.current_epoch + 1
-            pattern = os.path.join(self.save_dir, f"predictions_epoch_{epoch}_rank*.csv")
+        # Collect each rank's save_dir and row count
+        if (
+            world_size > 1
+            and torch.distributed.is_available()
+            and torch.distributed.is_initialized()
+        ):
+            rank_dirs: list[str | None] = [None] * world_size
+            rank_counts: list[int] = [0] * world_size
+            torch.distributed.all_gather_object(rank_dirs, str(self.save_dir))
+            torch.distributed.all_gather_object(
+                rank_counts, int(self.predictions_written)
+            )
+        else:
+            rank_dirs = [str(self.save_dir)]
+            rank_counts = [int(self.predictions_written)]
+
+        if self._active_epoch(trainer) and trainer.is_global_zero:
+            self._reduce_and_evaluate(
+                trainer, pl_module, [Path(d) for d in rank_dirs if d], sum(rank_counts)
+            )
+
+        strategy.barrier()  # allow rank 0 to finish
+
+    def teardown(
+        self, trainer: Trainer, pl_module: LightningModule, stage: str | None = None
+    ):
+        if self._is_temp and self._rank_base is not None:
+            shutil.rmtree(self._rank_base, ignore_errors=True)
+
+    def _reduce_and_evaluate(
+        self,
+        trainer: Trainer,
+        pl_module: LightningModule,
+        rank_dirs: list[Path],
+        total_written: int,
+    ) -> None:
+        epoch = trainer.current_epoch + 1
+        suffix = ".csv.gz" if self.compress else ".csv"
+
+        # discover shards
+        shard_paths: list[Path] = []
+        for d in rank_dirs:
+            pattern = str(d / f"predictions_epoch_{epoch}_rank*.csv")
             if self.compress:
                 pattern += ".gz"
+            shard_paths.extend(sorted(Path(p) for p in glob(pattern)))
 
-            shard_paths = sorted(glob(pattern))
-            merged_filename = f"predictions_epoch_{epoch}.csv"
-            if self.compress:
-                merged_filename += ".gz"
-            merged_path = os.path.join(self.save_dir, merged_filename)
+        merged_path = (
+            (self.save_dir / f"predictions_epoch_{epoch}{suffix}")
+            if shard_paths
+            else None
+        )
 
-            # Concatenate shards
-            dfs = []
-            for p in shard_paths:
-                if p.endswith(".gz"):
-                    dfs.append(pd.read_csv(p, compression="gzip"))
-                else:
-                    dfs.append(pd.read_csv(p))
-            if dfs:
-                merged = pd.concat(dfs, ignore_index=True)
-                if self.compress:
-                    merged.to_csv(merged_path, index=False, compression="gzip")
-                else:
-                    merged.to_csv(merged_path, index=False)
-                total_written = len(merged)
-            else:
-                total_written = 0
-                merged_path = None
+        # stream-merge shards into a single file without repeating headers
+        if merged_path is not None:
+            merged_path.parent.mkdir(parents=True, exist_ok=True)
+            open_out = gzip.open if self.compress else open
+            with open_out(merged_path, "wt", encoding="utf-8") as out_f:
+                wrote_header = False
+                for shard in shard_paths:
+                    open_in = (
+                        gzip.open
+                        if shard.suffix == ".gz" or shard.suffixes[-2:] == [".csv", ".gz"]
+                        else open
+                    )
+                    with open_in(shard, "rt", encoding="utf-8") as in_f:
+                        for i, line in enumerate(in_f):
+                            if i == 0 and wrote_header:
+                                continue
+                            out_f.write(line)
+                    wrote_header = True
 
-            # Save metadata
-            metadata = {
-                "epoch": epoch,
-                "current_step": trainer.global_step,
-                "predictions_count": total_written,
-                "target_csv_file": getattr(pl_module.config.validation, "csv_file", None),
-                "target_root_dir": getattr(pl_module.config.validation, "root_dir", None),
-                "shards": shard_paths,
-                "merged_predictions": merged_path,
-                "world_size": trainer.world_size,
-            }
-            with open(
-                os.path.join(self.save_dir, f"predictions_epoch_{epoch}_metadata.json"),
-                "w",
-            ) as f:
-                json.dump(metadata, f, indent=2)
+        # metadata
+        cfg = getattr(pl_module, "config", None)
+        val = getattr(cfg, "validation", None)
+        meta = {
+            "epoch": epoch,
+            "current_step": trainer.global_step,
+            "predictions_count": int(total_written),
+            "target_csv_file": getattr(val, "csv_file", None),
+            "target_root_dir": getattr(val, "root_dir", None),
+            "shards": [str(p) for p in shard_paths],
+            "merged_predictions": str(merged_path) if merged_path else None,
+            "world_size": trainer.strategy.world_size,
+        }
+        with open(
+            self.save_dir / f"predictions_epoch_{epoch}_metadata.json",
+            "w",
+            encoding="utf-8",
+        ) as f:
+            json.dump(meta, f, indent=2)
 
-            # Optional: cleanup shards after merge
-            for p in shard_paths:
+        # optional shard cleanup
+        for p in shard_paths:
+            try:
                 os.remove(p)
+            except OSError:
+                pass
 
-            # Run evaluation only if we have predictions and user requested it
-            if self.run_evaluation and total_written > 0 and merged_path is not None:
+        # optional evaluation
+        if self.run_evaluation:
+            if merged_path and total_written > 0:
                 try:
                     pl_module.evaluate(
-                        predictions=merged_path, csv_file=metadata["target_csv_file"]
+                        predictions=str(merged_path),
+                        csv_file=meta["target_csv_file"],
+                        iou_threshold=self.iou_threshold,
                     )
                 except Exception as e:
                     warnings.warn(f"Evaluation failed: {e}", stacklevel=2)
-            elif self.run_evaluation:
+            else:
                 warnings.warn(
                     "No predictions written to disk, skipping evaluate.", stacklevel=2
                 )
-
-        # Ensure rank 0 finished before next stage
-        trainer.strategy.barrier()
-
-        if self.temp_dir_obj is not None and trainer.is_global_zero:
-            self.temp_dir_obj.cleanup()
