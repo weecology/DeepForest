@@ -806,6 +806,12 @@ class deepforest(pl.LightningModule):
 
         return losses
 
+    def on_validation_batch_end(self, outputs, batch, batch_idx, dataloader_idx=0):
+        self.predictions.extend([p for p in self.last_preds if p is not None])
+
+    def on_validation_epoch_start(self):
+        self.predictions = []
+
     def calculate_empty_frame_accuracy(self, ground_df, predictions_df):
         """Calculate accuracy for empty frames (frames with no objects).
 
@@ -859,7 +865,7 @@ class deepforest(pl.LightningModule):
             gt = torch.zeros(len(empty_images))
             predictions = torch.tensor(predictions)
 
-            # Calculate accuracy using metric
+            # Calculate accuracy using metrictest_empty_frame_accuracy_mixed_frames_with_predictions
             self.empty_frame_accuracy.update(predictions, gt)
             empty_accuracy = self.empty_frame_accuracy.compute()
 
@@ -912,6 +918,11 @@ class deepforest(pl.LightningModule):
         log_info("Calculating torchmetrics")
         self.log_epoch_metrics()
         log_info(f"Logged epoch {self.current_epoch} metrics")
+
+        if len(self.predictions) > 0:
+            return pd.concat(self.predictions)
+        else:
+            return pd.DataFrame()
 
     def predict_step(self, batch, batch_idx):
         """Predict a batch of images with the deepforest model. If batch is a
@@ -1072,6 +1083,7 @@ class deepforest(pl.LightningModule):
         Returns:
             dict: Results dictionary containing precision, recall and other metrics
         """
+
         self.model.eval()
         ground_df = utilities.read_file(csv_file)
         ground_df["label"] = ground_df.label.apply(lambda x: self.label_dict[x])
@@ -1084,6 +1096,8 @@ class deepforest(pl.LightningModule):
             predictions = self.predict_file(
                 csv_file, root_dir, size=size, batch_size=batch_size
             )
+        else:
+            predictions = utilities.read_file(predictions)
 
         if iou_threshold is None:
             iou_threshold = self.config.validation.iou_threshold

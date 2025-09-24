@@ -73,12 +73,11 @@ def test_evaluation_callback_save_mode(m, tmpdir):
     with open(json_file, 'r') as f:
         metadata = json.load(f)
 
-    expected_keys = ["epoch", "predictions_count", "iou_threshold", "target_csv_file", "target_root_dir"]
+    expected_keys = ["epoch", "predictions_count", "target_csv_file", "target_root_dir"]
     for key in expected_keys:
         assert key in metadata, f"Missing metadata key: {key}"
 
     assert metadata["target_csv_file"] == get_data("example.csv")
-    assert metadata["iou_threshold"] == 0.4
 
 
 def test_evaluation_callback_with_evaluation(m, tmpdir):

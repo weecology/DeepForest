@@ -114,7 +114,9 @@ def train(
         )
         loggers.append(tensorboard_logger)
 
-    callbacks.append(ImagesCallback(save_dir=Path(csv_logger.log_dir) / "images"))
+    callbacks.append(
+        ImagesCallback(save_dir=Path(csv_logger.log_dir) / "images", every_n_epochs=5)
+    )
     callbacks.append(
         EvaluationCallback(
             save_dir=Path(csv_logger.log_dir) / "predictions", compress=compress
@@ -125,7 +127,7 @@ def train(
     if checkpoint:
         checkpoint_callback = ModelCheckpoint(
             dirpath=Path(csv_logger.log_dir) / "checkpoints",
-            filename=f"{config.architecture}-{{epoch:02d}}-{{val_map_50:.2f}}",
+            filename=f"{config.architecture}-{{epoch:02d}}-{{map_50:.2f}}",
             monitor="val_loss",
             mode="min",
             save_top_k=1,
@@ -133,7 +135,12 @@ def train(
         )
         callbacks.append(checkpoint_callback)
 
-    m.create_trainer(logger=loggers, callbacks=callbacks, gradient_clip_val=0.5)
+    m.create_trainer(
+        logger=loggers,
+        callbacks=callbacks,
+        gradient_clip_val=0.5,
+        strategy="ddp_find_unused_parameters_true",
+    )
 
     # Add experiment ID to hyperparameters if available
     if experiment_id is not None:
@@ -174,32 +181,61 @@ def train(
 
 def predict(
     config: DictConfig,
-    input_path: str,
+    input_path: str | None = None,
     output_path: str | None = None,
     plot: bool | None = False,
+    root_dir: str | None = None,
 ) -> None:
-    """Run prediction for the given image, optionally saving the results to the
-    provided path and optionally visualizing the results.
+    """Run prediction for the given image or CSV file, optionally saving the
+    results to the provided path and optionally visualizing the results.
 
     Args:
         config (DictConfig): Hydra configuration.
-        input_path (str): Path to the input image.
+        input_path (Optional[str]): Path to the input image or CSV file. If None, uses config.validation.csv_file.
         output_path (Optional[str]): Path to save the prediction results.
         plot (Optional[bool]): Whether to plot the results.
+        root_dir (Optional[str]): Root directory containing images when input_path is a CSV file.
 
     Returns:
         None
     """
     m = deepforest(config=config)
-    res = m.predict_tile(
-        path=input_path,
-        patch_size=config.patch_size,
-        patch_overlap=config.patch_overlap,
-        iou_threshold=config.nms_thresh,
-    )
+    m.create_trainer(logger=False)
+
+    # Use validation CSV from config if not provided
+    if input_path is None:
+        if config.validation.csv_file is None:
+            raise ValueError(
+                "No input file provided and config.validation.csv_file is not set"
+            )
+        input_path = config.validation.csv_file
+        print(f"Using validation CSV from config: {input_path}")
+
+    # Use validation root_dir from config if not provided and input is CSV
+    if input_path.endswith(".csv") and root_dir is None:
+        root_dir = config.validation.root_dir
+        if root_dir is not None:
+            print(f"Using root directory from config: {root_dir}")
+
+    if input_path.endswith(".csv"):
+        # CSV batch prediction
+        res = m.predict_file(
+            csv_file=input_path,
+            root_dir=root_dir,
+            batch_size=config.batch_size,
+        )
+    else:
+        # Single image prediction
+        res = m.predict_tile(
+            path=input_path,
+            patch_size=config.patch_size,
+            patch_overlap=config.patch_overlap,
+            iou_threshold=config.nms_thresh,
+        )
 
     if output_path is not None:
-        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        if os.path.dirname(output_path):
+            os.makedirs(os.path.dirname(output_path), exist_ok=True)
         res.to_csv(output_path, index=False)
 
     if plot:
@@ -208,37 +244,48 @@ def predict(
 
 def evaluate(
     config: DictConfig,
-    csv_file: str,
+    csv_file: str | None = None,
     root_dir: str | None = None,
     predictions_csv: str | None = None,
     iou_threshold: float | None = None,
     batch_size: int | None = None,
     size: int | None = None,
     experiment_id: str | None = None,
+    output_path: str | None = None,
 ) -> None:
     """Run evaluation on ground truth annotations, optionally logging to Comet.
 
     Args:
         config (DictConfig): Hydra configuration.
-        csv_file (str): Path to ground truth CSV file with annotations.
-        root_dir (Optional[str]): Root directory containing images. If None, uses directory of csv_file.
+        csv_file (Optional[str]): Path to ground truth CSV file with annotations. If None, uses config.validation.csv_file.
+        root_dir (Optional[str]): Root directory containing images. If None, uses config value or directory of csv_file.
         predictions_csv (Optional[str]): Path to predictions CSV file. If None, generates predictions.
         iou_threshold (Optional[float]): IoU threshold for evaluation. If None, uses config value.
         batch_size (Optional[int]): Batch size for prediction. If None, uses config value.
         size (Optional[int]): Size to resize images for prediction. If None, no resizing.
         experiment_id (Optional[str]): Comet experiment ID to log results to.
+        output_path (Optional[str]): Path to save evaluation results CSV.
 
     Returns:
         None
     """
     m = deepforest(config=config)
+    m.create_trainer(logger=False)
 
-    # Load predictions if provided
-    predictions = None
-    if predictions_csv is not None:
-        import pandas as pd
+    # Use validation CSV from config if not provided
+    if csv_file is None:
+        if config.validation.csv_file is None:
+            raise ValueError(
+                "No CSV file provided and config.validation.csv_file is not set"
+            )
+        csv_file = config.validation.csv_file
+        print(f"Using validation CSV from config: {csv_file}")
 
-        predictions = pd.read_csv(predictions_csv)
+    # Use validation root_dir from config if not provided
+    if root_dir is None:
+        root_dir = config.validation.root_dir
+        if root_dir is not None:
+            print(f"Using root directory from config: {root_dir}")
 
     # Run evaluation
     results = m.evaluate(
@@ -247,7 +294,7 @@ def evaluate(
         iou_threshold=iou_threshold,
         batch_size=batch_size,
         size=size,
-        predictions=predictions,
+        predictions=predictions_csv,
     )
 
     # Print results to console
@@ -306,6 +353,34 @@ def evaluate(
         except Exception as e:
             warnings.warn(f"Failed to log to Comet experiment. {e}", stacklevel=2)
 
+    # Save results to CSV if output path provided
+    if output_path is not None:
+        import pandas as pd
+
+        # Create a summary dataframe with evaluation metrics
+        summary_data = []
+        for key, value in results.items():
+            if key not in ["predictions", "results", "ground_df", "class_recall"]:
+                if value is not None:
+                    summary_data.append({"metric": key, "value": value})
+
+        # Add class-specific results if available
+        if results.get("class_recall") is not None:
+            for _, row in results["class_recall"].iterrows():
+                label_name = m.numeric_to_label_dict[row["label"]]
+                summary_data.append(
+                    {"metric": f"{label_name}_Recall", "value": row["recall"]}
+                )
+                summary_data.append(
+                    {"metric": f"{label_name}_Precision", "value": row["precision"]}
+                )
+
+        summary_df = pd.DataFrame(summary_data)
+        if os.path.dirname(output_path):
+            os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        summary_df.to_csv(output_path, index=False)
+        print(f"\nEvaluation results saved to: {output_path}")
+
 
 def main():
     parser = argparse.ArgumentParser(description="DeepForest CLI")
@@ -344,12 +419,19 @@ def main():
     # Predict subcommand
     predict_parser = subparsers.add_parser(
         "predict",
-        help="Run prediction on input",
+        help="Run prediction on input image or CSV file",
         epilog="Any remaining arguments <key>=<value> will be passed to Hydra to override the current config.",
     )
-    predict_parser.add_argument("input", help="Path to input raster")
+    predict_parser.add_argument(
+        "input",
+        nargs="?",
+        help="Path to input image or CSV file (optional if validation CSV specified in config)",
+    )
     predict_parser.add_argument("-o", "--output", help="Path to prediction results")
     predict_parser.add_argument("--plot", action="store_true", help="Plot results")
+    predict_parser.add_argument(
+        "--root-dir", help="Root directory containing images (required when input is CSV)"
+    )
 
     # Evaluate subcommand
     evaluate_parser = subparsers.add_parser(
@@ -357,7 +439,11 @@ def main():
         help="Run evaluation on ground truth annotations",
         epilog="Any remaining arguments <key>=<value> will be passed to Hydra to override the current config.",
     )
-    evaluate_parser.add_argument("csv_file", help="Path to ground truth CSV file")
+    evaluate_parser.add_argument(
+        "csv_file",
+        nargs="?",
+        help="Path to ground truth CSV file (optional if specified in config)",
+    )
     evaluate_parser.add_argument("--root-dir", help="Root directory containing images")
     evaluate_parser.add_argument(
         "--predictions-csv",
@@ -374,6 +460,9 @@ def main():
     )
     evaluate_parser.add_argument(
         "--experiment-id", help="Comet experiment ID to log results to"
+    )
+    evaluate_parser.add_argument(
+        "-o", "--output", help="Path to save evaluation results CSV"
     )
 
     # Show config subcommand
@@ -397,7 +486,13 @@ def main():
     cfg = OmegaConf.merge(base, cfg)
 
     if args.command == "predict":
-        predict(cfg, input_path=args.input, output_path=args.output, plot=args.plot)
+        predict(
+            cfg,
+            input_path=args.input,
+            output_path=args.output,
+            plot=args.plot,
+            root_dir=args.root_dir,
+        )
     elif args.command == "train":
         res = train(
             cfg,
@@ -420,6 +515,7 @@ def main():
             batch_size=args.batch_size,
             size=args.size,
             experiment_id=args.experiment_id,
+            output_path=args.output,
         )
 
     elif args.command == "config":

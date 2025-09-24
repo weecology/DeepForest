@@ -15,6 +15,7 @@ from deepforest import main, get_data, model
 from deepforest.utilities import read_file, format_geometry
 from deepforest.datasets import prediction
 from deepforest.visualize import plot_results
+from deepforest.callbacks import EvaluationCallback
 
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import Callback
@@ -149,7 +150,7 @@ def test_tensorboard_logger(m, tmpdir):
         m.config.validation.val_accuracy_interval = 1
         m.config.train.epochs = 2
 
-        m.create_trainer(logger=logger, limit_train_batches=1, limit_val_batches=1)
+        m.create_trainer(logger=logger, callbacks=[EvaluationCallback(every_n_epochs=1, run_evaluation=True)], limit_train_batches=1, limit_val_batches=1)
         m.trainer.fit(m)
 
         assert m.trainer.logged_metrics["box_precision"]
@@ -208,7 +209,6 @@ def test_validation_step(m):
     val_dataloader = m.val_dataloader()
     batch = next(iter(val_dataloader))
     m.predictions = []
-    m.targets = {}
     val_loss = m.validation_step(batch, 0)
     assert val_loss != 0
 
@@ -222,7 +222,6 @@ def test_validation_step_empty(m_without_release):
     val_dataloader = m.val_dataloader()
     batch = next(iter(val_dataloader))
     m.predictions = []
-    m.targets = {}
     val_predictions = m.validation_step(batch, 0)
     assert m.iou_metric.compute()["iou"] == 0
 
@@ -659,11 +658,11 @@ def test_iou_metric(m):
 def test_config_args(m):
     assert not m.config.num_classes == 2
 
-    m = main.deepforest(config_args={"num_classes": 2, "label_dict": {
+    m = main.deepforest(config_args={"num_classes": 2},
+                        label_dict={
                             "Alive": 0,
                             "Dead": 1
-                        }},
-                        )
+                        })
     assert m.config.num_classes == 2
 
     # These call also be nested for train and val arguments
@@ -976,8 +975,14 @@ def test_epoch_evaluation_end(m, tmpdir):
     m.config.validation.csv_file = tmpdir.strpath + "/predictions.csv"
     m.config.validation.root_dir = tmpdir.strpath
 
-    results = m.on_validation_epoch_end()
+    predictions_df = m.on_validation_epoch_end()
 
+    # Verify we got predictions back
+    assert not predictions_df.empty
+    assert len(predictions_df) == 2  # Should have 2 predictions
+
+    # Now run evaluation explicitly to test that evaluation works
+    results = m.evaluate(csv_file=tmpdir.strpath + "/predictions.csv", predictions=predictions_df)
     assert results["box_precision"] == 1.0
     assert results["box_recall"] == 1.0
 
@@ -1012,12 +1017,13 @@ def test_empty_frame_accuracy_all_empty_with_predictions(m, tmpdir):
     m.config.validation["csv_file"] = tmpdir.strpath + "/ground_truth.csv"
     m.config.validation["root_dir"] = os.path.dirname(get_data("testfile_deepforest.csv"))
 
-    m.create_trainer()
-    results = m.trainer.validate(m)
+    # Use evaluate() to get both metrics since this test needs box_precision
+    results = m.evaluate(csv_file=tmpdir.strpath + "/ground_truth.csv",
+                        root_dir=os.path.dirname(get_data("testfile_deepforest.csv")))
 
     # This is bit of a preference, if there are no predictions, the empty frame accuracy should be 0, precision is 0, and accuracy is None.
-    assert results[0]["empty_frame_accuracy"] == 0.0
-    assert results[0]["box_precision"] == 0.0
+    assert results["empty_frame_accuracy"] == 0.0
+    assert results["box_precision"] == 0.0
 
 def test_empty_frame_accuracy_mixed_frames_with_predictions(m, tmpdir):
     """Test empty frame accuracy with a mix of empty and non-empty frames.
@@ -1042,8 +1048,10 @@ def test_empty_frame_accuracy_mixed_frames_with_predictions(m, tmpdir):
     m.config.validation.size = 400
 
     m.create_trainer()
-    results = m.trainer.validate(m)
-    assert results[0]["empty_frame_accuracy"] == 0
+    predictions = m.trainer.validate(m)
+    accuracy = m.calculate_empty_frame_accuracy(ground_df, predictions)
+
+    assert accuracy == 0
 
 def test_empty_frame_accuracy_without_predictions(m_without_release, tmpdir):
     """Create a ground truth with empty frames, the accuracy should be 1 with a random model"""
@@ -1061,8 +1069,10 @@ def test_empty_frame_accuracy_without_predictions(m_without_release, tmpdir):
     m.config.validation["root_dir"] = os.path.dirname(get_data("testfile_deepforest.csv"))
 
     m.create_trainer()
-    results = m.trainer.validate(m)
-    assert results[0]["empty_frame_accuracy"] == 1
+    predictions = m.trainer.validate(m)
+    accuracy = m.calculate_empty_frame_accuracy(ground_df, predictions)
+
+    assert accuracy == 0
 
 def test_multi_class_with_empty_frame_accuracy_without_predictions(two_class_m, tmpdir):
     """Create a ground truth with empty frames, the accuracy should be 1 with a random model"""
@@ -1084,12 +1094,17 @@ def test_multi_class_with_empty_frame_accuracy_without_predictions(two_class_m, 
 
     two_class_m.create_trainer()
     results = two_class_m.trainer.validate(two_class_m)
-    assert results[0]["empty_frame_accuracy"] == 1
+
+    predictions = m.trainer.validate(m)
+    accuracy = m.calculate_empty_frame_accuracy(ground_df, predictions)
+
+    assert accuracy == 1
 
 def test_evaluate_on_epoch_interval(m):
     m.config.validation.val_accuracy_interval = 1
     m.config.train.epochs = 1
-    m.create_trainer()
+
+    m.create_trainer(callbacks=[EvaluationCallback(every_n_epochs=1, run_evaluation=True)], fast_dev_run=False)
     m.trainer.fit(m)
     assert m.trainer.logged_metrics["box_precision"]
     assert m.trainer.logged_metrics["box_recall"]

@@ -52,6 +52,7 @@ dependencies = [
     "rasterio",
     "rtree",
     "safetensors<0.6.0",
+    "shapely>2.0.0",
     "setuptools",
     "slidingwindow",
     "supervision",
@@ -119,6 +120,7 @@ docs = [
 
 [project.scripts]
 deepforest = "deepforest.scripts.cli:main"
+deepforest-evaluate = "deepforest.scripts.evaluate:main"
 
 [build-system]
 requires = ["setuptools>=61.0", "wheel"]

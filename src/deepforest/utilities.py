@@ -351,6 +351,33 @@ def determine_geometry_type(df):
     return geometry_type
 
 
+def to_gdf(df):
+    if isinstance(df, gpd.GeoDataFrame) or df.empty:
+        return df
+
+    # Check if we have bounding box columns and need to create geometry
+    if "geometry" in df.columns:
+        df = df.copy()
+        # Check if geometry column contains strings (WKT) or already contains Shapely objects
+        if isinstance(df["geometry"].iloc[0], str):
+            df["geometry"] = shapely.wkt.loads(df["geometry"])
+    elif all(col in df.columns for col in ["xmin", "ymin", "xmax", "ymax"]):
+        # Create geometry from bounding box columns
+        df = df.copy()
+        df["geometry"] = shapely.box(
+            df["xmin"].to_numpy(),
+            df["ymin"].to_numpy(),
+            df["xmax"].to_numpy(),
+            df["ymax"].to_numpy(),
+        )
+    else:
+        raise ValueError(
+            "Dataframe must contain a geometry column or bounding box coordinates (xmin, ymin, xmax, ymax)"
+        )
+
+    return gpd.GeoDataFrame(df, geometry="geometry")
+
+
 def format_geometry(predictions, scores=True, geom_type=None):
     """Format a retinanet prediction into a pandas dataframe for a batch of images
     Args:
@@ -400,9 +427,15 @@ def format_boxes(prediction, scores=True):
     if scores:
         df["score"] = prediction["scores"].cpu().detach().numpy()
 
-    df["geometry"] = df.apply(
-        lambda x: shapely.geometry.box(x.xmin, x.ymin, x.xmax, x.ymax), axis=1
+    geom = shapely.box(
+        df["xmin"].to_numpy(),
+        df["ymin"].to_numpy(),
+        df["xmax"].to_numpy(),
+        df["ymax"].to_numpy(),
     )
+
+    df["geometry"] = geom
+
     return df
 
 
