@@ -114,10 +114,22 @@ def train(
         )
         loggers.append(tensorboard_logger)
 
-    callbacks.append(ImagesCallback(save_dir=Path(csv_logger.log_dir) / "images"))
+    callbacks.append(
+        ImagesCallback(
+            save_dir=Path(csv_logger.log_dir) / "images",
+            every_n_epochs=config.validation.val_accuracy_interval,
+            select_random=True,
+        )
+    )
 
     evaluation_path = Path(csv_logger.log_dir) / "predictions"
-    callbacks.append(EvaluationCallback(save_dir=evaluation_path, compress=compress))
+    callbacks.append(
+        EvaluationCallback(
+            save_dir=evaluation_path,
+            compress=compress,
+            every_n_epochs=config.validation.val_accuracy_interval,
+        )
+    )
 
     # Setup checkpoint to store in log directory
     if checkpoint:

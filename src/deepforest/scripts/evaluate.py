@@ -56,11 +56,16 @@ def discover_prediction_files(log_dir: str) -> tuple[dict, list[tuple[str, str, 
         with open(json_file) as f:
             metadata = json.load(f)
 
-        # Find matching CSV
-        csv_name = json_file.stem.replace("_metadata", "") + ".csv"
-        csv_file = json_file.parent / csv_name
+        # Find matching CSV or CSV.gz
+        base_name = json_file.stem.replace("_metadata", "")
+        csv_file = None
+        for ext in [".csv", ".csv.gz"]:
+            candidate = json_file.parent / f"{base_name}{ext}"
+            if candidate.exists():
+                csv_file = candidate
+                break
 
-        if csv_file.exists():
+        if csv_file:
             file_pairs.append(
                 (str(csv_file), metadata["target_csv_file"], metadata["current_step"])
             )
