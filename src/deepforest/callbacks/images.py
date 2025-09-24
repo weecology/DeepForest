@@ -99,7 +99,7 @@ class ImagesCallback(Callback):
         if batch_idx in self.batch_indices:
             # Last predictions (validation_step)
             _, batch_targets, image_names = batch
-            batch_preds = pl_module.last_preds
+            batch_preds = [p for p in pl_module.last_preds if p is not None]
 
             # Sample at most self.images_per_batch
             for idx in list(range(min(len(batch_preds), self.images_per_batch))):
