@@ -66,9 +66,9 @@ def discover_prediction_files(log_dir: str) -> tuple[dict, list[tuple[str, str, 
                 break
 
         if csv_file:
-            file_pairs.append(
-                (str(csv_file), metadata["target_csv_file"], metadata["current_step"])
-            )
+            # Use current_step if available, otherwise fall back to epoch
+            step = metadata.get("current_step") or metadata.get("epoch")
+            file_pairs.append((str(csv_file), metadata["target_csv_file"], step))
 
     return hparams, sorted(file_pairs, key=lambda x: x[2])
 
