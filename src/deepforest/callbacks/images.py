@@ -95,11 +95,20 @@ class ImagesCallback(Callback):
         self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx=0
     ):
         """Determine whether to sample predictions from this batch."""
+
+        if trainer.global_rank != 0:
+            return
+
         # NB: Dataloader idx is the i'th dataloader
         if batch_idx in self.batch_indices:
             # Last predictions (validation_step)
             _, batch_targets, image_names = batch
             batch_preds = [p for p in pl_module.last_preds if p is not None]
+
+            if len(batch_preds) == 0:
+                warnings.warn(
+                    "No valid predictions found when logging images.", stacklevel=2
+                )
 
             # Sample at most self.images_per_batch
             for idx in list(range(min(len(batch_preds), self.images_per_batch))):
