@@ -207,9 +207,16 @@ def process_experiment_log(log_dir: str, args):
             # Process the file
             logger.info(f"Processing step {step}: {Path(pred_csv).name}")
 
-            # Load data
-            predictions = pd.read_csv(pred_csv)
+            # Load data with robust parsing to handle inconsistent field counts
+            predictions = pd.read_csv(pred_csv, on_bad_lines="skip")
             ground_truth = pd.read_csv(gt_csv)
+
+            # Drop any unwanted columns that may have been created from extra fields
+            columns_to_drop = [
+                col for col in predictions.columns if col.startswith("Unnamed:")
+            ]
+            if columns_to_drop:
+                predictions = predictions.drop(columns=columns_to_drop)
 
             # Run evaluation
             results = evaluate_boxes_parallel(
