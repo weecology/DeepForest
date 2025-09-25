@@ -113,7 +113,7 @@ class ImagesCallback(Callback):
             # Sample at most self.images_per_batch
             for idx in list(range(min(len(batch_preds), self.images_per_batch))):
                 targets = utilities.format_geometry(batch_targets[idx], scores=False)
-                preds = batch_preds[idx]
+                preds = batch_preds[idx].copy()
                 image_name = image_names[idx]
 
                 if preds.image_path.unique()[0] != image_name:
