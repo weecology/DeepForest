@@ -399,7 +399,6 @@ class CustomCropModel(CropModel):
 
         return loss
 ```
-
 ## Pre-2.0 compatability
 
 Before DeepForest 2.0, the CropModel object did not save num_classes or label_dict hyperparameters, making it awkward to reload the checkpoint without these data. The model weights loaded, but the label_dict needed to be supplied independently. This is fixed in 2.0, if you recieve the warning.
@@ -414,4 +413,3 @@ pass the num_classes or label_dict to the load_from_checkpoint function.
 
 ```
 >>> cropmodel = model.CropModel.load_from_checkpoint("/Users/benweinstein/3caaa23614c041eaa7edcc1231cf216b.ckpt",num_classes=61)
-```
