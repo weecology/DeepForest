@@ -2,15 +2,12 @@
 import os
 
 import cv2
-import torchmetrics
-from huggingface_hub import PyTorchModelHubMixin
-from torchvision import models, transforms
-from torchvision.datasets import ImageFolder
 import numpy as np
 import rasterio
 import torch
 import torch.nn.functional as F
 import torchmetrics
+from huggingface_hub import PyTorchModelHubMixin
 from PIL import Image
 from pytorch_lightning import LightningModule, Trainer
 from torchvision import models, transforms
@@ -83,9 +80,6 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
 
     Args:
         num_classes (int, optional): Number of classes for classification. If None, it will be inferred from the checkpoint during loading.
-        batch_size (int, optional): Batch size for training. Defaults to 4.
-        num_workers (int, optional): Number of worker processes for data loading. Defaults to 0.
-        lr (float, optional): Learning rate for optimization. Defaults to 0.0001.
         model (nn.Module, optional): Custom PyTorch model to use. If None, uses ResNet-50. Defaults to None.
         label_dict (dict, optional): Mapping of class labels to numeric indices. Defaults to None.
 
@@ -95,9 +89,6 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
         total_accuracy (torchmetrics.Accuracy): Overall accuracy metric
         precision_metric (torchmetrics.Precision): Precision metric
         metrics (torchmetrics.MetricCollection): Collection of all metrics
-        batch_size (int): Batch size for training
-        num_workers (int): Number of data loading workers
-        lr (float): Learning rate
         label_dict (dict): Label to index mapping {"Bird": 0, "Mammal": 1}
     """
 
@@ -109,8 +100,24 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
         lr=0.0001,
         label_dict=None,
         model=None,
+        config=None,
     ):
         super().__init__()
+        # Optional Hydra/OmegaConf config (deepforest.conf.schema.Config)
+        self.config = config
+
+        # Training Hyperparameters (prefer config if provided)
+        if self.config is not None and hasattr(self.config, "cropmodel"):
+            cm = self.config.cropmodel
+            batch_size = cm.batch_size
+            num_workers = cm.num_workers
+            lr = cm.lr
+            self._balance_classes = bool(cm.balance_classes)
+            self._sampler_type = getattr(cm, "sampler", "weighted_random")
+        else:
+            self._balance_classes = False
+            self._sampler_type = "weighted_random"
+
         self.num_classes = num_classes
         self.num_workers = num_workers
         self.label_dict = label_dict
@@ -130,7 +137,6 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
         else:
             self.model = model
 
-        # Training Hyperparameters
         self.batch_size = batch_size
         self.lr = lr
 
@@ -179,9 +185,9 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
     def on_load_checkpoint(self, checkpoint):
         self.label_dict = checkpoint["label_dict"]
         self.numeric_to_label_dict = {v: k for k, v in self.label_dict.items()}
-        self.num_classes = checkpoint['num_classes']
+        self.num_classes = checkpoint["num_classes"]
         self.create_model(self.num_classes)
-        self.load_state_dict(checkpoint['state_dict'])
+        self.load_state_dict(checkpoint["state_dict"])
         self.update_config()
 
     def load_from_disk(self, train_dir, val_dir, recreate_model=False):
@@ -325,10 +331,28 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
 
     def train_dataloader(self):
         """Train data loader."""
+        sampler = None
+        shuffle = True
+
+        # Optional class balancing using WeightedRandomSampler
+        if getattr(self, "_balance_classes", False) and hasattr(self, "train_ds"):
+            targets = getattr(self.train_ds, "targets", None)
+            if targets is not None and len(targets) > 0:
+                # Compute class counts and inverse-frequency weights per sample
+                counts = {}
+                for t in targets:
+                    counts[t] = counts.get(t, 0) + 1
+                weights = [1.0 / counts[t] for t in targets]
+                sampler = torch.utils.data.WeightedRandomSampler(
+                    weights=weights, num_samples=len(weights), replacement=True
+                )
+                shuffle = False
+
         train_loader = torch.utils.data.DataLoader(
             self.train_ds,
             batch_size=self.batch_size,
-            shuffle=True,
+            shuffle=shuffle,
+            sampler=sampler,
             num_workers=self.num_workers,
         )
 
@@ -386,7 +410,7 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
         for key, value in metric_dict.items():
             if isinstance(value, torch.Tensor) and value.numel() > 1:
                 for i, v in enumerate(value):
-                    # Use label names from label_dict 
+                    # Use label names from label_dict
                     if key == "Class Accuracy":
                         if self.numeric_to_label_dict is not None:
                             label_name = self.numeric_to_label_dict.get(i, str(i))
@@ -421,9 +445,11 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
         """Create a labels and predictions from the validation dataset to be
         created into a confusion matrix."""
         dl = self.predict_dataloader(self.val_ds)
+        # ensure fast_dev_run is False
+        self.trainer.fast_dev_run = False
         predictions = self.trainer.predict(self, dl)
         predicted_label, _ = self.postprocess_predictions(predictions)
-        true_label = [self.val_ds.imgs[i][1] for i in range(len(self.val_ds.imgs))]
+        true_label = [self.val_ds[i][1] for i in range(len(self.val_ds))]
         if return_images:
             images = [
                 Image.open(self.val_ds.imgs[i][0]) for i in range(len(self.val_ds.imgs))
