@@ -73,11 +73,75 @@ def discover_prediction_files(log_dir: str) -> tuple[dict, list[tuple[str, str, 
     return hparams, sorted(file_pairs, key=lambda x: x[2])
 
 
+def is_already_processed(pred_csv_path: str) -> bool:
+    """Check if prediction file has already been processed."""
+    semaphore_path = Path(pred_csv_path).with_suffix(".processed")
+    return semaphore_path.exists()
+
+
+def metric_on_comet(
+    experiment_id: str, step: int, metric_name: str = "box_recall"
+) -> bool:
+    """Check if metric exists at specific step in Comet experiment."""
+    if not COMET_AVAILABLE:
+        return False
+
+    try:
+        api = comet_ml.API()
+        experiment = api.get_experiment_by_key(experiment_id)
+        metrics = experiment.get_metrics(metric=metric_name)
+
+        # Check if any metric entry matches the step
+        for metric in metrics:
+            if metric.get("step") == step:
+                return True
+
+    except Exception as e:
+        logger.warning(f"Could not check Comet metrics for step {step}: {e}")
+
+    return False
+
+
+def save_results(results: dict, pred_csv_path: str):
+    """Save evaluation results alongside prediction file."""
+    pred_path = Path(pred_csv_path)
+
+    # Convert pandas DataFrames to dict for JSON serialization
+    serializable_results = {}
+    for key, value in results.items():
+        if isinstance(value, pd.DataFrame):
+            serializable_results[key] = value.to_dict("records")
+        else:
+            serializable_results[key] = value
+
+    # Determine output path and write based on compression
+    if pred_path.suffix == ".gz":
+        results_path = pred_path.with_suffix(".results.json.gz")
+        import gzip
+
+        with gzip.open(results_path, "wt") as f:
+            json.dump(serializable_results, f, indent=2, default=str)
+    else:
+        results_path = pred_path.with_suffix(".results.json")
+        with open(results_path, "w") as f:
+            json.dump(serializable_results, f, indent=2, default=str)
+
+    logger.info(f"Saved evaluation results to {results_path}")
+
+
+def create_semaphore(pred_csv_path: str, step: int):
+    """Create semaphore file to indicate processing is complete."""
+    semaphore_path = Path(pred_csv_path).with_suffix(".processed")
+    with open(semaphore_path, "w") as f:
+        json.dump({"step": step, "timestamp": time.time()}, f)
+    logger.info(f"Created semaphore file: {semaphore_path}")
+
+
 def log_to_comet(experiment_id: str, metrics: dict, step: int, label_dict: dict = None):
     """Log metrics to Comet experiment."""
     if not COMET_AVAILABLE:
         logger.warning("Comet ML not available, skipping logging")
-        return
+        return False
 
     try:
         experiment = comet_ml.ExistingExperiment(experiment_key=experiment_id)
@@ -97,27 +161,50 @@ def log_to_comet(experiment_id: str, metrics: dict, step: int, label_dict: dict 
                 )
 
         logger.info(f"Logged metrics to Comet for step {step}")
+        return True
 
     except Exception as e:
         logger.error(f"Failed to log to Comet: {e}")
+        return False
 
 
 def process_experiment_log(log_dir: str, args):
     """Process experiment log directory and evaluate all predictions."""
     try:
         hparams, file_pairs = discover_prediction_files(log_dir)
-
-        if args.dry_run:
-            logger.info("Dry run mode - would process the following files:")
-            for pred_csv, gt_csv, step in file_pairs:
-                logger.info(f"  Step {step}: {pred_csv} vs {gt_csv}")
-            return
-
-        # Process each file pair
         experiment_id = hparams.get("experiment_id")
         label_dict = hparams.get("config", {}).get("label_dict")
 
+        if args.dry_run:
+            logger.info("Dry run mode - would process the following files:")
+            for pred_csv, _gt_csv, step in file_pairs:
+                if is_already_processed(pred_csv):
+                    status = "SKIPPED (semaphore exists)"
+                elif experiment_id and metric_on_comet(experiment_id, step):
+                    status = "SKIPPED (found in Comet)"
+                else:
+                    status = "PROCESS"
+                logger.info(f"  Step {step}: {Path(pred_csv).name} - {status}")
+            return
+
+        # Process each file pair
         for pred_csv, gt_csv, step in file_pairs:
+            # Check semaphore file first
+            if is_already_processed(pred_csv):
+                logger.info(
+                    f"Step {step}: Already processed ({Path(pred_csv).name}), skipping"
+                )
+                continue
+
+            # Check Comet as secondary verification
+            if experiment_id and metric_on_comet(experiment_id, step):
+                logger.info(
+                    f"Step {step}: Found in Comet, creating semaphore and skipping"
+                )
+                create_semaphore(pred_csv, step)
+                continue
+
+            # Process the file
             logger.info(f"Processing step {step}: {Path(pred_csv).name}")
 
             # Load data
@@ -138,9 +225,15 @@ def process_experiment_log(log_dir: str, args):
                 f"Step {step} - Box Recall: {results['box_recall']:.4f}, Box Precision: {results['box_precision']:.4f}"
             )
 
-            # Log to Comet if experiment_id available
-            if experiment_id and not args.dry_run:
-                log_to_comet(experiment_id, results, step, label_dict)
+            # Save results and log to Comet
+            save_results(results, pred_csv)
+            comet_success = False
+            if experiment_id:
+                comet_success = log_to_comet(experiment_id, results, step, label_dict)
+
+            # Create semaphore only if Comet logging succeeded (or no experiment_id)
+            if comet_success or not experiment_id:
+                create_semaphore(pred_csv, step)
 
     except Exception as e:
         logger.error(f"Error processing experiment log directory: {e}")
