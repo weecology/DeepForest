@@ -39,6 +39,11 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+def _basename(series: pd.Series) -> pd.Series:
+    """Vectorized extraction of final path component for mixed / and \\."""
+    return series.astype("string").str.replace(r"^.*[\\/]", "", regex=True)
+
+
 def discover_prediction_files(log_dir: str) -> tuple[dict, list[tuple[str, str, int]]]:
     """Discover prediction files in experiment log directory.
 
@@ -252,61 +257,65 @@ def shard_dataframes(
     num_workers: int,
     output_dir: Path,
 ) -> list[tuple[str, str, list[str]]]:
-    """Create sharded CSV files for each worker.
+    """Shard by image basename with vectorized ops."""
 
-    Args:
-        predictions_df: Full predictions dataframe
-        ground_truth_df: Full ground truth dataframe
-        num_workers: Number of worker processes
-        output_dir: Directory to save sharded files
+    # Copy to avoid mutating callers
+    preds = predictions_df.copy()
+    gts = ground_truth_df.copy()
 
-    Returns:
-        List of tuples: (predictions_file, ground_truth_file, image_paths) for each worker
-    """
-    # Get unique image paths and distribute them across workers
-    unique_images = list(ground_truth_df["image_path"].unique())
+    # Normalize image_path to basenames (vectorized; handles / and \)
+    preds.drop(columns="geometry", errors="ignore", inplace=True)
+    preds["image_path"] = _basename(preds["image_path"])
+    gts["image_path"] = _basename(gts["image_path"])
+
+    # Unique basenames from GT define sharding universe
+    unique_images = gts["image_path"].unique()
+    if len(unique_images) == 0:
+        return []
+
+    # Do not create more shards than images
+    num_workers = max(1, min(num_workers, len(unique_images)))
+
+    # Contiguous partition like original
     images_per_worker = len(unique_images) // num_workers
     remainder = len(unique_images) % num_workers
 
-    worker_files = []
-    start_idx = 0
+    # Map basename -> shard id
+    worker_map = {}
+    start = 0
+    for wid in range(num_workers):
+        n = images_per_worker + (1 if wid < remainder else 0)
+        if n == 0:
+            continue
+        imgs = unique_images[start : start + n]
+        worker_map.update(dict.fromkeys(imgs, wid))
+        start += n
 
-    for worker_id in range(num_workers):
-        # Calculate number of images for this worker
-        num_images = images_per_worker + (1 if worker_id < remainder else 0)
-        end_idx = start_idx + num_images
+    # Assign shard ids via vectorized map
+    gts["_shard"] = gts["image_path"].map(worker_map).astype("Int64")
+    preds["_shard"] = preds["image_path"].map(worker_map).astype("Int64")
 
-        # Basenames for assigned images
-        worker_images = [Path(im).name for im in unique_images[start_idx:end_idx]]
-        if not worker_images:
+    # Prepare output
+    output_dir.mkdir(parents=True, exist_ok=True)
+    worker_files: list[tuple[str, str, list[str]]] = []
+
+    # Write one CSV pair per shard present
+    present_shards = np.sort(gts["_shard"].dropna().unique())
+    for wid in present_shards:
+        wid = int(wid)
+        gts_w = gts[gts["_shard"] == wid].drop(columns=["_shard"])
+        preds_w = preds[preds["_shard"] == wid].drop(columns=["_shard"])
+        img_list = gts_w["image_path"].unique().tolist()
+
+        if len(img_list) == 0:
             continue
 
-        # Add a basename column for filtering
-        predictions_df = predictions_df.assign(
-            image_path=predictions_df["image_path"].apply(lambda p: Path(p).name)
-        )
-        predictions_df.drop(columns="geometry", errors="ignore", inplace=True)
-        ground_truth_df = ground_truth_df.assign(
-            image_path=ground_truth_df["image_path"].apply(lambda p: Path(p).name)
-        )
+        pred_file = output_dir / f"worker_{wid}_predictions.csv"
+        gt_file = output_dir / f"worker_{wid}_ground_truth.csv"
+        preds_w.to_csv(pred_file, index=False)
+        gts_w.to_csv(gt_file, index=False)
 
-        worker_predictions = predictions_df[
-            predictions_df["image_path"].isin(worker_images)
-        ].copy()
-
-        worker_ground_truth = ground_truth_df[
-            ground_truth_df["image_path"].isin(worker_images)
-        ].copy()
-
-        # Save to temporary files
-        pred_file = output_dir / f"worker_{worker_id}_predictions.csv"
-        gt_file = output_dir / f"worker_{worker_id}_ground_truth.csv"
-
-        worker_predictions.to_csv(pred_file, index=False)
-        worker_ground_truth.to_csv(gt_file, index=False)
-
-        worker_files.append((str(pred_file), str(gt_file), worker_images))
-        start_idx = end_idx
+        worker_files.append((str(pred_file), str(gt_file), img_list))
 
     return worker_files
 
