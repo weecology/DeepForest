@@ -29,11 +29,11 @@ def evaluate_image_boxes(predictions, ground_df):
     # match
     result = IoU.compute_IoU(ground_df, predictions)
 
-    # add the label classes
-    result["predicted_label"] = result.prediction_id.apply(
-        lambda x: predictions.label.loc[x] if pd.notnull(x) else x
-    )
-    result["true_label"] = result.truth_id.apply(lambda x: ground_df.label.loc[x])
+    # Map prediction/truth IDs back to their original labels from input dataframes
+    pred_label_dict = predictions.label.to_dict()
+    ground_label_dict = ground_df.label.to_dict()
+    result["predicted_label"] = result.prediction_id.map(pred_label_dict)
+    result["true_label"] = result.truth_id.map(ground_label_dict)
 
     return result
 
@@ -115,8 +115,11 @@ def __evaluate_wrapper__(predictions, ground_df, iou_threshold, numeric_to_label
         ):
             # Create geometry from bounding box columns
             predictions = predictions.copy()
-            predictions["geometry"] = predictions.apply(
-                lambda x: shapely.geometry.box(x.xmin, x.ymin, x.xmax, x.ymax), axis=1
+            predictions["geometry"] = shapely.box(
+                predictions["xmin"],
+                predictions["ymin"],
+                predictions["xmax"],
+                predictions["ymax"],
             )
         predictions = gpd.GeoDataFrame(predictions, geometry="geometry")
 
@@ -128,8 +131,8 @@ def __evaluate_wrapper__(predictions, ground_df, iou_threshold, numeric_to_label
         ):
             # Create geometry from bounding box columns
             ground_df = ground_df.copy()
-            ground_df["geometry"] = ground_df.apply(
-                lambda x: shapely.geometry.box(x.xmin, x.ymin, x.xmax, x.ymax), axis=1
+            ground_df["geometry"] = shapely.box(
+                ground_df["xmin"], ground_df["ymin"], ground_df["xmax"], ground_df["ymax"]
             )
         ground_df = gpd.GeoDataFrame(ground_df, geometry="geometry")
 
@@ -143,17 +146,18 @@ def __evaluate_wrapper__(predictions, ground_df, iou_threshold, numeric_to_label
     else:
         raise NotImplementedError(f"Geometry type {prediction_geometry} not implemented")
 
-    # replace classes if not NUll
     if results["results"] is not None:
-        results["results"]["predicted_label"] = results["results"][
-            "predicted_label"
-        ].apply(lambda x: numeric_to_label_dict[x] if not pd.isnull(x) else x)
-        results["results"]["true_label"] = results["results"]["true_label"].apply(
-            lambda x: numeric_to_label_dict[x]
+        # Convert numeric class codes to string labels for results
+        results["results"]["predicted_label"] = results["results"]["predicted_label"].map(
+            lambda x: numeric_to_label_dict.get(x, x) if pd.notnull(x) else x
+        )
+        results["results"]["true_label"] = results["results"]["true_label"].map(
+            numeric_to_label_dict
         )
         results["predictions"] = predictions
-        results["predictions"]["label"] = results["predictions"]["label"].apply(
-            lambda x: numeric_to_label_dict[x]
+        # Also convert labels in the original predictions for consistency
+        results["predictions"]["label"] = results["predictions"]["label"].map(
+            numeric_to_label_dict
         )
 
     return results
@@ -194,8 +198,11 @@ def evaluate_boxes(predictions, ground_df, iou_threshold=0.4):
         ):
             # Create geometry from bounding box columns
             predictions = predictions.copy()
-            predictions["geometry"] = predictions.apply(
-                lambda x: shapely.geometry.box(x.xmin, x.ymin, x.xmax, x.ymax), axis=1
+            predictions["geometry"] = shapely.box(
+                predictions["xmin"],
+                predictions["ymin"],
+                predictions["xmax"],
+                predictions["ymax"],
             )
         predictions = gpd.GeoDataFrame(predictions, geometry="geometry")
 
@@ -206,32 +213,39 @@ def evaluate_boxes(predictions, ground_df, iou_threshold=0.4):
         ):
             # Create geometry from bounding box columns
             ground_df = ground_df.copy()
-            ground_df["geometry"] = ground_df.apply(
-                lambda x: shapely.geometry.box(x.xmin, x.ymin, x.xmax, x.ymax), axis=1
+            ground_df["geometry"] = shapely.box(
+                ground_df["xmin"], ground_df["ymin"], ground_df["xmax"], ground_df["ymax"]
             )
         ground_df = gpd.GeoDataFrame(ground_df, geometry="geometry")
+
+    # Pre-group predictions by image
+    predictions_by_image = {
+        name: group.reset_index(drop=True)
+        for name, group in predictions.groupby("image_path")
+    }
 
     # Run evaluation on all plots
     results = []
     box_recalls = []
     box_precisions = []
     for image_path, group in ground_df.groupby("image_path"):
-        # clean indices
-        image_predictions = predictions[
-            predictions["image_path"] == image_path
-        ].reset_index(drop=True)
+        # Predictions for this image
+        image_predictions = predictions_by_image.get(image_path, pd.DataFrame())
+        if not isinstance(image_predictions, pd.DataFrame) or image_predictions.empty:
+            image_predictions = pd.DataFrame()
 
         # If empty, add to list without computing IoU
         if image_predictions.empty:
             result = pd.DataFrame(
                 {
                     "truth_id": group.index.values,
-                    "prediction_id": None,
-                    "IoU": 0,
-                    "predicted_label": None,
-                    "score": None,
-                    "match": False,
-                    "true_label": group.label,
+                    "prediction_id": pd.Series([None] * len(group), dtype="object"),
+                    "IoU": pd.Series([0.0] * len(group), dtype="float64"),
+                    "predicted_label": pd.Series([None] * len(group), dtype="object"),
+                    "score": pd.Series([None] * len(group), dtype="float64"),
+                    "match": pd.Series([False] * len(group), dtype="bool"),
+                    "true_label": group.label.astype("object"),
+                    "geometry": group.geometry,
                 }
             )
             # An empty prediction set has recall of 0, precision of NA.
@@ -254,7 +268,23 @@ def evaluate_boxes(predictions, ground_df, iou_threshold=0.4):
         box_precisions.append(precision)
         results.append(result)
 
-    results = pd.concat(results)
+    # Concatenate results
+    if results:
+        results = pd.concat(results, ignore_index=True)
+    else:
+        columns = [
+            "truth_id",
+            "prediction_id",
+            "IoU",
+            "predicted_label",
+            "score",
+            "match",
+            "true_label",
+            "geometry",
+            "image_path",
+        ]
+        results = pd.DataFrame(columns=columns)
+
     box_precision = np.mean(box_precisions)
     box_recall = np.mean(box_recalls)
 
