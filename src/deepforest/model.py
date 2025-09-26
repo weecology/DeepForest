@@ -2,15 +2,12 @@
 import os
 
 import cv2
-import torchmetrics
-from huggingface_hub import PyTorchModelHubMixin
-from torchvision import models, transforms
-from torchvision.datasets import ImageFolder
 import numpy as np
 import rasterio
 import torch
 import torch.nn.functional as F
 import torchmetrics
+from huggingface_hub import PyTorchModelHubMixin
 from PIL import Image
 from pytorch_lightning import LightningModule, Trainer
 from torchvision import models, transforms
@@ -120,13 +117,17 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
         else:
             self.numeric_to_label_dict = None
         if model is None:
-            if num_classes is not None:
-                self.create_model(num_classes)
+            if self.num_classes is not None:
+                self.create_model(self.num_classes)
             else:
-                print(
-                    "No model created if model or num_classes is not provided, "
-                    "use load_from_disk to create a model from data directory."
-                )
+                if self.label_dict is not None:
+                    self.num_classes = len(self.label_dict)
+                    self.create_model(self.num_classes)
+                else:
+                    print(
+                        "No model created if model, label_dict, or num_classes is not provided, "
+                        "use load_from_disk to create a model from data directory."
+                    )
         else:
             self.model = model
 
@@ -179,9 +180,9 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
     def on_load_checkpoint(self, checkpoint):
         self.label_dict = checkpoint["label_dict"]
         self.numeric_to_label_dict = {v: k for k, v in self.label_dict.items()}
-        self.num_classes = checkpoint['num_classes']
+        self.num_classes = checkpoint["num_classes"]
         self.create_model(self.num_classes)
-        self.load_state_dict(checkpoint['state_dict'])
+        self.load_state_dict(checkpoint["state_dict"])
         self.update_config()
 
     def load_from_disk(self, train_dir, val_dir, recreate_model=False):
@@ -386,7 +387,7 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
         for key, value in metric_dict.items():
             if isinstance(value, torch.Tensor) and value.numel() > 1:
                 for i, v in enumerate(value):
-                    # Use label names from label_dict 
+                    # Use label names from label_dict
                     if key == "Class Accuracy":
                         if self.numeric_to_label_dict is not None:
                             label_name = self.numeric_to_label_dict.get(i, str(i))

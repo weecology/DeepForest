@@ -309,6 +309,25 @@ class deepforest(pl.LightningModule):
                 "No label_dict found in checkpoint, using default label_dict, "
                 "please use deepforest.set_labels() to set the label_dict after loading the checkpoint."
             )
+        # Pre 2.0 compatibility, the score_threshold used to be stored under retinanet.score_thresh
+        try:
+            self.config.score_thresh = self.config.retinanet.score_thresh
+        except AttributeError:
+            pass
+
+        if not hasattr(self.config.validation, "lr_plateau_target"):
+            default_config = utilities.load_config()
+            self.config.validation.lr_plateau_target = (
+                default_config.validation.lr_plateau_target
+            )
+
+        if not hasattr(self.config.train, "augmentations"):
+            default_config = utilities.load_config()
+            self.config.train.augmentations = default_config.train.augmentations
+
+        if not hasattr(self.config.validation, "augmentations"):
+            default_config = utilities.load_config()
+            self.config.validation.augmentations = default_config.validation.augmentations
 
     def save_model(self, path):
         """Save the trainer checkpoint in user defined path, in order to access
