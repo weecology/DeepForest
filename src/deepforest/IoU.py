@@ -14,7 +14,18 @@ def _overlap_all(test_polys: "gpd.GeoDataFrame", truth_polys: "gpd.GeoDataFrame"
     """Computes intersection and union areas for all polygons in the test/truth
     dataframes.
 
-    Return NumPy arrays:
+    For efficient querying, truth polygons are stored in a spatial R-Tree
+    and we only compute intersections/unions for matching pairs. The output from the
+    function are Numpy arrays containing the all-to-all intersection and union areas and
+    the indices of intersecting ground truth and prediction polygons.
+
+    This method works with any Shapely polygon, but may have
+    reduce performance for the polygon case where bounding box intersection does
+    not necessarily mean the vertices intersect. For rectangles, it's efficient
+    as the an r-tree hit is usually a true intersection, depending on how touching
+    edge cases are handled.
+
+    Returns:
       intersections  : (n_truth, n_pred) intersection areas
       unions : (n_truth, n_pred) union areas
       truth_ids : (n_truth,) truth index values (order matches rows of areas/unions)
@@ -56,7 +67,24 @@ def _overlap_all(test_polys: "gpd.GeoDataFrame", truth_polys: "gpd.GeoDataFrame"
 
 
 def compute_IoU(ground_truth: "gpd.GeoDataFrame", submission: "gpd.GeoDataFrame"):
-    """
+    """Find area of overlap among all sets of ground truth and prediction.
+
+    This function performs matching between a ground truth dataset and a
+    submission or prediction dataset, typically the output from a validation or
+    test run. In order to compute IoU, we must know which boxes correspond
+    between the datasets. This is performed by Hungarian matching, or linear
+    sum assignment.
+
+    For each ground truth polygon, we compute the IoUs of all
+    overlapping polygons. Intersection areas are used as the input cost matrix for the assignment and the
+    algorithm is such that at most one prediction is assigned to each ground truth,
+    and each prediction is only used at most once, with the solver aiming to
+    maximise the total area of intersection. The matching indices are then returned,
+    along with their IoUs and scores, to be used in downstream metrics like recall
+    and precision.
+
+    No filtering on IoU or score is performed.
+
     Args:
         ground_truth: a projected geopandas dataframe with geoemtry
         submission: a projected geopandas dataframe with geometry
