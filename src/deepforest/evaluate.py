@@ -239,12 +239,13 @@ def evaluate_boxes(predictions, ground_df, iou_threshold=0.4):
             result = pd.DataFrame(
                 {
                     "truth_id": group.index.values,
-                    "prediction_id": None,
-                    "IoU": 0,
-                    "predicted_label": None,
-                    "score": None,
-                    "match": False,
-                    "true_label": group.label,
+                    "prediction_id": pd.Series([None] * len(group), dtype="object"),
+                    "IoU": pd.Series([0.0] * len(group), dtype="float64"),
+                    "predicted_label": pd.Series([None] * len(group), dtype="object"),
+                    "score": pd.Series([None] * len(group), dtype="float64"),
+                    "match": pd.Series([False] * len(group), dtype="bool"),
+                    "true_label": group.label.astype("object"),
+                    "geometry": group.geometry,
                 }
             )
             # An empty prediction set has recall of 0, precision of NA.
@@ -267,7 +268,23 @@ def evaluate_boxes(predictions, ground_df, iou_threshold=0.4):
         box_precisions.append(precision)
         results.append(result)
 
-    results = pd.concat(results)
+    # Concatenate results
+    if results:
+        results = pd.concat(results, ignore_index=True)
+    else:
+        columns = [
+            "truth_id",
+            "prediction_id",
+            "IoU",
+            "predicted_label",
+            "score",
+            "match",
+            "true_label",
+            "geometry",
+            "image_path",
+        ]
+        results = pd.DataFrame(columns=columns)
+
     box_precision = np.mean(box_precisions)
     box_recall = np.mean(box_recalls)
 
