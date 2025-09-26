@@ -33,11 +33,13 @@ def evaluate_image_boxes(predictions, ground_df):
     # match
     result = IoU.compute_IoU(ground_df, predictions)
 
-    # add the label classes
-    result["predicted_label"] = result.prediction_id.apply(
-        lambda x: predictions.label.loc[x] if pd.notnull(x) else x
-    )
-    result["true_label"] = result.truth_id.apply(lambda x: ground_df.label.loc[x])
+    # add the label classes using dictionary lookups for performance
+    pred_label_dict = predictions.label.to_dict()
+    ground_label_dict = ground_df.label.to_dict()
+
+    # Use vectorized operations for label mapping
+    result["predicted_label"] = result.prediction_id.map(pred_label_dict)
+    result["true_label"] = result.truth_id.map(ground_label_dict)
 
     return result
 
@@ -125,17 +127,18 @@ def __evaluate_wrapper__(predictions, ground_df, iou_threshold, numeric_to_label
     else:
         raise NotImplementedError(f"Geometry type {prediction_geometry} not implemented")
 
-    # replace classes if not NUll
+    # replace classes if not NUll using efficient map operations
     if results["results"] is not None:
-        results["results"]["predicted_label"] = results["results"][
-            "predicted_label"
-        ].apply(lambda x: numeric_to_label_dict[x] if not pd.isnull(x) else x)
-        results["results"]["true_label"] = results["results"]["true_label"].apply(
-            lambda x: numeric_to_label_dict[x]
+        # Use map with dictionary for faster lookups
+        results["results"]["predicted_label"] = results["results"]["predicted_label"].map(
+            lambda x: numeric_to_label_dict.get(x, x) if pd.notnull(x) else x
+        )
+        results["results"]["true_label"] = results["results"]["true_label"].map(
+            numeric_to_label_dict
         )
         results["predictions"] = predictions
-        results["predictions"]["label"] = results["predictions"]["label"].apply(
-            lambda x: numeric_to_label_dict[x]
+        results["predictions"]["label"] = results["predictions"]["label"].map(
+            numeric_to_label_dict
         )
 
     return results
@@ -172,6 +175,12 @@ def evaluate_boxes(predictions, ground_df, iou_threshold=0.4):
     predictions = utilities.to_gdf(predictions)
     ground_df = utilities.to_gdf(ground_df)
 
+    # Pre-group predictions by image for efficient access
+    predictions_by_image = {
+        name: group.reset_index(drop=True)
+        for name, group in predictions.groupby("image_path")
+    }
+
     # Run evaluation on all plots
     results = []
     box_recalls = []
@@ -181,7 +190,10 @@ def evaluate_boxes(predictions, ground_df, iou_threshold=0.4):
     pbar = tqdm(total=len(groups))
 
     for image_path, image_gt in groups:
-        image_predictions = predictions[predictions["image_path"] == image_path]
+        # Get pre-grouped predictions for this image
+        image_predictions = predictions_by_image.get(image_path, pd.DataFrame())
+        if not isinstance(image_predictions, pd.DataFrame) or image_predictions.empty:
+            image_predictions = pd.DataFrame()
 
         name = os.path.basename(image_path)
         pbar.set_description(f"{name[:20]}, {len(image_predictions)} preds")
