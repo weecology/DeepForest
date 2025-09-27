@@ -20,7 +20,8 @@ def _load_image(
     root_dir: str | None = None,
 ) -> np.typing.NDArray:
     """Utility function to load an image from either a path or a
-    prediction/annotation dataframe.
+    prediction/annotation dataframe. If both are passed, image takes
+    precedence.
 
     Returns an image in RGB format with HWC channel ordering.
 
@@ -33,12 +34,20 @@ def _load_image(
         image: Numpy array
     """
 
-    if image is None and df is None:
-        raise ValueError(
-            "Either an image or a valid dataframe must be provided for plotting."
-        )
+    if image is not None:
+        if isinstance(image, str):
+            if root_dir is not None:
+                image_path = os.path.join(root_dir, image)
+            else:
+                image_path = image
 
-    if df is not None:
+            image = np.array(Image.open(image_path))
+        elif isinstance(image, Image.Image):
+            image = np.array(image)
+        elif not isinstance(image, np.ndarray):
+            raise ValueError("Image should be a numpy array, path or PIL Image.")
+
+    elif df is not None:
         # Resolve image root
         if hasattr(df, "root_dir") and root_dir is None:
             root_dir = df.root_dir
@@ -53,17 +62,10 @@ def _load_image(
 
         image_path = os.path.join(root_dir, df.image_path.unique()[0])
         image = np.array(Image.open(image_path))
-    elif isinstance(image, str):
-        if root_dir is not None:
-            image_path = os.path.join(root_dir, image)
-        else:
-            image_path = image
-
-        image = np.array(Image.open(image_path))
-    elif isinstance(image, Image.Image):
-        image = np.array(image)
-    elif not isinstance(image, np.ndarray):
-        raise ValueError("Image should be a numpy array, path or PIL Image.")
+    else:
+        raise ValueError(
+            "Either an image or a valid dataframe must be provided for plotting."
+        )
 
     # Fix channel ordering
     if image.ndim == 3 and image.shape[0] == 3 and image.shape[2] != 3:
@@ -348,9 +350,10 @@ def plot_annotations(
             basename = os.path.splitext(
                 os.path.basename(annotations.image_path.unique()[0])
             )[0]
+        os.makedirs(savedir, exist_ok=True)
         image_name = f"{basename}.png"
         image_path = os.path.join(savedir, image_name)
-        cv2.imwrite(image_path, annotated_scene)
+        Image.fromarray(annotated_scene).save(image_path)
     else:
         # Display the image using Matplotlib
         ax.imshow(annotated_scene)
@@ -439,9 +442,11 @@ def plot_results(
             basename = os.path.splitext(os.path.basename(results.image_path.unique()[0]))[
                 0
             ]
+
+        os.makedirs(savedir, exist_ok=True)
         image_name = f"{basename}.png"
         image_path = os.path.join(savedir, image_name)
-        cv2.imwrite(image_path, annotated_scene)
+        Image.fromarray(annotated_scene).save(image_path)
     else:
         # Display the image using Matplotlib
         ax.imshow(annotated_scene)

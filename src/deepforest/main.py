@@ -1,7 +1,6 @@
 # entry point for deepforest model
 import importlib
 import os
-import tempfile
 import warnings
 
 import geopandas as gpd
@@ -18,7 +17,7 @@ from torchmetrics.classification import BinaryAccuracy
 from torchmetrics.detection import IntersectionOverUnion, MeanAveragePrecision
 
 from deepforest import evaluate as evaluate_iou
-from deepforest import predict, utilities, visualize
+from deepforest import predict, utilities
 from deepforest.datasets import prediction, training
 
 
@@ -69,7 +68,7 @@ class deepforest(pl.LightningModule):
         self.iou_metric = IntersectionOverUnion(
             class_metrics=True, iou_threshold=self.config.validation.iou_threshold
         )
-        self.mAP_metric = MeanAveragePrecision()
+        self.mAP_metric = MeanAveragePrecision(backend="faster_coco_eval")
 
         # Empty frame accuracy
         self.empty_frame_accuracy = BinaryAccuracy()
@@ -242,94 +241,6 @@ class deepforest(pl.LightningModule):
                 "calling deepforest.create_trainer()'"
             )
 
-    def on_train_start(self):
-        """Log sample images from training and validation datasets at training
-        start."""
-
-        if self.trainer.fast_dev_run:
-            return
-
-        # Get training dataset
-        train_ds = self.train_dataloader().dataset
-
-        # Sample up to 5 indices from training dataset
-        n_samples = min(5, len(train_ds))
-        sample_indices = torch.randperm(len(train_ds))[:n_samples]
-
-        # Create temporary directory for images
-        tmpdir = tempfile.mkdtemp()
-
-        # Get images, targets and paths for sampled indices
-        sample_data = [train_ds[idx] for idx in sample_indices]
-        sample_images = [data[0] for data in sample_data]
-        sample_targets = [data[1] for data in sample_data]
-        sample_paths = [data[2] for data in sample_data]
-
-        for image, target, path in zip(
-            sample_images, sample_targets, sample_paths, strict=False
-        ):
-            # Get annotations for this image
-            image_annotations = target.copy()
-            image_annotations = utilities.format_geometry(image_annotations, scores=False)
-            image_annotations.root_dir = self.config.train.root_dir
-            image_annotations["image_path"] = path
-
-            # Plot and save
-            save_path = os.path.join(tmpdir, f"train_{os.path.basename(path)}")
-            visualize.plot_annotations(
-                image_annotations, savedir=tmpdir, image=image.numpy(), basename=path
-            )
-
-            # Log to available loggers
-            for logger in self.trainer.loggers:
-                if hasattr(logger.experiment, "log_image"):
-                    logger.experiment.log_image(
-                        save_path,
-                        metadata={
-                            "name": path,
-                            "context": "detection_train",
-                            "step": self.global_step,
-                        },
-                    )
-
-        # Also log validation images if available
-        if self.config.validation.csv_file is not None:
-            val_ds = self.val_dataloader().dataset
-
-            n_samples = min(5, len(val_ds))
-            sample_indices = torch.randperm(len(val_ds))[:n_samples]
-
-            sample_data = [val_ds[idx] for idx in sample_indices]
-            sample_images = [data[0] for data in sample_data]
-            sample_targets = [data[1] for data in sample_data]
-            sample_paths = [data[2] for data in sample_data]
-
-            for image, target, path in zip(
-                sample_images, sample_targets, sample_paths, strict=False
-            ):
-                image_annotations = target.copy()
-                image_annotations = utilities.format_geometry(
-                    image_annotations, scores=False
-                )
-                image_annotations.root_dir = self.config.validation.root_dir
-                image_annotations["image_path"] = path
-
-                save_path = os.path.join(tmpdir, f"val_{os.path.basename(path)}")
-                visualize.plot_annotations(
-                    image_annotations, savedir=tmpdir, image=image.numpy(), basename=path
-                )
-
-                for logger in self.trainer.loggers:
-                    if hasattr(logger.experiment, "log_image"):
-                        logger.experiment.log_image(
-                            save_path,
-                            metadata={
-                                "name": path,
-                                "context": "detection_val",
-                                "step": self.global_step,
-                            },
-                        )
-
     def on_save_checkpoint(self, checkpoint):
         checkpoint["label_dict"] = self.label_dict
         checkpoint["numeric_to_label_dict"] = self.numeric_to_label_dict
@@ -343,6 +254,25 @@ class deepforest(pl.LightningModule):
                 "No label_dict found in checkpoint, using default label_dict, "
                 "please use deepforest.set_labels() to set the label_dict after loading the checkpoint."
             )
+        # Pre 2.0 compatibility, the score_threshold used to be stored under retinanet.score_thresh
+        try:
+            self.config.score_thresh = self.config.retinanet.score_thresh
+        except AttributeError:
+            pass
+
+        if not hasattr(self.config.validation, "lr_plateau_target"):
+            default_config = utilities.load_config()
+            self.config.validation.lr_plateau_target = (
+                default_config.validation.lr_plateau_target
+            )
+
+        if not hasattr(self.config.train, "augmentations"):
+            default_config = utilities.load_config()
+            self.config.train.augmentations = default_config.train.augmentations
+
+        if not hasattr(self.config.validation, "augmentations"):
+            default_config = utilities.load_config()
+            self.config.validation.augmentations = default_config.validation.augmentations
 
     def save_model(self, path):
         """Save the trainer checkpoint in user defined path, in order to access
@@ -890,21 +820,22 @@ class deepforest(pl.LightningModule):
         if self.trainer.sanity_checking:  # optional skip
             return
 
-        if self.current_epoch % self.config.validation.val_accuracy_interval == 0:
+        # Log epoch metrics
+        self.log_epoch_metrics()
+
+        if (self.current_epoch + 1) % self.config.validation.val_accuracy_interval == 0:
             if len(self.predictions) > 0:
-                self.predictions = pd.concat(self.predictions)
+                predictions = pd.concat(self.predictions)
             else:
-                self.predictions = pd.DataFrame()
+                predictions = pd.DataFrame()
 
             results = self.evaluate(
                 self.config.validation.csv_file,
                 root_dir=self.config.validation.root_dir,
                 size=self.config.validation.size,
-                predictions=self.predictions,
+                predictions=predictions,
             )
 
-            # Log epoch metrics
-            self.log_epoch_metrics()
             self.__evaluation_logs__(results)
 
             return results

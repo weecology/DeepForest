@@ -7,6 +7,7 @@ import rasterio
 import torch
 import torch.nn.functional as F
 import torchmetrics
+from huggingface_hub import PyTorchModelHubMixin
 from PIL import Image
 from pytorch_lightning import LightningModule, Trainer
 from torchvision import models, transforms
@@ -69,7 +70,7 @@ def simple_resnet_50(num_classes=2):
     return m
 
 
-class CropModel(LightningModule):
+class CropModel(LightningModule, PyTorchModelHubMixin):
     """A PyTorch Lightning module for classifying image crops from object
     detection models.
 
@@ -116,19 +117,36 @@ class CropModel(LightningModule):
         else:
             self.numeric_to_label_dict = None
         if model is None:
-            if num_classes is not None:
-                self.create_model(num_classes)
+            if self.num_classes is not None:
+                self.create_model(self.num_classes)
             else:
-                print(
-                    "No model created if model or num_classes is not provided, "
-                    "use load_from_disk to create a model from data directory."
-                )
+                if self.label_dict is not None:
+                    self.num_classes = len(self.label_dict)
+                    self.create_model(self.num_classes)
+                else:
+                    print(
+                        "No model created if model, label_dict, or num_classes is not provided, "
+                        "use load_from_disk to create a model from data directory."
+                    )
         else:
             self.model = model
 
         # Training Hyperparameters
         self.batch_size = batch_size
         self.lr = lr
+
+        # sync hub config
+        self.update_config()
+
+    def update_config(self):
+        """Update config used by HF Hub mixin for save/load."""
+        self.config = {
+            "num_classes": self.num_classes,
+            "label_dict": self.label_dict,
+            "batch_size": self.batch_size,
+            "num_workers": self.num_workers,
+            "lr": self.lr,
+        }
 
     def create_model(self, num_classes):
         """Create a model with the given number of classes."""
@@ -162,8 +180,10 @@ class CropModel(LightningModule):
     def on_load_checkpoint(self, checkpoint):
         self.label_dict = checkpoint["label_dict"]
         self.numeric_to_label_dict = {v: k for k, v in self.label_dict.items()}
-        self.create_model(checkpoint["num_classes"])
+        self.num_classes = checkpoint["num_classes"]
+        self.create_model(self.num_classes)
         self.load_state_dict(checkpoint["state_dict"])
+        self.update_config()
 
     def load_from_disk(self, train_dir, val_dir, recreate_model=False):
         """Load the training and validation datasets from disk.
@@ -375,7 +395,16 @@ class CropModel(LightningModule):
         for key, value in metric_dict.items():
             if isinstance(value, torch.Tensor) and value.numel() > 1:
                 for i, v in enumerate(value):
-                    self.log(f"{key}_{i}", v, on_step=False, on_epoch=True)
+                    # Use label names from label_dict
+                    if key == "Class Accuracy":
+                        if self.numeric_to_label_dict is not None:
+                            label_name = self.numeric_to_label_dict.get(i, str(i))
+                            metric_name = f"{key}_{label_name}"
+                        else:
+                            metric_name = f"{key}_{i}"
+                    else:
+                        metric_name = f"{key}_{i}"
+                    self.log(metric_name, v, on_step=False, on_epoch=True)
             else:
                 self.log(key, value, on_step=False, on_epoch=True)
         return loss
@@ -411,3 +440,32 @@ class CropModel(LightningModule):
             return images, true_label, predicted_label
         else:
             return true_label, predicted_label
+
+    @classmethod
+    def load_model(
+        cls,
+        repo_id,
+        revision=None,
+    ):
+        """Load a model from the Hugging Face Hub.
+
+        Args:
+            repo_id: Hugging Face repo id, e.g. "username/my-cropmodel".
+            revision: Optional git revision/branch/tag. Defaults to repo default.
+
+        Returns:
+            CropModel: The loaded and eval-mode model instance.
+        """
+
+        model = cls.from_pretrained(
+            repo_id,
+            revision=revision,
+        )
+        model.eval()
+
+        return model
+
+    # Ensure config is up-to-date when pushing to Hub
+    def push_to_hub(self, *args, **kwargs):
+        self.update_config()
+        return super().push_to_hub(*args, **kwargs)
