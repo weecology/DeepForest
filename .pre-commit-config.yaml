@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.4.0
+    rev: v6.0.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
@@ -11,7 +11,7 @@ repos:
 
   # Notebooks: run Ruff via nbQA inside .ipynb
   - repo: https://github.com/nbQA-dev/nbQA
-    rev: 1.9.0
+    rev: 1.9.1
     hooks:
       - id: nbqa-ruff-format
         additional_dependencies: [ruff]
@@ -38,7 +38,7 @@ repos:
           )$
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.5.0
+    rev: v0.13.2
     hooks:
       - id: ruff-format
         files: |
