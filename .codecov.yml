@@ -1,0 +1,24 @@
+coverage:
+  status:
+    project:
+      default:
+        target: auto
+        threshold: 1%
+    patch:
+      default:
+        target: auto
+        threshold: 1%
+
+codecov:
+  require_ci_to_pass: yes
+
+comment:
+  layout: "header, diff"
+  behavior: default
+  require_changes: false
+
+ignore:
+  - "tests/*"
+  - "docs/*"
+  - "setup.py"
+  - "**/__init__.py"

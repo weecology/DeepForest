@@ -2,6 +2,7 @@
 
 [![Github Actions](https://github.com/weecology/DeepForest/actions/workflows/Conda-app.yml/badge.svg)](https://github.com/weecology/DeepForest/actions/workflows/Conda-app.yml)
 [![Documentation Status](https://readthedocs.org/projects/deepforest/badge/?version=latest)](http://deepforest.readthedocs.io/en/latest/?badge=latest)
+[![codecov](https://codecov.io/gh/weecology/DeepForest/branch/main/graph/badge.svg)](https://codecov.io/gh/weecology/DeepForest)
 [![Version](https://img.shields.io/pypi/v/DeepForest.svg)](https://pypi.python.org/pypi/DeepForest)
 [![PyPI - Downloads](https://img.shields.io/pypi/dm/deepforest)](https://pypi.python.org/pypi/DeepForest)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.2538143.svg)](https://doi.org/10.5281/zenodo.2538143)
