@@ -1,13 +1,13 @@
 # Evaluation
 
-DeepForest allows users to assess model performance compared to ground-truth data. 
+DeepForest allows users to assess model performance compared to ground-truth data.
 
 ## Summary
 
 1. Recall - the proportion of ground-truth objects correctly covered by predictions.
 2. Precision - the proportion of predictions that overlap ground-truth.
 3. Empty-frame accuracy - the proportion of ground-truth images that are currently predicted to have no objects of interest.
-4. iou - Intersection-over-Union, a computer vision metric that assesses how tightly a bounding box prediction overlaps with its matched ground-truth. 
+4. iou - Intersection-over-Union, a computer vision metric that assesses how tightly a bounding box prediction overlaps with its matched ground-truth.
 5. mAP - Mean-Average-Precision, a computer vision metric that assesses the performance of the model incoporating precision, recall and average score of true positives. See below.
 
 ## Evaluation code
@@ -49,7 +49,7 @@ This was the original DeepForest metric, set to an IoU of 0.4. This means that a
 
 There is an additional difference between ecological object detection methods like tree crowns and traditional computer vision methods. Instead of a single or set of easily differentiated ground truths, we could have 60 or 70 objects that overlap in an image. How do you best assign each prediction to each ground truth?
 
-DeepForest uses the [hungarian matching algorithm](https://thinkautonomous.medium.com/computer-vision-for-tracking-8220759eee85) to assign predictions to ground truth based on maximum IoU overlap. This is slow compared to the methods above, and so isn't a good choice for running hundreds of times during model training see config.validation.val_accuracy_interval for setting the frequency of the evaluate callback for this metric. 
+DeepForest uses the [hungarian matching algorithm](https://thinkautonomous.medium.com/computer-vision-for-tracking-8220759eee85) to assign predictions to ground truth based on maximum IoU overlap. This is slow compared to the methods above, and so isn't a good choice for running hundreds of times during model training see config.validation.val_accuracy_interval for setting the frequency of the evaluate callback for this metric.
 
 When there are no true positives, this metric is undefined.
 
