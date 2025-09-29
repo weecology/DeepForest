@@ -118,6 +118,7 @@ class deepforest(pl.LightningModule):
         self.mAP_metric = MeanAveragePrecision(
             backend="faster_coco_eval",
         )
+        self.mAP_metric.warn_on_many_detections = False
 
         # Empty frame accuracy
         self.empty_frame_accuracy = BinaryAccuracy()
