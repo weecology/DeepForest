@@ -84,7 +84,7 @@ Additional features and enhancements include:
 ## Version 1.1.1 (Date: Sep 14, 2021)
 
 - **Update:** `project_boxes` now includes output options for both `predict_tile` and `predict_image`.
-- **New Feature:** Introduced `annotations_to_shapefile`, which reverses `shapefile_to_annotations` functionality.  
+- **New Feature:** Introduced `annotations_to_shapefile`, which reverses `shapefile_to_annotations` functionality.
   Thanks to @sdtaylor for this contribution.
 
 ## Version 1.1.0 (Date: Aug 5, 2021)
