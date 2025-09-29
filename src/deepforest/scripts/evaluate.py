@@ -8,6 +8,7 @@ import os
 import tempfile
 import time
 import warnings
+from collections import namedtuple
 from pathlib import Path
 
 import numpy as np
@@ -38,16 +39,46 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Worker task structure
+WorkerTask = namedtuple(
+    "WorkerTask",
+    ["predictions_file", "ground_truth_file", "iou_threshold", "output_file", "rank"],
+)
+
 
 def _basename(series: pd.Series) -> pd.Series:
     """Vectorized extraction of final path component for mixed / and \\."""
     return series.astype("string").str.replace(r"^.*[\\/]", "", regex=True)
 
 
-def discover_prediction_files(log_dir: str) -> tuple[dict, list[tuple[str, str, int]]]:
+def _get_metric_label(epoch: int = None, step: int = None) -> str:
+    """Get display label for epoch/step combination."""
+    return f"epoch {epoch}" if epoch else f"step {step}"
+
+
+def _clean_unnamed_columns(df: pd.DataFrame) -> pd.DataFrame:
+    """Remove unnamed columns from DataFrame."""
+    unnamed_cols = [col for col in df.columns if col.startswith("Unnamed:")]
+    return df.drop(columns=unnamed_cols) if unnamed_cols else df
+
+
+def _should_skip_processing(
+    pred_csv: str, experiment_id: str = None, epoch: int = None, step: int = None
+) -> tuple[bool, str]:
+    """Check if processing should be skipped and return reason."""
+    if is_already_processed(pred_csv):
+        return True, "semaphore exists"
+    elif experiment_id and metric_on_comet(experiment_id, epoch=epoch, step=step):
+        return True, "found in Comet"
+    return False, None
+
+
+def discover_prediction_files(
+    log_dir: str,
+) -> tuple[dict, list[tuple[str, str, int, int]]]:
     """Discover prediction files in experiment log directory.
 
-    Returns: (hparams_dict, [(prediction_csv, ground_truth_csv, step), ...])
+    Returns: (hparams_dict, [(prediction_csv, ground_truth_csv, epoch, step), ...])
     """
     log_path = Path(log_dir)
 
@@ -61,21 +92,20 @@ def discover_prediction_files(log_dir: str) -> tuple[dict, list[tuple[str, str, 
         with open(json_file) as f:
             metadata = json.load(f)
 
-        # Find matching CSV or CSV.gz
+        # Find matching CSV
         base_name = json_file.stem.replace("_metadata", "")
-        csv_file = None
         for ext in [".csv", ".csv.gz"]:
-            candidate = json_file.parent / f"{base_name}{ext}"
-            if candidate.exists():
-                csv_file = candidate
+            csv_file = json_file.parent / f"{base_name}{ext}"
+            if csv_file.exists():
+                epoch = metadata.get("epoch")
+                step = metadata.get("current_step")
+                file_pairs.append(
+                    (str(csv_file), metadata["target_csv_file"], epoch, step)
+                )
                 break
 
-        if csv_file:
-            # Use current_step if available, otherwise fall back to epoch
-            step = metadata.get("current_step") or metadata.get("epoch")
-            file_pairs.append((str(csv_file), metadata["target_csv_file"], step))
-
-    return hparams, sorted(file_pairs, key=lambda x: x[2])
+    # Sort by epoch (priority) then step, handling None values
+    return hparams, sorted(file_pairs, key=lambda x: (x[2] or 999, x[3] or 999))
 
 
 def is_already_processed(pred_csv_path: str) -> bool:
@@ -85,9 +115,13 @@ def is_already_processed(pred_csv_path: str) -> bool:
 
 
 def metric_on_comet(
-    experiment_id: str, step: int, metric_name: str = "box_recall"
+    experiment_id: str,
+    epoch: int = None,
+    step: int = None,
+    metric_name: str = "box_recall",
 ) -> bool:
-    """Check if metric exists at specific step in Comet experiment."""
+    """Check if metric exists for the given epoch/step combination in Comet
+    experiment."""
     if not COMET_AVAILABLE:
         return False
 
@@ -96,13 +130,20 @@ def metric_on_comet(
         experiment = api.get_experiment_by_key(experiment_id)
         metrics = experiment.get_metrics(metric=metric_name)
 
-        # Check if any metric entry matches the step
+        # Check if any metric entry matches our epoch/step combination
         for metric in metrics:
-            if metric.get("step") == step:
+            metric_epoch = metric.get("epoch")
+            metric_step = metric.get("step")
+
+            # Match if both epoch and step align (when provided)
+            epoch_match = epoch is None or metric_epoch == epoch
+            step_match = step is None or metric_step == step
+
+            if epoch_match and step_match:
                 return True
 
     except Exception as e:
-        logger.warning(f"Could not check Comet metrics for step {step}: {e}")
+        logger.warning(f"Could not check Comet metrics (epoch={epoch}, step={step}): {e}")
 
     return False
 
@@ -111,19 +152,17 @@ def save_results(results: dict, pred_csv_path: str):
     """Save evaluation results alongside prediction file."""
     pred_path = Path(pred_csv_path)
 
-    # Convert pandas DataFrames to dict for JSON serialization
-    serializable_results = {}
-    for key, value in results.items():
-        if isinstance(value, pd.DataFrame):
-            serializable_results[key] = value.to_dict("records")
-        else:
-            serializable_results[key] = value
+    # Convert DataFrames for JSON serialization
+    serializable_results = {
+        k: v.to_dict("records") if isinstance(v, pd.DataFrame) else v
+        for k, v in results.items()
+    }
 
-    # Determine output path and write based on compression
+    # Write results (handle compression)
     if pred_path.suffix == ".gz":
-        results_path = pred_path.with_suffix(".results.json.gz")
         import gzip
 
+        results_path = pred_path.with_suffix(".results.json.gz")
         with gzip.open(results_path, "wt") as f:
             json.dump(serializable_results, f, indent=2, default=str)
     else:
@@ -131,19 +170,23 @@ def save_results(results: dict, pred_csv_path: str):
         with open(results_path, "w") as f:
             json.dump(serializable_results, f, indent=2, default=str)
 
-    logger.info(f"Saved evaluation results to {results_path}")
 
-
-def create_semaphore(pred_csv_path: str, step: int):
+def create_semaphore(pred_csv_path: str, epoch: int = None, step: int = None):
     """Create semaphore file to indicate processing is complete."""
     semaphore_path = Path(pred_csv_path).with_suffix(".processed")
     with open(semaphore_path, "w") as f:
-        json.dump({"step": step, "timestamp": time.time()}, f)
-    logger.info(f"Created semaphore file: {semaphore_path}")
+        json.dump({"epoch": epoch, "step": step, "timestamp": time.time()}, f)
 
 
-def log_to_comet(experiment_id: str, metrics: dict, step: int, label_dict: dict = None):
-    """Log metrics to Comet experiment."""
+def log_to_comet(
+    experiment_id: str,
+    metrics: dict,
+    epoch: int = None,
+    step: int = None,
+    label_dict: dict = None,
+):
+    """Log metrics to Comet experiment using native epoch and step
+    parameters."""
     if not COMET_AVAILABLE:
         logger.warning("Comet ML not available, skipping logging")
         return False
@@ -151,21 +194,25 @@ def log_to_comet(experiment_id: str, metrics: dict, step: int, label_dict: dict 
     try:
         experiment = comet_ml.ExistingExperiment(experiment_key=experiment_id)
 
-        # Log basic metrics
-        experiment.log_metric("box_recall", metrics["box_recall"], step=step)
-        experiment.log_metric("box_precision", metrics["box_precision"], step=step)
+        # Log basic metrics with both epoch and step
+        experiment.log_metric("box_recall", metrics["box_recall"], epoch=epoch, step=step)
+        experiment.log_metric(
+            "box_precision", metrics["box_precision"], epoch=epoch, step=step
+        )
 
         # Log class-specific metrics
         if metrics["class_recall"] is not None and label_dict is not None:
             numeric_to_label = {v: k for k, v in label_dict.items()}
             for _, row in metrics["class_recall"].iterrows():
                 label_name = numeric_to_label.get(row["label"], f"class_{row['label']}")
-                experiment.log_metric(f"{label_name}_Recall", row["recall"], step=step)
                 experiment.log_metric(
-                    f"{label_name}_Precision", row["precision"], step=step
+                    f"{label_name}_Recall", row["recall"], epoch=epoch, step=step
+                )
+                experiment.log_metric(
+                    f"{label_name}_Precision", row["precision"], epoch=epoch, step=step
                 )
 
-        logger.info(f"Logged metrics to Comet for step {step}")
+        logger.info(f"Logged metrics to Comet (epoch={epoch}, step={step})")
         return True
 
     except Exception as e:
@@ -182,46 +229,37 @@ def process_experiment_log(log_dir: str, args):
 
         if args.dry_run:
             logger.info("Dry run mode - would process the following files:")
-            for pred_csv, _gt_csv, step in file_pairs:
-                if is_already_processed(pred_csv):
-                    status = "SKIPPED (semaphore exists)"
-                elif experiment_id and metric_on_comet(experiment_id, step):
-                    status = "SKIPPED (found in Comet)"
-                else:
-                    status = "PROCESS"
-                logger.info(f"  Step {step}: {Path(pred_csv).name} - {status}")
+            for pred_csv, _gt_csv, epoch, step in file_pairs:
+                should_skip, reason = _should_skip_processing(
+                    pred_csv, experiment_id, epoch, step
+                )
+                status = f"SKIPPED ({reason})" if should_skip else "PROCESS"
+                metric_label = _get_metric_label(epoch, step)
+                logger.info(f"  {metric_label}: {Path(pred_csv).name} - {status}")
             return
 
         # Process each file pair
-        for pred_csv, gt_csv, step in file_pairs:
-            # Check semaphore file first
-            if is_already_processed(pred_csv):
-                logger.info(
-                    f"Step {step}: Already processed ({Path(pred_csv).name}), skipping"
-                )
-                continue
+        for pred_csv, gt_csv, epoch, step in file_pairs:
+            metric_label = _get_metric_label(epoch, step)
+            should_skip, reason = _should_skip_processing(
+                pred_csv, experiment_id, epoch, step
+            )
 
-            # Check Comet as secondary verification
-            if experiment_id and metric_on_comet(experiment_id, step):
-                logger.info(
-                    f"Step {step}: Found in Comet, creating semaphore and skipping"
-                )
-                create_semaphore(pred_csv, step)
+            if should_skip:
+                logger.info(f"{metric_label}: {reason.title()}, skipping")
+                if reason == "found in Comet":
+                    create_semaphore(pred_csv, epoch=epoch, step=step)
                 continue
 
             # Process the file
-            logger.info(f"Processing step {step}: {Path(pred_csv).name}")
+            logger.info(f"Processing {metric_label}: {Path(pred_csv).name}")
 
             # Load data with robust parsing to handle inconsistent field counts
             predictions = pd.read_csv(pred_csv, on_bad_lines="skip")
             ground_truth = pd.read_csv(gt_csv)
 
-            # Drop any unwanted columns that may have been created from extra fields
-            columns_to_drop = [
-                col for col in predictions.columns if col.startswith("Unnamed:")
-            ]
-            if columns_to_drop:
-                predictions = predictions.drop(columns=columns_to_drop)
+            # Drop any unwanted columns
+            predictions = _clean_unnamed_columns(predictions)
 
             # Run evaluation
             results = evaluate_boxes_parallel(
@@ -234,18 +272,20 @@ def process_experiment_log(log_dir: str, args):
 
             # Log results
             logger.info(
-                f"Step {step} - Box Recall: {results['box_recall']:.4f}, Box Precision: {results['box_precision']:.4f}"
+                f"{metric_label} - Box Recall: {results['box_recall']:.4f}, Box Precision: {results['box_precision']:.4f}"
             )
 
             # Save results and log to Comet
             save_results(results, pred_csv)
             comet_success = False
             if experiment_id:
-                comet_success = log_to_comet(experiment_id, results, step, label_dict)
+                comet_success = log_to_comet(
+                    experiment_id, results, epoch=epoch, step=step, label_dict=label_dict
+                )
 
             # Create semaphore only if Comet logging succeeded (or no experiment_id)
             if comet_success or not experiment_id:
-                create_semaphore(pred_csv, step)
+                create_semaphore(pred_csv, epoch=epoch, step=step)
 
     except Exception as e:
         logger.error(f"Error processing experiment log directory: {e}")
@@ -320,27 +360,13 @@ def shard_dataframes(
     return worker_files
 
 
-def process(worker_data: tuple[str, str, list[str], float, str]) -> dict:
-    """Worker function to evaluate a shard of images.
+def process(task: WorkerTask) -> dict:
+    """Worker function to evaluate a shard of images."""
+    assert os.path.exists(task.predictions_file)
+    assert os.path.exists(task.ground_truth_file)
 
-    Args:
-        worker_data: Tuple of (predictions_file, ground_truth_file, image_paths, iou_threshold, output_file)
-
-    Returns:
-        Dictionary with evaluation results for this worker's shard
-    """
-    predictions_file, ground_truth_file, iou_threshold, output_file, rank = worker_data
-    logger = logging.getLogger(f"worker: {os.getpid()}")
-
-    assert os.path.exists(predictions_file)
-    assert os.path.exists(ground_truth_file)
-
-    # Load worker's data
-    predictions = pd.read_csv(predictions_file)
-    ground_df = pd.read_csv(ground_truth_file)
-
-    if rank == 0:
-        logger.info("Loaded dataframes")
+    predictions = pd.read_csv(task.predictions_file)
+    ground_df = pd.read_csv(task.ground_truth_file)
 
     predictions = utilities.to_gdf(predictions)
     ground_df = utilities.to_gdf(ground_df)
@@ -351,27 +377,19 @@ def process(worker_data: tuple[str, str, list[str], float, str]) -> dict:
         for name, group in predictions.groupby("image_path")
     }
 
-    # Process each image in this worker's shard
     results = []
     box_recalls = []
     box_precisions = []
 
     groups = ground_df.groupby("image_path")
-
-    pbar = tqdm(
-        groups,
-        total=len(groups),
-        bar_format="[Rank 0] {desc}: {percentage:3.0f}%{bar}[{elapsed}<{remaining}, {rate_fmt}{postfix}]",
-        disable=rank != 0,
-    )
+    pbar = tqdm(groups, total=len(groups), disable=task.rank != 0)
 
     for image_path, image_ground_truth in pbar:
-        # Get pre-grouped predictions for this image
         image_predictions = predictions_by_image.get(image_path, pd.DataFrame())
         if not isinstance(image_predictions, pd.DataFrame) or image_predictions.empty:
             image_predictions = pd.DataFrame()
         recall, precision, result = _box_recall_image(
-            image_predictions, image_ground_truth, iou_threshold=iou_threshold
+            image_predictions, image_ground_truth, iou_threshold=task.iou_threshold
         )
 
         if precision:
@@ -379,13 +397,8 @@ def process(worker_data: tuple[str, str, list[str], float, str]) -> dict:
         box_recalls.append(recall)
         results.append(result)
 
-    # Combine results for this worker and compute metrics in memory
     if results:
         combined_results = pd.concat(results, ignore_index=True)
-        # Only save to file if needed for debugging (optional)
-        # combined_results.to_csv(output_file, index=False)
-
-        # Compute class metrics locally to reduce reduce() overhead
         matched_results = (
             combined_results[combined_results.match]
             if "match" in combined_results.columns
@@ -398,12 +411,11 @@ def process(worker_data: tuple[str, str, list[str], float, str]) -> dict:
         combined_results = pd.DataFrame()
         local_class_metrics = None
 
-    # Return summary metrics without file I/O
     return {
         "box_recalls": box_recalls,
         "box_precisions": box_precisions,
         "class_metrics": local_class_metrics,
-        "worker_id": os.path.basename(predictions_file).split("_")[1],
+        "worker_id": os.path.basename(task.predictions_file).split("_")[1],
         "num_results": len(combined_results) if not combined_results.empty else 0,
     }
 
@@ -429,17 +441,54 @@ def reduce(results):
     box_recall = np.mean(all_box_recalls) if all_box_recalls else 0
     box_precision = np.mean(all_box_precisions) if all_box_precisions else np.nan
 
-    # Aggregate class metrics from workers (if available)
+    # Aggregate class metrics from workers
     class_recall = None
     if worker_class_metrics:
-        # Combine class metrics from all workers
-        # This is an approximation - for exact metrics we'd need full data
-        class_recall = worker_class_metrics[
-            0
-        ]  # Use first worker's metrics as approximation
-        logger.info(
-            f"Aggregated metrics from {len(worker_class_metrics)} workers, {total_results} total results"
-        )
+        class_aggregation = {}
+
+        for worker_metrics in worker_class_metrics:
+            for _, row in worker_metrics.iterrows():
+                label = row["label"]
+                if label not in class_aggregation:
+                    class_aggregation[label] = {
+                        "true_positives": 0,
+                        "total_ground_truth": 0,
+                        "total_predictions": 0,
+                    }
+
+                # Accumulate counts from each worker
+                true_positives = row["recall"] * row["size"]
+                class_aggregation[label]["true_positives"] += true_positives
+                class_aggregation[label]["total_ground_truth"] += row["size"]
+
+                if row["precision"] > 0:
+                    total_predictions = true_positives / row["precision"]
+                    class_aggregation[label]["total_predictions"] += total_predictions
+
+        # Calculate final aggregated metrics
+        class_data = []
+        for label, counts in class_aggregation.items():
+            final_recall = (
+                counts["true_positives"] / counts["total_ground_truth"]
+                if counts["total_ground_truth"] > 0
+                else 0
+            )
+            final_precision = (
+                counts["true_positives"] / counts["total_predictions"]
+                if counts["total_predictions"] > 0
+                else 0
+            )
+
+            class_data.append(
+                {
+                    "label": label,
+                    "recall": final_recall,
+                    "precision": final_precision,
+                    "size": int(counts["total_ground_truth"]),
+                }
+            )
+
+        class_recall = pd.DataFrame(class_data)
 
     return combined_results, box_recall, box_precision, class_recall
 
@@ -518,23 +567,36 @@ def evaluate_boxes_parallel(
         for rank, (pred_file, gt_file, _) in enumerate(worker_files):
             output_file = temp_dir_path / f"worker_{rank}_results.csv"
             worker_args.append(
-                (pred_file, gt_file, iou_threshold, str(output_file), rank)
+                WorkerTask(pred_file, gt_file, iou_threshold, str(output_file), rank)
             )
 
         # Run parallel evaluation
         logger.info(f"Running parallel evaluation with {len(worker_args)} workers...")
         t_start = time.time()
         if num_workers > 1:
-            with mp.Pool(processes=min(len(worker_args), num_workers)) as pool:
-                worker_results = list(pool.imap(process, worker_args))
+            # Use spawn context to avoid resource sharing issues
+            ctx = mp.get_context("spawn")
+            with ctx.Pool(processes=min(len(worker_args), num_workers)) as pool:
+                try:
+                    worker_results = list(pool.imap(process, worker_args))
+                except KeyboardInterrupt:
+                    pool.terminate()
+                    pool.join()
+                    raise
         else:
             worker_results = [process(worker_args[0])]
 
+        t_compute = time.time() - t_start
+        logger.info(f"Parallel computation completed in {t_compute:.2f}s")
+
         # Reduce over results
+        t_reduce_start = time.time()
         results, box_recall, box_precision, class_recall = reduce(worker_results)
+        t_reduce = time.time() - t_reduce_start
+        logger.info(f"Result aggregation completed in {t_reduce:.2f}s")
 
         t_elapsed = time.time() - t_start
-        logger.info(t_elapsed)
+        logger.info(f"Total evaluation time: {t_elapsed:.2f}s")
 
         return {
             "results": results if not results.empty else None,
@@ -544,6 +606,15 @@ def evaluate_boxes_parallel(
         }
 
     finally:
+        # Clean up temporary files explicitly
+        if temp_dir_path.exists():
+            try:
+                for temp_file in temp_dir_path.glob("*"):
+                    if temp_file.is_file():
+                        temp_file.unlink()
+            except Exception:
+                pass  # Ignore cleanup errors
+
         if temp_dir_obj is not None:
             temp_dir_obj.cleanup()
 
@@ -623,16 +694,12 @@ def main():
         raise ValueError("ground_truth_csv is required")
 
     # Load data
-    logger.info("Loading predictions and ground truth data...")
     predictions = pd.read_csv(predictions_csv)
     ground_truth = pd.read_csv(ground_truth_csv)
 
     logger.info(
-        f"Loaded {len(predictions)} predictions and {len(ground_truth)} ground truth boxes"
+        f"Loaded {len(predictions)} predictions, {len(ground_truth)} ground truth boxes, {len(ground_truth['image_path'].unique())} images"
     )
-    logger.info(f"Processing {len(ground_truth['image_path'].unique())} unique images")
-
-    # Run parallel evaluation
     results = evaluate_boxes_parallel(
         predictions=predictions,
         ground_df=ground_truth,
@@ -641,15 +708,13 @@ def main():
         temp_dir=args.working_dir,
     )
 
-    # logger.info results
+    # Results
     logger.info("\nEvaluation Results:")
-    logger.info("=" * 50)
     logger.info(f"Box Recall: {results['box_recall']:.4f}")
     logger.info(f"Box Precision: {results['box_precision']:.4f}")
 
     if results["class_recall"] is not None:
         logger.info("\nClass-specific Results:")
-        logger.info("-" * 30)
         for _, row in results["class_recall"].iterrows():
             logger.info(
                 f"Class {row['label']} - Recall: {row['recall']:.4f}, Precision: {row['precision']:.4f}, Size: {row['size']}"
