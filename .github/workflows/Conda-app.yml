@@ -53,8 +53,16 @@ jobs:
       - name: Install package
         run: uv sync --all-extras --dev
 
-      - name: Run pytest
-        run: uv run pytest -v
+      - name: Run pytest with coverage
+        run: uv run pytest -v --cov=src/deepforest --cov-report=xml --cov-report=term-missing
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
 
       - name: Check predict script
         run: uv run deepforest predict src/deepforest/data/OSBS_029.png

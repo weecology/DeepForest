@@ -144,11 +144,36 @@ testpaths = ["tests"]
 python_files = ["test_*.py", "*_test.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
-addopts = "-v --tb=short"
+addopts = "-v --tb=short --cov=src/deepforest --cov-report=term-missing --cov-report=xml"
 filterwarnings = [
     "ignore::pytorch_lightning.utilities.warnings.PossibleUserWarning"
 ]
 markers = [
     "slow: marks tests that are slow to run",
     "integration: marks integration tests"
+]
+
+[tool.coverage.run]
+source = ["src/deepforest"]
+omit = [
+    "*/tests/*",
+    "*/test_*",
+    "*/__pycache__/*",
+    "*/migrations/*",
+    "*/venv/*",
+    "*/env/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
 ]
