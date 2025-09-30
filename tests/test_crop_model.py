@@ -309,7 +309,7 @@ def test_val_dataset_confusion_simple_three_class():
 
 
 class _TinyClsDataset(torch.utils.data.Dataset):
-    def __init__(self, labels, num_per_class=1):
+    def __init__(self, labels):
         self.samples = []
         for lbl in labels:
             # one dummy image per label
@@ -324,7 +324,7 @@ class _TinyClsDataset(torch.utils.data.Dataset):
 
 def test_cropmodel_trainer_fit_minimal():
     # Minimal end-to-end fit example, for where validation data is missing class==1
-    model = CropModel(num_classes=3, batch_size=2, num_workers=0)
+    model = CropModel(num_classes=3, batch_size=2)
     model.label_dict = {"A": 0, "B": 1, "C": 2}
     model.numeric_to_label_dict = {v: k for k, v in model.label_dict.items()}
 
@@ -343,12 +343,19 @@ def test_cropmodel_trainer_fit_minimal():
     # Minimal end-to-end fit example, for where training data is missing class==1
     train_labels = [0, 2]
     val_labels = [0, 1]
-    model = CropModel(num_classes=3, batch_size=2, num_workers=0)
+    model = CropModel(num_classes=3, batch_size=2)
     model.label_dict = {"A": 0, "B": 1, "C": 2}
     model.numeric_to_label_dict = {v: k for k, v in model.label_dict.items()}
     model.train_ds = _TinyClsDataset(train_labels)
     model.val_ds = _TinyClsDataset(val_labels)
+
+    # Assert label_dict are the same
+    assert model.label_dict == {"A": 0, "B": 1, "C": 2}
+    assert model.numeric_to_label_dict == {0: "A", 1: "B", 2: "C"}
+
     model.create_trainer(fast_dev_run=True,
                          logger=False,
                          enable_checkpointing=False)
+
+    # Confirm model can be trained
     model.trainer.fit(model)
