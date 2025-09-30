@@ -652,3 +652,13 @@ def test_format_geometry_polygon():
     # Format geometry should raise ValueError since polygon predictions are not supported
     with pytest.raises(ValueError, match="Polygon predictions are not yet supported for formatting"):
         utilities.format_geometry(prediction, geom_type="polygon")
+
+def test_empty_mask_to_poly():
+    """Test handling of empty masks."""
+
+    empty_mask = np.zeros((100, 100), dtype=np.uint8)
+
+    polygon = utilities.mask_to_polygon(empty_mask)
+
+    assert isinstance(polygon, shapely.geometry.Polygon)
+    assert polygon.is_empty
