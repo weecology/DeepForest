@@ -20,7 +20,7 @@ from deepforest.visualize import plot_results
 logger = logging.getLogger(__name__)
 
 
-def load_sam2_model(model_name: str, device: str):
+def load_sam2_model(model_name: str, device: str) -> tuple[Sam2Model, Sam2Processor]:
     """Load SAM2 model and processor from HuggingFace.
 
     Args:
@@ -39,15 +39,15 @@ def load_sam2_model(model_name: str, device: str):
 def process_image_group(
     image_path: str,
     detections: pd.DataFrame,
-    model,
-    processor,
+    model: Sam2Model,
+    processor: Sam2Processor,
     device: str,
     image_root: str = "",
     box_batch_size: int = 32,
     mask_threshold: float = 0.5,
     iou_threshold: float = 0.5,
-    viz_output_dir: str = None,
-) -> list:
+    viz_output_dir: str | None = None,
+) -> list[str]:
     """Process all detections for a single image.
 
     Args:
@@ -149,7 +149,7 @@ def convert_boxes_to_polygons(
     viz_output_dir: str = ".",
     mask_threshold: float = 0.5,
     iou_threshold: float = 0.5,
-    device: str = None,
+    device: str | None = None,
 ) -> None:
     """Convert DeepForest bounding boxes to polygons using SAM2.
 
@@ -214,7 +214,7 @@ def convert_boxes_to_polygons(
     logger.info("Saved results to %s", output_csv)
 
 
-def main():
+def main() -> None:
     """CLI entrypoint for polygon conversion."""
     parser = argparse.ArgumentParser(
         description="Convert DeepForest bounding boxes to polygons using SAM2"
