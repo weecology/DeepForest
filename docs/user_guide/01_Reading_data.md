@@ -16,7 +16,7 @@ df = utilities.read_file("annotations.csv", image_path="OSBS_029.tif", label="Tr
 **Note:** If your input file contains multiple image filenames and you do not provide the `image_path` argument, a warning may appear:
 
 ```
-UserWarning: Multiple image filenames found. This may cause issues if the file paths are not correctly specified. 
+UserWarning: Multiple image filenames found. This may cause issues if the file paths are not correctly specified.
 ```
 To avoid this, consider providing a single `image_path` argument if all annotations belong to the same image.
 
