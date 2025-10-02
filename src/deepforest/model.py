@@ -200,8 +200,8 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
         self.train_ds, self.val_ds = create_aligned_image_folders(
             train_dir,
             val_dir,
-            transform_train=self.get_transform(augment=["HorizontalFlip"]),
-            transform_val=self.get_transform(augment=None),
+            transform_train=self.get_transform(augmentations=["HorizontalFlip"]),
+            transform_val=self.get_transform(augmentations=None),
         )
         self.label_dict = self.train_ds.class_to_idx
 
