@@ -1,4 +1,9 @@
+# Coverage files
 .coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.pytest_cache/
 .DS_Store
 .idea
 .RHistory

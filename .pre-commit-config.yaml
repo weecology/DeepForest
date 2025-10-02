@@ -3,7 +3,9 @@ repos:
     rev: v4.4.0
     hooks:
       - id: trailing-whitespace
+        exclude: '\.(svg|yml|csv|xml|cpg|prj)$'
       - id: end-of-file-fixer
+        exclude: '\.(svg|csv|xml|cpg|prj)$'
       - id: check-yaml
       - id: check-added-large-files
       - id: check-json
@@ -53,3 +55,5 @@ repos:
             src/deepforest.*\.py|
             fetch_google_scholar\.py
           )$
+ci:
+    autofix_prs: false
