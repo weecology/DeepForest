@@ -18,9 +18,10 @@ plot_results(results)
 The same works with deepforest.main.predict_tile
 
 ```python
+import os
+
 from deepforest import main, get_data
 from deepforest.visualize import plot_results
-import os
 
 model = main.deepforest()
 model.load_model(model_name="weecology/deepforest-tree", revision="main")

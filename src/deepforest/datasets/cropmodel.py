@@ -13,11 +13,11 @@ from torch.utils.data import Dataset
 from torchvision import transforms
 
 
-def bounding_box_transform(augment=False):
+def bounding_box_transform(augmentations=None):
     """Create transform pipeline for bounding box data.
 
     Args:
-        augment: Whether to apply data augmentation
+        augmentations: Augmentation configuration (str, list, or dict)
 
     Returns:
         Composed transform pipeline
@@ -26,7 +26,7 @@ def bounding_box_transform(augment=False):
     data_transforms.append(transforms.ToTensor())
     data_transforms.append(resnet_normalize)
     data_transforms.append(transforms.Resize([224, 224]))
-    if augment:
+    if augmentations:
         data_transforms.append(transforms.RandomHorizontalFlip(0.5))
     return transforms.Compose(data_transforms)
 
@@ -48,11 +48,11 @@ class BoundingBoxDataset(Dataset):
         Tensor of shape (3, height, width)
     """
 
-    def __init__(self, df, root_dir, transform=None, augment=False):
+    def __init__(self, df, root_dir, transform=None, augmentations=None):
         self.df = df
 
         if transform is None:
-            self.transform = bounding_box_transform(augment=augment)
+            self.transform = bounding_box_transform(augmentations=augmentations)
         else:
             self.transform = transform
 

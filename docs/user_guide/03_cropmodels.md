@@ -133,7 +133,7 @@ crop_model = CropModel(num_classes=2, model=backbone)
 One detail to keep in mind is that the preprocessing transform will differ for backbones. Make sure to check the final lines:
 
 ```python
-print(crop_model.get_transform(augment=True))
+print(crop_model.get_transform(augmentations=["HorizontalFlip"]))
 
 # Output:
 # Resize(size=[224, 224], interpolation=bilinear, max_size=None, antialias=None)
@@ -163,7 +163,7 @@ Or, when running from memory crops during prediction, you can pass the transform
 ```python
 from deepforest import main as m
 
-m.predict_tile(..., crop_transform=custom_transform, augment=False)
+m.predict_tile(..., crop_transform=custom_transform, augmentations=None)
 ```
 
 This allows full flexibility over the preprocessing steps. For further customization, you can subclass the `CropModel` object and change methods such as learning rate optimization, evaluation steps, and all other PyTorch Lightning hooks.
@@ -206,7 +206,7 @@ cropmodel = CropModel.load_from_checkpoint("path/to/checkpoint.ckpt")
 ```python
 # Create a validation dataset
 from torchvision.datasets import ImageFolder
-val_ds = ImageFolder(root=root_dir, transform=cropmodel.get_transform(augment=False))
+val_ds = ImageFolder(root=root_dir, transform=cropmodel.get_transform(augmentations=None))
 
 # Get predictions and labels
 images, labels, predictions = cropmodel.val_dataset_confusion(return_images=True)
@@ -241,7 +241,7 @@ from PIL import Image
 
 # Load and preprocess a single image
 image = Image.open("path/to/image.jpg")
-transform = cropmodel.get_transform(augment=False)
+transform = cropmodel.get_transform(augmentations=None)
 tensor = transform(image).unsqueeze(0)  # Add batch dimension
 
 # Make prediction
@@ -399,6 +399,7 @@ class CustomCropModel(CropModel):
 
         return loss
 ```
+
 ## Pre-2.0 compatability
 
 Before DeepForest 2.0, the CropModel object did not save num_classes or label_dict hyperparameters, making it awkward to reload the checkpoint without these data. The model weights loaded, but the label_dict needed to be supplied independently. This is fixed in 2.0, if you recieve the warning.
