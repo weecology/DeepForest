@@ -97,6 +97,7 @@ predict:
 cropmodel:
     batch_size: 4
     num_workers: 0
+    num_classes: 2
     lr: 0.0001
     scheduler:
         type: ReduceLROnPlateau
@@ -110,4 +111,4 @@ cropmodel:
             min_lr: 0
             eps: 1.0e-08
     balance_classes: False
-    sampler: # None, weighted_random
+    label_dict:

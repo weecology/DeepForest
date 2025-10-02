@@ -107,6 +107,8 @@ class CropModelConfig:
     scheduler: SchedulerConfig = field(default_factory=SchedulerConfig)
     balance_classes: bool = False
     sampler: str | None = "weighted_random"  # or None
+    num_classes: int = 2
+    label_dict: dict[str, int] | None = None
 
 
 @dataclass

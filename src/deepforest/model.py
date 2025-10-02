@@ -13,6 +13,8 @@ from pytorch_lightning import LightningModule, Trainer
 from torchvision import models, transforms
 from torchvision.datasets import ImageFolder
 
+from deepforest import utilities
+
 
 class BaseModel:
     """Base class for DeepForest models.
@@ -94,38 +96,37 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
 
     def __init__(
         self,
-        num_classes=None,
-        batch_size=4,
-        num_workers=0,
-        lr=0.0001,
-        label_dict=None,
         model=None,
         config=None,
+        config_args: dict | None = None,
     ):
         super().__init__()
-        # Optional Hydra/OmegaConf config (deepforest.conf.schema.Config)
-        self.config = config
 
-        # Training Hyperparameters (prefer config if provided)
-        if self.config is not None and hasattr(self.config, "cropmodel"):
-            cm = self.config.cropmodel
-            batch_size = cm.batch_size
-            num_workers = cm.num_workers
-            lr = cm.lr
-            self._balance_classes = bool(cm.balance_classes)
-            self._sampler_type = getattr(cm, "sampler", "weighted_random")
+        # If not provided, load default config via OmegaConf.
+        if config is None:
+            if config_args is None:
+                self.config = utilities.load_config()
+            else:
+                self.config = utilities.load_config(overrides={"cropmodel": config_args})
+
+        self.num_classes = self.config["cropmodel"]["num_classes"]
+
+        # Label dict comes from config or config_args
+        if self.config["cropmodel"]["label_dict"] is None:
+            raise ValueError(
+                "Label dict not found. Check it was set in your config file or passed in config_args, "
+                "for example: CropModel(config_args={'label_dict': {'Class1': 0, 'Class2': 1}})"
+            )
         else:
-            self._balance_classes = False
+            self.label_dict = self.config["cropmodel"]["label_dict"]
+
+        if self.config["cropmodel"]["balance_classes"]:
             self._sampler_type = "weighted_random"
-
-        self.num_classes = num_classes
-        self.num_workers = num_workers
-        self.label_dict = label_dict
-
-        if label_dict is not None:
-            self.numeric_to_label_dict = {v: k for k, v in label_dict.items()}
         else:
-            self.numeric_to_label_dict = None
+            self._sampler_type = "random"
+
+        self.numeric_to_label_dict = {v: k for k, v in self.label_dict.items()}
+
         if model is None:
             if self.num_classes is not None:
                 self.create_model(self.num_classes)
@@ -140,22 +141,6 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
                     )
         else:
             self.model = model
-
-        self.batch_size = batch_size
-        self.lr = lr
-
-        # sync hub config
-        self.update_config()
-
-    def update_config(self):
-        """Update config used by HF Hub mixin for save/load."""
-        self.config = {
-            "num_classes": self.num_classes,
-            "label_dict": self.label_dict,
-            "batch_size": self.batch_size,
-            "num_workers": self.num_workers,
-            "lr": self.lr,
-        }
 
     def create_model(self, num_classes):
         """Create a model with the given number of classes."""
@@ -178,29 +163,20 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
 
         self.model = simple_resnet_50(num_classes=num_classes)
 
-    def on_save_checkpoint(self, checkpoint):
-        checkpoint["label_dict"] = self.label_dict
-        checkpoint["num_classes"] = self.num_classes
+    def on_load_checkpoint(self, checkpoint):
+        print(self.config)
+        print(self.label_dict)
 
     def create_trainer(self, **kwargs):
         """Create a pytorch lightning trainer object."""
         self.trainer = Trainer(**kwargs)
 
-    def on_load_checkpoint(self, checkpoint):
-        self.label_dict = checkpoint["label_dict"]
-        self.numeric_to_label_dict = {v: k for k, v in self.label_dict.items()}
-        self.num_classes = checkpoint["num_classes"]
-        self.create_model(self.num_classes)
-        self.load_state_dict(checkpoint["state_dict"])
-        self.update_config()
-
-    def load_from_disk(self, train_dir, val_dir, recreate_model=False):
+    def load_from_disk(self, train_dir, val_dir):
         """Load the training and validation datasets from disk.
 
         Args:
             train_dir (str): The directory containing the training dataset.
             val_dir (str): The directory containing the validation dataset.
-            recreate_model (bool): Whether to recreate the model with the new number of classes.
 
         Returns:
             None
@@ -215,10 +191,6 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
 
         # Create a reverse mapping from numeric indices to class labels
         self.numeric_to_label_dict = {v: k for k, v in self.label_dict.items()}
-
-        if recreate_model:
-            self.num_classes = len(self.label_dict)
-            self.create_model(num_classes=self.num_classes)
 
     def get_transform(self, augment):
         """Returns the data transformation pipeline for the model.
@@ -339,25 +311,27 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
         shuffle = True
 
         # Optional class balancing using WeightedRandomSampler
-        if getattr(self, "_balance_classes", False) and hasattr(self, "train_ds"):
-            targets = getattr(self.train_ds, "targets", None)
-            if targets is not None and len(targets) > 0:
-                # Compute class counts and inverse-frequency weights per sample
-                counts = {}
-                for t in targets:
-                    counts[t] = counts.get(t, 0) + 1
-                weights = [1.0 / counts[t] for t in targets]
-                sampler = torch.utils.data.WeightedRandomSampler(
-                    weights=weights, num_samples=len(weights), replacement=True
-                )
-                shuffle = False
+        if self.config["cropmodel"]["balance_classes"]:
+            # Compute class counts and inverse-frequency weights per sample
+            counts = {}
+            for t in self.train_ds.targets:
+                counts[t] = counts.get(t, 0) + 1
+
+            weights = [1.0 / counts[t] for t in self.train_ds.targets]
+            sampler = torch.utils.data.WeightedRandomSampler(
+                weights=weights, num_samples=len(weights), replacement=True
+            )
+            shuffle = False
+        else:
+            sampler = None
+            shuffle = True
 
         train_loader = torch.utils.data.DataLoader(
             self.train_ds,
-            batch_size=self.batch_size,
+            batch_size=self.config["cropmodel"]["batch_size"],
             shuffle=shuffle,
             sampler=sampler,
-            num_workers=self.num_workers,
+            num_workers=self.config["cropmodel"]["num_workers"],
         )
 
         return train_loader
@@ -365,7 +339,10 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
     def predict_dataloader(self, ds):
         """Prediction data loader."""
         loader = torch.utils.data.DataLoader(
-            ds, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers
+            ds,
+            batch_size=self.config["cropmodel"]["batch_size"],
+            shuffle=False,
+            num_workers=self.config["cropmodel"]["num_workers"],
         )
 
         return loader
@@ -373,7 +350,9 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
     def val_dataloader(self):
         """Validation data loader."""
         val_loader = torch.utils.data.DataLoader(
-            self.val_ds, batch_size=self.batch_size, num_workers=self.num_workers
+            self.val_ds,
+            batch_size=self.config["cropmodel"]["batch_size"],
+            num_workers=self.config["cropmodel"]["num_workers"],
         )
 
         return val_loader
@@ -429,7 +408,7 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
         return loss
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), lr=self.lr)
+        optimizer = torch.optim.Adam(self.parameters(), lr=self.config["cropmodel"]["lr"])
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
             optimizer,
             mode="min",
@@ -485,8 +464,3 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
         model.eval()
 
         return model
-
-    # Ensure config is up-to-date when pushing to Hub
-    def push_to_hub(self, *args, **kwargs):
-        self.update_config()
-        return super().push_to_hub(*args, **kwargs)

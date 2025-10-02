@@ -17,7 +17,7 @@ def test_model_no_args(config):
 
 @pytest.fixture()
 def crop_model():
-    crop_model = model.CropModel(num_classes=2, label_dict={"Alive": 0, "Dead": 1})
+    crop_model = model.CropModel(config_args={"num_classes": 2, "label_dict": {"Alive": 0, "Dead": 1}})
 
     return crop_model
 
@@ -72,16 +72,8 @@ def test_crop_model_train(crop_model, tmpdir, crop_model_data):
     crop_model.trainer.validate(crop_model)
 
 
-def test_crop_model_recreate_model(tmpdir, crop_model_data):
-    crop_model = model.CropModel()
-    crop_model.load_from_disk(train_dir=tmpdir, val_dir=tmpdir, recreate_model=True)
-    assert crop_model.model is not None
-    assert crop_model.model.fc.out_features == 2
-
-
-def test_crop_model_custom_transform():
+def test_crop_model_custom_transform(crop_model):
     # Create a dummy instance of CropModel
-    crop_model = model.CropModel(num_classes=2)
 
     def custom_transform(self, augment):
         data_transforms = []
@@ -99,12 +91,20 @@ def test_crop_model_custom_transform():
     output = crop_model.forward(x)
     assert output.shape == (4, 2)
 
-
 def test_crop_model_load_checkpoint(tmpdir, crop_model_data):
     """Test loading crop model from checkpoint with different numbers of classes"""
     for num_classes in [2, 5]:
         # Create initial model and save checkpoint
-        crop_model = model.CropModel(num_classes=num_classes)
+        label_dict = {
+            "label1": 0,
+            "label2": 1,
+            "label3": 2,
+            "label4": 3,
+            "label5": 4
+        }
+        label_dict = {f"label{i}": i for i in range(num_classes)}
+        crop_model = model.CropModel(config_args={"num_classes":
+                                                  num_classes, "label_dict": label_dict})
         crop_model.create_trainer(fast_dev_run=True)
         crop_model.load_from_disk(train_dir=tmpdir, val_dir=tmpdir)
 
@@ -122,98 +122,14 @@ def test_crop_model_load_checkpoint(tmpdir, crop_model_data):
 
         # Check output shape matches number of classes
         assert output.shape == (4, num_classes)
+        assert loaded_model.label_dict == crop_model.label_dict
 
         # Check model parameters were loaded
         for p1, p2 in zip(crop_model.parameters(), loaded_model.parameters()):
             assert torch.equal(p1, p2)
 
-
-def test_crop_model_load_checkpoint_from_disk(tmpdir, crop_model_data):
-    """Test loading crop model from checkpoint with different numbers of classes"""
-    # Create initial model and save checkpoint
-    crop_model = model.CropModel()
-    crop_model.create_trainer(fast_dev_run=True)
-    crop_model.load_from_disk(train_dir=tmpdir, val_dir=tmpdir, recreate_model=True)
-
-    crop_model.trainer.fit(crop_model)
-    checkpoint_path = os.path.join(tmpdir, "epoch=0-step=0.ckpt")
-
-    crop_model.trainer.save_checkpoint(checkpoint_path)
-
-    # Load from checkpoint
-    loaded_model = model.CropModel.load_from_checkpoint(checkpoint_path)
-    assert loaded_model.label_dict == crop_model.label_dict
-
-
-def test_crop_model_maintain_label_dict(tmpdir, crop_model_data):
-    """
-    Test that the label dictionary is maintained when loading a checkpoint.
-    """
-    crop_model = model.CropModel(num_classes=2)
-    crop_model.create_trainer(fast_dev_run=True)
-    crop_model.load_from_disk(train_dir=tmpdir, val_dir=tmpdir)
-
-    crop_model.trainer.fit(crop_model)
-    checkpoint_path = os.path.join(tmpdir, "epoch=0-step=0.ckpt")
-    crop_model.trainer.save_checkpoint(checkpoint_path)
-
-    # Load from checkpoint
-    loaded_model = model.CropModel.load_from_checkpoint(checkpoint_path)
-
-    # Check that the label dictionary is maintained
-    assert crop_model.label_dict == loaded_model.label_dict
-
-
-def test_crop_model_init_no_num_classes():
-    """
-    Test that initializing CropModel() without num_classes
-    (and not loading from checkpoint) will fail on forward pass.
-    This confirms that the user either needs to provide num_classes
-    or load from a checkpoint that contains it.
-    """
-    crop_model = model.CropModel()  # num_classes=None
-    x = torch.rand(4, 3, 224, 224)
-
-    # Expect the forward pass to fail because the model is uninitialized.
-    with pytest.raises(AttributeError):
-        _ = crop_model.forward(x)
-
-
-def test_crop_model_load_checkpoint_with_explicit_num_classes(tmpdir, crop_model_data):
-    """
-    Test loading a checkpoint while explicitly providing the same num_classes.
-    This verifies that passing num_classes during load_from_checkpoint
-    remains valid (backward compatible).
-    """
-    num_classes = 3
-    # Create initial model and save checkpoint
-    crop_model = model.CropModel(num_classes=num_classes)
-    crop_model.create_trainer(fast_dev_run=True)
-    crop_model.load_from_disk(train_dir=tmpdir, val_dir=tmpdir)
-    crop_model.label_dict = {0: "label1", 1: "label2", 2: "label3"}
-    crop_model.trainer.fit(crop_model)
-    checkpoint_path = os.path.join(tmpdir, "epoch=0-step=0.ckpt")
-    crop_model.trainer.save_checkpoint(checkpoint_path)
-
-    # Load from checkpoint, explicitly specifying num_classes
-    loaded_model = model.CropModel.load_from_checkpoint(checkpoint_path, num_classes=num_classes)
-
-    # Test forward pass
-    x = torch.rand(4, 3, 224, 224)
-    output = loaded_model(x)
-
-    # Check output shape
-    assert output.shape == (4, num_classes)
-
-    # Check model parameters match
-    for p1, p2 in zip(crop_model.parameters(), loaded_model.parameters()):
-        assert torch.equal(p1, p2)
-
-
-def test_expand_bbox_to_square_edge_cases():
+def test_expand_bbox_to_square_edge_cases(crop_model):
     """Test cases for the expand_bbox_to_square function."""
-    crop_model = model.CropModel(num_classes=2)
-
     # Test Case 1: Bounding box at the image edge (0,0)
     bbox = [0, 0, 20, 30]
     image_width, image_height = 100, 100
@@ -238,11 +154,9 @@ def test_expand_bbox_to_square_edge_cases():
     result = crop_model.expand_bbox_to_square(bbox, image_width, image_height)
     assert result == expected
 
-
-def test_crop_model_val_dataset_confusion(tmpdir, crop_model_data):
-    crop_model = model.CropModel()
+def test_crop_model_val_dataset_confusion(tmpdir, crop_model, crop_model_data):
     crop_model.create_trainer(fast_dev_run=False)
-    crop_model.load_from_disk(train_dir=tmpdir, val_dir=tmpdir, recreate_model=True)
+    crop_model.load_from_disk(train_dir=tmpdir, val_dir=tmpdir)
     crop_model.trainer.fit(crop_model)
     images, labels, predictions = crop_model.val_dataset_confusion(return_images=True)
 
