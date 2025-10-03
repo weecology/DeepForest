@@ -21,6 +21,9 @@ def config():
     config = utilities.load_config()
     return config
 
+@pytest.mark.xfail
+def test_nonexistant_data():
+    get_data("does_not_exist.png")
 
 def test_read_pascal_voc():
     annotations = utilities.read_pascal_voc(xml_path=get_data("OSBS_029.xml"))

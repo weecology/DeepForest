@@ -1,6 +1,8 @@
 import os
 
+import cv2
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 import rasterio as rio
 import slidingwindow
@@ -50,33 +52,45 @@ class PredictionDataset(Dataset):
         self.size = size
         self.items = self.prepare_items()
 
-    def _load_and_preprocess_image(self, image_path, image=None, size=None):
-        """Load and preprocess an image.
+    def _load_and_preprocess_image(
+        self,
+        image_path: str | None = None,
+        image: Image.Image | None = None,
+        size: int | None = None,
+    ):
+        """Load and preprocess an image. Either an image path or PIL image must
+        be provided.
 
-        Datasets should load using PIL and transpose the image to (C, H,
-        W) before main.model.forward() is called.
+        Datasets should load using PIL and transpose the image to
+        (C, H, W) before main.model.forward() is called.
+
+        Args:
+            image_path: (str) path to image, optional
+            image: (PIL image), optional
+            size: (int) output size
+
+        Returns:
+            CHW float32 numpy array, normalized to be in [0, 1]
         """
         if image is None:
             image = Image.open(image_path)
-        else:
-            image = image
-        image = np.array(image)
-        if not image.shape[2] == 3:
+
+        if image.mode != "RGB":
             raise ValueError(
-                f"Only three band raster are accepted. Input tile has shape {image.shape}. "
-                "Check for transparent alpha channel and remove if present"
+                f"Expected 8-bit 3-channel RGB, got {image.mode}, {len(image.getbands())} channels and size: {image.size}."
+                "Check for transparent alpha channel and remove if present."
             )
 
+        image = np.array(image)
         image = np.transpose(image, (2, 0, 1))
-        image = self.preprocess_crop(image, size)
+        image = self.preprocess_image(image, size)
 
         return image
 
-    def preprocess_crop(self, image, size=None):
+    def preprocess_image(self, image: npt.NDArray, size=None):
         """Preprocess a crop to a float32 tensor between 0 and 1."""
-        image = np.array(image)
-        image = image / 255.0
         image = image.astype(np.float32)
+        image /= 255.0
 
         if size is not None:
             image = self.resize_image(image, size)
@@ -84,9 +98,8 @@ class PredictionDataset(Dataset):
         return image
 
     def resize_image(self, image, size):
-        """Resize an image to a new size."""
-        image = np.resize(image, (image.shape[0], size, size))
-        return image
+        """Resize an image to a new (square) size."""
+        return cv2.resize(image, dsize=(size, size))
 
     def prepare_items(self):
         """Prepare the items for the dataset.
