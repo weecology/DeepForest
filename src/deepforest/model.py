@@ -102,45 +102,36 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
     ):
         super().__init__()
 
-        # If not provided, load default config via OmegaConf.
-        if config is None:
+        # Set the argument as the self.config, this way when reloading the checkpoint, self.config exists and is not overwritten.
+        self.config = config
+        if self.config is None:
             if config_args is None:
+                # If not provided, load default config via OmegaConf.
                 self.config = utilities.load_config()
             else:
                 self.config = utilities.load_config(overrides={"cropmodel": config_args})
 
         self.num_classes = self.config["cropmodel"]["num_classes"]
 
-        # Label dict comes from config or config_args
-        if self.config["cropmodel"]["label_dict"] is None:
-            raise ValueError(
-                "Label dict not found. Check it was set in your config file or passed in config_args, "
-                "for example: CropModel(config_args={'label_dict': {'Class1': 0, 'Class2': 1}})"
-            )
-        else:
-            self.label_dict = self.config["cropmodel"]["label_dict"]
-
         if self.config["cropmodel"]["balance_classes"]:
             self._sampler_type = "weighted_random"
         else:
             self._sampler_type = "random"
 
-        self.numeric_to_label_dict = {v: k for k, v in self.label_dict.items()}
-
         if model is None:
-            if self.num_classes is not None:
-                self.create_model(self.num_classes)
-            else:
-                if self.label_dict is not None:
-                    self.num_classes = len(self.label_dict)
-                    self.create_model(self.num_classes)
-                else:
-                    print(
-                        "No model created if model, label_dict, or num_classes is not provided, "
-                        "use load_from_disk to create a model from data directory."
-                    )
+            self.create_model(self.num_classes)
         else:
             self.model = model
+
+        self.save_hyperparameters()
+
+    def on_save_checkpoint(self, checkpoint):
+        # In case the label dict has been updated on self.load_from_disk, save the hyperparameters
+        checkpoint["label_dict"] = self.label_dict
+
+    def on_load_checkpoint(self, checkpoint):
+        self.label_dict = checkpoint["label_dict"]
+        self.numeric_to_label_dict = {v: k for k, v in self.label_dict.items()}
 
     def create_model(self, num_classes):
         """Create a model with the given number of classes."""
@@ -162,10 +153,6 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
         )
 
         self.model = simple_resnet_50(num_classes=num_classes)
-
-    def on_load_checkpoint(self, checkpoint):
-        print(self.config)
-        print(self.label_dict)
 
     def create_trainer(self, **kwargs):
         """Create a pytorch lightning trainer object."""
