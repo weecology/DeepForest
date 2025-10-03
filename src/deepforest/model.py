@@ -12,9 +12,8 @@ from PIL import Image
 from pytorch_lightning import LightningModule, Trainer
 from torchvision import models, transforms
 
-from deepforest.datasets.training import create_aligned_image_folders
-
 from deepforest import utilities
+from deepforest.datasets.training import create_aligned_image_folders
 
 
 class BaseModel:
@@ -180,7 +179,7 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
         # Create a reverse mapping from numeric indices to class labels
         self.numeric_to_label_dict = {v: k for k, v in self.label_dict.items()}
 
-    def get_transform(self, augment):
+    def get_transform(self, augmentations):
         """Returns the data transformation pipeline for the model.
 
         Args:
