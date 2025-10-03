@@ -8,6 +8,9 @@
 - [Henry Senyondo](https://github.com/henrykironde)
   >@henrykironde is a support maintainer of DeepForest.
 
+- [Josh Veitch-Micahelis](https://github.com/jveitchmichaelis)
+  >@jveitchmicahelis is a computer vision/ML researcher in the Weecology group, and support maintainer of DeepForest.
+
 - [Ethan White](https://github.com/ethanwhite)
   >@ethanwhite is a PI and Author of DeepForest.
 

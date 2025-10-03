@@ -24,6 +24,7 @@ classifiers = [
 authors = [
     { name = "Ben Weinstein", email = "benweinstein@weecology.org" },
     { name = "Henry Senyondo", email = "henrykironde@gmail.com" },
+    { name = "Josh Veitch-Michaelis", email = "j.veitchmichaelis@gmail.com" },
     { name = "Muhammed Magdy", email = "muhammedmagdy1015@gmail.com" },
     { name = "Om Doiphode", email = "omdoiphode161@gmail.com" },
     { name = "Dingyi Fang", email = "imfangdingyi@gmail.com" },
