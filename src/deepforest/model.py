@@ -11,7 +11,8 @@ from huggingface_hub import PyTorchModelHubMixin
 from PIL import Image
 from pytorch_lightning import LightningModule, Trainer
 from torchvision import models, transforms
-from torchvision.datasets import ImageFolder
+
+from deepforest.datasets.training import create_aligned_image_folders
 
 from deepforest import utilities
 
@@ -168,11 +169,11 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
         Returns:
             None
         """
-        self.train_ds = ImageFolder(
-            root=train_dir, transform=self.get_transform(augment=True)
-        )
-        self.val_ds = ImageFolder(
-            root=val_dir, transform=self.get_transform(augment=False)
+        self.train_ds, self.val_ds = create_aligned_image_folders(
+            train_dir,
+            val_dir,
+            transform_train=self.get_transform(augmentations=["HorizontalFlip"]),
+            transform_val=self.get_transform(augmentations=None),
         )
         self.label_dict = self.train_ds.class_to_idx
 
@@ -183,7 +184,9 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
         """Returns the data transformation pipeline for the model.
 
         Args:
-            augment (bool): Flag indicating whether to apply data augmentation.
+            augmentations (str, list, dict, optional): Augmentation configuration.
+                If None, no augmentations are applied. If "HorizontalFlip" or
+                ["HorizontalFlip"], applies random horizontal flip.
 
         Returns:
             torchvision.transforms.Compose: The composed data transformation pipeline.
@@ -192,8 +195,14 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
         data_transforms.append(transforms.ToTensor())
         data_transforms.append(self.normalize())
         data_transforms.append(transforms.Resize([224, 224]))
-        if augment:
-            data_transforms.append(transforms.RandomHorizontalFlip(0.5))
+
+        # Apply augmentations if specified
+        if augmentations is not None:
+            if isinstance(augmentations, str) and augmentations == "HorizontalFlip":
+                data_transforms.append(transforms.RandomHorizontalFlip(0.5))
+            elif isinstance(augmentations, list) and "HorizontalFlip" in augmentations:
+                data_transforms.append(transforms.RandomHorizontalFlip(0.5))
+
         return transforms.Compose(data_transforms)
 
     def expand_bbox_to_square(self, bbox, image_width, image_height):
@@ -376,23 +385,33 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
         outputs = self(x)
         loss = F.cross_entropy(outputs, y)
         self.log("val_loss", loss)
-        metric_dict = self.metrics(outputs, y)
-        for key, value in metric_dict.items():
-            if isinstance(value, torch.Tensor) and value.numel() > 1:
-                for i, v in enumerate(value):
-                    # Use label names from label_dict
-                    if key == "Class Accuracy":
-                        if self.numeric_to_label_dict is not None:
-                            label_name = self.numeric_to_label_dict.get(i, str(i))
-                            metric_name = f"{key}_{label_name}"
-                        else:
-                            metric_name = f"{key}_{i}"
-                    else:
-                        metric_name = f"{key}_{i}"
-                    self.log(metric_name, v, on_step=False, on_epoch=True)
-            else:
-                self.log(key, value, on_step=False, on_epoch=True)
+
+        predictions = torch.argmax(outputs, dim=1)
+        self.metrics.update(predictions, y)
+
         return loss
+
+    def on_validation_epoch_end(self):
+        metric_dict = self.metrics.compute()
+        for index, value in enumerate(metric_dict["Class Accuracy"]):
+            key = self.numeric_to_label_dict[index]
+            metric_name = f"Class Accuracy_{key}"
+            self.log(metric_name, value, on_step=False, on_epoch=True)
+
+        self.log(
+            "Micro-Average Accuracy",
+            metric_dict["Accuracy"],
+            on_step=False,
+            on_epoch=True,
+        )
+        self.log(
+            "Micro-Average Precision",
+            metric_dict["Precision"],
+            on_step=False,
+            on_epoch=True,
+        )
+
+        self.metrics.reset()
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.config["cropmodel"]["lr"])

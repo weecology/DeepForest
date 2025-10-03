@@ -239,7 +239,7 @@ def test_override_transforms():
 
     csv_file = get_data("example.csv")
     root_dir = os.path.dirname(csv_file)
-    train_ds = m.load_dataset(csv_file, root_dir=root_dir, augment=True)
+    train_ds = m.load_dataset(csv_file, root_dir=root_dir, augmentations=["HorizontalFlip"])
 
     image, target, path = next(iter(train_ds))
     assert m.transforms.__doc__ == "This is the new transform"
@@ -258,7 +258,7 @@ def test_config_augmentations():
     root_dir = os.path.dirname(csv_file)
 
     # Load dataset with config-based augmentations
-    train_ds = m.load_dataset(csv_file, root_dir=root_dir, augment=True)
+    train_ds = m.load_dataset(csv_file, root_dir=root_dir, augmentations=["HorizontalFlip"])
 
     # Check that we can iterate over the dataset
     image, target, path = next(iter(train_ds))
@@ -287,7 +287,7 @@ def test_config_augmentations_with_params():
     root_dir = os.path.dirname(csv_file)
 
     # Load dataset with config-based augmentations
-    train_ds = m.load_dataset(csv_file, root_dir=root_dir, augment=True)
+    train_ds = m.load_dataset(csv_file, root_dir=root_dir, augmentations=["HorizontalFlip"])
 
     # Check that we can iterate over the dataset
     image, target, path = next(iter(train_ds))
@@ -302,7 +302,7 @@ def test_config_no_augmentations():
     root_dir = os.path.dirname(csv_file)
 
     # Load dataset - should use default augmentations
-    train_ds = m.load_dataset(csv_file, root_dir=root_dir, augment=True)
+    train_ds = m.load_dataset(csv_file, root_dir=root_dir, augmentations=["HorizontalFlip"])
 
     # Check that we can iterate over the dataset
     image, target, path = next(iter(train_ds))

@@ -14,20 +14,20 @@ from deepforest import main
 class mymodule(main.deepforest):
     def __init__(self):
         super().__init__()
-    
+
     def training_step(self, batch, batch_idx):
         """Train on a loaded dataset
         """
         path, images, targets = batch
-    
+
         loss_dict = self.model.forward(images, targets)
-    
+
         # sum of regression and classification loss
         losses = sum([loss for loss in loss_dict.values()])
         # Log loss
         for key, value in loss_dict.items():
             self.log("train_{}".format(key), value, on_epoch=True)
-            
+
         return losses
 ```
 
@@ -35,7 +35,7 @@ Now when we call this module, it has the changed training_step, but still has al
 
 ```python
 m = mymodule()
-m.load_model("weecology/deepforest-tree") 
+m.load_model("weecology/deepforest-tree")
 
 ```
 In this way we can make additions and changes without needing to edit the deepforest source.

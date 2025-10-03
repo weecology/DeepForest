@@ -48,8 +48,8 @@ To see the default configuration and to check what options you can set, you can 
 This is most commonly used for small images or pre-cropped windows of large tiles. Passing a large tile to predict_image will lead to poor performance, use predict_tile.
 
 ```python
-from deepforest import main
 from deepforest import get_data
+from deepforest import main
 from deepforest.visualize import plot_results
 
 # Initialize the model class

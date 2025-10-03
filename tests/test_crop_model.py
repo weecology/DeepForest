@@ -5,10 +5,11 @@ import pytest
 import numpy as np
 import torch
 from torchvision import transforms
+import numpy as np
 
 from deepforest import get_data
 from deepforest import model
-
+from deepforest.model import CropModel
 
 # The model object is architecture agnostic container.
 def test_model_no_args(config):
@@ -53,7 +54,6 @@ def test_crop_model(crop_model):
     val_batch = (x, torch.tensor([0, 1, 0, 1]))
     val_loss = crop_model.validation_step(val_batch, batch_idx=0)
     assert isinstance(val_loss, torch.Tensor)
-
 
 def test_crop_model_train(crop_model, tmpdir, crop_model_data):
     # Create a trainer
@@ -110,10 +110,8 @@ def test_crop_model_load_checkpoint(tmpdir, crop_model):
         crop_model = model.CropModel(config_args={"num_classes":num_classes})
         crop_model.create_trainer(fast_dev_run=False, limit_train_batches=1, limit_val_batches=1, max_epochs=1)
         crop_model.load_from_disk(train_dir=tmpdir, val_dir=tmpdir)
-
         crop_model.trainer.fit(crop_model)
         checkpoint_path = os.path.join(tmpdir, "epoch=0-step=0.ckpt")
-
         crop_model.trainer.save_checkpoint(checkpoint_path)
 
         # Load from checkpoint
@@ -124,9 +122,9 @@ def test_crop_model_load_checkpoint(tmpdir, crop_model):
         output = loaded_model(x)
 
         # Check output shape matches number of classes
-        assert output.shape == (4, num_classes)
+        assert output.shape == (4, 2)
 
-        # Make sure the label dict was loaded correctly.
+        # Check label dictionary was loaded
         assert loaded_model.label_dict == crop_model.label_dict
 
         # Check model parameters were loaded

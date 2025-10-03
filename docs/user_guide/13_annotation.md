@@ -118,20 +118,18 @@ output_crops = preprocess.split_raster(
 You can speed up new annotations by starting with model predictions. Below is an example of predicting detections and saving them as shapefiles, which can then be edited in a tool like QGIS.
 
 ```python
-from deepforest import main
-from deepforest.visualize import plot_predictions
-from deepforest.utilities import boxes_to_shapefile
-import rasterio as rio
-import geopandas as gpd
-from glob import glob
 import os
-import matplotlib.pyplot as plt
-import numpy as np
-from shapely import geometry
+from glob import glob
+
+import rasterio as rio
+
+from deepforest import main
+from deepforest.utilities import image_to_geo_coordinates
+from deepforest.visualize import plot_results
 
 PATH_TO_DIR = "/path/to/directory"
 files = glob(f"{PATH_TO_DIR}/*.JPG")
-m = main.deepforest(label_dict={"Bird": 0})
+m = main.deepforest(config_args={"label_dict": {"Bird": 0}})
 m.load_model(model_name="weecology/deepforest-bird", revision="main")
 
 for path in files:
@@ -142,10 +140,10 @@ for path in files:
     if boxes is None:
         continue
 
-    plot_results(results=boxes, image=image)
+    plot_results(results=boxes)
 
     basename = os.path.splitext(os.path.basename(path))[0]
-    shp = boxes_to_shapefile(boxes, root_dir=PATH_TO_DIR, projected=False)
+    shp = image_to_geo_coordinates(boxes, root_dir=PATH_TO_DIR, projected=False)
     shp.to_file(f"{PATH_TO_DIR}/{basename}.shp")
 ```
 
