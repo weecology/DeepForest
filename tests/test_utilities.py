@@ -21,6 +21,12 @@ def config():
     config = utilities.load_config()
     return config
 
+def test_nonexistant_data():
+    filename = "does_not_exist.png"
+
+    # Check filename exists in error string:
+    with pytest.raises(FileNotFoundError, match=filename):
+        get_data(filename)
 
 def test_read_pascal_voc():
     annotations = utilities.read_pascal_voc(xml_path=get_data("OSBS_029.xml"))

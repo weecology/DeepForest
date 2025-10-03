@@ -1,6 +1,8 @@
 import os
 
+import cv2
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 import rasterio as rio
 import slidingwindow
@@ -50,43 +52,64 @@ class PredictionDataset(Dataset):
         self.size = size
         self.items = self.prepare_items()
 
-    def _load_and_preprocess_image(self, image_path, image=None, size=None):
-        """Load and preprocess an image.
+    def _load_and_preprocess_image(
+        self,
+        image_path: str | None = None,
+        image: Image.Image | npt.NDArray | None = None,
+        size: int | None = None,
+    ):
+        """Load and preprocess an image. Either an image path or PIL image must
+        be provided.
 
-        Datasets should load using PIL and transpose the image to (C, H,
-        W) before main.model.forward() is called.
+        Datasets should load using PIL and transpose the image to
+        (C, H, W) before main.model.forward() is called.
+
+        Args:
+            image_path: (str) path to image, optional
+            image: (PIL image), optional
+            size: (int) output size
+
+        Returns:
+            CHW float32 numpy array, normalized to be in [0, 1]
         """
-        if image is None:
+        if image is None and image_path is None:
+            raise ValueError("Either image or image_path must be provided")
+        elif image is None:
             image = Image.open(image_path)
-        else:
-            image = image
-        image = np.array(image)
-        if not image.shape[2] == 3:
+
+        if isinstance(image, Image.Image) and image.mode != "RGB":
             raise ValueError(
-                f"Only three band raster are accepted. Input tile has shape {image.shape}. "
-                "Check for transparent alpha channel and remove if present"
+                f"Expected 8-bit 3-channel RGB, got {image.mode}, {len(image.getbands())} channels and size: {image.size}."
+                "Check for transparent alpha channel and remove if present."
+            )
+        elif isinstance(image, np.ndarray) and (
+            image.ndim != 3 or image.shape[2] != 3 or image.dtype != np.uint8
+        ):
+            raise ValueError(
+                f"Expected 8-bit 3-channel RGB numpy array, got {image.ndim} dimensions and shape: {image.shape}."
+                "Check for transparent alpha channel and remove if present."
             )
 
-        image = np.transpose(image, (2, 0, 1))
-        image = self.preprocess_crop(image, size)
+        image = np.array(image)
+        image = self.preprocess_image(image, size)
 
         return image
 
-    def preprocess_crop(self, image, size=None):
-        """Preprocess a crop to a float32 tensor between 0 and 1."""
-        image = np.array(image)
-        image = image / 255.0
+    def preprocess_image(self, image: npt.NDArray, size=None) -> npt.NDArray:
+        """Preprocess an 8-bit image to a float32 array between 0 and 1."""
         image = image.astype(np.float32)
+        image /= 255.0
 
         if size is not None:
             image = self.resize_image(image, size)
 
+        image = np.transpose(image, (2, 0, 1))
+
         return image
 
-    def resize_image(self, image, size):
-        """Resize an image to a new size."""
-        image = np.resize(image, (image.shape[0], size, size))
-        return image
+    def resize_image(self, image: npt.NDArray, size: int) -> npt.NDArray:
+        """Resize an image to a new (square) size."""
+        return cv2.resize(image, dsize=(size, size))
 
     def prepare_items(self):
         """Prepare the items for the dataset.

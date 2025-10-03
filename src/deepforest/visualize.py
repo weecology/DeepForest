@@ -59,6 +59,8 @@ def _load_image(
         elif root_dir is None:
             raise ValueError(
                 "Neither root_dir nor a dataframe with the root_dir attribute was provided."
+                "This can happen if your dataframe contains predictions that aren't associated with a file."
+                "If you called plot_results, try providing an image (array or path) alongside the dataframe."
             )
 
         image_path = os.path.join(root_dir, df.image_path.unique()[0])
