@@ -23,9 +23,7 @@ While that approach is certainly valid, there are a few key benefits to using Cr
 - **Efficiency**: Using a CropModel will be slower, as for each detection, the sensor data needs to be cropped and passed to the detector. This is less efficient than using a combined classification/detection system like multi-class detection models. While modern GPUs mitigate this to some extent, it is still something to be mindful of.
 - **Lack of Spatial Awareness**: The model knows only about the pixels inside the crop and cannot use features outside the bounding box. This lack of spatial awareness can be a major limitation. It is possible, but untested, that multi-class detection models might perform better in such tasks. A box attention mechanism, like in [this paper](https://arxiv.org/abs/2111.13087), could be a better approach.
 
-## Usage
-
-### Single Crop Model
+## Single Crop Model
 
 Consider a test file with tree boxes and an 'Alive/Dead' label that comes with all DeepForest installations:
 
@@ -55,7 +53,7 @@ result.head()
 # 4    0.0  183.0   26.0  ...  SOAP_061.png               1         0.513122
 ```
 
-### Multiple Crop Models
+## Multiple Crop Models
 
 You can also pass multiple crop models to `predict_tile`. Each model's predictions and confidence scores will be stored in separate columns.
 
@@ -118,6 +116,10 @@ crop_model.load_from_disk(train_dir=tmpdir, val_dir=tmpdir)
 crop_model.trainer.fit(crop_model)
 crop_model.trainer.validate(crop_model)
 ```
+
+### Sampler
+
+Many classification tasks have imbalanced data, meaning that one class appears many more times than others. This leads to the model often choosing this class, regardless of visual appearance. To reduce this effect, a weighted_sampler randomly chooses images to show in training weighted by their inverse frequency. This means that rarer crops are shown more often to offset the common classes. This leads to better performance for rare classes, but can reduce performance on common classes by a small amount. To active the sampler, set the config: cropmodel -> sampler -> 'weighted_random'.
 
 # Customizing
 
@@ -231,6 +233,20 @@ label, score = cropmodel.postprocess_predictions(crop_results)
 label_names = [cropmodel.numeric_to_label_dict[x] for x in label]
 ```
 
+### Reloading a Dataset from Disk for Validation
+
+```python
+from deepforest.model import CropModel
+
+crop_model = CropModel.load_from_checkpoint("/blue/ewhite/b.weinstein/BOEM/UBFAI Images with Detection Data/classification/checkpoints/d7e956055e23433a8892a8928a357385.ckpt")
+crop_model.load_from_disk(
+    train_dir="/blue/ewhite/b.weinstein/BOEM/UBFAI Images with Detection Data/classification/crops/train/d7e956055e23433a8892a8928a357385",
+    val_dir="/blue/ewhite/b.weinstein/BOEM/UBFAI Images with Detection Data/classification/crops/val/d7e956055e23433a8892a8928a357385"
+)
+crop_model.create_trainer()
+true_label, predicted_label = crop_model.val_dataset_confusion()
+```
+
 ### Making Predictions on Single Images
 
 You can also make predictions on individual images or batches:
@@ -264,7 +280,7 @@ The CropModel uses a ResNet-50 backbone by default, but can be customized with a
 - Data augmentation during training (random horizontal flips)
 - Accuracy and precision metrics for evaluation
 
-### Training Process
+### Training
 
 ```python
 # Initialize model
@@ -414,3 +430,4 @@ pass the num_classes or label_dict to the load_from_checkpoint function.
 
 ```
 >>> cropmodel = model.CropModel.load_from_checkpoint("/Users/benweinstein/3caaa23614c041eaa7edcc1231cf216b.ckpt",num_classes=61)
+```
