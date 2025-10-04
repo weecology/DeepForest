@@ -122,7 +122,7 @@ def test_crop_model_load_checkpoint(tmpdir, crop_model):
         output = loaded_model(x)
 
         # Check output shape matches number of classes
-        assert output.shape == (4, 2)
+        assert output.shape == (4, num_classes)
 
         # Check label dictionary was loaded
         assert loaded_model.label_dict == crop_model.label_dict
