@@ -37,7 +37,7 @@ Depends on Python 3.9+
 
 5. Install the package from the main directory.
 
-Deepforest can be installed using either pip or conda.
+Deepforest can be installed using any system that uses PyPI as the source including pip and uv.
 
 **Install using Pip**
 
@@ -47,16 +47,10 @@ Installing with Pip uses [dev_requirements.txt](https://github.com/weecology/Dee
 pip install .'[dev,docs]'
 ```
 
-**Install using Conda**
-
-Installing with Conda uses [environment.yaml](https://github.com/weecology/DeepForest/blob/main/environment.yml).
-
-Conda-based installs can be slow. We recommend using [mamba](https://mamba.readthedocs.io/en/latest/user_guide/mamba.html#quickstart) to speed them up.
+**Install using uv**
 
 ```bash
-$ conda create -n deepforest python=3
-$ conda activate deepforest
-$ pip install . -U
+uv sync --all-extras --dev
 ```
 
 6. Verify the installation by running this simple test:
@@ -96,27 +90,6 @@ If the style tests fail on a pull request, running the above command is the easi
 #### Using pre-commit
 
 We configure all our checks using the `.pre-commit-config.yaml` file. To verify your code styling before committing, you should run `pre-commit install` to set up the hooks, followed by `pre-commit run` to execute them. This will apply the formatting rules specified in the `.style.yapf` file. For additional information, please refer to the [pre-commit documentation](https://pre-commit.com/index.html).
-
-### Testing the Conda Deepforest Build
-
-We use the `conda_recipe/meta.yaml` to make sure that the conda build can build the package.
-
-```bash
-$ cd conda_recipe
-$ conda build conda_recipe/meta.yaml -c conda-forge -c defaults
-```
-
-### Conda staged recipe update
-
-Update the Conda recipe after every release.
-
-Clone the [Weecology staged recipes](https://github.com/weecology/staged-recipes).
-Checkout the deepforest branch, update the `deepforest/meta.yaml` with the new version and the sha256 values. Sha256 values are obtained from the source on [PYPI download files](https://pypi.org/project/deepforest/#files) using the deepforest-{version-number}.tar.gz.
-
-```jinja
-{% set version = "fill new" %}
-{% set sha256 = "fill new" %}
-```
 
 ## Documentation
 
@@ -162,10 +135,10 @@ make html  # Run
 2. Ensure `HISTORY.rst` is up to date with all changes since the last release.
 3. Use `bump-my-version show-bump` to determine the appropriate version bump.
 4. Update the version for release: `bump-my-version bump [minor | patch | pre_l | pre_n]`. If show-bump does not have the right option, we can manually set it `bump-my-version bump --new-version 1.4.0`
-5. Publish the release to PyPi and update the Conda package.
-    - All releases are done on GitHub Actions when a new tag is pushed.
-    - `git tag v1.0.0`
-    - `git push origin v1.0.0`
+5. Publish the release to PyPi
+   - All releases are done on GitHub Actions when a new tag is pushed.
+   - `git tag v1.0.0`
+   - `git push origin v1.0.0`
 6. Post-release, update the version to the next development iteration:
    - Run `bump-my-version show-bump` to check the target version.
    - Then, execute `bump-my-version bump [minor | patch | pre_l | pre_n]`.
