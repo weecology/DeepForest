@@ -10,13 +10,6 @@
 [![Python Version](https://img.shields.io/badge/python-%3E%3D3.8%2C%20%3C3.13-blue.svg)](https://www.python.org/downloads/)
 [![Citations](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/weecology/DeepForest/refs/heads/main/citation_count.json)](https://scholar.google.com/scholar?hl=en&as_sdt=40005&sciodt=0,10&cites=4018186955550406830&scipsc=&q=)
 
-
-### Conda-forge build status
-
-| Name | Downloads | Version | Platforms |
-| --- | --- | --- | --- |
-| [![Conda Recipe](https://img.shields.io/badge/recipe-deepforest-green.svg)](https://anaconda.org/conda-forge/deepforest) | [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/deepforest.svg)](https://anaconda.org/conda-forge/deepforest) | [![Conda Version](https://img.shields.io/conda/vn/conda-forge/deepforest.svg)](https://anaconda.org/conda-forge/deepforest) | [![Conda Platforms](https://img.shields.io/conda/pn/conda-forge/deepforest.svg)](https://anaconda.org/conda-forge/deepforest) |
-
 ![](www/MEE_Figure4.png)
 ![](www/example_predictions_small.png)
 
