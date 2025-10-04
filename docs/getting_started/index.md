@@ -8,18 +8,7 @@
 :gutter: 4
 :margin: 0 5 0 0
 
-:::{grid-item-card} Working with conda?
-:class-card: install-card
-:shadow: md
-
-DeepForest is part of the [`Anaconda`](https://docs.continuum.io/anaconda/) distribution and can be installed with Anaconda or Miniconda:
-
-```bash
-conda install -c conda-forge deepforest
-```
-:::
-
-:::{grid-item-card} Prefer pip?
+:::{grid-item-card} Install with pip
 :class-card: install-card
 :shadow: md
 
@@ -31,6 +20,16 @@ pip install deepforest
 :::
 ::::
 
+:::{grid-item-card} Install with uv
+:class-card: install-card
+:shadow: md
+
+To install with uv:
+
+```bash
+uv add deepforest
+```
+:::
 
 ::::{grid} 1 1 1 1
 :gutter: 4
