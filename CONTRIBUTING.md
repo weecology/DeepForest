@@ -44,8 +44,7 @@ Deepforest can be installed using either pip or conda.
 Installing with Pip uses [dev_requirements.txt](https://github.com/weecology/DeepForest/blob/main/dev_requirements.txt).
 
 ```bash
-$ pip install -r dev_requirements.txt
-$ pip install . -U
+pip install .'[dev,docs]'
 ```
 
 **Install using Conda**
