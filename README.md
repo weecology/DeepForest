@@ -1,6 +1,6 @@
 # DeepForest
 
-[![Github Actions](https://github.com/weecology/DeepForest/actions/workflows/Conda-app.yml/badge.svg)](https://github.com/weecology/DeepForest/actions/workflows/Conda-app.yml)
+[![Github Actions](https://github.com/weecology/DeepForest/actions/workflows/ci_tests.yml/badge.svg)](https://github.com/weecology/DeepForest/actions/workflows/ci_tests.yml)
 [![pre-commit.ci status](https://results.pre-commit.ci/badge/github/weecology/DeepForest/main.svg)](https://results.pre-commit.ci/latest/github/weecology/DeepForest/main)
 [![codecov](https://codecov.io/gh/weecology/DeepForest/branch/main/graph/badge.svg)](https://codecov.io/gh/weecology/DeepForest)
 [![Documentation Status](https://readthedocs.org/projects/deepforest/badge/?version=latest)](http://deepforest.readthedocs.io/en/latest/?badge=latest)
@@ -24,12 +24,14 @@ DeepForest is a python package for training and predicting ecological objects in
 [DeepForest is documented on readthedocs](https://deepforest.readthedocs.io/)
 
 ## How does deepforest work?
+
 DeepForest uses deep learning object detection networks to predict bounding boxes corresponding to individual trees in RGB imagery.
-DeepForest is built on the object detection module from the [torchvision package](http://pytorch.org/vision/stable/index.html) and designed to make training models for  detection simpler.
+DeepForest is built on the object detection module from the [torchvision package](http://pytorch.org/vision/stable/index.html) and designed to make training models for detection simpler.
 
 For more about the motivation behind DeepForest, see some recent talks we have given on computer vision for ecology and practical applications to machine learning in environmental monitoring.
 
 ## Where can I get help, learn from others, and report bugs?
+
 Given the enormous array of forest types and image acquisition environments, it is unlikely that your image will be perfectly predicted by a prebuilt model. Below are some tips and some general guidelines to improve predictions.
 
 Get suggestions on how to improve a model by using the [discussion board](https://github.com/weecology/DeepForest/discussions). Please be aware that only feature requests or bug reports should be posted on the [issues page](https://github.com/weecology/DeepForest/issues).
