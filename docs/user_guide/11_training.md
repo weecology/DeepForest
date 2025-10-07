@@ -499,6 +499,10 @@ with tempfile.TemporaryDirectory() as tmpdir:
 
 We provide a basic script to trigger a training run via CLI. This script is installed as part of the standard DeepForest installation is called `deepforest train`. We use [Hydra](https://hydra.cc/docs/intro/) for configuration management and you can pass configuration parameters as command line arguments as follows:
 
+```{note}
+If you are using `uv` to manage your Python environment, remember to prefix these commands with `uv run`, for example: `uv run deepforest predict`.
+```
+
 ```bash
 deepforest train batch_size=8 train.csv_file=your_labels.csv train.root_dir=some/path
 ```

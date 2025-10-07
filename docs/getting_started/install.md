@@ -33,6 +33,12 @@ cd DeepForest
 pip install .
 ```
 
+```bash
+git clone https://github.com/weecology/DeepForest.git
+cd DeepForest
+uv sync --all-extras -dev
+```
+
 ## GPU support
 
 PyTorch can be run on GPUs to allow faster model training and prediction. DeepForest is a PyTorch Lightning module, which automatically distributes data to available GPUs. If using a release model with training, the module can be moved from CPU to GPU for prediction using the `pytorch.to()` method.
