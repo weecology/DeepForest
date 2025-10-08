@@ -66,6 +66,7 @@ dependencies = [
     "timm>=1.0.15",
     "faster-coco-eval>=1.6.7",
     "comet-ml>=3.51.0",
+    "lightning>=2.5.5",
 ]
 
 [[tool.uv.index]]
