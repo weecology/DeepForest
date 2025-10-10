@@ -95,6 +95,20 @@ class PredictConfig:
 
 
 @dataclass
+class CropModelConfig:
+    """Configuration for the CropModel classifier training.
+
+    This section controls the standalone crop classification module.
+    """
+
+    batch_size: int = 4
+    num_workers: int = 0
+    lr: float = 0.0001
+    scheduler: SchedulerConfig = field(default_factory=SchedulerConfig)
+    balance_classes: bool = False
+
+
+@dataclass
 class Config:
     """General DeepForest configuration. Some parameters here are shared
     between dataloaders, for example the batch size, accelerator and number of
@@ -135,3 +149,4 @@ class Config:
     train: TrainConfig = field(default_factory=TrainConfig)
     validation: ValidationConfig = field(default_factory=ValidationConfig)
     predict: PredictConfig = field(default_factory=PredictConfig)
+    cropmodel: CropModelConfig = field(default_factory=CropModelConfig)
