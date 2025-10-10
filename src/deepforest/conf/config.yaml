@@ -93,3 +93,20 @@ validation:
 
 predict:
     pin_memory: False
+
+cropmodel:
+    batch_size: 4
+    num_workers: 0
+    lr: 0.0001
+    scheduler:
+        type: ReduceLROnPlateau
+        params:
+            mode: min
+            factor: 0.5
+            patience: 5
+            threshold: 0.0001
+            threshold_mode: rel
+            cooldown: 0
+            min_lr: 0
+            eps: 1.0e-08
+    balance_classes: False
