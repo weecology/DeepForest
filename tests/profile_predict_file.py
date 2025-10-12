@@ -1,13 +1,16 @@
 # Profile the dataset class on gpu
-from deepforest import main
-from deepforest import get_data
+import cProfile
 import os
-import pandas as pd
-import numpy as np
-import cProfile, pstats
+import pstats
 import tempfile
-from PIL import Image
+
 import cv2
+import numpy as np
+import pandas as pd
+from PIL import Image
+
+from deepforest import get_data
+from deepforest import main
 
 
 def run(m, csv_file, root_dir):

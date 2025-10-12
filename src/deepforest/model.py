@@ -1,48 +1,51 @@
 # Model - common class
-from deepforest.models import *
-import torch
-from pytorch_lightning import LightningModule, Trainer
 import os
-import torchmetrics
-from torchvision import models, transforms
-from torchvision.datasets import ImageFolder
+
+import cv2
 import numpy as np
 import rasterio
+import torch
 import torch.nn.functional as F
-import cv2
+import torchmetrics
+from huggingface_hub import PyTorchModelHubMixin
 from PIL import Image
+from pytorch_lightning import LightningModule, Trainer
+from torchvision import models, transforms
+
+from deepforest.datasets.training import create_aligned_image_folders
 
 
-class BaseModel():
-    """A architecture agnostic class that controls the basic train, eval and
-    predict functions. A model should optionally allow a backbone for
-    pretraining. To add new architectures, simply create a new module in
-    models/ and write a create_model. Then add the result to the if else
-    statement below.
+class BaseModel:
+    """Base class for DeepForest models.
+
+    Provides common train, eval, and predict functionality.
+    To add new architectures, create a module in models/ and implement create_model().
 
     Args:
-        config (DictConfig): DeepForest config settings object
+        config: DeepForest configuration object
     """
 
     def __init__(self, config):
-
         # Check for required properties and formats
         self.config = config
 
     def create_model(self):
-        """This function converts a deepforest config file into a model.
+        """Create model from configuration.
 
-        An architecture should have a list of nested arguments in config
-        that match this function
+        Must be implemented by subclasses to return a PyTorch nn.Module.
         """
 
         raise ValueError(
-            "The create_model class method needs to be implemented. Take in args and return a pytorch nn module."
+            "The create_model class method needs to be implemented. "
+            "Take in args and return a pytorch nn module."
         )
 
     def check_model(self):
-        """Ensure that model follows deepforest guidelines, see ##### If fails,
-        raise ValueError."""
+        """Validate model follows DeepForest guidelines.
+
+        Tests model with dummy data to ensure proper input/output
+        format. Raises ValueError if validation fails.
+        """
         # This assumes model creation is not expensive
         test_model = self.create_model()
         test_model.eval()
@@ -57,7 +60,7 @@ class BaseModel():
         # Returns a list equal to number of images with proper keys per image
         model_keys = list(predictions[1].keys())
         model_keys.sort()
-        assert model_keys == ['boxes', 'labels', 'scores']
+        assert model_keys == ["boxes", "labels", "scores"]
 
 
 def simple_resnet_50(num_classes=2):
@@ -68,7 +71,7 @@ def simple_resnet_50(num_classes=2):
     return m
 
 
-class CropModel(LightningModule):
+class CropModel(LightningModule, PyTorchModelHubMixin):
     """A PyTorch Lightning module for classifying image crops from object
     detection models.
 
@@ -96,13 +99,15 @@ class CropModel(LightningModule):
         label_dict (dict): Label to index mapping {"Bird": 0, "Mammal": 1}
     """
 
-    def __init__(self,
-                 num_classes=None,
-                 batch_size=4,
-                 num_workers=0,
-                 lr=0.0001,
-                 label_dict=None,
-                 model=None):
+    def __init__(
+        self,
+        num_classes=None,
+        batch_size=4,
+        num_workers=0,
+        lr=0.0001,
+        label_dict=None,
+        model=None,
+    ):
         super().__init__()
         self.num_classes = num_classes
         self.num_workers = num_workers
@@ -113,12 +118,17 @@ class CropModel(LightningModule):
         else:
             self.numeric_to_label_dict = None
         if model is None:
-            if num_classes is not None:
-                self.create_model(num_classes)
+            if self.num_classes is not None:
+                self.create_model(self.num_classes)
             else:
-                print(
-                    "No model created if model or num_classes is not provided, use load_from_disk to create a model from data directory."
-                )
+                if self.label_dict is not None:
+                    self.num_classes = len(self.label_dict)
+                    self.create_model(self.num_classes)
+                else:
+                    print(
+                        "No model created if model, label_dict, or num_classes is not provided, "
+                        "use load_from_disk to create a model from data directory."
+                    )
         else:
             self.model = model
 
@@ -126,25 +136,42 @@ class CropModel(LightningModule):
         self.batch_size = batch_size
         self.lr = lr
 
+        # sync hub config
+        self.update_config()
+
+    def update_config(self):
+        """Update config used by HF Hub mixin for save/load."""
+        self.config = {
+            "num_classes": self.num_classes,
+            "label_dict": self.label_dict,
+            "batch_size": self.batch_size,
+            "num_workers": self.num_workers,
+            "lr": self.lr,
+        }
+
     def create_model(self, num_classes):
         """Create a model with the given number of classes."""
-        self.accuracy = torchmetrics.Accuracy(average='none',
-                                              num_classes=num_classes,
-                                              task="multiclass")
-        self.total_accuracy = torchmetrics.Accuracy(num_classes=num_classes,
-                                                    task="multiclass")
-        self.precision_metric = torchmetrics.Precision(num_classes=num_classes,
-                                                       task="multiclass")
-        self.metrics = torchmetrics.MetricCollection({
-            "Class Accuracy": self.accuracy,
-            "Accuracy": self.total_accuracy,
-            "Precision": self.precision_metric
-        })
+        self.accuracy = torchmetrics.Accuracy(
+            average="none", num_classes=num_classes, task="multiclass"
+        )
+        self.total_accuracy = torchmetrics.Accuracy(
+            num_classes=num_classes, task="multiclass"
+        )
+        self.precision_metric = torchmetrics.Precision(
+            num_classes=num_classes, task="multiclass"
+        )
+        self.metrics = torchmetrics.MetricCollection(
+            {
+                "Class Accuracy": self.accuracy,
+                "Accuracy": self.total_accuracy,
+                "Precision": self.precision_metric,
+            }
+        )
 
         self.model = simple_resnet_50(num_classes=num_classes)
 
     def on_save_checkpoint(self, checkpoint):
-        checkpoint['label_dict'] = self.label_dict
+        checkpoint["label_dict"] = self.label_dict
         checkpoint["num_classes"] = self.num_classes
 
     def create_trainer(self, **kwargs):
@@ -152,10 +179,12 @@ class CropModel(LightningModule):
         self.trainer = Trainer(**kwargs)
 
     def on_load_checkpoint(self, checkpoint):
-        self.label_dict = checkpoint['label_dict']
+        self.label_dict = checkpoint["label_dict"]
         self.numeric_to_label_dict = {v: k for k, v in self.label_dict.items()}
-        self.create_model(checkpoint['num_classes'])
-        self.load_state_dict(checkpoint['state_dict'])
+        self.num_classes = checkpoint["num_classes"]
+        self.create_model(self.num_classes)
+        self.load_state_dict(checkpoint["state_dict"])
+        self.update_config()
 
     def load_from_disk(self, train_dir, val_dir, recreate_model=False):
         """Load the training and validation datasets from disk.
@@ -168,10 +197,12 @@ class CropModel(LightningModule):
         Returns:
             None
         """
-        self.train_ds = ImageFolder(root=train_dir,
-                                    transform=self.get_transform(augment=True))
-        self.val_ds = ImageFolder(root=val_dir,
-                                  transform=self.get_transform(augment=False))
+        self.train_ds, self.val_ds = create_aligned_image_folders(
+            train_dir,
+            val_dir,
+            transform_train=self.get_transform(augmentations=["HorizontalFlip"]),
+            transform_val=self.get_transform(augmentations=None),
+        )
         self.label_dict = self.train_ds.class_to_idx
 
         # Create a reverse mapping from numeric indices to class labels
@@ -181,11 +212,13 @@ class CropModel(LightningModule):
             self.num_classes = len(self.label_dict)
             self.create_model(num_classes=self.num_classes)
 
-    def get_transform(self, augment):
+    def get_transform(self, augmentations=None):
         """Returns the data transformation pipeline for the model.
 
         Args:
-            augment (bool): Flag indicating whether to apply data augmentation.
+            augmentations (str, list, dict, optional): Augmentation configuration.
+                If None, no augmentations are applied. If "HorizontalFlip" or
+                ["HorizontalFlip"], applies random horizontal flip.
 
         Returns:
             torchvision.transforms.Compose: The composed data transformation pipeline.
@@ -194,8 +227,14 @@ class CropModel(LightningModule):
         data_transforms.append(transforms.ToTensor())
         data_transforms.append(self.normalize())
         data_transforms.append(transforms.Resize([224, 224]))
-        if augment:
-            data_transforms.append(transforms.RandomHorizontalFlip(0.5))
+
+        # Apply augmentations if specified
+        if augmentations is not None:
+            if isinstance(augmentations, str) and augmentations == "HorizontalFlip":
+                data_transforms.append(transforms.RandomHorizontalFlip(0.5))
+            elif isinstance(augmentations, list) and "HorizontalFlip" in augmentations:
+                data_transforms.append(transforms.RandomHorizontalFlip(0.5))
+
         return transforms.Compose(data_transforms)
 
     def expand_bbox_to_square(self, bbox, image_width, image_height):
@@ -296,27 +335,28 @@ class CropModel(LightningModule):
 
     def train_dataloader(self):
         """Train data loader."""
-        train_loader = torch.utils.data.DataLoader(self.train_ds,
-                                                   batch_size=self.batch_size,
-                                                   shuffle=True,
-                                                   num_workers=self.num_workers)
+        train_loader = torch.utils.data.DataLoader(
+            self.train_ds,
+            batch_size=self.batch_size,
+            shuffle=True,
+            num_workers=self.num_workers,
+        )
 
         return train_loader
 
     def predict_dataloader(self, ds):
         """Prediction data loader."""
-        loader = torch.utils.data.DataLoader(ds,
-                                             batch_size=self.batch_size,
-                                             shuffle=False,
-                                             num_workers=self.num_workers)
+        loader = torch.utils.data.DataLoader(
+            ds, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers
+        )
 
         return loader
 
     def val_dataloader(self):
         """Validation data loader."""
-        val_loader = torch.utils.data.DataLoader(self.val_ds,
-                                                 batch_size=self.batch_size,
-                                                 num_workers=self.num_workers)
+        val_loader = torch.utils.data.DataLoader(
+            self.val_ds, batch_size=self.batch_size, num_workers=self.num_workers
+        )
 
         return val_loader
 
@@ -352,29 +392,50 @@ class CropModel(LightningModule):
         outputs = self(x)
         loss = F.cross_entropy(outputs, y)
         self.log("val_loss", loss)
-        metric_dict = self.metrics(outputs, y)
-        for key, value in metric_dict.items():
-            if isinstance(value, torch.Tensor) and value.numel() > 1:
-                for i, v in enumerate(value):
-                    self.log(f"{key}_{i}", v, on_step=False, on_epoch=True)
-            else:
-                self.log(key, value, on_step=False, on_epoch=True)
+
+        predictions = torch.argmax(outputs, dim=1)
+        self.metrics.update(predictions, y)
+
         return loss
+
+    def on_validation_epoch_end(self):
+        metric_dict = self.metrics.compute()
+        for index, value in enumerate(metric_dict["Class Accuracy"]):
+            key = self.numeric_to_label_dict[index]
+            metric_name = f"Class Accuracy_{key}"
+            self.log(metric_name, value, on_step=False, on_epoch=True)
+
+        self.log(
+            "Micro-Average Accuracy",
+            metric_dict["Accuracy"],
+            on_step=False,
+            on_epoch=True,
+        )
+        self.log(
+            "Micro-Average Precision",
+            metric_dict["Precision"],
+            on_step=False,
+            on_epoch=True,
+        )
+
+        self.metrics.reset()
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.lr)
-        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer,
-                                                               mode='min',
-                                                               factor=0.5,
-                                                               patience=10,
-                                                               threshold=0.0001,
-                                                               threshold_mode='rel',
-                                                               cooldown=0,
-                                                               min_lr=0,
-                                                               eps=1e-08)
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer,
+            mode="min",
+            factor=0.5,
+            patience=10,
+            threshold=0.0001,
+            threshold_mode="rel",
+            cooldown=0,
+            min_lr=0,
+            eps=1e-08,
+        )
 
         # Monitor rate is val data is used
-        return {'optimizer': optimizer, 'lr_scheduler': scheduler, "monitor": 'val_loss'}
+        return {"optimizer": optimizer, "lr_scheduler": scheduler, "monitor": "val_loss"}
 
     def val_dataset_confusion(self, return_images=False):
         """Create a labels and predictions from the validation dataset to be
@@ -390,3 +451,32 @@ class CropModel(LightningModule):
             return images, true_label, predicted_label
         else:
             return true_label, predicted_label
+
+    @classmethod
+    def load_model(
+        cls,
+        repo_id,
+        revision=None,
+    ):
+        """Load a model from the Hugging Face Hub.
+
+        Args:
+            repo_id: Hugging Face repo id, e.g. "username/my-cropmodel".
+            revision: Optional git revision/branch/tag. Defaults to repo default.
+
+        Returns:
+            CropModel: The loaded and eval-mode model instance.
+        """
+
+        model = cls.from_pretrained(
+            repo_id,
+            revision=revision,
+        )
+        model.eval()
+
+        return model
+
+    # Ensure config is up-to-date when pushing to Hub
+    def push_to_hub(self, *args, **kwargs):
+        self.update_config()
+        return super().push_to_hub(*args, **kwargs)

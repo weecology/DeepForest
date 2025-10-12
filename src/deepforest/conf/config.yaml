@@ -35,6 +35,16 @@ train:
 
     # Optimizer initial learning rate
     lr: 0.001
+
+    # Data augmentations for training
+    # Augmentations must be a list of augmentation names, or a list
+    # of dicts with augmentation names and parameters.
+    # Examples:
+    # augmentations:
+    #   - HorizontalFlip: {p: 0.5}
+    #   - Downscale: {scale_min: 0.25, scale_max: 0.75, p: 0.5}
+    augmentations:
+        - HorizontalFlip: {p: 0.5}
     scheduler:
         type:
         params:
@@ -76,6 +86,10 @@ validation:
     # Intersection over union evaluation
     iou_threshold: 0.4
     val_accuracy_interval: 20
+
+    # Data augmentation is none by default for validation, but you can specify:
+    # augmentations:
+    # if you need to apply augmentations during the val stage.
 
 predict:
     pin_memory: False

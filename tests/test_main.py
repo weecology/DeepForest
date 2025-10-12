@@ -11,9 +11,6 @@ import tempfile
 import copy
 import importlib.util
 
-import albumentations as A
-from albumentations.pytorch import ToTensorV2
-
 from deepforest import main, get_data, model
 from deepforest.utilities import read_file, format_geometry
 from deepforest.datasets import prediction
@@ -31,16 +28,17 @@ import shapely
 # Import release model from global script to avoid thrasing github during testing.
 # Just download once.
 from .conftest import download_release
+from unittest.mock import Mock
 
 ALL_ARCHITECTURES = ["retinanet", "DeformableDetr"]
 
 @pytest.fixture()
 def two_class_m():
-    m = main.deepforest(config_args={"num_classes": 2},
-                        label_dict={
-                            "Alive": 0,
-                            "Dead": 1
-                        })
+    m = main.deepforest(config_args={"num_classes": 2,
+                                    "label_dict": {
+                                        "Alive": 0,
+                                        "Dead": 1
+                                    }})
     m.config.train.csv_file = get_data("testfile_multi.csv")
     m.config.train.root_dir = os.path.dirname(get_data("testfile_multi.csv"))
     m.config.train.fast_dev_run = True
@@ -160,11 +158,6 @@ def test_tensorboard_logger(m, tmpdir):
         print("TensorBoard is not installed. Skipping test_tensorboard_logger.")
 
 
-def test_use_bird_release(m):
-    imgpath = get_data("AWPE Pigeon Lake 2020 DJI_0005.JPG")
-    m.load_model("Weecology/deepforest-bird")
-    boxes = m.predict_image(path=imgpath)
-    assert not boxes.empty
 
 def test_load_model(m):
     imgpath = get_data("OSBS_029.png")
@@ -210,6 +203,7 @@ def test_validation_step(m):
     val_dataloader = m.val_dataloader()
     batch = next(iter(val_dataloader))
     m.predictions = []
+    m.targets = {}
     val_loss = m.validation_step(batch, 0)
     assert val_loss != 0
 
@@ -223,6 +217,7 @@ def test_validation_step_empty(m_without_release):
     val_dataloader = m.val_dataloader()
     batch = next(iter(val_dataloader))
     m.predictions = []
+    m.targets = {}
     val_predictions = m.validation_step(batch, 0)
     assert m.iou_metric.compute()["iou"] == 0
 
@@ -476,7 +471,7 @@ def test_predict_tile(m, path, dataloader_strategy):
     assert prediction.ymin.min() < 50
     assert prediction.ymin.max() > 350
 
-    plot_results(prediction)
+    plot_results(prediction, show=False)
 
 
 # Add predict_tile for serial single dataloader strategy
@@ -496,8 +491,8 @@ def test_predict_tile_serial_single(m):
     prediction_2 = prediction[prediction.image_path == os.path.basename(path2)]
     prediction_2.root_dir = os.path.dirname(path2)
 
-    plot_results(prediction_1)
-    plot_results(prediction_2)
+    plot_results(prediction_1, show=False)
+    plot_results(prediction_2, show=False)
 
 # test equivalence for within and out of memory dataset strategies
 def test_predict_tile_equivalence(m):
@@ -634,31 +629,6 @@ def test_reload_multi_class(two_class_m, tmpdir):
 
     assert after[0]["val_classification"] == before[0]["val_classification"]
 
-
-def test_override_transforms():
-
-    def get_transform(augment):
-        """This is the new transform"""
-        if augment:
-            print("I'm a new augmentation!")
-            transform = A.Compose(
-                [A.HorizontalFlip(p=0.5), ToTensorV2()],
-                bbox_params=A.BboxParams(format='pascal_voc',
-                                         label_fields=["category_ids"]))
-
-        else:
-            transform = ToTensorV2()
-        return transform
-
-    m = main.deepforest(transforms=get_transform)
-
-    csv_file = get_data("example.csv")
-    root_dir = os.path.dirname(csv_file)
-    train_ds = m.load_dataset(csv_file, root_dir=root_dir, augment=True)
-
-    image, target, path = next(iter(train_ds))
-    assert m.transforms.__doc__ == "This is the new transform"
-
 def test_over_score_thresh(m):
     """A user might want to change the config after model training and update the score thresh"""
     img = get_data("OSBS_029.png")
@@ -684,11 +654,11 @@ def test_iou_metric(m):
 def test_config_args(m):
     assert not m.config.num_classes == 2
 
-    m = main.deepforest(config_args={"num_classes": 2},
-                        label_dict={
-                            "Alive": 0,
-                            "Dead": 1
-                        })
+    m = main.deepforest(config_args={"num_classes": 2,
+                                    "label_dict": {
+                                        "Alive": 0,
+                                        "Dead": 1
+                                    }})
     assert m.config.num_classes == 2
 
     # These call also be nested for train and val arguments

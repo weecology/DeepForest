@@ -1,6 +1,8 @@
 import pytest
+
 from deepforest import get_data, utilities
 from deepforest.main import deepforest
+
 
 def run_inference(config):
     model = deepforest(config=config)
@@ -9,6 +11,7 @@ def run_inference(config):
     assert len(results) > 0
 
     return results
+
 
 @pytest.mark.parametrize("overrides", [
     {"architecture": "retinanet",
@@ -20,6 +23,7 @@ def run_inference(config):
 def test_model_inference(overrides):
     config = utilities.load_config(overrides=overrides)
     run_inference(config)
+
 
 def test_score_threshold():
     config = utilities.load_config(overrides={"score_thresh": 0})

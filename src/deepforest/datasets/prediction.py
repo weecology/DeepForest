@@ -1,50 +1,48 @@
-# Standard library imports
 import os
-from typing import List
 
-# Third party imports
+import cv2
 import numpy as np
+import numpy.typing as npt
+import pandas as pd
 import rasterio as rio
 import slidingwindow
 import torch
 from PIL import Image
 from rasterio.windows import Window
 from torch.nn import functional as F
-from torch.utils.data import Dataset
-from torch.utils.data import default_collate
-import pandas as pd
+from torch.utils.data import Dataset, default_collate
 
-from deepforest.utilities import format_geometry
-
-# Local imports
 from deepforest import preprocess
+from deepforest.utilities import format_geometry
 
 
 # Base prediction class
 class PredictionDataset(Dataset):
-    """This is the base class for all prediction datasets. It defines the
-    interface for all prediction datasets. It flexibly accepts a single image
-    or a list of images, a single path or a list of paths, and a patch_size and
-    patch_overlap.
+    """Base class for prediction datasets. Defines the common interface and
+    accepts either a single image or path, or lists of images/paths, along with
+    patch_size and patch_overlap. Images can optionally be resized to a given
+    size.
 
     Args:
         image (PIL.Image.Image): A single image.
-        path (str): A single image path.
+        path (str): Path to a single image.
         images (List[PIL.Image.Image]): A list of images.
         paths (List[str]): A list of image paths.
-        patch_size (int): The size of the patches to extract.
-        patch_overlap (float): The overlap between patches.
-        size (int): The size of the image to resize to. Optional, if not provided, the image is not resized.
+        patch_size (int): Size of the patches to extract.
+        patch_overlap (float): Overlap between patches.
+        size (int): Target size to resize images to. Optional; if not provided, no resizing is performed.
     """
 
-    def __init__(self,
-                 image=None,
-                 path=None,
-                 images=None,
-                 paths=None,
-                 patch_size=400,
-                 patch_overlap=0,
-                 size=None):
+    def __init__(
+        self,
+        image=None,
+        path=None,
+        images=None,
+        paths=None,
+        patch_size=400,
+        patch_overlap=0,
+        size=None,
+    ):
         self.image = image
         self.images = images
         self.path = path
@@ -54,42 +52,64 @@ class PredictionDataset(Dataset):
         self.size = size
         self.items = self.prepare_items()
 
-    def _load_and_preprocess_image(self, image_path, image=None, size=None):
-        """Load and preprocess an image.
+    def _load_and_preprocess_image(
+        self,
+        image_path: str | None = None,
+        image: Image.Image | npt.NDArray | None = None,
+        size: int | None = None,
+    ):
+        """Load and preprocess an image. Either an image path or PIL image must
+        be provided.
 
-        Datasets should load using PIL and transpose the image to (C, H,
-        W) before main.model.forward() is called.
+        Datasets should load using PIL and transpose the image to
+        (C, H, W) before main.model.forward() is called.
+
+        Args:
+            image_path: (str) path to image, optional
+            image: (PIL image), optional
+            size: (int) output size
+
+        Returns:
+            CHW float32 numpy array, normalized to be in [0, 1]
         """
-        if image is None:
+        if image is None and image_path is None:
+            raise ValueError("Either image or image_path must be provided")
+        elif image is None:
             image = Image.open(image_path)
-        else:
-            image = image
-        image = np.array(image)
-        if not image.shape[2] == 3:
-            raise ValueError(
-                "Only three band raster are accepted. Input tile has shape {}. Check for transparent alpha channel and remove if present"
-                .format(image.shape))
 
-        image = np.transpose(image, (2, 0, 1))
-        image = self.preprocess_crop(image, size)
+        if isinstance(image, Image.Image) and image.mode != "RGB":
+            raise ValueError(
+                f"Expected 8-bit 3-channel RGB, got {image.mode}, {len(image.getbands())} channels and size: {image.size}."
+                "Check for transparent alpha channel and remove if present."
+            )
+        elif isinstance(image, np.ndarray) and (
+            image.ndim != 3 or image.shape[2] != 3 or image.dtype != np.uint8
+        ):
+            raise ValueError(
+                f"Expected 8-bit 3-channel RGB numpy array, got {image.ndim} dimensions and shape: {image.shape}."
+                "Check for transparent alpha channel and remove if present."
+            )
+
+        image = np.array(image)
+        image = self.preprocess_image(image, size)
 
         return image
 
-    def preprocess_crop(self, image, size=None):
-        """Preprocess a crop to a float32 tensor between 0 and 1."""
-        image = np.array(image)
-        image = image / 255.0
+    def preprocess_image(self, image: npt.NDArray, size=None) -> npt.NDArray:
+        """Preprocess an 8-bit image to a float32 array between 0 and 1."""
         image = image.astype(np.float32)
+        image /= 255.0
 
         if size is not None:
             image = self.resize_image(image, size)
 
+        image = np.transpose(image, (2, 0, 1))
+
         return image
 
-    def resize_image(self, image, size):
-        """Resize an image to a new size."""
-        image = np.resize(image, (image.shape[0], size, size))
-        return image
+    def resize_image(self, image: npt.NDArray, size: int) -> npt.NDArray:
+        """Resize an image to a new (square) size."""
+        return cv2.resize(image, dsize=(size, size))
 
     def prepare_items(self):
         """Prepare the items for the dataset.
@@ -111,10 +131,11 @@ class PredictionDataset(Dataset):
         # Check if all images in batch have same dimensions
         try:
             return default_collate(batch)
-        except RuntimeError as e:
+        except RuntimeError:
             raise RuntimeError(
-                "Images in batch have different dimensions. Set validation.size in config.yaml to resize all images to a common size."
-            )
+                "Images in batch have different dimensions. "
+                "Set validation.size in config.yaml to resize all images to a common size."
+            ) from None
 
     def get_crop_bounds(self, idx):
         """Get the crop bounds at the given index, needed to mosaic
@@ -139,8 +160,9 @@ class PredictionDataset(Dataset):
         elif "polygons" in batched_result.keys():
             geom_type = "polygon"
         else:
-            raise ValueError("Unknown geometry type, prediction keys are {}".format(
-                batched_result.keys()))
+            raise ValueError(
+                f"Unknown geometry type, prediction keys are {batched_result.keys()}"
+            )
 
         return geom_type
 
@@ -196,15 +218,15 @@ class SingleImage(PredictionDataset):
     """Take in a single image path, preprocess and batch together."""
 
     def __init__(self, path=None, image=None, patch_size=400, patch_overlap=0):
-        super().__init__(path=path,
-                         image=image,
-                         patch_size=patch_size,
-                         patch_overlap=patch_overlap)
+        super().__init__(
+            path=path, image=image, patch_size=patch_size, patch_overlap=patch_overlap
+        )
 
     def prepare_items(self):
         self.image = self._load_and_preprocess_image(self.path, self.image)
-        self.windows = preprocess.compute_windows(self.image, self.patch_size,
-                                                  self.patch_overlap)
+        self.windows = preprocess.compute_windows(
+            self.image, self.patch_size, self.patch_overlap
+        )
 
     def __len__(self):
         return len(self.windows)
@@ -277,7 +299,7 @@ class FromCSVFile(PredictionDataset):
 class MultiImage(PredictionDataset):
     """Take in a list of image paths, preprocess and batch together."""
 
-    def __init__(self, paths: List[str], patch_size: int, patch_overlap: float):
+    def __init__(self, paths: list[str], patch_size: int, patch_overlap: float):
         """
         Args:
             paths (List[str]): List of image paths.
@@ -343,8 +365,9 @@ class MultiImage(PredictionDataset):
     def _create_patches(self, image):
         image_tensor = torch.tensor(image).unsqueeze(0)  # Convert to (N, C, H, W)
         patch_overlap_size = int(self.patch_size * self.patch_overlap)
-        patches = self.create_overlapping_views(image_tensor, self.patch_size,
-                                                patch_overlap_size)
+        patches = self.create_overlapping_views(
+            image_tensor, self.patch_size, patch_overlap_size
+        )
 
         return patches
 
@@ -364,14 +387,14 @@ class MultiImage(PredictionDataset):
         n_patches_h = (H - patch_overlap_size) // step + 1
         n_patches_w = (W - patch_overlap_size) // step + 1
 
-        # Generate window coordinates matching the unfolded tensor views
+        # Generate window coordinates for unfolded tensor views
         windows = []
         for i in range(n_patches_h):
             for j in range(n_patches_w):
                 y = i * step
                 x = j * step
                 # Only add window if it contains any real data
-                if (x < W and y < H):
+                if x < W and y < H:
                     windows.append((x, y, self.patch_size, self.patch_size))
 
         return windows
@@ -430,7 +453,8 @@ class TiledRaster(PredictionDataset):
                     "the purpose of an out-of-memory dataset. "
                     "\nPlease run: "
                     "\ngdal_translate -of GTiff -co TILED=YES <input> <output> "
-                    "to create a tiled raster")
+                    "to create a tiled raster"
+                )
 
         # Generate sliding windows
         self.windows = slidingwindow.generateForSize(
@@ -438,7 +462,8 @@ class TiledRaster(PredictionDataset):
             width,
             dimOrder=slidingwindow.DimOrder.ChannelHeightWidth,
             maxWindowSize=self.patch_size,
-            overlapPercent=self.patch_overlap)
+            overlapPercent=self.patch_overlap,
+        )
 
     def __len__(self):
         return len(self.windows)

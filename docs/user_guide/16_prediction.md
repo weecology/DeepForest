@@ -4,7 +4,7 @@ There are atleast four ways to make predictions with DeepForest.
 
 1. Predict an image using [model.predict_image](https://deepforest.readthedocs.io/en/latest/source/deepforest.html#deepforest.main.deepforest.predict_image). The entire image is passed to the model.
 
-2. Predict a large number, which we call a 'tile', using [model.predict_tile](https://deepforest.readthedocs.io/en/latest/source/deepforest.html#deepforest.main.deepforest.predict_tile). The tile is cut into smaller windows and each window is predicted. 
+2. Predict a large number, which we call a 'tile', using [model.predict_tile](https://deepforest.readthedocs.io/en/latest/source/deepforest.html#deepforest.main.deepforest.predict_tile). The tile is cut into smaller windows and each window is predicted.
 
 3. Predict a directory of images using a csv file using [model.predict_file](https://deepforest.readthedocs.io/en/latest/source/deepforest.html#deepforest.main.deepforest.predict_file). Each unique image listed in a csv file is predicted.
 
@@ -15,6 +15,10 @@ In general, during inference, for large images it is most common to use predict_
 ## Predict an image using the command line
 
 We provide a basic utility script to run a prediction task with the ability to save and/or plot outputs. This command is called `deepforest predict` and is included as part of the standard installation. You can run the command without any arguments, or the `--help` flag to check that it's available. The script will run in tiled prediction mode by default.
+
+```{note}
+If you are using `uv` to manage your Python environment, remember to prefix these commands with `uv run`, for example: `uv run deepforest predict`.
+```
 
 ```bash
 > deepforest predict -h
@@ -45,11 +49,11 @@ To see the default configuration and to check what options you can set, you can 
 
 ## Predict an image using model.predict_image
 
-This is most commonly used for small images or pre-cropped windows of large tiles. Passing a large tile to predict_image will lead to poor performance, use predict_tile. 
+This is most commonly used for small images or pre-cropped windows of large tiles. Passing a large tile to predict_image will lead to poor performance, use predict_tile.
 
 ```python
-from deepforest import main
 from deepforest import get_data
+from deepforest import main
 from deepforest.visualize import plot_results
 
 # Initialize the model class
@@ -65,7 +69,7 @@ plot_results(img)
 
 ## Predict a tile using model.predict_tile
 
-Large tiles covering wide geographic extents cannot fit into memory during prediction and would yield poor results due to the density of bounding boxes. Often provided as geospatial .tif files, remote sensing data is best suited for the ``predict_tile`` function, which splits the tile into overlapping windows, performs prediction on each of the windows, and then reassembles the resulting annotations.
+Large tiles covering wide geographic extents cannot fit into memory during prediction and would yield poor results due to the density of bounding boxes. Often provided as geospatial .tif files, remote sensing data is best suited for the `predict_tile` function, which splits the tile into overlapping windows, performs prediction on each of the windows, and then reassembles the resulting annotations.
 
 Let's show an example with a small image. For larger images, patch_size should be increased.
 
@@ -83,8 +87,8 @@ model = main.deepforest()
 model.load_model(model_name="weecology/deepforest-tree", revision="main")
 
 # Predict on large geospatial tiles using overlapping windows
-raster_path = get_data("OSBS_029.tif")
-predicted_raster = model.predict_tile(raster_path, patch_size=300, patch_overlap=0.25)
+path = get_data("OSBS_029.tif")
+predicted_raster = model.predict_tile(path, patch_size=300, patch_overlap=0.25)
 plot_results(predicted_raster)
 ```
 
@@ -95,22 +99,23 @@ An optional argument to predict_tile allows the user to control how to scale pre
 ```python
 prediction_single = m.predict_tile(path=path, patch_size=300, dataloader_strategy="single")
 ```
+
 The `dataloader_strategy` parameter has three options:
 
-* **single**: Loads the entire image into CPU memory and passes individual windows to GPU.
+- **single**: Loads the entire image into CPU memory and passes individual windows to GPU.
 
-* **batch**: Loads the entire image into GPU memory and creates views of the image as batches. Requires the entire tile to fit into GPU memory. CPU parallelization is possible for loading images.
+- **batch**: Loads the entire image into GPU memory and creates views of the image as batches. Requires the entire tile to fit into GPU memory. CPU parallelization is possible for loading images.
 
-* **window**: Loads only the desired window of the image from the raster dataset. Most memory efficient option, but cannot parallelize across windows due to Python's Global Interpreter Lock, workers must be set to 0. 
+- **window**: Loads only the desired window of the image from the raster dataset. Most memory efficient option, but cannot parallelize across windows due to Python's Global Interpreter Lock, workers must be set to 0.
 
 ![](../../www/dataloader-strategy.png)
 
-The image shows that the speed of the predict_tile function is related to the strategy, the number of images, and the number of dataloader workers, which is set in the deepforest config file. 
+The image shows that the speed of the predict_tile function is related to the strategy, the number of images, and the number of dataloader workers, which is set in the deepforest config file.
 
 ### Patch Size
 
-   The *predict_tile* function is sensitive to *patch_size*, especially when using the prebuilt model on new data.
-   We encourage users to experiment with various patch sizes. For 0.1m data, 400-800px per window is appropriate, but it will depend on the density of tree plots. For coarser resolution tiles, >800px patch sizes have been effective.
+The _predict_tile_ function is sensitive to _patch_size_, especially when using the prebuilt model on new data.
+We encourage users to experiment with various patch sizes. For 0.1m data, 400-800px per window is appropriate, but it will depend on the density of tree plots. For coarser resolution tiles, >800px patch sizes have been effective.
 
 ## Predict a directory of using a csv file using model.predict_file
 
@@ -143,8 +148,8 @@ from torch.utils.data import DataLoader
 import numpy as np
 from PIL import Image
 
-raster_path = get_data("OSBS_029.tif")
-tile = np.array(Image.open(raster_path))
+path = get_data("OSBS_029.tif")
+tile = np.array(Image.open(path))
 ds = BoxDataset(tile=tile, patch_overlap=0.1, patch_size=100)
 dl = DataLoader(ds, batch_size=3)
 

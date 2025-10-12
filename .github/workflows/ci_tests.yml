@@ -1,0 +1,79 @@
+name: Continuous integration tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  ci:
+    name: "CI setup"
+
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version:
+          - "3.12"
+          - "3.11"
+          - "3.10"
+
+        os:
+          - "ubuntu-latest"
+
+    runs-on: "${{ matrix.os }}"
+
+    # use bash everywhere
+    defaults:
+      run:
+        shell: "bash -l {0}"
+
+    steps:
+      - name: "Checkout code"
+        uses: "actions/checkout@v4"
+
+      - name: Install opencv dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgl1 and libglx-mesa0
+
+      - name: Install ipynb dependencies (pandoc)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pandoc
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Set up Python
+        run: uv python install
+
+      - name: Install package
+        run: uv sync --all-extras --dev
+
+      - name: Run pytest with coverage
+        run: uv run pytest -v --cov=src/deepforest --cov-report=xml --cov-report=term-missing
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+
+      - name: Check predict script
+        run: uv run deepforest predict src/deepforest/data/OSBS_029.png
+
+      - name: Check train script
+        run: uv run deepforest train train.csv_file=src/deepforest/data/OSBS_029.csv train.root_dir=src/deepforest/data train.fast_dev_run=True
+
+      - name: Test Docs
+        run: |
+          cd docs && uv run make clean && uv run make html SPHINXOPTS="-W"
+
+      - name: Test and check build artifacts
+        run: |
+          uv pip install build && uv run python -m build && uv run twine check dist/*

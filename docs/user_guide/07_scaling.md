@@ -34,9 +34,9 @@ https://lightning.ai/docs/pytorch/latest/clouds/cluster_advanced.html#troublesho
 
 ## Prediction
 
-Often we have a large number of tiles we want to predict. DeepForest uses [PyTorch Lightning](https://lightning.ai/docs/pytorch/stable/) to scale inference. This gives us access to powerful tools for scaling without any changes to user code. DeepForest automatically detects whether you are running on GPU or CPU. 
+Often we have a large number of tiles we want to predict. DeepForest uses [PyTorch Lightning](https://lightning.ai/docs/pytorch/stable/) to scale inference. This gives us access to powerful tools for scaling without any changes to user code. DeepForest automatically detects whether you are running on GPU or CPU.
 
-There are three dataset strategies that *balance cpu memory, gpu memory, and gpu utilization* using batch sizes. 
+There are three dataset strategies that *balance cpu memory, gpu memory, and gpu utilization* using batch sizes.
 
 ```python
 prediction_single = m.predict_tile(path=path, patch_size=300, dataloader_strategy="single")
@@ -47,15 +47,13 @@ The `dataloader_strategy` parameter has three options:
 
 * **batch**: Loads the entire image into GPU memory and creates views of the image as batches. Requires the entire tile to fit into GPU memory. CPU parallelization is possible for loading images.
 
-* **window**: Loads only the desired window of the image from the raster dataset. Most memory efficient option, but cannot parallelize across windows due to Python's Global Interpreter Lock, workers must be set to 0. 
+* **window**: Loads only the desired window of the image from the raster dataset. Most memory efficient option, but cannot parallelize across windows due to Python's Global Interpreter Lock, workers must be set to 0.
 
 ## Data Loading
 
-DeepForest uses PyTorch's DataLoader for efficient data loading. One important parameter for scaling is the number of CPU workers, which controls parallel data loading using multiple CPU processes. This can be set 
+DeepForest uses PyTorch's DataLoader for efficient data loading. One important parameter for scaling is the number of CPU workers, which controls parallel data loading using multiple CPU processes. This can be set
 
 ```
 m.config["workers"] = 10
 ```
 0 workers runs without multiprocessing, workers > 1 runs with multiprocessing. Increase this value slowly, as IO constraints can lead to deadlocks among workers.
-
-

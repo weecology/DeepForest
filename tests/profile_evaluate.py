@@ -1,10 +1,13 @@
 # Profile the dataset class
-from deepforest import evaluate
-from deepforest import main
-from deepforest import get_data
-import pandas as pd
+import cProfile
 import os
-import cProfile, pstats
+import pstats
+
+import pandas as pd
+
+from deepforest import evaluate
+from deepforest import get_data
+from deepforest import main
 
 
 def run(m):

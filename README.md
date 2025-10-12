@@ -1,19 +1,14 @@
 # DeepForest
 
-[![Github Actions](https://github.com/weecology/DeepForest/actions/workflows/Conda-app.yml/badge.svg)](https://github.com/weecology/DeepForest/actions/workflows/Conda-app.yml)
+[![Github Actions](https://github.com/weecology/DeepForest/actions/workflows/ci_tests.yml/badge.svg)](https://github.com/weecology/DeepForest/actions/workflows/ci_tests.yml)
+[![pre-commit.ci status](https://results.pre-commit.ci/badge/github/weecology/DeepForest/main.svg)](https://results.pre-commit.ci/latest/github/weecology/DeepForest/main)
+[![codecov](https://codecov.io/gh/weecology/DeepForest/branch/main/graph/badge.svg)](https://codecov.io/gh/weecology/DeepForest)
 [![Documentation Status](https://readthedocs.org/projects/deepforest/badge/?version=latest)](http://deepforest.readthedocs.io/en/latest/?badge=latest)
 [![Version](https://img.shields.io/pypi/v/DeepForest.svg)](https://pypi.python.org/pypi/DeepForest)
 [![PyPI - Downloads](https://img.shields.io/pypi/dm/deepforest)](https://pypi.python.org/pypi/DeepForest)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.2538143.svg)](https://doi.org/10.5281/zenodo.2538143)
 [![Python Version](https://img.shields.io/badge/python-%3E%3D3.8%2C%20%3C3.13-blue.svg)](https://www.python.org/downloads/)
 [![Citations](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/weecology/DeepForest/refs/heads/main/citation_count.json)](https://scholar.google.com/scholar?hl=en&as_sdt=40005&sciodt=0,10&cites=4018186955550406830&scipsc=&q=)
-
-
-### Conda-forge build status
-
-| Name | Downloads | Version | Platforms |
-| --- | --- | --- | --- |
-| [![Conda Recipe](https://img.shields.io/badge/recipe-deepforest-green.svg)](https://anaconda.org/conda-forge/deepforest) | [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/deepforest.svg)](https://anaconda.org/conda-forge/deepforest) | [![Conda Version](https://img.shields.io/conda/vn/conda-forge/deepforest.svg)](https://anaconda.org/conda-forge/deepforest) | [![Conda Platforms](https://img.shields.io/conda/pn/conda-forge/deepforest.svg)](https://anaconda.org/conda-forge/deepforest) |
 
 ![](www/MEE_Figure4.png)
 ![](www/example_predictions_small.png)
@@ -29,12 +24,14 @@ DeepForest is a python package for training and predicting ecological objects in
 [DeepForest is documented on readthedocs](https://deepforest.readthedocs.io/)
 
 ## How does deepforest work?
+
 DeepForest uses deep learning object detection networks to predict bounding boxes corresponding to individual trees in RGB imagery.
-DeepForest is built on the object detection module from the [torchvision package](http://pytorch.org/vision/stable/index.html) and designed to make training models for  detection simpler.
+DeepForest is built on the object detection module from the [torchvision package](http://pytorch.org/vision/stable/index.html) and designed to make training models for detection simpler.
 
 For more about the motivation behind DeepForest, see some recent talks we have given on computer vision for ecology and practical applications to machine learning in environmental monitoring.
 
 ## Where can I get help, learn from others, and report bugs?
+
 Given the enormous array of forest types and image acquisition environments, it is unlikely that your image will be perfectly predicted by a prebuilt model. Below are some tips and some general guidelines to improve predictions.
 
 Get suggestions on how to improve a model by using the [discussion board](https://github.com/weecology/DeepForest/discussions). Please be aware that only feature requests or bug reports should be posted on the [issues page](https://github.com/weecology/DeepForest/issues).

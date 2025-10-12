@@ -1,7 +1,7 @@
 # Comparison with Other Tools
 
-There are many open-source projects for training machine learning models. 
-DeepForest aims to complement these existing tools by providing a specialized, streamlined approach tailored to ecological and environmental monitoring tasks. 
+There are many open-source projects for training machine learning models.
+DeepForest aims to complement these existing tools by providing a specialized, streamlined approach tailored to ecological and environmental monitoring tasks.
 This document also includes an overview of the models that have been built using the DeepForest framework.
 Below, we compare DeepForest with other notable tools in this space, highlighting similarities, differences, and areas of potential collaboration.
 
@@ -35,11 +35,11 @@ Available on [GitHub](https://github.com/afruizh/TreeEyed), this open-source QGI
 - **Inference:** API-driven deployment of machine learning models.
 
 The ecosystem is well-executed and widely used within DeepForest.
-However, Roboflow operates as a commercial platform requiring an API key and has a range of licensing structures. 
+However, Roboflow operates as a commercial platform requiring an API key and has a range of licensing structures.
 Its broad scope makes it challenging to identify robust models among thousands of projects.
 
 **Key Differences:**
-           
+
 1. Roboflow is designed as an all-encompassing platform for general computer vision applications.
 2. DeepForest focuses on a curated set of models tailored to ecological and environmental monitoring, offering simplicity and specificity for existing workflows.
 
@@ -87,6 +87,6 @@ We invite users and contributors from all packages to share ideas and propose im
 
 **Conclusion**
 
-The future of open-source machine learning in environmental monitoring relies on collaboration and interoperability. 
+The future of open-source machine learning in environmental monitoring relies on collaboration and interoperability.
 Tools like DeepForest, Torchgeo, Roboflow, and AIDE complement each other, each addressing specific needs within the field.
 By fostering connections between these tools, we can build a more cohesive and efficient ecosystem for solving critical environmental challenges.

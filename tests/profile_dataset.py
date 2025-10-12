@@ -1,8 +1,10 @@
 # Profile the dataset class
+import cProfile
+import os
+import pstats
+
 from deepforest import dataset
 from deepforest import get_data
-import os
-import cProfile, pstats
 
 
 def run():
@@ -11,7 +13,7 @@ def run():
 
     ds = dataset.TreeDataset(csv_file=csv_file,
                              root_dir=root_dir,
-                             transforms=dataset.get_transform(augment=True))
+                             transforms=dataset.get_transform(augmentations=["HorizontalFlip"]))
 
     for x in range(1000):
         next(iter(ds))

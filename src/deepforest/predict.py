@@ -1,21 +1,22 @@
 # Prediction utilities
-import pandas as pd
-import numpy as np
 import os
 
+import numpy as np
+import pandas as pd
 import torch
 from torchvision.ops import nms
-import typing
 
 from deepforest import utilities
 from deepforest.datasets import cropmodel
 from deepforest.utilities import read_file
 
 
-def _predict_image_(model,
-                    image: typing.Optional[np.ndarray] = None,
-                    path: typing.Optional[str] = None,
-                    nms_thresh: float = 0.15):
+def _predict_image_(
+    model,
+    image: np.ndarray | None = None,
+    path: str | None = None,
+    nms_thresh: float = 0.15,
+):
     """Predict a single image with a deepforest model.
 
     Args:
@@ -65,6 +66,12 @@ def transform_coordinates(boxes):
     boxes["ymin"] += boxes["window_ymin"]
     boxes["ymax"] += boxes["window_ymin"]
 
+    # Cast to int
+    boxes["xmin"] = boxes["xmin"].astype(int)
+    boxes["ymin"] = boxes["ymin"].astype(int)
+    boxes["xmax"] = boxes["xmax"].astype(int)
+    boxes["ymax"] = boxes["ymax"].astype(int)
+
     return boxes
 
 
@@ -88,15 +95,18 @@ def apply_nms(boxes, scores, labels, iou_threshold):
     new_scores = scores[bbox_left_idx]
 
     # Recreate box dataframe
-    image_detections = np.concatenate([
-        new_boxes,
-        np.expand_dims(new_labels, axis=1),
-        np.expand_dims(new_scores, axis=1)
-    ],
-                                      axis=1)
+    image_detections = np.concatenate(
+        [
+            new_boxes,
+            np.expand_dims(new_labels, axis=1),
+            np.expand_dims(new_scores, axis=1),
+        ],
+        axis=1,
+    )
 
-    return pd.DataFrame(image_detections,
-                        columns=["xmin", "ymin", "xmax", "ymax", "label", "score"])
+    return pd.DataFrame(
+        image_detections, columns=["xmin", "ymin", "xmax", "ymax", "label", "score"]
+    )
 
 
 def mosiac(predictions, iou_threshold=0.1):
@@ -110,13 +120,19 @@ def mosiac(predictions, iou_threshold=0.1):
         A pandas dataframe of predictions.
     """
     predicted_boxes = transform_coordinates(predictions)
+
+    # Skip NMS if there's is one or less prediction
+    if predicted_boxes.shape[0] <= 1:
+        return predicted_boxes
+
     print(
         f"{predicted_boxes.shape[0]} predictions in overlapping windows, applying non-max suppression"
     )
 
     # Convert to tensors
-    boxes = torch.tensor(predicted_boxes[["xmin", "ymin", "xmax", "ymax"]].values,
-                         dtype=torch.float32)
+    boxes = torch.tensor(
+        predicted_boxes[["xmin", "ymin", "xmax", "ymax"]].values, dtype=torch.float32
+    )
     scores = torch.tensor(predicted_boxes.score.values, dtype=torch.float32)
     labels = predicted_boxes.label.values
 
@@ -132,27 +148,38 @@ def across_class_nms(predicted_boxes, iou_threshold=0.15):
     visualize.format_boxes) to remove boxes that overlap by iou_thresholdold of
     IoU."""
 
+    # Skip NMS if there's is one or less prediction
+    if predicted_boxes.shape[0] <= 1:
+        return predicted_boxes
+
     # move prediciton to tensor
-    boxes = torch.tensor(predicted_boxes[["xmin", "ymin", "xmax", "ymax"]].values,
-                         dtype=torch.float32)
+    boxes = torch.tensor(
+        predicted_boxes[["xmin", "ymin", "xmax", "ymax"]].values, dtype=torch.float32
+    )
     scores = torch.tensor(predicted_boxes.score.values, dtype=torch.float32)
     labels = predicted_boxes.label.values
 
     bbox_left_idx = nms(boxes=boxes, scores=scores, iou_threshold=iou_threshold)
     bbox_left_idx = bbox_left_idx.numpy()
-    new_boxes, new_labels, new_scores = boxes[bbox_left_idx].type(
-        torch.int), labels[bbox_left_idx], scores[bbox_left_idx]
+    new_boxes, new_labels, new_scores = (
+        boxes[bbox_left_idx].type(torch.int),
+        labels[bbox_left_idx],
+        scores[bbox_left_idx],
+    )
 
     # Recreate box dataframe
-    image_detections = np.concatenate([
-        new_boxes,
-        np.expand_dims(new_labels, axis=1),
-        np.expand_dims(new_scores, axis=1)
-    ],
-                                      axis=1)
+    image_detections = np.concatenate(
+        [
+            new_boxes,
+            np.expand_dims(new_labels, axis=1),
+            np.expand_dims(new_scores, axis=1),
+        ],
+        axis=1,
+    )
 
-    new_df = pd.DataFrame(image_detections,
-                          columns=["xmin", "ymin", "xmax", "ymax", "label", "score"])
+    new_df = pd.DataFrame(
+        image_detections, columns=["xmin", "ymin", "xmax", "ymax", "label", "score"]
+    )
 
     return new_df
 
@@ -193,13 +220,15 @@ def _dataloader_wrapper_(model, trainer, dataloader, root_dir, crop_model):
             # Flag to check if only one model is passed
             is_single_model = len(crop_model) == 1
 
-            for i, crop_model in enumerate(crop_model):
-                crop_model_results = _predict_crop_model_(crop_model=crop_model,
-                                                          results=image_results,
-                                                          path=image_path,
-                                                          trainer=trainer,
-                                                          model_index=i,
-                                                          is_single_model=is_single_model)
+            for i, crop_model_item in enumerate(crop_model):
+                crop_model_results = _predict_crop_model_(
+                    crop_model=crop_model_item,
+                    results=image_results,
+                    path=image_path,
+                    trainer=trainer,
+                    model_index=i,
+                    is_single_model=is_single_model,
+                )
 
             processed_results.append(crop_model_results)
 
@@ -208,14 +237,16 @@ def _dataloader_wrapper_(model, trainer, dataloader, root_dir, crop_model):
     return results
 
 
-def _predict_crop_model_(crop_model,
-                         trainer,
-                         results,
-                         path,
-                         transform=None,
-                         augment=False,
-                         model_index=0,
-                         is_single_model=False):
+def _predict_crop_model_(
+    crop_model,
+    trainer,
+    results,
+    path,
+    transform=None,
+    augmentations=None,
+    model_index=0,
+    is_single_model=False,
+):
     """Predicts crop model on a raster file.
 
     Args:
@@ -237,10 +268,12 @@ def _predict_crop_model_(crop_model,
     results = results[results.ymin != results.ymax]
 
     # Create dataset
-    bounding_box_dataset = cropmodel.BoundingBoxDataset(results,
-                                                        root_dir=os.path.dirname(path),
-                                                        transform=transform,
-                                                        augment=augment)
+    bounding_box_dataset = cropmodel.BoundingBoxDataset(
+        results,
+        root_dir=os.path.dirname(path),
+        transform=transform,
+        augmentations=augmentations,
+    )
 
     # Create dataloader
     crop_dataloader = crop_model.predict_dataloader(bounding_box_dataset)
@@ -261,7 +294,10 @@ def _predict_crop_model_(crop_model,
 
     if crop_model.numeric_to_label_dict is None:
         raise ValueError(
-            f"The numeric_to_label_dict is not set, and the label_dict is {crop_model.label_dict}, set either when loading CropModel(label_dict=), which creates the numeric_to_label_dict, or load annotations from CropModel.load_from_disk(), which creates the dictionaries based on file contents."
+            f"The numeric_to_label_dict is not set, and the label_dict is "
+            f"{crop_model.label_dict}, set either when loading CropModel(label_dict=), "
+            f"which creates the numeric_to_label_dict, or load annotations from CropModel."
+            f"load_from_disk(), which creates the dictionaries based on file contents."
         )
 
     results[label_column] = [crop_model.numeric_to_label_dict[x] for x in label]
@@ -271,26 +307,31 @@ def _predict_crop_model_(crop_model,
     return results
 
 
-def _crop_models_wrapper_(crop_models, trainer, results, transform=None, augment=False):
+def _crop_models_wrapper_(
+    crop_models, trainer, results, transform=None, augmentations=None
+):
     if crop_models is not None and not isinstance(crop_models, list):
         crop_models = [crop_models]
 
     # Run predictions
     crop_results = []
     if crop_models:
-        is_single_model = len(
-            crop_models) == 1  # Flag to check if only one model is passed
+        is_single_model = (
+            len(crop_models) == 1
+        )  # Flag to check if only one model is passed
         for i, crop_model in enumerate(crop_models):
             for path in results.image_path.unique():
                 path = os.path.join(results.root_dir, path)
-                crop_result = _predict_crop_model_(crop_model=crop_model,
-                                                   results=results,
-                                                   path=path,
-                                                   trainer=trainer,
-                                                   model_index=i,
-                                                   transform=transform,
-                                                   augment=augment,
-                                                   is_single_model=is_single_model)
+                crop_result = _predict_crop_model_(
+                    crop_model=crop_model,
+                    results=results,
+                    path=path,
+                    trainer=trainer,
+                    model_index=i,
+                    transform=transform,
+                    augmentations=augmentations,
+                    is_single_model=is_single_model,
+                )
                 crop_results.append(crop_result)
 
     # Concatenate results
