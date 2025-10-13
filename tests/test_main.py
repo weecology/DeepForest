@@ -792,7 +792,9 @@ def test_configure_optimizers(scheduler, expected):
 
 @pytest.fixture()
 def crop_model():
-    return model.CropModel(num_classes=2)
+    cm = model.CropModel()
+    cm.create_model(num_classes=2)
+    return cm
 
 
 def test_predict_tile_with_crop_model(m, config):
@@ -801,7 +803,10 @@ def test_predict_tile_with_crop_model(m, config):
     patch_overlap = 0.05
     iou_threshold = 0.15
     # Set up the crop model
-    crop_model = model.CropModel(num_classes=2, label_dict = {"Dead":0, "Alive":1})
+    crop_model = model.CropModel()
+    crop_model.create_model(num_classes=2)
+    crop_model.label_dict = {"Dead": 0, "Alive": 1}
+    crop_model.numeric_to_label_dict = {0: "Dead", 1: "Alive"}
 
     # Call the predict_tile method with the crop_model
     m.config.train.fast_dev_run = False
@@ -830,7 +835,10 @@ def test_predict_tile_with_crop_model_empty(m_without_release):
     m = m_without_release
 
     # Set up the crop model
-    crop_model = model.CropModel(num_classes=2, label_dict = {"Dead": 0, "Alive": 1})
+    crop_model = model.CropModel()
+    crop_model.create_model(num_classes=2)
+    crop_model.label_dict = {"Dead": 0, "Alive": 1}
+    crop_model.numeric_to_label_dict = {0: "Dead", 1: "Alive"}
 
     # Call the predict_tile method with the crop_model
     m.config.train.fast_dev_run = False
@@ -852,7 +860,15 @@ def test_predict_tile_with_multiple_crop_models(m, config):
     iou_threshold = 0.15
 
     # Create multiple crop models
-    crop_model = [model.CropModel(num_classes=2, label_dict={"Dead":0, "Alive":1}), model.CropModel(num_classes=3, label_dict={"Dead":0, "Alive":1, "Sapling":2})]
+    cm1 = model.CropModel()
+    cm1.create_model(num_classes=2)
+    cm1.label_dict = {"Dead": 0, "Alive": 1}
+    cm1.numeric_to_label_dict = {0: "Dead", 1: "Alive"}
+    cm2 = model.CropModel()
+    cm2.create_model(num_classes=3)
+    cm2.label_dict = {"Dead": 0, "Alive": 1, "Sapling": 2}
+    cm2.numeric_to_label_dict = {0: "Dead", 1: "Alive", 2: "Sapling"}
+    crop_model = [cm1, cm2]
 
     # Call predict_tile with multiple crop models
     m.config.train.fast_dev_run = False
@@ -882,8 +898,14 @@ def test_predict_tile_with_multiple_crop_models_empty(m_without_release):
     m = m_without_release
 
     # Create multiple crop models
-    crop_model_1 = model.CropModel(num_classes=2, label_dict={"Dead":0, "Alive":1})
-    crop_model_2 = model.CropModel(num_classes=3, label_dict={"Dead":0, "Alive":1, "Sapling":2})
+    crop_model_1 = model.CropModel()
+    crop_model_1.create_model(num_classes=2)
+    crop_model_1.label_dict = {"Dead": 0, "Alive": 1}
+    crop_model_1.numeric_to_label_dict = {0: "Dead", 1: "Alive"}
+    crop_model_2 = model.CropModel()
+    crop_model_2.create_model(num_classes=3)
+    crop_model_2.label_dict = {"Dead": 0, "Alive": 1, "Sapling": 2}
+    crop_model_2.numeric_to_label_dict = {0: "Dead", 1: "Alive", 2: "Sapling"}
 
     m.config.train.fast_dev_run = False
     m.create_trainer()
