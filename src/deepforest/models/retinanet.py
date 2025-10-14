@@ -257,22 +257,21 @@ class Model(BaseModel):
                 label_dict=self.config.label_dict,
                 freeze_backbone=self.config.train.freeze_backbone,
             )
-        elif (
-            isinstance(pretrained, str) or isinstance(pretrained, Path)
-        ) and "dinov3" in pretrained:
-            if revision is not None:
-                warnings.warn(
-                    f"Ignoring revision and fine-tuning from DinoV3 {pretrained} checkpoint.",
-                    stacklevel=2,
-                )
+        elif pretrained is None:
+            warnings.warn(
+                "Using a randomly initialized model. You probably don't want to do this unless you have a very large dataset to pretrain on..",
+                stacklevel=2,
+            )
             model = RetinaNetHub(
-                weights=pretrained,
+                weights=None,
+                backbone_weights=None,
                 num_classes=self.config.num_classes,
                 nms_thresh=self.config.nms_thresh,
                 score_thresh=self.config.score_thresh,
                 label_dict=self.config.label_dict,
                 freeze_backbone=self.config.train.freeze_backbone,
             )
+        # Deepforest/tree, fine-tune from user, etc.
         else:
             model = RetinaNetHub.from_pretrained(
                 pretrained,

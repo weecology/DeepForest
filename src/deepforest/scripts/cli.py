@@ -26,6 +26,7 @@ def train(
     tensorboard: bool = False,
     trace: bool = False,
     compress: bool = False,
+    resume: str | None = None,
 ) -> bool:
     """Train a DeepForest model with configurable logging and experiment
     tracking.
@@ -63,7 +64,10 @@ def train(
         else:
             torch.cuda.memory._record_memory_history()
 
-    m = deepforest(config=config)
+    if "ckpt" in config.model.name and os.path.exists(config.model.name):
+        m = deepforest.load_from_checkpoint(config.model.name)
+    else:
+        m = deepforest(config=config)
 
     callbacks = []
     loggers = []
@@ -128,6 +132,7 @@ def train(
             save_dir=evaluation_path,
             compress=compress,
             every_n_epochs=config.validation.val_accuracy_interval,
+            run_evaluation=True,
         )
     )
 
@@ -161,7 +166,7 @@ def train(
 
     train_success = False
     try:
-        m.trainer.fit(m)
+        m.trainer.fit(m, ckpt_path=resume)
         train_success = True
     except Exception as e:
         warnings.warn(
