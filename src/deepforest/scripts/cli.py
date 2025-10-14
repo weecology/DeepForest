@@ -65,7 +65,9 @@ def train(
             torch.cuda.memory._record_memory_history()
 
     if "ckpt" in config.model.name and os.path.exists(config.model.name):
-        m = deepforest.load_from_checkpoint(config.model.name)
+        m = deepforest.load_from_checkpoint(
+            config.model.name, map_location=config.accelerator
+        )
     else:
         m = deepforest(config=config)
 
@@ -146,12 +148,15 @@ def train(
             save_top_k=1,
             save_last=True,
         )
+        # Using equals causes a lot of strife with Hydra, so use colon instead.
+        checkpoint_callback.CHECKPOINT_EQUALS_CHAR = ":"
         callbacks.append(checkpoint_callback)
 
     m.create_trainer(
         logger=loggers,
         callbacks=callbacks,
         gradient_clip_val=0.5,
+        accelerator=config.accelerator,
         strategy="ddp_find_unused_parameters_true"
         if torch.cuda.is_available()
         else "auto",

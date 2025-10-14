@@ -301,6 +301,9 @@ class deepforest(pl.LightningModule):
         else:
             enable_checkpointing = False
 
+        if self.config.accelerator == "cuda" and not torch.cuda.is_available():
+            self.config.accelerator = "auto"
+
         trainer_args = {
             "logger": logger,
             "max_epochs": self.config.train.epochs,

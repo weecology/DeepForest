@@ -124,6 +124,7 @@ class Config:
     persistent_workers: bool = True
 
     architecture: str = "retinanet"
+    backbone: str = "resnet50"
     num_classes: int = 1
     label_dict: dict[str, int] = field(default_factory=lambda: {"Tree": 0})
 

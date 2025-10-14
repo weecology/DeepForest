@@ -22,6 +22,7 @@ class RetinaNetHub(RetinaNet, PyTorchModelHubMixin):
         self,
         weights: str | None = None,
         backbone_weights: str | None = None,
+        backbone="resnet50",
         num_classes: int = 1,
         nms_thresh: float = 0.05,
         score_thresh: float = 0.5,
@@ -31,13 +32,17 @@ class RetinaNetHub(RetinaNet, PyTorchModelHubMixin):
         freeze_backbone: bool = False,
         **kwargs,
     ):
-        if isinstance(weights, str) and "dinov3" in weights:
-            backbone = Dinov3Model(
-                repo_id=weights,
-                use_conv_pyramid=use_conv_pyramid,
-                fpn_out_channels=fpn_out_channels,
-                frozen=freeze_backbone,
-            )
+        if backbone == "dinov3":
+            # Only pass repo_id if weights is not None to avoid overriding the default
+            dinov3_kwargs = {
+                "use_conv_pyramid": use_conv_pyramid,
+                "fpn_out_channels": fpn_out_channels,
+                "frozen": freeze_backbone,
+            }
+            if weights is not None:
+                dinov3_kwargs["repo_id"] = weights
+
+            backbone = Dinov3Model(**dinov3_kwargs)
             anchor_sizes = tuple(
                 (x, int(x * 2 ** (1.0 / 3)), int(x * 2 ** (2.0 / 3)))
                 for x in [32, 64, 128, 256]
@@ -48,7 +53,7 @@ class RetinaNetHub(RetinaNet, PyTorchModelHubMixin):
             # Can vary with model, e.g. sat does not use ImageNet
             image_mean = backbone.image_mean
             image_std = backbone.image_std
-        else:
+        elif backbone == "resnet50":
             backbone = torchvision.models.detection.retinanet_resnet50_fpn(
                 weights=weights, backbone_weights=backbone_weights
             ).backbone
@@ -61,6 +66,10 @@ class RetinaNetHub(RetinaNet, PyTorchModelHubMixin):
             # Explicitly use ImageNet
             image_mean = torch.tensor([0.485, 0.456, 0.406])
             image_std = torch.tensor([0.229, 0.224, 0.225])
+        else:
+            raise NotImplementedError(
+                f"Backbone {backbone} is unknown, or not supported. Use 'dinov3' or 'resnet50'"
+            )
 
         super().__init__(
             backbone=backbone,
@@ -101,6 +110,7 @@ class RetinaNetHub(RetinaNet, PyTorchModelHubMixin):
         If the target num_classes differs from the model's num_classes,
         then the model heads are reinitialized to compensate.
         """
+
         model = super().from_pretrained(pretrained_model_name_or_path, **kwargs)
 
         # Override class info if specified
@@ -265,6 +275,7 @@ class Model(BaseModel):
             model = RetinaNetHub(
                 weights=None,
                 backbone_weights=None,
+                backbone=self.config.backbone,
                 num_classes=self.config.num_classes,
                 nms_thresh=self.config.nms_thresh,
                 score_thresh=self.config.score_thresh,
@@ -276,6 +287,7 @@ class Model(BaseModel):
             model = RetinaNetHub.from_pretrained(
                 pretrained,
                 revision=revision,
+                backbone=self.config.backbone,
                 num_classes=self.config.num_classes,
                 label_dict=self.config.label_dict,
                 nms_thresh=self.config.nms_thresh,
