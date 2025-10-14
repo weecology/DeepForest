@@ -1,4 +1,4 @@
-"""Augmentation module for DeepForest using albumentations.
+"""Augmentation module for DeepForest using kornia.
 
 This module provides configurable augmentations for training and
 validation that can be specified through configuration files or direct
@@ -7,36 +7,48 @@ parameters.
 
 from typing import Any
 
-import albumentations as A
-from albumentations.pytorch import ToTensorV2
+import kornia.augmentation as K
+import torch
 from omegaconf import OmegaConf
 from omegaconf.dictconfig import DictConfig
 from omegaconf.listconfig import ListConfig
 
 _SUPPORTED_TRANSFORMS = {
-    "HorizontalFlip": (A.HorizontalFlip, {"p": 0.5}),
-    "VerticalFlip": (A.VerticalFlip, {"p": 0.5}),
-    "Downscale": (A.Downscale, {"scale_range": (0.25, 0.5), "p": 0.5}),
-    "RandomCrop": (A.RandomCrop, {"height": 200, "width": 200, "p": 0.5}),
-    "RandomSizedBBoxSafeCrop": (
-        A.RandomSizedBBoxSafeCrop,
-        {"height": 200, "width": 200, "p": 0.5},
+    "HorizontalFlip": (K.RandomHorizontalFlip, {"p": 0.5}),
+    "VerticalFlip": (K.RandomVerticalFlip, {"p": 0.5}),
+    "Downscale": (
+        K.RandomResizedCrop,
+        {"size": (200, 200), "scale": (0.25, 0.5), "p": 0.5},
     ),
-    "PadIfNeeded": (A.PadIfNeeded, {"min_height": 800, "min_width": 800, "p": 1.0}),
-    "Rotate": (A.Rotate, {"limit": 15, "p": 0.5}),
+    "RandomCrop": (K.RandomCrop, {"size": (200, 200), "p": 0.5}),
+    "RandomSizedBBoxSafeCrop": (
+        K.RandomResizedCrop,
+        {"size": (200, 200), "scale": (0.5, 1.0), "p": 0.5},
+    ),
+    "PadIfNeeded": (K.PadTo, {"size": (800, 800), "p": 1.0}),
+    "Rotate": (K.RandomRotation, {"degrees": 15, "p": 0.5}),
     "RandomBrightnessContrast": (
-        A.RandomBrightnessContrast,
-        {"brightness_limit": 0.2, "contrast_limit": 0.2, "p": 0.5},
+        K.ColorJitter,
+        {"brightness": 0.2, "contrast": 0.2, "p": 0.5},
     ),
     "HueSaturationValue": (
-        A.HueSaturationValue,
-        {"hue_shift_limit": 10, "sat_shift_limit": 10, "val_shift_limit": 10, "p": 0.5},
+        K.ColorJitter,
+        {"hue": 0.1, "saturation": 0.1, "p": 0.5},
     ),
-    "GaussNoise": (A.GaussNoise, {"var_limit": (5.0, 20.0), "p": 0.3}),
-    "Blur": (A.Blur, {"blur_limit": 2, "p": 0.3}),
-    "GaussianBlur": (A.GaussianBlur, {"blur_limit": 2, "p": 0.3}),
-    "MotionBlur": (A.MotionBlur, {"blur_limit": 2, "p": 0.3}),
-    "ZoomBlur": (A.ZoomBlur, {"max_factor": 1.05, "p": 0.3}),
+    "GaussNoise": (K.RandomGaussianNoise, {"std": 0.1, "p": 0.3}),
+    "Blur": (
+        K.RandomGaussianBlur,
+        {"kernel_size": (3, 3), "sigma": (0.1, 2.0), "p": 0.3},
+    ),
+    "GaussianBlur": (
+        K.RandomGaussianBlur,
+        {"kernel_size": (3, 3), "sigma": (0.1, 2.0), "p": 0.3},
+    ),
+    "MotionBlur": (
+        K.RandomMotionBlur,
+        {"kernel_size": 3, "angle": 45, "direction": 0.0, "p": 0.3},
+    ),
+    "ZoomBlur": (K.RandomAffine, {"degrees": 0, "scale": (1.0, 1.05), "p": 0.3}),
 }
 
 
@@ -51,8 +63,8 @@ def get_available_augmentations() -> list[str]:
 
 def get_transform(
     augmentations: str | list[str] | dict[str, Any] | None = None,
-) -> A.Compose:
-    """Create Albumentations transform for bounding boxes.
+) -> torch.nn.Module:
+    """Create Kornia transform for bounding boxes.
 
     Args:
         augmentations: Augmentation configuration:
@@ -62,10 +74,10 @@ def get_transform(
             - None: No augmentations
 
     Returns:
-        Composed albumentations transform
+        Composed kornia transform
 
     Examples:
-        >>> # Default behavior, returns a ToTensorV2 transform
+        >>> # Default behavior, returns a basic transform
         >>> transform = get_transform()
 
         >>> # Single augmentation
@@ -77,11 +89,10 @@ def get_transform(
         >>> # Augmentations with parameters
         >>> transform = get_transform(augmentations={
         ...                              "HorizontalFlip": {"p": 0.5},
-        ...                              "Downscale": {"scale_min": 0.25, "scale_max": 0.75}
+        ...                              "Downscale": {"scale": (0.25, 0.75)}
         ...                          })
     """
     transforms_list = []
-    bbox_params = None
 
     if augmentations is not None:
         augment_configs = _parse_augmentations(augmentations)
@@ -90,12 +101,12 @@ def get_transform(
             aug_transform = _create_augmentation(aug_name, aug_params)
             transforms_list.append(aug_transform)
 
-        bbox_params = A.BboxParams(format="pascal_voc", label_fields=["category_ids"])
-
-    # Always add ToTensorV2 at the end
-    transforms_list.append(ToTensorV2())
-
-    return A.Compose(transforms_list, bbox_params=bbox_params)
+    # Create a sequential container for all transforms
+    if transforms_list:
+        return torch.nn.Sequential(*transforms_list)
+    else:
+        # Return identity transform if no augmentations
+        return torch.nn.Identity()
 
 
 def _parse_augmentations(
@@ -151,15 +162,15 @@ def _parse_augmentations(
         raise ValueError(f"Unable to parse augmentation parameters: {augmentations}")
 
 
-def _create_augmentation(name: str, params: dict[str, Any]) -> A.BasicTransform | None:
-    """Create an albumentations transform by name with given parameters.
+def _create_augmentation(name: str, params: dict[str, Any]) -> torch.nn.Module | None:
+    """Create a kornia transform by name with given parameters.
 
     Args:
         name: Name of the augmentation
         params: Parameters to pass to the augmentation
 
     Returns:
-        Albumentations transform or None if name not recognized
+        Kornia transform or None if name not recognized
     """
 
     if name not in get_available_augmentations():

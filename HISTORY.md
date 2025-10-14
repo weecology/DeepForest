@@ -2,7 +2,26 @@
 
 ## Version 2.0.0 (Date: November 4, 2025)
 
+The major innovations are:
+
+1. **Migration from albumentations to kornia for data augmentations** - Replaced albumentations with kornia for better PyTorch integration and GPU acceleration
+
+Additional features and enhancements include:
+
+- **Enhancement:** Better PyTorch integration with kornia transforms
+- **Enhancement:** Simplified API without bbox parameter complexity
+- **Enhancement:** GPU acceleration support for augmentation transforms
+- **Enhancement:** More consistent with PyTorch ecosystem
+- **Documentation:** Updated augmentation documentation with kornia examples
+
 ### Breaking Changes - Deprecated Items Removed:
+
+**Augmentation Changes:**
+- **Migration from albumentations to kornia** - All augmentation transforms now use kornia instead of albumentations
+- Some augmentation parameter names have changed (e.g., `scale_range` → `scale`, `height/width` → `size`)
+- Custom transforms now use `torch.nn.Sequential` instead of `A.Compose`
+- No longer requires bbox parameter configuration
+- See migration guide in documentation for detailed parameter changes
 
 **Removed Functions:**
 - `xml_to_annotations()` - Use `utilities.read_pascal_voc(path)` or the general `utilities.read_file(path)`.
@@ -23,6 +42,7 @@
 - `raster_path` parameter from predict_tile()  - Use `path` parameter instead
 
 **Migration Guide:**
+- **Augmentations:** Update parameter names and use kornia transforms (see documentation)
 - Replace `xml_to_annotations(xml_path)` with `read_pascal_voc(xml_path)`
 - Replace `boxes_to_shapefile(df, root_dir)` with `image_to_geo_coordinates(df, root_dir)`
 - Replace `plot_points(image, points)` with `plot_results(results)`

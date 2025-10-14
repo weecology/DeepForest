@@ -34,12 +34,12 @@ authors = [
 dependencies = [
     "aiohttp",
     "aiolimiter",
-    "albumentations>=2.0.0",
     "faster-coco-eval>=1.6.8",
     "geopandas",
     "h5py",
     "huggingface_hub>=0.25.0",
     "hydra-core",
+    "kornia",
     "matplotlib",
     "numpy",
     "omegaconf",
