@@ -102,6 +102,7 @@ docs = [
 
 [project.scripts]
 deepforest = "deepforest.scripts.cli:main"
+deepforest-sam = "deepforest.scripts.sam:main"
 
 [build-system]
 requires = ["setuptools>=61.0", "wheel"]
