@@ -68,6 +68,11 @@ def train(
         m = deepforest.load_from_checkpoint(
             config.model.name, map_location=config.accelerator
         )
+
+        # Update config with user-provided, and ensure
+        # we overwrite on disk too
+        m.config = OmegaConf.merge(m.config, config)
+        m.save_hyperparameters({"config": m.config})
     else:
         m = deepforest(config=config)
 
