@@ -429,17 +429,27 @@ for tile in tiles_to_predict:
 
 Usually creating this object does not cost too much computational time.
 
-#### Training across multiple nodes on a HPC system
+#### Training across multiple nodes/GPUs
 
-We have heard that this error can appear when trying to deep copy the pytorch lightning module. The trainer object is not pickleable.
-For example, on multi-gpu environments when trying to scale the deepforest model the entire module is copied leading to this error.
-Setting the trainer object to None and directly using the pytorch object is a reasonable workaround.
+If you have access to a HPC system or cluster, or simply a powerful desktop with multiple GPUs locally, you may want to take advantage of them. Fortunately, DeepForest uses Lightning which handles most of the distributed processing issues for you. Let's call the number of nodes "N" and the number of GPUs per node, "M". A common setup is a single node with up to `M=8` GPUs, but you may need to split procesing between machines, in which case you'd have multiple nodes.
 
-Replace
+If you're using a job manager like SLURM, you can express the number of GPUs via a configuration and the "allowed" device IDs will be passed to Lightning. On a local machine, Lightning will attempt to acquire whatever resources it can, unless you override and specify the `devices` argument, which can be a list. **On a managed cluster, do not do this: rely on 'auto' and let the scheduler to inform what GPUs are available.** The reason is that some clusters are unable to isolate GPU devices to jobs like they can with CPU cores, and you can interfere with other people's jobs if you try to acquire a device that wasn't allocated to you.
+
+In most cases the only thing you need to set is the training strategy to be "DDP" (distributed-data parallel). Pytorch has a technical document here, but we provide a brief summary here with some practical tips. When training starts, `NM` copies of your program will be created. In DDP, the training dataset is sharded/split between these processes, so each epoch will be `len(dataset)/batch_size/NM` steps. At the end of each forward pass, all the processes are synchronized, the g are combined
+
 
 ```python
 m = main.deepforest()
-m.create_trainer()
+ v
+        logger=loggers,
+        callbacks=callbacks,
+        gradient_clip_val=0.5,
+        accelerator=config.accelerator,
+        strategy="ddp_find_unused_parameters_true"
+        if torch.cuda.is_available()
+        else "auto",
+        devices='auto'
+    )
 m.trainer.fit(m)
 ```
 
@@ -449,14 +459,16 @@ with
 m.trainer = None
 from pytorch_lightning import Trainer
 
-    trainer = Trainer(
-        accelerator="gpu",
-        strategy="ddp",
-        devices=model.config.devices,
-        enable_checkpointing=False,
-        max_epochs=model.config.train.epochs,
-        logger=comet_logger
-    )
+trainer = Trainer(
+    accelerator="gpu",
+    strategy="ddp_find_unused_parameters_true",
+    devices=model.config.devices,
+    enable_checkpointing=False,
+    max_epochs=model.config.train.epochs,
+    logger=comet_logger
+)
+
+
 trainer.fit(m)
 ```
 
