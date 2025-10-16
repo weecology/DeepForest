@@ -2,8 +2,11 @@
 import importlib
 import os
 import warnings
+from pathlib import Path
 
+import cv2
 import geopandas as gpd
+import matplotlib.pyplot as pyplot
 import numpy as np
 import pandas as pd
 import pytorch_lightning as pl
@@ -19,6 +22,7 @@ from torchmetrics.detection import IntersectionOverUnion, MeanAveragePrecision
 from deepforest import evaluate as evaluate_iou
 from deepforest import predict, utilities
 from deepforest.datasets import prediction, training
+from evaluate import create_sfm_model, align_and_delete
 
 
 class deepforest(pl.LightningModule):
@@ -1071,3 +1075,118 @@ class deepforest(pl.LightningModule):
                         self.log(key, value)
                     except MisconfigurationException:
                         pass
+
+    def predict_unique(image_dir, save_dir, strategy='highest-score', visualization=True):
+        """
+        High-level function to get unique predictions from a directory of overlapping images.
+
+        Args:
+            image_dir (str): Path to the directory containing input images.
+                Supported formats: .tif, .png, .jpg
+            save_dir (str): Path to a directory for saving intermediate SfM files.
+                Will be created if it doesn't exist.
+            strategy (str, optional): The strategy for deduplication. 
+                Options: 'highest-score', 'left-hand', 'right-hand'. 
+                Defaults to 'highest-score'.
+            visualization (bool, optional): If True, shows a plot comparing original 
+                and final predictions. Blue boxes = original, Pink boxes = final.
+                Defaults to True.
+
+        Returns:
+            pandas.DataFrame: A DataFrame containing the final, deduplicated predictions
+            with columns: ['xmin', 'ymin', 'xmax', 'ymax', 'score', 'label', 'image_path']
+            
+        Note:
+            This function requires additional dependencies: pycolmap, hloc, torchvision.
+            The SfM feature extraction can be computationally intensive for large images.
+        """
+        # 1. SETUP
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        print(f"Using device: {device}")
+
+        model = deepforest()
+        model.use_release()
+        model.to(device)
+        
+        # Ensure the save directory exists
+        os.makedirs(save_dir, exist_ok=True)
+
+        image_files = sorted([f for f in os.listdir(image_dir) if f.lower().endswith(('.tif', '.png', '.jpg'))])
+        
+        print(f"Found {len(image_files)} images to process: {image_files}")
+        if not image_files:
+            raise FileNotFoundError(f"No images found in directory: {image_dir}")
+
+        # --- 2. PRE-PROCESSING: CREATE SFM FEATURES ---
+        print("\nStep 1: Creating SfM features...")
+        create_sfm_model(
+            image_dir=Path(image_dir),
+            output_path=Path(save_dir),
+            references=image_files,
+            overwrite=True
+        )
+        print("SfM features created.")
+
+        # 3. PREDICTION: GET INITIAL BOXES
+        print("\nStep 2: Running prediction on all images...")
+        all_predictions = []
+        for image_file in image_files:
+            print(f"Predicting on: {image_file}")
+            image_path = os.path.join(image_dir, image_file)
+            preds = model.predict_image(path=image_path, return_plot=False)
+            if preds is not None and not preds.empty:
+                preds["image_path"] = os.path.basename(image_file)
+                all_predictions.append(preds)
+
+        if not all_predictions:
+            raise ValueError("No predictions were made on any images. Cannot proceed.")
+            
+        predictions = pd.concat(all_predictions, ignore_index=True)
+        print(f"Found {len(predictions)} total predictions before filtering.")
+
+        # 4. DEDUPLICATION
+        print("\nStep 3: Resolving overlaps using SfM...")
+        matching_file = os.path.join(save_dir, "matches.h5")
+
+        final_predictions = align_and_delete(
+            predictions=predictions,
+            matching_h5_file=matching_file,
+            device=device,
+            strategy=strategy
+        )
+        print(f"Overlap resolution complete. Final unique predictions: {len(final_predictions)}")
+
+        # 5. VISUALIZATION
+        if visualization and not final_predictions.empty:
+            print("\nStep 4: Generating plots...")
+            num_images = len(image_files)
+            # Adjust subplot grid to fit all images
+            cols = int(np.ceil(np.sqrt(num_images)))
+            rows = int(np.ceil(num_images / cols))
+            fig, axs = pyplot.subplots(rows, cols, figsize=(cols * 8, rows * 8))
+            axs = axs.flatten()
+
+            for i, image_path in enumerate(image_files):
+                full_image_path = os.path.join(image_dir, image_path)
+                image = cv2.imread(full_image_path)
+                
+                original_image_predictions = predictions[predictions["image_path"] == image_path]
+                for _, row in original_image_predictions.iterrows():
+                    cv2.rectangle(image, (int(row["xmin"]), int(row["ymin"])), (int(row["xmax"]), int(row["ymax"])), (255, 0, 0), 7) # Blue for original
+                
+                final_image_predictions_plot = final_predictions[final_predictions["image_path"] == image_path]
+                for _, row in final_image_predictions_plot.iterrows():
+                    cv2.rectangle(image, (int(row["xmin"]), int(row["ymin"])), (int(row["xmax"]), int(row["ymax"])), (182, 192, 255), 5) # Pink for final
+                    
+                axs[i].imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+                axs[i].set_title(f"Final predictions for {image_path}")
+                axs[i].axis('off')
+            
+            # Hide any unused subplots
+            for j in range(i + 1, len(axs)):
+                axs[j].axis('off')
+
+            pyplot.tight_layout()
+            pyplot.show()
+
+        return final_predictions
