@@ -17,3 +17,10 @@ build:
 
 sphinx:
   configuration: docs/conf.py
+
+versions:
+  only:
+    - latest
+    - stable
+    - v1.5.2
+  default: stable
