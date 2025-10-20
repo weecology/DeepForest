@@ -314,7 +314,18 @@ def evaluate(
     Returns:
         None
     """
-    m = deepforest(config=config)
+    if "ckpt" in config.model.name and os.path.exists(config.model.name):
+        m = deepforest.load_from_checkpoint(
+            config.model.name, map_location=config.accelerator
+        )
+
+        # Update config with user-provided, and ensure
+        # we overwrite on disk too
+        m.config = OmegaConf.merge(m.config, config)
+        m.save_hyperparameters({"config": m.config})
+    else:
+        m = deepforest(config=config)
+
     m.create_trainer(logger=False)
 
     # Use validation CSV from config if not provided
