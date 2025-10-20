@@ -28,11 +28,11 @@ class BaseModel:
         config: DeepForest configuration object
     """
 
-    def __init__(self, config):
+    def __init__(self, config) -> None:
         # Check for required properties and formats
         self.config = config
 
-    def create_model(self):
+    def create_model(self) -> torch.nn.Module:
         """Create model from configuration.
 
         Must be implemented by subclasses to return a PyTorch nn.Module.
@@ -43,7 +43,7 @@ class BaseModel:
             "Take in args and return a pytorch nn module."
         )
 
-    def check_model(self):
+    def check_model(self) -> None:
         """Validate model follows DeepForest guidelines.
 
         Tests model with dummy data to ensure proper input/output
@@ -66,7 +66,15 @@ class BaseModel:
         assert model_keys == ["boxes", "labels", "scores"]
 
 
-def simple_resnet_50(num_classes=2):
+def simple_resnet_50(num_classes: int = 2) -> torch.nn.Module:
+    """Create a simple ResNet-50 model for classification.
+
+    Args:
+        num_classes: Number of output classes for the final layer
+
+    Returns:
+        torch.nn.Module: ResNet-50 model with modified final layer
+    """
     m = models.resnet50(weights=models.ResNet50_Weights.DEFAULT)
     num_ftrs = m.fc.in_features
     m.fc = torch.nn.Linear(num_ftrs, num_classes)
