@@ -1,6 +1,6 @@
 [project]
 name = "deepforest"
-version = "1.5.3-dev0"
+version = "2.0.0rc1"
 description = "Platform for individual detection from airborne remote sensing including trees, birds, and livestock. Supports multiple detection models, adding models for species classification, and easy fine tuning to particular ecosystems."
 readme = "README.md"
 requires-python = ">=3.10,<3.13"

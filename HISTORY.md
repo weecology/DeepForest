@@ -1,8 +1,9 @@
 # DeepForest Changelog
 
-## Version 2.0.0 (Date: TBD)
+## Version 2.0.0rc1 (Date: October 21, 2025)
 
-### Breaking Changes - Deprecated Items Removed:
+### Release Candidate 1 - Beta Release
+#### Breaking Changes - Deprecated Items Removed:
 
 **Removed Functions:**
 - `xml_to_annotations()` - Use `utilities.read_pascal_voc(path)` or the general `utilities.read_file(path)`.

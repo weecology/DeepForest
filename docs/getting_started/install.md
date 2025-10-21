@@ -36,8 +36,28 @@ pip install .
 ```bash
 git clone https://github.com/weecology/DeepForest.git
 cd DeepForest
-uv sync --all-extras -dev
+uv sync --all-extras --dev
 ```
+
+## Development Installation
+
+For developers who want to contribute to DeepForest, install the package in development mode with all dependencies:
+
+```bash
+git clone https://github.com/weecology/DeepForest.git
+cd DeepForest
+pip install .'[dev,docs]'
+```
+
+Or using uv:
+
+```bash
+git clone https://github.com/weecology/DeepForest.git
+cd DeepForest
+uv sync --all-extras --dev
+```
+
+This installs DeepForest in editable mode with development and documentation dependencies.
 
 ## GPU support
 
