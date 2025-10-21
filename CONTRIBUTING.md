@@ -1,6 +1,6 @@
 # Developer's Guide
 
-Depends on Python 3.9+
+Depends on Python 3.10+
 
 ## Getting started
 
@@ -28,12 +28,12 @@ Depends on Python 3.9+
 
 4. Check or confirm your settings using `git remote -v`
 
-   ```text
+```bash
    origin git@github.com:[your user name]/DeepForest.git (fetch)
    origin git@github.com:[your user name]/DeepForest.git (push)
    upstream https://github.com/weecology/DeepForest.git (fetch)
    upstream https://github.com/weecology/DeepForest.git (push)
-   ```
+```
 
 5. Install the package from the main directory.
 
@@ -70,26 +70,85 @@ $ pip install . --upgrade  # or python setup.py install
 $ pytest -v
 ```
 
-### Checking and fixing code style
+### Code Quality and Style
 
-#### Using Yapf
+We use [pre-commit](https://pre-commit.com/) to ensure consistent code quality and style across the project. Pre-commit runs automated checks and fixes before each commit to catch issues early.
 
-We use [yapf](https://github.com/google/yapf) for code formatting and style checking.
+#### Setting up pre-commit
 
-The easiest way to make sure your code is formatted correctly is to integrate it into your editor.
-See [EDITOR SUPPORT](https://github.com/google/yapf/blob/main/EDITOR%20SUPPORT.md).
+1. **Install pre-commit** (if not already installed):
+   ```bash
+   pip install pre-commit
+   ```
 
-You can also run yapf from the command line to cleanup the style in your changes:
+2. **Install the pre-commit hooks** in your local repository:
+   ```bash
+   pre-commit install
+   ```
+
+3. **Run pre-commit on all files** (optional, for initial setup):
+   ```bash
+   pre-commit run --all-files
+   ```
+
+#### What pre-commit does
+
+Our pre-commit configuration (`.pre-commit-config.yaml`) includes:
+
+- **Code formatting**: Uses [Ruff](https://docs.astral.sh/ruff/) for fast Python linting and formatting
+- **Import sorting**: Automatically sorts and organizes imports
+- **Docstring formatting**: Uses [docformatter](https://github.com/PyCQA/docformatter) to format docstrings
+- **Notebook formatting**: Formats Jupyter notebooks in the documentation
+- **File checks**: Ensures files end with newlines, removes trailing whitespace, checks YAML/JSON syntax
+- **Large file detection**: Prevents accidentally committing large files
+
+#### Running pre-commit manually
+
+You can run pre-commit checks manually at any time:
 
 ```bash
-yapf -i --recursive src/deepforest/ --style=.style.yapf
+# Run on staged files only
+pre-commit run
+
+# Run on all files
+pre-commit run --all-files
+
+# Run a specific hook
+pre-commit run ruff
 ```
 
-If the style tests fail on a pull request, running the above command is the easiest way to fix this.
+#### Fixing pre-commit issues
 
-#### Using pre-commit
+Most pre-commit hooks will automatically fix issues for you. If a hook fails:
 
-We configure all our checks using the `.pre-commit-config.yaml` file. To verify your code styling before committing, you should run `pre-commit install` to set up the hooks, followed by `pre-commit run` to execute them. This will apply the formatting rules specified in the `.style.yapf` file. For additional information, please refer to the [pre-commit documentation](https://pre-commit.com/index.html).
+1. **Check the output** - pre-commit will show you what needs to be fixed
+2. **Re-run the hook** - many hooks can auto-fix issues:
+   ```bash
+   pre-commit run --all-files
+   ```
+3. **Stage the fixed files** and commit again:
+   ```bash
+   git add .
+   git commit -m "Your commit message"
+   ```
+
+#### Bypassing pre-commit (not recommended)
+
+If you need to bypass pre-commit for a specific commit (not recommended for regular development):
+
+```bash
+git commit --no-verify -m "Your commit message"
+```
+
+#### Editor integration
+
+For the best development experience, consider integrating these tools directly into your editor:
+
+- **VS Code**: Install the Ruff extension for real-time linting and formatting
+- **PyCharm**: Configure Ruff as an external tool
+- **Vim/Neovim**: Use plugins like `nvim-lspconfig` with the Ruff language server
+
+For more information, see the [pre-commit documentation](https://pre-commit.com/).
 
 ## Documentation
 
@@ -175,7 +234,7 @@ The model will be uploaded to [https://huggingface.co/weecology/[model-name]](ht
 
 ### CropModel
 
-```python```
+```python
 from deepforest.model import CropModel
 
 crop_model = CropModel()
@@ -183,6 +242,7 @@ crop_model.push_to_hub("weecology/cropmodel-deadtrees")
 
 # Reload it later
 crop_model.from_pretrained("Weecology/cropmodel-deadtrees")
+
 ```
 
 Please name the cropmodel based on what is being classified.
