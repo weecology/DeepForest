@@ -1,2 +1,2 @@
-__version__ = "1.5.3-dev0"
+__version__ = "2.0.0rc1"
 # Version updated using bump-my-version

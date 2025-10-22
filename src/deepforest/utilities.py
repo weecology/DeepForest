@@ -146,7 +146,7 @@ def read_pascal_voc(xml_path):
     return annotations
 
 
-def convert_point_to_bbox(gdf, buffer_size):
+def convert_point_to_bbox(gdf: gpd.GeoDataFrame, buffer_size: float) -> gpd.GeoDataFrame:
     """Convert an input point type annotation to a bounding box by buffering
     the point with a fixed size.
 
@@ -173,12 +173,12 @@ def convert_point_to_bbox(gdf, buffer_size):
 
 
 def shapefile_to_annotations(
-    shapefile,
-    rgb=None,
-    root_dir=None,
-    buffer_size=None,
-    convert_point=False,
-):
+    shapefile: str | gpd.GeoDataFrame,
+    rgb: str | None = None,
+    root_dir: str | None = None,
+    buffer_size: float | None = None,
+    convert_point: bool = False,
+) -> gpd.GeoDataFrame:
     """Convert shapefile annotations to DeepForest format.
 
     Args:
@@ -399,7 +399,12 @@ def read_coco(json_file):
         return pd.DataFrame({"image_path": filenames, "geometry": polygons})
 
 
-def read_file(input, root_dir=None, image_path=None, label=None):
+def read_file(
+    input: str | pd.DataFrame,
+    root_dir: str | None = None,
+    image_path: str | None = None,
+    label: str | None = None,
+) -> gpd.GeoDataFrame:
     """Read file and return GeoDataFrame.
 
     Args:

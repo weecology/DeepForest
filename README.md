@@ -7,7 +7,7 @@
 [![Version](https://img.shields.io/pypi/v/DeepForest.svg)](https://pypi.python.org/pypi/DeepForest)
 [![PyPI - Downloads](https://img.shields.io/pypi/dm/deepforest)](https://pypi.python.org/pypi/DeepForest)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.2538143.svg)](https://doi.org/10.5281/zenodo.2538143)
-[![Python Version](https://img.shields.io/badge/python-%3E%3D3.8%2C%20%3C3.13-blue.svg)](https://www.python.org/downloads/)
+[![Python Version](https://img.shields.io/badge/python-%3E%3D3.10%2C%20%3C3.13-blue.svg)](https://www.python.org/downloads/)
 [![Citations](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/weecology/DeepForest/refs/heads/main/citation_count.json)](https://scholar.google.com/scholar?hl=en&as_sdt=40005&sciodt=0,10&cites=4018186955550406830&scipsc=&q=)
 
 ![](www/MEE_Figure4.png)

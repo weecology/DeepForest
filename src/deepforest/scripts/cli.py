@@ -10,6 +10,11 @@ from deepforest.visualize import plot_results
 
 
 def train(config: DictConfig) -> None:
+    """Train a DeepForest model with the given configuration.
+
+    Args:
+        config: Hydra configuration object containing training parameters
+    """
     m = deepforest(config=config)
     m.trainer.fit(m)
 
@@ -49,6 +54,11 @@ def predict(
 
 
 def main():
+    """Main CLI entry point for DeepForest.
+
+    Provides subcommands for training, prediction, and configuration
+    management.
+    """
     parser = argparse.ArgumentParser(description="DeepForest CLI")
     subparsers = parser.add_subparsers(dest="command")
 
