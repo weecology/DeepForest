@@ -239,7 +239,36 @@ class FromCSVFile(PredictionDataset):
     def prepare_items(self):
         self.annotations = pd.read_csv(self.csv_file)
         self.image_names = self.annotations.image_path.unique()
-        self.image_paths = [os.path.join(self.root_dir, x) for x in self.image_names]
+        # Use basename to handle absolute paths from other systems
+        candidate_paths = [
+            os.path.join(self.root_dir, os.path.basename(x)) for x in self.image_names
+        ]
+
+        # Validate that images exist
+        self.image_paths = []
+        missing_images = []
+        for path in candidate_paths:
+            if os.path.exists(path):
+                self.image_paths.append(path)
+            else:
+                missing_images.append(path)
+
+        # Warn about missing images
+        if missing_images:
+            print(f"Warning: {len(missing_images)} images not found:")
+            for path in missing_images[:5]:  # Show first 5
+                print(f"  - {path}")
+            if len(missing_images) > 5:
+                print(f"  ... and {len(missing_images) - 5} more")
+
+        # Ensure we have at least some valid images
+        assert (
+            len(self.image_paths) > 0
+        ), f"No valid images found! Checked {len(candidate_paths)} paths in {self.root_dir}"
+
+        print(
+            f"Found {len(self.image_paths)} valid images out of {len(candidate_paths)} in CSV"
+        )
 
     def __len__(self):
         return len(self.image_paths)
