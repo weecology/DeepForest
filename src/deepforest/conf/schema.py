@@ -106,6 +106,7 @@ class CropModelConfig:
     lr: float = 0.0001
     scheduler: SchedulerConfig = field(default_factory=SchedulerConfig)
     balance_classes: bool = False
+    resize: list[int] = field(default_factory=lambda: [224, 224])
 
 
 @dataclass

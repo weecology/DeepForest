@@ -110,3 +110,6 @@ cropmodel:
             min_lr: 0
             eps: 1.0e-08
     balance_classes: False
+    resize:
+        - 224
+        - 224
