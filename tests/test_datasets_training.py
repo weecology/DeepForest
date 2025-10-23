@@ -7,8 +7,7 @@ import pandas as pd
 import pytest
 import torch
 
-from deepforest import get_data, main
-from deepforest import utilities
+from deepforest import get_data, main, utilities
 from deepforest.datasets.training import BoxDataset
 
 
@@ -62,10 +61,10 @@ def test_single_class_with_empty(tmpdir):
     df.loc[df.image_path == "OSBS_029.tif", "xmax"] = 0
     df.loc[df.image_path == "OSBS_029.tif", "ymax"] = 0
 
-    df.to_csv("{}_test_empty.csv".format(tmpdir))
+    df.to_csv(f"{tmpdir}_test_empty.csv")
 
     root_dir = os.path.dirname(get_data("OSBS_029.png"))
-    ds = BoxDataset(csv_file="{}_test_empty.csv".format(tmpdir),
+    ds = BoxDataset(csv_file=f"{tmpdir}_test_empty.csv",
                              root_dir=root_dir,
                              label_dict={"Tree": 0})
     assert len(ds) == 2
@@ -142,7 +141,7 @@ def test_multi_image_warning():
     df1 = pd.read_csv(csv_file1)
     df2 = pd.read_csv(csv_file2)
     df = pd.concat([df1, df2])
-    csv_file = "{}/multiple.csv".format(tmpdir)
+    csv_file = f"{tmpdir}/multiple.csv"
     df.to_csv(csv_file)
 
     root_dir = os.path.dirname(csv_file1)
@@ -194,3 +193,54 @@ def test_BoxDataset_validate_labels():
     # Invalid case: CSV labels are not in label_dict
     with pytest.raises(ValueError, match="Labels \\['Tree'\\] are missing from label_dict"):
         BoxDataset(csv_file=csv_file, root_dir=root_dir, label_dict={"Bird": 0})
+
+
+def test_BoxDataset_with_projected_shapefile(tmpdir, raster_path):
+    """Test that BoxDataset can load a shapefile with projected coordinates and converts to pixel coordinates"""
+    import geopandas as gpd
+
+    # Get the raster to extract CRS and bounds
+    import rasterio
+    from shapely import geometry
+    with rasterio.open(raster_path) as src:
+        raster_crs = src.crs
+        bounds = src.bounds
+        left, bottom, right, top = bounds
+        resolution = src.res[0]
+
+    # Create sample geometry in projected coordinates (within raster bounds)
+    # Use coordinates that are well within the raster bounds to avoid edge issues
+    sample_x = left + (right - left) * 0.3
+    sample_y = bottom + (top - bottom) * 0.3
+    box_size = resolution * 5  # 5 pixels in projected coordinates
+
+    sample_geometry = [
+        geometry.box(sample_x, sample_y, sample_x + box_size, sample_y + box_size),
+        geometry.box(sample_x + box_size * 2, sample_y + box_size * 2, sample_x + box_size * 3, sample_y + box_size * 3)
+    ]
+    labels = ["Tree", "Tree"]
+    image_path = os.path.basename(raster_path)
+
+    df = pd.DataFrame({"geometry": sample_geometry, "label": labels, "image_path": image_path})
+    gdf = gpd.GeoDataFrame(df, geometry="geometry", crs=raster_crs)
+
+    # Save as shapefile
+    shapefile_path = os.path.join(tmpdir, "annotations.shp")
+    gdf.to_file(shapefile_path)
+
+    # Load with BoxDataset
+    root_dir = os.path.dirname(raster_path)
+    ds = BoxDataset(csv_file=shapefile_path, root_dir=root_dir, label_dict={"Tree": 0})
+
+    # Verify dataset loaded successfully
+    assert len(ds) == 1  # One unique image
+
+    # Get one sample
+    image, targets, path = ds[0]
+
+    # Verify boxes are in pixel coordinates (should be positive and reasonable)
+    # After geo_to_image_coordinates conversion, values should be in pixel space
+    boxes = targets["boxes"]
+    assert torch.all(boxes >= 0), "Boxes should have non-negative coordinates in pixel space"
+    assert torch.all(boxes[:, 2] > boxes[:, 0]), "xmax should be greater than xmin"
+    assert torch.all(boxes[:, 3] > boxes[:, 1]), "ymax should be greater than ymin"

@@ -3,13 +3,13 @@
 import os
 
 import numpy as np
-import pandas as pd
 import shapely
 import torch
 from PIL import Image
 from torch.utils.data import Dataset
 from torchvision.datasets import ImageFolder
 
+from deepforest import utilities
 from deepforest.augmentations import get_transform
 
 
@@ -55,7 +55,7 @@ class BoxDataset(Dataset):
                 - "boxes": numpy.ndarray of shape (N, 4)
                 - "labels": numpy.ndarray of shape (N,)
         """
-        self.annotations = pd.read_csv(csv_file)
+        self.annotations = utilities.read_file(csv_file, root_dir=root_dir)
         self.root_dir = root_dir
 
         # Initialize label_dict with default if None
@@ -126,8 +126,12 @@ class BoxDataset(Dataset):
         targets = {}
 
         if "geometry" in image_annotations.columns:
+            # Handle both shapely geometry objects and WKT strings
             targets["boxes"] = np.array(
-                [shapely.wkt.loads(x).bounds for x in image_annotations.geometry]
+                [
+                    x.bounds if hasattr(x, "bounds") else shapely.wkt.loads(x).bounds
+                    for x in image_annotations.geometry
+                ]
             ).astype("float32")
         else:
             targets["boxes"] = image_annotations[
