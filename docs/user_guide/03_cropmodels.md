@@ -132,6 +132,33 @@ backbone = resnet101(weights='DEFAULT')
 crop_model = CropModel(num_classes=2, model=backbone)
 ```
 
+## Configuring Image Resize
+
+The CropModel can be configured to resize input images to different dimensions. By default, images are resized to 224x224 pixels, but this can be customized through the config:
+
+```python
+from deepforest.model import CropModel
+
+# Using config_args to set custom resize dimensions
+crop_model = CropModel(config_args={"resize": [300, 300]})
+```
+
+You can also specify this in a config file:
+
+```yaml
+cropmodel:
+    batch_size: 4
+    num_workers: 0
+    lr: 0.0001
+    resize:
+        - 300
+        - 300
+```
+
+This is particularly useful when using custom models that expect different input sizes or when working with high-resolution imagery where preserving more detail is important.
+
+## Custom Transforms
+
 One detail to keep in mind is that the preprocessing transform will differ for backbones. Make sure to check the final lines:
 
 ```python

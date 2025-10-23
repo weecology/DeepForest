@@ -92,6 +92,35 @@ def test_crop_model_custom_transform(crop_model):
     output = crop_model.forward(x)
     assert output.shape == (4, 2)
 
+def test_crop_model_configurable_resize():
+    """Test that CropModel resize dimensions can be configured"""
+    # Test with default resize dimensions
+    default_model = model.CropModel()
+    default_model.create_model(num_classes=2)
+    transform = default_model.get_transform(augmentations=None)
+
+    # Check that default resize is [224, 224]
+    resize_transform = [t for t in transform.transforms if isinstance(t, transforms.Resize)]
+    assert len(resize_transform) == 1
+    assert resize_transform[0].size == [224, 224]
+
+    # Test with custom resize dimensions
+    custom_config = {"resize": [300, 300]}
+    custom_model = model.CropModel(config_args=custom_config)
+    custom_model.create_model(num_classes=2)
+    custom_transform = custom_model.get_transform(augmentations=None)
+
+    # Check that custom resize is applied
+    custom_resize_transform = [t for t in custom_transform.transforms if isinstance(t, transforms.Resize)]
+    assert len(custom_resize_transform) == 1
+    assert custom_resize_transform[0].size == [300, 300]
+
+    # Test forward pass with custom resize
+    x = torch.rand(4, 3, 300, 300)
+    output = custom_model.forward(x)
+    assert output.shape == (4, 2)
+
+
 def test_crop_model_load_checkpoint(tmpdir, crop_model):
     """Test loading crop model from checkpoint with different numbers of classes"""
     for num_classes in [2, 5]:

@@ -267,12 +267,18 @@ def _predict_crop_model_(
     results = results[results.xmin != results.xmax]
     results = results[results.ymin != results.ymax]
 
+    # Get resize dimensions from crop_model config if not using custom transform
+    resize = None
+    if transform is None and hasattr(crop_model, "config"):
+        resize = crop_model.config.get("cropmodel", {}).get("resize", [224, 224])
+
     # Create dataset
     bounding_box_dataset = cropmodel.BoundingBoxDataset(
         results,
         root_dir=os.path.dirname(path),
         transform=transform,
         augmentations=augmentations,
+        resize=resize,
     )
 
     # Create dataloader
