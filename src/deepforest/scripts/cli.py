@@ -274,19 +274,34 @@ def evaluate(
     size: int | None = None,
     experiment_id: str | None = None,
     output_path: str | None = None,
+    save_predictions: str | None = None,
 ) -> None:
     """Run evaluation on ground truth annotations, optionally logging to Comet.
+
+    This function evaluates model predictions against ground truth annotations.
+    There are two workflows:
+
+    1. Provide existing predictions via --predictions-csv:
+       deepforest evaluate ground_truth.csv --predictions-csv predictions.csv
+
+    2. Generate predictions during evaluation:
+       deepforest evaluate ground_truth.csv --root-dir /path/to/images
+
+       Optionally save generated predictions with --save-predictions:
+       deepforest evaluate ground_truth.csv --root-dir /path/to/images \\
+           --save-predictions predictions.csv -o eval_results.csv
 
     Args:
         config (DictConfig): Hydra configuration.
         csv_file (Optional[str]): Path to ground truth CSV file with annotations. If None, uses config.validation.csv_file.
         root_dir (Optional[str]): Root directory containing images. If None, uses config value or directory of csv_file.
-        predictions_csv (Optional[str]): Path to predictions CSV file. If None, generates predictions.
+        predictions_csv (Optional[str]): Path to existing predictions CSV file. If None, generates predictions.
         iou_threshold (Optional[float]): IoU threshold for evaluation. If None, uses config value.
         batch_size (Optional[int]): Batch size for prediction. If None, uses config value.
         size (Optional[int]): Size to resize images for prediction. If None, no resizing.
         experiment_id (Optional[str]): Comet experiment ID to log results to.
-        output_path (Optional[str]): Path to save evaluation results CSV.
+        output_path (Optional[str]): Path to save evaluation metrics summary CSV.
+        save_predictions (Optional[str]): Path to save generated predictions CSV. Only used when predictions_csv is None.
 
     Returns:
         None
@@ -317,6 +332,21 @@ def evaluate(
         size=size,
         predictions=predictions_csv,
     )
+
+    # Save generated predictions if requested and they were generated (not loaded from file)
+    if save_predictions is not None and predictions_csv is None:
+        predictions_df = results.get("predictions")
+        if predictions_df is not None and not predictions_df.empty:
+            if os.path.dirname(save_predictions):
+                os.makedirs(os.path.dirname(save_predictions), exist_ok=True)
+            predictions_df.to_csv(save_predictions, index=False)
+            print(f"\nGenerated predictions saved to: {save_predictions}")
+        else:
+            print("\nWarning: No predictions to save (predictions dataframe is empty)")
+    elif save_predictions is not None and predictions_csv is not None:
+        print(
+            "\nNote: --save-predictions is ignored when --predictions-csv is provided (predictions already exist)"
+        )
 
     # Print results to console
     print("Evaluation Results:")
@@ -457,7 +487,7 @@ def main():
     # Evaluate subcommand
     evaluate_parser = subparsers.add_parser(
         "evaluate",
-        help="Run evaluation on ground truth annotations",
+        help="Run evaluation on ground truth annotations. Use --predictions-csv to provide existing predictions, or omit to generate them.",
         epilog="Any remaining arguments <key>=<value> will be passed to Hydra to override the current config.",
     )
     evaluate_parser.add_argument(
@@ -465,10 +495,17 @@ def main():
         nargs="?",
         help="Path to ground truth CSV file (optional if specified in config)",
     )
-    evaluate_parser.add_argument("--root-dir", help="Root directory containing images")
+    evaluate_parser.add_argument(
+        "--root-dir",
+        help="Root directory containing images (required when generating predictions)",
+    )
     evaluate_parser.add_argument(
         "--predictions-csv",
-        help="Path to predictions CSV file (if not provided, predictions will be generated)",
+        help="Path to existing predictions CSV file. If not provided, predictions will be generated.",
+    )
+    evaluate_parser.add_argument(
+        "--save-predictions",
+        help="Path to save generated predictions CSV (only used when --predictions-csv is not provided)",
     )
     evaluate_parser.add_argument(
         "--iou-threshold", type=float, help="IoU threshold for evaluation"
@@ -483,7 +520,7 @@ def main():
         "--experiment-id", help="Comet experiment ID to log results to"
     )
     evaluate_parser.add_argument(
-        "-o", "--output", help="Path to save evaluation results CSV"
+        "-o", "--output", help="Path to save evaluation metrics summary CSV"
     )
 
     # Show config subcommand
@@ -537,6 +574,7 @@ def main():
             size=args.size,
             experiment_id=args.experiment_id,
             output_path=args.output,
+            save_predictions=args.save_predictions,
         )
 
     elif args.command == "config":
