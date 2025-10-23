@@ -1,5 +1,11 @@
 # DeepForest Changelog
 
+## Version 2.0.0rc2 (Date: October 23, 2025)
+
+**Internal / Developer Updates:**
+- Fixed publish pipeline issues
+- No user-facing changes from 2.0.0rc1
+
 ## Version 2.0.0rc1 (Date: October 21, 2025)
 
 ### Release Candidate 1 - Beta Release
