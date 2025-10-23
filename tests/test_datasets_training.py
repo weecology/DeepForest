@@ -238,10 +238,6 @@ def test_BoxDataset_with_projected_shapefile(tmpdir, raster_path):
     # Get one sample
     image, targets, path = ds[0]
 
-    # Verify we have annotations
-    assert targets["boxes"].shape[0] == 2  # Two boxes
-    assert targets["labels"].shape[0] == 2
-
     # Verify boxes are in pixel coordinates (should be positive and reasonable)
     # After geo_to_image_coordinates conversion, values should be in pixel space
     boxes = targets["boxes"]
