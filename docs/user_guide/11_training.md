@@ -33,8 +33,7 @@ annotations_file = get_data("testfile_deepforest.csv")
 # Load the default model
 m = main.deepforest()
 
-m.config.epochs = 1
-m.config.save-snapshot = False
+m.config.train.epochs = 1
 m.config.train.csv_file = annotations_file
 m.config.train.root_dir = os.path.dirname(annotations_file)
 
