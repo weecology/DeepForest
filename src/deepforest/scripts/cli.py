@@ -64,26 +64,7 @@ def train(
         else:
             torch.cuda.memory._record_memory_history()
 
-    if "ckpt" in config.model.name and os.path.exists(config.model.name):
-        m = deepforest.load_from_checkpoint(
-            config.model.name, map_location=config.accelerator
-        )
-
-        # Preserve the original model architecture name from checkpoint
-        # so it doesn't get overwritten with the checkpoint path
-        original_model_name = m.config.model.name
-        original_model_revision = m.config.model.revision
-
-        # Update config with user-provided overrides (batch_size, lr, etc.)
-        m.config = OmegaConf.merge(m.config, config)
-
-        # Restore the original model architecture identifiers
-        m.config.model.name = original_model_name
-        m.config.model.revision = original_model_revision
-
-        m.save_hyperparameters({"config": m.config})
-    else:
-        m = deepforest(config=config)
+    m = deepforest(config=config)
 
     callbacks = []
     loggers = []
@@ -241,29 +222,7 @@ def predict(
     Returns:
         None
     """
-
-    if "ckpt" in config.model.name and os.path.exists(config.model.name):
-        m = deepforest.load_from_checkpoint(
-            config.model.name, map_location=config.accelerator
-        )
-
-        # Preserve the original model architecture name from checkpoint
-        # so it doesn't get overwritten with the checkpoint path
-        original_model_name = m.config.model.name
-        original_model_revision = m.config.model.revision
-
-        # Update config with user-provided overrides (batch_size, etc.)
-        m.config = OmegaConf.merge(m.config, config)
-
-        # Restore the original model architecture identifiers
-        m.config.model.name = original_model_name
-        m.config.model.revision = original_model_revision
-
-        m.save_hyperparameters({"config": m.config})
-    else:
-        m = deepforest(config=config)
-
-    m.create_trainer(logger=False)
+    m = deepforest(config=config)
 
     # Use validation CSV from config if not provided
     if input_path is None:
@@ -332,28 +291,7 @@ def evaluate(
     Returns:
         None
     """
-    if "ckpt" in config.model.name and os.path.exists(config.model.name):
-        m = deepforest.load_from_checkpoint(
-            config.model.name, map_location=config.accelerator
-        )
-
-        # Preserve the original model architecture name from checkpoint
-        # so it doesn't get overwritten with the checkpoint path
-        original_model_name = m.config.model.name
-        original_model_revision = m.config.model.revision
-
-        # Update config with user-provided overrides (batch_size, iou_threshold, etc.)
-        m.config = OmegaConf.merge(m.config, config)
-
-        # Restore the original model architecture identifiers
-        m.config.model.name = original_model_name
-        m.config.model.revision = original_model_revision
-
-        m.save_hyperparameters({"config": m.config})
-    else:
-        m = deepforest(config=config)
-
-    m.create_trainer(logger=False)
+    m = deepforest(config=config)
 
     # Use validation CSV from config if not provided
     if csv_file is None:

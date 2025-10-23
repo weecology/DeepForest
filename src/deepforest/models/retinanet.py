@@ -1,3 +1,4 @@
+import os
 import warnings
 from pathlib import Path
 
@@ -109,9 +110,40 @@ class RetinaNetHub(RetinaNet, PyTorchModelHubMixin):
 
         If the target num_classes differs from the model's num_classes,
         then the model heads are reinitialized to compensate.
+
+        Also handles PyTorch Lightning .ckpt files directly.
         """
 
-        model = super().from_pretrained(pretrained_model_name_or_path, **kwargs)
+        # Handle PyTorch Lightning checkpoint files (.ckpt)
+        # TODO: Use from_pretrained and generate HF compatible config from ckpt?
+        if (
+            isinstance(pretrained_model_name_or_path, (str, Path))
+            and str(pretrained_model_name_or_path).endswith(".ckpt")
+            and os.path.exists(pretrained_model_name_or_path)
+        ):
+            # Always load to CPU first to avoid device mapping issues later
+            checkpoint = torch.load(
+                pretrained_model_name_or_path, map_location="cpu", weights_only=False
+            )
+
+            config = checkpoint["hyper_parameters"]["config"]
+
+            if config["architecture"] != "retinanet":
+                raise ValueError(
+                    f"Checkpoint architecture is {config['architecture']}, should be retinanet."
+                )
+            elif config["backbone"] != kwargs.get("backbone"):
+                raise ValueError(
+                    f"You are trying to instantiate a RetinaNet with a {kwargs.get('backbone')}, backbone, but your checkpoint contains {config['backbone']}. Check your config is correct."
+                )
+
+            # Instantiate model with config as provided and load in the state
+            model = cls(**kwargs)
+            model.load_state_dict(checkpoint["state_dict"])
+
+        else:
+            # Otherwise use HuggingFace Hub path, which requires weights + config
+            model = super().from_pretrained(pretrained_model_name_or_path, **kwargs)
 
         # Override class info if specified
         if num_classes is not None and label_dict is not None:
