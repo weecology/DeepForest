@@ -658,3 +658,25 @@ def test_format_geometry_polygon():
     # Format geometry should raise ValueError since polygon predictions are not supported
     with pytest.raises(ValueError, match="Polygon predictions are not yet supported for formatting"):
         utilities.format_geometry(prediction, geom_type="polygon")
+
+
+def test_read_file_lowercases_columns_siteid():
+    """Ensure read_file lowercases incoming DataFrame columns (siteID -> siteid)."""
+    # Create minimal DataFrame with box geometry columns and a capitalized siteID
+    df = pd.DataFrame({
+        'xmin': [0],
+        'ymin': [0],
+        'xmax': [10],
+        'ymax': [10],
+        'label': ['Tree'],
+        'siteID': ['TEST_SITE']
+    })
+
+    result = utilities.read_file(df)
+
+    # Column names should be all lowercase
+    assert 'siteID' in df.columns
+    assert 'siteID' in result.columns
+
+    # Value should be preserved under the lowercased column
+    assert result.loc[0, 'siteID'] == 'TEST_SITE'

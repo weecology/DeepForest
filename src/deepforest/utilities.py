@@ -466,9 +466,6 @@ def read_file(input, root_dir=None, image_path=None, label=None):
             # Detect geometry type
             geom_type = determine_geometry_type(df)
 
-            # Check for uppercase names and set to lowercase
-            df.columns = [x.lower() for x in df.columns]
-
             # convert to geodataframe
             if geom_type == "box":
                 df["geometry"] = df.apply(
