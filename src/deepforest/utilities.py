@@ -467,6 +467,7 @@ def read_file(
         if "geometry" in df.columns:
             if pd.api.types.infer_dtype(df["geometry"]) == "string":
                 df["geometry"] = gpd.GeoSeries.from_wkt(df["geometry"])
+            df = gpd.GeoDataFrame(df, geometry="geometry")
         else:
             # Detect geometry type
             geom_type = determine_geometry_type(df)

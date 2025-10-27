@@ -98,6 +98,46 @@ def test_read_file_in_memory_dataframe():
     assert len(result) == 2
 
 
+def test_read_file_pandas_dataframe_with_geometry_column():
+    """Test that read_file returns a GeoDataFrame when passed a pandas DataFrame with geometry column.
+    
+    This test addresses the issue where read_file would return a pandas DataFrame
+    with a shapely geometry column instead of a proper GeoDataFrame when a geometry
+    column was already present.
+    """
+    # Create a pandas DataFrame with shapely geometry objects (simulating the issue scenario)
+    sample_geometry = [
+        shapely.geometry.box(0, 0, 10, 10),
+        shapely.geometry.box(20, 20, 30, 30)
+    ]
+    test_df = pd.DataFrame({
+        'image_path': ['test1.png', 'test2.png'],
+        'xmin': [0, 20],
+        'ymin': [0, 20],
+        'xmax': [10, 30],
+        'ymax': [10, 30],
+        'label': ['Tree', 'Tree'],
+        'geometry': sample_geometry
+    })
+    
+    # Verify input is a pandas DataFrame, not a GeoDataFrame
+    assert isinstance(test_df, pd.DataFrame)
+    assert not isinstance(test_df, gpd.GeoDataFrame)
+    
+    # Process through read_file
+    result = utilities.read_file(input=test_df)
+    
+    # Verify output is a GeoDataFrame (not just a pandas DataFrame)
+    assert isinstance(result, gpd.GeoDataFrame)
+    assert 'geometry' in result.columns
+    assert all(result.geometry.geom_type == 'Polygon')
+    assert len(result) == 2
+    
+    # Verify that GeoDataFrame methods work (like those used in preprocess.split_raster)
+    assert hasattr(result, 'intersects')
+    assert hasattr(result.geometry, 'centroid')
+
+
 def test_shapefile_to_annotations_convert_unprojected_to_boxes(tmpdir):
     sample_geometry = [geometry.Point(10, 20), geometry.Point(20, 40)]
     labels = ["Tree", "Tree"]
