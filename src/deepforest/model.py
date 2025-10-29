@@ -205,7 +205,10 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
         data_transforms = []
         data_transforms.append(transforms.ToTensor())
         data_transforms.append(self.normalize())
-        data_transforms.append(transforms.Resize([224, 224]))
+
+        # Get resize dimensions from config, default to [224, 224] if not specified
+        resize_dims = self.config["cropmodel"].get("resize", [224, 224])
+        data_transforms.append(transforms.Resize(resize_dims))
 
         # Apply augmentations if specified
         if augmentations is not None:

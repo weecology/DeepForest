@@ -92,6 +92,26 @@ validation:
 predict:
     pin_memory: False
 
+cropmodel:
+    batch_size: 4
+    num_workers: 0
+    lr: 0.0001
+    scheduler:
+        type: ReduceLROnPlateau
+        params:
+            mode: min
+            factor: 0.5
+            patience: 5
+            threshold: 0.0001
+            threshold_mode: rel
+            cooldown: 0
+            min_lr: 0
+            eps: 1.0e-08
+    balance_classes: False
+    resize:
+        - 224
+        - 224
+
 ```
 ## Passing config arguments at runtime using a dict
 
@@ -255,3 +275,41 @@ Directory to search for images in the csv_file image_path column
 
 Compute and log the classification accuracy of the predicted results computed every X epochs.
 This incurs some reductions in speed of training and is most useful for multi-class models. To deactivate, set to an number larger than epochs.
+
+## CropModel
+
+The `cropmodel` section contains configuration options specific to the CropModel class, used for classification of detected objects.
+
+### batch_size
+
+Number of images per batch during crop model training and prediction. Default is 4.
+
+### num_workers
+
+Number of workers for data loading during crop model training. Set to 0 to disable multiprocessing.
+
+### lr
+
+Learning rate for the crop model optimizer (Adam). Default is 0.0001.
+
+### scheduler
+
+Learning rate scheduler configuration for the crop model. Default is ReduceLROnPlateau with specific parameters.
+
+### balance_classes
+
+Boolean flag to enable weighted sampling for imbalanced datasets. When set to `True`, uses `weighted_random` sampling to give more weight to underrepresented classes during training. Default is `False`.
+
+### resize
+
+A list of two integers `[height, width]` specifying the dimensions to resize input images to before feeding them to the model. Default is `[224, 224]`. This can be customized for models that expect different input sizes:
+
+```python
+from deepforest.model import CropModel
+
+# Use default 224x224 resize
+crop_model = CropModel()
+
+# Or use custom resize dimensions
+crop_model = CropModel(config_args={"resize": [300, 300]})
+```
