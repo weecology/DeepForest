@@ -65,9 +65,9 @@ class BoundingBoxDataset(Dataset):
             self.transform = transform
 
         unique_image = self.df["image_path"].unique()
-        assert (
-            len(unique_image) == 1
-        ), "There should be only one unique image for this class object"
+        assert len(unique_image) == 1, (
+            "There should be only one unique image for this class object"
+        )
 
         # Open the image using rasterio
         self.src = rio.open(os.path.join(root_dir, unique_image[0]))
