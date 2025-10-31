@@ -491,7 +491,14 @@ def _plot_image_with_geometry(
             detections=detections,
         )
     elif geom_type == "point":
-        point_annotator = sv.VertexAnnotator(color=sv_color, radius=radius)
+        # TODO can we abuse DotAnnotator and pass in a zero-area bbox with the keypoint as coords?
+        # VertexAnnotator doesn't accept ColorPalette, only single Color
+        # If we have a palette, use the first color
+        if isinstance(sv_color, sv.ColorPalette):
+            point_color = sv_color.colors[0]
+        else:
+            point_color = sv_color
+        point_annotator = sv.VertexAnnotator(color=point_color, radius=radius)
         annotated_frame = point_annotator.annotate(
             scene=image.copy(), key_points=detections
         )

@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 import rasterio
 import shapely
+import torch
 import xmltodict
 from omegaconf import DictConfig, OmegaConf
 from PIL import Image
@@ -309,7 +310,7 @@ def determine_geometry_type(df):
             geometry_type = "box"
         elif "polygon" in df.keys():
             geometry_type = "polygon"
-        elif "points" in df.keys():
+        elif "points" in df.keys() or "keypoints" in df.keys():
             geometry_type = "point"
 
     return geometry_type
@@ -337,12 +338,14 @@ def format_geometry(predictions, scores=True, geom_type=None):
     elif geom_type == "polygon":
         raise ValueError("Polygon predictions are not yet supported for formatting")
     elif geom_type == "point":
-        raise ValueError("Point predictions are not yet supported for formatting")
+        df = format_points(predictions, scores=scores)
+        if df is None:
+            return None
 
     return df
 
 
-def format_boxes(prediction, scores=True):
+def format_boxes(prediction: dict[str, torch.Tensor], scores=True):
     """Format a retinanet prediction into a pandas dataframe for a single
     image.
 
@@ -367,6 +370,39 @@ def format_boxes(prediction, scores=True):
     df["geometry"] = df.apply(
         lambda x: shapely.geometry.box(x.xmin, x.ymin, x.xmax, x.ymax), axis=1
     )
+    return df
+
+
+def format_points(prediction: dict[str, torch.Tensor], scores=True):
+    """Format a keypoint prediction into a pandas dataframe for a single image.
+
+    Args:
+        prediction: a dictionary with keys 'keypoints' (or 'points'), 'labels', and optionally 'scores'
+        scores: Whether points come with scores, during prediction, or without scores, as in during training.
+    Returns:
+        df: a pandas dataframe with columns x, y, label, score (optional), geometry
+    """
+
+    if "keypoints" in prediction:
+        points_key = "keypoints"
+    elif "points" in prediction:
+        points_key = "points"
+    else:
+        raise ValueError(
+            "Prediction dict must contain either 'keypoints' or 'points' key"
+        )
+
+    if len(prediction[points_key]) == 0:
+        return None
+
+    points = prediction[points_key].cpu().detach().numpy()
+    df = pd.DataFrame(points, columns=["x", "y"])
+    df["label"] = prediction["labels"].cpu().detach().numpy()
+
+    if scores and "scores" in prediction:
+        df["score"] = prediction["scores"].cpu().detach().numpy()
+
+    df["geometry"] = df.apply(lambda row: shapely.geometry.Point(row.x, row.y), axis=1)
     return df
 
 
