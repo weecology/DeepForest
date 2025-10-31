@@ -3,6 +3,7 @@
 import os
 
 import numpy as np
+import pandas as pd
 import shapely
 import torch
 from PIL import Image
@@ -106,7 +107,7 @@ class BoxDataset(Dataset):
         return images, targets, image_names
 
     def load_image(self, idx):
-        img_name = os.path.join(self.root_dir, self.image_names[idx])
+        img_name = os.path.join(self.root_dir, os.path.basename(self.image_names[idx]))
         image = np.array(Image.open(img_name).convert("RGB")) / 255
         image = image.astype("float32")
         return image
@@ -173,16 +174,221 @@ class BoxDataset(Dataset):
         augmented = self.transform(
             image=image,
             bboxes=targets["boxes"],
-            category_ids=targets["labels"].astype(np.int64),
+            labels=targets["labels"].astype(np.int64),
         )
         image = augmented["image"]
 
         # Convert boxes to tensor
         boxes = np.array(augmented["bboxes"])
         boxes = torch.from_numpy(boxes).float()
-        labels = np.array(augmented["category_ids"])
+        labels = np.array(augmented["labels"])
         labels = torch.from_numpy(labels.astype(np.int64))
         targets = {"boxes": boxes, "labels": labels}
+
+        return image, targets, self.image_names[idx]
+
+
+# TODO: Combine training dataset classes to reduce duplication?
+class KeypointDataset(Dataset):
+    """Dataset for keypoint/point detection.
+
+    Supports two CSV formats:
+
+    1. Keypoint format (direct):
+        image_path,x,y,label
+        - x, y: Keypoint coordinates in pixels
+
+    2. Bounding box format (auto-converted to center points):
+        image_path,xmin,ymin,xmax,ymax,label
+
+    Args:
+        csv_file: Path to CSV file with keypoint annotations
+        root_dir: Directory containing images
+        transforms: Function applied to each sample
+        augmentations: Augmentation configuration
+        label_dict: Mapping from string labels to class IDs
+        preload_images: Preload all images into memory
+
+    Returns:
+        List of (image, target) pairs where target contains:
+        - "points": torch.Tensor of shape (N, 2) - (x, y) coordinates
+        - "labels": torch.Tensor of shape (N,) - class indices
+    """
+
+    def __init__(
+        self,
+        csv_file,
+        root_dir,
+        *,
+        transforms=None,
+        augmentations=None,
+        label_dict=None,
+        preload_images=False,
+    ):
+        """
+        Args:
+            csv_file (str): Path to the CSV file containing keypoint annotations.
+            root_dir (str): Directory containing all referenced images.
+            transforms (callable, optional): Function applied to each sample. Defaults to None.
+            augmentations (str | list | dict, optional): Augmentation configuration.
+            label_dict (dict[str, int]): Mapping from string labels to integer class IDs.
+            preload_images (bool): If True, preload all images into memory. Defaults to False.
+
+        Returns:
+            list: A list of (image, target) pairs, where each target is a dict with:
+                - "points": torch.Tensor of shape (N, 2)
+                - "labels": torch.Tensor of shape (N,)
+        """
+        self.annotations = pd.read_csv(csv_file)
+        self.root_dir = root_dir
+
+        # Check if CSV has keypoint columns or box columns
+        keypoint_columns = {"image_path", "x", "y", "label"}
+        box_columns_xyxy = {"image_path", "xmin", "ymin", "xmax", "ymax", "label"}
+
+        if not keypoint_columns.issubset(self.annotations.columns):
+            if box_columns_xyxy.issubset(self.annotations.columns):
+                # Use box centers as keypoints
+                self.annotations["x"] = (
+                    self.annotations["xmin"] + self.annotations["xmax"]
+                ) / 2
+                self.annotations["y"] = (
+                    self.annotations["ymin"] + self.annotations["ymax"]
+                ) / 2
+            else:
+                raise ValueError(
+                    f"CSV must contain either keypoint columns {keypoint_columns} "
+                    f"or box columns {box_columns_xyxy}. "
+                    f"Found: {set(self.annotations.columns)}"
+                )
+
+        # Initialize label_dict with default if None
+        if label_dict is None:
+            label_dict = {"Tree": 0}
+        self.label_dict = label_dict
+
+        if transforms is None:
+            self.transform = get_transform(augmentations=augmentations, task="keypoint")
+        else:
+            self.transform = transforms
+
+        self.image_names = self.annotations.image_path.unique()
+        self.preload_images = preload_images
+
+        self._validate_labels()
+
+        # Pin data to memory if desired
+        if self.preload_images:
+            print("Pinning dataset to GPU memory")
+            self.image_dict = {}
+            for idx, _ in enumerate(self.image_names):
+                self.image_dict[idx] = self.load_image(idx)
+
+    def _validate_labels(self):
+        """Validate that all labels in annotations exist in label_dict.
+
+        Raises:
+            ValueError: If any label in annotations is missing from label_dict
+        """
+        csv_labels = self.annotations["label"].unique()
+        missing_labels = [label for label in csv_labels if label not in self.label_dict]
+
+        if missing_labels:
+            raise ValueError(
+                f"Labels {missing_labels} are missing from label_dict. "
+                f"Please ensure all labels in the annotations exist as keys in label_dict."
+            )
+
+    def __len__(self):
+        return len(self.image_names)
+
+    def collate_fn(self, batch):
+        """Collate function for DataLoader."""
+        images = [item[0] for item in batch]
+        targets = [item[1] for item in batch]
+        image_names = [item[2] for item in batch]
+
+        return images, targets, image_names
+
+    def load_image(self, idx):
+        """Load and preprocess an image."""
+        img_name = os.path.join(self.root_dir, os.path.basename(self.image_names[idx]))
+        image = np.array(Image.open(img_name).convert("RGB")) / 255
+        image = image.astype("float32")
+        return image
+
+    def annotations_for_path(self, image_path, return_tensor=False):
+        """Construct target dictionary for a given image path.
+
+        Args:
+            image_path (str): Path to image, expected to be in dataframe
+            return_tensor (bool): If true, convert fields from numpy to tensor
+
+        Returns:
+            target dictionary with points and labels entries
+        """
+        image_annotations = self.annotations[self.annotations.image_path == image_path]
+        targets = {}
+
+        # Extract x, y coordinates as points
+        targets["points"] = image_annotations[["x", "y"]].values.astype("float32")
+
+        # Labels need to be encoded
+        targets["labels"] = image_annotations.label.apply(
+            lambda x: self.label_dict[x]
+        ).values.astype(np.int64)
+
+        if return_tensor:
+            for k, v in targets.items():
+                targets[k] = torch.from_numpy(v)
+
+        return targets
+
+    def __getitem__(self, idx):
+        # Read image if not in memory
+        if self.preload_images:
+            image = self.image_dict[idx]
+        else:
+            image = self.load_image(idx)
+
+        # TODO: Not sure we need this any more, will check before review
+        orig_h, orig_w = image.shape[0], image.shape[1]
+
+        targets = self.annotations_for_path(self.image_names[idx])
+
+        # If image has no annotations, don't augment
+        if len(targets["points"]) == 0:
+            points = torch.zeros((0, 2), dtype=torch.float32)
+            labels = torch.zeros(0, dtype=torch.int64)
+            # channels last
+            image = np.rollaxis(image, 2, 0)
+            image = torch.from_numpy(image).float()
+            targets = {"points": points, "labels": labels}
+
+            return image, targets, self.image_names[idx]
+
+        augmented = self.transform(
+            image=image,
+            keypoints=targets["points"],
+            labels=targets["labels"].astype(np.int64),
+        )
+        image = augmented["image"]
+
+        # Convert points back from augmented keypoints
+        if len(augmented["keypoints"]) > 0:
+            points = np.array(augmented["keypoints"])
+            points = torch.from_numpy(points).float()
+        else:
+            points = torch.zeros((0, 2), dtype=torch.float32)
+
+        labels = np.array(augmented["labels"])
+        labels = torch.from_numpy(labels.astype(np.int64))
+
+        targets = {
+            "points": points,
+            "labels": labels,
+            "orig_size": torch.tensor([orig_h, orig_w], dtype=torch.int64),
+        }
 
         return image, targets, self.image_names[idx]
 

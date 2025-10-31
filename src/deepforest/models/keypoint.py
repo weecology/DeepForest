@@ -11,7 +11,9 @@ https://github.com/huggingface/transformers?tab=Apache-2.0-1-ov-file
 from dataclasses import dataclass
 
 import numpy as np
+import PIL
 import torch
+from scipy.optimize import linear_sum_assignment
 from torch import nn
 from transformers import (
     DeformableDetrConfig,
@@ -135,15 +137,11 @@ class DeformableDetrKeypointMatcher(HungarianMatcher):
         target_ids = torch.cat([v["class_labels"] for v in targets])
         target_points = torch.cat([v["points"] for v in targets])
 
-        # Compute classification cost using focal loss
-        alpha = 0.25
-        gamma = 2.0
-        neg_cost_class = (1 - alpha) * (out_prob**gamma) * (-(1 - out_prob + 1e-8).log())
-        pos_cost_class = alpha * ((1 - out_prob) ** gamma) * (-(out_prob + 1e-8).log())
-        class_cost = pos_cost_class[:, target_ids] - neg_cost_class[:, target_ids]
+        # Compute approximate classification cost
+        class_cost = -out_prob[:, target_ids]
 
-        # Compute L2 point distance cost
-        point_cost = torch.cdist(out_points, target_points, p=2)
+        # Compute L1 point distance cost
+        point_cost = torch.cdist(out_points, target_points, p=1)
 
         # Final cost matrix
         # Note: self.bbox_cost was set to point_cost value in __init__
@@ -151,9 +149,6 @@ class DeformableDetrKeypointMatcher(HungarianMatcher):
         cost_matrix = cost_matrix.view(batch_size, num_queries, -1).cpu()
 
         sizes = [len(v["points"]) for v in targets]
-
-        # Import here to avoid issues if scipy is not available
-        from scipy.optimize import linear_sum_assignment
 
         indices = [
             linear_sum_assignment(c[i])
@@ -201,7 +196,7 @@ class DeformableDetrKeypointLoss(DeformableDetrImageLoss):
                 src_points, target_points, reduction="none"
             )
 
-        losses = {"loss_point": loss_point.sum() / num_objects}
+        losses = {f"loss_point_{self.loss_type}": loss_point.sum() / num_objects}
 
         return losses
 
@@ -266,13 +261,15 @@ def DeformableDetrForKeypointDetectionLoss(
     point_loss_coefficient = getattr(
         config, "point_loss_coefficient", config.bbox_loss_coefficient
     )
-    weight_dict = {"loss_ce": 1, "loss_point": point_loss_coefficient}
+    weight_dict = {"loss_ce": 1, f"loss_point_{loss_type}": point_loss_coefficient}
     if config.auxiliary_loss:
         aux_weight_dict = {}
         for i in range(config.decoder_layers - 1):
             aux_weight_dict.update({k + f"_{i}": v for k, v in weight_dict.items()})
         weight_dict.update(aux_weight_dict)
+
     loss = sum(loss_dict[k] * weight_dict[k] for k in loss_dict if k in weight_dict)
+
     return loss, loss_dict, auxiliary_outputs
 
 
@@ -299,7 +296,7 @@ def prepare_keypoint_annotation(
     Output format:
         {
             "image_id": array,
-            "class_labels": array of shape (num_keypoints,),
+            "labels": array of shape (num_keypoints,),
             "points": array of shape (num_keypoints, 2),  # Internal representation
             "orig_size": array of shape (2,)  # [height, width]
         }
@@ -362,7 +359,9 @@ def prepare_keypoint_annotation(
 
     new_target = {}
     new_target["image_id"] = image_id
-    new_target["class_labels"] = np.array(all_classes, dtype=np.int64)
+    new_target["labels"] = np.array(all_classes, dtype=np.int64)
+    # Transformers library expects "class_labels" key for loss computation
+    new_target["class_labels"] = new_target["labels"]
     new_target["points"] = points
     new_target["orig_size"] = np.asarray(
         [int(image_height), int(image_width)], dtype=np.int64
@@ -389,6 +388,10 @@ def normalize_keypoint_annotation(annotation: dict, image_size: tuple[int, int])
         norm_annotation["points"] = annotation["points"] / np.array(
             [image_width, image_height], dtype=np.float32
         )
+
+    # Ensure both "labels" and "class_labels" are preserved for transformers compatibility
+    if "labels" in norm_annotation and "class_labels" not in norm_annotation:
+        norm_annotation["class_labels"] = norm_annotation["labels"]
 
     return norm_annotation
 
@@ -426,6 +429,31 @@ class DeformableDetrKeypointImageProcessor(DeformableDetrImageProcessor):
         do_convert_annotations=True.
         """
         return normalize_keypoint_annotation(annotation, image_size)
+
+    def resize_annotation(
+        self,
+        annotation,
+        orig_size,
+        size,
+        resample: PIL.Image.Resampling = PIL.Image.Resampling.NEAREST,
+    ) -> dict:
+        """Resize the annotation to match the resized image.
+
+        This is an override of the existing function in transformers to
+        handle keypoints only (since we don't care about other
+        annotations here). Since the processor may resize samples, we
+        also need to scale keypoints to match (even though they are then
+        scaled to [0,1] anyway).
+        """
+        ratios = tuple(
+            float(s) / float(s_orig) for s, s_orig in zip(size, orig_size, strict=False)
+        )
+        ratio_height, ratio_width = ratios
+
+        new_annotation = dict(annotation)
+        new_annotation["points"] *= np.array([ratio_height, ratio_width])
+
+        return new_annotation
 
     def post_process_keypoint_detection(
         self,
@@ -492,9 +520,11 @@ class DeformableDetrKeypointImageProcessor(DeformableDetrImageProcessor):
         for result in zip(scores, labels, points, strict=False):
             score, label, point = result
 
-            score = score[score > threshold]
-            label = label[label > threshold]
-            keypoint = point[point > threshold]
+            # Filter all outputs by score threshold
+            mask = score > threshold
+            score = score[mask]
+            label = label[mask]
+            keypoint = point[mask]
 
             results.append(
                 {
@@ -573,7 +603,7 @@ class DeformableDetrForKeypointDetection(DeformableDetrPreTrainedModel):
 
         labels (`list[Dict]` of len `(batch_size,)`, *optional*):
             Labels for computing the bipartite matching loss. List of dicts, each dictionary containing at least the
-            following 2 keys: 'class_labels' and 'points' (the class labels and object centers (points) of an image in the batch
+            following 2 keys: 'labels' and 'points' (the class labels and object centers (points) of an image in the batch
             respectively). The class labels themselves should be a `torch.LongTensor` of len `(number of objects
             in the image,)` and the points a `torch.FloatTensor` of shape `(number of points in the image, 2)`.
         ```
@@ -679,6 +709,231 @@ class DeformableDetrForKeypointDetection(DeformableDetrPreTrainedModel):
         return dict_outputs
 
 
+def keypoint_to_coco(targets):
+    if not isinstance(targets, list):
+        targets = [targets]
+
+    coco_targets = []
+    for target in targets:
+        annotations_for_target = []
+        for i, (label, point) in enumerate(
+            zip(target["labels"], target["points"], strict=False)
+        ):
+            if isinstance(point, torch.Tensor):
+                point = point.tolist()
+            if isinstance(label, torch.Tensor):
+                label = label.item()
+
+            annotations_for_target.append(
+                {
+                    "id": i,
+                    "image_id": i,
+                    "category_id": label,
+                    "keypoints": point,  # [x, y]
+                }
+            )
+
+        coco_target = {"image_id": 0, "annotations": annotations_for_target}
+
+        # Preserve orig_size if available for coordinate scaling during preprocessing
+        if "orig_size" in target:
+            coco_target["orig_size"] = target["orig_size"]
+
+        coco_targets.append(coco_target)
+
+    return coco_targets
+
+
+class KeypointDetrWrapper(nn.Module):
+    """Wrapper for DeformableDetrForKeypointDetection that handles
+    preprocessing and postprocessing transparently.
+
+    This class translates between DeepForest's KeypointDataset format
+    and the transformers keypoint model format.
+    """
+
+    def __init__(self, config, name, revision, **hf_args):
+        """Initialize a DeformableDetrForKeypointDetection model.
+
+        Args:
+            config: DeepForest config object
+            name: HuggingFace model name or path
+            revision: Model revision/branch
+            **hf_args: Additional arguments for from_pretrained
+        """
+        super().__init__()
+        self.config = config
+
+        # Import here to avoid circular imports
+        import warnings
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=UserWarning)
+
+            # Create keypoint model config with keypoint-specific parameters
+            from transformers import DeformableDetrConfig
+
+            # Load base config from pretrained model
+            model_config = DeformableDetrConfig.from_pretrained(
+                name, revision=revision, **hf_args
+            )
+
+            # Add keypoint-specific loss parameters if they exist in config
+            if hasattr(self.config, "point_cost"):
+                model_config.point_cost = self.config.point_cost
+            if hasattr(self.config, "point_loss_coefficient"):
+                model_config.point_loss_coefficient = self.config.point_loss_coefficient
+            if hasattr(self.config, "point_loss_type"):
+                model_config.point_loss_type = self.config.point_loss_type
+
+            # Create model from config
+            self.net = DeformableDetrForKeypointDetection(model_config)
+
+            # Load pretrained weights if available (backbone only, not prediction heads)
+            if name is not None:
+                from transformers import DeformableDetrModel
+
+                pretrained_base = DeformableDetrModel.from_pretrained(
+                    name, revision=revision, **hf_args
+                )
+                # Copy only the base model weights (encoder/decoder, not classification/bbox heads)
+                self.net.model.load_state_dict(pretrained_base.state_dict(), strict=False)
+
+            # Create processor
+            self.processor = DeformableDetrKeypointImageProcessor()
+
+            # Update label mappings
+            if hasattr(self.config, "label_dict"):
+                self.label_dict = self.config.label_dict
+            else:
+                self.label_dict = {"Tree": 0}
+            self.num_classes = model_config.num_labels
+
+    def _prepare_targets(self, targets):
+        """Translate KeypointDataset targets to COCO keypoint format.
+
+        Args:
+            targets: List of dicts with "points" (N, 2) and "labels" (N,)
+
+        Returns:
+            List of dicts in COCO annotation format for keypoints
+        """
+        return keypoint_to_coco(targets)
+
+    def forward(self, images, targets=None, prepare_targets=True):
+        """Forward pass for keypoint detection.
+
+        Args:
+            images: Input images (list of tensors or batch tensor)
+            targets: Optional targets for training
+            prepare_targets: Whether to convert targets to COCO format
+
+        Returns:
+            If training: loss dictionary
+            If inference: list of dicts with "keypoints", "scores", "labels"
+        """
+        if targets and prepare_targets:
+            targets = self._prepare_targets(targets)
+
+        encoded_inputs = self.processor.preprocess(
+            images=images,
+            annotations=targets,
+            return_tensors="pt",
+            do_rescale=False,  # Dataset already normalized [0,255]→[0,1]
+            # Processor still does: resize, normalize (ImageNet), pad
+        )
+
+        # Move tensors to model device
+        for k, v in encoded_inputs.items():
+            if isinstance(v, torch.Tensor):
+                encoded_inputs[k] = v.to(self.net.device)
+
+        if isinstance(encoded_inputs.get("labels"), list):
+            encoded_inputs["labels"] = [
+                {
+                    key: val.to(self.net.device) if isinstance(val, torch.Tensor) else val
+                    for key, val in target.items()
+                }
+                for target in encoded_inputs["labels"]
+            ]
+
+        preds = self.net(**encoded_inputs)
+
+        if targets is None or not self.training:
+            # Inference mode: post-process and return predictions
+            # Use original image sizes from targets to scale predictions back to original coordinate space
+            target_sizes = [t["orig_size"].cpu().tolist() for t in targets]
+
+            results = self.processor.post_process_keypoint_detection(
+                preds,
+                threshold=self.config.score_thresh,
+                target_sizes=target_sizes,
+            )
+            return results
+        else:
+            # Training mode: return loss dict and predictions for logging
+            return {
+                "loss_dict": preds.loss_dict,
+                "pred_points": preds.pred_points,
+                "targets": encoded_inputs.get("labels"),
+            }
+
+
+class Model:
+    """Model factory for keypoint detection following DeepForest interface.
+
+    This class provides a simple interface to create keypoint detection
+    models compatible with the DeepForest training pipeline.
+    """
+
+    def __init__(self, config, **kwargs):
+        """Initialize model factory.
+
+        Args:
+            config: DeepForest configuration object
+        """
+        self.config = config
+
+    def create_model(
+        self,
+        pretrained: str | None = "SenseTime/deformable-detr",
+        *,
+        revision: str | None = "main",
+        map_location: str | torch.device | None = None,
+        **hf_args,
+    ) -> KeypointDetrWrapper:
+        """Create a keypoint detection model from pretrained weights.
+
+        The model starts from a pretrained Deformable DETR backbone (encoder/decoder)
+        but initializes new prediction heads for the configured number of classes.
+
+        Args:
+            pretrained: HuggingFace model name or path. If None, random initialization.
+            revision: Model revision/branch
+            map_location: Device to load model onto
+            **hf_args: Additional arguments for from_pretrained
+
+        Returns:
+            KeypointDetrWrapper model ready for training or inference
+        """
+        # Set label mapping if provided
+        if pretrained is None:
+            hf_args.setdefault("id2label", self.config.numeric_to_label_dict)
+
+        model = KeypointDetrWrapper(
+            self.config,
+            name=pretrained,
+            revision=revision,
+            num_labels=self.config.num_classes,
+            **hf_args,
+        )
+
+        if map_location is not None:
+            model = model.to(map_location)
+
+        return model
+
+
 __all__ = [
     "DeformableDetrKeypointConfig",
     "DeformableDetrKeypointDetectionOutput",
@@ -686,4 +941,6 @@ __all__ = [
     "DeformableDetrKeypointMatcher",
     "DeformableDetrKeypointLoss",
     "DeformableDetrKeypointImageProcessor",
+    "KeypointDetrWrapper",
+    "Model",
 ]

@@ -1,0 +1,33 @@
+# Config file for DeepForest keypoint detection tasks
+
+# Ensure we inherit from default config + overlay these overrides.
+defaults:
+  - config
+  - _self_
+
+# Task and Model Architecture
+task: 'keypoint'
+architecture: 'DeformableDetr'
+
+# Keypoint-specific parameters for Deformable DETR
+# point_cost: Relative weight of point distance in matching cost (default: 5.0)
+# point_loss_coefficient: Weight of point loss in total loss (default: 5.0)
+# point_loss_type: Type of loss for coordinates - "l1" (default) or "mse"
+point_cost: 5.0
+point_loss_coefficient: 5.0
+point_loss_type: 'l1'
+
+# For keypoint detection, start from pretrained Deformable DETR backbone
+# Override with our DETR backbone once trained.
+model:
+    name: 'SenseTime/deformable-detr'
+    revision: 'main'
+
+# Transformer-based models often prefer lower learning rates
+train:
+    lr: 0.0001
+
+# Pixel distance threshold for keypoint matching (instead of IoU for boxes)
+# A prediction is considered correct if within this many pixels of ground truth
+validation:
+    pixel_distance_threshold: 10.0
