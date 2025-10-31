@@ -783,6 +783,15 @@ def image_to_geo_coordinates(gdf, root_dir=None, flip_y_axis=False):
             projected_geometry.append(geom)
 
     transformed_gdf.geometry = projected_geometry
+
+    # Update xmin, xmax, ymin, ymax columns to match transformed geometry
+    if geom_type == "box":
+        bounds = transformed_gdf.geometry.bounds
+        transformed_gdf["xmin"] = bounds.minx
+        transformed_gdf["xmax"] = bounds.maxx
+        transformed_gdf["ymin"] = bounds.miny
+        transformed_gdf["ymax"] = bounds.maxy
+
     if flip_y_axis:
         # Numpy uses top-left origin, flip y-axis for QGIS compatibility
         # See GIS StackExchange for details on negative y-spacing
