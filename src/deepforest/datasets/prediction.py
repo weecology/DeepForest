@@ -247,6 +247,8 @@ class SingleImage(PredictionDataset):
     def get_crop(self, idx):
         crop = self.image[self.windows[idx].indices()]
         crop = self.preprocess_image(crop)
+        if crop.shape[0] != 3:
+            crop = np.transpose(crop, (1, 2, 0))
 
         return crop
 
