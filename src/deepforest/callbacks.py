@@ -151,12 +151,12 @@ class ImagesCallback(Callback):
         else:
             selected_images = df.image_path.unique()[: self.prediction_samples]
 
-            # Ensure color is correctly assigned
-            if self.color is None:
-                num_classes = len(df["label"].unique())
-                results_color = sv.ColorPalette.from_matplotlib("viridis", num_classes)
-            else:
-                results_color = self.color
+        # Ensure color is correctly assigned
+        if self.color is None:
+            num_classes = len(df["label"].unique())
+            results_color = sv.ColorPalette.from_matplotlib("viridis", num_classes)
+        else:
+            results_color = self.color
 
         for image_name in selected_images:
             pred_df = df[df.image_path == image_name]

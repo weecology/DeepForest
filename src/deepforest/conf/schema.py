@@ -68,6 +68,7 @@ class TrainConfig:
     fast_dev_run: bool = False
     preload_images: bool = False
     augmentations: list[str] | None = field(default_factory=lambda: ["HorizontalFlip"])
+    log_root: str = "logs"
 
 
 @dataclass
@@ -87,6 +88,8 @@ class ValidationConfig:
     val_accuracy_interval: int = 20
     lr_plateau_target: str = "val_loss"
     augmentations: list[str] | None = field(default_factory=lambda: [])
+    # Keypoint-specific validation (used when task="keypoint")
+    pixel_distance_threshold: float = 10.0
 
 
 @dataclass
@@ -131,9 +134,15 @@ class Config:
     accelerator: str = "auto"
     batch_size: int = 1
 
+    task: str = "box"
     architecture: str = "retinanet"
     num_classes: int = 1
     label_dict: dict[str, int] = field(default_factory=lambda: {"Tree": 0})
+
+    # Keypoint-specific parameters (used when task="keypoint")
+    point_cost: float = 5.0
+    point_loss_coefficient: float = 5.0
+    point_loss_type: str = "l1"
 
     nms_thresh: float = 0.05
     score_thresh: float = 0.1
