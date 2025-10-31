@@ -2,7 +2,7 @@
 
 ## Version 2.0.0 (Date: October 30, 2025)
 
-#### Breaking Changes - Deprecated Items Removed:
+### Breaking Changes - Deprecated Items Removed:
 
 **Removed Functions:**
 - `xml_to_annotations()` - Use `utilities.read_pascal_voc(path)` or the general `utilities.read_file(path)`.
