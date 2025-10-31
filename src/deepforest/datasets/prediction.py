@@ -57,6 +57,7 @@ class PredictionDataset(Dataset):
         image_path: str | None = None,
         image: Image.Image | npt.NDArray | None = None,
         size: int | None = None,
+        preprocess_image: bool = True,
     ):
         """Load and preprocess an image. Either an image path or PIL image must
         be provided.
@@ -68,6 +69,7 @@ class PredictionDataset(Dataset):
             image_path: (str) path to image, optional
             image: (PIL image), optional
             size: (int) output size
+            preprocess_image: (bool) Whether to convert the image to a float32 array between 0 and 1.
 
         Returns:
             CHW float32 numpy array, normalized to be in [0, 1]
@@ -91,7 +93,9 @@ class PredictionDataset(Dataset):
             )
 
         image = np.array(image)
-        image = self.preprocess_image(image, size)
+
+        if preprocess_image:
+            image = self.preprocess_image(image, size)
 
         return image
 
@@ -223,7 +227,9 @@ class SingleImage(PredictionDataset):
         )
 
     def prepare_items(self):
-        self.image = self._load_and_preprocess_image(self.path, self.image)
+        self.image = self._load_and_preprocess_image(
+            self.path, self.image, preprocess_image=False
+        )
         self.windows = preprocess.compute_windows(
             self.image, self.patch_size, self.patch_overlap
         )
@@ -236,6 +242,7 @@ class SingleImage(PredictionDataset):
 
     def get_crop(self, idx):
         crop = self.image[self.windows[idx].indices()]
+        crop = self.preprocess_image(crop)
 
         return crop
 
@@ -297,7 +304,10 @@ class FromCSVFile(PredictionDataset):
 
 
 class MultiImage(PredictionDataset):
-    """Take in a list of image paths, preprocess and batch together."""
+    """Take in a list of image paths, preprocess and batch together.
+
+    Note: This dataset will load the first image to determine the image dimensions.
+    """
 
     def __init__(self, paths: list[str], patch_size: int, patch_overlap: float):
         """
