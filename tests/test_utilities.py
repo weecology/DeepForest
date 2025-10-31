@@ -402,6 +402,13 @@ def test_image_to_geo_coordinates(tmpdir):
     # show(src, ax=ax)
     # plt.show()
 
+    # Check that geo coordiates are also reflected in box coordinate columns
+    bounds = geo_coords.geometry.bounds
+    assert (geo_coords["xmin"] == bounds.minx).all()
+    assert (geo_coords["xmax"] == bounds.maxx).all()
+    assert (geo_coords["ymin"] == bounds.miny).all()
+    assert (geo_coords["ymax"] == bounds.maxy).all()
+
 
 def test_image_to_geo_coordinates_boxes(tmpdir):
     annotations = get_data("2018_SJER_3_252000_4107000_image_477.csv")
