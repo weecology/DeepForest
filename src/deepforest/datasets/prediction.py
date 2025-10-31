@@ -230,6 +230,10 @@ class SingleImage(PredictionDataset):
         self.image = self._load_and_preprocess_image(
             self.path, self.image, preprocess_image=False
         )
+
+        # Seperately transpose the image to channels first
+        self.image = np.transpose(self.image, (2, 0, 1))
+
         self.windows = preprocess.compute_windows(
             self.image, self.patch_size, self.patch_overlap
         )
