@@ -1,6 +1,6 @@
 # DeepForest Changelog
 
-## Version 2.0.0 (Date: October 30, 2025)
+## Version 2.0.0 (Date: November 4, 2025)
 
 ### Breaking Changes - Deprecated Items Removed:
 
