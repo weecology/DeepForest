@@ -217,3 +217,39 @@ def test_check_float_image_non_unitary():
 def test_image_empty():
     image = visualize._load_image()
     assert image is not None
+
+
+def test_plot_results_with_relative_image_path_and_root_dir(tmpdir):
+    # Use a relative image_path and ensure df.root_dir is used by _load_image
+    full_path = get_data("OSBS_029.png")
+    relative_name = os.path.basename(full_path)
+    root_dir = os.path.dirname(full_path)
+
+    df = pd.DataFrame({
+        'xmin': [10], 'ymin': [10], 'xmax': [30], 'ymax': [30],
+        'label': ['Tree'], 'image_path': [relative_name], 'score': [0.9]
+    })
+
+    gdf = utilities.read_file(df)
+    gdf.root_dir = root_dir
+
+    visualize.plot_results(gdf, savedir=tmpdir, show=False)
+    assert os.path.exists(os.path.join(tmpdir, "OSBS_029.png"))
+
+
+def test_plot_annotations_with_relative_image_path_and_root_dir(tmpdir):
+    # Use a relative image_path and ensure df.root_dir is used by _load_image
+    full_path = get_data("OSBS_029.png")
+    relative_name = os.path.basename(full_path)
+    root_dir = os.path.dirname(full_path)
+
+    df = pd.DataFrame({
+        'xmin': [10], 'ymin': [10], 'xmax': [30], 'ymax': [30],
+        'label': ['Tree'], 'image_path': [relative_name]
+    })
+
+    gdf = utilities.read_file(df)
+    gdf.root_dir = root_dir
+
+    visualize.plot_annotations(gdf, savedir=tmpdir, show=False)
+    assert os.path.exists(os.path.join(tmpdir, "OSBS_029.png"))
