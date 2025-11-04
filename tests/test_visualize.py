@@ -162,6 +162,29 @@ def test_plot_results_polygon(gdf_poly, tmpdir):
     assert os.path.exists(os.path.join(tmpdir, "OSBS_029.png"))
 
 
+def test_plot_results_polygon_relative_no_dims(tmpdir):
+    # Build polygon gdf with relative image_path and root_dir, without passing width/height
+    full_path = get_data("OSBS_029.tif")
+    relative_name = os.path.basename(full_path)
+    root_dir = os.path.dirname(full_path)
+
+    data = {
+        'geometry': [
+            geometry.Polygon([(10, 10), (20, 10), (20, 20), (10, 20), (15, 25)]),
+            geometry.Polygon([(30, 30), (40, 30), (40, 40), (30, 40), (35, 35)])
+        ],
+        'label': ['Tree', 'Tree'],
+        'image_path': [relative_name, relative_name],
+        'score': [0.9, 0.8]
+    }
+    gdf = gpd.GeoDataFrame(data)
+    gdf.root_dir = root_dir
+
+    # Should auto-detect width/height using root_dir + image_path
+    visualize.plot_results(gdf, savedir=tmpdir, show=False)
+    assert os.path.exists(os.path.join(tmpdir, "OSBS_029.png"))
+
+
 
 
 def test_image_from_path_or_array():

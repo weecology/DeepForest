@@ -205,8 +205,26 @@ def convert_to_sv_format(
 
             # Use the first image_path entry
             image_path = df["image_path"].iloc[0]
+
+            # Resolve root_dir similar to _load_image
+            resolved_root = None
+            if hasattr(df, "root_dir"):
+                resolved_root = df.root_dir
+                # In case root_dir is a Series (mixed df attributes)
+                resolved_root = (
+                    resolved_root.iloc[0]
+                    if isinstance(resolved_root, pd.Series)
+                    else resolved_root
+                )
+
+            full_image_path = (
+                os.path.join(resolved_root, image_path)
+                if resolved_root is not None
+                else image_path
+            )
+
             try:
-                with Image.open(image_path) as img:
+                with Image.open(full_image_path) as img:
                     width, height = img.size  # Get dimensions
             except Exception as e:
                 raise ValueError(
