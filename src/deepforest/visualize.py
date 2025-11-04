@@ -134,7 +134,7 @@ def label_to_color(label: int) -> tuple:
 
 
 def convert_to_sv_format(
-    df: pd.DataFrame, width: int | None = None, height: int | None = None
+    df: pd.DataFrame, image: np.typing.NDArray | None = None
 ) -> sv.Detections | sv.KeyPoints:
     """Convert DeepForest prediction results into a supervision object.
 
@@ -198,19 +198,19 @@ def convert_to_sv_format(
         # Create a reverse mapping from integer to string labels
         class_name = {v: k for k, v in label_mapping.items()}
 
-        # Auto-detect width/height if missing
-        if width is None or height is None:
+        # Determine image dimensions
+        if image is not None:
+            height, width = image.shape[:2]
+        else:
             if "image_path" not in df.columns:
                 raise ValueError("'image_path' column required for polygons.")
 
-            # Use the first image_path entry
             image_path = df["image_path"].iloc[0]
 
             # Resolve root_dir similar to _load_image
             resolved_root = None
             if hasattr(df, "root_dir"):
                 resolved_root = df.root_dir
-                # In case root_dir is a Series (mixed df attributes)
                 resolved_root = (
                     resolved_root.iloc[0]
                     if isinstance(resolved_root, pd.Series)
@@ -225,7 +225,7 @@ def convert_to_sv_format(
 
             try:
                 with Image.open(full_image_path) as img:
-                    width, height = img.size  # Get dimensions
+                    width, height = img.size
             except Exception as e:
                 raise ValueError(
                     f"Could not read image dimensions from {image_path}: {e}"
@@ -315,8 +315,6 @@ def __check_color__(
 def plot_annotations(
     annotations: pd.DataFrame,
     savedir: str | None = None,
-    height: int | None = None,
-    width: int | None = None,
     color: list | sv.ColorPalette | None = None,
     thickness: int = 2,
     basename: str | None = None,
@@ -330,8 +328,7 @@ def plot_annotations(
     Args:
         annotations: DataFrame with annotations
         savedir: Directory to save plot
-        height: Image height in pixels
-        width: Image width in pixels
+
         color: Color for annotations
         thickness: Line thickness
         basename: Base name for saved file
@@ -358,8 +355,6 @@ def plot_annotations(
         df=annotations,
         image=image,
         sv_color=annotation_color,
-        height=height,
-        width=width,
         thickness=thickness,
         radius=radius,
     )
@@ -387,8 +382,6 @@ def plot_results(
     results: pd.DataFrame,
     ground_truth: pd.DataFrame | None = None,
     savedir: str | None = None,
-    height: int | None = None,
-    width: int | None = None,
     results_color: list | sv.ColorPalette | None = None,
     ground_truth_color: list | sv.ColorPalette | None = None,
     thickness: int = 2,
@@ -407,8 +400,7 @@ def plot_results(
         results: Pandas DataFrame of prediction results.
         ground_truth: Optional DataFrame of ground-truth annotations.
         savedir: Optional path to save the figure; if None, plots interactively.
-        height: Image height in pixels. Required when using polygon geometry.
-        width: Image width in pixels. Required when using polygon geometry.
+
         results_color: Single RGB list (e.g., [245, 135, 66]) or an sv.ColorPalette for per-label colors.
         ground_truth_color: Single RGB list (e.g., [0, 165, 255]) or an sv.ColorPalette.
         thickness: Line thickness in pixels.
@@ -438,8 +430,6 @@ def plot_results(
         df=results,
         image=image,
         sv_color=results_color_sv,
-        height=height,
-        width=width,
         thickness=thickness,
         radius=radius,
     )
@@ -450,8 +440,6 @@ def plot_results(
             df=ground_truth,
             image=annotated_scene,
             sv_color=ground_truth_color_sv,
-            height=height,
-            width=width,
             thickness=thickness,
             radius=radius,
         )
@@ -478,9 +466,7 @@ def plot_results(
     return fig
 
 
-def _plot_image_with_geometry(
-    df, image, sv_color, thickness=1, radius=3, height=None, width=None
-):
+def _plot_image_with_geometry(df, image, sv_color, thickness=1, radius=3):
     """Annotates an image with the given results.
 
     Args:
@@ -494,7 +480,7 @@ def _plot_image_with_geometry(
     """
     # Determine the geometry type
     geom_type = determine_geometry_type(df)
-    detections = convert_to_sv_format(df, height=height, width=width)
+    detections = convert_to_sv_format(df, image=image)
 
     if geom_type == "box":
         bounding_box_annotator = sv.BoxAnnotator(color=sv_color, thickness=thickness)

@@ -149,14 +149,8 @@ def test_plot_results_point_no_label(tmpdir):
 
 
 def test_plot_results_polygon(gdf_poly, tmpdir):
-
-    # Read in image and get height
-    image = cv2.imread(get_data("OSBS_029.tif"))
-    height = image.shape[0]
-    width = image.shape[1]
-
-    # Call the function
-    visualize.plot_results(gdf_poly, savedir=tmpdir,height=height, width=width)
+    # Call the function without height/width
+    visualize.plot_results(gdf_poly, savedir=tmpdir)
 
     # Assertions
     assert os.path.exists(os.path.join(tmpdir, "OSBS_029.png"))
