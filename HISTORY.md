@@ -1,5 +1,97 @@
 # DeepForest Changelog
 
+## Version 2.0.0 (Date: November 4, 2025)
+
+### Breaking Changes - Deprecated Items Removed:
+
+**Removed Functions:**
+- `xml_to_annotations()` - Use `utilities.read_pascal_voc(path)` or the general `utilities.read_file(path)`.
+- `boxes_to_shapefile()` - Use `image_to_geo_coordinates()`.
+- `project_boxes()` - Use `image_to_geo_coordinates()`.
+- `annotations_to_shapefile` - Use `image_to_geo_coordinates()`.
+- `plot_points()` - Use `plot_results`
+- `draw_points()` - Use `plot_results`
+- `plot_predictions()` - Use `plot_results`
+- `draw_predictions()` - Use `plot_results`
+- `use_release()` - Use `load_model('weecology/deepforest-tree')` instead
+- `use_bird_release()` - Use `load_model('weecology/deepforest-bird')` instead
+
+**Removed Parameters:**
+- `geometry_type` and `save_dir` from `shapefile_to_annotations()`
+- `num_classes` and `label_dict` from `deepforest()` constructor - Use config file instead
+- `augment` parameter from all functions - Use `augmentations` parameter instead
+- `raster_path` parameter from predict_tile()  - Use `path` parameter instead
+
+**Migration Guide:**
+- Replace `xml_to_annotations(xml_path)` with `read_pascal_voc(xml_path)`
+- Replace `boxes_to_shapefile(df, root_dir)` with `image_to_geo_coordinates(df, root_dir)`
+- Replace `plot_points(image, points)` with `plot_results(results)`
+- Replace `draw_points(image, points)` with `plot_results(results)`
+- Replace `plot_predictions(image, df)` with `plot_results(results)`
+- Replace `draw_predictions(image, df)` with `plot_results(results)`
+- Replace `use_release()` with `load_model('weecology/deepforest-tree')`
+- Replace `use_bird_release()` with `load_model('weecology/deepforest-bird')`
+- Use config file or `config_args` instead of constructor parameters
+- Use `augmentations` parameter instead of `augment` parameter
+
+---
+
+## Developer
+
+**Developer Workflow:**
+- Pre-commit workflow with Ruff, docformatter, and nbQA for automated code quality checks
+- Editor integration recommendations (VS Code, PyCharm, Vim/Neovim)
+- Comprehensive developer contributing guide
+
+**Infrastructure:**
+- Modernized pyproject.toml configuration with improved dependency management
+- Better optional dependency handling (dev, docs)
+
+**Documentation:**
+- Enhanced Sphinx documentation with pydata theme
+- Improved version switcher for release candidates
+- ReadTheDocs integration with uv
+
+**Testing:**
+- Enhanced test coverage for edge cases
+- Added comprehensive test suites for dataset handling, evaluation metrics, CLI functionality, model inference, and HuggingFace model loading
+
+---
+
+## Features
+
+**Model Structure:**
+- Enhanced configuration handling via config file system
+- Better separation of concerns between training and prediction modules
+- Consistent type hints in `BaseModel` and model creation methods
+- Improved model validation with `check_model()` method
+
+**Data Handling:**
+- Improved annotation reading with unified `read_file()` method
+- Enhanced geometry type detection and conversion
+- Better coordinate system handling (image ↔ geographic)
+
+---
+
+## Enhancements
+
+**Installation & Packaging:**
+- Updated Python version requirement to 3.11+
+- Removed conda support (package now only available via PyPI)
+- Canonical PEP 440 versioning format implementation (e.g., `2.0.0rc1`)
+
+**Testing & Evaluation:**
+- Improved `evaluate_boxes()` with better multi-class support
+- Enhanced class recall and precision calculations
+- Better handling of empty predictions and ground truth
+- Improved point recall evaluation for point annotations
+
+**Documentation:**
+- Enhanced installation instructions (pip/uv focused)
+- Better examples and tutorials
+- Updated migration guides for deprecated features
+
+
 ## Version 2.0.0rc2 (Date: October 23, 2025)
 
 **Internal / Developer Updates:**
