@@ -19,8 +19,6 @@ serialize = [
 values = ["dev", "rc", "final"]
 optional_value = "final"
 
-search = "{current_version}"
-replace = "{new_version}"
 regex = false
 ignore_missing_version = false
 ignore_missing_files = false
@@ -35,6 +33,15 @@ commit_args = ""
 
 [[tool.bumpversion.files]]
 filename = "pyproject.toml"
+search = "version = \"{current_version}\""
+replace = "version = \"{new_version}\""
 
 [[tool.bumpversion.files]]
 filename = "src/deepforest/_version.py"
+search = "__version__ = \"{current_version}\""
+replace = "__version__ = \"{new_version}\""
+
+[[tool.bumpversion.files]]
+filename = ".bumpversion.toml"
+search = "current_version = \"{current_version}\""
+replace = "current_version = \"{new_version}\""
