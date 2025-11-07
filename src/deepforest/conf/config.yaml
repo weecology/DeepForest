@@ -8,6 +8,7 @@ accelerator: auto
 batch_size: 1
 
 # Model Architecture
+task: 'box'
 architecture: 'retinanet'
 num_classes: 1
 nms_thresh: 0.05
@@ -18,6 +19,7 @@ model:
     name: 'weecology/deepforest-tree'
     revision: 'main'
 
+# Label dict should be a dictionary of class_label -> class_id
 label_dict:
     Tree: 0
 

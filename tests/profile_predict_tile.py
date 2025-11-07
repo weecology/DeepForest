@@ -63,9 +63,7 @@ def profile_predict_tile(model, paths, device, workers=0, patch_size=1500, patch
 
 def run():
     # Initialize model
-    m = main.deepforest()
-    m.create_model()
-    m.load_model("Weecology/deepforest-bird")
+    m = main.deepforest(config='bird')
     m.config["train"]["fast_dev_run"] = False
     m.config["batch_size"] = 3
     strategies = ["single", "batch"]
