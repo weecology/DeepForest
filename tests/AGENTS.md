@@ -1,3 +1,28 @@
+# Agents Guidelines (Cursor)
+
+## Testing
+
+- When proposing code changes that require new tests:
+  - First add the minimal failing test(s) that reproduce the issue or specify the expected new behavior.
+  - Run those specific tests and show their failing output (red) before suggesting or implementing a fix.
+  - After implementing the fix, re-run the same tests and show they pass (green).
+- Keep tests short and focused, with a clear contract.
+- Prefer using existing data via `deepforest.get_data(...)` over generating new data at runtime.
+- Do not use print statements in tests; document failure with assertions.
+- Use fixtures for repeated setup; keep scope appropriate.
+- Test behavior, not implementation details.
+
+## Running tests
+
+- Use the project environment managed by `uv`:
+  - Sync dev dependencies:
+    - `uv sync --dev`
+  - Run a specific test or test selection:
+    - `uv run pytest -q tests/path/to/test_file.py::test_name`
+  - Run the full suite:
+    - `uv run pytest`
+- If permission prompts appear in Cursor (e.g., network), request and obtain them to complete installs and test runs.
+
 ## Testing
 
 - Tests will be run via pytest
