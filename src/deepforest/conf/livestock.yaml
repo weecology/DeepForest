@@ -1,0 +1,10 @@
+# Ensure we inherit from default config + overlay these overrides.
+defaults:
+  - config
+  - _self_
+
+task: 'box'
+
+model:
+    name: 'weecology/deepforest-livestock'
+    revision: 'main'

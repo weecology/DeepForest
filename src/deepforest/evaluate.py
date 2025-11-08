@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 import shapely
 
-from deepforest import IoU
+from deepforest import IoU, keypoint_distance
 from deepforest.utilities import determine_geometry_type
 
 
@@ -80,17 +80,39 @@ def compute_class_recall(results):
     return class_recall
 
 
-def __evaluate_wrapper__(predictions, ground_df, iou_threshold, numeric_to_label_dict):
+def __evaluate_wrapper__(
+    predictions,
+    ground_df,
+    match_threshold=None,
+    iou_threshold=None,
+    numeric_to_label_dict=None,
+):
     """Evaluate a set of predictions against a ground truth csv file
     Args:
         predictions: a pandas dataframe, if supplied a root dir is needed to give the relative path of files in df.name. The labels in ground truth and predictions must match. If one is numeric, the other must be numeric.
         ground_df: a pandas dataframe, if supplied a root dir is needed to give the relative path of files in df.name
-        iou_threshold: intersection-over-union threshold, see deepforest.evaluate
+        match_threshold: matching threshold - IoU for boxes (default 0.4), pixel distance for keypoints (default 10.0)
+        iou_threshold: DEPRECATED - use match_threshold instead
+        numeric_to_label_dict: dictionary mapping numeric labels to string labels
     Returns:
         results: a dictionary of results with keys, results, box_recall, box_precision, class_recall
     """
+
+    if iou_threshold is not None:
+        warnings.warn(
+            "iou_threshold parameter is deprecated and will be removed in a future version. "
+            "Use match_threshold instead (IoU for boxes, pixel distance for keypoints).",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        if match_threshold is None:
+            match_threshold = iou_threshold
+        else:
+            raise ValueError("Found both iou_threshold and match_threshold set.")
+
     # remove empty samples from ground truth
-    ground_df = ground_df[~((ground_df.xmin == 0) & (ground_df.xmax == 0))]
+    if "xmin" in ground_df.columns and "xmax" in ground_df.columns:
+        ground_df = ground_df[~((ground_df.xmin == 0) & (ground_df.xmax == 0))]
 
     # Default results for blank predictions
     if predictions.empty:
@@ -138,10 +160,12 @@ def __evaluate_wrapper__(predictions, ground_df, iou_threshold, numeric_to_label
 
     prediction_geometry = determine_geometry_type(predictions)
     if prediction_geometry == "point":
-        raise NotImplementedError("Point evaluation is not yet implemented")
+        results = evaluate_keypoints(
+            predictions=predictions, ground_df=ground_df, pixel_threshold=match_threshold
+        )
     elif prediction_geometry == "box":
         results = evaluate_boxes(
-            predictions=predictions, ground_df=ground_df, iou_threshold=iou_threshold
+            predictions=predictions, ground_df=ground_df, iou_threshold=match_threshold
         )
     else:
         raise NotImplementedError(f"Geometry type {prediction_geometry} not implemented")
@@ -398,3 +422,173 @@ def point_recall(predictions, ground_df):
     class_recall = compute_class_recall(matched_results)
 
     return {"results": results, "box_recall": box_recall, "class_recall": class_recall}
+
+
+def evaluate_image_keypoints(predictions, ground_df):
+    """Match predicted keypoints to ground truth keypoints for one image using
+    Hungarian algorithm.
+
+    Args:
+        predictions: a geopandas dataframe with Point geometry
+        ground_df: a geopandas dataframe with Point geometry
+
+    Returns:
+        result: pandas dataframe with matched keypoints, distance, and labels
+    """
+    plot_names = predictions["image_path"].unique()
+    if len(plot_names) > 1:
+        raise ValueError(
+            f"More than one plot passed to image keypoint evaluation: {plot_names}"
+        )
+
+    # Use keypoint_distance module for Hungarian matching
+    result = keypoint_distance.compute_distances(ground_df, predictions)
+
+    # Map prediction/truth IDs back to their original labels
+    pred_label_dict = predictions.label.to_dict()
+    ground_label_dict = ground_df.label.to_dict()
+    result["predicted_label"] = result.prediction_id.map(pred_label_dict)
+    result["true_label"] = result.truth_id.map(ground_label_dict)
+
+    return result
+
+
+def evaluate_keypoints(predictions, ground_df, pixel_threshold=10.0):
+    """Evaluate keypoint detection predictions against ground truth.
+
+    Uses Hungarian algorithm to optimally match predicted keypoints to ground truth
+    based on Euclidean pixel distance. This is mostly identical to the box evaluation.
+
+    Args:
+        predictions: a geopandas dataframe with Point geometry
+        ground_df: a geopandas dataframe with Point geometry
+        pixel_threshold: maximum pixel distance for a match to be considered valid
+
+    Returns:
+        dict with keys:
+            - results: dataframe of matched keypoints with distance and labels
+            - recall: overall recall (proportion of ground truth matched)
+            - precision: overall precision (proportion of predictions matched)
+            - class_recall: per-class recall and precision metrics
+            - predictions: original predictions dataframe
+            - ground_df: original ground truth dataframe
+    """
+    # If all empty ground truth, return 0 recall and precision
+    if ground_df.empty:
+        return {
+            "results": None,
+            "recall": None,
+            "precision": 0,
+            "class_recall": None,
+            "predictions": predictions,
+            "ground_df": ground_df,
+        }
+
+    # Convert to GeoDataFrame if needed and create Point geometries
+    if not isinstance(predictions, gpd.GeoDataFrame):
+        if "geometry" not in predictions.columns and all(
+            col in predictions.columns for col in ["x", "y"]
+        ):
+            predictions = predictions.copy()
+            predictions["geometry"] = predictions.apply(
+                lambda row: shapely.geometry.Point(row.x, row.y), axis=1
+            )
+        predictions = gpd.GeoDataFrame(predictions, geometry="geometry")
+
+    if not isinstance(ground_df, gpd.GeoDataFrame):
+        if "geometry" not in ground_df.columns and all(
+            col in ground_df.columns for col in ["x", "y"]
+        ):
+            ground_df = ground_df.copy()
+            ground_df["geometry"] = ground_df.apply(
+                lambda row: shapely.geometry.Point(row.x, row.y), axis=1
+            )
+        ground_df = gpd.GeoDataFrame(ground_df, geometry="geometry")
+
+    # Pre-group predictions by image
+    predictions_by_image = {
+        name: group.reset_index(drop=True)
+        for name, group in predictions.groupby("image_path")
+    }
+
+    # Run evaluation on all images
+    results = []
+    recalls = []
+    precisions = []
+    for image_path, group in ground_df.groupby("image_path"):
+        # Predictions for this image
+        image_predictions = predictions_by_image.get(image_path, pd.DataFrame())
+        if not isinstance(image_predictions, pd.DataFrame) or image_predictions.empty:
+            image_predictions = pd.DataFrame()
+
+        # If empty, add to list without computing matching
+        if image_predictions.empty:
+            # Reset index to ensure consistent DataFrame creation
+            group_reset = group.reset_index(drop=True)
+            result = pd.DataFrame(
+                {
+                    "truth_id": group_reset.index.values,
+                    "prediction_id": pd.Series([None] * len(group_reset), dtype="object"),
+                    "distance": pd.Series([np.inf] * len(group_reset), dtype="float64"),
+                    "predicted_label": pd.Series(
+                        [None] * len(group_reset), dtype="object"
+                    ),
+                    "score": pd.Series([None] * len(group_reset), dtype="float64"),
+                    "match": pd.Series([False] * len(group_reset), dtype="bool"),
+                    "true_label": group_reset.label.astype("object"),
+                    "geometry": group_reset.geometry,
+                }
+            )
+            recalls.append(0)
+            results.append(result)
+            continue
+        else:
+            group = group.reset_index(drop=True)
+            result = evaluate_image_keypoints(
+                predictions=image_predictions, ground_df=group
+            )
+
+        result["image_path"] = image_path
+        result["match"] = result.distance <= pixel_threshold
+        # Convert None to False for boolean consistency
+        result["match"] = result["match"].fillna(False)
+        true_positive = sum(result["match"])
+        recall = true_positive / result.shape[0]
+        precision = true_positive / image_predictions.shape[0]
+
+        recalls.append(recall)
+        precisions.append(precision)
+        results.append(result)
+
+    # Concatenate results
+    if results:
+        results = pd.concat(results, ignore_index=True)
+    else:
+        columns = [
+            "truth_id",
+            "prediction_id",
+            "distance",
+            "predicted_label",
+            "score",
+            "match",
+            "true_label",
+            "geometry",
+            "image_path",
+        ]
+        results = pd.DataFrame(columns=columns)
+
+    precision = np.mean(precisions)
+    recall = np.mean(recalls)
+
+    # Only matching keypoints are considered in class recall
+    matched_results = results[results.match]
+    class_recall = compute_class_recall(matched_results)
+
+    return {
+        "results": results,
+        "precision": precision,
+        "recall": recall,
+        "class_recall": class_recall,
+        "predictions": predictions,
+        "ground_df": ground_df,
+    }

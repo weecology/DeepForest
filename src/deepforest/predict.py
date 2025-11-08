@@ -1,5 +1,6 @@
 # Prediction utilities
 import os
+from warnings import warn
 
 import numpy as np
 import pandas as pd
@@ -23,7 +24,7 @@ def _predict_image_(
         model: a deepforest.main.model object
         image: a tensor of shape (channels, height, width)
         path: optional path to read image from disk instead of passing image arg
-        nms_thresh: Non-max suppression threshold, see config.nms_thresh
+        nms_thresh: Non-max suppression threshold, see config.nms_thresh (only for box detection)
     Returns:
         df: A pandas dataframe of predictions (Default)
         img: The input with predictions overlaid (Optional)
@@ -35,13 +36,14 @@ def _predict_image_(
     with torch.no_grad():
         prediction = model(image.unsqueeze(0))
 
+    df = utilities.format_geometry(prediction[0])
+
     # return None for no predictions
-    if len(prediction[0]["boxes"]) == 0:
+    if df is None:
         return None
 
-    df = utilities.format_boxes(prediction[0])
-
-    if df.label.nunique() > 1:
+    # NMS for boxes only
+    if "xmin" in df.columns and df.label.nunique() > 1:
         df = across_class_nms(df, iou_threshold=nms_thresh)
 
     # Add image path if provided
@@ -51,28 +53,40 @@ def _predict_image_(
     return df
 
 
-def transform_coordinates(boxes):
-    """Transform box coordinates from window space to original image space.
+def transform_coordinates(predictions):
+    """Transform coordinates from window space to original image space.
 
     Args:
-        boxes: DataFrame of predictions with xmin, ymin, xmax, ymax, window_xmin, window_ymin columns
+        predictions: DataFrame of predictions with coordinate columns and window_xmin, window_ymin
 
     Returns:
         DataFrame with transformed coordinates
     """
-    boxes = boxes.copy()
-    boxes["xmin"] += boxes["window_xmin"]
-    boxes["xmax"] += boxes["window_xmin"]
-    boxes["ymin"] += boxes["window_ymin"]
-    boxes["ymax"] += boxes["window_ymin"]
+    predictions = predictions.copy()
 
-    # Cast to int
-    boxes["xmin"] = boxes["xmin"].astype(int)
-    boxes["ymin"] = boxes["ymin"].astype(int)
-    boxes["xmax"] = boxes["xmax"].astype(int)
-    boxes["ymax"] = boxes["ymax"].astype(int)
+    # Handle box coordinates
+    if "xmin" in predictions.columns:
+        predictions["xmin"] += predictions["window_xmin"]
+        predictions["xmax"] += predictions["window_xmin"]
+        predictions["ymin"] += predictions["window_ymin"]
+        predictions["ymax"] += predictions["window_ymin"]
 
-    return boxes
+        # Cast to int
+        predictions["xmin"] = predictions["xmin"].astype(int)
+        predictions["ymin"] = predictions["ymin"].astype(int)
+        predictions["xmax"] = predictions["xmax"].astype(int)
+        predictions["ymax"] = predictions["ymax"].astype(int)
+
+    # Handle keypoint coordinates
+    elif "x" in predictions.columns and "y" in predictions.columns:
+        predictions["x"] += predictions["window_xmin"]
+        predictions["y"] += predictions["window_ymin"]
+
+        # Cast to int
+        predictions["x"] = predictions["x"].astype(int)
+        predictions["y"] = predictions["y"].astype(int)
+
+    return predictions
 
 
 def apply_nms(boxes, scores, labels, iou_threshold):
@@ -109,7 +123,7 @@ def apply_nms(boxes, scores, labels, iou_threshold):
     )
 
 
-def mosiac(predictions, iou_threshold=0.1):
+def mosaic(predictions, iou_threshold=0.1):
     """Mosaic predictions from overlapping windows.
 
     Args:
@@ -119,22 +133,31 @@ def mosiac(predictions, iou_threshold=0.1):
     Returns:
         A pandas dataframe of predictions.
     """
-    predicted_boxes = transform_coordinates(predictions)
+    predicted_results = transform_coordinates(predictions)
 
     # Skip NMS if there's is one or less prediction
-    if predicted_boxes.shape[0] <= 1:
-        return predicted_boxes
+    if predicted_results.shape[0] <= 1:
+        return predicted_results
+
+    # TODO: Should probably have an aggregation function here.
+    # For keypoints, eturn transformed coordinates
+    if "x" in predicted_results.columns and "y" in predicted_results.columns:
+        warn(
+            "Keypoint merging for overlapping windows is not yet supported, returning all points.",
+            stacklevel=2,
+        )
+        return predicted_results
 
     print(
-        f"{predicted_boxes.shape[0]} predictions in overlapping windows, applying non-max suppression"
+        f"{predicted_results.shape[0]} box predictions in overlapping windows, applying non-max suppression"
     )
 
     # Convert to tensors
     boxes = torch.tensor(
-        predicted_boxes[["xmin", "ymin", "xmax", "ymax"]].values, dtype=torch.float32
+        predicted_results[["xmin", "ymin", "xmax", "ymax"]].values, dtype=torch.float32
     )
-    scores = torch.tensor(predicted_boxes.score.values, dtype=torch.float32)
-    labels = predicted_boxes.label.values
+    scores = torch.tensor(predicted_results.score.values, dtype=torch.float32)
+    labels = predicted_results.label.values
 
     # Apply NMS
     filtered_boxes = apply_nms(boxes, scores, labels, iou_threshold)

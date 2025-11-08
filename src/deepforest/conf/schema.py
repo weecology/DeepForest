@@ -1,7 +1,5 @@
 from dataclasses import dataclass, field
 
-from omegaconf import MISSING
-
 
 @dataclass
 class ModelConfig:
@@ -53,6 +51,11 @@ class TrainConfig:
     architectures, such as transformers-based models which sometimes
     prefer a lower learning rate.
 
+    The optimizer can be "sgd" (with momentum=0.9) or "adamw". SGD is
+    the default and works well for RetinaNet. AdamW is recommended for
+    transformer-based models like DeformableDetr, typically with a lower
+    learning rate (e.g., 1e-4 to 5e-4).
+
     The number of epochs should be user-specified and depends on the
     size of the dataset (e.g. how many iterations the model will train
     for and how diverse the imagery is). DeepForest uses Lightning to
@@ -60,14 +63,16 @@ class TrainConfig:
     sanity checking.
     """
 
-    csv_file: str | None = MISSING
-    root_dir: str | None = MISSING
+    csv_file: str | None = None
+    root_dir: str | None = None
     lr: float = 0.001
+    optimizer: str = "sgd"
     scheduler: SchedulerConfig = field(default_factory=SchedulerConfig)
     epochs: int = 1
     fast_dev_run: bool = False
     preload_images: bool = False
     augmentations: list[str] | None = field(default_factory=lambda: ["HorizontalFlip"])
+    log_root: str = "logs"
 
 
 @dataclass
@@ -79,14 +84,16 @@ class ValidationConfig:
     converged or is overfitting.
     """
 
-    csv_file: str | None = MISSING
-    root_dir: str | None = MISSING
+    csv_file: str | None = None
+    root_dir: str | None = None
     preload_images: bool = False
     size: int | None = None
     iou_threshold: float = 0.4
     val_accuracy_interval: int = 20
     lr_plateau_target: str = "val_loss"
     augmentations: list[str] | None = field(default_factory=lambda: [])
+    # Keypoint-specific validation (used when task="keypoint")
+    pixel_distance_threshold: float = 10.0
 
 
 @dataclass
@@ -131,21 +138,27 @@ class Config:
     accelerator: str = "auto"
     batch_size: int = 1
 
+    task: str = "box"
     architecture: str = "retinanet"
     num_classes: int = 1
     label_dict: dict[str, int] = field(default_factory=lambda: {"Tree": 0})
+
+    # Keypoint-specific parameters (used when task="keypoint")
+    point_cost: float = 5.0
+    point_loss_coefficient: float = 5.0
+    point_loss_type: str = "l1"
 
     nms_thresh: float = 0.05
     score_thresh: float = 0.1
     model: ModelConfig = field(default_factory=ModelConfig)
 
     # Preprocessing
-    path_to_raster: str | None = MISSING
+    path_to_raster: str | None = None
     patch_size: int = 400
     patch_overlap: float = 0.05
-    annotations_xml: str | None = MISSING
-    rgb_dir: str | None = MISSING
-    path_to_rgb: str | None = MISSING
+    annotations_xml: str | None = None
+    rgb_dir: str | None = None
+    path_to_rgb: str | None = None
 
     train: TrainConfig = field(default_factory=TrainConfig)
     validation: ValidationConfig = field(default_factory=ValidationConfig)

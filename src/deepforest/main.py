@@ -1,5 +1,4 @@
 # entry point for deepforest model
-import importlib
 import os
 import warnings
 
@@ -29,7 +28,7 @@ class deepforest(pl.LightningModule):
         model: DeepForest model object
         existing_train_dataloader: PyTorch dataloader for training data
         existing_val_dataloader: PyTorch dataloader for validation data
-        config: DeepForest configuration object
+        config: DeepForest configuration object or name (tree, bird, etc)
         config_args: Dictionary of config overrides
     """
 
@@ -39,17 +38,19 @@ class deepforest(pl.LightningModule):
         transforms=None,
         existing_train_dataloader=None,
         existing_val_dataloader=None,
-        config: DictConfig = None,
+        config: str | DictConfig = "tree",
         config_args: dict | None = None,
     ):
         super().__init__()
 
-        # If not provided, load default config via OmegaConf.
-        if config is None:
-            config = utilities.load_config(overrides=config_args)
+        # Default/string config name
+        if isinstance(config, str):
+            config = utilities.load_config(config_name=config, overrides=config_args)
         # Hub overrides
         elif "config_args" in config:
             config = utilities.load_config(overrides=config["config_args"])
+        elif config is None:
+            config = utilities.load_config(overrides=config_args)
         elif config_args is not None:
             warnings.warn(
                 f"Ignoring options as configuration object was provided: {config_args}",
@@ -114,10 +115,35 @@ class deepforest(pl.LightningModule):
         if revision is None:
             revision = self.config.model.revision
 
-        model_class = importlib.import_module(
-            f"deepforest.models.{self.config.architecture}"
-        )
-        self.model = model_class.Model(config=self.config).create_model(
+        # TODO - utility/model function for this block
+        # Load appropriate model based on task type
+        if self.config.task == "box":
+            # For box detection, use specified architecture
+            if self.config.architecture == "DeformableDetr":
+                from deepforest.models.DeformableDetr import Model
+            elif self.config.architecture == "retinanet":
+                from deepforest.models.retinanet import Model
+            else:
+                raise ValueError(
+                    f"Unknown architecture: '{self.config.architecture}'. "
+                    f"Supported: 'DeformableDetr', 'retinanet'"
+                )
+        elif self.config.task == "keypoint":
+            # For keypoint detection, use keypoint model
+            if self.config.architecture == "DeformableDetr":
+                from deepforest.models.keypoint import Model
+            else:
+                raise ValueError(
+                    f"Unknown architecture: '{self.config.architecture}'. "
+                    f"Supported: 'DeformableDetr'"
+                )
+        else:
+            raise ValueError(
+                f"Invalid task type: '{self.config.task}'. "
+                f"Must be either 'box' or 'keypoint'."
+            )
+
+        self.model = Model(config=self.config).create_model(
             pretrained=model_name, revision=revision
         )
 
@@ -180,10 +206,27 @@ class deepforest(pl.LightningModule):
             None
         """
         if self.config.model.name is None or initialize_model:
-            model_class = importlib.import_module(
-                f"deepforest.models.{self.config.architecture}"
-            )
-            self.model = model_class.Model(config=self.config).create_model()
+            # TODO: DRY
+            # Load appropriate model based on task type
+            if self.config.task == "box":
+                if self.config.architecture == "DeformableDetr":
+                    from deepforest.models.DeformableDetr import Model
+                elif self.config.architecture == "retinanet":
+                    from deepforest.models.retinanet import Model
+                else:
+                    raise ValueError(
+                        f"Unknown architecture: '{self.config.architecture}'. "
+                        f"Supported: 'DeformableDetr', 'retinanet'"
+                    )
+            elif self.config.task == "keypoint":
+                from deepforest.models.keypoint import Model
+            else:
+                raise ValueError(
+                    f"Invalid task type: '{self.config.task}'. "
+                    f"Must be either 'box' or 'keypoint'."
+                )
+
+            self.model = Model(config=self.config).create_model()
             self.set_labels(self.config.label_dict)
         else:
             self.load_model()
@@ -310,14 +353,31 @@ class deepforest(pl.LightningModule):
             ds: a pytorch dataset
         """
 
-        ds = training.BoxDataset(
-            csv_file=csv_file,
-            root_dir=root_dir,
-            transforms=transforms,
-            label_dict=self.label_dict,
-            augmentations=augmentations,
-            preload_images=preload_images,
-        )
+        # Create appropriate dataset based on task type
+        # TODO: could this be a factory function/similar so we call dataset(task=x)?
+        if self.config.task == "box":
+            ds = training.BoxDataset(
+                csv_file=csv_file,
+                root_dir=root_dir,
+                transforms=transforms,
+                label_dict=self.label_dict,
+                augmentations=augmentations,
+                preload_images=preload_images,
+            )
+        elif self.config.task == "keypoint":
+            ds = training.KeypointDataset(
+                csv_file=csv_file,
+                root_dir=root_dir,
+                transforms=transforms,
+                label_dict=self.label_dict,
+                augmentations=augmentations,
+                preload_images=preload_images,
+            )
+        else:
+            raise ValueError(
+                f"Invalid task type: '{self.config.task}'. "
+                f"Must be either 'box' or 'keypoint'."
+            )
         if len(ds) == 0:
             raise ValueError(
                 f"Dataset from {csv_file} is empty. Check CSV for valid entries and columns."
@@ -604,11 +664,11 @@ class deepforest(pl.LightningModule):
         # Perform mosaic for each image_path, or all if image_path is None
         mosaic_results = []
         if results["image_path"].isnull().all():
-            mosaic_results.append(predict.mosiac(results, iou_threshold=iou_threshold))
+            mosaic_results.append(predict.mosaic(results, iou_threshold=iou_threshold))
         else:
             for image_path in results["image_path"].unique():
                 image_results = results[results["image_path"] == image_path]
-                image_mosaic = predict.mosiac(image_results, iou_threshold=iou_threshold)
+                image_mosaic = predict.mosaic(image_results, iou_threshold=iou_threshold)
                 image_mosaic["image_path"] = image_path
                 mosaic_results.append(image_mosaic)
 
@@ -654,17 +714,28 @@ class deepforest(pl.LightningModule):
 
         # allow for empty data if data augmentation is generated
         images, targets, image_names = batch
-        loss_dict = self.model.forward(images, targets)
+        model_output = self.model.forward(images, targets)
+
+        # TODO: This is messy to handle some other metrics from the keypoint model, but
+        # ideally we'd log them from somewhere else.
+
+        # Handle different return formats (keypoint returns dict, box returns loss_dict)
+        if isinstance(model_output, dict) and "loss_dict" in model_output:
+            loss_dict = model_output["loss_dict"]
+        else:
+            loss_dict = model_output
 
         # sum of regression and classification loss
-        losses = sum(loss_dict.values())
+        losses = sum([loss_dict[k] for k in loss_dict.keys() if k != "cardinality_error"])
 
         # Log loss
         for key, value in loss_dict.items():
             self.log(f"train_{key}", value, on_epoch=True, batch_size=len(images))
 
-        # Log sum of losses
-        self.log("train_loss", losses, on_epoch=True, batch_size=len(images))
+        # Log sum of losses and show in pbar
+        self.log(
+            "train_loss", losses, on_epoch=True, batch_size=len(images), prog_bar=True
+        )
 
         return losses
 
@@ -676,7 +747,14 @@ class deepforest(pl.LightningModule):
         # Torchvision does not return loss in eval mode.
         self.model.train()
         with torch.no_grad():
-            loss_dict = self.model.forward(images, targets)
+            model_output = self.model.forward(images, targets)
+
+        # TODO: same as above
+        # Handle different return formats (keypoint returns dict, box returns loss_dict)
+        if isinstance(model_output, dict) and "loss_dict" in model_output:
+            loss_dict = model_output["loss_dict"]
+        else:
+            loss_dict = model_output
 
         # sum of regression and classification loss
         losses = sum(loss_dict.values())
@@ -690,8 +768,8 @@ class deepforest(pl.LightningModule):
         except MisconfigurationException:
             pass
 
-        # In eval model, return predictions to calculate prediction metrics
-        preds = self.model.eval()
+        # In eval mode, return predictions to calculate prediction metrics
+        self.model.eval()
         with torch.no_grad():
             preds = self.model.forward(images, targets)
 
@@ -700,12 +778,22 @@ class deepforest(pl.LightningModule):
             filtered_preds = []
             filtered_targets = []
             for i, target in enumerate(targets):
-                if target["boxes"].shape[0] > 0:
+                # Check for non-empty targets based on task type
+                if "boxes" in target:
+                    has_annotations = target["boxes"].shape[0] > 0
+                elif "points" in target:
+                    has_annotations = target["points"].shape[0] > 0
+                else:
+                    has_annotations = False
+
+                if has_annotations:
                     filtered_preds.append(preds[i])
                     filtered_targets.append(target)
 
-            self.iou_metric.update(filtered_preds, filtered_targets)
-            self.mAP_metric.update(filtered_preds, filtered_targets)
+            # Box/polygon metrics
+            if self.config.task == "box":
+                self.iou_metric.update(filtered_preds, filtered_targets)
+                self.mAP_metric.update(filtered_preds, filtered_targets)
 
         # Log the predictions if you want to use them for evaluation logs
         for i, result in enumerate(preds):
@@ -785,6 +873,7 @@ class deepforest(pl.LightningModule):
         return empty_accuracy
 
     def log_epoch_metrics(self):
+        # Should be zero for points as the IoU metric has nothing in it.
         if len(self.iou_metric.groundtruth_labels) > 0:
             output = self.iou_metric.compute()
             # Lightning bug: claims this is a warning but it's not. See issue #16218 in Lightning-AI/pytorch-lightning
@@ -911,9 +1000,18 @@ class deepforest(pl.LightningModule):
         return results
 
     def configure_optimizers(self):
-        optimizer = optim.SGD(
-            self.model.parameters(), lr=self.config.train.lr, momentum=0.9
-        )
+        optimizer_type = self.config.train.optimizer.lower()
+
+        if optimizer_type == "adamw":
+            optimizer = optim.AdamW(self.model.parameters(), lr=self.config.train.lr)
+        elif optimizer_type == "sgd":
+            optimizer = optim.SGD(
+                self.model.parameters(), lr=self.config.train.lr, momentum=0.9
+            )
+        else:
+            raise ValueError(
+                f"Unknown optimizer: '{optimizer_type}'. Supported: 'sgd', 'adamw'"
+            )
 
         scheduler_config = self.config.train.scheduler
         scheduler_type = scheduler_config.type
@@ -977,18 +1075,22 @@ class deepforest(pl.LightningModule):
     def evaluate(
         self,
         csv_file,
+        match_threshold=None,
         iou_threshold=None,
         root_dir=None,
         size=None,
         batch_size=None,
         predictions=None,
     ):
-        """Compute intersection-over-union and precision/recall for a given
-        iou_threshold.
+        """Compute precision/recall metrics for predictions against ground
+        truth.
 
         Args:
-            csv_file: location of a csv file with columns "name","xmin","ymin","xmax","ymax","label"
-            iou_threshold: float [0,1] intersection-over-union threshold for true positive
+            csv_file: location of a csv file with columns "name","xmin","ymin","xmax","ymax","label" (boxes)
+                     or "image_path","x","y","label" (keypoints)
+            match_threshold: matching threshold - IoU [0,1] for boxes, pixel distance for keypoints.
+                           If None, uses config.validation.iou_threshold or pixel_distance_threshold.
+            iou_threshold: deprecated - use match_threshold instead
             batch_size: int, the batch size to use for prediction. If None, uses the batch size of the model.
             size: int, the size to resize the images to. If None, no resizing is done.
             predictions: list of predictions to use for evaluation. If None, predictions are generated from the model.
@@ -996,9 +1098,34 @@ class deepforest(pl.LightningModule):
         Returns:
             dict: Results dictionary containing precision, recall and other metrics
         """
+        # Deprecate IoU threshold in favour of a more generic matching threshold
+        # TODO: keep separate / different eval for evaluate wrapper?
+        if iou_threshold is not None:
+            import warnings
+
+            warnings.warn(
+                "iou_threshold parameter is deprecated and will be removed in a future version. "
+                "Use match_threshold instead (IoU for boxes, pixel distance for keypoints).",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            if match_threshold is None:
+                match_threshold = iou_threshold
+
         self.model.eval()
         ground_df = utilities.read_file(csv_file)
         ground_df["label"] = ground_df.label.apply(lambda x: self.label_dict[x])
+
+        # Convert box geometries to points for keypoint tasks
+        if self.config.task == "keypoint":
+            geom_type = utilities.determine_geometry_type(ground_df)
+            if geom_type == "box":
+                # Convert box centers to points (same as KeypointDataset does)
+                import shapely.geometry
+
+                ground_df["geometry"] = ground_df.geometry.apply(
+                    lambda box: shapely.geometry.Point(box.centroid.x, box.centroid.y)
+                )
 
         if root_dir is None:
             root_dir = os.path.dirname(csv_file)
@@ -1009,17 +1136,20 @@ class deepforest(pl.LightningModule):
                 csv_file, root_dir, size=size, batch_size=batch_size
             )
 
-        if iou_threshold is None:
-            iou_threshold = self.config.validation.iou_threshold
+        if match_threshold is None:
+            # Use task-specific threshold from config
+            if self.config.task == "keypoint":
+                match_threshold = self.config.validation.pixel_distance_threshold
+            else:
+                match_threshold = self.config.validation.iou_threshold
 
         results = evaluate_iou.__evaluate_wrapper__(
             predictions=predictions,
             ground_df=ground_df,
-            iou_threshold=iou_threshold,
+            match_threshold=match_threshold,
             numeric_to_label_dict=self.numeric_to_label_dict,
         )
 
-        # empty frame accuracy
         empty_accuracy = self.calculate_empty_frame_accuracy(ground_df, predictions)
         results["empty_frame_accuracy"] = empty_accuracy
 

@@ -51,8 +51,9 @@ def get_available_augmentations() -> list[str]:
 
 def get_transform(
     augmentations: str | list[str] | dict[str, Any] | None = None,
+    task: str = "box",
 ) -> A.Compose:
-    """Create Albumentations transform for bounding boxes.
+    """Create Albumentations transform for boxes or keypoints.
 
     Args:
         augmentations: Augmentation configuration:
@@ -60,6 +61,7 @@ def get_transform(
             - list: List of augmentation names
             - dict: Dict with names as keys and params as values
             - None: No augmentations
+        task: Task type - "box" for bounding boxes or "keypoint" for keypoints
 
     Returns:
         Composed albumentations transform
@@ -79,9 +81,13 @@ def get_transform(
         ...                              "HorizontalFlip": {"p": 0.5},
         ...                              "Downscale": {"scale_min": 0.25, "scale_max": 0.75}
         ...                          })
+
+        >>> # Keypoint augmentations
+        >>> transform = get_transform(augmentations=["HorizontalFlip"], task="keypoint")
     """
     transforms_list = []
     bbox_params = None
+    keypoint_params = None
 
     if augmentations is not None:
         augment_configs = _parse_augmentations(augmentations)
@@ -90,12 +96,19 @@ def get_transform(
             aug_transform = _create_augmentation(aug_name, aug_params)
             transforms_list.append(aug_transform)
 
-        bbox_params = A.BboxParams(format="pascal_voc", label_fields=["category_ids"])
+        if task == "box":
+            bbox_params = A.BboxParams(format="pascal_voc", label_fields=["labels"])
+        elif task == "keypoint":
+            keypoint_params = A.KeypointParams(format="xy", label_fields=["labels"])
+        else:
+            raise ValueError(f"Unsupported task: {task}. Must be 'box' or 'keypoint'.")
 
     # Always add ToTensorV2 at the end
     transforms_list.append(ToTensorV2())
 
-    return A.Compose(transforms_list, bbox_params=bbox_params)
+    return A.Compose(
+        transforms_list, bbox_params=bbox_params, keypoint_params=keypoint_params
+    )
 
 
 def _parse_augmentations(

@@ -8,6 +8,7 @@ accelerator: auto
 batch_size: 1
 
 # Model Architecture
+task: 'box'
 architecture: 'retinanet'
 num_classes: 1
 nms_thresh: 0.05
@@ -65,6 +66,10 @@ train:
             cooldown: 0
             min_lr: 0
             eps: 0.00000001
+
+    # Currently sgd and adamw are supported. If you use Adam,
+    # make sure your learning rate is lowered sufficiently.
+    optimizer: sgd
 
     # How many epochs to run for
     epochs: 1

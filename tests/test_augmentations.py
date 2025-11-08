@@ -172,7 +172,7 @@ def test_bbox_params():
     transform_repr = repr(transform)
     assert "bbox_params" in transform_repr
     assert "'format': 'pascal_voc'" in transform_repr
-    assert "'label_fields': ['category_ids']" in transform_repr
+    assert "'label_fields': ['labels']" in transform_repr
 
 
 def test_blur_augmentations():
