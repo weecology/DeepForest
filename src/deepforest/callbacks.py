@@ -16,6 +16,8 @@ import supervision as sv
 import torch
 from PIL import Image
 from pytorch_lightning import Callback
+import tempfile
+import shutil
 
 from deepforest import utilities, visualize
 from deepforest.datasets.training import BoxDataset
@@ -60,6 +62,62 @@ class ImagesCallback(Callback):
 
         self.trainer = trainer
         self.pl_module = pl_module
+
+        # --- Log up to 5 annotated training images (ground truth) before training starts ---
+        # This helps verify that the annotations align with the images. We render
+        # up to 5 non-empty annotated images to a temporary directory and then
+        # log them using the existing logger handling in _log_to_all().
+        try:
+            train_ds = trainer.train_dataloader.dataset
+
+            # Collect image names that actually have annotations
+            image_names = list(getattr(train_ds, "image_names", train_ds.annotations.image_path.unique()))
+            non_empty = []
+            for img_name in image_names:
+                try:
+                    targets = train_ds.annotations_for_path(img_name)
+                except Exception:
+                    # If annotations_for_path fails for any image, skip it
+                    continue
+                if targets and "boxes" in targets and getattr(targets["boxes"], "shape", (0,))[0] > 0:
+                    non_empty.append(img_name)
+
+            if len(non_empty) > 0:
+                n = min(5, len(non_empty))
+                selected = np.random.choice(non_empty, size=n, replace=False)
+
+                tmpdir = tempfile.mkdtemp()
+                try:
+                    for filename in selected:
+                        # Subset annotations for the chosen image and ensure root_dir is set
+                        sample_ann = train_ds.annotations[train_ds.annotations.image_path == filename].copy()
+                        sample_ann.root_dir = train_ds.root_dir
+
+                        # Plot and save annotated image(s) to the temporary directory
+                        basename = Path(filename).stem
+                        fig = visualize.plot_annotations(
+                            annotations=sample_ann,
+                            savedir=tmpdir,
+                            basename=basename,
+                            show=False,
+                        )
+                        plt.close(fig)
+
+                        # Log image to available loggers (Comet/TensorBoard/etc.)
+                        self._log_to_all(
+                            image=os.path.join(tmpdir, basename + ".png"),
+                            trainer=trainer,
+                            tag="train_annotated_sample",
+                        )
+                finally:
+                    # Clean up temporary directory
+                    try:
+                        shutil.rmtree(tmpdir)
+                    except Exception:
+                        pass
+        except Exception as e:
+            # Don't fail training startup on logging issues; warn instead
+            warnings.warn(f"Could not log annotated training samples: {e}", stacklevel=2)
 
         # Training samples
         pl_module.print("Logging training dataset samples.")
