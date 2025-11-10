@@ -14,7 +14,6 @@ from omegaconf import DictConfig
 from PIL import Image
 from pytorch_lightning.callbacks import LearningRateMonitor
 from pytorch_lightning.utilities import rank_zero_only
-from torch import optim
 from torchmetrics.classification import BinaryAccuracy
 from torchmetrics.detection import IntersectionOverUnion, MeanAveragePrecision
 
@@ -999,9 +998,33 @@ class deepforest(pl.LightningModule):
         return results
 
     def configure_optimizers(self):
-        optimizer = optim.SGD(
-            self.model.parameters(), lr=self.config.train.lr, momentum=0.9
-        )
+        param_dicts = [
+            {
+                "params": [
+                    p
+                    for n, p in self.model.named_parameters()
+                    if "backbone" not in n and p.requires_grad
+                ]
+            },
+            {
+                "params": [
+                    p
+                    for n, p in self.model.named_parameters()
+                    if "backbone" in n and p.requires_grad
+                ],
+                "lr": self.config.train.lr_backbone,
+            },
+        ]
+
+        optimizer_name = self.config.train.optimizer
+
+        if optimizer_name.lower() == "sgd":
+            optimizer = torch.optim.SGD(
+                param_dicts,
+                lr=self.config.train.lr,
+            )
+        elif optimizer_name.lower() == "adamw":
+            optimizer = torch.optim.AdamW(param_dicts, lr=self.config.train.lr)
 
         scheduler_config = self.config.train.scheduler
         scheduler_type = scheduler_config.type

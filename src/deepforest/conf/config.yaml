@@ -41,6 +41,9 @@ train:
 
     # Optimizer initial learning rate
     lr: 0.001
+    # For some models it's helpful to set a lower
+    # backbone learning rate. Default is the same.
+    lr_backbone: 0.001
 
     # Data augmentations for training
     # Augmentations must be a list of augmentation names, or a list
@@ -79,6 +82,7 @@ train:
     # preload images to GPU memory for fast training. This depends on GPU size and number of images.
     preload_images: False
     freeze_backbone: False
+    optimizer: sgd
 
 validation:
     csv_file:

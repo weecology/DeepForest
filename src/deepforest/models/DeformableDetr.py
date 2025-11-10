@@ -47,7 +47,12 @@ class DeformableDetrWrapper(nn.Module):
                 **hf_args,
             )
             self.processor = DeformableDetrImageProcessor.from_pretrained(
-                name, revision=revision, **hf_args
+                name,
+                do_resize=False,
+                do_rescale=False,
+                do_normalize=True,
+                revision=revision,
+                **hf_args,
             )
 
             # If user-provided label_dict doesn't match the model's id2label:
