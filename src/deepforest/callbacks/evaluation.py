@@ -61,14 +61,26 @@ class EvaluationCallback(Callback):
     def setup(
         self, trainer: Trainer, pl_module: LightningModule, stage: str | None = None
     ):
-        if self._is_temp:
-            # independent temp base per rank, then a rank subdir for clarity
-            base = Path(tempfile.mkdtemp(prefix="preds_"))
-            self._rank_base = base
-            self.save_dir = base / f"rank{trainer.global_rank}"
-        else:
-            self.save_dir = Path(self._user_save_dir)  # type: ignore[arg-type]
-        self.save_dir.mkdir(parents=True, exist_ok=True)
+        # Rank 0 creates/determines the save directory, then broadcasts to all ranks
+        # This ensures all ranks write shards to the same location
+        if trainer.is_global_zero:
+            if self._is_temp:
+                base = Path(tempfile.mkdtemp(prefix="preds_"))
+                self._rank_base = base
+                self.save_dir = base
+            else:
+                self.save_dir = Path(self._user_save_dir)  # type: ignore[arg-type]
+            self.save_dir.mkdir(parents=True, exist_ok=True)
+
+        # Broadcast the directory from rank 0 to all other ranks
+        if trainer.world_size > 1:
+            save_dir_str = str(self.save_dir) if trainer.is_global_zero else None
+            save_dir_str = trainer.strategy.broadcast(save_dir_str, src=0)
+            self.save_dir = Path(save_dir_str)
+
+        # Non-rank-0 processes ensure the directory exists
+        if not trainer.is_global_zero:
+            self.save_dir.mkdir(parents=True, exist_ok=True)
 
     def on_validation_epoch_start(
         self, trainer: Trainer, pl_module: LightningModule
@@ -161,13 +173,31 @@ class EvaluationCallback(Callback):
         epoch = trainer.current_epoch + 1
         suffix = ".csv.gz" if self.compress else ".csv"
 
+        # Deduplicate rank_dirs
+        unique_dirs = list(dict.fromkeys(rank_dirs))
+        if len(unique_dirs) < len(rank_dirs):
+            warnings.warn(
+                f"Detected {len(rank_dirs) - len(unique_dirs)} duplicate directories "
+                f"in rank_dirs. This may indicate a configuration issue.",
+                stacklevel=2,
+            )
+
         # discover shards
         shard_paths: list[Path] = []
-        for d in rank_dirs:
+        for d in unique_dirs:
             pattern = str(d / f"predictions_epoch_{epoch}_rank*.csv")
             if self.compress:
                 pattern += ".gz"
             shard_paths.extend(sorted(Path(p) for p in glob(pattern)))
+
+        # Validate shard count matches world size
+        world_size = trainer.strategy.world_size
+        if len(shard_paths) != world_size:
+            warnings.warn(
+                f"Expected {world_size} shard files but found {len(shard_paths)}. "
+                f"Shards: {[p.name for p in shard_paths]}",
+                stacklevel=2,
+            )
 
         merged_path = (
             (self.save_dir / f"predictions_epoch_{epoch}{suffix}")
