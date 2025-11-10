@@ -1004,7 +1004,8 @@ class deepforest(pl.LightningModule):
                     p
                     for n, p in self.model.named_parameters()
                     if "backbone" not in n and p.requires_grad
-                ]
+                ],
+                "name": "head",
             },
             {
                 "params": [
@@ -1013,6 +1014,7 @@ class deepforest(pl.LightningModule):
                     if "backbone" in n and p.requires_grad
                 ],
                 "lr": self.config.train.lr_backbone,
+                "name": "backbone",
             },
         ]
 
