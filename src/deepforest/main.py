@@ -1022,9 +1022,14 @@ class deepforest(pl.LightningModule):
             optimizer = torch.optim.SGD(
                 param_dicts,
                 lr=self.config.train.lr,
+                weight_decay=self.config.train.weight_decay,
             )
         elif optimizer_name.lower() == "adamw":
-            optimizer = torch.optim.AdamW(param_dicts, lr=self.config.train.lr)
+            optimizer = torch.optim.AdamW(
+                param_dicts,
+                lr=self.config.train.lr,
+                weight_decay=self.config.train.weight_decay,
+            )
 
         scheduler_config = self.config.train.scheduler
         scheduler_type = scheduler_config.type

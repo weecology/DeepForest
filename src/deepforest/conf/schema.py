@@ -73,6 +73,7 @@ class TrainConfig:
     check_annotations: bool = False
     freeze_backbone: bool = False
     optimizer: str = "sgd"
+    weight_decay: float = 0.0
 
 
 @dataclass

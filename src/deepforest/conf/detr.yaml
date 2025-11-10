@@ -1,0 +1,22 @@
+# DETR Base Configuration - Shared parameters for all folds
+defaults:
+  - config
+  - _self_
+
+model:
+  name: "SenseTime/deformable-detr"
+  revision: 'main'
+
+architecture: 'DeformableDetr'
+
+train:
+  epochs: 40
+  lr: 1e-4
+  lr_backbone: 1e-5
+  optimizer: adamw
+  weight_decay: 1e-4
+  scheduler:
+    type: cosine
+    params:
+      T_max: 75
+      eta_min: 1e-7

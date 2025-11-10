@@ -44,6 +44,7 @@ train:
     # For some models it's helpful to set a lower
     # backbone learning rate. Default is the same.
     lr_backbone: 0.001
+    weight_decay: 0.0
 
     # Data augmentations for training
     # Augmentations must be a list of augmentation names, or a list

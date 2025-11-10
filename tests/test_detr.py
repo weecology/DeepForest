@@ -131,3 +131,48 @@ def test_training_sample(config):
 
     # Assert non-zero loss
     assert sum([loss for loss in loss_dict.values()]) > 0
+
+
+def test_prepare_targets_bbox_conversion(config):
+    """
+    Test that _prepare_targets correctly converts bounding boxes from
+    [xmin, ymin, xmax, ymax] format to COCO format [x, y, width, height].
+    """
+    detr_model = DeformableDetr.Model(config).create_model()
+
+    # Create test targets in [xmin, ymin, xmax, ymax] format
+    test_targets = [
+        {
+            "boxes": torch.tensor([
+                [10.0, 20.0, 50.0, 80.0],  # Box 1: xmin=10, ymin=20, xmax=50, ymax=80
+                [100.0, 150.0, 200.0, 250.0],  # Box 2: xmin=100, ymin=150, xmax=200, ymax=250
+            ]),
+            "labels": torch.tensor([0, 0], dtype=torch.int64),
+        }
+    ]
+
+    # Call _prepare_targets
+    coco_targets = detr_model._prepare_targets(test_targets)
+
+    # Verify output structure
+    assert len(coco_targets) == 1
+    assert "annotations" in coco_targets[0]
+    assert len(coco_targets[0]["annotations"]) == 2
+
+    # Verify Box 1 conversion: [10, 20, 50, 80] -> [10, 20, 40, 60]
+    box1 = coco_targets[0]["annotations"][0]
+    assert box1["bbox"] == [10.0, 20.0, 40.0, 60.0], \
+        f"Expected [10.0, 20.0, 40.0, 60.0] but got {box1['bbox']}"
+    assert box1["area"] == 2400.0, \
+        f"Expected area 2400.0 but got {box1['area']}"
+    assert box1["category_id"] == 0
+    assert box1["iscrowd"] == 0
+
+    # Verify Box 2 conversion: [100, 150, 200, 250] -> [100, 150, 100, 100]
+    box2 = coco_targets[0]["annotations"][1]
+    assert box2["bbox"] == [100.0, 150.0, 100.0, 100.0], \
+        f"Expected [100.0, 150.0, 100.0, 100.0] but got {box2['bbox']}"
+    assert box2["area"] == 10000.0, \
+        f"Expected area 10000.0 but got {box2['area']}"
+    assert box2["category_id"] == 0
+    assert box2["iscrowd"] == 0

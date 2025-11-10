@@ -90,13 +90,18 @@ class DeformableDetrWrapper(nn.Module):
                 if isinstance(label, torch.Tensor):
                     label = label.item()
 
+                # Convert from [xmin, ymin, xmax, ymax] to COCO format [x, y, width, height]
+                xmin, ymin, xmax, ymax = box
+                coco_bbox = [xmin, ymin, xmax - xmin, ymax - ymin]
+                area = (xmax - xmin) * (ymax - ymin)
+
                 annotations_for_target.append(
                     {
                         "id": i,
                         "image_id": i,
                         "category_id": label,
-                        "bbox": box,
-                        "area": (box[3] - box[1]) * (box[2] - box[0]),
+                        "bbox": coco_bbox,
+                        "area": area,
                         "iscrowd": 0,
                     }
                 )
