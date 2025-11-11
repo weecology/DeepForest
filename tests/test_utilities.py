@@ -61,22 +61,63 @@ def test_read_file_in_memory_geodataframe():
     labels = ["Tree", "Tree"]
     df = pd.DataFrame({"geometry": sample_geometry, "label": labels})
     gdf = gpd.GeoDataFrame(df, geometry="geometry", crs="EPSG:32617")
+    # Convert to polygons (boxes) in projected units
+    gdf["geometry"] = [
+        geometry.box(left, bottom, right, top)
+        for left, bottom, right, top in gdf.geometry.buffer(0.5).bounds.values
+    ]
     gdf["image_path"] = get_data("OSBS_029.tif")
 
     # Process through read_file
     result = utilities.read_file(input=gdf)
 
-    # Verify coordinate conversion happened
-    original_coords = gdf.geometry.iloc[0].coords[0]
-    result_coords = result.geometry.iloc[0].coords[0]
-
-    # Coordinates should change after geo_to_image conversion
-    assert original_coords != result_coords
+    # Verify coordinate conversion happened by comparing polygon bounds
+    original_bounds = gdf.geometry.iloc[0].bounds
+    result_bounds = result.geometry.iloc[0].bounds
+    # Bounds should change after geo_to_image conversion
+    assert original_bounds != result_bounds
 
     # Verify output
     assert isinstance(result, gpd.GeoDataFrame)
     assert len(result) == 2
     assert "geometry" in result.columns
+    assert all(result.geometry.geom_type == "Polygon")
+
+
+def test_read_file_geodataframe_converts_to_image_coords(tmpdir):
+    """Assert read_file converts projected GeoDataFrame coordinates into image pixel coordinates."""
+    # Build a projected GeoDataFrame with simple boxes in the raster's CRS
+    points = [geometry.Point(404211.9 + 10, 3285102 + 20), geometry.Point(404211.9 + 20, 3285102 + 30)]
+    df = pd.DataFrame({"geometry": points, "label": ["Tree", "Tree"]})
+    gdf = gpd.GeoDataFrame(df, geometry="geometry", crs="EPSG:32617")
+    # Buffer points to create box polygons in projected units
+    gdf["geometry"] = [
+        geometry.box(left, bottom, right, top)
+        for left, bottom, right, top in gdf.geometry.buffer(0.5).bounds.values
+    ]
+    # Provide image path so utilities.read_file can open the raster for bounds/resolution
+    tif_path = get_data("OSBS_029.tif")
+    gdf["image_path"] = tif_path
+
+    # Call function under test
+    result = utilities.read_file(input=gdf)
+
+    # Geometry should be polygons
+    assert all(result.geometry.geom_type == "Polygon")
+
+    # Open raster to derive image-space bounds
+    with rio.open(tif_path) as src:
+        height, width = src.height, src.width
+
+    # Assert CRS is removed after conversion (image pixel space has no CRS)
+    assert result.crs is None
+
+    # Assert all geometries lie within image pixel extent [0, width] x [0, height]
+    bounds = result.geometry.bounds
+    assert (bounds.minx >= 0).all()
+    assert (bounds.miny >= 0).all()
+    assert (bounds.maxx <= width).all()
+    assert (bounds.maxy <= height).all()
 
 
 def test_read_file_in_memory_dataframe():
