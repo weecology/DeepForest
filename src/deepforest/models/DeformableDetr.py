@@ -183,6 +183,7 @@ class DeformableDetrWrapper(nn.Module):
                 target_sizes=[i.shape[-2:] for i in images]
                 if isinstance(images, list)
                 else [images.shape[-2:]],
+                top_k=self.net.config.num_queries,
             )
 
             # DETR is specifically designed to be NMS-free, however we've seen cases
