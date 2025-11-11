@@ -178,6 +178,7 @@ def shapefile_to_annotations(
     root_dir: str | None = None,
     buffer_size: float | None = None,
     convert_point: bool = False,
+    label: str | None = None,
 ) -> gpd.GeoDataFrame:
     """Convert shapefile annotations to DeepForest format.
 
@@ -187,6 +188,7 @@ def shapefile_to_annotations(
         root_dir: Directory to prepend to image paths
         buffer_size: Buffer size for point-to-polygon conversion
         convert_point: Convert points to bounding boxes
+        label: Optional label to assign if shapefile lacks a 'label' column
 
     Returns:
         GeoDataFrame with annotations
@@ -257,13 +259,14 @@ def shapefile_to_annotations(
             print(f"CRS of image is {raster_crs}")
             gdf = geo_to_image_coordinates(gdf, src.bounds, src.res[0])
 
-    # check for label column
+    # check for label column, allow override via argument
     if "label" not in gdf.columns:
-        raise ValueError(
-            "No label column found in shapefile. Please add a column named 'label' to your shapefile."
-        )
-    else:
-        gdf["label"] = gdf["label"]
+        if label is None:
+            raise ValueError(
+                "No label column found in shapefile. Please add a column named 'label' "
+                "to your shapefile or pass label='YourLabel' to shapefile_to_annotations/read_file."
+            )
+        gdf["label"] = label
 
     # add filename
     gdf["image_path"] = os.path.basename(rgb)
@@ -402,6 +405,7 @@ def read_coco(json_file):
 def read_file(
     input: str | pd.DataFrame,
     root_dir: str | None = None,
+    rgb_path: str | None = None,
     image_path: str | None = None,
     label: str | None = None,
 ) -> gpd.GeoDataFrame:
@@ -410,12 +414,15 @@ def read_file(
     Args:
         input: Path to file, DataFrame, or GeoDataFrame
         root_dir: Root directory for image files
+        rgb_path: Path to the RGB image associated with a shapefile. Use when the shapefile
+            does not have an image_path column.
         image_path: Assign to all rows (use only for single image)
         label: Assign to all rows (use only for single label)
 
     Returns:
         GeoDataFrame with geometry column
     """
+    # For non-shapefile DataFrames, image_path assigns a column value; for shapefiles, prefer rgb_path.
     if image_path is not None:
         warnings.warn(
             "You have passed an image_path. "
@@ -440,7 +447,13 @@ def read_file(
         elif input.endswith(".json"):
             df = read_coco(input)
         elif input.endswith((".shp", ".gpkg")):
-            df = shapefile_to_annotations(input, root_dir=root_dir)
+            # Use rgb_path for shapefiles that don't have image_path; fall back to image_path if provided.
+            df = shapefile_to_annotations(
+                input,
+                rgb=rgb_path or image_path,
+                root_dir=root_dir,
+                label=label,
+            )
         elif input.endswith(".xml"):
             df = read_pascal_voc(input)
         else:
@@ -452,7 +465,12 @@ def read_file(
     else:
         # Explicitly check for GeoDataFrame first
         if isinstance(input, gpd.GeoDataFrame):
-            return shapefile_to_annotations(input, root_dir=root_dir)
+            return shapefile_to_annotations(
+                input,
+                rgb=rgb_path or image_path,
+                root_dir=root_dir,
+                label=label,
+            )
         elif isinstance(input, pd.DataFrame):
             df = input.copy(deep=True)
         else:

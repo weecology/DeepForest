@@ -5,12 +5,25 @@ The most time-consuming part of many open-source projects is getting the data in
 You can also optionally provide:
   - `image_path`: A single image path to assign to all annotations in the input. This is useful when the input contains annotations for only one image.
   - `label`: A single label to apply to all rows. This is helpful when all annotations share the same label (e.g., "Tree").
+  - `rgb_path`: For shapefiles (`.shp`, `.gpkg`) that do not contain an `image_path` column, provide the path to the corresponding RGB image so that coordinate conversion can occur.
 
 Example:
 ```
 from deepforest import utilities
 
 df = utilities.read_file("annotations.csv", image_path="OSBS_029.tif", label="Tree")
+```
+
+For shapefiles that lack an `image_path` column, pass `rgb_path`:
+
+```python
+from deepforest import utilities
+
+gdf = utilities.read_file(
+    input="/path/to/annotations.shp",
+    rgb_path="/path/to/OSBS_029.tif",   # required if no image_path column
+    label="Tree"                        # optional: used if no 'label' column in the shapefile
+)
 ```
 
 **Note:** If your input file contains multiple image filenames and you do not provide the `image_path` argument, a warning may appear:
@@ -138,6 +151,29 @@ from deepforest import utilities
 
 shp = utilities.read_file(input="/path/to/boxes_shapefile.shp")
 shp.head()
+```
+
+If your shapefile does not include an `image_path` column, you must provide the raster path via `rgb_path`:
+
+```python
+from deepforest import utilities
+
+shp = utilities.read_file(
+    input="/path/to/boxes_shapefile.shp",
+    rgb_path="/path/to/OSBS_029.tif"
+)
+```
+
+If your shapefile also lacks a `label` column, you can assign one for all rows:
+
+```python
+from deepforest import utilities
+
+shp = utilities.read_file(
+    input="/path/to/boxes_shapefile.shp",
+    rgb_path="/path/to/OSBS_029.tif",
+    label="Tree"
+)
 ```
 
 Example output:

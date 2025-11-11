@@ -109,6 +109,22 @@ def test_shapefile_to_annotations_convert_unprojected_to_boxes(tmpdir):
     assert shp.shape[0] == 2
 
 
+def test_read_file_shapefile_with_rgb_path(tmpdir):
+    # Create a shapefile with no image_path or label columns
+    sample_geometry = [geometry.Point(10, 20), geometry.Point(20, 40)]
+    df = pd.DataFrame({"geometry": sample_geometry})
+    gdf = gpd.GeoDataFrame(df, geometry="geometry")
+    shp_path = "{}/annotations_no_image_label.shp".format(tmpdir)
+    gdf.to_file(shp_path)
+
+    # Provide rgb_path and label via read_file to fill missing columns
+    rgb = get_data("OSBS_029.png")
+    result = utilities.read_file(input=shp_path, rgb_path=rgb, label="Tree")
+
+    assert result.shape[0] == 2
+    # image_path should be taken from the provided rgb_path
+    assert os.path.basename(rgb) in result.image_path.unique()
+
 def test_shapefile_to_annotations_invalid_epsg(tmpdir):
     sample_geometry = [geometry.Point(404211.9 + 10, 3285102 + 20), geometry.Point(404211.9 + 20, 3285102 + 20)]
     labels = ["Tree", "Tree"]
