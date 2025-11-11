@@ -15,6 +15,8 @@ from tqdm import tqdm
 from deepforest import _ROOT
 from deepforest.conf.schema import Config as StructuredConfig
 
+# Testing that a change in one file doesn't trigger ruff on all files
+
 
 def load_config(
     config_name: str = "config.yaml",
