@@ -72,7 +72,9 @@ class ImagesCallback(Callback):
             train_ds = trainer.train_dataloader.dataset
 
             # Collect image names that actually have annotations
-            image_names = list(getattr(train_ds, "image_names", train_ds.annotations.image_path.unique()))
+            image_names = list(
+                getattr(train_ds, "image_names", train_ds.annotations.image_path.unique())
+            )
             non_empty = []
             for img_name in image_names:
                 try:
@@ -80,7 +82,11 @@ class ImagesCallback(Callback):
                 except Exception:
                     # If annotations_for_path fails for any image, skip it
                     continue
-                if targets and "boxes" in targets and getattr(targets["boxes"], "shape", (0,))[0] > 0:
+                if (
+                    targets
+                    and "boxes" in targets
+                    and getattr(targets["boxes"], "shape", (0,))[0] > 0
+                ):
                     non_empty.append(img_name)
 
             if len(non_empty) > 0:
@@ -91,7 +97,9 @@ class ImagesCallback(Callback):
                 try:
                     for filename in selected:
                         # Subset annotations for the chosen image and ensure root_dir is set
-                        sample_ann = train_ds.annotations[train_ds.annotations.image_path == filename].copy()
+                        sample_ann = train_ds.annotations[
+                            train_ds.annotations.image_path == filename
+                        ].copy()
                         sample_ann.root_dir = train_ds.root_dir
 
                         # Plot and save annotated image(s) to the temporary directory
@@ -125,7 +133,9 @@ class ImagesCallback(Callback):
         # so automated runs are unaffected.
         try:
             if os.getenv("DEEPFOREST_IMAGE_SCREEN_PROMPT") == "1" and sys.stdin.isatty():
-                print("\nDeepForest image screen options:\n1) Default\n2) Arduino\n3) Custom")
+                print(
+                    "\nDeepForest image screen options:\n1) Default\n2) Arduino\n3) Custom"
+                )
                 choice = input("Select option [1-3] (enter to skip): ").strip()
                 if choice == "3":
                     # Supported sizes and drivers (kept small and common)
@@ -194,7 +204,9 @@ class ImagesCallback(Callback):
                     print(f"Custom screen configured: {self.custom_screen}\n")
         except Exception as e:
             # Never fail training startup for interactive configuration issues
-            warnings.warn(f"Could not run interactive image screen config: {e}", stacklevel=2)
+            warnings.warn(
+                f"Could not run interactive image screen config: {e}", stacklevel=2
+            )
 
         # Training samples
         pl_module.print("Logging training dataset samples.")
