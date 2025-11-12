@@ -37,6 +37,9 @@ df.spotlight(format="lightly", out_dir="spotlight_export")
 ## API Reference
 
 - `view_with_spotlight(df, format="lightly"|"objects", out_dir=...)` - Convert DeepForest DataFrame to Spotlight format
+  - Supports flexible image reference columns: `image_path`, `file_name`, `source_image`, `image`
+  - Handles NaN values in optional columns gracefully
+  - Validates required bbox columns: `xmin`, `ymin`, `xmax`, `ymax`
 - `df.spotlight(...)` - DataFrame accessor method (calls `view_with_spotlight`)
 - `prepare_spotlight_package(gallery_dir, out_dir)` - Package gallery thumbnails for Spotlight
 - `export_to_spotlight_dataset(gallery_dir)` - Create Hugging Face Dataset from gallery
@@ -92,21 +95,31 @@ results = model.predict_image(path=image_path)
 view_with_spotlight(results)
 ```
 
-![Spotlight Interface](assets/spotlight_demo_screenshot.png)
+```{image} ../assets/spotlight_demo_screenshot.png
+:alt: Spotlight interface main view showing DeepForest predictions with data table and image viewer
+:width: 600px
+:align: center
+```
 *Main interface showing detection results in an interactive table*
 
-![Detection Details](assets/spotlight_demo_screenshot1.png)
+```{image} ../assets/spotlight_demo_screenshot1.png
+:alt: Spotlight interface showing detailed bounding box visualization on forest imagery
+:width: 600px
+:align: center
+```
 *Confidence scores and bounding box coordinates for each detection*
 
-![Image Inspector](assets/spotlight_demo_screenshot2.png)
+```{image} ../assets/spotlight_demo_screenshot2.png
+:alt: Spotlight interface displaying confidence score distribution and filtering options
+:width: 600px
+:align: center
+```
 *Source imagery with detection metadata*
 
-The interface displays:
-- 55 tree detections from the sample image
-- Confidence scores ranging from 0.303 to 0.799
-- Bounding box coordinates for each detection
-- Interactive sorting and filtering capabilities
-- Source image visualization
+The screenshots show the Spotlight interface with:
+- **Main view**: Data table displaying tree detections with confidence scores, bounding box coordinates, and interactive sorting capabilities
+- **Image viewer**: Visual representation of detected trees with bounding boxes overlaid on the source forest imagery
+- **Analytics panel**: Confidence score distribution charts and filtering options for analyzing model performance across detections
 
 ## Demo Script
 
@@ -176,13 +189,65 @@ See `src/deepforest/visualize/spotlight_export.py` for packaging utilities and `
 
 For integration with other tools, you can export the gallery data in standard formats and use external tools for further processing.
 
+## Data Format Flexibility
+
+The Spotlight integration supports flexible column naming for image references:
+
+```python
+# All of these column names work for image references:
+df_path = pd.DataFrame({"image_path": ["img.jpg"], ...})
+df_file = pd.DataFrame({"file_name": ["img.jpg"], ...})
+df_source = pd.DataFrame({"source_image": ["img.jpg"], ...})
+df_image = pd.DataFrame({"image": ["img.jpg"], ...})
+
+# All will work with Spotlight
+for df in [df_path, df_file, df_source, df_image]:
+    spotlight_data = view_with_spotlight(df)
+```
+
+The integration also handles missing values gracefully:
+- NaN values in optional columns (label, score) are excluded from output
+- Empty DataFrames raise clear error messages
+- Missing required columns (bbox coordinates) are validated
+
+## Error Handling
+
+The integration provides clear error messages for common issues:
+
+```python
+# Empty DataFrame
+df_empty = pd.DataFrame()
+# Raises: ValueError("DataFrame is empty")
+
+# Missing image reference
+df_no_image = pd.DataFrame({"xmin": [10], "ymin": [10], "xmax": [50], "ymax": [50]})
+# Raises: ValueError("DataFrame must contain an image reference column")
+
+# Missing bbox columns
+df_no_bbox = pd.DataFrame({"image_path": ["test.jpg"], "label": ["Tree"]})
+# Raises: ValueError("Missing required bbox column")
+
+# Invalid format
+df.spotlight(format="invalid")
+# Raises: ValueError("Unsupported format: invalid")
+```
+
 ## Testing
 
-Run the test suite:
+Run the comprehensive test suite:
 
 ```bash
 python -m pip install -U pytest pandas
-python -m pytest -q tests/test_spotlight_adapter.py
+python -m pytest -q tests/test_spotlight.py
 ```
 
-Tests are located in `tests/test_spotlight_adapter.py` and `tests/test_spotlight_export.py`.
+The test suite covers:
+- Basic functionality and error handling
+- Multiple image reference column formats
+- NaN value handling
+- Format consistency between "objects" and "lightly" formats
+- Complete prediction workflows
+- DataFrame accessor methods
+- Export functionality
+
+Tests are consolidated in `tests/test_spotlight.py`.
