@@ -6,9 +6,11 @@ on_fit_begin methods and inject model and epoch kwargs.
 
 import json
 import os
+import shutil
+import sys
+import tempfile
 import warnings
 from pathlib import Path
-import sys
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -17,8 +19,6 @@ import supervision as sv
 import torch
 from PIL import Image
 from pytorch_lightning import Callback
-import tempfile
-import shutil
 
 from deepforest import utilities, visualize
 from deepforest.datasets.training import BoxDataset
