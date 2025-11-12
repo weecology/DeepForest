@@ -594,6 +594,3 @@ def write_gallery_html(
 
     with open(savedir_path / "index.html", "w", encoding="utf8") as fh:
         fh.write(html)
-
-
-# Web server functionality removed - not part of core Spotlight integration
