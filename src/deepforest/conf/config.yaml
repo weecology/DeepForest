@@ -85,6 +85,10 @@ train:
     freeze_backbone: False
     optimizer: sgd
 
+    # DETR
+    # no-object class in loss
+    eos_coefficient: 0.1
+
 validation:
     csv_file:
     root_dir:

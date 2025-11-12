@@ -74,6 +74,7 @@ class TrainConfig:
     freeze_backbone: bool = False
     optimizer: str = "sgd"
     weight_decay: float = 0.0
+    eos_coefficient: float = 0.1
 
 
 @dataclass

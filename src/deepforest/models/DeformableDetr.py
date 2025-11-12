@@ -44,6 +44,7 @@ class DeformableDetrWrapper(nn.Module):
                 revision=revision,
                 num_labels=self.config.num_classes,
                 ignore_mismatched_sizes=True,
+                eos_coefficient=self.config.train.eos_coefficient,
                 **hf_args,
             )
             self.processor = DeformableDetrImageProcessor.from_pretrained(
