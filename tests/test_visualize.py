@@ -149,16 +149,30 @@ def test_plot_results_point_no_label(tmpdir):
 
 
 def test_plot_results_polygon(gdf_poly, tmpdir):
-
-    # Read in image and get height
-    image = cv2.imread(get_data("OSBS_029.tif"))
-    height = image.shape[0]
-    width = image.shape[1]
-
-    # Call the function
-    visualize.plot_results(gdf_poly, savedir=tmpdir,height=height, width=width)
+    # Call the function without height/width
+    visualize.plot_results(gdf_poly, savedir=tmpdir)
 
     # Assertions
+    assert os.path.exists(os.path.join(tmpdir, "OSBS_029.png"))
+
+
+def test_plot_with_relative_paths(tmpdir):
+    # Test that plot_results and plot_annotations work with relative paths and root_dir
+    full_path = get_data("OSBS_029.png")
+    relative_name = os.path.basename(full_path)
+    root_dir = os.path.dirname(full_path)
+
+    data = {
+        'geometry': [geometry.Polygon([(10, 10), (20, 10), (20, 20), (10, 20), (15, 25)])],
+        'label': ['Tree'],
+        'image_path': [relative_name],
+        'score': [0.9]
+    }
+    gdf = gpd.GeoDataFrame(data)
+    gdf.root_dir = root_dir
+
+    visualize.plot_results(gdf, savedir=tmpdir, show=False)
+    visualize.plot_annotations(gdf, savedir=tmpdir, show=False)
     assert os.path.exists(os.path.join(tmpdir, "OSBS_029.png"))
 
 
