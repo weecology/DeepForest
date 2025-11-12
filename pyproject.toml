@@ -41,7 +41,7 @@ dependencies = [
     "huggingface_hub>=0.25.0",
     "hydra-core",
     "matplotlib",
-    "numpy<2.0",
+    "numpy",
     "omegaconf",
     "opencv-python-headless>=4.5.4",
     "pandas",
