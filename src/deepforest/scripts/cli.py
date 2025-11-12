@@ -153,7 +153,7 @@ def train(
         gradient_clip_val=0.5,
         accelerator=config.accelerator,
         strategy="ddp_find_unused_parameters_true"
-        if torch.cuda.is_available()
+        if torch.cuda.is_available() and "dino" in config.model.name
         else "auto",
     )
 
