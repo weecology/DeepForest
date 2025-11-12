@@ -2,6 +2,14 @@
 
 DeepForest comes with prebuilt models to help you get started. These models are available on Hugging Face and are loaded using the `load_model` function, they always are seen as the starting point for further training, rather than a general purpose tool for new imagery.
 
+We provide standard configuration files for `tree` (default), `bird` and `livestock`:
+
+```python
+from deepforest import main
+
+m = main.deepforest(config='tree')
+```
+
 ## Demo
 
 The prebuilt models can be viewed on the hugging face demo. These are for individual images only using the predict_image function. Large files that would typically be run with predict_tile and cut into smaller pieces will not produce accurate results.
@@ -48,10 +56,7 @@ m = main.deepforest()
 m.load_model(model_name="weecology/deepforest-bird")
 
 # Alternatively, via configuration:
-config_args = {
-  "model": {"name": "weecology/deepforest-bird"}
-}
-m = main.deepforest(config_args=config_args)
+m = main.deepforest(config='bird')
 
 ```
 
@@ -96,10 +101,7 @@ m = main.deepforest()
 m.load_model(model_name="weecology/deepforest-livestock")
 
 # Alternatively, via configuration:
-config_args = {
-  "model": {"name": "weecology/deepforest-livestock"}
-}
-m = main.deepforest(config_args=config_args)
+m = main.deepforest(config='livestock')
 ```
 
 ## Crop Classifiers model

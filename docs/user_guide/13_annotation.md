@@ -129,8 +129,7 @@ from deepforest.visualize import plot_results
 
 PATH_TO_DIR = "/path/to/directory"
 files = glob(f"{PATH_TO_DIR}/*.JPG")
-m = main.deepforest(config_args={"label_dict": {"Bird": 0}})
-m.load_model(model_name="weecology/deepforest-bird", revision="main")
+m = main.deepforest(config='bird')
 
 for path in files:
     boxes = m.predict_image(path=path)
