@@ -162,11 +162,13 @@ def test_plot_with_relative_paths(tmpdir):
     relative_name = os.path.basename(full_path)
     root_dir = os.path.dirname(full_path)
 
-    df = pd.DataFrame({
-        'xmin': [10], 'ymin': [10], 'xmax': [30], 'ymax': [30],
-        'label': ['Tree'], 'image_path': [relative_name], 'score': [0.9]
-    })
-    gdf = utilities.read_file(df)
+    data = {
+        'geometry': [geometry.Polygon([(10, 10), (20, 10), (20, 20), (10, 20), (15, 25)])],
+        'label': ['Tree'],
+        'image_path': [relative_name],
+        'score': [0.9]
+    }
+    gdf = gpd.GeoDataFrame(data)
     gdf.root_dir = root_dir
 
     visualize.plot_results(gdf, savedir=tmpdir, show=False)
