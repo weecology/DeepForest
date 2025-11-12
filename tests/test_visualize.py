@@ -156,26 +156,21 @@ def test_plot_results_polygon(gdf_poly, tmpdir):
     assert os.path.exists(os.path.join(tmpdir, "OSBS_029.png"))
 
 
-def test_plot_results_polygon_relative_no_dims(tmpdir):
-    # Build polygon gdf with relative image_path and root_dir, without passing width/height
-    full_path = get_data("OSBS_029.tif")
+def test_plot_with_relative_paths(tmpdir):
+    # Test that plot_results and plot_annotations work with relative paths and root_dir
+    full_path = get_data("OSBS_029.png")
     relative_name = os.path.basename(full_path)
     root_dir = os.path.dirname(full_path)
 
-    data = {
-        'geometry': [
-            geometry.Polygon([(10, 10), (20, 10), (20, 20), (10, 20), (15, 25)]),
-            geometry.Polygon([(30, 30), (40, 30), (40, 40), (30, 40), (35, 35)])
-        ],
-        'label': ['Tree', 'Tree'],
-        'image_path': [relative_name, relative_name],
-        'score': [0.9, 0.8]
-    }
-    gdf = gpd.GeoDataFrame(data)
+    df = pd.DataFrame({
+        'xmin': [10], 'ymin': [10], 'xmax': [30], 'ymax': [30],
+        'label': ['Tree'], 'image_path': [relative_name], 'score': [0.9]
+    })
+    gdf = utilities.read_file(df)
     gdf.root_dir = root_dir
 
-    # Should auto-detect width/height using root_dir + image_path
     visualize.plot_results(gdf, savedir=tmpdir, show=False)
+    visualize.plot_annotations(gdf, savedir=tmpdir, show=False)
     assert os.path.exists(os.path.join(tmpdir, "OSBS_029.png"))
 
 
@@ -236,37 +231,4 @@ def test_image_empty():
     assert image is not None
 
 
-def test_plot_results_with_relative_image_path_and_root_dir(tmpdir):
-    # Use a relative image_path and ensure df.root_dir is used by _load_image
-    full_path = get_data("OSBS_029.png")
-    relative_name = os.path.basename(full_path)
-    root_dir = os.path.dirname(full_path)
 
-    df = pd.DataFrame({
-        'xmin': [10], 'ymin': [10], 'xmax': [30], 'ymax': [30],
-        'label': ['Tree'], 'image_path': [relative_name], 'score': [0.9]
-    })
-
-    gdf = utilities.read_file(df)
-    gdf.root_dir = root_dir
-
-    visualize.plot_results(gdf, savedir=tmpdir, show=False)
-    assert os.path.exists(os.path.join(tmpdir, "OSBS_029.png"))
-
-
-def test_plot_annotations_with_relative_image_path_and_root_dir(tmpdir):
-    # Use a relative image_path and ensure df.root_dir is used by _load_image
-    full_path = get_data("OSBS_029.png")
-    relative_name = os.path.basename(full_path)
-    root_dir = os.path.dirname(full_path)
-
-    df = pd.DataFrame({
-        'xmin': [10], 'ymin': [10], 'xmax': [30], 'ymax': [30],
-        'label': ['Tree'], 'image_path': [relative_name]
-    })
-
-    gdf = utilities.read_file(df)
-    gdf.root_dir = root_dir
-
-    visualize.plot_annotations(gdf, savedir=tmpdir, show=False)
-    assert os.path.exists(os.path.join(tmpdir, "OSBS_029.png"))
