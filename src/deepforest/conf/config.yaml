@@ -84,8 +84,7 @@ train:
     preload_images: False
     freeze_backbone: False
     optimizer: sgd
-
-    focal_alpha: 0.25
+    auxiliary_loss: false
 
 validation:
     csv_file:

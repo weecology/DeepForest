@@ -74,7 +74,7 @@ class TrainConfig:
     freeze_backbone: bool = False
     optimizer: str = "sgd"
     weight_decay: float = 0.0
-    focal_alpha: float = 0.25
+    auxiliary_loss: bool = False
 
 
 @dataclass
