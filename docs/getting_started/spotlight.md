@@ -41,7 +41,7 @@ df.spotlight(format="lightly", out_dir="spotlight_export")
   - Handles NaN values in optional columns gracefully
   - Validates required bbox columns: `xmin`, `ymin`, `xmax`, `ymax`
 - `df.spotlight(...)` - DataFrame accessor method (calls `view_with_spotlight`)
-- `prepare_spotlight_package(gallery_dir, out_dir)` - Package gallery thumbnails for Spotlight
+- Core DataFrame-to-Spotlight conversion functionality
 - `export_to_spotlight_dataset(gallery_dir)` - Create Hugging Face Dataset from gallery
 
 ## Working with Predictions

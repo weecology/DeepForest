@@ -8,19 +8,19 @@ The adapter supports two output formats:
 2. "lightly" - Format compatible with Lightly's object detection conventions
 
 Public API:
-- view_with_spotlight(df, format="lightly", out_dir=None) - Main conversion function
-- df_to_objects_manifest(df) - Convert DataFrame to canonical objects format
-- objects_to_lightly(manifest) - Convert objects format to Lightly format
+- `view_with_spotlight(df, format="lightly", out_dir=None)` - Main conversion function
+- `df_to_objects_manifest(df)` - Convert DataFrame to canonical objects format
+- `objects_to_lightly(manifest)` - Convert objects format to Lightly format
 
 Usage:
     # Direct conversion
-    manifest = view_with_spotlight(df, format="objects")
+    manifest = `view_with_spotlight(df, format="objects")`
 
     # Using DataFrame accessor
     lightly_data = df.spotlight(format="lightly", out_dir="export")
 
     # Export to file
-    result = view_with_spotlight(df, format="lightly", out_dir="spotlight_export")
+    result = `view_with_spotlight(df, format="lightly", out_dir="spotlight_export")`
 """
 
 from __future__ import annotations
