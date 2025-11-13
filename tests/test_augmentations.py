@@ -2,9 +2,9 @@
 import io
 import os
 
-import albumentations as A
+import torch
+import kornia.augmentation as K
 import pytest
-from albumentations.pytorch import ToTensorV2
 
 from deepforest import main, get_data
 from deepforest.augmentations import _create_augmentation
@@ -17,44 +17,40 @@ def test_get_transform_default():
     """Test default behavior (backward compatibility)."""
     # Test without augmentations
     transform = get_transform()
-    assert isinstance(transform, A.Compose)
-    assert len(transform.transforms) == 1
-    assert isinstance(transform.transforms[0], ToTensorV2)
+    assert isinstance(transform, torch.nn.Identity)
 
 
 def test_get_transform_single_augmentation():
     """Test with single augmentation name."""
     transform = get_transform(augmentations="Downscale")
-    assert isinstance(transform, A.Compose)
-    assert len(transform.transforms) == 2  # Downscale + ToTensorV2
-    assert isinstance(transform.transforms[0], A.Downscale)
-    assert isinstance(transform.transforms[1], ToTensorV2)
+    assert isinstance(transform, torch.nn.Sequential)
+    assert len(transform) == 1  # Just Downscale
+    assert isinstance(transform[0], K.RandomResizedCrop)
 
 
 def test_get_transform_multiple_augmentations():
     """Test with list of augmentation names (strings)."""
     transform = get_transform(augmentations=["HorizontalFlip", "Downscale"])
-    assert isinstance(transform, A.Compose)
-    assert len(transform.transforms) == 3  # HorizontalFlip + Downscale + ToTensorV2
-    assert isinstance(transform.transforms[0], A.HorizontalFlip)
-    assert isinstance(transform.transforms[1], A.Downscale)
-    assert isinstance(transform.transforms[2], ToTensorV2)
+    assert isinstance(transform, torch.nn.Sequential)
+    assert len(transform) == 2  # HorizontalFlip + Downscale
+    assert isinstance(transform[0], K.RandomHorizontalFlip)
+    assert isinstance(transform[1], K.RandomResizedCrop)
 
 
 def test_get_transform_with_parameters():
     """Test with augmentation parameters."""
     augmentations = {
         "HorizontalFlip": {"p": 0.8},
-        "Downscale": {"scale_range": (0.5, 0.9), "p": 0.3}
+        "Downscale": {"scale": (0.5, 0.9), "p": 0.3}
     }
     transform = get_transform(augmentations=augmentations)
-    assert isinstance(transform, A.Compose)
-    assert len(transform.transforms) == 3  # HorizontalFlip + Downscale + ToTensorV2
+    assert isinstance(transform, torch.nn.Sequential)
+    assert len(transform) == 2  # HorizontalFlip + Downscale
 
     # Check parameters were applied
-    assert transform.transforms[0].p == 0.8  # HorizontalFlip
-    assert transform.transforms[1].scale_range == (0.5, 0.9)  # Downscale
-    assert transform.transforms[1].p == 0.3
+    assert transform[0].p == 0.8  # HorizontalFlip
+    assert transform[1].scale == (0.5, 0.9)  # Downscale
+    assert transform[1].p == 0.3
 
 
 def test_parse_augmentations_string():
@@ -146,7 +142,7 @@ def test_create_augmentation():
     """Test _create_augmentation function."""
     # Valid augmentation
     aug = _create_augmentation("HorizontalFlip", {"p": 0.7})
-    assert isinstance(aug, A.HorizontalFlip)
+    assert isinstance(aug, K.RandomHorizontalFlip)
     assert aug.p == 0.7
 
     # Invalid augmentation should raise ValueError
@@ -165,14 +161,13 @@ def test_get_available_augmentations():
 
 
 def test_bbox_params():
-    """Test that bbox_params are properly set."""
+    """Test that transforms are properly created."""
     transform = get_transform(augmentations="HorizontalFlip")
 
-    # Check that bbox_params is configured in the transform repr
-    transform_repr = repr(transform)
-    assert "bbox_params" in transform_repr
-    assert "'format': 'pascal_voc'" in transform_repr
-    assert "'label_fields': ['category_ids']" in transform_repr
+    # Check that transform is properly created
+    assert isinstance(transform, torch.nn.Sequential)
+    assert len(transform) == 1
+    assert isinstance(transform[0], K.RandomHorizontalFlip)
 
 
 def test_blur_augmentations():
@@ -181,37 +176,35 @@ def test_blur_augmentations():
 
     for blur_aug in blur_augmentations:
         transform = get_transform(augmentations=[{blur_aug: {}}])
-        assert isinstance(transform, A.Compose)
-        assert len(transform.transforms) == 2  # Blur augmentation + ToTensorV2
-        assert isinstance(transform.transforms[1], ToTensorV2)
+        assert isinstance(transform, torch.nn.Sequential)
+        assert len(transform) == 1  # Just blur augmentation
+        assert isinstance(transform[0], K.RandomGaussianBlur)
 
 
 def test_blur_augmentations_with_parameters():
     """Test blur augmentations with custom parameters."""
     blur_configs = {
-        "GaussianBlur": {"blur_limit": 5, "p": 0.8},
-        "MotionBlur": {"blur_limit": 7, "p": 0.6},
-        "ZoomBlur": {"max_factor": 1.3, "p": 0.4}
+        "GaussianBlur": {"kernel_size": (5, 5), "p": 0.8},
+        "MotionBlur": {"kernel_size": 7, "p": 0.6},
+        "ZoomBlur": {"scale": (1.0, 1.3), "p": 0.4}
     }
 
     transform = get_transform(augmentations=blur_configs)
-    assert isinstance(transform, A.Compose)
-    assert len(transform.transforms) == 4  # 3 blur augmentations + ToTensorV2
-    assert isinstance(transform.transforms[3], ToTensorV2)
+    assert isinstance(transform, torch.nn.Sequential)
+    assert len(transform) == 3  # 3 blur augmentations
 
 
 def test_mixed_blur_and_other_augmentations():
     """Test combining blur augmentations with other augmentations using mixed format."""
-    mixed_augmentations = ["HorizontalFlip", {"GaussianBlur": {"blur_limit": 3}}, "Downscale", {"MotionBlur": {"blur_limit": 5}}]
+    mixed_augmentations = ["HorizontalFlip", {"GaussianBlur": {"kernel_size": (3, 3)}}, "Downscale", {"MotionBlur": {"kernel_size": 5}}]
 
     transform = get_transform(augmentations=mixed_augmentations)
-    assert isinstance(transform, A.Compose)
-    assert len(transform.transforms) == 5  # 4 augmentations + ToTensorV2
-    assert isinstance(transform.transforms[0], A.HorizontalFlip)
-    assert isinstance(transform.transforms[1], A.GaussianBlur)
-    assert isinstance(transform.transforms[2], A.Downscale)
-    assert isinstance(transform.transforms[3], A.MotionBlur)
-    assert isinstance(transform.transforms[4], ToTensorV2)
+    assert isinstance(transform, torch.nn.Sequential)
+    assert len(transform) == 4  # 4 augmentations
+    assert isinstance(transform[0], K.RandomHorizontalFlip)
+    assert isinstance(transform[1], K.RandomGaussianBlur)
+    assert isinstance(transform[2], K.RandomResizedCrop)
+    assert isinstance(transform[3], K.RandomMotionBlur)
 
 
 def test_unknown_augmentation_error():
@@ -226,13 +219,11 @@ def test_override_transforms():
         """This is the new transform"""
         if augment:
             print("I'm a new augmentation!")
-            transform = A.Compose(
-                [A.HorizontalFlip(p=0.5), ToTensorV2()],
-                bbox_params=A.BboxParams(format='pascal_voc',
-                                         label_fields=["category_ids"]))
-
+            transform = torch.nn.Sequential(
+                K.RandomHorizontalFlip(p=0.5)
+            )
         else:
-            transform = ToTensorV2()
+            transform = torch.nn.Identity()
         return transform
 
     m = main.deepforest(transforms=get_transform)
@@ -272,7 +263,7 @@ def test_config_augmentations_with_params():
         "train": {
             "augmentations": [
                 {"HorizontalFlip": {"p": 0.8}},
-                {"Downscale": {"scale_range": (0.5, 0.9), "p": 0.3}}
+                {"Downscale": {"scale": (0.5, 0.9), "p": 0.3}}
             ]
         },
         "validation": {
