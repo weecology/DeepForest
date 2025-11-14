@@ -1,43 +1,44 @@
 # Reading in Data
 
-The most time-consuming part of many open-source projects is getting the data in and out. This is because there are so many formats and ways a user might interact with the package. DeepForest has collated many use cases into a single `read_file` function that will attempt to read many common data formats, both projected and unprojected, and create a dataframe ready for DeepForest functions.
+The most time-consuming part of many open-source projects is getting the data in and out. This is because there are so many formats and ways a user might interact with the package.
 
-You can also optionally provide:
-  - `image_path`: A single image path to assign to all annotations in the input. This is useful when the input contains annotations for only one image.
-  - `label`: A single label to apply to all rows. This is helpful when all annotations share the same label (e.g., "Tree").
-  - `rgb_path`: For shapefiles (`.shp`, `.gpkg`) that do not contain an `image_path` column, provide the path to the corresponding RGB image so that coordinate conversion can occur.
+## The DeepForest data model
 
-Example:
+The DeepForest data model has three components
+
+1. Annotations are stored as dataframes. Each row is an annotation with a single geometry and label. Each annotation dataframe must contain a 'image_path' (relative, not full path) and a 'label' column.
+2. Annotation geometry is stored as a shapely object, allowing the easy movement among Point, Polygon and Box representations.
+3. Annotations are expressed in image coordinates, not geographic coordinates.
+
+## The read_file function
+DeepForest has collated many use cases into a single `read_file` function that will read many common data formats, both projected and unprojected, and create a dataframe ready for DeepForest functions that fits the DeepForest data model.
+
+### Example 1: A csv file containing box annotations.
+
 ```
 from deepforest import utilities
 
-df = utilities.read_file("annotations.csv", image_path="OSBS_029.tif", label="Tree")
+df = utilities.read_file("annotations.csv", image_path="<full path to the image>", label="Tree")
 ```
 
-For shapefiles that lack an `image_path` column, pass `rgb_path`:
+For files that lack an `image_path` or `label` column, pass the `image_path` or `label` argument.
 
 ```python
 from deepforest import utilities
 
 gdf = utilities.read_file(
     input="/path/to/annotations.shp",
-    rgb_path="/path/to/OSBS_029.tif",   # required if no image_path column
+    image_path="/path/to/OSBS_029.tif",   # required if no image_path column
     label="Tree"                        # optional: used if no 'label' column in the shapefile
 )
 ```
 
-**Note:** If your input file contains multiple image filenames and you do not provide the `image_path` argument, a warning may appear:
-
-```
-UserWarning: Multiple image filenames found. This may cause issues if the file paths are not correctly specified.
-```
-To avoid this, consider providing a single `image_path` argument if all annotations belong to the same image.
-
 At a high level, `read_file` will:
 
 1. Check the file extension to determine the format.
-2. Read the file into a pandas dataframe.
-3. Append the location of the image directory as an attribute.
+2. Read and convert the file into a GeoPandas dataframe.
+3. Append the location of the image directory as a 'root_dir' attribute.
+4. If input data is a geospatial object, such as a shapefile, convert geographic coordinates to image coordinates based on the coordinate reference system (CRS) and resolution of the image.
 
 Allows for the following formats:
 
@@ -46,21 +47,6 @@ Allows for the following formats:
 - GeoPackage (`.gpkg`)
 - COCO (`.json`)
 - Pascal VOC (`.xml`)
-
-## Annotation Geometries and Coordinate Systems
-
-DeepForest was originally designed for bounding box annotations. As of DeepForest 1.4.0, point and polygon annotations are also supported. There are two ways to format annotations, depending on the annotation platform you are using. `read_file` can read points, polygons, and boxes, in both image coordinate systems (relative to image origin at top-left 0,0) as well as projected coordinates on the Earth's surface. The `read_file` method also appends the location of the current image directory as an attribute. To access this attribute use the `root_dir` attribute.
-
-```python
-from deepforest import get_data
-from deepforest import utilities
-
-filename = get_data("OSBS_029.csv")
-df = utilities.read_file(filename)
-df.root_dir
-```
-
-**Note:** For CSV files, coordinates are expected to be in the image coordinate system, not projected coordinates (such as latitude/longitude or UTM).
 
 ### Boxes
 

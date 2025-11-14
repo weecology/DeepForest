@@ -203,7 +203,7 @@ def shapefile_to_annotations(
     if rgb is None:
         if "image_path" not in gdf.columns:
             raise ValueError(
-                "No image_path column found in shapefile, please specify rgb path"
+                "No image_path column found in shapefile, please specify rgb_path"
             )
         else:
             rgb = gdf.image_path.unique()[0]
@@ -405,7 +405,6 @@ def read_coco(json_file):
 def read_file(
     input: str | pd.DataFrame,
     root_dir: str | None = None,
-    rgb_path: str | None = None,
     image_path: str | None = None,
     label: str | None = None,
 ) -> gpd.GeoDataFrame:
@@ -414,32 +413,12 @@ def read_file(
     Args:
         input: Path to file, DataFrame, or GeoDataFrame
         root_dir: Root directory for image files
-        rgb_path: Path to the RGB image associated with a shapefile. Use when the shapefile
-            does not have an image_path column.
-        image_path: Assign to all rows (use only for single image)
-        label: Assign to all rows (use only for single label)
+        image_path: Assign image_path column to all rows. The full path to the image file.
+        label: Assign label column to all rows.
 
     Returns:
-        GeoDataFrame with geometry column
+        GeoDataFrame with geometry, image_path, and label columns
     """
-    # For non-shapefile DataFrames, image_path assigns a column value; for shapefiles, prefer rgb_path.
-    if image_path is not None:
-        warnings.warn(
-            "You have passed an image_path. "
-            "This value will be assigned to every row in the dataframe. "
-            "Only use this if the file contains annotations for a single image.",
-            UserWarning,
-            stacklevel=2,
-        )
-
-    if label is not None:
-        warnings.warn(
-            "You have passed a label. This value will be assigned to every row in the dataframe. "
-            "Only use this if all annotations share the same label.",
-            UserWarning,
-            stacklevel=2,
-        )
-
     # read file
     if isinstance(input, str):
         if input.endswith(".csv"):
@@ -448,9 +427,15 @@ def read_file(
             df = read_coco(input)
         elif input.endswith((".shp", ".gpkg")):
             # Use rgb_path for shapefiles that don't have image_path; fall back to image_path if provided.
+            # Check if shapefile has image_path column
+            if "image_path" not in gpd.read_file(input).columns:
+                if image_path is None:
+                    raise ValueError(
+                        "No image_path column found in shapefile, please specify full path to image file in image_path argument: read_file(input=shp_path, image_path='/path/to/image.tif', ...)"
+                    )
             df = shapefile_to_annotations(
                 input,
-                rgb=rgb_path or image_path,
+                rgb=image_path,
                 root_dir=root_dir,
                 label=label,
             )
@@ -467,12 +452,18 @@ def read_file(
         if isinstance(input, gpd.GeoDataFrame):
             return shapefile_to_annotations(
                 input,
-                rgb=rgb_path or image_path,
+                rgb=image_path,
                 root_dir=root_dir,
                 label=label,
             )
         elif isinstance(input, pd.DataFrame):
             df = input.copy(deep=True)
+            if "image_path" not in df.columns:
+                if image_path is None:
+                    raise ValueError(
+                        "No image_path column found in dataframe, please specify full path to image file in image_path argument: read_file(input=df, image_path='/path/to/image.tif', ...)"
+                    )
+                df["image_path"] = os.path.basename(image_path)
         else:
             raise ValueError(
                 "Input must be a path to a file, geopandas or a pandas dataframe"
@@ -513,38 +504,28 @@ def read_file(
 
     # Add missing columns if not provided
     if "image_path" not in df.columns and image_path is not None:
-        df["image_path"] = image_path
-    elif "image_path" not in df.columns:
-        warnings.warn(
-            "'image_path' column is missing from shapefile, please specify the image path",
-            UserWarning,
-            stacklevel=2,
-        )
-
-    if "label" not in df.columns and label is not None:
-        df["label"] = label
-    elif "label" not in df.columns:
-        warnings.warn(
-            "'label' column is missing from shapefile, using default label",
-            UserWarning,
-            stacklevel=2,
-        )
-        df["label"] = "Unknown"  # Set default label if not provided
+        df["image_path"] = os.path.basename(image_path)
 
     # If root_dir is specified, add as attribute
     if root_dir is not None:
         df.root_dir = root_dir
     else:
-        try:
-            df.root_dir = os.path.dirname(input)
-        except TypeError:
+        if image_path is not None:
+            df.root_dir = os.path.dirname(image_path)
+        elif type(input) is str:
             warnings.warn(
-                "root_dir argument for the location of images should be specified "
-                "if input is not a path, returning without results.root_dir attribute",
-                UserWarning,
+                f"root_dir argument not specified, assuming the images are in the same directory as the input file: {os.path.dirname(input)}",
                 stacklevel=2,
             )
-
+            df.root_dir = os.path.dirname(input)
+        elif isinstance(input, pd.DataFrame):
+            raise ValueError(
+                "root_dir argument not specified and input is a dataframe, where are the images stored?"
+            )
+        else:
+            raise ValueError(
+                "Input must be a path to a file, geopandas or a pandas dataframe"
+            )
     return df
 
 
