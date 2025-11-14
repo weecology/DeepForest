@@ -206,30 +206,10 @@ def convert_to_sv_format(
                 raise ValueError("'image_path' column required for polygons.")
 
             image_path = df["image_path"].iloc[0]
+            full_path = os.path.join(df.root_dir, image_path)
 
-            # Resolve root_dir similar to _load_image
-            resolved_root = None
-            if hasattr(df, "root_dir"):
-                resolved_root = df.root_dir
-                resolved_root = (
-                    resolved_root.iloc[0]
-                    if isinstance(resolved_root, pd.Series)
-                    else resolved_root
-                )
-
-            full_image_path = (
-                os.path.join(resolved_root, image_path)
-                if resolved_root is not None
-                else image_path
-            )
-
-            try:
-                with Image.open(full_image_path) as img:
-                    width, height = img.size
-            except Exception as e:
-                raise ValueError(
-                    f"Could not read image dimensions from {image_path}: {e}"
-                ) from e
+            with Image.open(full_path) as img:
+                width, height = img.size
 
         polygons = df.geometry.apply(lambda x: np.array(x.exterior.coords)).values
         # as integers
