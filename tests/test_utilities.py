@@ -162,7 +162,7 @@ def test_read_file_points_csv(tmpdir):
     y = [20, 20]
     labels = ["Tree", "Tree"]
     image_path = [get_data("OSBS_029.tif"), get_data("OSBS_029.tif")]
-    df = pd.DataFrame({"x": x, "y": y, "label": labels})
+    df = pd.DataFrame({"x": x, "y": y, "label": labels, "image_path": image_path})
     df.to_csv("{}/test_read_file_points.csv".format(tmpdir), index=False)
     read_df = utilities.read_file(input="{}/test_read_file_points.csv".format(tmpdir))
     assert read_df.shape[0] == 2
