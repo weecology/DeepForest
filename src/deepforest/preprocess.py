@@ -84,9 +84,18 @@ def select_annotations(annotations, window):
     if clipped_annotations.empty:
         return clipped_annotations
 
-    # For points, keep all annotations.
+    # For points, keep all annotations but translate to window origin
     if selected_annotations.iloc[0].geometry.geom_type == "Point":
-        return selected_annotations
+        if clipped_annotations.empty:
+            return clipped_annotations
+        # Translate point coordinates to be relative to the top-left of the window
+        clipped_annotations.geometry = clipped_annotations.geometry.translate(
+            xoff=-window_xmin, yoff=-window_ymin
+        )
+        # Update convenience x/y columns if they exist or create them
+        clipped_annotations["x"] = clipped_annotations.geometry.x
+        clipped_annotations["y"] = clipped_annotations.geometry.y
+        return clipped_annotations
 
     else:
         # Keep clipped boxes if they're more than 50% of original size

@@ -274,6 +274,45 @@ def test_split_raster_with_polygon_annotations(tmpdir, config):
     assert tmpdir.join("OSBS_029_0.png").exists()
 
 
+def test_split_raster_points_translate_and_bounds(tmpdir):
+    """Ensure split_raster keeps point geometry, translates to window coords,
+    preserves count, and points lie within patch window when patch_overlap=0."""
+    path_to_raster = get_data("OSBS_029.tif")
+    # Choose points well inside expected windows to avoid edge duplication
+    df = pd.DataFrame(
+        {
+            "image_path": ["OSBS_029.tif", "OSBS_029.tif"],
+            "x": [50, 350],
+            "y": [50, 350],
+            "label": ["Tree", "Tree"],
+        }
+    )
+    csv_path = tmpdir.join("point_ann.csv").strpath
+    df.to_csv(csv_path, index=False)
+
+    # Split with no overlap
+    split_df = preprocess.split_raster(
+        annotations_file=csv_path,
+        path_to_raster=path_to_raster,
+        save_dir=tmpdir,
+        patch_size=300,
+        patch_overlap=0,
+    )
+
+    # Geometry should be points
+    assert utilities.determine_geometry_type(split_df) == "point"
+
+    # Count should be preserved
+    assert split_df.shape[0] == df.shape[0]
+
+    # Coordinates should be relative to window and within [0, patch_size]
+    # Use geometry.x/y as the source of truth
+    assert (split_df.geometry.x >= 0).all()
+    assert (split_df.geometry.y >= 0).all()
+    assert (split_df.geometry.x <= 300).all()
+    assert (split_df.geometry.y <= 300).all()
+
+
 def test_split_raster_from_csv(tmpdir):
     """Read in annotations, convert to a projected shapefile, read back in and crop,
     the output annotations should still be maintained in logical place"""

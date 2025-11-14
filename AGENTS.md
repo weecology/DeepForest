@@ -1,6 +1,6 @@
 # Project Overview
 
-DeepForest is a Python library for object detection in aerial images, primarily trees, but also supporting models for livestock and other objects of interest. It uses pytorch throughout and the Lightning framework for model training, prediction and evaluation.
+DeepForest is a Python library for object detection in aerial images for biodiversity applications such as tree detection and wildlife observation. It uses pytorch and Pytorch Lightning framework for model training, prediction and evaluation.
 
 Imagery is of a relatively high resolution and is generally not satellite data.
 
@@ -8,7 +8,7 @@ Imagery is of a relatively high resolution and is generally not satellite data.
 
 - We use `uv` for package management
 - NEVER edit dependencies in pyproject.toml directly, ALWAYS use `uv add`
-- To set up, use `uv sync --all-extras --dev`. You can reference the CI workflow in .github
+- To set up and run tests, use `uv sync --all-extras --dev`. You can reference the CI workflow in .github
 - Use the `deepforest` command line interface with Hydra overrides for simple tests
 - When you've finished, run `uv run pre-commit` with appropriate arguments to run formatting and linters on your work.
 
@@ -54,3 +54,21 @@ OSBS_029.tif,166,253,225,304,Tree
 - We use ruff for linting with options set in pyproject.toml
 - Enforced by .pre-commit.yaml
 - Take advantage of implicit vectorization using pandas, numpy, etc. Avoid explicit loops if you can.
+
+
+## Testing
+
+- When proposing code changes that require new tests:
+  - First add the minimal failing test(s) that reproduce the issue or specify the expected new behavior.
+  - Run those specific tests and show their failing output (red) before suggesting or implementing a fix.
+  - After implementing the fix, re-run the same tests and show they pass (green).
+- Keep tests short and focused, with a clear contract.
+- Prefer using existing data via `deepforest.get_data(...)` over generating new data at runtime.
+- Do not use print statements in tests; document failure with assertions.
+- Use fixtures for repeated setup; keep scope appropriate.
+- Test behavior, not implementation details.
+
+## Running tests
+
+- From the root folder, `uv run pytest tests`
+- Useful flags include `-s` to show output, `-x` to fail on first error and `--ff` to run failed tests first.
