@@ -1,14 +1,14 @@
-# DETR Base Configuration
+# Conditional DETR Base Configuration
 defaults:
   - config
   - _self_
 
 # Default model is pretrained on MS-COCO
 model:
-  name: "facebook/detr-resnet-50"
+  name: "microsoft/conditional-detr-resnet-50"
   revision: 'main'
 
-architecture: 'Detr'
+architecture: 'ConditionalDetr'
 
 train:
   epochs: 40

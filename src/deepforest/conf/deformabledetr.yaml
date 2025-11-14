@@ -5,10 +5,10 @@ defaults:
 
 # Default model is pretrained on MS-COCO
 model:
-  name: "facebook/detr-resnet-50"
+  name: "SenseTime/deformable-detr"
   revision: 'main'
 
-architecture: 'Detr'
+architecture: 'DeformableDetr'
 
 train:
   epochs: 40

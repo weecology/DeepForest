@@ -1,4 +1,4 @@
-# test Transformers/detr (standard DETR)
+# test Transformers/conditional_detr
 import os
 
 import numpy as np
@@ -9,13 +9,13 @@ from PIL import Image
 from deepforest import get_data
 from deepforest import utilities
 from deepforest.datasets.training import BoxDataset
-from deepforest.models import Detr
+from deepforest.models import ConditionalDetr
 
 
 @pytest.fixture()
 def config():
-    config = utilities.load_config(overrides={"architecture": "Detr"})
-    config.model.name = "facebook/detr-resnet-50"
+    config = utilities.load_config(overrides={"architecture": "ConditionalDetr"})
+    config.model.name = "microsoft/conditional-detr-resnet-50"
     config.train.fast_dev_run = True
     config.batch_size = 1
     config.score_thresh = 0.5
@@ -46,7 +46,7 @@ def coco_sample():
 
 
 def test_check_model(config):
-    model = Detr.Model(config)
+    model = ConditionalDetr.Model(config)
     model.check_model()
 
 
@@ -61,7 +61,7 @@ def test_create_model(config, num_classes):
     """
     config.num_classes = num_classes
     config.label_dict = {f"{i}": i for i in range(num_classes)}
-    detr_model = Detr.Model(config).create_model()
+    detr_model = ConditionalDetr.Model(config).create_model()
     detr_model.eval()
     x = [torch.rand(3, 300, 400), torch.rand(3, 500, 400)]
     _ = detr_model(x)
@@ -75,7 +75,7 @@ def test_boxes_in_output(config):
     include boxes, scores and labels. This model should have
     trained weights.
     """
-    detr_model = Detr.Model(config).create_model(config.model.name, revision=config.model.revision)
+    detr_model = ConditionalDetr.Model(config).create_model(config.model.name, revision=config.model.revision)
     detr_model.eval()
 
     image_path = get_data("OSBS_029.png")
@@ -102,7 +102,7 @@ def test_forward_sample_dummy(config, coco_sample):
     Test that in training mode, we get a loss dict and it's
     non-zero.
     """
-    detr_model = Detr.Model(config).create_model()
+    detr_model = ConditionalDetr.Model(config).create_model()
     detr_model.train()
 
     image, targets = coco_sample
@@ -123,7 +123,7 @@ def test_training_sample(config):
 
     image, targets, _ = next(iter(ds))
 
-    detr_model = Detr.Model(config).create_model()
+    detr_model = ConditionalDetr.Model(config).create_model()
     detr_model.train()
 
     loss_dict = detr_model(image, targets)
@@ -137,7 +137,7 @@ def test_prepare_targets_bbox_conversion(config):
     Test that _prepare_targets correctly converts bounding boxes from
     [xmin, ymin, xmax, ymax] format to COCO format [x, y, width, height].
     """
-    detr_model = Detr.Model(config).create_model()
+    detr_model = ConditionalDetr.Model(config).create_model()
 
     # Create test targets in [xmin, ymin, xmax, ymax] format
     test_targets = [
