@@ -61,10 +61,10 @@ def test_read_file_in_memory_geodataframe():
     labels = ["Tree", "Tree"]
     df = pd.DataFrame({"geometry": sample_geometry, "label": labels})
     gdf = gpd.GeoDataFrame(df, geometry="geometry", crs="EPSG:32617")
-    gdf["image_path"] = get_data("OSBS_029.tif")
+    gdf["image_path"] = os.path.basename(get_data("OSBS_029.tif"))
 
     # Process through read_file
-    result = utilities.read_file(input=gdf)
+    result = utilities.read_file(input=gdf, root_dir=os.path.dirname(get_data("OSBS_029.tif")))
 
     # Verify coordinate conversion happened
     original_coords = gdf.geometry.iloc[0].coords[0]
