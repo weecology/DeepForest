@@ -61,10 +61,10 @@ def test_read_file_in_memory_geodataframe():
     labels = ["Tree", "Tree"]
     df = pd.DataFrame({"geometry": sample_geometry, "label": labels})
     gdf = gpd.GeoDataFrame(df, geometry="geometry", crs="EPSG:32617")
-    gdf["image_path"] = get_data("OSBS_029.tif")
+    gdf["image_path"] = os.path.basename(get_data("OSBS_029.tif"))
 
     # Process through read_file
-    result = utilities.read_file(input=gdf)
+    result = utilities.read_file(input=gdf, root_dir=os.path.dirname(get_data("OSBS_029.tif")))
 
     # Verify coordinate conversion happened
     original_coords = gdf.geometry.iloc[0].coords[0]
@@ -83,19 +83,23 @@ def test_read_file_in_memory_dataframe():
     """Test reading an in-memory DataFrame with box coordinates"""
     # Create DataFrame with box columns
     test_df = pd.DataFrame({
-        'xmin': [0, 10], 'ymin': [0, 10],
-        'xmax': [5, 15], 'ymax': [5, 15],
+        'xmin': [0, 10],
+        'ymin': [0, 10],
+        'xmax': [5, 15],
+        'ymax': [5, 15],
         'label': ['Tree', 'Tree']
     })
 
     # Process through read_file
-    result = utilities.read_file(input=test_df)
+    result = utilities.read_file(input=test_df, image_path=get_data("OSBS_029.tif"))
 
     # Verify output
     assert isinstance(result, gpd.GeoDataFrame)
     assert 'geometry' in result.columns
     assert all(result.geometry.geom_type == 'Polygon')
     assert len(result) == 2
+    assert result.root_dir is not None
+    assert "image_path" in result.columns
 
 
 def test_shapefile_to_annotations_convert_unprojected_to_boxes(tmpdir):
@@ -108,6 +112,22 @@ def test_shapefile_to_annotations_convert_unprojected_to_boxes(tmpdir):
     shp = utilities.shapefile_to_annotations(shapefile="{}/annotations.shp".format(tmpdir), rgb=image_path)
     assert shp.shape[0] == 2
 
+
+def test_read_file_shapefile_without_image_path(tmpdir):
+    # Create a shapefile with no image_path or label columns
+    sample_geometry = [geometry.Point(10, 20), geometry.Point(20, 40)]
+    df = pd.DataFrame({"geometry": sample_geometry})
+    gdf = gpd.GeoDataFrame(df, geometry="geometry")
+    shp_path = "{}/annotations_no_image_label.shp".format(tmpdir)
+    gdf.to_file(shp_path)
+
+    # Provide image_path and label via read_file to fill missing columns
+    rgb = get_data("OSBS_029.png")
+    result = utilities.read_file(input=shp_path, image_path=rgb,label="Tree")
+
+    assert result.shape[0] == 2
+    # image_path should be taken from the provided rgb_path
+    assert os.path.basename(rgb) in result.image_path.unique()
 
 def test_shapefile_to_annotations_invalid_epsg(tmpdir):
     sample_geometry = [geometry.Point(404211.9 + 10, 3285102 + 20), geometry.Point(404211.9 + 20, 3285102 + 20)]
@@ -142,7 +162,7 @@ def test_read_file_points_csv(tmpdir):
     y = [20, 20]
     labels = ["Tree", "Tree"]
     image_path = [get_data("OSBS_029.tif"), get_data("OSBS_029.tif")]
-    df = pd.DataFrame({"x": x, "y": y, "label": labels})
+    df = pd.DataFrame({"x": x, "y": y, "label": labels, "image_path": image_path})
     df.to_csv("{}/test_read_file_points.csv".format(tmpdir), index=False)
     read_df = utilities.read_file(input="{}/test_read_file_points.csv".format(tmpdir))
     assert read_df.shape[0] == 2
@@ -676,10 +696,11 @@ def test_read_file_column_names():
         'xmax': [10],
         'ymax': [10],
         'label': ['Tree'],
-        'siteID': ['TEST_SITE']
+        'siteID': ['TEST_SITE'],
+        "image_path": [os.path.basename(get_data("OSBS_029.tif"))]
     })
 
-    result = utilities.read_file(df)
+    result = utilities.read_file(df, root_dir=os.path.dirname(get_data("OSBS_029.tif")))
 
     # Column names should not be changed
     assert 'siteID' in df.columns

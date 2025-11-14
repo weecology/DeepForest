@@ -446,7 +446,6 @@ class deepforest(pl.LightningModule):
             result["label"] = result.label.apply(lambda x: self.numeric_to_label_dict[x])
 
         if path is None:
-            result = utilities.read_file(result)
             warnings.warn(
                 "An image was passed directly to predict_image, the result.root_dir attribute "
                 "will be None in the output dataframe, to use visualize.plot_results, "
@@ -621,7 +620,7 @@ class deepforest(pl.LightningModule):
             root_dir = os.path.dirname(paths[0])
         else:
             print(
-                "No image path provided, root_dir will be None, since either "
+                "No image path provided, root_dir of the output results dataframe will be None, since either "
                 "images were directly provided or there were multiple image paths"
             )
             root_dir = None
@@ -643,7 +642,8 @@ class deepforest(pl.LightningModule):
         else:
             cropmodel_results = mosaic_results
 
-        formatted_results = utilities.read_file(cropmodel_results, root_dir=root_dir)
+        formatted_results = utilities.__pandas_to_geodataframe__(cropmodel_results)
+        formatted_results.root_dir = root_dir
 
         return formatted_results
 
@@ -906,7 +906,7 @@ class deepforest(pl.LightningModule):
                 continue
             geom_type = utilities.determine_geometry_type(pred)
             result = utilities.format_geometry(pred, geom_type=geom_type)
-            results.append(utilities.read_file(result))
+            results.append(result)
 
         return results
 
