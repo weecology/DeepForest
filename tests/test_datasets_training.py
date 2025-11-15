@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import pytest
 import torch
+from PIL import Image
 
 from deepforest import get_data, main, utilities
 from deepforest.datasets.training import BoxDataset
@@ -195,6 +196,41 @@ def test_BoxDataset_validate_labels():
         BoxDataset(csv_file=csv_file, root_dir=root_dir, label_dict={"Bird": 0})
 
 
+def test_BoxDataset_validate_coordinates(tmpdir, raster_path):
+    # Valid case: uses example.csv with all valid boxes
+    csv_path = get_data("example.csv")
+    root_dir = os.path.dirname(csv_path)
+    ds = BoxDataset(csv_file=csv_path, root_dir=root_dir)
+
+    # Test various invalid box coordinates
+    with Image.open(raster_path) as image:
+        width, height = image.size
+
+    invalid_boxes = [
+        (width - 5, 0, width + 10, 10),  # xmax exceeds width
+        (0, height - 5, 10, height + 10),  # ymax exceeds height
+        (-5, 0, 10, 10),  # negative xmin
+        (0, -5, 10, 10),  # negative ymin
+    ]
+
+    for box in invalid_boxes:
+        csv_path = os.path.join(tmpdir, "test.csv")
+        df = pd.DataFrame(
+            {
+                "image_path": ["OSBS_029.tif"],
+                "xmin": [box[0]],
+                "ymin": [box[1]],
+                "xmax": [box[2]],
+                "ymax": [box[3]],
+                "label": ["Tree"],
+            }
+        )
+        df.to_csv(csv_path, index=False)
+
+        with pytest.raises(ValueError, match="exceeds image dimensions"):
+            print(BoxDataset(csv_file=csv_path, root_dir=root_dir))
+
+
 def test_BoxDataset_with_projected_shapefile(tmpdir, raster_path):
     """Test that BoxDataset can load a shapefile with projected coordinates and converts to pixel coordinates"""
     import geopandas as gpd
@@ -202,6 +238,7 @@ def test_BoxDataset_with_projected_shapefile(tmpdir, raster_path):
     # Get the raster to extract CRS and bounds
     import rasterio
     from shapely import geometry
+
     with rasterio.open(raster_path) as src:
         raster_crs = src.crs
         bounds = src.bounds
@@ -216,12 +253,19 @@ def test_BoxDataset_with_projected_shapefile(tmpdir, raster_path):
 
     sample_geometry = [
         geometry.box(sample_x, sample_y, sample_x + box_size, sample_y + box_size),
-        geometry.box(sample_x + box_size * 2, sample_y + box_size * 2, sample_x + box_size * 3, sample_y + box_size * 3)
+        geometry.box(
+            sample_x + box_size * 2,
+            sample_y + box_size * 2,
+            sample_x + box_size * 3,
+            sample_y + box_size * 3,
+        ),
     ]
     labels = ["Tree", "Tree"]
     image_path = os.path.basename(raster_path)
 
-    df = pd.DataFrame({"geometry": sample_geometry, "label": labels, "image_path": image_path})
+    df = pd.DataFrame(
+        {"geometry": sample_geometry, "label": labels, "image_path": image_path}
+    )
     gdf = gpd.GeoDataFrame(df, geometry="geometry", crs=raster_crs)
 
     # Save as shapefile
@@ -241,6 +285,8 @@ def test_BoxDataset_with_projected_shapefile(tmpdir, raster_path):
     # Verify boxes are in pixel coordinates (should be positive and reasonable)
     # After geo_to_image_coordinates conversion, values should be in pixel space
     boxes = targets["boxes"]
-    assert torch.all(boxes >= 0), "Boxes should have non-negative coordinates in pixel space"
+    assert torch.all(boxes >= 0), (
+        "Boxes should have non-negative coordinates in pixel space"
+    )
     assert torch.all(boxes[:, 2] > boxes[:, 0]), "xmax should be greater than xmin"
     assert torch.all(boxes[:, 3] > boxes[:, 1]), "ymax should be greater than ymin"
