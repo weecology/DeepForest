@@ -2,10 +2,13 @@
 import os
 import tempfile
 
+import geopandas as gpd
 import numpy as np
 import pandas as pd
 import pytest
 import torch
+from PIL import Image
+from shapely import geometry
 
 from deepforest import get_data, main, utilities
 from deepforest.datasets.training import BoxDataset
@@ -25,10 +28,13 @@ def multi_class():
 
 @pytest.fixture()
 def raster_path():
-    return get_data(path='OSBS_029.tif')
+    return get_data(path="OSBS_029.tif")
 
 
-@pytest.mark.parametrize("csv_file,label_dict", [(single_class(), {"Tree": 0}), (multi_class(), {"Alive": 0, "Dead": 1})])
+@pytest.mark.parametrize(
+    "csv_file,label_dict",
+    [(single_class(), {"Tree": 0}), (multi_class(), {"Alive": 0, "Dead": 1})],
+)
 def test_BoxDataset(csv_file, label_dict):
     root_dir = os.path.dirname(get_data("OSBS_029.png"))
     ds = BoxDataset(csv_file=csv_file, root_dir=root_dir, label_dict=label_dict)
@@ -48,7 +54,7 @@ def test_BoxDataset(csv_file, label_dict):
 
 
 def test_single_class_with_empty(tmpdir):
-    """Add fake empty annotations to test parsing """
+    """Add fake empty annotations to test parsing"""
     csv_file1 = get_data("example.csv")
     csv_file2 = get_data("OSBS_029.csv")
 
@@ -64,9 +70,9 @@ def test_single_class_with_empty(tmpdir):
     df.to_csv(f"{tmpdir}_test_empty.csv")
 
     root_dir = os.path.dirname(get_data("OSBS_029.png"))
-    ds = BoxDataset(csv_file=f"{tmpdir}_test_empty.csv",
-                             root_dir=root_dir,
-                             label_dict={"Tree": 0})
+    ds = BoxDataset(
+        csv_file=f"{tmpdir}_test_empty.csv", root_dir=root_dir, label_dict={"Tree": 0}
+    )
     assert len(ds) == 2
     # First image has annotations
     assert not torch.sum(ds[0][1]["boxes"]) == 0
@@ -78,9 +84,11 @@ def test_single_class_with_empty(tmpdir):
 def test_BoxDataset_transform(augment):
     csv_file = get_data("example.csv")
     root_dir = os.path.dirname(csv_file)
-    ds = BoxDataset(csv_file=csv_file,
-                             root_dir=root_dir,
-                             augmentations=["HorizontalFlip"] if augment else None)
+    ds = BoxDataset(
+        csv_file=csv_file,
+        root_dir=root_dir,
+        augmentations=["HorizontalFlip"] if augment else None,
+    )
 
     for i in range(len(ds)):
         # Between 0 and 1
@@ -100,8 +108,7 @@ def test_collate():
     """Due to data augmentations the dataset class may yield empty bounding box annotations"""
     csv_file = get_data("example.csv")
     root_dir = os.path.dirname(csv_file)
-    ds = BoxDataset(csv_file=csv_file,
-                             root_dir=root_dir)
+    ds = BoxDataset(csv_file=csv_file, root_dir=root_dir)
 
     for i in range(len(ds)):
         # Between 0 and 1
@@ -114,8 +121,7 @@ def test_empty_collate():
     """Due to data augmentations the dataset class may yield empty bounding box annotations"""
     csv_file = get_data("example.csv")
     root_dir = os.path.dirname(csv_file)
-    ds = BoxDataset(csv_file=csv_file,
-                             root_dir=root_dir)
+    ds = BoxDataset(csv_file=csv_file, root_dir=root_dir)
 
     for i in range(len(ds)):
         # Between 0 and 1
@@ -145,8 +151,7 @@ def test_multi_image_warning():
     df.to_csv(csv_file)
 
     root_dir = os.path.dirname(csv_file1)
-    ds = BoxDataset(csv_file=csv_file,
-                             root_dir=root_dir)
+    ds = BoxDataset(csv_file=csv_file, root_dir=root_dir)
 
     for i in range(len(ds)):
         # Between 0 and 1
@@ -162,7 +167,9 @@ def test_label_validation__training_csv():
     m.config.train.root_dir = os.path.dirname(get_data("example.csv"))
     m.create_trainer()
 
-    with pytest.raises(ValueError, match="Labels \\['Tree'\\] are missing from label_dict"):
+    with pytest.raises(
+        ValueError, match="Labels \\['Tree'\\] are missing from label_dict"
+    ):
         m.trainer.fit(m)
 
 
@@ -171,11 +178,15 @@ def test_csv_label_validation__validation_csv(m):
     m = main.deepforest(config_args={"num_classes": 1, "label_dict": {"Tree": 0}})
     m.config.train.csv_file = get_data("example.csv")  # contains 'Tree' label
     m.config.train.root_dir = os.path.dirname(get_data("example.csv"))
-    m.config.validation.csv_file = get_data("testfile_multi.csv")  # contains 'Dead', 'Alive' labels
+    m.config.validation.csv_file = get_data(
+        "testfile_multi.csv"
+    )  # contains 'Dead', 'Alive' labels
     m.config.validation.root_dir = os.path.dirname(get_data("testfile_multi.csv"))
     m.create_trainer()
 
-    with pytest.raises(ValueError, match="Labels \\['Dead', 'Alive'\\] are missing from label_dict"):
+    with pytest.raises(
+        ValueError, match="Labels \\['Dead', 'Alive'\\] are missing from label_dict"
+    ):
         m.trainer.fit(m)
 
 
@@ -191,8 +202,88 @@ def test_BoxDataset_validate_labels():
     # Should not raise an error
 
     # Invalid case: CSV labels are not in label_dict
-    with pytest.raises(ValueError, match="Labels \\['Tree'\\] are missing from label_dict"):
+    with pytest.raises(
+        ValueError, match="Labels \\['Tree'\\] are missing from label_dict"
+    ):
         BoxDataset(csv_file=csv_file, root_dir=root_dir, label_dict={"Bird": 0})
+
+
+def test_validate_BoxDataset_missing_image(tmpdir, raster_path):
+    csv_path = os.path.join(tmpdir, "test.csv")
+    df = pd.DataFrame(
+        {
+            "image_path": ["missing.tif"],
+            "xmin": 0,
+            "ymin": 0,
+            "xmax": 10,
+            "ymax": 10,
+            "label": ["Tree"],
+        }
+    )
+    df.to_csv(csv_path, index=False)
+    root_dir = os.path.dirname(raster_path)
+    with pytest.raises(ValueError, match="Failed to open image"):
+        _ = BoxDataset(csv_file=csv_path, root_dir=root_dir)
+
+
+def test_BoxDataset_validate_coordinates(tmpdir, raster_path):
+    # Valid case: uses example.csv with all valid boxes
+    csv_path = get_data("example.csv")
+    root_dir = os.path.dirname(csv_path)
+    _ = BoxDataset(csv_file=csv_path, root_dir=root_dir)
+
+    # Test various invalid box coordinates
+    with Image.open(raster_path) as image:
+        width, height = image.size
+
+    invalid_boxes = [
+        (width - 5, 0, width + 10, 10),  # xmax exceeds width
+        (0, height - 5, 10, height + 10),  # ymax exceeds height
+        (-5, 0, 10, 10),  # negative xmin
+        (0, -5, 10, 10),  # negative ymin
+    ]
+
+    for box in invalid_boxes:
+        csv_path = os.path.join(tmpdir, "test.csv")
+        df = pd.DataFrame(
+            {
+                "image_path": ["OSBS_029.tif"],
+                "xmin": [box[0]],
+                "ymin": [box[1]],
+                "xmax": [box[2]],
+                "ymax": [box[3]],
+                "label": ["Tree"],
+            }
+        )
+        df.to_csv(csv_path, index=False)
+
+        with pytest.raises(ValueError, match="exceeds image dimensions"):
+            BoxDataset(csv_file=csv_path, root_dir=root_dir)
+
+
+def test_BoxDataset_validate_non_rectangular_polygon(tmpdir, raster_path):
+    # Create a non-rectangular polygon (triangle)
+    non_rect_polygon = geometry.Polygon([(10, 10), (50, 10), (30, 40)])
+
+    # Create dataframe with the non-rectangular geometry
+    df = pd.DataFrame(
+        {
+            "geometry": [non_rect_polygon],
+            "label": ["Tree"],
+            "image_path": ["OSBS_029.tif"],
+        }
+    )
+
+    # Convert to GeoDataFrame and save
+    gdf = gpd.GeoDataFrame(df, geometry="geometry")
+    csv_path = os.path.join(tmpdir, "non_rect.csv")
+    gdf.to_csv(csv_path, index=False)
+
+    root_dir = os.path.dirname(raster_path)
+
+    # Should raise an error because the geometry is not a valid bounding box
+    with pytest.raises(ValueError, match="is not a valid bounding box"):
+        BoxDataset(csv_file=csv_path, root_dir=root_dir)
 
 
 def test_BoxDataset_with_projected_shapefile(tmpdir, raster_path):
@@ -202,6 +293,7 @@ def test_BoxDataset_with_projected_shapefile(tmpdir, raster_path):
     # Get the raster to extract CRS and bounds
     import rasterio
     from shapely import geometry
+
     with rasterio.open(raster_path) as src:
         raster_crs = src.crs
         bounds = src.bounds
@@ -216,12 +308,19 @@ def test_BoxDataset_with_projected_shapefile(tmpdir, raster_path):
 
     sample_geometry = [
         geometry.box(sample_x, sample_y, sample_x + box_size, sample_y + box_size),
-        geometry.box(sample_x + box_size * 2, sample_y + box_size * 2, sample_x + box_size * 3, sample_y + box_size * 3)
+        geometry.box(
+            sample_x + box_size * 2,
+            sample_y + box_size * 2,
+            sample_x + box_size * 3,
+            sample_y + box_size * 3,
+        ),
     ]
     labels = ["Tree", "Tree"]
     image_path = os.path.basename(raster_path)
 
-    df = pd.DataFrame({"geometry": sample_geometry, "label": labels, "image_path": image_path})
+    df = pd.DataFrame(
+        {"geometry": sample_geometry, "label": labels, "image_path": image_path}
+    )
     gdf = gpd.GeoDataFrame(df, geometry="geometry", crs=raster_crs)
 
     # Save as shapefile
@@ -241,6 +340,8 @@ def test_BoxDataset_with_projected_shapefile(tmpdir, raster_path):
     # Verify boxes are in pixel coordinates (should be positive and reasonable)
     # After geo_to_image_coordinates conversion, values should be in pixel space
     boxes = targets["boxes"]
-    assert torch.all(boxes >= 0), "Boxes should have non-negative coordinates in pixel space"
+    assert torch.all(boxes >= 0), (
+        "Boxes should have non-negative coordinates in pixel space"
+    )
     assert torch.all(boxes[:, 2] > boxes[:, 0]), "xmax should be greater than xmin"
     assert torch.all(boxes[:, 3] > boxes[:, 1]), "ymax should be greater than ymin"
