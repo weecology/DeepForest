@@ -462,7 +462,6 @@ class deepforest(pl.LightningModule):
             result["label"] = result.label.apply(lambda x: self.numeric_to_label_dict[x])
 
         if path is None:
-            result = utilities.read_file(result)
             warnings.warn(
                 "An image was passed directly to predict_image, the result.root_dir attribute "
                 "will be None in the output dataframe, to use visualize.plot_results, "
@@ -654,7 +653,7 @@ class deepforest(pl.LightningModule):
             root_dir = os.path.dirname(paths[0])
         else:
             print(
-                "No image path provided, root_dir will be None, since either "
+                "No image path provided, root_dir of the output results dataframe will be None, since either "
                 "images were directly provided or there were multiple image paths"
             )
             root_dir = None
@@ -676,7 +675,8 @@ class deepforest(pl.LightningModule):
         else:
             cropmodel_results = mosaic_results
 
-        formatted_results = utilities.read_file(cropmodel_results, root_dir=root_dir)
+        formatted_results = utilities.__pandas_to_geodataframe__(cropmodel_results)
+        formatted_results.root_dir = root_dir
 
         return formatted_results
 
@@ -937,7 +937,7 @@ class deepforest(pl.LightningModule):
                 continue
             geom_type = utilities.determine_geometry_type(pred)
             result = utilities.format_geometry(pred, geom_type=geom_type)
-            results.append(utilities.read_file(result))
+            results.append(result)
 
         return results
 
@@ -1024,17 +1024,21 @@ class deepforest(pl.LightningModule):
             dict: Results dictionary containing precision, recall and other metrics
         """
         self.model.eval()
-        ground_df = utilities.read_file(csv_file)
-        ground_df["label"] = ground_df.label.apply(lambda x: self.label_dict[x])
-
         if root_dir is None:
-            root_dir = os.path.dirname(csv_file)
+            root_dir = self.config.validation.root_dir
+
+        ground_df = utilities.read_file(csv_file, root_dir=root_dir)
+        ground_df["label"] = ground_df.label.apply(lambda x: self.label_dict[x])
 
         if predictions is None:
             # Get the predict dataloader and use predict_batch
             predictions = self.predict_file(
+<<<<<<< HEAD
                 csv_file,
                 root_dir,
+=======
+                csv_file, ground_df.root_dir, size=size, batch_size=batch_size
+>>>>>>> 79709690 (Refactor read_file to be more readable, consistent and fail early. This PR creates a custom class to close #1042, refactored to allow multiple image files to pass through)
             )
 
         if iou_threshold is None:
@@ -1095,7 +1099,11 @@ class deepforest(pl.LightningModule):
         """Log metrics from evaluation results."""
         # Log metrics
         for key, value in results.items():
-            if type(value) in [pd.DataFrame, gpd.GeoDataFrame]:
+            if type(value) in [
+                pd.DataFrame,
+                gpd.GeoDataFrame,
+                utilities.DeepForest_DataFrame,
+            ]:
                 pass
             elif value is None:
                 pass
