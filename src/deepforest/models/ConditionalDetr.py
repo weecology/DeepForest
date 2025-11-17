@@ -3,7 +3,6 @@ from pathlib import Path
 
 import torch
 from torch import nn
-from torchvision.ops import nms
 from transformers import (
     ConditionalDetrForObjectDetection,
     ConditionalDetrImageProcessor,
@@ -11,6 +10,7 @@ from transformers import (
 )
 
 from deepforest.model import BaseModel
+from deepforest.models import detr_utils
 
 # Suppress huge amounts of unnecessary warnings from transformers.
 logging.set_verbosity_error()
@@ -72,81 +72,6 @@ class ConditionalDetrWrapper(nn.Module):
             self.label_dict = self.net.config.label2id
             self.num_classes = self.net.config.num_labels
 
-    def _prepare_targets(self, targets):
-        """This is an internal function which translates BoxDataset targets
-        into MS-COCO format, for use with transformers-like models."""
-        if not isinstance(targets, list):
-            targets = [targets]
-
-        coco_targets = []
-
-        for target in targets:
-            annotations_for_target = []
-            for i, (label, box) in enumerate(
-                zip(target["labels"], target["boxes"], strict=False)
-            ):
-                if isinstance(box, torch.Tensor):
-                    box = box.tolist()
-
-                if isinstance(label, torch.Tensor):
-                    label = label.item()
-
-                # Convert from [xmin, ymin, xmax, ymax] to COCO format [x, y, width, height]
-                xmin, ymin, xmax, ymax = box
-                coco_bbox = [xmin, ymin, xmax - xmin, ymax - ymin]
-                area = (xmax - xmin) * (ymax - ymin)
-
-                annotations_for_target.append(
-                    {
-                        "id": i,
-                        "image_id": i,
-                        "category_id": label,
-                        "bbox": coco_bbox,
-                        "area": area,
-                        "iscrowd": 0,
-                    }
-                )
-
-            coco_targets.append({"image_id": 0, "annotations": annotations_for_target})
-
-        return coco_targets
-
-    def _apply_nms(self, predictions, iou_thresh):
-        """Apply class-wise NMS to a list of predictions."""
-        filtered = []
-        for pred in predictions:
-            boxes = pred["boxes"]
-            scores = pred["scores"]
-            labels = pred["labels"]
-
-            keep = []
-            for cls in labels.unique():
-                cls_mask = labels == cls
-                cls_boxes = boxes[cls_mask]
-                cls_scores = scores[cls_mask]
-                cls_keep = nms(cls_boxes, cls_scores, iou_thresh)
-                cls_indices = torch.nonzero(cls_mask).squeeze(1)[cls_keep]
-                keep.append(cls_indices)
-
-            if keep:
-                keep = torch.cat(keep)
-                filtered.append(
-                    {
-                        "boxes": boxes[keep],
-                        "scores": scores[keep],
-                        "labels": labels[keep],
-                    }
-                )
-            else:
-                filtered.append(
-                    {
-                        "boxes": boxes,
-                        "scores": scores,
-                        "labels": labels,
-                    }
-                )
-
-        return filtered
 
     def forward(self, images, targets=None, prepare_targets=True):
         """ConditionalDetrForObjectDetection forward pass. If targets are
@@ -159,7 +84,7 @@ class ConditionalDetrWrapper(nn.Module):
                           a loss dict for training.
         """
         if targets and prepare_targets:
-            targets = self._prepare_targets(targets)
+            targets = detr_utils.prepare_targets(targets)
 
         encoded_inputs = self.processor.preprocess(
             images=images, annotations=targets, return_tensors="pt", do_rescale=False
@@ -178,22 +103,18 @@ class ConditionalDetrWrapper(nn.Module):
         preds = self.net(**encoded_inputs)
 
         if targets is None or not self.training:
-            results = self.processor.post_process_object_detection(
-                preds,
-                threshold=self.config.score_thresh,
-                target_sizes=[i.shape[-2:] for i in images]
-                if isinstance(images, list)
-                else [images.shape[-2:]],
-                top_k=self.net.config.num_queries,
+            results = detr_utils.handle_padding_and_postprocess(
+                self.processor, preds, encoded_inputs, images, self.config,
+                num_queries=self.net.config.num_queries
             )
 
-            # DETR is specifically designed to be NMS-free, however we've seen cases
-            # where it still predicts duplicate boxes
             if self.use_nms:
-                results = self._apply_nms(results, iou_thresh=self.config.nms_thresh)
+                results = detr_utils.apply_nms(results, iou_thresh=self.config.nms_thresh)
 
             return results
         else:
+            # Drop this as it's incorrect for ConditionalDETR
+            preds.loss_dict.pop('cardinality_error', None)
             return preds.loss_dict
 
 
