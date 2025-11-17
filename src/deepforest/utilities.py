@@ -174,38 +174,64 @@ def convert_point_to_bbox(gdf: gpd.GeoDataFrame, buffer_size: float) -> gpd.GeoD
 
 def shapefile_to_annotations(
     shapefile: str | gpd.GeoDataFrame,
-    rgb: str | None = None,
     root_dir: str | None = None,
+    rgb: str | None = None,
     buffer_size: float | None = None,
     convert_point: bool = False,
+    label: str | None = None,
 ) -> gpd.GeoDataFrame:
-    """Convert shapefile annotations to DeepForest format.
+    raise DeprecationWarning(
+        "shapefile_to_annotations is deprecated, use read_file instead"
+    )
 
-    Args:
-        shapefile: Path to shapefile or GeoDataFrame
-        rgb: Path to RGB image
-        root_dir: Directory to prepend to image paths
-        buffer_size: Buffer size for point-to-polygon conversion
-        convert_point: Convert points to bounding boxes
+    if buffer_size is not None and convert_point:
+        raise DeprecationWarning(
+            "buffer_size argument is deprecated, use convert_point_to_bbox instead"
+        )
 
-    Returns:
-        GeoDataFrame with annotations
-    """
+    image_path = root_dir + rgb
+    return __shapefile_to_annotations__(shapefile, image_path, label)
 
-    # Read shapefile
-    if isinstance(shapefile, str):
-        gdf = gpd.read_file(shapefile)
-    else:
-        gdf = shapefile.copy(deep=True)
 
-    if rgb is None:
-        if "image_path" not in gdf.columns:
+def __check_image_path__(
+    df: pd.DataFrame | gpd.GeoDataFrame,
+    image_path: str | None = None,
+    root_dir: str | None = None,
+):
+    if image_path is None:
+        if "image_path" not in df.columns:
             raise ValueError(
-                "No image_path column found in shapefile, please specify rgb path"
+                "No image_path column found in dataframe and image_path argument not specified, please specify full path to image file in image_path argument: read_file(input=df, image_path='/path/to/image.tif', ...)"
             )
         else:
-            rgb = gdf.image_path.unique()[0]
-            print(f"Found image_path column in shapefile, using {rgb}")
+            full_image_path = os.path.join(root_dir, df["image_path"].unique()[0])
+    else:
+        full_image_path = image_path
+
+    if not os.path.exists(full_image_path):
+        raise FileNotFoundError(
+            f"Image file {full_image_path} not found, please check the image_path argument, it should be the full path: read_file(input=df, image_path='/path/to/image.tif', ...)"
+        )
+
+    return full_image_path
+
+
+def __shapefile_to_annotations__(
+    gdf: str | gpd.GeoDataFrame,
+    root_dir: str | None = None,
+    image_path: str | None = None,
+) -> gpd.GeoDataFrame:
+    """Convert geospatial annotations to DeepForest format.
+
+    Args:
+        gdf: A GeoDataFrame with a geometry column and an image_path column. If the image_path column is not present, it will be added using the image_path argument.
+        image_path: Full path to the image file.
+        root_dir: Root directory of the image files. If not provided, it will be inferred from the image_path column.
+
+    Returns:
+        GeoDataFrame with annotations in DeepForest format.
+    """
+    image_path = __check_image_path__(gdf, image_path=image_path, root_dir=root_dir)
 
     # Determine geometry type and report to user
     if gdf.geometry.type.unique().shape[0] > 1:
@@ -217,21 +243,8 @@ def shapefile_to_annotations(
         geometry_type = gdf.geometry.type.unique()[0]
         print(f"Geometry type of shapefile is {geometry_type}")
 
-    # Convert point to bounding box if desired
-    if convert_point:
-        if geometry_type == "Point":
-            if buffer_size is None:
-                raise ValueError(
-                    "buffer_size must be specified to convert point to bounding box"
-                )
-            gdf = convert_point_to_bbox(gdf, buffer_size)
-        else:
-            raise ValueError("convert_point is True, but geometry type is not Point")
-
     # raster bounds
-    if root_dir:
-        rgb = os.path.join(root_dir, rgb)
-    with rasterio.open(rgb) as src:
+    with rasterio.open(image_path) as src:
         raster_crs = src.crs
 
     if gdf.crs:
@@ -257,16 +270,8 @@ def shapefile_to_annotations(
             print(f"CRS of image is {raster_crs}")
             gdf = geo_to_image_coordinates(gdf, src.bounds, src.res[0])
 
-    # check for label column
-    if "label" not in gdf.columns:
-        raise ValueError(
-            "No label column found in shapefile. Please add a column named 'label' to your shapefile."
-        )
-    else:
-        gdf["label"] = gdf["label"]
-
     # add filename
-    gdf["image_path"] = os.path.basename(rgb)
+    gdf["image_path"] = os.path.basename(image_path)
 
     return gdf
 
@@ -376,27 +381,110 @@ def read_coco(json_file):
     Args:
         json_file: Path to the COCO segmentation JSON file
     Returns:
-        df: A pandas dataframe with image_path and geometry columns
+        df: A pandas dataframe with image_path, geometry, and label columns
     """
     with open(json_file) as f:
         coco_data = json.load(f)
 
-        polygons = []
-        filenames = []
-        image_ids = {image["id"]: image["file_name"] for image in coco_data["images"]}
+    # Create mapping from image IDs to filenames
+    image_ids = {image["id"]: image["file_name"] for image in coco_data["images"]}
 
-        for annotation in coco_data["annotations"]:
-            segmentation_mask = annotation["segmentation"][0]
-            # Convert flat list to coordinate pairs
-            pairs = [
-                (segmentation_mask[i], segmentation_mask[i + 1])
-                for i in range(0, len(segmentation_mask), 2)
-            ]
-            polygon = shapely.geometry.Polygon(pairs)
-            filenames.append(image_ids[annotation["image_id"]])
-            polygons.append(polygon.wkt)
+    # Create mapping from category IDs to category names
+    category_id_to_name = {
+        category["id"]: category["name"] for category in coco_data["categories"]
+    }
 
-        return pd.DataFrame({"image_path": filenames, "geometry": polygons})
+    polygons = []
+    filenames = []
+    labels = []
+
+    for annotation in coco_data["annotations"]:
+        segmentation = annotation.get("segmentation")
+        if not segmentation:
+            continue
+        # COCO polygons are usually a list of lists; take the first (assume "single part")
+        segmentation_mask = segmentation[0]
+        # Convert flat list to coordinate pairs
+        pairs = [
+            (segmentation_mask[i], segmentation_mask[i + 1])
+            for i in range(0, len(segmentation_mask), 2)
+        ]
+        polygon = shapely.geometry.Polygon(pairs)
+        filenames.append(image_ids[annotation["image_id"]])
+        polygons.append(polygon.wkt)
+        cat_id = annotation.get("category_id")
+        label = category_id_to_name.get(cat_id, cat_id)
+        labels.append(label)
+
+    return pd.DataFrame({"image_path": filenames, "geometry": polygons, "label": labels})
+
+
+def __pandas_to_geodataframe__(df: pd.DataFrame):
+    """Create a geometry column from a pandas dataframe with coordinates".
+
+    Args:
+        df: a pandas dataframe with columns: xmin, ymin, xmax, ymax, or x, y, or polygon
+    Returns:
+        gdf: a geodataframe with a geometry column
+    """
+    # If the geometry column is present, convert to geodataframe directly
+    if "geometry" in df.columns:
+        if pd.api.types.infer_dtype(df["geometry"]) == "string":
+            df["geometry"] = gpd.GeoSeries.from_wkt(df["geometry"])
+    else:
+        geom_type = determine_geometry_type(df)
+        if geom_type == "box":
+            df["geometry"] = df.apply(
+                lambda x: shapely.geometry.box(x.xmin, x.ymin, x.xmax, x.ymax), axis=1
+            )
+        elif geom_type == "polygon":
+            df["geometry"] = gpd.GeoSeries.from_wkt(df["polygon"])
+        elif geom_type == "point":
+            df["geometry"] = gpd.GeoSeries(
+                [
+                    shapely.geometry.Point(x, y)
+                    for x, y in zip(df.x.astype(float), df.y.astype(float), strict=False)
+                ]
+            )
+    gdf = gpd.GeoDataFrame(df, geometry="geometry")
+
+    return gdf
+
+
+def __check_label__(df: pd.DataFrame | gpd.GeoDataFrame, label: str | None = None):
+    if label is None:
+        if "label" not in df.columns:
+            raise ValueError(
+                "No label specified and no label column found in dataframe, please specify label in label argument: read_file(input=df, label='YourLabel', ...)"
+            )
+    else:
+        df["label"] = label
+
+    return df
+
+
+def __assign_root_dir__(
+    input,
+    gdf: gpd.GeoDataFrame,
+    image_path: str | None = None,
+    root_dir: str | None = None,
+):
+    if root_dir is not None:
+        gdf.root_dir = root_dir
+    else:
+        if image_path is not None:
+            gdf.root_dir = os.path.dirname(image_path)
+        elif isinstance(input, str):
+            warnings.warn(
+                f"root_dir argument not specified, defaulting the images root_dir to the same directory as the input file: {os.path.dirname(input)}",
+                stacklevel=2,
+            )
+            gdf.root_dir = os.path.dirname(input)
+        else:
+            raise ValueError(
+                "root_dir argument not specified and input is a dataframe, where are the images stored?"
+            )
+    return gdf
 
 
 def read_file(
@@ -405,129 +493,69 @@ def read_file(
     image_path: str | None = None,
     label: str | None = None,
 ) -> gpd.GeoDataFrame:
-    """Read file and return GeoDataFrame.
+    """Read file and return GeoDataFrame in DeepForest format.
 
     Args:
         input: Path to file, DataFrame, or GeoDataFrame
         root_dir: Root directory for image files
-        image_path: Assign to all rows (use only for single image)
-        label: Assign to all rows (use only for single label)
+        image_path: Assign image_path column to all rows. The full path to the image file.
+        label: Assign a single label column to all rows.
 
+    Notes:
+        The image_path and label arguments are applied to all rows in the dataframe or shapefile and therefore should only be used in cases where all rows have the same image_path and label.
     Returns:
-        GeoDataFrame with geometry column
+        GeoDataFrame with geometry, image_path, and label columns
     """
-    if image_path is not None:
-        warnings.warn(
-            "You have passed an image_path. "
-            "This value will be assigned to every row in the dataframe. "
-            "Only use this if the file contains annotations for a single image.",
-            UserWarning,
-            stacklevel=2,
-        )
-
-    if label is not None:
-        warnings.warn(
-            "You have passed a label. This value will be assigned to every row in the dataframe. "
-            "Only use this if all annotations share the same label.",
-            UserWarning,
-            stacklevel=2,
-        )
-
     # read file
     if isinstance(input, str):
         if input.endswith(".csv"):
             df = pd.read_csv(input)
+            df = __check_label__(df, label=label)
+            gdf = __pandas_to_geodataframe__(df)
         elif input.endswith(".json"):
             df = read_coco(input)
+            df = __check_label__(df, label=label)
+            gdf = __pandas_to_geodataframe__(df)
         elif input.endswith((".shp", ".gpkg")):
-            df = shapefile_to_annotations(input, root_dir=root_dir)
+            gdf = gpd.read_file(input)
+            gdf = __check_label__(gdf, label=label)
+            gdf = __shapefile_to_annotations__(
+                gdf,
+                root_dir=root_dir,
+                image_path=image_path,
+            )
         elif input.endswith(".xml"):
             df = read_pascal_voc(input)
+            df = __check_label__(df, label=label)
+            gdf = __pandas_to_geodataframe__(df)
         else:
             raise ValueError(
-                f"File type {df} not supported. "
+                f"File type {input} not supported. "
                 "DeepForest currently supports .csv, .shp, .gpkg, .xml, and .json files. "
                 "See https://deepforest.readthedocs.io/en/latest/annotation.html "
             )
-    else:
-        # Explicitly check for GeoDataFrame first
-        if isinstance(input, gpd.GeoDataFrame):
-            return shapefile_to_annotations(input, root_dir=root_dir)
-        elif isinstance(input, pd.DataFrame):
-            df = input.copy(deep=True)
-        else:
-            raise ValueError(
-                "Input must be a path to a file, geopandas or a pandas dataframe"
-            )
-
-    if isinstance(df, pd.DataFrame):
-        if df.empty:
+    elif isinstance(input, gpd.GeoDataFrame):
+        input = __check_label__(input, label=label)
+        gdf = __shapefile_to_annotations__(
+            input,
+            image_path=image_path,
+            root_dir=root_dir,
+        )
+    elif isinstance(input, pd.DataFrame):
+        if input.empty:
             raise ValueError("No annotations in dataframe")
-        # If the geometry column is present, convert to geodataframe directly
-        if "geometry" in df.columns:
-            if pd.api.types.infer_dtype(df["geometry"]) == "string":
-                df["geometry"] = gpd.GeoSeries.from_wkt(df["geometry"])
-        else:
-            # Detect geometry type
-            geom_type = determine_geometry_type(df)
-
-            # convert to geodataframe
-            if geom_type == "box":
-                df["geometry"] = df.apply(
-                    lambda x: shapely.geometry.box(x.xmin, x.ymin, x.xmax, x.ymax), axis=1
-                )
-                df = gpd.GeoDataFrame(df, geometry="geometry")
-            elif geom_type == "polygon":
-                df["geometry"] = gpd.GeoSeries.from_wkt(df["polygon"])
-                df = gpd.GeoDataFrame(df, geometry="geometry")
-            elif geom_type == "point":
-                df["geometry"] = gpd.GeoSeries(
-                    [
-                        shapely.geometry.Point(x, y)
-                        for x, y in zip(
-                            df.x.astype(float), df.y.astype(float), strict=False
-                        )
-                    ]
-                )
-                df = gpd.GeoDataFrame(df, geometry="geometry")
-            else:
-                raise ValueError(f"Geometry type {geom_type} not supported")
-
-    # Add missing columns if not provided
-    if "image_path" not in df.columns and image_path is not None:
-        df["image_path"] = image_path
-    elif "image_path" not in df.columns:
-        warnings.warn(
-            "'image_path' column is missing from shapefile, please specify the image path",
-            UserWarning,
-            stacklevel=2,
-        )
-
-    if "label" not in df.columns and label is not None:
-        df["label"] = label
-    elif "label" not in df.columns:
-        warnings.warn(
-            "'label' column is missing from shapefile, using default label",
-            UserWarning,
-            stacklevel=2,
-        )
-        df["label"] = "Unknown"  # Set default label if not provided
-
-    # If root_dir is specified, add as attribute
-    if root_dir is not None:
-        df.root_dir = root_dir
+        gdf = __check_label__(input, label=label)
+        gdf = __pandas_to_geodataframe__(input)
+        image_path = __check_image_path__(gdf, image_path=image_path, root_dir=root_dir)
+        gdf["image_path"] = os.path.basename(image_path)
     else:
-        try:
-            df.root_dir = os.path.dirname(input)
-        except TypeError:
-            warnings.warn(
-                "root_dir argument for the location of images should be specified "
-                "if input is not a path, returning without results.root_dir attribute",
-                UserWarning,
-                stacklevel=2,
-            )
+        raise ValueError(
+            "Input must be a path to a file, geopandas or a pandas dataframe"
+        )
 
-    return df
+    gdf = __assign_root_dir__(input, gdf, root_dir=root_dir, image_path=image_path)
+
+    return gdf
 
 
 def crop_raster(bounds, rgb_path=None, savedir=None, filename=None, driver="GTiff"):
