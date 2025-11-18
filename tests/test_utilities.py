@@ -7,7 +7,6 @@ import numpy as np
 import pandas as pd
 import pytest
 import rasterio as rio
-# import general model fixture
 import shapely
 import torch
 from shapely import geometry
@@ -59,6 +58,23 @@ def test_read_file(tmpdir):
     assert hasattr(shp, "root_dir")
 
 
+def test_read_file_multiple_images(tmpdir):
+    sample_geometry = [geometry.Point(404211.9 + 10, 3285102 + 20), geometry.Point(404211.9 + 20, 3285102 + 20)]
+    labels = ["Tree", "Tree"]
+    df = pd.DataFrame({"geometry": sample_geometry, "label": labels})
+    gdf = gpd.GeoDataFrame(df, geometry="geometry", crs="EPSG:32617")
+    gdf["geometry"] = [geometry.box(left, bottom, right, top) for left, bottom, right, top in
+                       gdf.geometry.buffer(0.5).bounds.values]
+    gdf["image_path"] = [os.path.basename(get_data("OSBS_029.tif")), os.path.basename(get_data("2018_SJER_3_252000_4107000_image_477.tif"))]
+    gdf.to_file("{}/annotations.shp".format(tmpdir))
+    shp = utilities.read_file(input="{}/annotations.shp".format(tmpdir), root_dir=os.path.dirname(get_data("OSBS_029.tif")))
+
+    assert shp.shape[0] == 2
+    assert "image_path" in shp.columns
+    assert "label" in shp.columns
+    assert hasattr(shp, "root_dir")
+
+
 def test_read_file_in_memory_geodataframe():
     """Test reading an in-memory GeoDataFrame"""
     sample_geometry = [geometry.Point(404211.9 + 10, 3285102 + 20), geometry.Point(404211.9 + 20, 3285102 + 20)]
@@ -98,7 +114,8 @@ def test_read_file_in_memory_dataframe():
 
     # Process through read_file
     result = utilities.read_file(input=test_df,
-                                 image_path=get_data("OSBS_029.tif"))
+                                 image_path=get_data("OSBS_029.tif"),
+                                 root_dir=os.path.dirname(get_data("OSBS_029.tif")))
 
     # Verify output
     assert isinstance(result, gpd.GeoDataFrame)
@@ -130,8 +147,8 @@ def test_read_file_shapefile_without_image_path(tmpdir):
     gdf.to_file(shp_path)
 
     # Provide image_path and label via read_file to fill missing columns
-    rgb = get_data("OSBS_029.png")
-    result = utilities.read_file(input=shp_path, image_path=rgb,label="Tree")
+    rgb = os.path.basename(get_data("OSBS_029.png"))
+    result = utilities.read_file(input=shp_path, image_path=rgb,label="Tree", root_dir=os.path.dirname(get_data("OSBS_029.png")))
 
     assert result.shape[0] == 2
     # image_path should be taken from the provided rgb_path
