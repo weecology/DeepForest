@@ -1046,7 +1046,11 @@ class deepforest(pl.LightningModule):
         """Log metrics from evaluation results."""
         # Log metrics
         for key, value in results.items():
-            if type(value) in [pd.DataFrame, gpd.GeoDataFrame]:
+            if type(value) in [
+                pd.DataFrame,
+                gpd.GeoDataFrame,
+                utilities.DeepForest_DataFrame,
+            ]:
                 pass
             elif value is None:
                 pass

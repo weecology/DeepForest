@@ -101,6 +101,22 @@ class DownloadProgressBar(tqdm):
         self.update(b * bsize - self.n)
 
 
+class DeepForest_DataFrame(gpd.GeoDataFrame):
+    """Custom GeoDataFrame that preserves a root_dir attribute if present."""
+
+    _metadata = ["root_dir"]
+
+    def __init__(self, *args, **kwargs):
+        root_dir = getattr(args[0], "root_dir", None) if args else None
+        super().__init__(*args, **kwargs)
+        if root_dir is not None:
+            self.root_dir = root_dir
+
+    @property
+    def _constructor(self):
+        return DeepForest_DataFrame
+
+
 def read_pascal_voc(xml_path):
     """Load annotations from xml format (e.g. RectLabel editor) and convert
     them into retinanet annotations format.
@@ -196,8 +212,8 @@ def convert_point_to_bbox(gdf: gpd.GeoDataFrame, buffer_size: float) -> gpd.GeoD
 
 def shapefile_to_annotations(
     shapefile: str | gpd.GeoDataFrame,
-    root_dir: str | None = None,
     rgb: str | None = None,
+    root_dir: str | None = None,
     buffer_size: float | None = None,
     convert_point: bool = False,
     label: str | None = None,
@@ -211,50 +227,49 @@ def shapefile_to_annotations(
             "buffer_size argument is deprecated, use convert_point_to_bbox instead"
         )
 
-    image_path = root_dir + rgb
-    return __shapefile_to_annotations__(shapefile, image_path, label)
+    return __shapefile_to_annotations__(shapefile)
 
 
-def __check_image_path__(
-    df: pd.DataFrame | gpd.GeoDataFrame,
-    image_path: str | None = None,
-    root_dir: str | None = None,
-):
+def __assign_image_path__(gdf, image_path: str) -> str:
     if image_path is None:
-        if "image_path" not in df.columns:
+        if "image_path" not in gdf.columns:
             raise ValueError(
-                "No image_path column found in dataframe and image_path argument not specified, please specify full path to image file in image_path argument: read_file(input=df, image_path='/path/to/image.tif', ...)"
+                "No image_path column found in GeoDataframe and image_path argument not specified, please specify the root_dir and image_path arguements: read_file(input=df, root_dir='path/to/images/', image_path='image.tif', ...)"
             )
         else:
-            full_image_path = os.path.join(root_dir, df["image_path"].unique()[0])
+            # Image Path columns exists, leave it unchanged.
+            pass
     else:
-        full_image_path = image_path
+        if "image_path" in gdf.columns:
+            existing_image_path = gdf.image_path.unique()[0]
+            if len(existing_image_path) > 1:
+                warnings.warn(
+                    f"Multiple image_paths found in dataframe: {existing_image_path}, overriding and assigning {image_path} to all rows!",
+                    stacklevel=2,
+                )
+            if existing_image_path != image_path:
+                warnings.warn(
+                    f"Image path {existing_image_path} found in dataframe, overriding and assigning {image_path} to all rows!",
+                    stacklevel=2,
+                )
+            gdf["image_path"] = image_path
+        else:
+            gdf["image_path"] = image_path
 
-    if not os.path.exists(full_image_path):
-        raise FileNotFoundError(
-            f"Image file {full_image_path} not found, please check the image_path argument, it should be the full path: read_file(input=df, image_path='/path/to/image.tif', ...)"
-        )
-
-    return full_image_path
+    return gdf
 
 
 def __shapefile_to_annotations__(
-    gdf: str | gpd.GeoDataFrame,
-    root_dir: str | None = None,
-    image_path: str | None = None,
+    gdf: gpd.GeoDataFrame,
 ) -> gpd.GeoDataFrame:
     """Convert geospatial annotations to DeepForest format.
 
     Args:
-        gdf: A GeoDataFrame with a geometry column and an image_path column. If the image_path column is not present, it will be added using the image_path argument.
-        image_path: Full path to the image file.
-        root_dir: Root directory of the image files. If not provided, it will be inferred from the image_path column.
+        gdf: A GeoDataFrame with a geometry column and an image_path column.
 
     Returns:
         GeoDataFrame with annotations in DeepForest format.
     """
-    image_path = __check_image_path__(gdf, image_path=image_path, root_dir=root_dir)
-
     # Determine geometry type and report to user
     if gdf.geometry.type.unique().shape[0] > 1:
         raise ValueError(
@@ -266,7 +281,8 @@ def __shapefile_to_annotations__(
         print(f"Geometry type of shapefile is {geometry_type}")
 
     # raster bounds
-    with rasterio.open(image_path) as src:
+    full_image_path = os.path.join(gdf.root_dir, gdf.image_path.unique()[0])
+    with rasterio.open(full_image_path) as src:
         raster_crs = src.crs
 
     if gdf.crs:
@@ -292,9 +308,6 @@ def __shapefile_to_annotations__(
             print(f"CRS of image is {raster_crs}")
             gdf = geo_to_image_coordinates(gdf, src.bounds, src.res[0])
 
-    # add filename
-    gdf["image_path"] = os.path.basename(image_path)
-
     return gdf
 
 
@@ -305,7 +318,7 @@ def determine_geometry_type(df):
     Returns:
         geometry_type: a string of the geometry type
     """
-    if type(df) in [pd.DataFrame, gpd.GeoDataFrame]:
+    if type(df) in [pd.DataFrame, gpd.GeoDataFrame, DeepForest_DataFrame]:
         columns = df.columns
         if "geometry" in columns:
             df = gpd.GeoDataFrame(geometry=df["geometry"])
@@ -469,18 +482,34 @@ def __pandas_to_geodataframe__(df: pd.DataFrame):
                 ]
             )
     gdf = gpd.GeoDataFrame(df, geometry="geometry")
+    gdf = DeepForest_DataFrame(gdf)
 
     return gdf
 
 
-def __check_label__(df: pd.DataFrame | gpd.GeoDataFrame, label: str | None = None):
+def __check_and_assign_label__(
+    df: pd.DataFrame | gpd.GeoDataFrame, label: str | None = None
+):
     if label is None:
         if "label" not in df.columns:
             raise ValueError(
                 "No label specified and no label column found in dataframe, please specify label in label argument: read_file(input=df, label='YourLabel', ...)"
             )
     else:
-        df["label"] = label
+        if "label" in df.columns:
+            existing_labels = df.label.unique()
+            if len(existing_labels) > 1:
+                warnings.warn(
+                    f"Multiple labels found in dataframe: {existing_labels}, the label argument in read_file will override these labels!",
+                    stacklevel=2,
+                )
+            if existing_labels[0] != label:
+                warnings.warn(
+                    f"Label {existing_labels[0]} found in dataframe, overriding and assigning {label} to all rows!",
+                    stacklevel=2,
+                )
+        else:
+            df["label"] = label
 
     return df
 
@@ -488,24 +517,29 @@ def __check_label__(df: pd.DataFrame | gpd.GeoDataFrame, label: str | None = Non
 def __assign_root_dir__(
     input,
     gdf: gpd.GeoDataFrame,
-    image_path: str | None = None,
     root_dir: str | None = None,
 ):
     if root_dir is not None:
         gdf.root_dir = root_dir
     else:
-        if image_path is not None:
-            gdf.root_dir = os.path.dirname(image_path)
-        elif isinstance(input, str):
-            warnings.warn(
-                f"root_dir argument not specified, defaulting the images root_dir to the same directory as the input file: {os.path.dirname(input)}",
-                stacklevel=2,
-            )
+        # If the user specified a path to file, use that root_dir as default.
+        if isinstance(input, str):
             gdf.root_dir = os.path.dirname(input)
         else:
             raise ValueError(
                 "root_dir argument not specified and input is a dataframe, where are the images stored?"
             )
+
+    return gdf
+
+
+def _pandas_to_deepforest_format__(input, df, image_path, root_dir, label):
+    df = __check_and_assign_label__(df, label=label)
+    gdf = __pandas_to_geodataframe__(df)
+    gdf = __assign_image_path__(gdf, image_path=image_path)
+    gdf = __assign_root_dir__(input, gdf, root_dir=root_dir)
+    gdf = DeepForest_DataFrame(gdf)
+
     return gdf
 
 
@@ -520,36 +554,36 @@ def read_file(
     Args:
         input: Path to file, DataFrame, or GeoDataFrame
         root_dir: Root directory for image files
-        image_path: Assign image_path column to all rows. The full path to the image file.
-        label: Assign a single label column to all rows.
+        image_path: Path relative to root_dir to a single image that will be assigned as the image_path column for all annotations. The full path will be constructed by joining the root_dir and the image_path. Overrides any image_path column in input.
+        label: Single label to be assigned as the label for all annotations. Overrides any label column in input.
 
-    Notes:
-        The image_path and label arguments are applied to all rows in the dataframe or shapefile and therefore should only be used in cases where all rows have the same image_path and label.
     Returns:
         GeoDataFrame with geometry, image_path, and label columns
     """
+    # Check arguments
+    if image_path is not None and root_dir is None:
+        raise ValueError(
+            "root_dir argument must be specified if image_path argument is used"
+        )
+
     # read file
     if isinstance(input, str):
         if input.endswith(".csv"):
             df = pd.read_csv(input)
-            df = __check_label__(df, label=label)
-            gdf = __pandas_to_geodataframe__(df)
+            gdf = _pandas_to_deepforest_format__(input, df, image_path, root_dir, label)
         elif input.endswith(".json"):
             df = read_coco(input)
-            df = __check_label__(df, label=label)
-            gdf = __pandas_to_geodataframe__(df)
-        elif input.endswith((".shp", ".gpkg")):
-            gdf = gpd.read_file(input)
-            gdf = __check_label__(gdf, label=label)
-            gdf = __shapefile_to_annotations__(
-                gdf,
-                root_dir=root_dir,
-                image_path=image_path,
-            )
+            gdf = _pandas_to_deepforest_format__(input, df, image_path, root_dir, label)
         elif input.endswith(".xml"):
             df = read_pascal_voc(input)
-            df = __check_label__(df, label=label)
-            gdf = __pandas_to_geodataframe__(df)
+            gdf = _pandas_to_deepforest_format__(input, df, image_path, root_dir, label)
+        elif input.endswith((".shp", ".gpkg")):
+            gdf = gpd.read_file(input)
+            gdf = DeepForest_DataFrame(gdf)
+            gdf = __assign_image_path__(gdf, image_path=image_path)
+            gdf = __check_and_assign_label__(gdf, label=label)
+            gdf = __assign_root_dir__(input=input, gdf=gdf, root_dir=root_dir)
+            gdf = __shapefile_to_annotations__(gdf)
         else:
             raise ValueError(
                 f"File type {input} not supported. "
@@ -557,25 +591,34 @@ def read_file(
                 "See https://deepforest.readthedocs.io/en/latest/annotation.html "
             )
     elif isinstance(input, gpd.GeoDataFrame):
-        input = __check_label__(input, label=label)
-        gdf = __shapefile_to_annotations__(
-            input,
-            image_path=image_path,
-            root_dir=root_dir,
-        )
+        gdf = input
+        gdf = __assign_image_path__(gdf, image_path=image_path)
+        gdf = __assign_root_dir__(input, gdf, root_dir=root_dir)
+        gdf = DeepForest_DataFrame(gdf)
+        gdf_list = []
+        for image_path in gdf.image_path.unique():
+            image_annotations = gdf[gdf.image_path == image_path]
+            gdf = __shapefile_to_annotations__(image_annotations)
+            gdf_list.append(gdf)
+
+        # When concat, need to reform GeoPandas GeoDataFrame
+        gdf = pd.concat(gdf_list)
+        gdf = gpd.GeoDataFrame(gdf)
+        gdf = DeepForest_DataFrame(gdf)
+        gdf = __check_and_assign_label__(gdf, label=label)
+
     elif isinstance(input, pd.DataFrame):
         if input.empty:
             raise ValueError("No annotations in dataframe")
-        gdf = __check_label__(input, label=label)
         gdf = __pandas_to_geodataframe__(input)
-        image_path = __check_image_path__(gdf, image_path=image_path, root_dir=root_dir)
-        gdf["image_path"] = os.path.basename(image_path)
+        gdf = __assign_image_path__(gdf, image_path=image_path)
+        gdf = __assign_root_dir__(input, gdf, root_dir=root_dir)
+        gdf = __check_and_assign_label__(gdf, label=label)
+        gdf = DeepForest_DataFrame(gdf)
     else:
         raise ValueError(
             "Input must be a path to a file, geopandas or a pandas dataframe"
         )
-
-    gdf = __assign_root_dir__(input, gdf, root_dir=root_dir, image_path=image_path)
 
     return gdf
 

@@ -2,11 +2,12 @@
 
 ## The DeepForest data model
 
-The DeepForest data model has three components
+The DeepForest data model has four components:
 
-1. Annotations are stored as dataframes. Each row is an annotation with a single geometry and label. Each annotation dataframe must contain a 'image_path', which is the relative, not full path to the image, and a 'label' column.
+1. Annotations are stored as dataframes. Each row is an annotation with a single geometry and label. Each annotation dataframe must contain a 'image_path', which is the basename, not full path to the image, and a 'label' column.
 2. Annotation geometry is stored as a shapely object, allowing the easy movement among Point, Polygon and Box representations.
 3. Annotations are expressed in image coordinates, not geographic coordinates. There are utilities to convert geospatial data (.shp, .gpkg) to DeepForest data formats.
+4. A root_dir attribute that specifies where the images are stored. A Dee
 
 ## The read_file function
 DeepForest has collated many use cases into a single `read_file` function that will read many common data formats, both projected and unprojected, and create a dataframe ready for DeepForest functions that fits the DeepForest data model.
@@ -16,18 +17,19 @@ DeepForest has collated many use cases into a single `read_file` function that w
 ```
 from deepforest import utilities
 
-df = utilities.read_file("annotations.csv", image_path="<full path to the image>", label="Tree")
+df = utilities.read_file("annotations.csv", root_dir="directory containing images", image_path="relative path to the image>", label="Tree")
 ```
 
-For files that lack an `image_path` or `label` column, pass the `image_path` or `label` argument.
+For files that lack an `image_path` or `label` column, pass the `image_path` or `label` argument. This applies the same image_path and label for the entire file, and is not appropriate for multi-image files.
 
 ```python
 from deepforest import utilities
 
 gdf = utilities.read_file(
     input="/path/to/annotations.shp",
-    image_path="/path/to/OSBS_029.tif",   # required if no image_path column
-    label="Tree"                        # optional: used if no 'label' column in the shapefile
+    image_path="OSBS_029.tif",   # required if no image_path column
+    root_dir="path/to/images/"   # required is image_path argument is used
+    label="Tree"                 # optional: used if no 'label' column in the shapefile
 )
 ```
 
