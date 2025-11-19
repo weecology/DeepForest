@@ -1,6 +1,9 @@
 from omegaconf import OmegaConf
+import os
+import pytest
+import yaml
 
-from deepforest import get_data
+from deepforest import main, get_data
 from deepforest.conf import schema
 
 
@@ -15,3 +18,28 @@ def test_default_config_schema():
     config = OmegaConf.merge(base, default_config)
 
     assert isinstance(config, type(base))
+
+def test_config_main_dictconfig():
+    base = OmegaConf.structured(schema.Config)
+    m = main.deepforest(config=base)
+    assert m.config.model.name == "weecology/deepforest-tree"
+
+def test_config_main_empty_config():
+    m = main.deepforest(config=None)
+    assert m.config.model.name == "weecology/deepforest-tree"
+
+def test_custom_config_file(tmpdir):
+    # Verify that we can use a custom config file which overrides the default
+    config = {
+        'label_dict': {
+            'foo': 0
+        }
+    }
+
+    config_path = os.path.join(tmpdir, "custom-config.yaml")
+    with open(config_path, 'w') as fp:
+        yaml.dump(config, fp)
+
+    m = main.deepforest(config = config_path)
+    assert 'foo' in m.config.label_dict
+    assert 'Tree' not in m.config.label_dict

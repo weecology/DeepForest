@@ -18,14 +18,20 @@ from deepforest.conf.schema import Config as StructuredConfig
 
 def load_config(
     config_name: str = "config.yaml",
-    overrides: DictConfig | dict = None,
+    overrides: DictConfig | dict | None = None,
     strict: bool = False,
 ) -> DictConfig:
     """Loads the DeepForest structured config, merges with YAML and overrides.
 
+    If config_name is found to be a valid path, it will be loaded, otherwise
+    it's assumed to be a named config in the deepforest package. The loaded
+    config will be checked against the schema, but unexpected (extra) parameters
+    will be ignored unless strict is set to true.
+
     Args:
-        config_name (str): Path to config file, assumed in package folder
+        config_name (str): Path to config file
         overrides (DictConfig or dict): Overrides to config
+        strict (bool): disallow unexpected keys in config, default False
 
     Returns:
         config (DictConfig): composed configuration
@@ -37,13 +43,19 @@ def load_config(
     if overrides is None:
         overrides = {}
 
-    config_root = os.path.abspath(os.path.join(_ROOT, "conf"))
-    yaml_path = os.path.join(config_root, config_name)
+    if os.path.exists(config_name):
+        yaml_path = config_name
+    else:
+        config_root = os.path.abspath(os.path.join(_ROOT, "conf"))
+        yaml_path = os.path.join(config_root, config_name)
 
     # Config schema
     base = OmegaConf.structured(StructuredConfig)
 
     yaml_cfg = OmegaConf.load(yaml_path)
+
+    # Drop Hydra-specific override and inherit directly from base
+    yaml_cfg.pop("defaults", None)
 
     # Merge in sequence (overrides last)
     config = OmegaConf.merge(base, yaml_cfg, overrides)
@@ -52,7 +64,11 @@ def load_config(
     if strict:
         OmegaConf.set_struct(config, True)
 
-    # Force override label dict, don't merge.
+    # Don't merge keys that must remain dicts (only labels, currently)
+    yaml_cfg_label_dict = yaml_cfg.get("label_dict", None)
+    if yaml_cfg_label_dict:
+        config.label_dict = yaml_cfg_label_dict
+
     override_label_dict = overrides.get("label_dict", None)
     if override_label_dict:
         config.label_dict = override_label_dict
