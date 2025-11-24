@@ -1,7 +1,5 @@
 from dataclasses import dataclass, field
 
-from omegaconf import MISSING
-
 
 @dataclass
 class ModelConfig:
@@ -60,8 +58,8 @@ class TrainConfig:
     sanity checking.
     """
 
-    csv_file: str | None = MISSING
-    root_dir: str | None = MISSING
+    csv_file: str | None = None
+    root_dir: str | None = None
     lr: float = 0.001
     scheduler: SchedulerConfig = field(default_factory=SchedulerConfig)
     epochs: int = 1
@@ -79,8 +77,8 @@ class ValidationConfig:
     converged or is overfitting.
     """
 
-    csv_file: str | None = MISSING
-    root_dir: str | None = MISSING
+    csv_file: str | None = None
+    root_dir: str | None = None
     preload_images: bool = False
     size: int | None = None
     iou_threshold: float = 0.4
@@ -140,12 +138,12 @@ class Config:
     model: ModelConfig = field(default_factory=ModelConfig)
 
     # Preprocessing
-    path_to_raster: str | None = MISSING
+    path_to_raster: str | None = None
     patch_size: int = 400
     patch_overlap: float = 0.05
-    annotations_xml: str | None = MISSING
-    rgb_dir: str | None = MISSING
-    path_to_rgb: str | None = MISSING
+    annotations_xml: str | None = None
+    rgb_dir: str | None = None
+    path_to_rgb: str | None = None
 
     train: TrainConfig = field(default_factory=TrainConfig)
     validation: ValidationConfig = field(default_factory=ValidationConfig)

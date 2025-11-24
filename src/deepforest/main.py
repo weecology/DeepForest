@@ -29,7 +29,7 @@ class deepforest(pl.LightningModule):
         model: DeepForest model object
         existing_train_dataloader: PyTorch dataloader for training data
         existing_val_dataloader: PyTorch dataloader for validation data
-        config: DeepForest configuration object
+        config: DeepForest configuration object or name
         config_args: Dictionary of config overrides
     """
 
@@ -39,14 +39,16 @@ class deepforest(pl.LightningModule):
         transforms=None,
         existing_train_dataloader=None,
         existing_val_dataloader=None,
-        config: DictConfig = None,
+        config: str | DictConfig | None = None,
         config_args: dict | None = None,
     ):
         super().__init__()
 
-        # If not provided, load default config via OmegaConf.
         if config is None:
             config = utilities.load_config(overrides=config_args)
+        # Default/string config name
+        elif isinstance(config, str):
+            config = utilities.load_config(config_name=config, overrides=config_args)
         # Hub overrides
         elif "config_args" in config:
             config = utilities.load_config(overrides=config["config_args"])
