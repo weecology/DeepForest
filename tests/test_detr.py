@@ -131,3 +131,47 @@ def test_training_sample(config):
 
     # Assert non-zero loss
     assert sum([loss for loss in loss_dict.values()]) > 0
+
+
+def test_prepare_targets_coco_format(config):
+    """
+    Test conversion to COCO format for targets.
+    """
+    detr_model = DeformableDetr.Model(config).create_model()
+
+    x1, y1, w1, h1 = 10.0, 20.0, 40.0, 60.0
+    x2, y2, w2, h2 = 100.0, 150.0, 100.0, 150.0
+
+    target = {
+        "labels": torch.tensor([0, 1]),
+        "boxes": torch.tensor([
+            [x1, y1, x1 + w1, y1 + h1],
+            [x2, y2, x2 + w2, y2 + h2],
+        ]),
+    }
+
+    coco_targets = detr_model._prepare_targets([target])
+
+    # Expect 1 group with 2 annotations, IDs shouldn't matter
+    assert len(coco_targets) == 1
+    assert coco_targets[0]["image_id"] == 0
+    assert "annotations" in coco_targets[0]
+
+    annotations = coco_targets[0]["annotations"]
+    assert len(annotations) == 2
+
+    # First annotation
+    assert annotations[0]["id"] == 0
+    assert annotations[0]["image_id"] == 0
+    assert annotations[0]["category_id"] == 0
+    assert annotations[0]["bbox"] == [x1, y1, w1, h1]
+    assert annotations[0]["area"] == w1 * h1
+    assert annotations[0]["iscrowd"] == 0
+
+    # Second annotation
+    assert annotations[1]["id"] == 1
+    assert annotations[1]["image_id"] == 1
+    assert annotations[1]["category_id"] == 1
+    assert annotations[1]["bbox"] == [x2, y2, w2, h2]
+    assert annotations[1]["area"] == w2 * h2
+    assert annotations[1]["iscrowd"] == 0
