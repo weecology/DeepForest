@@ -9,6 +9,12 @@ batch_size: 1
 limit_batches: 1.0
 persistent_workers: false
 
+# Precision settings
+# matmul_precision: 'highest' (default, full precision), 'high' (TF32 on Ampere+), or 'medium' (bfloat16)
+matmul_precision: highest
+# training_precision: null (default '32-true'), '16-mixed', 'bf16-mixed', '32-true', etc.
+training_precision: null
+
 # Model Architecture
 architecture: 'retinanet'
 backbone: 'resnet50'

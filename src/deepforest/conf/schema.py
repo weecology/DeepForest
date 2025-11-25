@@ -126,6 +126,8 @@ class Config:
     batch_size: int = 1
     limit_batches: float | int = 1.0
     persistent_workers: bool = True
+    matmul_precision: str = "highest"
+    training_precision: str | int | None = None
 
     architecture: str = "retinanet"
     backbone: str = "resnet50"

@@ -64,6 +64,9 @@ def train(
         else:
             torch.cuda.memory._record_memory_history()
 
+    # Set matmul precision
+    torch.set_float32_matmul_precision(config.matmul_precision)
+
     m = deepforest(config=config)
 
     callbacks = []
@@ -152,6 +155,7 @@ def train(
         callbacks=callbacks,
         gradient_clip_val=0.5,
         accelerator=config.accelerator,
+        precision=config.training_precision,
         strategy="ddp_find_unused_parameters_true"
         if torch.cuda.is_available() and "dino" in config.model.name
         else "auto",
@@ -222,6 +226,9 @@ def predict(
     Returns:
         None
     """
+    # Set matmul precision
+    torch.set_float32_matmul_precision(config.matmul_precision)
+
     m = deepforest(config=config)
 
     # Use validation CSV from config if not provided
@@ -306,6 +313,9 @@ def evaluate(
     Returns:
         None
     """
+    # Set matmul precision
+    torch.set_float32_matmul_precision(config.matmul_precision)
+
     m = deepforest(config=config)
 
     # Use validation CSV from config if not provided
