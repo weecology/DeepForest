@@ -12,6 +12,7 @@ from lightning_fabric.utilities.exceptions import MisconfigurationException
 from omegaconf import DictConfig, OmegaConf
 from PIL import Image
 from pytorch_lightning.callbacks import LearningRateMonitor
+from pytorch_lightning.loggers import CSVLogger
 from torch import optim
 from torchmetrics.classification import BinaryAccuracy
 from torchmetrics.detection import IntersectionOverUnion, MeanAveragePrecision
@@ -205,6 +206,11 @@ class deepforest(pl.LightningModule):
         """
         if callbacks is None:
             callbacks = []
+
+        # Set default logger to use log_root from config instead of lightning_logs
+        if logger is None:
+            logger = CSVLogger(save_dir=self.config.train.log_root, name="")
+
         # If val data is passed, monitor learning rate and setup classification metrics
         if self.config.validation.csv_file is not None:
             if logger is not None:

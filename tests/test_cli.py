@@ -4,11 +4,46 @@ import sys
 from importlib.resources import files
 
 from omegaconf import OmegaConf
+import pytest
 
 from deepforest import get_data
+from deepforest.utilities import load_config
+from deepforest.scripts.train import train
+from deepforest.scripts.predict import predict
+from deepforest.scripts.evaluate import evaluate
+
 
 SCRIPT = files("deepforest.scripts").joinpath("cli.py")
 
+@pytest.fixture
+def config():
+    """Load default config for testing, load default train/val data"""
+    return load_config(overrides={"train": {"fast_dev_run": True,
+                                            "csv_file": get_data("OSBS_029.csv"),
+                                            "root_dir": os.path.dirname(get_data("OSBS_029.csv"))},
+                                  "validation": {"csv_file": get_data("OSBS_029.csv"),
+                                                 "root_dir": os.path.dirname(get_data("OSBS_029.csv"))}})
+def test_train_cli_direct(config):
+    """Direct call train for coverage"""
+    assert train(config)
+
+def test_evaluate_cli_direct(tmpdir, config):
+    """Direct call evaluate for coverage"""
+    evaluate(config,
+             ground_truth=get_data("OSBS_029.csv"),
+             root_dir=os.path.dirname(get_data("OSBS_029.csv")),
+             output_path=tmpdir / "eval_results.csv")
+
+    assert os.path.exists(tmpdir / "eval_results.csv"), "Expected output file not found"
+
+def test_predict_cli_direct(tmpdir, config):
+    """Direct call predict for coverage"""
+    prediction_path = tmpdir / "OSBS_029_predictions.csv"
+    predict(config,
+                   input_path=get_data("OSBS_029.png"),
+                   output_path=prediction_path)
+
+    assert os.path.exists(prediction_path), f"Expected output file not found: {prediction_path}"
 
 def test_train_cli(tmpdir):
     """Check a basic training run, including overrides for unit testing
@@ -142,3 +177,71 @@ def test_predict_cli_config_help(tmp_path):
 
     assert result.returncode == 0
     assert len(result.stdout) > 0
+
+
+def test_evaluate_cli(tmp_path):
+    """Check basic evaluation with generated predictions"""
+    test_labels = get_data("OSBS_029.csv")
+
+    args = [
+        sys.executable,
+        str(SCRIPT),
+        "evaluate",
+        test_labels,
+        f"--root-dir={os.path.dirname(test_labels)}",
+        "train.fast_dev_run=True",
+    ]
+
+    result = subprocess.run(
+        args,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+
+    assert result.returncode == 0, f"stderr:\n{result.stderr}\nstdout:\n{result.stdout}"
+    assert "Evaluation Results:" in result.stdout
+
+
+def test_evaluate_cli_with_output(tmp_path):
+    """Check evaluation with output CSV file"""
+    test_labels = get_data("OSBS_029.csv")
+    output_path = tmp_path / "eval_results.csv"
+
+    args = [
+        sys.executable,
+        str(SCRIPT),
+        "evaluate",
+        test_labels,
+        f"--root-dir={os.path.dirname(test_labels)}",
+        "-o", str(output_path),
+        "train.fast_dev_run=True",
+    ]
+
+    result = subprocess.run(
+        args,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+
+    assert result.returncode == 0, f"stderr:\n{result.stderr}\nstdout:\n{result.stdout}"
+    assert output_path.exists(), f"Expected output file not found: {output_path}"
+
+
+def test_evaluate_cli_missing_input(tmp_path):
+    """Check that evaluation fails if no CSV file provided"""
+    args = [
+        sys.executable,
+        str(SCRIPT),
+        "evaluate",
+    ]
+
+    result = subprocess.run(
+        args,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+
+    assert result.returncode != 0
