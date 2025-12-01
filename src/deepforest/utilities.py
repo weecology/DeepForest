@@ -591,7 +591,7 @@ def read_file(
                 "See https://deepforest.readthedocs.io/en/latest/annotation.html "
             )
     elif isinstance(input, gpd.GeoDataFrame):
-        gdf = input
+        gdf = input.copy(deep=True)
         gdf = __assign_image_path__(gdf, image_path=image_path)
         gdf = __assign_root_dir__(input, gdf, root_dir=root_dir)
         gdf = DeepForest_DataFrame(gdf)
@@ -608,6 +608,7 @@ def read_file(
         gdf = __check_and_assign_label__(gdf, label=label)
 
     elif isinstance(input, pd.DataFrame):
+        input = input.copy(deep=True)
         if input.empty:
             raise ValueError("No annotations in dataframe")
         gdf = __pandas_to_geodataframe__(input)
