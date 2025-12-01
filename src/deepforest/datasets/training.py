@@ -3,6 +3,7 @@
 import math
 import os
 
+import kornia.augmentation as K
 import numpy as np
 import shapely
 import torch
@@ -67,7 +68,12 @@ class BoxDataset(Dataset):
         if transforms is None:
             self.transform = get_transform(augmentations=augmentations)
         else:
+            if not isinstance(transforms, K.AugmentationSequential):
+                raise ValueError(
+                    "User-supplied dataset transform must be a kornia AugmentationSequential object."
+                )
             self.transform = transforms
+
         self.image_names = self.annotations.image_path.unique()
         self.preload_images = preload_images
 
@@ -145,6 +151,33 @@ class BoxDataset(Dataset):
         if errors:
             raise ValueError("\n".join(errors))
 
+    def filter_boxes(self, boxes, labels, image_shape, min_size=1):
+        """Clamp boxes to image bounds and filter by minimum dimension.
+
+        Args:
+            boxes (torch.Tensor): Bounding boxes of shape (N, 4) in xyxy format.
+            labels (torch.Tensor): Labels of shape (N,).
+            image_shape (tuple): Image shape as (C, H, W).
+            min_size (int): Minimum box width/height in pixels. Defaults to 1.
+
+        Returns:
+            tuple: A tuple of (filtered_boxes, filtered_labels)
+        """
+        _, H, W = image_shape
+
+        # Clamp boxes to image bounds
+        boxes[:, 0] = torch.clamp(boxes[:, 0], min=0, max=W)  # x1
+        boxes[:, 1] = torch.clamp(boxes[:, 1], min=0, max=H)  # y1
+        boxes[:, 2] = torch.clamp(boxes[:, 2], min=0, max=W)  # x2
+        boxes[:, 3] = torch.clamp(boxes[:, 3], min=0, max=H)  # y2
+
+        # Filter boxes with minimum size
+        width = boxes[:, 2] - boxes[:, 0]
+        height = boxes[:, 3] - boxes[:, 1]
+        valid_mask = (width >= min_size) & (height >= min_size)
+
+        return boxes[valid_mask], labels[valid_mask]
+
     def __len__(self):
         return len(self.image_names)
 
@@ -221,18 +254,23 @@ class BoxDataset(Dataset):
             return image, targets, self.image_names[idx]
 
         # Apply augmentations
-        augmented = self.transform(
-            image=image,
-            bboxes=targets["boxes"],
-            category_ids=targets["labels"].astype(np.int64),
-        )
-        image = augmented["image"]
+        image_tensor = torch.from_numpy(image).permute(2, 0, 1).unsqueeze(0).float()
+        boxes_tensor = torch.from_numpy(targets["boxes"]).unsqueeze(0).float()
+        augmented_image, augmented_boxes = self.transform(image_tensor, boxes_tensor)
 
         # Convert boxes to tensor
-        boxes = np.array(augmented["bboxes"])
-        boxes = torch.from_numpy(boxes).float()
-        labels = np.array(augmented["category_ids"])
-        labels = torch.from_numpy(labels.astype(np.int64))
+        image = augmented_image.squeeze(0)
+        boxes = augmented_boxes.squeeze(0)
+        labels = torch.from_numpy(targets["labels"].astype(np.int64))
+
+        # Filter invalid boxes after augmentation
+        boxes, labels = self.filter_boxes(boxes, labels, image.shape)
+
+        # Edge case if all labels were augmented away, keep the image
+        if len(boxes) == 0:
+            boxes = torch.zeros((0, 4), dtype=torch.float32)
+            labels = torch.zeros(0, dtype=torch.int64)
+
         targets = {"boxes": boxes, "labels": labels}
 
         return image, targets, self.image_names[idx]

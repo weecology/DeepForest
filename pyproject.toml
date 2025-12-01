@@ -39,7 +39,7 @@ dependencies = [
     "h5py",
     "huggingface_hub>=0.25.0",
     "hydra-core",
-    "kornia",
+    "kornia>=0.8.2",
     "matplotlib",
     "numpy",
     "omegaconf",

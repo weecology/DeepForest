@@ -4,24 +4,15 @@
 
 The major innovations are:
 
-1. **Migration from albumentations to kornia for data augmentations** - Replaced albumentations with kornia for better PyTorch integration and GPU acceleration
+1. **Migration from albumentations to kornia for data augmentations** - Replaced albumentations with kornia
 
-Additional features and enhancements include:
-
-- **Enhancement:** Better PyTorch integration with kornia transforms
-- **Enhancement:** Simplified API without bbox parameter complexity
-- **Enhancement:** GPU acceleration support for augmentation transforms
-- **Enhancement:** More consistent with PyTorch ecosystem
-- **Documentation:** Updated augmentation documentation with kornia examples
+- Migrated most transformations to `kornia` equivalents. See documentation for more information.
+- `albumentations` dependency is removed.
+- Most existing transformation types are supported with minimal changes to configuration needed.
+- `ZoomBlur` and `RandomPadTo` augmentations added
 
 ### Breaking Changes - Deprecated Items Removed:
-
-**Augmentation Changes:**
-- **Migration from albumentations to kornia** - All augmentation transforms now use kornia instead of albumentations
-- Some augmentation parameter names have changed (e.g., `scale_range` → `scale`, `height/width` → `size`)
-- Custom transforms now use `torch.nn.Sequential` instead of `A.Compose`
-- No longer requires bbox parameter configuration
-- See migration guide in documentation for detailed parameter changes
+- Albumentations' `DownScale` (down + upscale) is no longer supported. Users can use two `Resize` steps to mimic this, or `RandomResizedCrop`.
 
 **Removed Functions:**
 - `xml_to_annotations()` - Use `utilities.read_pascal_voc(path)` or the general `utilities.read_file(path)`.
