@@ -1,5 +1,7 @@
 from dataclasses import dataclass, field
 
+from omegaconf import DictConfig, OmegaConf
+
 
 @dataclass
 class ModelConfig:
@@ -131,7 +133,7 @@ class Config:
 
     architecture: str = "retinanet"
     num_classes: int = 1
-    label_dict: dict[str, int] = field(default_factory=lambda: {"Tree": 0})
+    label_dict: DictConfig = field(default_factory=lambda: OmegaConf.create({"Tree": 0}))
 
     nms_thresh: float = 0.05
     score_thresh: float = 0.1

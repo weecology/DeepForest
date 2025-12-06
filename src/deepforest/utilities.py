@@ -25,13 +25,16 @@ def load_config(
 
     If config_name is found to be a valid path, it will be loaded, otherwise
     it's assumed to be a named config in the deepforest package. The loaded
-    config will be checked against the schema, but unexpected (extra) parameters
-    will be ignored unless strict is set to true.
+    config will be validated against the schema.
+
+    You can load a config in strict mode, which will not allow any additional keys.
+    This may be useful for debugging, but it may cause issues due to the way OmegaConf
+    handles dictionary config items, like label_dict.
 
     Args:
         config_name (str): Path to config file
         overrides (DictConfig or dict): Overrides to config
-        strict (bool): disallow unexpected keys in config, default False
+        strict (bool): If True, disallows unexpected keys.
 
     Returns:
         config (DictConfig): composed configuration
@@ -49,23 +52,26 @@ def load_config(
         config_root = os.path.abspath(os.path.join(_ROOT, "conf"))
         yaml_path = os.path.join(config_root, config_name)
 
-    # Config schema
+    # Load base configuration from struct
     base = OmegaConf.structured(StructuredConfig)
+    OmegaConf.set_struct(base, strict)
 
+    # Label dict has model-specific keys, so needs to be mutable.
+    # Validated elsewhere
+    OmegaConf.set_struct(base.label_dict, False)
+
+    # Load target (potentially derived) config
     yaml_cfg = OmegaConf.load(yaml_path)
 
-    # Drop Hydra-specific override and inherit directly from base
+    # Drop Hydra-specific overrides
     yaml_cfg.pop("defaults", None)
 
-    # Merge in sequence (overrides last)
+    # Merge in sequence (base, derived config, overrides)
     config = OmegaConf.merge(base, yaml_cfg, overrides)
 
-    # Check for unexpected config entries
-    if strict:
-        OmegaConf.set_struct(config, True)
-
-    # Don't merge keys that must remain dicts (only labels, currently)
-    yaml_cfg_label_dict = yaml_cfg.get("label_dict", None)
+    # This hack is necessary because OmegaConf will merge rather than
+    # replace label_dict by default.
+    yaml_cfg_label_dict = yaml_cfg.get("label_dict", None)  # type: ignore
     if yaml_cfg_label_dict:
         config.label_dict = yaml_cfg_label_dict
 

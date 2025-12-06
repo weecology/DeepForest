@@ -47,7 +47,7 @@ dependencies = [
     "pandas",
     "pillow>6.2.0",
     "psutil",
-    "pytorch-lightning>=2.1.0,<3.0.0",
+    "pytorch-lightning>=2.6.0,<3.0.0",
     "pyyaml>=5.1.0",
     "rasterio",
     "safetensors<0.6.0",
