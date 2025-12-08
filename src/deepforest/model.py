@@ -91,9 +91,9 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
     model or a custom provided model.
 
     Args:
-        num_classes (int, optional): Number of classes for classification. If None, it will be inferred from the checkpoint during loading.
         model (nn.Module, optional): Custom PyTorch model to use. If None, uses ResNet-50. Defaults to None.
-        label_dict (dict, optional): Mapping of class labels to numeric indices. Defaults to None.
+        config (DictConfig, optional): Full configuration object. If None, loads default config. Defaults to None.
+        config_args (dict, optional): Dictionary to override cropmodel config settings (e.g., {"resize": [300, 300], "balance_classes": True}). Defaults to None.
 
     Attributes:
         model (nn.Module): The classification model (ResNet-50 or custom)
