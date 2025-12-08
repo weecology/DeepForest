@@ -9,7 +9,7 @@ import pandas as pd
 import pytorch_lightning as pl
 import torch
 from lightning_fabric.utilities.exceptions import MisconfigurationException
-from omegaconf import DictConfig
+from omegaconf import DictConfig, OmegaConf
 from PIL import Image
 from pytorch_lightning.callbacks import LearningRateMonitor
 from torch import optim
@@ -39,7 +39,7 @@ class deepforest(pl.LightningModule):
         transforms=None,
         existing_train_dataloader=None,
         existing_val_dataloader=None,
-        config: str | DictConfig | None = None,
+        config: str | dict | DictConfig | None = None,
         config_args: dict | None = None,
     ):
         super().__init__()
@@ -49,6 +49,9 @@ class deepforest(pl.LightningModule):
         # Default/string config name
         elif isinstance(config, str):
             config = utilities.load_config(config_name=config, overrides=config_args)
+        # Checkpoint load
+        elif isinstance(config, dict):
+            config = utilities.load_config(overrides=config)
         # Hub overrides
         elif "config_args" in config:
             config = utilities.load_config(overrides=config["config_args"])
@@ -89,7 +92,9 @@ class deepforest(pl.LightningModule):
         else:
             self.transforms = transforms
 
-        self.save_hyperparameters({"config": self.config})
+        self.save_hyperparameters(
+            {"config": OmegaConf.to_container(self.config, resolve=True)}
+        )
 
     def load_model(self, model_name=None, revision=None):
         """Loads a model that has already been pretrained for a specific task,
@@ -244,8 +249,16 @@ class deepforest(pl.LightningModule):
             )
 
     def on_save_checkpoint(self, checkpoint):
+        # Update hparams in case they've changed since init
+        checkpoint["hyper_parameters"]["config"] = OmegaConf.to_container(
+            self.config, resolve=True
+        )
         checkpoint["label_dict"] = self.label_dict
         checkpoint["numeric_to_label_dict"] = self.numeric_to_label_dict
+
+        for key in checkpoint:
+            if isinstance(checkpoint[key], DictConfig):
+                checkpoint[key] = OmegaConf.to_container(checkpoint[key], resolve=True)
 
     def on_load_checkpoint(self, checkpoint):
         try:
