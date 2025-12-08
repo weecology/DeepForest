@@ -54,3 +54,7 @@ OSBS_029.tif,166,253,225,304,Tree
 - We use ruff for linting with options set in pyproject.toml
 - Enforced by .pre-commit.yaml
 - Take advantage of implicit vectorization using pandas, numpy, etc. Avoid explicit loops if you can.
+
+## Code Style
+
+-  According to PEP 8, "avoid trailing whitespace anywhere. Because it’s usually invisible, it can be confusing"
