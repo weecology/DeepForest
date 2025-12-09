@@ -1,5 +1,6 @@
 """Dataset model for object detection tasks."""
 
+import math
 import os
 
 import numpy as np
@@ -71,6 +72,7 @@ class BoxDataset(Dataset):
         self.preload_images = preload_images
 
         self._validate_labels()
+        self._validate_coordinates()
 
         # Pin data to memory if desired
         if self.preload_images:
@@ -93,6 +95,55 @@ class BoxDataset(Dataset):
                 f"Labels {missing_labels} are missing from label_dict. "
                 f"Please ensure all labels in the annotations exist as keys in label_dict."
             )
+
+    def _validate_coordinates(self):
+        """Validate that all bounding box coordinates occur within the image.
+
+        Raises:
+            ValueError: If any bounding box coordinate occurs outside the image
+        """
+        errors = []
+        for _idx, row in self.annotations.iterrows():
+            img_path = os.path.join(self.root_dir, row["image_path"])
+            try:
+                with Image.open(img_path) as img:
+                    width, height = img.size
+            except Exception as e:
+                errors.append(f"Failed to open image {img_path}: {e}")
+                continue
+
+            # Extract bounding box
+            geom = row["geometry"]
+            xmin, ymin, xmax, ymax = geom.bounds
+
+            # All coordinates equal to zero is how we code empty frames.
+            # Therefore these are valid coordinates even though they would
+            # fail other checks.
+            if xmin == 0 and ymin == 0 and xmax == 0 and ymax == 0:
+                continue
+
+            # Check if box is valid
+            oob_issues = []
+            if not geom.equals(shapely.envelope(geom)):
+                oob_issues.append(f"geom ({geom}) is not a valid bounding box")
+            if xmin < 0:
+                oob_issues.append(f"xmin ({xmin}) < 0")
+            if xmax > width:
+                oob_issues.append(f"xmax ({xmax}) > image width ({width})")
+            if ymin < 0:
+                oob_issues.append(f"ymin ({ymin}) < 0")
+            if ymax > height:
+                oob_issues.append(f"ymax ({ymax}) > image height ({height})")
+            if math.isclose(geom.area, 1):
+                oob_issues.append("area of bounding box is a single pixel")
+
+            if oob_issues:
+                errors.append(
+                    f"Box, ({xmin}, {ymin}, {xmax}, {ymax}) exceeds image dimensions, ({width}, {height}). Issues: {', '.join(oob_issues)}."
+                )
+
+        if errors:
+            raise ValueError("\n".join(errors))
 
     def __len__(self):
         return len(self.image_names)
