@@ -203,3 +203,50 @@ def test_crop_model_val_dataset_confusion(tmpdir, crop_model, crop_model_data):
     # There was just one batch in the fast_dev_run
     assert len(labels) ==37
     assert len(predictions) == 37
+
+def test_crop_model_predictions_identical_after_reload_five_class(tmpdir):
+    # Prepare a 5-class dataset by writing crops with deterministic labels
+    df = pd.read_csv(get_data("testfile_multi.csv"))
+    boxes = df[["xmin", "ymin", "xmax", "ymax"]].values.tolist()
+    root_dir = os.path.dirname(get_data("SOAP_061.png"))
+    images = df.image_path.values
+    class_names = ["A", "B", "C", "D", "E"]
+    labels = [class_names[i % len(class_names)] for i in range(len(df))]
+
+    cm = model.CropModel()
+    cm.write_crops(
+        boxes=boxes,
+        labels=labels,
+        root_dir=root_dir,
+        images=images,
+        savedir=tmpdir,
+    )
+
+    # Train briefly to produce a non-random initialized model state
+    cm.create_trainer(
+        fast_dev_run=False, limit_train_batches=1, limit_val_batches=1, max_epochs=1
+    )
+    cm.load_from_disk(train_dir=tmpdir, val_dir=tmpdir)
+    cm.create_model(num_classes=len(cm.label_dict))
+    cm.trainer.fit(cm)
+
+    # Collect validation predictions before saving
+    true_before, pred_before = cm.val_dataset_confusion(return_images=False)
+
+    # Save and reload the checkpoint
+    checkpoint_path = os.path.join(tmpdir, "cropmodel-5class.ckpt")
+    cm.trainer.save_checkpoint(checkpoint_path)
+    cm_loaded = model.CropModel.load_from_checkpoint(checkpoint_path)
+
+    # Ensure label mappings are preserved
+    assert cm_loaded.label_dict == cm.label_dict
+    assert cm_loaded.numeric_to_label_dict == cm.numeric_to_label_dict
+
+    # Reattach datasets and create trainer for prediction
+    cm_loaded.load_from_disk(train_dir=tmpdir, val_dir=tmpdir)
+    cm_loaded.create_trainer(fast_dev_run=False)
+    _, pred_after = cm_loaded.val_dataset_confusion(return_images=False)
+
+    # Predictions must be identical after reload
+    assert len(pred_before) == len(pred_after)
+    assert np.array_equal(np.array(pred_before), np.array(pred_after))
