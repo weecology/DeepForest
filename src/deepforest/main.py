@@ -9,8 +9,11 @@ import pandas as pd
 import pytorch_lightning as pl
 import torch
 from lightning_fabric.utilities.exceptions import MisconfigurationException
-from omegaconf import DictConfig, OmegaConf
-from PIL import Image
+from omegaconf import DictConfig
+try:
+    from PIL import Image
+except (AttributeError, TypeError):
+    pass
 from pytorch_lightning.callbacks import LearningRateMonitor
 from torch import optim
 from torchmetrics.classification import BinaryAccuracy

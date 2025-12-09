@@ -10,7 +10,10 @@ import torch.nn.functional as F
 import torchmetrics
 from huggingface_hub import PyTorchModelHubMixin, hf_hub_download
 from omegaconf import OmegaConf
-from PIL import Image
+try:
+    from PIL import Image
+except (AttributeError, TypeError):
+    pass
 from pytorch_lightning import LightningModule, Trainer
 from torchvision import models, transforms
 
