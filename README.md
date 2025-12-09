@@ -38,7 +38,15 @@ Get suggestions on how to improve a model by using the [discussion board](https:
 
 # Developer Guidelines
 
-We welcome pull requests for any issue or extension of the models. Please follow the [developer's guide](https://deepforest.readthedocs.io/en/latest/development/contributing.html).
+If you are a new contributor to DeepForest, welcome and thank you! Here are some suggestions that we hope will make the submission process more smooth:
+
+- Look out for [good first issues](https://github.com/weecology/DeepForest/pulls?q=is%3Aopen+is%3Apr+label%3A%22good+first+issue%22). These should be accessible to less experienced developers and will help you get oriented with the code.
+- Check that the functionality you are suggesting doesn't already exist. Perhaps it does, but needs improved documentation.
+- Search for issues or discussions on Github already, before submitting a PR. Do check closed issues as well.
+- If you are submitting a trivial improvement (like a one-line bug fix), feel free to PR directly, following the template.
+- If you want to propose any non-trivial changes without an existing issue please open an issue to discuss the change prior to opening a PR. Non-trivial PR's submitted without an associated issue that includes maintainer approval to proceed with a PR will typically not be considered.
+
+Please follow the [developer's guide](https://deepforest.readthedocs.io/en/latest/development/contributing.html) for more details on contribution.
 
 ## License
 
