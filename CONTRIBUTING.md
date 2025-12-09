@@ -158,7 +158,7 @@ We welcome contributions! To ensure smooth reviews and maintain code quality, pl
 
 #### Before Submitting a Pull Request
 
-- **Issue discussion**: For non-trivial changes, discuss your approach in an issue first or link to an existing issue
+- **Issue discussion**: For non-trivial changes, discuss your approach in an issue first. This can be done by either responding to an open issue indicating an interest in addressing the issue and an outline of how you plan to do so, or by creating a new issue describing the changes you think should be made (e.g., what the bug or feature is), that you would be interested in helping implement them, and what your general plan is for doing so.
 - **Code style**: Follow project conventions (Ruff formatting, type hints, docstrings)
 - **Tests**: Add or update tests for your changes. All tests must pass locally
 - **Documentation**: Update relevant documentation for new features or API changes
@@ -183,8 +183,6 @@ We recognize that AI tools can be helpful in development. However, we have speci
 - **Understanding required**: You must understand the code you're submitting. Don't submit code you can't explain or debug
 - **Review and validation**: AI-generated code must be thoroughly reviewed, tested, and validated by you before submission
 - **Context matters**: Ensure AI suggestions fit our project's architecture, patterns, and coding standards
-- **No blind acceptance**: We may ask you to explain or modify AI-generated code during review
-
 
 #### Review Process Expectations
 
