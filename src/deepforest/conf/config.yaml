@@ -113,3 +113,5 @@ cropmodel:
     resize:
         - 224
         - 224
+    # Number of pixels to expand bbox crops for cropmodel prediction context (not padding)
+    expand: 0

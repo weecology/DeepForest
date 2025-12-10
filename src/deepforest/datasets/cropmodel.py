@@ -49,12 +49,23 @@ class BoundingBoxDataset(Dataset):
         transform: Optional transform function
         augmentations: Augmentation configuration
         resize: Optional list of [height, width] for resizing. Defaults to [224, 224]
+        expand: Number of pixels to expand the bounding box on all sides before
+            reading the window. This is NOT padding; it enlarges the window to
+            include additional surrounding context for the object.
 
     Returns:
         Tensor of shape (3, height, width)
     """
 
-    def __init__(self, df, root_dir, transform=None, augmentations=None, resize=None):
+    def __init__(
+        self,
+        df,
+        root_dir,
+        transform=None,
+        augmentations=None,
+        resize=None,
+        expand: int = 0,
+    ):
         self.df = df
 
         if transform is None:
@@ -64,6 +75,13 @@ class BoundingBoxDataset(Dataset):
         else:
             self.transform = transform
 
+        # Store expand (context) in pixels; ensure non-negative
+        if expand is None:
+            expand = 0
+        if expand < 0:
+            raise ValueError("expand must be >= 0")
+        self.expand = int(expand)
+
         unique_image = self.df["image_path"].unique()
         assert len(unique_image) == 1, (
             "There should be only one unique image for this class object"
@@ -71,6 +89,8 @@ class BoundingBoxDataset(Dataset):
 
         # Open the image using rasterio
         self.src = rio.open(os.path.join(root_dir, unique_image[0]))
+        self._image_width = self.src.width
+        self._image_height = self.src.height
 
     def __len__(self):
         """Return number of samples."""
@@ -86,13 +106,24 @@ class BoundingBoxDataset(Dataset):
             Transformed image tensor
         """
         row = self.df.iloc[idx]
-        xmin = row["xmin"]
-        xmax = row["xmax"]
-        ymin = row["ymin"]
-        ymax = row["ymax"]
+        xmin = float(row["xmin"])
+        xmax = float(row["xmax"])
+        ymin = float(row["ymin"])
+        ymax = float(row["ymax"])
+
+        # Expand the box equally on all sides by self.expand pixels (context window)
+        if self.expand > 0:
+            xmin = max(0, xmin - self.expand)
+            ymin = max(0, ymin - self.expand)
+            xmax = min(self._image_width, xmax + self.expand)
+            ymax = min(self._image_height, ymax + self.expand)
 
         # Read the RGB data
-        box = self.src.read(window=Window(xmin, ymin, xmax - xmin, ymax - ymin))
+        col_off = int(xmin)
+        row_off = int(ymin)
+        width = int(max(1, xmax - xmin))
+        height = int(max(1, ymax - ymin))
+        box = self.src.read(window=Window(col_off, row_off, width, height))
         box = np.rollaxis(box, 0, 3)
 
         if self.transform:
