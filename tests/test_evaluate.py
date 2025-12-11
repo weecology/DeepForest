@@ -12,6 +12,8 @@ from deepforest import get_data
 from deepforest import main
 from deepforest.utilities import read_file
 
+from shapely.geometry import box
+
 
 def test_evaluate_image(m):
     csv_file = get_data("OSBS_029.csv")
@@ -150,3 +152,52 @@ def test_point_recall():
     results = evaluate.point_recall(ground_df=ground_df, predictions=predictions)
     assert results["box_recall"] == 0.5
     assert results["class_recall"].recall[0] == 1
+
+
+def test_evaluate_boxes_no_predictions_for_image():
+    """Test evaluate_boxes when ground truth exists but no predictions for that image."""
+
+    # Create ground truth with non-default index
+    ground_truth = gpd.GeoDataFrame(
+        {
+            "image_path": ["image1.jpg", "image1.jpg"],
+            "label": ["Tree", "Tree"],
+            "xmin": [10, 50],
+            "ymin": [10, 50],
+            "xmax": [30, 70],
+            "ymax": [30, 70],
+        },
+        index=[100, 200]  # Non-default index to trigger the issue
+    )
+    ground_truth["geometry"] = ground_truth.apply(
+        lambda row: box(row["xmin"], row["ymin"], row["xmax"], row["ymax"]), axis=1
+    )
+
+    # Create predictions for a different image
+    predictions = gpd.GeoDataFrame(
+        {
+            "image_path": ["image2.jpg"],
+            "label": ["Tree"],
+            "xmin": [10],
+            "ymin": [10],
+            "xmax": [30],
+            "ymax": [30],
+            "score": [0.9],
+        }
+    )
+    predictions["geometry"] = predictions.apply(
+        lambda row: box(row["xmin"], row["ymin"], row["xmax"], row["ymax"]), axis=1
+    )
+
+    # Should not raise TypeError
+    results = evaluate.evaluate_boxes(
+        predictions=predictions,
+        ground_df=ground_truth,
+        iou_threshold=0.4
+    )
+
+    # Verify results structure
+    assert results["results"].shape[0] == 2  # Two ground truth boxes
+    assert results["box_recall"] == 0  # No predictions for image1.jpg
+    assert all(results["results"].match == False)  # No matches
+    assert all(results["results"].prediction_id.isna())  # No prediction IDs
