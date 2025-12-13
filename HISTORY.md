@@ -2,7 +2,17 @@
 
 ## Version 2.0.0 (Date: November 4, 2025)
 
+The major innovations are:
+
+1. **Migration from albumentations to kornia for data augmentations** - Replaced albumentations with kornia
+
+- Migrated most transformations to `kornia` equivalents. See documentation for more information.
+- `albumentations` dependency is removed.
+- Most existing transformation types are supported with minimal changes to configuration needed.
+- `ZoomBlur` and `RandomPadTo` augmentations added
+
 ### Breaking Changes - Deprecated Items Removed:
+- Albumentations' `DownScale` (down + upscale) is no longer supported. Users can use two `Resize` steps to mimic this, or `RandomResizedCrop`.
 
 **Removed Functions:**
 - `xml_to_annotations()` - Use `utilities.read_pascal_voc(path)` or the general `utilities.read_file(path)`.
@@ -23,6 +33,7 @@
 - `raster_path` parameter from predict_tile()  - Use `path` parameter instead
 
 **Migration Guide:**
+- **Augmentations:** Update parameter names and use kornia transforms (see documentation)
 - Replace `xml_to_annotations(xml_path)` with `read_pascal_voc(xml_path)`
 - Replace `boxes_to_shapefile(df, root_dir)` with `image_to_geo_coordinates(df, root_dir)`
 - Replace `plot_points(image, points)` with `plot_results(results)`
