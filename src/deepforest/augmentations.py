@@ -1,42 +1,197 @@
-"""Augmentation module for DeepForest using albumentations.
+"""Augmentation module for DeepForest using kornia.
 
 This module provides configurable augmentations for training and
 validation that can be specified through configuration files or direct
 parameters.
 """
 
+import math
 from typing import Any
 
-import albumentations as A
-from albumentations.pytorch import ToTensorV2
+import kornia.augmentation as K
+import torch
+import torch.nn.functional as F
+from kornia.augmentation import IntensityAugmentationBase2D
+from kornia.augmentation import random_generator as rg
+from kornia.augmentation._2d.geometric.base import GeometricAugmentationBase2D
+from kornia.constants import DataKey
 from omegaconf import OmegaConf
 from omegaconf.dictconfig import DictConfig
 from omegaconf.listconfig import ListConfig
+from torch import Tensor
+
+
+class RandomPadTo(GeometricAugmentationBase2D):
+    r"""Pad the given sample by a random amount. This function is copied from
+    kornia, but allows p to be changed.
+
+    Args:
+        pad_range: Range of padding to apply as (min, max) in pixels.
+        pad_mode: Padding mode (constant, reflect, replicate, circular).
+        pad_value: Fill value for constant padding mode.
+        p: Probability of applying the transform.
+        same_on_batch: Apply same transformation to all batch elements.
+        keepdim: Maintain shape.
+    """
+
+    def __init__(
+        self,
+        pad_range: tuple[int, int] = (0, 10),
+        pad_mode: str = "constant",
+        pad_value: float = 0,
+        p: float = 0.5,
+        same_on_batch: bool = False,
+        keepdim: bool = False,
+    ) -> None:
+        super().__init__(p=p, same_on_batch=same_on_batch, p_batch=1.0, keepdim=keepdim)
+        self.flags = {"pad_mode": pad_mode, "pad_value": pad_value}
+        self._param_generator = rg.PlainUniformGenerator(
+            (pad_range, "pad_height", None, None),
+            (pad_range, "pad_width", None, None),
+        )
+
+    def compute_transformation(
+        self, input: Tensor, params: dict[str, Tensor], flags: dict[str, Any]
+    ) -> Tensor:
+        # This is probably OK as the padding always extends right/down,
+        # so applying the identity to objects/labels is fine. Kornia docs
+        # say that we must implement the inverse, but this is auto-computed in
+        # the base class.
+        return self.identity_matrix(input)
+
+    def apply_transform(
+        self,
+        input: Tensor,
+        params: dict[str, Tensor],
+        flags: dict[str, Any],
+        transform: Tensor | None = None,
+    ) -> Tensor:
+        height_pad = int(params["pad_height"].item())
+        width_pad = int(params["pad_width"].item())
+        return torch.nn.functional.pad(
+            input,
+            [0, width_pad, 0, height_pad],
+            mode=flags["pad_mode"],
+            value=flags["pad_value"],
+        )
+
+    def inverse_transform(
+        self,
+        input: Tensor,
+        flags: dict[str, Any],
+        transform: Tensor | None = None,
+        size: tuple[int, int] | None = None,
+    ) -> Tensor:
+        if size is None:
+            raise RuntimeError("`size` has to be a tuple. Got None.")
+        return input[..., : size[0], : size[1]]
+
+
+class ZoomBlur(IntensityAugmentationBase2D):
+    """Apply zoom blur effect by averaging multiple zoomed versions of the
+    image.
+
+    Simulates the effect of zooming during camera exposure by creating
+    multiple center-cropped and zoomed versions at different scales and averaging them.
+
+    Args:
+        max_factor: Maximum zoom factor range (min, max). Default: (1.0, 1.03)
+        step_factor: Step size for zoom progression range (min, max). Default: (0.01, 0.02)
+        p: Probability of applying the transform. Default: 0.5
+        same_on_batch: Apply same transformation to all batch elements. Default: False
+        keepdim: Maintain shape. Default: False
+    """
+
+    def __init__(
+        self,
+        max_factor: tuple[float, float] = (1.0, 1.03),
+        step_factor: tuple[float, float] = (0.01, 0.02),
+        p: float = 0.5,
+        same_on_batch: bool = False,
+        keepdim: bool = False,
+    ):
+        super().__init__(p=p, same_on_batch=same_on_batch, keepdim=keepdim)
+        self._param_generator = rg.PlainUniformGenerator(
+            (max_factor, "max_factor", None, None),
+            (step_factor, "step_factor", None, None),
+        )
+
+    def apply_transform(self, input, params, flags, transform=None):
+        """Apply zoom blur to image tensor.
+
+        Args:
+            input: Input tensor of shape (B, C, H, W)
+            params: Dict with 'max_factor' and 'step_factor'
+            flags: Additional flags
+            transform: Optional transformation matrix (unused)
+
+        Returns:
+            Blurred image tensor of same shape
+        """
+        max_f = params["max_factor"].item()
+        step = params["step_factor"].item()
+        max_f = max(1.0 + step, max_f)
+        steps = torch.arange(1.0, max_f, step)
+
+        B, C, H, W = input.shape
+        out = input.clone()
+
+        for zoom_factor in steps:
+            zf = zoom_factor.item()
+            h_crop = math.ceil(H / zf)
+            w_crop = math.ceil(W / zf)
+            h_start = (H - h_crop) // 2
+            w_start = (W - w_crop) // 2
+
+            cropped = input[:, :, h_start : h_start + h_crop, w_start : w_start + w_crop]
+            zoomed = F.interpolate(
+                cropped, size=(H, W), mode="bilinear", align_corners=False
+            )
+            out += zoomed
+
+        return out / (len(steps) + 1)
+
 
 _SUPPORTED_TRANSFORMS = {
-    "HorizontalFlip": (A.HorizontalFlip, {"p": 0.5}),
-    "VerticalFlip": (A.VerticalFlip, {"p": 0.5}),
-    "Downscale": (A.Downscale, {"scale_range": (0.25, 0.5), "p": 0.5}),
-    "RandomCrop": (A.RandomCrop, {"height": 200, "width": 200, "p": 0.5}),
-    "RandomSizedBBoxSafeCrop": (
-        A.RandomSizedBBoxSafeCrop,
-        {"height": 200, "width": 200, "p": 0.5},
+    "HorizontalFlip": (K.RandomHorizontalFlip, {"p": 0.5}),
+    "VerticalFlip": (K.RandomVerticalFlip, {"p": 0.5}),
+    "Resize": (K.LongestMaxSize, {"max_size": 400}),
+    "RandomCrop": (K.RandomCrop, {"size": (200, 200), "p": 0.5}),
+    "RandomResizedCrop": (
+        K.RandomResizedCrop,
+        {"size": (400, 400), "scale": (0.5, 1.0), "ratio": (1.0, 1.0), "p": 0.5},
     ),
-    "PadIfNeeded": (A.PadIfNeeded, {"min_height": 800, "min_width": 800, "p": 1.0}),
-    "Rotate": (A.Rotate, {"limit": 15, "p": 0.5}),
+    "RandomPadTo": (
+        RandomPadTo,
+        {"pad_range": (0, 10), "pad_mode": "constant", "pad_value": 0, "p": 0.5},
+    ),
+    "PadIfNeeded": (K.PadTo, {"size": (800, 800)}),
+    "Rotate": (K.RandomRotation, {"degrees": 15, "p": 0.5}),
     "RandomBrightnessContrast": (
-        A.RandomBrightnessContrast,
-        {"brightness_limit": 0.2, "contrast_limit": 0.2, "p": 0.5},
+        K.ColorJiggle,
+        {"brightness": 0.2, "contrast": 0.2, "p": 0.5},
     ),
     "HueSaturationValue": (
-        A.HueSaturationValue,
-        {"hue_shift_limit": 10, "sat_shift_limit": 10, "val_shift_limit": 10, "p": 0.5},
+        K.ColorJiggle,
+        {"hue": 0.1, "saturation": 0.1, "p": 0.5},
     ),
-    "GaussNoise": (A.GaussNoise, {"var_limit": (5.0, 20.0), "p": 0.3}),
-    "Blur": (A.Blur, {"blur_limit": 2, "p": 0.3}),
-    "GaussianBlur": (A.GaussianBlur, {"blur_limit": 2, "p": 0.3}),
-    "MotionBlur": (A.MotionBlur, {"blur_limit": 2, "p": 0.3}),
-    "ZoomBlur": (A.ZoomBlur, {"max_factor": 1.05, "p": 0.3}),
+    "GaussNoise": (K.RandomGaussianNoise, {"std": 0.1, "p": 0.3}),
+    "Blur": (
+        K.RandomBoxBlur,
+        {"kernel_size": (3, 3), "p": 0.3},
+    ),
+    "GaussianBlur": (
+        K.RandomGaussianBlur,
+        {"kernel_size": (3, 3), "sigma": (0.1, 2.0), "p": 0.3},
+    ),
+    "MotionBlur": (
+        K.RandomMotionBlur,
+        {"kernel_size": 3, "angle": 45, "direction": 0.0, "p": 0.3},
+    ),
+    "ZoomBlur": (
+        ZoomBlur,
+        {"max_factor": (1.0, 1.03), "step_factor": (0.01, 0.02), "p": 0.5},
+    ),
 }
 
 
@@ -51,8 +206,8 @@ def get_available_augmentations() -> list[str]:
 
 def get_transform(
     augmentations: str | list[str] | dict[str, Any] | None = None,
-) -> A.Compose:
-    """Create Albumentations transform for bounding boxes.
+) -> K.AugmentationSequential:
+    """Create Kornia transform for bounding boxes.
 
     Args:
         augmentations: Augmentation configuration:
@@ -62,26 +217,25 @@ def get_transform(
             - None: No augmentations
 
     Returns:
-        Composed albumentations transform
+        Kornia AugmentationSequential
 
     Examples:
-        >>> # Default behavior, returns a ToTensorV2 transform
+        >>> # Default behavior, returns a basic transform
         >>> transform = get_transform()
 
         >>> # Single augmentation
-        >>> transform = get_transform(augmentations="Downscale")
+        >>> transform = get_transform(augmentations="VerticalFlip")
 
         >>> # Multiple augmentations
-        >>> transform = get_transform(augmentations=["HorizontalFlip", "Downscale"])
+        >>> transform = get_transform(augmentations=["HorizontalFlip", "VerticalFlip"])
 
         >>> # Augmentations with parameters
         >>> transform = get_transform(augmentations={
         ...                              "HorizontalFlip": {"p": 0.5},
-        ...                              "Downscale": {"scale_min": 0.25, "scale_max": 0.75}
+        ...                              "VerticalFlip"
         ...                          })
     """
     transforms_list = []
-    bbox_params = None
 
     if augmentations is not None:
         augment_configs = _parse_augmentations(augmentations)
@@ -90,12 +244,10 @@ def get_transform(
             aug_transform = _create_augmentation(aug_name, aug_params)
             transforms_list.append(aug_transform)
 
-        bbox_params = A.BboxParams(format="pascal_voc", label_fields=["category_ids"])
-
-    # Always add ToTensorV2 at the end
-    transforms_list.append(ToTensorV2())
-
-    return A.Compose(transforms_list, bbox_params=bbox_params)
+    # Create a sequential container for all transforms
+    return K.AugmentationSequential(
+        *transforms_list, data_keys=[DataKey.IMAGE, DataKey.BBOX_XYXY]
+    )
 
 
 def _parse_augmentations(
@@ -151,15 +303,17 @@ def _parse_augmentations(
         raise ValueError(f"Unable to parse augmentation parameters: {augmentations}")
 
 
-def _create_augmentation(name: str, params: dict[str, Any]) -> A.BasicTransform | None:
-    """Create an albumentations transform by name with given parameters.
+def _create_augmentation(
+    name: str, params: dict[str, Any]
+) -> K.AugmentationSequential | None:
+    """Create a kornia transform by name with given parameters.
 
     Args:
         name: Name of the augmentation
         params: Parameters to pass to the augmentation
 
     Returns:
-        Albumentations transform or None if name not recognized
+        Kornia AugmentationSequential or None if name not recognized
     """
 
     if name not in get_available_augmentations():
@@ -169,6 +323,11 @@ def _create_augmentation(name: str, params: dict[str, Any]) -> A.BasicTransform 
 
     # Retrieve factory and defaults, merge with user-provided params
     transform, base_params = _SUPPORTED_TRANSFORMS[name]
+
+    # Check if augmentation is unsupported
+    if transform is None:
+        raise NotImplementedError(f"Augmentation '{name}' is not currently supported.")
+
     final_params = base_params.copy()
     final_params.update(params)
 
