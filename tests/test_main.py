@@ -1127,3 +1127,24 @@ def test_set_labels_invalid_length(m): # Expect a ValueError when setting an inv
     invalid_mapping = {"Object": 0, "Extra": 1}
     with pytest.raises(ValueError):
         m.set_labels(invalid_mapping)
+
+def test_white_image_predict_tile_no_predictions_bird_model():
+    """All-white image should yield no detections with the bird model."""
+    m = main.deepforest()
+    m.create_trainer()
+    # Load the bird model explicitly
+    m.load_model("weecology/deepforest-bird")
+
+    # Create a white image (uint8 RGB)
+    white = np.full((2048, 2048, 3), 255, dtype=np.uint8)
+
+    # Run tiled prediction
+    res = m.predict_tile(
+        image=white,
+        patch_size=400,
+        patch_overlap=0.05,
+        iou_threshold=m.config.nms_thresh,
+    )
+
+    # Assert no predictions
+    assert (res is None) or (isinstance(res, pd.DataFrame) and res.empty)
