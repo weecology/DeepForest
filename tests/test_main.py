@@ -1141,8 +1141,8 @@ def test_white_image_predict_tile_no_predictions_bird_model():
     # Run tiled prediction
     res = m.predict_tile(
         image=white,
-        patch_size=400,
-        patch_overlap=0.05,
+        patch_size=128,
+        patch_overlap=0.0,
         iou_threshold=m.config.nms_thresh,
     )
 
