@@ -248,6 +248,7 @@ def evaluate_boxes(predictions, ground_df, iou_threshold=0.4):
                     "match": pd.Series([False] * len(group), dtype="bool"),
                     "true_label": group.label.astype("object"),
                     "geometry": group.geometry,
+                    "image_path": image_path,
                 }
             )
             # An empty prediction set has recall of 0, precision of NA.
