@@ -82,6 +82,28 @@ def load_config(
     return config
 
 
+def read_raster_window(data, nodata_value=None, masked=True):
+    """Apply no-data value masking to raster data.
+
+    This function masks no-data values to 0, ensuring consistent handling
+    across all DeepForest components.
+
+    Args:
+        data: numpy.ndarray with shape (bands, height, width) containing raster data
+        nodata_value: The no-data value to mask. If None, no masking is applied.
+        masked: If True, mask no-data values to 0. Default True.
+
+    Returns:
+        numpy.ndarray: Raster data with shape (bands, height, width). No-data values
+            are set to 0 if masked=True and nodata_value is not None.
+    """
+    if masked and nodata_value is not None:
+        nodata_mask = np.any(data == nodata_value, axis=0)
+        data[:, nodata_mask] = 0
+
+    return data
+
+
 class DownloadProgressBar(tqdm):
     """Download progress bar class."""
 
@@ -587,6 +609,7 @@ def crop_raster(bounds, rgb_path=None, savedir=None, filename=None, driver="GTif
                 left, bottom, right, top, transform=src.transform
             )
         )
+        img = read_raster_window(img, nodata_value=src.nodata)
         cropped_transform = rasterio.windows.transform(
             rasterio.windows.from_bounds(
                 left, bottom, right, top, transform=src.transform

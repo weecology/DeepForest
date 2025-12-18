@@ -297,6 +297,7 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
 
                 # Crop the image using the square box coordinates
                 img = src.read(window=((int(ymin), int(ymax)), (int(xmin), int(xmax))))
+                img = utilities.read_raster_window(img, nodata_value=src.nodata)
                 # Save the cropped image as a PNG file using opencv
                 image_basename = os.path.splitext(os.path.basename(image))[0]
                 img_path = os.path.join(savedir, label, f"{image_basename}_{index}.png")
