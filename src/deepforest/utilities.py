@@ -260,6 +260,13 @@ def __assign_image_path__(gdf, image_path: str) -> str:
                 )
             gdf["image_path"] = image_path
         else:
+            warnings.warn(
+                f"You have passed an image_path argument, but the shapefile does not contain an image_path column. "
+                f"All annotations will be assigned to {image_path}. "
+                f"Make sure all annotations in the shapefile relate to this image.",
+                UserWarning,
+                stacklevel=2,
+            )
             gdf["image_path"] = image_path
 
     return gdf
@@ -498,9 +505,8 @@ def __check_and_assign_label__(
 ):
     if label is None:
         if "label" not in df.columns:
-            raise ValueError(
-                "No label specified and no label column found in dataframe, please specify label in label argument: read_file(input=df, label='YourLabel', ...)"
-            )
+            # Default to "Unknown" if label is not provided and not in dataframe
+            df["label"] = "Unknown"
     else:
         if "label" in df.columns:
             existing_labels = df.label.unique()

@@ -139,27 +139,36 @@ shp = utilities.read_file(input="/path/to/boxes_shapefile.shp")
 shp.head()
 ```
 
-If your shapefile does not include an `image_path` column, you must provide the raster path via `img_path`:
+##### Reading Shapefiles Without `image_path` or `label` Columns
+
+Many GIS shapefiles do not include `image_path` or `label` columns. You can provide these values directly to `read_file`:
 
 ```python
 from deepforest import utilities
 
+# Shapefile doesn't have image_path or label columns
 shp = utilities.read_file(
-    input="/path/to/boxes_shapefile.shp",
-    image_path="/path/to/OSBS_029.tif"
+    input="/path/to/annotations.shp",
+    image_path="my_raster.tif",  # Required if shapefile has no image_path column
+    label="Tree",                 # Optional, defaults to "Unknown"
+    root_dir="/path/to/images/"   # Required when using image_path argument
 )
 ```
 
-If your shapefile also lacks a `label` column, you can assign one for all rows:
+**Arguments:**
 
-```python
-from deepforest import utilities
+| Argument | Required? | Description |
+|----------|-----------|-------------|
+| `image_path` | **Required** if shapefile lacks `image_path` column | The image file path (relative to `root_dir`) that all annotations belong to |
+| `label` | Optional | The label for all annotations. Defaults to `"Unknown"` if not provided |
+| `root_dir` | **Required** when using `image_path` argument | Directory where image files are located |
 
-shp = utilities.read_file(
-    input="/path/to/boxes_shapefile.shp",
-    image_path="/path/to/OSBS_029.tif",
-    label="Tree"
-)
+This assigns the same `image_path` and `label` to all annotations in the file. Use this when all annotations belong to a single image and share the same label.
+
+**Note:** A warning will be shown when `image_path` is provided but the shapefile doesn't have an `image_path` column:
+
+```
+UserWarning: You have passed an image_path argument, but the shapefile does not contain an image_path column. All annotations will be assigned to my_raster.tif. Make sure all annotations in the shapefile relate to this image.
 ```
 
 Example output:
