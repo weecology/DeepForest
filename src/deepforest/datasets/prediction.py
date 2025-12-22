@@ -13,7 +13,7 @@ from torch.nn import functional as F
 from torch.utils.data import Dataset, default_collate
 
 from deepforest import preprocess
-from deepforest.utilities import format_geometry, read_raster_window
+from deepforest.utilities import apply_nodata_mask, format_geometry
 
 
 # Base prediction class
@@ -490,8 +490,9 @@ class TiledRaster(PredictionDataset):
     def get_crop(self, idx):
         window = self.windows[idx]
         with rio.open(self.path) as src:
-            window_data = src.read(window=Window(window.x, window.y, window.w, window.h))
-            window_data = read_raster_window(window_data, nodata_value=src.nodata)
+            window_data = apply_nodata_mask(
+                src, Window(window.x, window.y, window.w, window.h)
+            )
 
         # Convert to torch tensor and rearrange dimensions
         window_data = torch.from_numpy(window_data).float()  # Convert to torch tensor

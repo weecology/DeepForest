@@ -12,7 +12,7 @@ from rasterio.windows import Window
 from torch.utils.data import Dataset
 from torchvision import transforms
 
-from deepforest.utilities import read_raster_window
+from deepforest.utilities import apply_nodata_mask
 
 
 def bounding_box_transform(augmentations=None, resize=None):
@@ -123,8 +123,7 @@ class BoundingBoxDataset(Dataset):
         row_off = int(ymin)
         width = int(max(1, xmax - xmin))
         height = int(max(1, ymax - ymin))
-        box = self.src.read(window=Window(col_off, row_off, width, height))
-        box = read_raster_window(box, nodata_value=self.src.nodata)
+        box = apply_nodata_mask(self.src, Window(col_off, row_off, width, height))
         box = np.rollaxis(box, 0, 3)
 
         if self.transform:

@@ -82,24 +82,32 @@ def load_config(
     return config
 
 
-def read_raster_window(data, nodata_value=None, masked=True):
-    """Apply no-data value masking to raster data.
+def apply_nodata_mask(src, window):
+    """Read raster window and apply no-data value masking.
 
-    This function masks no-data values to 0, ensuring consistent handling
-    across all DeepForest components.
+    This function reads a window from a rasterio dataset and masks no-data
+    values to 0, ensuring consistent handling across all DeepForest components.
+    Uses rasterio's built-in dataset mask for efficient masking.
 
     Args:
-        data: numpy.ndarray with shape (bands, height, width) containing raster data
-        nodata_value: The no-data value to mask. If None, no masking is applied.
-        masked: If True, mask no-data values to 0. Default True.
+        src: rasterio.DatasetReader opened in 'r' mode
+        window: rasterio.windows.Window or tuple defining the window to read
 
     Returns:
         numpy.ndarray: Raster data with shape (bands, height, width). No-data values
-            are set to 0 if masked=True and nodata_value is not None.
+            are set to 0.
     """
-    if masked and nodata_value is not None:
-        nodata_mask = np.any(data == nodata_value, axis=0)
-        data[:, nodata_mask] = 0
+    data = src.read(window=window)
+
+    # Use rasterio's dataset_mask to get the mask (True = valid, False = nodata)
+    if src.nodata is not None:
+        mask = src.dataset_mask(window=window)
+        # Invert mask: True where nodata, False where valid
+        nodata_mask = ~mask
+        # Set nodata pixels to 0 for all bands
+        # Apply 2D mask to each band: data shape is (bands, height, width)
+        for band_idx in range(data.shape[0]):
+            data[band_idx, nodata_mask] = 0
 
     return data
 
@@ -604,12 +612,10 @@ def crop_raster(bounds, rgb_path=None, savedir=None, filename=None, driver="GTif
             driver = "PNG"
     else:
         # Read projected data using rasterio and crop
-        img = src.read(
-            window=rasterio.windows.from_bounds(
-                left, bottom, right, top, transform=src.transform
-            )
+        window = rasterio.windows.from_bounds(
+            left, bottom, right, top, transform=src.transform
         )
-        img = read_raster_window(img, nodata_value=src.nodata)
+        img = apply_nodata_mask(src, window)
         cropped_transform = rasterio.windows.transform(
             rasterio.windows.from_bounds(
                 left, bottom, right, top, transform=src.transform
