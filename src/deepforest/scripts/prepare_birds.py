@@ -13,6 +13,7 @@ import os
 import shutil
 from pathlib import Path
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from PIL import Image
@@ -190,6 +191,234 @@ def create_symlink(source, target):
     os.symlink(source, target)
 
 
+def check_negative_coordinates(df):
+    """Check for negative bounding box coordinates.
+
+    Args:
+        df: DataFrame with xmin, ymin, xmax, ymax columns
+
+    Returns:
+        DataFrame with rows that have negative coordinates
+    """
+    required_cols = ["xmin", "ymin", "xmax", "ymax"]
+    for col in required_cols:
+        if col not in df.columns:
+            return pd.DataFrame()
+
+    # Find rows with any negative coordinates
+    negative_mask = (
+        (df["xmin"] < 0) | (df["ymin"] < 0) | (df["xmax"] < 0) | (df["ymax"] < 0)
+    )
+    return df[negative_mask].copy()
+
+
+def clip_boxes_to_image_bounds(df, image_dir):
+    """Clip bounding box coordinates to image boundaries.
+
+    Clips negative coordinates to 0 and coordinates beyond image dimensions
+    to the image edges. Ensures boxes remain valid (xmax > xmin, ymax > ymin).
+
+    Args:
+        df: DataFrame with image_path, xmin, ymin, xmax, ymax columns
+        image_dir: Directory containing the images
+
+    Returns:
+        DataFrame with clipped coordinates
+    """
+    df = df.copy()
+    required_cols = ["image_path", "xmin", "ymin", "xmax", "ymax"]
+    for col in required_cols:
+        if col not in df.columns:
+            return df
+
+    # Track how many boxes were clipped
+    clipped_count = 0
+    invalid_count = 0
+
+    # Process each unique image
+    unique_images = df["image_path"].unique()
+    for img_path in unique_images:
+        # Get full image path
+        full_img_path = os.path.join(image_dir, img_path)
+
+        if not os.path.exists(full_img_path):
+            continue
+
+        try:
+            # Load image to get dimensions
+            img = Image.open(full_img_path)
+            img_width, img_height = img.size
+
+            # Get annotations for this image
+            img_mask = df["image_path"] == img_path
+            img_indices = df[img_mask].index
+
+            for idx in img_indices:
+                original_xmin = df.at[idx, "xmin"]
+                original_ymin = df.at[idx, "ymin"]
+                original_xmax = df.at[idx, "xmax"]
+                original_ymax = df.at[idx, "ymax"]
+
+                # Clip coordinates to image boundaries
+                xmin = max(0, min(original_xmin, img_width - 1))
+                ymin = max(0, min(original_ymin, img_height - 1))
+                xmax = max(xmin + 1, min(original_xmax, img_width))
+                ymax = max(ymin + 1, min(original_ymax, img_height))
+
+                # Check if clipping occurred
+                if (
+                    xmin != original_xmin
+                    or ymin != original_ymin
+                    or xmax != original_xmax
+                    or ymax != original_ymax
+                ):
+                    clipped_count += 1
+                    df.at[idx, "xmin"] = xmin
+                    df.at[idx, "ymin"] = ymin
+                    df.at[idx, "xmax"] = xmax
+                    df.at[idx, "ymax"] = ymax
+
+                # Check if box is still valid
+                if xmax <= xmin or ymax <= ymin:
+                    invalid_count += 1
+
+        except Exception as e:
+            print(f"  Warning: Error processing image {img_path}: {e}")
+            continue
+
+    if clipped_count > 0:
+        print(f"  Clipped {clipped_count} bounding boxes to image boundaries")
+    if invalid_count > 0:
+        print(f"  Warning: {invalid_count} boxes became invalid after clipping")
+
+    return df
+
+
+def filter_small_boxes(df, min_area=1, epsilon=1e-6):
+    """Filter out bounding boxes with zero or single-pixel area.
+
+    Args:
+        df: DataFrame with xmin, ymin, xmax, ymax columns
+        min_area: Minimum area (in pixels) for a box to be kept (default: 1)
+        epsilon: Small value for floating point comparison (default: 1e-6)
+
+    Returns:
+        DataFrame with small boxes removed
+    """
+    df = df.copy()
+    required_cols = ["xmin", "ymin", "xmax", "ymax"]
+    for col in required_cols:
+        if col not in df.columns:
+            return df
+
+    # Calculate width, height, and area
+    width = df["xmax"] - df["xmin"]
+    height = df["ymax"] - df["ymin"]
+    area = width * height
+
+    # Round area to handle floating point precision issues
+    # Single-pixel boxes (width=1, height=1) should have area=1.0
+    area_rounded = np.round(area, decimals=6)
+
+    # Filter out boxes with invalid dimensions or area <= min_area
+    # Filter if: width <= 0, height <= 0, or rounded area <= min_area
+    # This catches single-pixel boxes (width=1, height=1, area=1)
+    valid_mask = (width > epsilon) & (height > epsilon) & (area_rounded > min_area)
+
+    removed_count = (~valid_mask).sum()
+    if removed_count > 0:
+        print(f"  Removed {removed_count} bounding boxes with area <= {min_area} pixel(s) or single-pixel dimensions")
+
+    return df[valid_mask].copy()
+
+
+def plot_negative_coordinate_examples(df, output_dir, root_dir=None, num_examples=3):
+    """Plot examples of images with negative bounding box coordinates.
+
+    Args:
+        df: DataFrame with annotations that have negative coordinates
+        output_dir: Directory to save plots
+        root_dir: Root directory for images (optional)
+        num_examples: Number of examples to plot (default: 3)
+    """
+    if df.empty:
+        print("No examples with negative coordinates to plot.")
+        return
+
+    # Get unique images with negative coordinates
+    unique_images = df["image_path"].unique()
+    num_examples = min(num_examples, len(unique_images))
+
+    print(f"\nPlotting {num_examples} examples with negative coordinates...")
+
+    # Create plots directory
+    plots_dir = os.path.join(output_dir, "negative_coordinate_examples")
+    os.makedirs(plots_dir, exist_ok=True)
+
+    for i, img_path in enumerate(unique_images[:num_examples]):
+        # Get annotations for this image
+        img_annotations = df[df["image_path"] == img_path].copy()
+
+        # Try to load the image
+        if root_dir:
+            full_img_path = os.path.join(root_dir, img_path)
+        else:
+            full_img_path = img_path
+
+        if not os.path.exists(full_img_path):
+            print(f"  Warning: Image not found: {full_img_path}")
+            continue
+
+        try:
+            img = Image.open(full_img_path)
+            img_array = np.array(img)
+
+            # Create plot
+            fig, ax = plt.subplots(1, 1, figsize=(12, 8))
+            ax.imshow(img_array)
+            ax.set_title(f"Image: {os.path.basename(img_path)}\nNegative coordinates detected", fontsize=12)
+
+            # Draw bounding boxes
+            for idx, row in img_annotations.iterrows():
+                xmin, ymin, xmax, ymax = row["xmin"], row["ymin"], row["xmax"], row["ymax"]
+                # Draw rectangle
+                rect = plt.Rectangle(
+                    (xmin, ymin),
+                    xmax - xmin,
+                    ymax - ymin,
+                    fill=False,
+                    edgecolor="red",
+                    linewidth=2,
+                )
+                ax.add_patch(rect)
+                # Add text with coordinates
+                ax.text(
+                    xmin,
+                    ymin - 5,
+                    f"xmin={xmin:.1f}, ymin={ymin:.1f}\nxmax={xmax:.1f}, ymax={ymax:.1f}",
+                    color="red",
+                    fontsize=8,
+                    bbox=dict(boxstyle="round,pad=0.3", facecolor="yellow", alpha=0.7),
+                )
+
+            ax.axis("off")
+            plt.tight_layout()
+
+            # Save plot
+            plot_filename = f"negative_coords_example_{i+1}_{os.path.basename(img_path)}.png"
+            plot_path = os.path.join(plots_dir, plot_filename)
+            plt.savefig(plot_path, dpi=150, bbox_inches="tight")
+            plt.close()
+
+            print(f"  Saved: {plot_path}")
+
+        except Exception as e:
+            print(f"  Error plotting {img_path}: {e}")
+            continue
+
+    print(f"\nPlots saved to: {plots_dir}")
+
+
 def main():
     """Main function to prepare bird detection training data."""
     parser = argparse.ArgumentParser(
@@ -307,6 +536,42 @@ def main():
 
     # Combine all annotations
     combined_df = pd.concat(all_annotations, ignore_index=True)
+
+    # Check for negative coordinates before clipping
+    print("\nChecking for negative bounding box coordinates...")
+    negative_coords_df = check_negative_coordinates(combined_df)
+    if not negative_coords_df.empty:
+        print(f"  Found {len(negative_coords_df)} annotations with negative coordinates")
+        print(f"  Affected images: {negative_coords_df['image_path'].nunique()}")
+        print("\n  Summary of negative coordinates:")
+        print(f"    xmin < 0: {(combined_df['xmin'] < 0).sum()}")
+        print(f"    ymin < 0: {(combined_df['ymin'] < 0).sum()}")
+        print(f"    xmax < 0: {(combined_df['xmax'] < 0).sum()}")
+        print(f"    ymax < 0: {(combined_df['ymax'] < 0).sum()}")
+
+        # Plot examples before clipping
+        plot_negative_coordinate_examples(negative_coords_df, args.output_dir, root_dir=args.output_dir)
+
+        # Clip boxes to image boundaries
+        print("\nClipping bounding boxes to image boundaries...")
+        combined_df = clip_boxes_to_image_bounds(combined_df, args.output_dir)
+
+        # Verify clipping worked
+        negative_after = check_negative_coordinates(combined_df)
+        if negative_after.empty:
+            print("  All negative coordinates have been clipped.")
+        else:
+            print(f"  Warning: {len(negative_after)} annotations still have negative coordinates after clipping")
+    else:
+        print("  No negative coordinates found.")
+
+    # Filter out boxes with zero or single-pixel area
+    print("\nFiltering out boxes with zero or single-pixel area...")
+    initial_count = len(combined_df)
+    combined_df = filter_small_boxes(combined_df, min_area=1)
+    removed_count = initial_count - len(combined_df)
+    if removed_count > 0:
+        print(f"  Removed {removed_count} boxes (kept {len(combined_df)} boxes)")
 
     # Add blank images
     print(f"\nGenerating {args.num_blank_images} blank white images...")
