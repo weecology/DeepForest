@@ -2,7 +2,7 @@
 
 # Cpu workers for data loaders
 # Dataloaders
-workers: 0
+workers: 5
 devices: auto
 accelerator: auto
 batch_size: 1

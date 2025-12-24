@@ -14,7 +14,7 @@ import torch
 from pytorch_lightning.loggers import CometLogger
 from omegaconf import OmegaConf
 
-from deepforest import main
+from deepforest import main, callbacks
 import pandas as pd
 
 
@@ -94,6 +94,9 @@ def run():
     m.config.label_dict = {"Bird": 0}
     m.config.num_classes = 1
 
+    m.config.score_thresh = 0.25
+    m.model.score_thresh = 0.25
+
     # Configure training data paths
     m.config["train"]["csv_file"] = train_csv
     m.config["train"]["root_dir"] = args.data_dir
@@ -118,11 +121,11 @@ def run():
         "train": {
             "augmentations": [
                 {"RandomResizedCrop": {"size": (800, 800), "scale": (0.5, 1.0), "p": 0.3}},
-                {"Rotate": {"degrees": 15, "p": 0.5}},
-                {"HorizontalFlip": {"p": 0.5}},
-                {"VerticalFlip": {"p": 0.3}},
-                {"RandomBrightnessContrast": {"brightness": 0.2, "contrast": 0.2, "p": 0.5}},
-                {"HueSaturationValue": {"hue": 0.1, "saturation": 0.1, "p": 0.3}},
+                #{"Rotate": {"degrees": 15, "p": 0.5}},
+                #{"HorizontalFlip": {"p": 0.5}},
+                #{"VerticalFlip": {"p": 0.3}},
+                #{"RandomBrightnessContrast": {"brightness": 0.2, "contrast": 0.2, "p": 0.5}},
+                #{"HueSaturationValue": {"hue": 0.1, "saturation": 0.1, "p": 0.3}},
                 {"ZoomBlur": {"max_factor": (1.0, 1.03), "step_factor": (0.01, 0.02), "p": 0.3}},
             ]
         }
@@ -163,32 +166,39 @@ def run():
         print("Continuing without Comet logging...")
         comet_logger = None
 
+    # Set up image callback for validation visualization
+    images_dir = os.path.join(checkpoint_dir, "images")
+    os.makedirs(images_dir, exist_ok=True)
+    im_callback = callbacks.ImagesCallback(
+        save_dir=images_dir,
+        prediction_samples=20,  # Number of validation images to log
+        dataset_samples=20,  # Number of dataset samples to log at start
+        every_n_epochs=1,  # Log predictions every epoch
+    )
+
     # Create trainer with GPU support
     print("Creating trainer...")
     devices = torch.cuda.device_count() if torch.cuda.is_available() else 1
 
     m.create_trainer(
         logger=comet_logger,
+        callbacks=[im_callback],
         accelerator="auto",
-        strategy="ddp",
         num_nodes=1,
         devices=devices,
         fast_dev_run=args.fast_dev_run,
+        enable_progress_bar=True,
     )
-
-    # Evaluate before training
-    print("\nEvaluating model before training...")
-    results_before = m.evaluate(csv_file=test_csv, root_dir=args.data_dir, size=800)
-    print(f"Before training - Box Precision: {results_before['box_precision']:.4f}, "
-          f"Box Recall: {results_before['box_recall']:.4f}")
-
-    if comet_logger:
-        comet_logger.experiment.log_metric("box_precision_before", results_before["box_precision"])
-        comet_logger.experiment.log_metric("box_recall_before", results_before["box_recall"])
 
     # Train the model
     print("\nStarting training...")
     m.trainer.fit(m)
+
+    #results = m.evaluate(csv_file=test_csv, root_dir=args.data_dir, size=800)
+    # print(f"Box Precision: {results['box_precision']:.4f}, Box Recall: {results['box_recall']:.4f}")
+    # if comet_logger:
+    #     comet_logger.experiment.log_metric("box_precision", results["box_precision"])
+    #     comet_logger.experiment.log_metric("box_recall", results["box_recall"])
 
     # Save the model checkpoint
     if comet_logger:
@@ -199,16 +209,7 @@ def run():
     print(f"\nSaving checkpoint to: {checkpoint_path}")
     m.trainer.save_checkpoint(checkpoint_path)
 
-    # Evaluate after training
-    print("\nEvaluating model after training...")
-    results_after = m.evaluate(csv_file=test_csv, root_dir=args.data_dir, size=800)
-    print(f"After training - Box Precision: {results_after['box_precision']:.4f}, "
-          f"Box Recall: {results_after['box_recall']:.4f}")
-
     if comet_logger:
-        comet_logger.experiment.log_metric("box_precision_after", results_after["box_precision"])
-        comet_logger.experiment.log_metric("box_recall_after", results_after["box_recall"])
-
         # Log global steps
         global_steps = torch.tensor(m.trainer.global_step, dtype=torch.int32, device=m.device)
         comet_logger.experiment.log_metric("global_steps", global_steps.item())
