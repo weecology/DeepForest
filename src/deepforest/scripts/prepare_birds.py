@@ -19,6 +19,7 @@ import pandas as pd
 from PIL import Image
 from sklearn.model_selection import train_test_split
 
+from deepforest.preprocess import split_raster
 from deepforest.utilities import read_file
 
 
@@ -31,7 +32,7 @@ DATA_SOURCES = [
 ]
 
 # Nuisance labels to exclude (will be filtered out)
-NUISANCE_LABELS = {"buoy", "buoys", "trash", "Trash"}
+NUISANCE_LABELS = {"buoy", "buoys", "trash", "Trash",'boat','sargassum'}
 
 def load_coco_with_bboxes(json_file):
     """Load COCO format JSON file with bounding boxes (bbox) instead of segmentation.
@@ -294,6 +295,122 @@ def clip_boxes_to_image_bounds(df, image_dir):
     return df
 
 
+def process_izembek_with_splitting(df, root_dir, output_dir, image_files_map):
+    """Process Izembek dataset by splitting images into 800-pixel crops.
+
+    Args:
+        df: DataFrame with annotations
+        root_dir: Root directory for images
+        output_dir: Output directory for crops
+        image_files_map: Map from original path to symlink name
+
+    Returns:
+        DataFrame with crop annotations
+    """
+    import tempfile
+
+    # Create temporary directory for crops
+    crops_dir = os.path.join(output_dir, "izembek_crops")
+    os.makedirs(crops_dir, exist_ok=True)
+
+    crop_annotations_list = []
+    unique_images = df["image_path"].unique()
+
+    print(f"  Splitting {len(unique_images)} images into 2000-pixel crops...")
+
+    for img_path in unique_images:
+        # Construct full source path
+        if os.path.isabs(img_path):
+            source_img_path = img_path
+        else:
+            source_img_path = os.path.join(root_dir, img_path)
+
+        if not os.path.exists(source_img_path):
+            # Try alternative locations
+            alt_paths = [
+                os.path.join(root_dir, os.path.basename(img_path)),
+            ]
+            found = False
+            for alt_path in alt_paths:
+                if os.path.exists(alt_path):
+                    source_img_path = alt_path
+                    found = True
+                    break
+            if not found:
+                print(f"  Warning: Image not found: {source_img_path}")
+                continue
+
+        # Get image basename for matching with annotations
+        image_basename = os.path.basename(source_img_path)
+
+        # Filter annotations for this image and update image_path to basename
+        img_annotations = df[df["image_path"] == img_path].copy()
+        if img_annotations.empty:
+            continue
+
+        # Update image_path to basename for split_raster matching
+        img_annotations["image_path"] = image_basename
+
+        # Save temporary annotations file for this image
+        temp_annotations_file = os.path.join(crops_dir, f"temp_{image_basename}_annotations.csv")
+        img_annotations.to_csv(temp_annotations_file, index=False)
+
+        try:
+            # Use split_raster to create crops
+            crop_df = split_raster(
+                annotations_file=temp_annotations_file,
+                path_to_raster=source_img_path,
+                root_dir=os.path.dirname(temp_annotations_file),
+                patch_size=2000,
+                patch_overlap=0,
+                allow_empty=False,
+                save_dir=crops_dir,
+            )
+
+            # Process each crop
+            for crop_img_path in crop_df["image_path"].unique():
+                crop_full_path = os.path.join(crops_dir, crop_img_path)
+
+                if not os.path.exists(crop_full_path):
+                    continue
+
+                # Create unique symlink name
+                crop_basename = crop_img_path
+                symlink_name = crop_basename
+                counter = 1
+                while symlink_name in image_files_map.values():
+                    name, ext = os.path.splitext(crop_basename)
+                    symlink_name = f"{name}_{counter}{ext}"
+                    counter += 1
+
+                # Create symlink to crop
+                target_path = os.path.join(output_dir, symlink_name)
+                try:
+                    create_symlink(crop_full_path, target_path)
+                    image_files_map[crop_img_path] = symlink_name
+                except Exception as e:
+                    print(f"  Warning: Failed to create symlink for {crop_img_path}: {e}")
+                    continue
+
+                # Update image paths in crop dataframe to use symlink name
+                crop_df.loc[crop_df["image_path"] == crop_img_path, "image_path"] = symlink_name
+
+            crop_annotations_list.append(crop_df)
+
+        except Exception as e:
+            print(f"  Warning: Failed to split image {img_path}: {e}")
+            continue
+        finally:
+            # Clean up temporary annotations file
+            if os.path.exists(temp_annotations_file):
+                os.remove(temp_annotations_file)
+
+    if crop_annotations_list:
+        return pd.concat(crop_annotations_list, ignore_index=True)
+    else:
+        return pd.DataFrame()
+
+
 def filter_small_boxes(df, min_area=1, epsilon=1e-6):
     """Filter out bounding boxes with zero or single-pixel area.
 
@@ -480,6 +597,17 @@ def main():
         missing_cols = [col for col in required_cols if col not in df.columns]
         if missing_cols:
             print(f"  Warning: Missing columns {missing_cols}, skipping...")
+            continue
+
+        # Special case: Izembek dataset - split into 2000-pixel crops
+        if "izembek" in source_path.lower():
+            print("  Using split_raster to create 2000-pixel crops with allow_empty=False")
+            df = process_izembek_with_splitting(df, root_dir, args.output_dir, image_files_map)
+            if df.empty:
+                print(f"  No crop annotations generated for {source_path}")
+                continue
+            all_annotations.append(df)
+            print(f"  Loaded {len(df)} crop annotations from {df['image_path'].nunique()} crop images")
             continue
 
         # Handle image paths - create symlinks

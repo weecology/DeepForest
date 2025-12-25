@@ -121,12 +121,12 @@ def run():
         "train": {
             "augmentations": [
                 {"RandomResizedCrop": {"size": (800, 800), "scale": (0.5, 1.0), "p": 0.3}},
-                #{"Rotate": {"degrees": 15, "p": 0.5}},
-                #{"HorizontalFlip": {"p": 0.5}},
-                #{"VerticalFlip": {"p": 0.3}},
+                {"Rotate": {"degrees": 15, "p": 0.5}},
+                {"HorizontalFlip": {"p": 0.5}},
+                {"VerticalFlip": {"p": 0.3}},
                 #{"RandomBrightnessContrast": {"brightness": 0.2, "contrast": 0.2, "p": 0.5}},
                 #{"HueSaturationValue": {"hue": 0.1, "saturation": 0.1, "p": 0.3}},
-                {"ZoomBlur": {"max_factor": (1.0, 1.03), "step_factor": (0.01, 0.02), "p": 0.3}},
+                #{"ZoomBlur": {"max_factor": (1.0, 1.03), "step_factor": (0.01, 0.02), "p": 0.3}},
             ]
         }
     })
@@ -178,14 +178,13 @@ def run():
 
     # Create trainer with GPU support
     print("Creating trainer...")
-    devices = torch.cuda.device_count() if torch.cuda.is_available() else 1
+    # For DDP, each process uses 1 device. PyTorch Lightning will handle
 
     m.create_trainer(
         logger=comet_logger,
         callbacks=[im_callback],
-        accelerator="auto",
-        num_nodes=1,
         devices=devices,
+        strategy="ddp",
         fast_dev_run=args.fast_dev_run,
         enable_progress_bar=True,
     )
@@ -193,12 +192,7 @@ def run():
     # Train the model
     print("\nStarting training...")
     m.trainer.fit(m)
-
-    #results = m.evaluate(csv_file=test_csv, root_dir=args.data_dir, size=800)
-    # print(f"Box Precision: {results['box_precision']:.4f}, Box Recall: {results['box_recall']:.4f}")
-    # if comet_logger:
-    #     comet_logger.experiment.log_metric("box_precision", results["box_precision"])
-    #     comet_logger.experiment.log_metric("box_recall", results["box_recall"])
+    m.trainer.validate(m)
 
     # Save the model checkpoint
     if comet_logger:
