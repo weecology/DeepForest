@@ -10,7 +10,6 @@
 #SBATCH --output=/home/b.weinstein/logs/train_birds%j.out   # Standard output and error log
 #SBATCH --error=/home/b.weinstein/logs/train_birds%j.err
 #SBATCH --partition=hpg-b200
-#SBATCH --ntasks-per-node=1
 #SBATCH --gpus=2
 
 # Example usage:

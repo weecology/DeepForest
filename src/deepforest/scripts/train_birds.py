@@ -167,7 +167,8 @@ def run():
         comet_logger = None
 
     # Set up image callback for validation visualization
-    images_dir = os.path.join(checkpoint_dir, "images")
+    # Save images to home directory to avoid /blue quota issues
+    images_dir = os.path.join(os.path.expanduser("~"), "logs", "training_images")
     os.makedirs(images_dir, exist_ok=True)
     im_callback = callbacks.ImagesCallback(
         save_dir=images_dir,
