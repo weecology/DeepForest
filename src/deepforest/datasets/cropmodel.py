@@ -123,7 +123,10 @@ class BoundingBoxDataset(Dataset):
         row_off = int(ymin)
         width = int(max(1, xmax - xmin))
         height = int(max(1, ymax - ymin))
-        box = apply_nodata_mask(self.src, Window(col_off, row_off, width, height))
+        # Clip window to image bounds to avoid out-of-bounds errors
+        window = Window(col_off, row_off, width, height)
+        window = window.intersection(Window(0, 0, self._image_width, self._image_height))
+        box = apply_nodata_mask(self.src, window)
         box = np.rollaxis(box, 0, 3)
 
         if self.transform:
