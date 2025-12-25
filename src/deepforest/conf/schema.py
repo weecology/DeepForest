@@ -1,6 +1,8 @@
 from dataclasses import dataclass, field
-from omegaconf import DictConfig, OmegaConf
 from typing import Any
+
+from omegaconf import DictConfig, OmegaConf
+
 
 @dataclass
 class ModelConfig:
