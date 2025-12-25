@@ -524,6 +524,8 @@ def test_evaluate(m, tmpdir):
 
     df = pd.read_csv(csv_file)
     assert results["results"].shape[0] == df.shape[0]
+    assert results["box_precision"] == pytest.approx(0.8, abs=0.01)
+    assert results["box_recall"] == pytest.approx(0.7213, abs=0.01)
 
 
 def test_train_callbacks(m):
