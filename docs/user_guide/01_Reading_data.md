@@ -140,6 +140,39 @@ shp = utilities.read_file(input="/path/to/boxes_shapefile.shp")
 shp.head()
 ```
 
+##### Reading Shapefiles Without `image_path` or `label` Columns
+
+Many GIS shapefiles do not include `image_path` or `label` columns. You can provide these values directly to `read_file`:
+
+```python
+from deepforest import utilities
+
+# Shapefile doesn't have image_path or label columns
+shp = utilities.read_file(
+    input="/path/to/annotations.shp",
+    image_path="/path/to/images/my_raster.tif",  # Required if shapefile has no image_path column
+    label="Tree",                                 # Optional, defaults to "Unknown"
+    root_dir="/path/to/images/"                   # Optional, directory where images are located
+)
+```
+
+**Arguments:**
+
+| Argument | Required? | Description |
+|----------|-----------|-------------|
+| `image_path` | **Required** if shapefile lacks `image_path` column | The image file path that all annotations belong to |
+| `label` | Optional | The label for all annotations. Defaults to `"Unknown"` if not provided |
+| `root_dir` | Optional | Directory where image files are located. Useful when `image_path` is just a filename |
+
+This assigns the same `image_path` and `label` to all annotations in the file. Use this when all annotations belong to a single image and share the same label.
+
+**Note:** Warnings will be shown to confirm values are applied to every row:
+
+```
+UserWarning: You have passed an image_path. This value will be assigned to every row in the dataframe.
+UserWarning: You have passed a label. This value will be assigned to every row in the dataframe.
+```
+
 Example output:
 
 ```
