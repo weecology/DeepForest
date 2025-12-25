@@ -102,24 +102,31 @@ class ImagesCallback(Callback):
         ):
             image_annotations = target.copy()
             image_annotations = utilities.format_geometry(image_annotations, scores=False)
-            image_annotations.root_dir = dataset.root_dir
-            image_annotations["image_path"] = path
 
-            # Plot transformed image
             basename = Path(path).stem
             image = (255 * image.cpu().numpy().transpose((1, 2, 0))).astype(np.uint8)
-            fig = visualize.plot_annotations(
-                image=image,
-                annotations=image_annotations,
-                savedir=out_dir,
-                basename=basename,
-                thickness=self.thickness,
-                show=False,
-            )
-            plt.close(fig)
+            out_path = os.path.join(out_dir, basename + ".png")
+
+            if image_annotations is not None:
+                image_annotations.root_dir = dataset.root_dir
+                image_annotations["image_path"] = path
+
+                # Plot transformed image
+                fig = visualize.plot_annotations(
+                    image=image,
+                    annotations=image_annotations,
+                    savedir=out_dir,
+                    basename=basename,
+                    thickness=self.thickness,
+                    show=False,
+                )
+                plt.close(fig)
+            else:
+                # Save un-annotated image
+                Image.fromarray(image).save(out_path)
 
             self._log_to_all(
-                image=os.path.join(out_dir, basename + ".png"),
+                image=out_path,
                 trainer=self.trainer,
                 tag=f"{split} dataset sample",
             )

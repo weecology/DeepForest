@@ -9,6 +9,7 @@ from pytorch_lightning.loggers.logger import DummyLogger
 
 from deepforest import get_data
 from deepforest import callbacks, main
+from deepforest.datasets.training import BoxDataset
 
 class MockCometLogger(DummyLogger):
     def __init__(self, *args, **kwargs):
@@ -148,6 +149,28 @@ def test_log_images_no_dataset(m, tmpdir):
     assert os.path.exists(os.path.join(tmpdir, "predictions"))
     assert not os.path.exists(os.path.join(tmpdir, "train_sample"))
     assert not os.path.exists(os.path.join(tmpdir, "validation_sample"))
+
+def test_log_image_empty_annotations(m, tmpdir):
+    """Test that images with no annotations are logged without error"""
+    im_callback = callbacks.ImagesCallback(save_dir=tmpdir, every_n_epochs=1, prediction_samples=1)
+    im_callback.trainer = m.trainer
+
+    # Drop targets from all samples
+    class EmptyDataset(BoxDataset):
+        def __getitem__(self, idx):
+            image, targets, img_name = super().__getitem__(idx)
+            targets = {"boxes": [], "labels": []}
+            return image, targets, img_name
+
+    empty_dataset = EmptyDataset(
+        csv_file=m.config.validation.csv_file,
+        root_dir=m.config.validation.root_dir
+    )
+
+    im_callback._log_dataset_sample(empty_dataset, split="validation")
+    assert os.path.exists(os.path.join(tmpdir, "validation_sample"))
+    val_images = glob.glob("{}/validation_sample/*".format(tmpdir))
+    assert len(val_images) == 1
 
 def test_create_checkpoint(m, tmpdir):
     """Test checkpoint creation"""
