@@ -12,6 +12,12 @@ There are atleast four ways to make predictions with DeepForest.
 
 In general, during inference, for large images it is most common to use predict_tile.
 
+```{tip}
+Working with overlapping surveys and want to remove duplicate detections across images?
+See the new guide: [Unique Predictions (Double-Counting Removal)](./17_Unique_predictions.md).
+It covers the SfM-based pipeline, extra installation, and best practices.
+```
+
 ## Predict an image using the command line
 
 We provide a basic utility script to run a prediction task with the ability to save and/or plot outputs. This command is called `deepforest predict` and is included as part of the standard installation. You can run the command without any arguments, or the `--help` flag to check that it's available. The script will run in tiled prediction mode by default.
