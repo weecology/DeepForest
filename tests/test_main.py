@@ -473,6 +473,24 @@ def test_predict_tile(m, path, dataloader_strategy):
 
     plot_results(prediction, show=False)
 
+def test_predict_tile_projected(m):
+    """Test that project=True returns a GeoDataFrame with projected coordinates"""
+    m.create_model()
+    m.create_trainer()
+    m.load_model("weecology/deepforest-tree")
+
+    raster_path = get_data("OSBS_029.tif")
+
+    results = m.predict_tile(path=raster_path, patch_size=300, patch_overlap=0.1, project=True)
+
+    import geopandas as gpd
+    assert isinstance(results, gpd.GeoDataFrame)
+    assert results.crs is not None
+    assert "geometry" in results.columns
+
+    # check that coordinates are large (UTM), not pixels
+    # pixel 0 is usually ~0. UTM 0 is ~400,000 meters.
+    assert results.iloc[0]["xmin"] > 10000
 
 # Add predict_tile for serial single dataloader strategy
 def test_predict_tile_serial_single(m):
