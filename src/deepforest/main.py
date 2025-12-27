@@ -664,9 +664,11 @@ class deepforest(pl.LightningModule):
 
         if project:
             if root_dir is None and isinstance(paths[0], str):
-                 root_dir = os.path.dirname(paths[0])
+                root_dir = os.path.dirname(paths[0])
 
-            formatted_results = utilities.image_to_geo_coordinates(formatted_results, root_dir=root_dir)
+            formatted_results = utilities.image_to_geo_coordinates(
+                formatted_results, root_dir=root_dir
+            )
 
         return formatted_results
 
