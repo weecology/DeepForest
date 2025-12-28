@@ -10,6 +10,7 @@ import shapely
 import xmltodict
 from omegaconf import DictConfig, OmegaConf
 from PIL import Image
+from rasterio.windows import Window
 from tqdm import tqdm
 
 from deepforest import _ROOT
@@ -80,6 +81,59 @@ def load_config(
         config.label_dict = override_label_dict
 
     return config
+
+
+def apply_nodata_mask(src, window):
+    """Read raster window and apply no-data value masking.
+
+    This function reads a window from a rasterio dataset and masks no-data
+    values to 0, ensuring consistent handling across all DeepForest components.
+    Uses rasterio's built-in dataset mask for efficient masking.
+
+    Args:
+        src: rasterio.DatasetReader opened in 'r' mode
+        window: rasterio.windows.Window or tuple defining the window to read
+
+    Returns:
+        numpy.ndarray: Raster data with shape (bands, height, width). No-data values
+            are set to 0.
+    """
+    # Clip window to image bounds before reading to ensure consistent dimensions
+    if isinstance(window, Window):
+        full_window = Window(0, 0, src.width, src.height)
+        try:
+            window = window.intersection(full_window)
+        except rasterio.errors.WindowError as exc:
+            # Window is completely outside image bounds
+            raise ValueError(
+                f"Window {window} is completely outside image bounds "
+                f"(width={src.width}, height={src.height})"
+            ) from exc
+
+    data = src.read(window=window)
+
+    # Use rasterio's dataset_mask to get the mask (True = valid, False = nodata)
+    if src.nodata is not None:
+        mask = src.dataset_mask(window=window)
+        expected_height, expected_width = data.shape[1], data.shape[2]
+        if mask.shape[0] > expected_height:
+            mask = mask[:expected_height, :]
+        if mask.shape[1] > expected_width:
+            mask = mask[:, :expected_width]
+        if mask.shape != (expected_height, expected_width):
+            return data
+        nodata_mask = ~mask
+        assert nodata_mask.shape == (expected_height, expected_width), (
+            f"nodata_mask shape {nodata_mask.shape} != expected {(expected_height, expected_width)}"
+        )
+        # Set nodata pixels to 0 for all bands
+        # Apply 2D mask to each band: data shape is (bands, height, width)
+        # Use np.where to safely apply mask without indexing issues
+        for band_idx in range(data.shape[0]):
+            # np.where(condition, x, y): where condition is True, use x (0), else use y (data)
+            data[band_idx] = np.where(nodata_mask, 0, data[band_idx])
+
+    return data
 
 
 class DownloadProgressBar(tqdm):
@@ -582,11 +636,10 @@ def crop_raster(bounds, rgb_path=None, savedir=None, filename=None, driver="GTif
             driver = "PNG"
     else:
         # Read projected data using rasterio and crop
-        img = src.read(
-            window=rasterio.windows.from_bounds(
-                left, bottom, right, top, transform=src.transform
-            )
+        window = rasterio.windows.from_bounds(
+            left, bottom, right, top, transform=src.transform
         )
+        img = apply_nodata_mask(src, window)
         cropped_transform = rasterio.windows.transform(
             rasterio.windows.from_bounds(
                 left, bottom, right, top, transform=src.transform

@@ -12,6 +12,8 @@ from rasterio.windows import Window
 from torch.utils.data import Dataset
 from torchvision import transforms
 
+from deepforest.utilities import apply_nodata_mask
+
 
 def bounding_box_transform(augmentations=None, resize=None):
     """Create transform pipeline for bounding box data.
@@ -121,7 +123,10 @@ class BoundingBoxDataset(Dataset):
         row_off = int(ymin)
         width = int(max(1, xmax - xmin))
         height = int(max(1, ymax - ymin))
-        box = self.src.read(window=Window(col_off, row_off, width, height))
+        # Clip window to image bounds to avoid out-of-bounds errors
+        window = Window(col_off, row_off, width, height)
+        window = window.intersection(Window(0, 0, self._image_width, self._image_height))
+        box = apply_nodata_mask(self.src, window)
         box = np.rollaxis(box, 0, 3)
 
         if self.transform:
