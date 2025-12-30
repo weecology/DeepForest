@@ -1127,3 +1127,32 @@ def test_set_labels_invalid_length(m): # Expect a ValueError when setting an inv
     invalid_mapping = {"Object": 0, "Extra": 1}
     with pytest.raises(ValueError):
         m.set_labels(invalid_mapping)
+
+def test_predict_file_mixed_sizes(m, tmp_path):
+    """Mixed-size images should yield predictions in original image coordinates."""
+    # Prepare two images at different sizes
+    src_path = get_data("OSBS_029.tif")
+    img = Image.open(src_path).convert("RGB")
+
+    # Create a smaller and a larger variant (bounded to avoid extreme sizes)
+    w, h = img.size
+    small = img.resize((max(64, w // 2), max(64, h // 2)))
+    large = img.resize((min(w * 2, 2 * w), min(h * 2, 2 * h)))
+
+    # Save both to tmp directory as PNGs
+    small_name = "mixed_small.png"
+    large_name = "mixed_large.png"
+    small_path = os.path.join(tmp_path, small_name)
+    large_path = os.path.join(tmp_path, large_name)
+    small.save(small_path)
+    large.save(large_path)
+
+    # Build a CSV with just image_path column (prediction path)
+    csv_path = os.path.join(tmp_path, "mixed_images.csv")
+    df = pd.DataFrame({"image_path": [small_name, large_name]})
+    df.to_csv(csv_path, index=False)
+
+    m.config.validation.size = 200
+    preds = m.predict_file(csv_file=csv_path, root_dir=str(tmp_path))
+
+    assert preds.ymax.max() > 200  # The larger image should have predictions outside the 200px limit

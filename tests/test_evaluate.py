@@ -201,3 +201,33 @@ def test_evaluate_boxes_no_predictions_for_image():
     assert results["box_recall"] == 0  # No predictions for image1.jpg
     assert all(results["results"].match == False)  # No matches
     assert all(results["results"].prediction_id.isna())  # No prediction IDs
+
+
+def test_validate_predictions_match_predict_file(m):
+    """trainer.validate should populate predictions equivalent to main.predict_file."""
+    csv_file = get_data("example.csv")
+    root_dir = os.path.dirname(csv_file)
+
+    # Run validation to populate m.predictions
+    m.create_trainer()
+    m.trainer.validate(m)
+
+    # Concatenate predictions collected during validation
+    if len(m.predictions) > 0:
+        val_preds = pd.concat(m.predictions, ignore_index=True)
+    else:
+        val_preds = pd.DataFrame(
+            columns=["image_path", "xmin", "ymin", "xmax", "ymax", "label"])
+
+    # Predict through inference path
+    infer_preds = m.predict_file(csv_file=csv_file, root_dir=root_dir)
+
+    assert infer_preds.empty == val_preds.empty
+    assert infer_preds.shape == val_preds.shape
+
+    # Compare the first row of the predictions
+    assert infer_preds.iloc[0].xmin == val_preds.iloc[0].xmin
+    assert infer_preds.iloc[0].ymin == val_preds.iloc[0].ymin
+    assert infer_preds.iloc[0].xmax == val_preds.iloc[0].xmax
+    assert infer_preds.iloc[0].ymax == val_preds.iloc[0].ymax
+    assert infer_preds.iloc[0].label == val_preds.iloc[0].label

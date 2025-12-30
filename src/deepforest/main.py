@@ -811,8 +811,13 @@ class deepforest(pl.LightningModule):
             self.iou_metric.reset()
             output = self.mAP_metric.compute()
 
-            # Remove classes from output dict
-            output = {key: value for key, value in output.items() if not key == "classes"}
+            # Keep only overall mAP; drop extra map_* and classes clutter
+            if isinstance(output, dict):
+                # Remove classes entry if present
+                if "classes" in output:
+                    output.pop("classes", None)
+                # Reduce to only overall 'map' and map_50   if available
+                output = {k: v for k, v in output.items() if k in ["map", "map_50"]}
             try:
                 self.log_dict(output)
             except MisconfigurationException:
@@ -994,8 +999,6 @@ class deepforest(pl.LightningModule):
         csv_file,
         iou_threshold=None,
         root_dir=None,
-        size=None,
-        batch_size=None,
         predictions=None,
     ):
         """Compute intersection-over-union and precision/recall for a given
@@ -1004,8 +1007,6 @@ class deepforest(pl.LightningModule):
         Args:
             csv_file: location of a csv file with columns "name","xmin","ymin","xmax","ymax","label"
             iou_threshold: float [0,1] intersection-over-union threshold for true positive
-            batch_size: int, the batch size to use for prediction. If None, uses the batch size of the model.
-            size: int, the size to resize the images to. If None, no resizing is done.
             predictions: list of predictions to use for evaluation. If None, predictions are generated from the model.
 
         Returns:
@@ -1021,7 +1022,10 @@ class deepforest(pl.LightningModule):
         if predictions is None:
             # Get the predict dataloader and use predict_batch
             predictions = self.predict_file(
-                csv_file, root_dir, size=size, batch_size=batch_size
+                csv_file,
+                root_dir,
+                size=self.config.validation.size,
+                batch_size=self.config.batch_size,
             )
 
         if iou_threshold is None:
@@ -1057,7 +1061,7 @@ class deepforest(pl.LightningModule):
                     pass
 
         # Log each key value pair of the results dict
-        if results["class_recall"] is not None:
+        if results["class_recall"] is not None and self.config.num_classes > 1:
             for key, value in results.items():
                 if key in ["class_recall"]:
                     for _, row in value.iterrows():
