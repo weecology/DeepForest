@@ -1,8 +1,6 @@
 import os
 
-import cv2
 import numpy as np
-import numpy.typing as npt
 import pandas as pd
 import rasterio as rio
 import slidingwindow
@@ -10,7 +8,7 @@ import torch
 from PIL import Image
 from rasterio.windows import Window
 from torch.nn import functional as F
-from torch.utils.data import Dataset, default_collate
+from torch.utils.data import Dataset
 
 from deepforest import preprocess
 from deepforest.utilities import format_geometry
@@ -27,7 +25,6 @@ class PredictionDataset(Dataset):
         image (PIL.Image.Image): A single image.
         path (str): Path to a single image.
         images (List[PIL.Image.Image]): A list of images.
-        paths (List[str]): A list of image paths.
         patch_size (int): Size of the patches to extract.
         patch_overlap (float): Overlap between patches.
         size (int): Target size to resize images to. Optional; if not provided, no resizing is performed.
@@ -38,82 +35,45 @@ class PredictionDataset(Dataset):
         image=None,
         path=None,
         images=None,
-        paths=None,
         patch_size=400,
         patch_overlap=0,
-        size=None,
     ):
         self.image = image
         self.images = images
         self.path = path
-        self.paths = paths
         self.patch_size = patch_size
         self.patch_overlap = patch_overlap
-        self.size = size
         self.items = self.prepare_items()
 
-    def _load_and_preprocess_image(
-        self,
-        image_path: str | None = None,
-        image: Image.Image | npt.NDArray | None = None,
-        size: int | None = None,
-        preprocess_image: bool = True,
+    def load_and_preprocess_image(
+        self, image_path: str = None, image: np.ndarray | Image.Image = None
     ):
-        """Load and preprocess an image. Either an image path or PIL image must
-        be provided.
+        if image is None:
+            if image_path is None:
+                raise ValueError("Either image_path or image must be provided")
+            image = np.array(Image.open(image_path).convert("RGB"))
+        else:
+            image = np.array(image)
+        # If dtype is not float32, convert to float32
+        if image.dtype != "float32":
+            image = image.astype("float32")
 
-        Datasets should load using PIL and transpose the image to
-        (C, H, W) before main.model.forward() is called.
+        # If image is not normalized, normalize to [0, 1]
+        if image.max() > 1 or image.min() < 0:
+            image = image / 255.0
 
-        Args:
-            image_path: (str) path to image, optional
-            image: (PIL image), optional
-            size: (int) output size
-            preprocess_image: (bool) Whether to convert the image to a float32 array between 0 and 1.
+        # If image is not in CHW format, convert to CHW
+        if image.shape[0] != 3:
+            if image.shape[-1] != 3:
+                raise ValueError(
+                    f"Expected 3 channel image, got image shape {image.shape}"
+                )
+            else:
+                image = np.rollaxis(image, 2, 0)
 
-        Returns:
-            CHW float32 numpy array, normalized to be in [0, 1]
-        """
-        if image is None and image_path is None:
-            raise ValueError("Either image or image_path must be provided")
-        elif image is None:
-            image = Image.open(image_path)
-
-        if isinstance(image, Image.Image) and image.mode != "RGB":
-            raise ValueError(
-                f"Expected 8-bit 3-channel RGB, got {image.mode}, {len(image.getbands())} channels and size: {image.size}."
-                "Check for transparent alpha channel and remove if present."
-            )
-        elif isinstance(image, np.ndarray) and (
-            image.ndim != 3 or image.shape[2] != 3 or image.dtype != np.uint8
-        ):
-            raise ValueError(
-                f"Expected 8-bit 3-channel RGB numpy array, got {image.ndim} dimensions and shape: {image.shape}."
-                "Check for transparent alpha channel and remove if present."
-            )
-
-        image = np.array(image)
-
-        if preprocess_image:
-            image = self.preprocess_image(image, size)
+        image = torch.from_numpy(image)
 
         return image
-
-    def preprocess_image(self, image: npt.NDArray, size=None) -> npt.NDArray:
-        """Preprocess an 8-bit image to a float32 array between 0 and 1."""
-        image = image.astype(np.float32)
-        image /= 255.0
-
-        if size is not None:
-            image = self.resize_image(image, size)
-
-        image = np.transpose(image, (2, 0, 1))
-
-        return image
-
-    def resize_image(self, image: npt.NDArray, size: int) -> npt.NDArray:
-        """Resize an image to a new (square) size."""
-        return cv2.resize(image, dsize=(size, size))
 
     def prepare_items(self):
         """Prepare the items for the dataset.
@@ -131,15 +91,9 @@ class PredictionDataset(Dataset):
         return self.get_crop(idx)
 
     def collate_fn(self, batch):
-        """Collate the batch into a single tensor."""
-        # Check if all images in batch have same dimensions
-        try:
-            return default_collate(batch)
-        except RuntimeError:
-            raise RuntimeError(
-                "Images in batch have different dimensions. "
-                "Set validation.size in config.yaml to resize all images to a common size."
-            ) from None
+        """Collate the batch into a list."""
+
+        return batch
 
     def get_crop_bounds(self, idx):
         """Get the crop bounds at the given index, needed to mosaic
@@ -171,12 +125,12 @@ class PredictionDataset(Dataset):
         return geom_type
 
     def format_batch(self, batch, idx, sub_idx=None):
-        """Format the batch into a single dataframe.
+        """Format a single prediction dict into a dataframe with metadata.
 
         Args:
-            batch (list): The batch to format.
-            idx (int): The index of the batch.
-            sub_idx (int): The index of the subbatch. If None, the index is the subbatch index.
+            batch: A single prediction dict (keys: boxes, labels, scores, etc.)
+            idx: The dataset index (image index for windowed datasets)
+            sub_idx: The sub-index (window index). If None, uses idx.
         """
         if sub_idx is None:
             sub_idx = idx
@@ -184,38 +138,26 @@ class PredictionDataset(Dataset):
         result = format_geometry(batch, geom_type=geom_type)
         if result is None:
             return None
-        result["window_xmin"] = self.get_crop_bounds(sub_idx)[0]
-        result["window_ymin"] = self.get_crop_bounds(sub_idx)[1]
+
+        crop_bounds = self.get_crop_bounds(sub_idx)
+        if crop_bounds is not None:
+            result["window_xmin"] = crop_bounds[0]
+            result["window_ymin"] = crop_bounds[1]
         result["image_path"] = self.get_image_basename(idx)
 
         return result
 
-    def postprocess(self, batched_result):
-        """Postprocess the batched result into a single dataframe.
+    def postprocess(self, batch, prediction_index):
+        """Postprocess a single prediction result into a dataframe.
 
-        In the case of sub-batches, the index is the sub-batch index.
+        Args:
+            batch: A single prediction dict (keys: boxes, labels, scores, etc.)
+            prediction_index: The index of this item in the dataset
         """
-        formatted_result = []
-        for idx, batch in enumerate(batched_result):
-            if isinstance(batch, list):
-                for sub_idx, sub_batch in enumerate(batch):
-                    result = self.format_batch(sub_batch, idx, sub_idx)
-                    if result is not None:
-                        formatted_result.append(result)
-            else:
-                result = self.format_batch(batch, idx)
-                if result is not None:
-                    formatted_result.append(result)
-
-        if len(formatted_result) > 0:
-            formatted_result = pd.concat(formatted_result)
-        else:
-            formatted_result = pd.DataFrame()
-
-        # reset index
-        formatted_result = formatted_result.reset_index(drop=True)
-
-        return formatted_result
+        result = self.format_batch(batch, prediction_index)
+        if result is None:
+            return pd.DataFrame()
+        return result.reset_index(drop=True)
 
 
 class SingleImage(PredictionDataset):
@@ -227,13 +169,7 @@ class SingleImage(PredictionDataset):
         )
 
     def prepare_items(self):
-        self.image = self._load_and_preprocess_image(
-            self.path, self.image, preprocess_image=False
-        )
-
-        # Seperately transpose the image to channels first
-        self.image = np.transpose(self.image, (2, 0, 1))
-
+        self.image = self.load_and_preprocess_image(self.path, image=self.image)
         self.windows = preprocess.compute_windows(
             self.image, self.patch_size, self.patch_overlap
         )
@@ -246,9 +182,6 @@ class SingleImage(PredictionDataset):
 
     def get_crop(self, idx):
         crop = self.image[self.windows[idx].indices()]
-        crop = self.preprocess_image(crop)
-        if crop.shape[0] != 3:
-            crop = np.transpose(crop, (1, 2, 0))
 
         return crop
 
@@ -266,11 +199,10 @@ class FromCSVFile(PredictionDataset):
     """Take in a csv file with image paths and preprocess and batch
     together."""
 
-    def __init__(self, csv_file: str, root_dir: str, size: int = None):
+    def __init__(self, csv_file: str, root_dir: str):
         self.csv_file = csv_file
         self.root_dir = root_dir
-        super().__init__(size=size)
-        self.prepare_items()
+        super().__init__()
 
     def prepare_items(self):
         self.annotations = pd.read_csv(self.csv_file)
@@ -281,7 +213,7 @@ class FromCSVFile(PredictionDataset):
         return len(self.image_paths)
 
     def get_crop(self, idx):
-        image = self._load_and_preprocess_image(self.image_paths[idx], size=self.size)
+        image = self.load_and_preprocess_image(image_path=self.image_paths[idx])
         return image
 
     def get_image_basename(self, idx):
@@ -291,19 +223,20 @@ class FromCSVFile(PredictionDataset):
         return None
 
     def format_batch(self, batch, idx, sub_idx=None):
-        """Format the batch into a single dataframe.
+        """Format a single prediction dict into a dataframe with metadata.
+        Override of base class to skip window coordinates (not applicable for
+        full images).
 
         Args:
-            batch (list): The batch to format.
-            idx (int): The index of the batch.
-            sub_idx (int): The index of the subbatch. If None, the index is the subbatch index.
+            batch: A single prediction dict (keys: boxes, labels, scores, etc.)
+            idx: The dataset index (image index)
+            sub_idx: Unused (kept for compatibility with base class signature)
         """
-        if sub_idx is None:
-            sub_idx = idx
         geom_type = self.determine_geometry_type(batch)
         result = format_geometry(batch, geom_type=geom_type)
         if result is None:
             return None
+
         result["image_path"] = self.get_image_basename(idx)
 
         return result
@@ -312,7 +245,7 @@ class FromCSVFile(PredictionDataset):
 class MultiImage(PredictionDataset):
     """Take in a list of image paths, preprocess and batch together.
 
-    Note: This dataset will load the first image to determine the image dimensions.
+    Note: This dataset will load the first image to determine the image dimensions. Images for expected to be the same size. For variable sized images, write a csv file and use the FromCSVFile dataset.
     """
 
     def __init__(self, paths: list[str], patch_size: int, patch_overlap: float):
@@ -322,15 +255,12 @@ class MultiImage(PredictionDataset):
             patch_size (int): Size of the patches to extract.
             patch_overlap (float): Overlap between patches.
         """
-        # Runtime type checking
-        if not isinstance(paths, list):
-            raise TypeError(f"paths must be a list, got {type(paths)}")
-
         self.paths = paths
         self.patch_size = patch_size
         self.patch_overlap = patch_overlap
+        self.sublist_lengths = []
 
-        image = self._load_and_preprocess_image(self.paths[0])
+        image = self.load_and_preprocess_image(image_path=self.paths[0])
         self.image_height = image.shape[1]
         self.image_width = image.shape[2]
 
@@ -379,7 +309,7 @@ class MultiImage(PredictionDataset):
         return output
 
     def _create_patches(self, image):
-        image_tensor = torch.tensor(image).unsqueeze(0)  # Convert to (N, C, H, W)
+        image_tensor = image.unsqueeze(0)  # Convert to (N, C, H, W)
         patch_overlap_size = int(self.patch_size * self.patch_overlap)
         patches = self.create_overlapping_views(
             image_tensor, self.patch_size, patch_overlap_size
@@ -416,21 +346,73 @@ class MultiImage(PredictionDataset):
         return windows
 
     def collate_fn(self, batch):
-        # Comes pre-batched
-        return batch
+        """Collate the batch into a single list of crops.
+
+        Keep track of the lengths of each sublist.
+        """
+        # Create a list of lengths of each sublist
+        sub_list_length = [
+            [idx, sub_idx]
+            for idx, sublist in enumerate(batch)
+            for sub_idx in range(len(sublist))
+        ]
+        self.sublist_lengths.append(sub_list_length)
+
+        # Flatten list of lists of crops
+        flattened_batch = [crop for sublist in batch for crop in sublist]
+        sublist_lengths = [
+            [idx, sub_idx]
+            for idx, sublist in enumerate(batch)
+            for sub_idx in range(len(sublist))
+        ]
+
+        return {"batch": flattened_batch, "sublist_lengths": sublist_lengths}
 
     def __len__(self):
         return len(self.paths)
 
     def get_crop(self, idx):
-        image = self._load_and_preprocess_image(self.paths[idx])
-        return self._create_patches(image)
+        image = self.load_and_preprocess_image(image_path=self.paths[idx])
+        crops = self._create_patches(image)
+
+        # Return as a list of crops, each with shape (3, 300, 300)
+        return [crops[i] for i in range(crops.shape[0])]
 
     def get_image_basename(self, idx):
         return os.path.basename(self.paths[idx])
 
     def get_crop_bounds(self, idx):
         return self.window_list()[idx]
+
+    def postprocess(self, batch, prediction_index, original_batch_structure):
+        """Postprocess flattened batch of predictions from multiple images.
+
+        Args:
+            batch: List of prediction dicts (all windows from all images in batch)
+            prediction_index: Index of this batch from trainer.predict
+        """
+        if prediction_index >= len(original_batch_structure):
+            raise ValueError(
+                f"prediction_index {prediction_index} exceeds sublist_lengths length {len(original_batch_structure)}. "
+                "This may indicate a mismatch between collate_fn calls and postprocess calls."
+            )
+
+        batch_sublist_lengths = original_batch_structure[prediction_index]
+        formatted_results = []
+
+        # batch_sublist_lengths[i] = [image_idx, window_idx] corresponds to batch[i]
+        for batch_position, (image_idx, window_idx) in enumerate(batch_sublist_lengths):
+            prediction = batch[batch_position]
+
+            # Format with correct image index and window index
+            result = self.format_batch(prediction, image_idx, window_idx)
+            if result is not None:
+                formatted_results.append(result)
+
+        if len(formatted_results) > 0:
+            return pd.concat(formatted_results).reset_index(drop=True)
+        else:
+            return pd.DataFrame()
 
 
 class TiledRaster(PredictionDataset):
@@ -447,13 +429,9 @@ class TiledRaster(PredictionDataset):
     """
 
     def __init__(self, path, patch_size, patch_overlap):
-        self.path = path
-        self.patch_size = patch_size
-        self.patch_overlap = patch_overlap
-        self.prepare_items()
-
         if path is None:
             raise ValueError("path is required for a memory raster dataset")
+        super().__init__(path=path, patch_size=patch_size, patch_overlap=patch_overlap)
 
     def prepare_items(self):
         # Get raster shape without keeping file open
@@ -492,9 +470,13 @@ class TiledRaster(PredictionDataset):
         with rio.open(self.path) as src:
             window_data = src.read(window=Window(window.x, window.y, window.w, window.h))
 
-        # Convert to torch tensor and rearrange dimensions
-        window_data = torch.from_numpy(window_data).float()  # Convert to torch tensor
-        window_data = window_data / 255.0  # Normalize
+        # Rasterio already returns (C, H, W), just normalize and convert
+        window_data = window_data.astype("float32") / 255.0
+        window_data = torch.from_numpy(window_data).float()
+        if window_data.shape[0] != 3:
+            raise ValueError(
+                f"Expected 3 channel image, got {window_data.shape[0]} channels"
+            )
 
         return window_data
 

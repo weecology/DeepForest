@@ -12,6 +12,7 @@ from deepforest import get_data
 from deepforest import main
 from deepforest.utilities import read_file
 
+from PIL import Image
 from shapely.geometry import box
 
 
@@ -201,3 +202,103 @@ def test_evaluate_boxes_no_predictions_for_image():
     assert results["box_recall"] == 0  # No predictions for image1.jpg
     assert all(results["results"].match == False)  # No matches
     assert all(results["results"].prediction_id.isna())  # No prediction IDs
+
+
+def test_validate_predictions_match_predict_file(m):
+    """trainer.validate should populate predictions equivalent to main.predict_file."""
+    csv_file = get_data("example.csv")
+    root_dir = os.path.dirname(csv_file)
+
+    # Run validation to populate m.predictions
+    m.create_trainer()
+    m.trainer.validate(m)
+
+    # Concatenate predictions collected during validation
+    if len(m.predictions) > 0:
+        val_preds = pd.concat(m.predictions, ignore_index=True)
+    else:
+        val_preds = pd.DataFrame(
+            columns=["image_path", "xmin", "ymin", "xmax", "ymax", "label"])
+
+    # Predict through inference path
+    infer_preds = m.predict_file(csv_file=csv_file, root_dir=root_dir)
+
+    assert infer_preds.empty == val_preds.empty
+    assert infer_preds.shape == val_preds.shape
+
+    # Compare the first row of the predictions
+    assert infer_preds.iloc[0].xmin == val_preds.iloc[0].xmin
+    assert infer_preds.iloc[0].ymin == val_preds.iloc[0].ymin
+    assert infer_preds.iloc[0].xmax == val_preds.iloc[0].xmax
+    assert infer_preds.iloc[0].ymax == val_preds.iloc[0].ymax
+    assert infer_preds.iloc[0].label == val_preds.iloc[0].label
+
+
+def test_validate_predictions_match_predict_file_mixed_sizes(m, tmp_path):
+    """trainer.validate should populate predictions equivalent to main.predict_file for mixed-size images."""
+    # Prepare two images at different sizes
+    src_path = get_data("OSBS_029.tif")
+    img = Image.open(src_path).convert("RGB")
+
+    # Create a smaller and a larger variant (bounded to avoid extreme sizes)
+    w, h = img.size
+    small = img.resize((max(64, w // 2), max(64, h // 2)))
+    large = img.resize((min(w * 2, 2 * w), min(h * 2, 2 * h)))
+
+    # Save both to tmp directory as PNGs
+    small_name = "mixed_small.png"
+    large_name = "mixed_large.png"
+    small_path = os.path.join(tmp_path, small_name)
+    large_path = os.path.join(tmp_path, large_name)
+    small.save(small_path)
+    large.save(large_path)
+
+    # Build a CSV with empty annotations (0,0,0,0) for validation compatibility
+    # predict_file only needs image_path, but validation requires full annotation format
+    csv_path = os.path.join(tmp_path, "mixed_images.csv")
+    df = pd.DataFrame({
+        "image_path": [small_name, large_name],
+        "xmin": [0, 0],
+        "ymin": [0, 0],
+        "xmax": [0, 0],
+        "ymax": [0, 0],
+        "label": ["Tree", "Tree"]
+    })
+    df.to_csv(csv_path, index=False)
+
+    # Configure validation to use the mixed-size images
+    m.config.validation.csv_file = csv_path
+    m.config.validation.root_dir = str(tmp_path)
+    # Don't set validation.size to avoid resizing - use batch_size=1 to handle mixed sizes
+    m.config.batch_size = 1
+
+    # Run validation to populate m.predictions
+    m.create_trainer()
+    m.trainer.validate(m)
+
+    # Concatenate predictions collected during validation
+    if len(m.predictions) > 0:
+        val_preds = pd.concat(m.predictions, ignore_index=True)
+    else:
+        val_preds = pd.DataFrame(
+            columns=["image_path", "xmin", "ymin", "xmax", "ymax", "label"])
+
+    # Predict through inference path
+    # Don't pass size to avoid resizing - coordinates should be in original image space
+    infer_preds = m.predict_file(csv_file=csv_path, root_dir=str(tmp_path))
+
+    assert infer_preds.empty == val_preds.empty
+    assert infer_preds.shape == val_preds.shape
+
+    # Compare predictions by image_path to ensure matching
+    # Sort both dataframes for comparison
+    val_preds_sorted = val_preds.sort_values(by=["image_path", "xmin", "ymin"]).reset_index(drop=True)
+    infer_preds_sorted = infer_preds.sort_values(by=["image_path", "xmin", "ymin"]).reset_index(drop=True)
+
+    # Compare the first row of the predictions if both are non-empty
+    if not val_preds_sorted.empty and not infer_preds_sorted.empty:
+        assert infer_preds_sorted.iloc[0].xmin == val_preds_sorted.iloc[0].xmin
+        assert infer_preds_sorted.iloc[0].ymin == val_preds_sorted.iloc[0].ymin
+        assert infer_preds_sorted.iloc[0].xmax == val_preds_sorted.iloc[0].xmax
+        assert infer_preds_sorted.iloc[0].ymax == val_preds_sorted.iloc[0].ymax
+        assert infer_preds_sorted.iloc[0].label == val_preds_sorted.iloc[0].label
