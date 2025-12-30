@@ -11,17 +11,24 @@ DeepForest allows users to assess model performance compared to ground-truth dat
 5. mAP - Mean-Average-Precision, a computer vision metric that assesses the performance of the model incoporating precision, recall and average score of true positives. See below.
 
 ## Evaluation code
-
-The model's .evaluate method takes a set of labels in the form of a CSV file that includes paths to images and the coordinates of associated labels as well as thresholds to determine if a prediction is close enough to a label to be considered a match.
+We can use the trainer.validate method to generate the validation predictions and get the evaluation metrics.
 
 ```python
 from deepforest import main, get_data
+import os
+import pandas as pd
 
 m = main.deepforest()
 m.load_model("Weecology/deepforest-tree")
-# Sample data
 csv_file = get_data("OSBS_029.csv")
-results = m.evaluate(csv_file, iou_threshold=0.4)
+m.config.validation.csv_file = csv_file
+m.config.validation.root_dir = os.path.dirname(csv_file)
+m.create_trainer()
+# Runs validation, logs IoU and overall mAP
+m.trainer.validate(m)
+
+# Access predictions dataframe if desired
+predictions = pd.concat(m.predictions)
 ```
 
 This produces a dictionary that contains a detailed result comparison for each label, the aggregate metrics, the predictions data frame, and the ground truth data frame.
@@ -44,6 +51,8 @@ mAP is the standard COCO evaluation metric and the most common for comparing com
 2. The vast majority of biological applications use a fixed cutoff to determine an object of interest in an image. Perhaps in the future we will weight tree boxes by their confidence score, but currently we do things like, "All predictions > 0.4 score are considered positive detections". This does not connect well with the mAP metric.
 
 For information on how to calculate mAP, see the [torchmetrics documentation](https://torchmetrics.readthedocs.io/en/stable/detection/mean_average_precision.html) and further reading below.
+
+
 
 ### Precision and Recall at a set IoU threshold.
 This was the original DeepForest metric, set to an IoU of 0.4. This means that all predictions that overlap a ground truth box at IoU > 0.4 are true positives. As opposed to the torchmetrics above, it is intuitive and matches downstream ecological tasks. The drawback is that it is slow, coarse, and does not fully reward the model for having high confidence scores on true positives.
