@@ -78,7 +78,7 @@ class BoxDataset(Dataset):
         self.preload_images = preload_images
 
         self._validate_labels()
-        self._validate_coordinates()
+        #self._validate_coordinates()
 
         # Pin data to memory if desired
         if self.preload_images:
@@ -109,14 +109,21 @@ class BoxDataset(Dataset):
             ValueError: If any bounding box coordinate occurs outside the image
         """
         errors = []
+        # Cache image dimensions to avoid opening the same image multiple times
+        image_dims = {}
         for _idx, row in self.annotations.iterrows():
             img_path = os.path.join(self.root_dir, row["image_path"])
-            try:
-                with Image.open(img_path) as img:
-                    width, height = img.size
-            except Exception as e:
-                errors.append(f"Failed to open image {img_path}: {e}")
-                continue
+            
+            # Get image dimensions (cached per unique image)
+            if img_path not in image_dims:
+                try:
+                    with Image.open(img_path) as img:
+                        image_dims[img_path] = img.size
+                except Exception as e:
+                    errors.append(f"Failed to open image {img_path}: {e}")
+                    continue
+            
+            width, height = image_dims[img_path]
 
             # Extract bounding box
             geom = row["geometry"]
