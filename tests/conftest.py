@@ -59,34 +59,42 @@ def ROOT():
 
 @pytest.fixture(scope="session")
 def two_class_m():
-    m = main.deepforest(config_args={"num_classes": 2, "label_dict": {"Alive": 0, "Dead": 1}})
-    m.config.train.csv_file = get_data("testfile_multi.csv")
-    m.config.train.root_dir = os.path.dirname(get_data("testfile_multi.csv"))
-    m.config.train.fast_dev_run = True
-    m.config.batch_size = 2
-    m.config.validation.csv_file = get_data("testfile_multi.csv")
-    m.config.validation.root_dir = os.path.dirname(get_data("testfile_multi.csv"))
-    m.config.validation.val_accuracy_interval = 1
-
-    m.create_trainer()
+    m = main.deepforest(config_args={
+        "num_classes": 2,
+        "label_dict": {"Alive": 0, "Dead": 1},
+        "train": {
+            "csv_file": get_data("testfile_multi.csv"),
+            "root_dir": os.path.dirname(get_data("testfile_multi.csv")),
+            "fast_dev_run": True,
+        },
+        "validation": {
+            "csv_file": get_data("testfile_multi.csv"),
+            "root_dir": os.path.dirname(get_data("testfile_multi.csv")),
+            "val_accuracy_interval": 1,
+        },
+        "batch_size": 2,
+    })
 
     return m
 
 
 @pytest.fixture(scope="session")
 def m(download_release):
-    m = main.deepforest()
-    m.config.train.csv_file = get_data("example.csv")
-    m.config.train.root_dir = os.path.dirname(get_data("example.csv"))
-    m.config.train.fast_dev_run = True
-    m.config.batch_size = 2
-    m.config.validation.csv_file = get_data("example.csv")
-    m.config.validation.root_dir = os.path.dirname(get_data("example.csv"))
-    m.config.workers = 0
-    m.config.validation.val_accuracy_interval = 1
-    m.config.train.epochs = 2
-
-    m.create_trainer()
-    m.load_model("weecology/deepforest-tree")
+    m = main.deepforest(config_args={
+        "model": {"name": "weecology/deepforest-tree"},
+        "train": {
+            "csv_file": get_data("example.csv"),
+            "root_dir": os.path.dirname(get_data("example.csv")),
+            "fast_dev_run": True,
+            "epochs": 2,
+        },
+        "validation": {
+            "csv_file": get_data("example.csv"),
+            "root_dir": os.path.dirname(get_data("example.csv")),
+            "val_accuracy_interval": 1,
+        },
+        "batch_size": 2,
+        "workers": 0,
+    })
 
     return m
