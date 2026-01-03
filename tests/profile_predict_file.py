@@ -18,10 +18,11 @@ def run(m, csv_file, root_dir):
 
 
 if __name__ == "__main__":
-    m = main.deepforest()
-    m.load_model("weecology/deepforest-tree")
-    m.config.workers = 0
-    m.config.batch_size = 5
+    m = main.deepforest(config_args={
+        "model": {"name": "weecology/deepforest-tree"},
+        "workers": 0,
+        "batch_size": 5,
+    })
 
     csv_file = get_data("OSBS_029.csv")
     image_path = get_data("OSBS_029.png")
