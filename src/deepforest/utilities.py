@@ -279,12 +279,8 @@ def shapefile_to_annotations(
             print(f"CRS of image is {raster_crs}")
             gdf = geo_to_image_coordinates(gdf, src.bounds, src.res[0])
 
-    # check for label column
-    if "label" not in gdf.columns:
-        raise ValueError(
-            "No label column found in shapefile. Please add a column named 'label' to your shapefile."
-        )
-    else:
+    # check for label column - if missing, read_file() will handle it
+    if "label" in gdf.columns:
         gdf["label"] = gdf["label"]
 
     # add filename
@@ -462,7 +458,7 @@ def read_file(
         elif input.endswith(".json"):
             df = read_coco(input)
         elif input.endswith((".shp", ".gpkg")):
-            df = shapefile_to_annotations(input, root_dir=root_dir)
+            df = shapefile_to_annotations(input, rgb=image_path, root_dir=root_dir)
         elif input.endswith(".xml"):
             df = read_pascal_voc(input)
         else:
@@ -474,7 +470,7 @@ def read_file(
     else:
         # Explicitly check for GeoDataFrame first
         if isinstance(input, gpd.GeoDataFrame):
-            return shapefile_to_annotations(input, root_dir=root_dir)
+            return shapefile_to_annotations(input, rgb=image_path, root_dir=root_dir)
         elif isinstance(input, pd.DataFrame):
             df = input.copy(deep=True)
         else:
