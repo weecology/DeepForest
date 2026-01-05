@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.4.0
+    rev: v6.0.0
     hooks:
       - id: trailing-whitespace
         exclude: '\.(svg|yml|csv|xml|cpg|prj)$'
@@ -13,7 +13,7 @@ repos:
 
   # Notebooks: run Ruff via nbQA inside .ipynb
   - repo: https://github.com/nbQA-dev/nbQA
-    rev: 1.9.0
+    rev: 1.9.1
     hooks:
       - id: nbqa-ruff-format
         additional_dependencies: [ruff]
@@ -40,7 +40,7 @@ repos:
           )$
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.14.2
+    rev: v0.14.10
     hooks:
       - id: ruff-format
         files: |
