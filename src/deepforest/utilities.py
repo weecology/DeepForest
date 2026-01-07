@@ -87,8 +87,8 @@ def apply_nodata_mask(src, window):
     """Read raster window and apply no-data value masking.
 
     This function reads a window from a rasterio dataset and masks no-data
-    values to 0, ensuring consistent handling across all DeepForest components.
-    Uses rasterio's built-in dataset mask for efficient masking.
+    values to 0 for more consistent predictions. If no nodata value is set,
+    the data are returned unmodified.
 
     Args:
         src: rasterio.DatasetReader opened in 'r' mode
