@@ -347,6 +347,22 @@ def test_geometric_augmentation_filters_boxes():
         # Labels should match box count
         assert len(labels) == len(boxes), f"Label count mismatch: {len(labels)} labels, {len(boxes)} boxes"
 
+def test_augmentation_schema_validation(m):
+    """
+    Test that the schema accepts a list of dictionaries for augmentations.
+    """
+    # Define the complex dictionary
+    complex_augmentations = [
+        {"RandomResizedCrop": {"size": (800, 800), "scale": (0.5, 1.0), "p": 0.3}},
+        {"Rotate": {"degrees": 15, "p": 0.5}},
+        {"HorizontalFlip": {"p": 0.5}}
+    ]
+
+    # assigning it to the config
+    m.config.train.augmentations = complex_augmentations
+
+    # Verifying that it was stored correctly
+    assert m.config.train.augmentations == complex_augmentations
 
 if __name__ == "__main__":
     pytest.main([__file__])
