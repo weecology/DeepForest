@@ -347,7 +347,7 @@ def test_geometric_augmentation_filters_boxes():
         # Labels should match box count
         assert len(labels) == len(boxes), f"Label count mismatch: {len(labels)} labels, {len(boxes)} boxes"
 
-def test_augmentation_schema_validation(m):
+def test_augmentation_schema_validation():
     """
     Test that the schema accepts a list of dictionaries for augmentations.
     """
@@ -358,10 +358,10 @@ def test_augmentation_schema_validation(m):
         {"HorizontalFlip": {"p": 0.5}}
     ]
 
-    # assigning it to the config
-    m.config.train.augmentations = complex_augmentations
+    # Pass it directly to the model constructor via config_args
+    m = main.deepforest(config_args={"train": {"augmentations": complex_augmentations}})
 
-    # Verifying that it was stored correctly
+    # Verify it was stored correctly
     assert m.config.train.augmentations == complex_augmentations
 
 if __name__ == "__main__":
