@@ -40,7 +40,7 @@ class SchedulerConfig:
     """Set the type of scheduler, by default DeepForest uses a stepped learning
     function reducing at "milestones" during training."""
 
-    type: str | None = "StepLR"
+    type: str | None = "stepLR"
     params: SchedulerParamsConfig = field(default_factory=SchedulerParamsConfig)
 
 
