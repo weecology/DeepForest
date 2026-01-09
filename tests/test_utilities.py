@@ -688,20 +688,26 @@ def test_read_file_column_names():
     assert result.loc[0, 'siteID'] == 'TEST_SITE'
 
 
-def test_read_file_shapefile_with_image_path_argument(tmpdir):
+@pytest.fixture
+def sample_shapefile_gdf():
+    """Create a sample GeoDataFrame for shapefile testing."""
+    sample_geometry = [geometry.Point(404211.9 + 10, 3285102 + 20),
+                       geometry.Point(404211.9 + 20, 3285102 + 20)]
+    df = pd.DataFrame({"geometry": sample_geometry})
+    gdf = gpd.GeoDataFrame(df, geometry="geometry", crs="EPSG:32617")
+    gdf["geometry"] = [geometry.box(left, bottom, right, top) for left, bottom, right, top
+                       in gdf.geometry.buffer(0.5).bounds.values]
+    return gdf
+
+
+def test_read_file_shapefile_with_image_path_argument(tmpdir, sample_shapefile_gdf):
     """Test reading a shapefile without image_path column by passing image_path argument.
 
     This tests the fix for issue #997.
     """
-    # Create a shapefile WITHOUT image_path column
-    sample_geometry = [geometry.Point(404211.9 + 10, 3285102 + 20),
-                       geometry.Point(404211.9 + 20, 3285102 + 20)]
-    labels = ["Tree", "Tree"]
-    df = pd.DataFrame({"geometry": sample_geometry, "label": labels})
-    gdf = gpd.GeoDataFrame(df, geometry="geometry", crs="EPSG:32617")
-    gdf["geometry"] = [geometry.box(left, bottom, right, top) for left, bottom, right, top
-                       in gdf.geometry.buffer(0.5).bounds.values]
-    # Note: NOT adding image_path column
+    # Create shapefile without image_path column
+    gdf = sample_shapefile_gdf.copy()
+    gdf["label"] = "Tree"
     gdf.to_file("{}/no_image_path.shp".format(tmpdir))
 
     # Read with image_path argument
@@ -717,20 +723,14 @@ def test_read_file_shapefile_with_image_path_argument(tmpdir):
     assert result["image_path"].iloc[0] == "OSBS_029.tif"
 
 
-def test_read_file_shapefile_with_label_argument(tmpdir):
+def test_read_file_shapefile_with_label_argument(tmpdir, sample_shapefile_gdf):
     """Test reading a shapefile without label column by passing label argument.
 
     This tests the fix for issue #997.
     """
-    # Create a shapefile WITHOUT label column
-    sample_geometry = [geometry.Point(404211.9 + 10, 3285102 + 20),
-                       geometry.Point(404211.9 + 20, 3285102 + 20)]
-    df = pd.DataFrame({"geometry": sample_geometry})
-    gdf = gpd.GeoDataFrame(df, geometry="geometry", crs="EPSG:32617")
-    gdf["geometry"] = [geometry.box(left, bottom, right, top) for left, bottom, right, top
-                       in gdf.geometry.buffer(0.5).bounds.values]
+    # Create shapefile without label column
+    gdf = sample_shapefile_gdf.copy()
     gdf["image_path"] = get_data("OSBS_029.tif")
-    # Note: NOT adding label column
     gdf.to_file("{}/no_label.shp".format(tmpdir))
 
     # Read with label argument
@@ -745,19 +745,13 @@ def test_read_file_shapefile_with_label_argument(tmpdir):
     assert result["label"].iloc[0] == "CustomTree"
 
 
-def test_read_file_shapefile_with_image_path_and_label_arguments(tmpdir):
+def test_read_file_shapefile_with_image_path_and_label_arguments(tmpdir, sample_shapefile_gdf):
     """Test reading a shapefile without image_path and label columns.
 
     This tests the fix for issue #997 where users can pass both arguments.
     """
-    # Create a shapefile WITHOUT image_path and label columns
-    sample_geometry = [geometry.Point(404211.9 + 10, 3285102 + 20),
-                       geometry.Point(404211.9 + 20, 3285102 + 20)]
-    df = pd.DataFrame({"geometry": sample_geometry})
-    gdf = gpd.GeoDataFrame(df, geometry="geometry", crs="EPSG:32617")
-    gdf["geometry"] = [geometry.box(left, bottom, right, top) for left, bottom, right, top
-                       in gdf.geometry.buffer(0.5).bounds.values]
-    # Note: NOT adding image_path or label columns
+    # Create shapefile without image_path and label columns
+    gdf = sample_shapefile_gdf.copy()
     gdf.to_file("{}/no_image_path_no_label.shp".format(tmpdir))
 
     # Read with both image_path and label arguments
@@ -780,7 +774,7 @@ def test_read_file_shapefile_without_image_path_raises_error(tmpdir):
 
     This documents the expected behavior when no image_path is provided.
     """
-    # Create a shapefile WITHOUT image_path column
+    # Create a simple shapefile without image_path column
     sample_geometry = [geometry.Point(10, 20), geometry.Point(20, 40)]
     labels = ["Tree", "Tree"]
     df = pd.DataFrame({"geometry": sample_geometry, "label": labels})
