@@ -601,7 +601,10 @@ class deepforest(pl.LightningModule):
                         image_results.append(formatted_result)
                         global_window_idx += 1
 
-            results = pd.concat(image_results)
+            if not image_results:
+                results = pd.DataFrame()
+            else:
+                results = pd.concat(image_results)
 
         elif dataloader_strategy == "batch":
             self.original_batch_structure.clear()
@@ -619,7 +622,10 @@ class deepforest(pl.LightningModule):
                 )
                 image_results.append(formatted_result)
 
-            results = pd.concat(image_results)
+            if not image_results:
+                results = pd.DataFrame()
+            else:
+                results = pd.concat(image_results)
 
         else:
             raise ValueError(f"Invalid dataloader_strategy: {dataloader_strategy}")
