@@ -571,6 +571,33 @@ def test_checkpoint_label_dict(m, tmpdir):
     assert after.label_dict == {"Object": 0}
     assert after.numeric_to_label_dict == {0: "Object"}
 
+def test_checkpoint_config_override(tmpdir):
+    """Test that config_args overrides checkpoint configuration"""
+    m = main.deepforest(config_args={"score_thresh": 0.1})
+
+    csv_file = get_data("example.csv")
+    root_dir = os.path.dirname(csv_file)
+
+    m.config["train"]["csv_file"] = csv_file
+    m.config["train"]["root_dir"] = root_dir
+
+    m.config["train"]["fast_dev_run"] = True
+    m.create_trainer()
+    m.trainer.fit(m)
+
+    ckpt_path = os.path.join(tmpdir, "checkpoint_override.pl")
+    m.trainer.save_checkpoint(ckpt_path)
+
+    #we pass score_thresh=0.5 and expect it to WIN against the saved 0.1
+    after = main.deepforest.load_from_checkpoint(
+        ckpt_path,
+        config_args={"score_thresh": 0.5},
+        weights_only=False
+    )
+
+    assert after.config.score_thresh == 0.5
+    assert after.model.score_thresh == 0.5
+
 def test_save_and_reload_checkpoint(m, tmpdir):
     img_path = get_data(path="2019_YELL_2_528000_4978000_image_crop2.png")
     m.config.train.fast_dev_run = True

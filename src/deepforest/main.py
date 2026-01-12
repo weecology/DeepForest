@@ -52,6 +52,8 @@ class deepforest(pl.LightningModule):
         # Checkpoint load
         elif isinstance(config, dict):
             config = utilities.load_config(overrides=config)
+            if config_args is not None:
+                config = OmegaConf.merge(config, config_args)
         # Hub overrides
         elif "config_args" in config:
             config = utilities.load_config(overrides=config["config_args"])
