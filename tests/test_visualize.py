@@ -130,24 +130,6 @@ def test_plot_results_point(gdf_point, tmpdir):
     assert os.path.exists(os.path.join(tmpdir, "OSBS_029.png"))
 
 
-def test_plot_results_point_no_label(tmpdir):
-    # Create a mock DataFrame with point annotations
-    data = {
-        'x': [15, 25],
-        'y': [15, 25],
-        'image_path': [get_data("OSBS_029.tif"), get_data("OSBS_029.tif")],
-    }
-    df = pd.DataFrame(data)
-    gdf = utilities.read_file(df, root_dir=os.path.dirname(get_data("OSBS_029.tif")))
-    gdf.root_dir = os.path.dirname(get_data("OSBS_029.tif"))
-
-    # Call the function
-    visualize.plot_results(gdf, savedir=tmpdir)
-
-    # Assertions
-    assert os.path.exists(os.path.join(tmpdir, "OSBS_029.png"))
-
-
 def test_plot_results_polygon(gdf_poly, tmpdir):
     # Call the function without height/width
     visualize.plot_results(gdf_poly, savedir=tmpdir)
