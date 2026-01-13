@@ -27,7 +27,7 @@ def test_evaluate_image(m):
     assert sum(result["results"].IoU) > 10
 
 
-def test_evaluate_boxes(m, tmpdir):
+def test_evaluate_boxes(m):
     csv_file = get_data("OSBS_029.csv")
     predictions = m.predict_file(csv_file=csv_file, root_dir=os.path.dirname(csv_file))
     predictions.label = "Tree"
@@ -61,7 +61,7 @@ def test_evaluate_boxes_multiclass():
     assert results["class_recall"].shape == (2, 4)
 
 
-def test_evaluate_boxes_save_images(tmpdir):
+def test_evaluate_boxes_save_images():
     csv_file = get_data("testfile_multi.csv")
     ground_truth = read_file(csv_file)
     ground_truth["label"] = ground_truth.label.astype("category").cat.codes
@@ -74,9 +74,10 @@ def test_evaluate_boxes_save_images(tmpdir):
                                       ground_df=ground_truth)
 
 
-def test_evaluate_empty(m):
+def test_evaluate_empty(m, tmp_path):
     # Evaluate with an empty model which should return no predictions.
-    m = main.deepforest(config_args={"model": {"name": None}})
+    m = main.deepforest(config_args={"model": {"name": None},
+                                     "log_root": str(tmp_path)})
     csv_file = get_data("OSBS_029.csv")
     results = m.evaluate(csv_file, iou_threshold=0.4)
 

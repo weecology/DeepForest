@@ -160,9 +160,9 @@ def test_multi_image_warning():
         len(collated_batch[0]) == 2
 
 
-def test_label_validation__training_csv():
+def test_label_validation__training_csv(tmp_path):
     """Test training CSV labels are validated against label_dict"""
-    m = main.deepforest(config_args={"num_classes": 1, "label_dict": {"Bird": 0}})
+    m = main.deepforest(config_args={"num_classes": 1, "label_dict": {"Bird": 0}, "log_root": tmp_path})
     m.config.train.csv_file = get_data("example.csv")  # contains 'Tree' label
     m.config.train.root_dir = os.path.dirname(get_data("example.csv"))
     m.create_trainer()
@@ -173,9 +173,9 @@ def test_label_validation__training_csv():
         m.trainer.fit(m)
 
 
-def test_csv_label_validation__validation_csv(m):
+def test_csv_label_validation__validation_csv(m, tmp_path):
     """Test validation CSV labels are validated against label_dict"""
-    m = main.deepforest(config_args={"num_classes": 1, "label_dict": {"Tree": 0}})
+    m = main.deepforest(config_args={"num_classes": 1, "label_dict": {"Tree": 0}, "log_root": tmp_path})
     m.config.train.csv_file = get_data("example.csv")  # contains 'Tree' label
     m.config.train.root_dir = os.path.dirname(get_data("example.csv"))
     m.config.validation.csv_file = get_data(

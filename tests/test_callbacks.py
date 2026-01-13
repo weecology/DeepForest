@@ -33,7 +33,7 @@ class MockTBLogger(MockCometLogger):
         self._experiment = probe
 
 @pytest.fixture(scope="module")
-def m(download_release):
+def m(download_release, tmp_path_factory):
     m = main.deepforest()
     m.config.train.csv_file = get_data("example.csv")
     m.config.train.root_dir = os.path.dirname(get_data("example.csv"))
@@ -44,6 +44,7 @@ def m(download_release):
     m.config.workers = 0
     m.config.validation.val_accuracy_interval = 1
     m.config.train.epochs = 2
+    m.config.log_root = str(tmp_path_factory.mktemp("logs"))
 
     m.create_trainer()
     m.load_model("weecology/deepforest-tree")

@@ -58,7 +58,7 @@ def test_crop_model(crop_model):
 
 def test_crop_model_train(crop_model, tmpdir, crop_model_data):
     # Create a trainer
-    crop_model.create_trainer(fast_dev_run=True)
+    crop_model.create_trainer(fast_dev_run=True, default_root_dir=tmpdir)
     crop_model.load_from_disk(train_dir=tmpdir, val_dir=tmpdir)
 
     # Test training dataloader
@@ -121,7 +121,7 @@ def test_crop_model_configurable_resize():
     assert output.shape == (4, 2)
 
 
-def test_crop_model_load_checkpoint(tmpdir, crop_model):
+def test_crop_model_load_checkpoint(tmp_path_factory, crop_model):
     """Test loading crop model from checkpoint with different numbers of classes"""
     for num_classes in [2, 5]:
         # Create data for example
@@ -130,6 +130,7 @@ def test_crop_model_load_checkpoint(tmpdir, crop_model):
         root_dir = os.path.dirname(get_data("SOAP_061.png"))
         images = df.image_path.values
         labels = np.random.randint(0, num_classes, size=len(df)).astype(str)
+        tmpdir = tmp_path_factory.mktemp(f"crop_model_{num_classes}_classes")
         crop_model.write_crops(boxes=boxes,
                             labels=labels,
                             root_dir=root_dir,
@@ -138,7 +139,7 @@ def test_crop_model_load_checkpoint(tmpdir, crop_model):
 
         # Create initial model and save checkpoint
         crop_model = model.CropModel()
-        crop_model.create_trainer(fast_dev_run=False, limit_train_batches=1, limit_val_batches=1, max_epochs=1)
+        crop_model.create_trainer(fast_dev_run=False, limit_train_batches=1, limit_val_batches=1, max_epochs=1, default_root_dir=tmpdir)
         crop_model.load_from_disk(train_dir=tmpdir, val_dir=tmpdir)
         # Initialize classification head based on discovered labels
         crop_model.create_model(num_classes=len(crop_model.label_dict))
@@ -190,11 +191,11 @@ def test_expand_bbox_to_square_edge_cases(crop_model):
     assert result == expected
 
 def test_crop_model_val_dataset_confusion(tmpdir, crop_model, crop_model_data):
-    crop_model.create_trainer(fast_dev_run=True)
+    crop_model.create_trainer(fast_dev_run=True, default_root_dir=tmpdir)
     crop_model.load_from_disk(train_dir=tmpdir, val_dir=tmpdir)
     crop_model.trainer.fit(crop_model)
 
-    crop_model.create_trainer(fast_dev_run=False)
+    crop_model.create_trainer(fast_dev_run=False, default_root_dir=tmpdir)
     images, labels, predictions = crop_model.val_dataset_confusion(return_images=True)
 
     # There are 37 images in the testfile_multi.csv

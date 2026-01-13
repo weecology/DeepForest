@@ -33,7 +33,7 @@ from unittest.mock import Mock
 ALL_ARCHITECTURES = ["retinanet", "DeformableDetr"]
 
 @pytest.fixture()
-def two_class_m():
+def two_class_m(tmp_path_factory):
     m = main.deepforest(config_args={"num_classes": 2,
                                     "label_dict": {
                                         "Alive": 0,
@@ -48,13 +48,15 @@ def two_class_m():
     m.config.validation["root_dir"] = os.path.dirname(get_data("testfile_multi.csv"))
     m.config.validation["val_accuracy_interval"] = 1
 
+    m.config.log_root = str(tmp_path_factory.mktemp("logs"))
+
     m.create_trainer()
 
     return m
 
 
 @pytest.fixture()
-def m(download_release):
+def m(download_release, tmp_path_factory):
     m = main.deepforest()
     m.config.train.csv_file = get_data("example.csv")
     m.config.train.root_dir = os.path.dirname(get_data("example.csv"))
@@ -67,6 +69,8 @@ def m(download_release):
     m.config.validation.val_accuracy_interval = 1
     m.config.train.epochs = 2
 
+    m.config.log_root = str(tmp_path_factory.mktemp("logs"))
+
     m.create_trainer()
     m.load_model("weecology/deepforest-tree")
 
@@ -74,7 +78,7 @@ def m(download_release):
 
 # A random-initialized model
 @pytest.fixture()
-def m_without_release():
+def m_without_release(tmp_path_factory):
     m = main.deepforest(config_args={"model": {"name": None}})
     m.config.train.csv_file = get_data("example.csv")
     m.config.train.root_dir = os.path.dirname(get_data("example.csv"))
@@ -86,6 +90,8 @@ def m_without_release():
     m.config.workers = 0
     m.config.validation.val_accuracy_interval = 1
     m.config.train.epochs = 2
+
+    m.config.log_root = str(tmp_path_factory.mktemp("logs"))
 
     m.create_trainer()
     return m
@@ -135,12 +141,12 @@ def test_m_has_tree_model_loaded(m):
     boxes = m.predict_image(path=get_data("OSBS_029.tif"))
     assert not boxes.empty
 
-def test_tensorboard_logger(m, tmpdir):
+def test_tensorboard_logger(m, tmp_path):
     # Check if TensorBoard is installed
     if importlib.util.find_spec("tensorboard"):
         # Create model trainer and fit model
         annotations_file = get_data("testfile_deepforest.csv")
-        logger = TensorBoardLogger(save_dir=tmpdir)
+        logger = TensorBoardLogger(save_dir=tmp_path)
         m.config.train.csv_file = annotations_file
         m.config.train.root_dir = os.path.dirname(annotations_file)
         m.config.train.fast_dev_run = False
@@ -148,6 +154,7 @@ def test_tensorboard_logger(m, tmpdir):
         m.config.validation.root_dir = os.path.dirname(annotations_file)
         m.config.validation.val_accuracy_interval = 1
         m.config.train.epochs = 2
+        m.config.log_root = str(tmp_path)
 
         m.create_trainer(logger=logger, limit_train_batches=1, limit_val_batches=1)
         m.trainer.fit(m)
@@ -295,7 +302,7 @@ def test_train_multi(two_class_m):
     two_class_m.create_trainer(fast_dev_run=True)
     two_class_m.trainer.fit(two_class_m)
 
-def test_model_multi_from_single():
+def test_model_multi_from_single(tmp_path):
     # Check we can go from a single-class model to multi
     labels = {
         "Alive": 0,
@@ -305,7 +312,8 @@ def test_model_multi_from_single():
     m = main.deepforest(config_args={"architecture": "retinanet",
                          "num_classes": 2,
                          "model": {"name": "weecology/deepforest-tree"},
-                         "label_dict": labels
+                         "label_dict": labels,
+                         "log_root": str(tmp_path)
                         })
 
     # Check model shape is correct:
@@ -314,7 +322,7 @@ def test_model_multi_from_single():
     # Check our label dict was not overriden
     assert m.label_dict == labels
 
-def test_model_single_from_multi():
+def test_model_single_from_multi(tmp_path):
     # Check we can go from a multi-class model to a single-class.
     labels = {
         "Test": 0,
@@ -322,7 +330,8 @@ def test_model_single_from_multi():
     m = main.deepforest(config_args={"architecture": "retinanet",
                                      "num_classes": 1,
                                     "label_dict": labels,
-                                    "model": {"name": "weecology/everglades-bird-species-detector"}
+                                    "model": {"name": "weecology/everglades-bird-species-detector"},
+                                    "log_root": str(tmp_path)
                                     })
 
     # Check model shape is correct:
@@ -332,7 +341,7 @@ def test_model_single_from_multi():
     assert m.label_dict == labels
 
 @pytest.mark.parametrize("architecture", ALL_ARCHITECTURES)
-def test_empty_model_labels_single(architecture):
+def test_empty_model_labels_single(architecture, tmp_path):
     # Verify that we can set up a single class model from scratch with custom labels
     labels = {
         "Test": 0,
@@ -340,7 +349,8 @@ def test_empty_model_labels_single(architecture):
     m = main.deepforest(config_args={"architecture": architecture,
                                      "num_classes": 1,
                                     "label_dict": labels,
-                                    "model": {"name": None}
+                                    "model": {"name": None},
+                                    "log_root": str(tmp_path)
                                     })
 
     # Check model shape is correct:
@@ -350,7 +360,7 @@ def test_empty_model_labels_single(architecture):
     assert m.label_dict == labels
 
 @pytest.mark.parametrize("architecture", ALL_ARCHITECTURES)
-def test_empty_model_labels_multi(architecture):
+def test_empty_model_labels_multi(architecture, tmp_path):
     # Verify that we can set up a multi-class model from scratch with custom labels
     labels = {
         "Test": 0,
@@ -359,7 +369,8 @@ def test_empty_model_labels_multi(architecture):
     m = main.deepforest(config_args={"architecture": architecture,
                                      "num_classes": 2,
                                     "label_dict": labels,
-                                    "model": {"name": None}
+                                    "model": {"name": None},
+                                    "log_root": str(tmp_path)
                                     })
 
     # Check model shape is correct:
@@ -739,7 +750,7 @@ def test_existing_predict_dataloader(m, tmpdir):
                             ("stepLR", "StepLR"),
                           ("multistepLR", "MultiStepLR"),
                           ("reduceLROnPlateau", "ReduceLROnPlateau")])
-def test_configure_optimizers(scheduler, expected):
+def test_configure_optimizers(scheduler, expected, tmp_path):
     scheduler_config = {
         "type": scheduler,
         "params": {
@@ -776,7 +787,8 @@ def test_configure_optimizers(scheduler, expected):
         "validation": {
             "csv_file": annotations_file,
             "root_dir": root_dir
-        }
+        },
+        "log_root": str(tmp_path)
     }
 
     # Initialize the model with the config arguments

@@ -234,6 +234,7 @@ class deepforest(pl.LightningModule):
             "callbacks": callbacks,
             "limit_val_batches": limit_val_batches,
             "num_sanity_val_steps": num_sanity_val_steps,
+            "default_root_dir": self.config.log_root,
         }
         # Update with kwargs to allow them to override config
         trainer_args.update(kwargs)
