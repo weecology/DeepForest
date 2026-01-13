@@ -71,7 +71,11 @@ def run():
     strategies = ["single", "batch"]
 
     # Get test data
-    paths = glob.glob("/blue/ewhite/b.weinstein/BOEM/JPG_20241220_145900/*.jpg")[:20]
+
+    # Path to sample images inside your repo
+    sample_dir = os.path.join(os.path.dirname(__file__), "sample_images")
+    paths = [os.path.join(sample_dir, f) for f in os.listdir(sample_dir) if f.endswith(".jpg")]
+
 
     # Test configurations
     worker_configs = [0, 5]
