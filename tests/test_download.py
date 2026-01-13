@@ -53,13 +53,13 @@ def mock_arcgis_response_image():
 
 
 @pytest.mark.parametrize("image_name, url, box, params, download_service_name", url_box_pairs)
-def test_download_arcgis_rest(tmpdir, image_name, url, box, params, download_service_name):
+def test_download_arcgis_rest(tmp_path, image_name, url, box, params, download_service_name):
     async def run_test():
         semaphore = asyncio.Semaphore(20)
         limiter = AsyncLimiter(1, 0.05)
         xmin, ymin, xmax, ymax = box
         bbox_crs = "EPSG:4326"  # Assuming WGS84 for bounding box CRS
-        savedir = tmpdir
+        savedir = tmp_path
 
         # Mock network requests to prevent flakes
         with patch("aiohttp.ClientSession.get", side_effect=[mock_arcgis_response_json(), mock_arcgis_response_image()]):
@@ -108,13 +108,13 @@ locations = [
 
 # Parametrize test cases with different locations
 @pytest.mark.parametrize("source, lat0, lon0, lat1, lon1, zoom, save_image, save_dir, image_name", locations)
-def test_download_tile_mapserver(tmpdir, source, lat0, lon0, lat1, lon1, zoom, save_image, save_dir, image_name):
+def test_download_tile_mapserver(tmp_path, source, lat0, lon0, lat1, lon1, zoom, save_image, save_dir, image_name):
     async def run_test():
         semaphore = asyncio.Semaphore(20)
         limiter = AsyncLimiter(1, 0.05)
-        save_path = os.path.join(tmpdir, image_name)
+        save_path = tmp_path / image_name
         await download.download_web_server(semaphore, limiter, source, lat0, lon0, lat1, lon1, zoom, save_image=True,
-                                           save_dir=tmpdir, image_name=image_name)
+                                           save_dir=tmp_path, image_name=image_name)
         try:
             # Check if the image file is saved
             assert os.path.exists(save_path)
