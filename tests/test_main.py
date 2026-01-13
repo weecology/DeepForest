@@ -29,6 +29,7 @@ import shapely
 # Just download once.
 from .conftest import download_release
 from unittest.mock import Mock
+import unittest.mock as mock
 
 ALL_ARCHITECTURES = ["retinanet", "DeformableDetr"]
 
@@ -212,7 +213,8 @@ def test_validation_step(m):
     batch = next(iter(val_dataloader))
     m.predictions = []
     m.targets = {}
-    val_loss = m.validation_step(batch, 0)
+    with mock.patch.object(m, 'log') as _:
+        val_loss = m.validation_step(batch, 0)
     assert val_loss != 0
 
 def test_validation_step_empty(m_without_release):
@@ -226,7 +228,8 @@ def test_validation_step_empty(m_without_release):
     batch = next(iter(val_dataloader))
     m.predictions = []
     m.targets = {}
-    val_predictions = m.validation_step(batch, 0)
+    with mock.patch.object(m, 'log') as _:
+        _ = m.validation_step(batch, 0)
     assert m.iou_metric.compute()["iou"] == 0
 
 def test_validate(m):
@@ -558,7 +561,6 @@ def test_train_callbacks(m):
     trainer = Trainer(fast_dev_run=True)
     trainer.fit(m, train_ds)
 
-
 def test_over_score_thresh(m):
     """A user might want to change the config after model training and update the score thresh"""
     img = get_data("OSBS_029.png")
@@ -573,13 +575,42 @@ def test_over_score_thresh(m):
     assert m.model.score_thresh == high_thresh
     assert not m.model.score_thresh == original_score_thresh
 
+def test_logged_metrics(m, tmp_path):
+    """Test that all expected metrics are logged during training."""
 
-def test_iou_metric(m):
-    results = m.trainer.validate(m)
-    keys = ['val_classification', 'val_bbox_regression', 'iou', 'iou/cl_0']
-    for x in keys:
-        assert x in list(results[0].keys())
+    # Create an empty frame using an existing test image
+    ground_df = pd.read_csv(get_data("example.csv"))
+    empty_frame = ground_df.iloc[0:1].copy()
+    empty_frame.loc[:, ["xmin", "ymin", "xmax", "ymax"]] = 0
+    empty_frame.loc[:, "image_path"] = "OSBS_029.png"
+    # Place empty frame first so it's processed in fast_dev_run mode
+    validation_df = pd.concat([empty_frame, ground_df])
+    validation_df.to_csv(tmp_path / "validation.csv", index=False)
 
+    m.config.validation.csv_file = tmp_path / "validation.csv"
+    m.create_trainer()
+    m.trainer.fit(m)
+
+    logged = m.trainer.logged_metrics
+
+    # Torchmetrics + training metrics
+    metrics = [
+        'train_loss_step',
+        'train_classification_step', # RetinaNet specific
+        'train_bbox_regression_step', # RetinaNet specific
+        'val_loss',
+        'val_classification',
+        'val_bbox_regression',
+        'iou',
+        'map',
+        'map_50',
+        'map_75',
+        'box_precision',
+        'box_recall',
+        'empty_frame_accuracy'
+    ]
+    for metric in metrics:
+        assert metric in logged, f"Expected metric '{metric}' not found in logged metrics."
 
 def test_config_args(m):
     assert not m.config.num_classes == 2
@@ -921,13 +952,19 @@ def test_epoch_evaluation_end(m, tmp_path):
     boxes["label"] = "Tree"
     m.predictions = [predictions]
     boxes.to_csv(tmp_path / "predictions.csv", index=False)
-    m.config.validation.csv_file = str(tmp_path / "predictions.csv")
+
+    m.config.validation.csv_file = tmp_path / "predictions.csv"
     m.config.validation.root_dir = str(tmp_path)
+    # Recreate metrics after changing validation csv_file
+    m.setup_metrics()
+    m.precision_recall_metric.update(preds, ["test"])
 
-    results = m.on_validation_epoch_end()
+    with mock.patch.object(m, 'log_dict') as mock_log:
+        m.on_validation_epoch_end()
+        logged_metrics = mock_log.call_args[0][0]
 
-    assert results["box_precision"] == 1.0
-    assert results["box_recall"] == 1.0
+    assert logged_metrics["box_precision"] == 1.0
+    assert logged_metrics["box_recall"] == 1.0
 
 def test_epoch_evaluation_end_empty(m):
     """If the model returns an empty prediction, the metrics should not fail"""
@@ -944,7 +981,9 @@ def test_epoch_evaluation_end_empty(m):
     boxes = format_geometry(preds[0])
     boxes["image_path"] = "test"
     m.predictions = [boxes]
-    m.on_validation_epoch_end()
+
+    with mock.patch.object(m, 'log_dict') as _:
+        m.on_validation_epoch_end()
 
 def test_empty_frame_accuracy_all_empty_with_predictions(m, tmp_path):
     """Test empty frame accuracy when all frames are empty but model predicts objects.
@@ -960,6 +999,7 @@ def test_empty_frame_accuracy_all_empty_with_predictions(m, tmp_path):
     m.config.validation["csv_file"] = str(tmp_path / "ground_truth.csv")
     m.config.validation["root_dir"] = os.path.dirname(get_data("testfile_deepforest.csv"))
 
+    # Recreate metrics after changing validation csv_file
     m.create_trainer()
     results = m.trainer.validate(m)
 
