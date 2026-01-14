@@ -140,6 +140,8 @@ class Config:
     score_thresh: float = 0.1
     model: ModelConfig = field(default_factory=ModelConfig)
 
+    log_root: str = "./"
+
     # Preprocessing
     path_to_raster: str | None = None
     patch_size: int = 400
