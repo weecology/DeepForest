@@ -889,7 +889,7 @@ class deepforest(pl.LightningModule):
         Returns:
         """
         if isinstance(batch, dict):
-            images = batch["batch"]
+            images = batch["images"]
             sublist_lengths = batch["sublist_lengths"]
             self.original_batch_structure.append(sublist_lengths)
         else:

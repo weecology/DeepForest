@@ -245,7 +245,7 @@ class FromCSVFile(PredictionDataset):
 class MultiImage(PredictionDataset):
     """Take in a list of image paths, preprocess and batch together.
 
-    Note: This dataset will load the first image to determine the image dimensions. Images for expected to be the same size. For variable sized images, write a csv file and use the FromCSVFile dataset.
+    Note: This dataset will load the first image to determine the image dimensions. Images are expected to be the same size. For variable sized images, write a csv file and use the FromCSVFile dataset.
     """
 
     def __init__(self, paths: list[str], patch_size: int, patch_overlap: float):
@@ -366,7 +366,7 @@ class MultiImage(PredictionDataset):
             for sub_idx in range(len(sublist))
         ]
 
-        return {"batch": flattened_batch, "sublist_lengths": sublist_lengths}
+        return {"images": flattened_batch, "sublist_lengths": sublist_lengths}
 
     def __len__(self):
         return len(self.paths)
