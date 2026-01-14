@@ -29,6 +29,8 @@ annotations_xml:
 rgb_dir:
 path_to_rgb:
 
+log_root: ./
+
 train:
     csv_file:
     root_dir:

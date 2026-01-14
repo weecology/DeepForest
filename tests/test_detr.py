@@ -13,13 +13,14 @@ from deepforest.models import DeformableDetr
 
 
 @pytest.fixture()
-def config():
+def config(tmp_path_factory):
     config = utilities.load_config()
     config.model.name = "joshvm/milliontrees-detr"
     config.architecture = "DeformableDetr"
     config.train.fast_dev_run = True
     config.batch_size = 1
     config.score_thresh = 0.5
+    config.log_root = str(tmp_path_factory.mktemp("logs"))
     return config
 
 

@@ -10,7 +10,7 @@ from deepforest import get_data
 SCRIPT = files("deepforest.scripts").joinpath("cli.py")
 
 
-def test_train_cli(tmpdir):
+def test_train_cli(tmp_path):
     """Check a basic training run, including overrides for unit testing
     see test_main.py fixtures for setup reference."""
 
@@ -22,7 +22,8 @@ def test_train_cli(tmpdir):
         "train",
         "train.fast_dev_run=True",
         f"train.csv_file={test_labels}",
-        f"train.root_dir={os.path.dirname(test_labels)}"
+        f"train.root_dir={os.path.dirname(test_labels)}",
+        f"log_root={tmp_path}"
     ]
 
     result = subprocess.run(
@@ -35,7 +36,7 @@ def test_train_cli(tmpdir):
     assert result.returncode == 0, f"stderr:\n{result.stderr}\nstdout:\n{result.stdout}"
 
 
-def test_train_cli_fail(tmpdir):
+def test_train_cli_fail(tmp_path):
     """Check that training fails if no dataset paths are provided"""
 
     args = [
@@ -43,6 +44,7 @@ def test_train_cli_fail(tmpdir):
         str(SCRIPT),
         "train",
         "train.fast_dev_run=True",
+        f"log_root={tmp_path}"
     ]
 
     result = subprocess.run(
@@ -55,7 +57,7 @@ def test_train_cli_fail(tmpdir):
     assert result.returncode != 0
 
 
-def test_train_cli_user_config(tmpdir):
+def test_train_cli_user_config(tmp_path):
     """Check whether we can provide a custom YAML file for configuration"""
 
     # Create a modified config
@@ -63,17 +65,19 @@ def test_train_cli_user_config(tmpdir):
     config = OmegaConf.load(get_data("config.yaml"))
     config.train.csv_file = test_labels
     config.train.root_dir = os.path.dirname(test_labels)
-    OmegaConf.save(config, tmpdir.join("user_config.yaml").open('w'))
+    OmegaConf.save(config, (tmp_path / "user_config.yaml").open('w'))
 
     # This will fail if the config is not correctly created
     # as the csv/root parameters are not set by default.
     args = [
         sys.executable,
         str(SCRIPT),
-        f"--config-dir", tmpdir,
+        f"--config-dir", tmp_path,
         f"--config-name", "user_config",
         "train",
-        "train.fast_dev_run=True"
+        "train.fast_dev_run=True",
+        f"log_root={tmp_path}"
+
     ]
 
     result = subprocess.run(
@@ -90,7 +94,7 @@ def test_predict_cli(tmp_path):
     """Check we can predict an image and save results"""
     input_path = get_data("OSBS_029.png")
     output_path = tmp_path / "result.csv"
-    args = [input_path, "-o", str(output_path)]
+    args = [input_path, "-o", str(output_path), f"log_root={tmp_path}"]
 
     result = subprocess.run(
         [sys.executable, SCRIPT, "predict"] + args,
@@ -107,7 +111,7 @@ def test_predict_cli_with_opt(tmp_path):
     """Check we can predict an image and save results"""
     input_path = get_data("OSBS_029.png")
     output_path = tmp_path / "result.csv"
-    args = [input_path, "-o", str(output_path), "patch_size=250"]
+    args = [input_path, "-o", str(output_path), "patch_size=250", f"log_root={tmp_path}"]
 
     result = subprocess.run(
         [sys.executable, SCRIPT, "predict"] + args,
