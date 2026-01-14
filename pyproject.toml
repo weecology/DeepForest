@@ -87,14 +87,14 @@ dev = [
 ]
 
 docs = [
-    "docutils<0.18",
+    "docutils",
     "myst-parser",
     "nbmake",
     "nbsphinx",
     "numpydoc",
     "pydata-sphinx-theme",
     "recommonmark",
-    "sphinx>=7.3",
+    "sphinx>=8.0.2",
     "sphinx-design",
     "sphinx-markdown-tables",
     "sphinx_rtd_theme",
