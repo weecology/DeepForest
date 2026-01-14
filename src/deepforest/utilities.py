@@ -311,42 +311,23 @@ def determine_geometry_type(df):
     return geometry_type
 
 
-def format_prediction(prediction, scores=True):
-    """Format a single prediction dictionary into a pandas dataframe, handling empty predictions gracefully.
-    
-    This function combines determine_geometry_type and format_geometry to provide a single interface
-    that handles both empty and non-empty predictions consistently.
+def format_geometry(prediction: dict, scores: bool = True, geom_type: str = None) -> pd.DataFrame:
+    """Format a retinanet prediction into a pandas dataframe
     
     Args:
-        prediction: a dictionary with prediction results (e.g., 'boxes', 'labels', 'scores')
-        scores: Whether prediction comes with scores, during prediction, or without scores, as in during training.
-    Returns:
-        df: a pandas dataframe with predictions (empty DataFrame if no predictions)
-    """
-    # Determine geometry type
-    geom_type = determine_geometry_type(prediction)
-    
-    # Format geometry using existing function
-    df = format_geometry(prediction, scores=scores, geom_type=geom_type)
-    
-    return df
-
-
-def format_geometry(predictions, scores=True, geom_type=None):
-    """Format a retinanet prediction into a pandas dataframe for a batch of images
-    Args:
-        predictions: a list of dictionaries with keys 'boxes' and 'labels' coming from a retinanet
+        prediction: A dictionary with keys 'boxes' and 'labels' (and optionally 'scores') containing tensors from a retinanet model
         scores: Whether boxes come with scores, during prediction, or without scores, as in during training.
+        geom_type: Optional geometry type override. If None, will be auto-detected.
     Returns:
         df: a pandas dataframe (empty DataFrame if no predictions)
     """
 
     # Detect geometry type
     if geom_type is None:
-        geom_type = determine_geometry_type(predictions)
+        geom_type = determine_geometry_type(prediction)
 
     if geom_type == "box":
-        df = format_boxes(predictions, scores=scores)
+        df = format_boxes(prediction, scores=scores)
 
     elif geom_type == "polygon":
         raise ValueError("Polygon predictions are not yet supported for formatting")
@@ -356,15 +337,15 @@ def format_geometry(predictions, scores=True, geom_type=None):
     return df
 
 
-def format_boxes(prediction, scores=True):
-    """Format a retinanet prediction into a pandas dataframe for a single
-    image.
+def format_boxes(prediction: dict, scores: bool = True) -> pd.DataFrame:
+    """Format a retinanet prediction into a pandas dataframe for a single image.
 
     Args:
-        prediction: a dictionary with keys 'boxes' and 'labels' coming from a retinanet
+        prediction: A dictionary with keys 'boxes', 'labels', and optionally 'scores'. 
+                   Values are expected to be PyTorch tensors (e.g., torch.Tensor).
         scores: Whether boxes come with scores, during prediction, or without scores, as in during training.
     Returns:
-        df: a pandas dataframe
+        df: a pandas dataframe (empty DataFrame with correct structure if no predictions)
     """
     if len(prediction["boxes"]) == 0:
         # Return empty DataFrame with correct structure

@@ -60,7 +60,6 @@ def test_multi_process_dataloader_strategy_single(m):
         patch_overlap=0,
     )
     assert len(results) > 0
-    #plot_results(results)
 
 def test_multi_process_dataloader_strategy_batch(m):
     root_dir = os.path.dirname(get_data("OSBS_029.csv"))
@@ -73,7 +72,6 @@ def test_multi_process_dataloader_strategy_batch(m):
         patch_overlap=0,
     )
     assert len(results) > 0
-    #plot_results(results)
 
 def test_multi_process_dataloader_strategy_window(m):
     root_dir = os.path.dirname(get_data("OSBS_029.csv"))
@@ -87,5 +85,4 @@ def test_multi_process_dataloader_strategy_window(m):
         patch_overlap=0,
     )
     assert len(results) > 0
-    #plot_results(results)
 
