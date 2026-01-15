@@ -17,12 +17,8 @@
 # First prepare the data:
 #uv run python src/deepforest/scripts/prepare_birds.py --output_dir /blue/ewhite/b.weinstein/bird_detector_retrain/data/
 
-# Then submit this job:
-# sbatch src/deepforest/scripts/submit_train_birds.sh
-
-
 srun uv run python src/deepforest/scripts/train_birds.py \
     --data_dir /blue/ewhite/b.weinstein/bird_detector_retrain/data/ \
-    --batch_size 24 \
+    --batch_size 32 \
     --workers 10 \
-    --epochs 30
+    --epochs 40 

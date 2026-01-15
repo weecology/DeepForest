@@ -12,21 +12,37 @@ import glob
 
 import pandas as pd
 from deepforest import main as df_main
-from deepforest.utilities import read_file, shapefile_to_annotations
+from deepforest.preprocess import split_raster
+from deepforest.utilities import read_file
 from deepforest.visualize import plot_results
 import geopandas as gpd
 
 
-def load_shapefiles_and_create_test_csv(data_dir, output_csv="test.csv"):
+def load_shapefiles_and_create_test_csv(data_dir, output_csv="test.csv", output_dir=None):
     """Load all shapefiles and create a test.csv file.
 
     Args:
         data_dir: Directory containing shapefiles and images
-        output_csv: Path to output CSV file
+        output_csv: Name of output CSV file
+        output_dir: Directory to write CSV file (default: tries data_dir, falls back to current directory)
 
     Returns:
         Path to the created CSV file
     """
+    output_path = os.path.join(data_dir, output_csv)
+    
+    # Check if CSV already exists
+    if os.path.exists(output_path):
+        print(f"Test CSV already exists at {output_path}, skipping creation.")
+        # Verify it's readable
+        try:
+            existing_df = pd.read_csv(output_path)
+            print(f"Found existing {output_csv} with {len(existing_df)} annotations from {len(existing_df['image_path'].unique())} images")
+        except Exception as e:
+            print(f"Warning: Could not read existing CSV: {e}. Recreating...")
+        else:
+            return output_path
+    
     # Find all shapefiles
     shapefiles = glob.glob(os.path.join(data_dir, "*_annotated.shp"))
     print(f"Found {len(shapefiles)} shapefiles")
@@ -49,88 +65,122 @@ def load_shapefiles_and_create_test_csv(data_dir, output_csv="test.csv"):
         print(f"Processing {base_name}: {image_filename}")
         
         # Read shapefile directly (coordinates are already in image space)
-        
-        # Read shapefile directly
-        gdf = read_file(shp_path,image_path=image_path)
-        
-        # If CRS is EPSG:4326 but coordinates look like image coordinates, remove CRS
-        if gdf.crs and gdf.crs.to_string() == "EPSG:4326":
-            # Check if coordinates are in image space (not geographic)
-            bounds = gdf.total_bounds
-            if bounds[0] > -180 and bounds[2] < 180 and (bounds[0] > 100 or bounds[2] < -100):
-                # These are likely image coordinates, not geographic
-                gdf.crs = None
+        gdf = gpd.read_file(shp_path)
+        gdf.geometry = gdf.geometry.scale(xfact=1, yfact=-1, origin=(0, 0))
         
         # Set image_path
         gdf["image_path"] = image_filename
-        
-        # Set label if not present
-        if "label" not in gdf.columns:
-            gdf["label"] = "Bird"
-        
-        # Convert geometry to bounding boxes if needed
-        if "geometry" in gdf.columns:
-            # Get bounds for each geometry
-            bounds = gdf.geometry.bounds
-            # Handle non-finite values
-            gdf["xmin"] = bounds["minx"].fillna(0).replace([float('inf'), float('-inf')], 0).astype(int)
-            gdf["ymin"] = bounds["miny"].fillna(0).replace([float('inf'), float('-inf')], 0).astype(int)
-            gdf["xmax"] = bounds["maxx"].fillna(0).replace([float('inf'), float('-inf')], 0).astype(int)
-            gdf["ymax"] = bounds["maxy"].fillna(0).replace([float('inf'), float('-inf')], 0).astype(int)
-            
-            # Filter out any rows with invalid coordinates
-            # Note: ymin might be negative in image coordinates, so just check xmax > xmin and ymax > ymin
-            initial_count = len(gdf)
-            gdf = gdf[(gdf["xmax"] > gdf["xmin"]) & (gdf["ymax"] > gdf["ymin"])]
-            
-            # Skip if no valid rows
-            if len(gdf) == 0:
-                print(f"  Warning: No valid annotations after filtering (had {initial_count} before)")
-                continue
-            else:
-                print(f"  Loaded {len(gdf)} annotations")
-        
-        # Ensure label column exists (should be "Bird" for bird annotations)
-        if "label" not in gdf.columns:
-            gdf["label"] = "Bird"
-        else:
-            # Standardize label to "Bird"
-            gdf["label"] = "Bird"
-        
+        gdf.crs = None
+        gdf["label"] = "Bird"
+        gdf = gdf[gdf.geometry.notna()]
+        gdf = read_file(gdf, root_dir=data_dir)
+
         all_annotations.append(gdf)
 
     # Combine all annotations
     combined_df = pd.concat(all_annotations, ignore_index=True)
-    
-    # Ensure we have required columns for CSV format
-    if "geometry" in combined_df.columns:
-        # Convert geometry to xmin, ymin, xmax, ymax if needed
-        if "xmin" not in combined_df.columns:
-            bounds = combined_df.geometry.bounds
-            combined_df["xmin"] = bounds["minx"].astype(int)
-            combined_df["ymin"] = bounds["miny"].astype(int)
-            combined_df["xmax"] = bounds["maxx"].astype(int)
-            combined_df["ymax"] = bounds["maxy"].astype(int)
-    
-    # Select required columns for CSV
-    csv_columns = ["image_path", "xmin", "ymin", "xmax", "ymax", "label"]
-    csv_df = combined_df[csv_columns].copy()
-    
-    output_path = os.path.join(data_dir, output_csv)
-    csv_df.to_csv(output_path, index=False)
-    print(f"\nCreated {output_csv} with {len(csv_df)} annotations from {len(csv_df['image_path'].unique())} images")
+        
+    combined_df.to_csv(output_path, index=False)
+    print(f"\nCreated {output_csv} with {len(combined_df)} annotations from {len(combined_df['image_path'].unique())} images")
     print(f"Saved to: {output_path}")
     
     return output_path
 
 
-def evaluate_models(checkpoint_path, data_dir, test_csv, iou_threshold=0.4):
+def split_test_images_for_evaluation(test_csv, data_dir, patch_size=800, patch_overlap=0, output_dir=None, split_csv_name=None):
+    """Split test images into smaller patches for evaluation using split_raster.
+
+    Args:
+        test_csv: Path to test CSV file with full image annotations
+        data_dir: Directory containing test images
+        patch_size: Size of patches for splitting (default: 800)
+        patch_overlap: Overlap between patches (default: 0)
+        output_dir: Directory to save split images (default: test_splits subdirectory of test_csv location)
+        split_csv_name: Name of the output CSV file (default: test_split.csv)
+
+    Returns:
+        Tuple of (split_csv_path, split_dir) where split_csv_path is the path to
+        the CSV file with split image annotations and split_dir is the directory
+        containing the split images
+    """
+    # Create output directory for split images
+    if output_dir is None:
+        output_dir = os.path.join(os.path.dirname(test_csv), "test_splits")
+    os.makedirs(output_dir, exist_ok=True)
+    
+    # Set default CSV name if not provided
+    if split_csv_name is None:
+        split_csv_name = "test_split.csv"
+
+    # Read the test CSV
+    test_df = read_file(test_csv)
+    unique_images = test_df["image_path"].unique()
+
+    print(f"\nSplitting {len(unique_images)} test images into {patch_size}-pixel patches...")
+    print(f"Output directory: {output_dir}")
+
+    all_split_annotations = []
+
+    for image_name in unique_images:
+        image_path = os.path.join(data_dir, image_name)
+        if not os.path.exists(image_path):
+            print(f"Warning: Image not found: {image_path}")
+            continue
+
+        print(f"Processing {image_name}...")
+
+        # Get annotations for this image
+        image_annotations = test_df[test_df["image_path"] == image_name].copy()
+
+        # Create temporary CSV file for this image's annotations
+        temp_annotations_file = os.path.join(output_dir, f"temp_{image_name}_annotations.csv")
+        image_annotations.to_csv(temp_annotations_file, index=False)
+
+        # Use split_raster to create crops
+        split_df = split_raster(
+            annotations_file=temp_annotations_file,
+            path_to_raster=image_path,
+            root_dir=os.path.dirname(temp_annotations_file),
+            patch_size=patch_size,
+            patch_overlap=patch_overlap,
+            allow_empty=False,
+            save_dir=output_dir,
+        )
+
+        if not split_df.empty:
+            all_split_annotations.append(split_df)
+            print(f"  Created {len(split_df['image_path'].unique())} patches with {len(split_df)} annotations")
+        else:
+            print(f"  Warning: No patches created for {image_name}")
+
+        # Clean up temporary annotations file
+        if os.path.exists(temp_annotations_file):
+            os.remove(temp_annotations_file)
+
+    # Combine all split annotations
+    if all_split_annotations:
+        combined_split_df = pd.concat(all_split_annotations, ignore_index=True)
+        
+        # Save split CSV
+        split_csv_path = os.path.join(output_dir, split_csv_name)
+        combined_split_df.to_csv(split_csv_path, index=False)
+        
+        print(f"\nCreated split test CSV with {len(combined_split_df)} annotations from {len(combined_split_df['image_path'].unique())} patches")
+        print(f"Saved to: {split_csv_path}")
+        
+        return split_csv_path, output_dir
+    else:
+        raise ValueError("No split annotations were created. Check that images exist and contain valid annotations.")
+
+
+def evaluate_models(checkpoint_path, data_dir, test_csv, split_dir, iou_threshold=0.4):
     """Evaluate both old and new bird detection models.
 
     Args:
         checkpoint_path: Path to the new checkpoint model
-        data_dir: Directory containing test data
-        test_csv: Path to test CSV file
+        data_dir: Directory containing original test data (not used for evaluation)
+        test_csv: Path to split test CSV file (for evaluation)
+        split_dir: Directory containing split images (for evaluation)
         iou_threshold: IoU threshold for evaluation
 
     Returns:
@@ -146,11 +196,12 @@ def evaluate_models(checkpoint_path, data_dir, test_csv, iou_threshold=0.4):
     checkpoint_model.config.score_thresh = 0.25
     checkpoint_model.model.score_thresh = 0.25
     
-    # Set up validation configuration
+    # Set up validation configuration using split CSV and split directory
     checkpoint_model.config.validation.csv_file = test_csv
-    checkpoint_model.config.validation.root_dir = data_dir
+    checkpoint_model.config.validation.root_dir = split_dir
     checkpoint_model.config.validation.iou_threshold = iou_threshold
     checkpoint_model.config.validation.val_accuracy_interval = 1
+    checkpoint_model.config.workers = 0
     checkpoint_model.create_trainer()
     
     validation_results = checkpoint_model.trainer.validate(checkpoint_model)
@@ -176,11 +227,12 @@ def evaluate_models(checkpoint_path, data_dir, test_csv, iou_threshold=0.4):
     pretrained_model.config.label_dict = {"Bird": 0}
     pretrained_model.config.num_classes = 1
     
-    # Set up validation configuration
+    # Set up validation configuration using split CSV and split directory
     pretrained_model.config.validation.csv_file = test_csv
-    pretrained_model.config.validation.root_dir = data_dir
+    pretrained_model.config.validation.root_dir = split_dir
     pretrained_model.config.validation.iou_threshold = iou_threshold
     pretrained_model.config.validation.val_accuracy_interval = 1
+    pretrained_model.config.workers = 0
     pretrained_model.create_trainer()
     
     validation_results = pretrained_model.trainer.validate(pretrained_model)
@@ -218,7 +270,7 @@ def generate_visualizations(
     os.makedirs(output_dir, exist_ok=True)
     
     # Read test CSV to get image list
-    test_df = pd.read_csv(test_csv)
+    test_df = read_file(test_csv)
     unique_images = test_df["image_path"].unique()[:num_images]
     
     print(f"\nGenerating visualizations for {len(unique_images)} images...")
@@ -235,36 +287,16 @@ def generate_visualizations(
         ground_truth = test_df[test_df["image_path"] == image_name].copy()
         
         # Predict with new model
-        checkpoint_predictions = checkpoint_model.predict_image(path=image_path)
-        if checkpoint_predictions is not None and len(checkpoint_predictions) > 0:
-            checkpoint_predictions = checkpoint_predictions[checkpoint_predictions.score > 0.25]
-            # Ensure geometry column exists for visualization
-            if "geometry" not in checkpoint_predictions.columns and all(col in checkpoint_predictions.columns for col in ["xmin", "ymin", "xmax", "ymax"]):
-                import shapely.geometry
-                checkpoint_predictions["geometry"] = checkpoint_predictions.apply(
-                    lambda x: shapely.geometry.box(x.xmin, x.ymin, x.xmax, x.ymax), axis=1
-                )
-        else:
-            checkpoint_predictions = pd.DataFrame()
+        checkpoint_predictions = checkpoint_model.predict_tile(path=image_path, patch_size=800, patch_overlap=0)
         
         # Predict with old model
-        pretrained_predictions = pretrained_model.predict_image(path=image_path)
-        if pretrained_predictions is not None and len(pretrained_predictions) > 0:
-            pretrained_predictions = pretrained_predictions[pretrained_predictions.score > 0.25]
-            # Ensure geometry column exists for visualization
-            if "geometry" not in pretrained_predictions.columns and all(col in pretrained_predictions.columns for col in ["xmin", "ymin", "xmax", "ymax"]):
-                import shapely.geometry
-                pretrained_predictions["geometry"] = pretrained_predictions.apply(
-                    lambda x: shapely.geometry.box(x.xmin, x.ymin, x.xmax, x.ymax), axis=1
-                )
-        else:
-            pretrained_predictions = pd.DataFrame()
-        
+        pretrained_predictions = pretrained_model.predict_tile(path=image_path, patch_size=800, patch_overlap=0)
+
         # Create side-by-side comparison using savedir approach
         # Save individual plots first, then combine
         base_name = os.path.splitext(image_name)[0]
-        temp_dir = os.path.join(output_dir, "temp")
-        os.makedirs(temp_dir, exist_ok=True)
+        plots_dir = "/blue/ewhite/b.weinstein/bird_detector_retrain/zero_shot/avian_images_annotated/plots"
+        os.makedirs(plots_dir, exist_ok=True)
         
         # Plot new model
         if len(checkpoint_predictions) > 0:
@@ -272,7 +304,7 @@ def generate_visualizations(
                 checkpoint_predictions,
                 ground_truth=ground_truth,
                 image=image_path,
-                savedir=temp_dir,
+                savedir=plots_dir,
                 basename=f"{base_name}_new",
                 show=False,
             )
@@ -281,7 +313,7 @@ def generate_visualizations(
             fig, ax = plt.subplots(figsize=(10, 10))
             ax.text(0.5, 0.5, "No predictions", ha="center", va="center", fontsize=16)
             ax.set_title("New Retrained Model - No Predictions", fontsize=14)
-            plt.savefig(os.path.join(temp_dir, f"{base_name}_new.png"), dpi=300, bbox_inches="tight")
+            plt.savefig(os.path.join(plots_dir, f"{base_name}_new.png"), dpi=300, bbox_inches="tight")
             plt.close(fig)
         
         # Plot old model
@@ -290,7 +322,7 @@ def generate_visualizations(
                 pretrained_predictions,
                 ground_truth=ground_truth,
                 image=image_path,
-                savedir=temp_dir,
+                savedir=plots_dir,
                 basename=f"{base_name}_old",
                 show=False,
             )
@@ -299,13 +331,13 @@ def generate_visualizations(
             fig, ax = plt.subplots(figsize=(10, 10))
             ax.text(0.5, 0.5, "No predictions", ha="center", va="center", fontsize=16)
             ax.set_title("Original Pretrained Model - No Predictions", fontsize=14)
-            plt.savefig(os.path.join(temp_dir, f"{base_name}_old.png"), dpi=300, bbox_inches="tight")
+            plt.savefig(os.path.join(plots_dir, f"{base_name}_old.png"), dpi=300, bbox_inches="tight")
             plt.close(fig)
         
         # Combine the two images side by side
         from PIL import Image as PILImage
-        img1 = PILImage.open(os.path.join(temp_dir, f"{base_name}_new.png"))
-        img2 = PILImage.open(os.path.join(temp_dir, f"{base_name}_old.png"))
+        img1 = PILImage.open(os.path.join(plots_dir, f"{base_name}_new.png"))
+        img2 = PILImage.open(os.path.join(plots_dir, f"{base_name}_old.png"))
         
         # Resize to same height
         height = max(img1.height, img2.height)
@@ -318,12 +350,8 @@ def generate_visualizations(
         combined.paste(img2, (img1.width, 0))
         
         # Save
-        output_path = os.path.join(output_dir, f"{base_name}_comparison.png")
+        output_path = os.path.join(plots_dir, f"{base_name}_comparison.png")
         combined.save(output_path, dpi=(300, 300))
-        
-        # Clean up temp files
-        os.remove(os.path.join(temp_dir, f"{base_name}_new.png"))
-        os.remove(os.path.join(temp_dir, f"{base_name}_old.png"))
         
         print(f"Saved: {output_path}")
 
@@ -344,7 +372,7 @@ def main():
     parser.add_argument(
         "--checkpoint_path",
         type=str,
-        default="/blue/ewhite/b.weinstein/bird_detector_retrain/data/checkpoints/6181df1ab7ac40f291b863a2a9b86024.ckpt",
+        default="/blue/ewhite/b.weinstein/bird_detector_retrain/2022paper/checkpoints/f92a9384135f4481b7372b85d1da5b5f.ckpt",
         help="Path to checkpoint file",
     )
     parser.add_argument(
@@ -365,6 +393,18 @@ def main():
         default=2,
         help="Number of images to visualize",
     )
+    parser.add_argument(
+        "--patch_size",
+        type=int,
+        default=800,
+        help="Patch size for splitting images during evaluation (default: 800)",
+    )
+    parser.add_argument(
+        "--patch_overlap",
+        type=float,
+        default=0.0,
+        help="Patch overlap for splitting images during evaluation (default: 0.0)",
+    )
     
     args = parser.parse_args()
     
@@ -378,20 +418,32 @@ def main():
     print("=" * 80)
     test_csv = load_shapefiles_and_create_test_csv(args.data_dir)
     
-    # Step 2: Evaluate models
+    # Step 2: Split test images for evaluation
     print("\n" + "=" * 80)
-    print("Step 2: Evaluating models")
+    print("Step 2: Splitting test images for evaluation")
+    print("=" * 80)
+    split_csv, split_dir = split_test_images_for_evaluation(
+        test_csv=test_csv,
+        data_dir=args.data_dir,
+        patch_size=args.patch_size,
+        patch_overlap=args.patch_overlap,
+    )
+    
+    # Step 3: Evaluate models using split images
+    print("\n" + "=" * 80)
+    print("Step 3: Evaluating models")
     print("=" * 80)
     results, checkpoint_model, pretrained_model = evaluate_models(
         checkpoint_path=args.checkpoint_path,
         data_dir=args.data_dir,
-        test_csv=test_csv,
+        test_csv=split_csv,
+        split_dir=split_dir,
         iou_threshold=args.iou_threshold,
     )
     
-    # Step 3: Generate visualizations
+    # Step 4: Generate visualizations using full images
     print("\n" + "=" * 80)
-    print("Step 3: Generating visualizations")
+    print("Step 4: Generating visualizations")
     print("=" * 80)
     generate_visualizations(
         checkpoint_model=checkpoint_model,
@@ -417,7 +469,9 @@ def main():
     print(f"  Empty Frame Accuracy: {results['pretrained'].get('empty_frame_accuracy', 'N/A')}")
     
     print(f"\nVisualizations saved to: {args.output_dir}")
-    print(f"Test CSV saved to: {test_csv}")
+    print(f"Original test CSV saved to: {test_csv}")
+    print(f"Split test CSV saved to: {split_csv}")
+    print(f"Split images directory: {split_dir}")
 
 
 if __name__ == "__main__":

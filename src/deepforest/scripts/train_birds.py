@@ -65,6 +65,11 @@ def run():
 
     args = parser.parse_args()
 
+    # Set matmul precision to high for faster training on Tensor Core GPUs
+    if torch.cuda.is_available():
+        torch.set_float32_matmul_precision('high')
+        print("Set torch.float32_matmul_precision to 'high' for faster training")
+
     # Set up paths
     train_csv = os.path.join(args.data_dir, "train.csv")
     test_csv = os.path.join(args.data_dir, "test.csv")
@@ -85,7 +90,7 @@ def run():
     m = main.deepforest()
 
     # Load the pretrained tree model as a starting point
-    print("Loading pretrained tree model: weecology/deepforest-tree")
+    #print("Loading pretrained tree model: weecology/deepforest-tree")
     m.load_model("weecology/deepforest-tree")
 
     # Set label dictionaries for single "Bird" class
@@ -103,6 +108,7 @@ def run():
     m.config["train"]["fast_dev_run"] = args.fast_dev_run
     m.config["train"]["epochs"] = args.epochs
     m.config["train"]["lr"] = args.lr
+    m.config["train"]["scheduler"]["params"]["patience"] = 3
 
     # Configure validation data paths
     m.config["validation"]["csv_file"] = test_csv
@@ -120,10 +126,11 @@ def run():
     augmentations_config = OmegaConf.create({
         "train": {
             "augmentations": [
-                {"RandomResizedCrop": {"size": (800, 800), "scale": (0.5, 1.0), "p": 0.3}},
+                {"RandomResizedCrop": {"size": (800, 800), "scale": (0.3, 1.0), "p": 0.5}},
                 {"Rotate": {"degrees": 15, "p": 0.5}},
                 {"HorizontalFlip": {"p": 0.5}},
                 {"VerticalFlip": {"p": 0.3}},
+                {"PadIfNeeded": {"size": (1000, 1000)}}
                 #{"RandomBrightnessContrast": {"brightness": 0.2, "contrast": 0.2, "p": 0.5}},
                 #{"HueSaturationValue": {"hue": 0.1, "saturation": 0.1, "p": 0.3}},
                 #{"ZoomBlur": {"max_factor": (1.0, 1.03), "step_factor": (0.01, 0.02), "p": 0.3}},
@@ -185,6 +192,7 @@ def run():
         callbacks=[im_callback],
         devices=devices,
         strategy="ddp",
+        precision="16-mixed",  # Use mixed precision training for faster performance
         fast_dev_run=args.fast_dev_run,
         enable_progress_bar=True,
     )
@@ -195,13 +203,37 @@ def run():
     m.trainer.validate(m)
 
     # Save the model checkpoint
-    if comet_logger:
-        checkpoint_path = os.path.join(checkpoint_dir, f"{comet_logger.experiment.id}.ckpt")
-    else:
-        checkpoint_path = os.path.join(checkpoint_dir, "bird_model.ckpt")
-
+    checkpoint_path = os.path.join(checkpoint_dir, f"{comet_logger.experiment.id}.ckpt")
     print(f"\nSaving checkpoint to: {checkpoint_path}")
     m.trainer.save_checkpoint(checkpoint_path)
+    
+    # Evaluate on zero-shot dataset
+    print("\n" + "=" * 80)
+    print("Evaluating on zero-shot dataset (DeepWater Horizon)")
+    print("=" * 80)
+
+    # Update validation config for zero-shot dataset
+    m.config.validation.csv_file = "/blue/ewhite/b.weinstein/bird_detector_retrain/zero_shot/avian_images_annotated/test_splits/test_split_patch_600.csv"
+    m.config.validation.root_dir = "/blue/ewhite/b.weinstein/bird_detector_retrain/zero_shot/avian_images_annotated/test_splits/patch_600"
+    m.config.validation.iou_threshold = 0.4
+    
+    # Create new trainer for zero-shot evaluation
+    m.create_trainer()
+    
+    # Evaluate on zero-shot dataset
+    zero_shot_results = m.trainer.validate(m)
+    zero_shot_metrics = zero_shot_results[0] if zero_shot_results else {}
+    
+    print("\nZero-shot evaluation results:")
+    print(f"  Box Precision: {zero_shot_metrics.get('box_precision', 'N/A')}")
+    print(f"  Box Recall: {zero_shot_metrics.get('box_recall', 'N/A')}")
+    print(f"  Empty Frame Accuracy: {zero_shot_metrics.get('empty_frame_accuracy', 'N/A')}")
+    
+    # log the zero-shot evaluation results to the comet logger
+    if comet_logger:
+        comet_logger.experiment.log_metric("zero_shot_box_precision", zero_shot_metrics.get('box_precision', 'N/A'))
+        comet_logger.experiment.log_metric("zero_shot_box_recall", zero_shot_metrics.get('box_recall', 'N/A'))
+        comet_logger.experiment.log_metric("zero_shot_empty_frame_accuracy", zero_shot_metrics.get('empty_frame_accuracy', 'N/A'))
 
     if comet_logger:
         # Log global steps

@@ -10,8 +10,6 @@ Example paths are hardcoded below (actual data not publicly available).
 import argparse
 import json
 import os
-import shutil
-from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -30,6 +28,9 @@ DATA_SOURCES = [
     "/orange/ewhite/b.weinstein/bird_detector/generalization/crops/training_annotations.csv",
     "/blue/ewhite/b.weinstein/BOEM/UBFAI Images with Detection Data/crops/train.csv",
 ]
+
+# Path to existing test dataset (if provided, skip train/test split and put all new data in train)
+EXISTING_TEST = None  # e.g., "/path/to/existing/test.csv"
 
 # Nuisance labels to exclude (will be filtered out)
 NUISANCE_LABELS = {"buoy", "buoys", "trash", "Trash",'boat','sargassum'}
@@ -449,91 +450,6 @@ def filter_small_boxes(df, min_area=1, epsilon=1e-6):
     return df[valid_mask].copy()
 
 
-def plot_negative_coordinate_examples(df, output_dir, root_dir=None, num_examples=3):
-    """Plot examples of images with negative bounding box coordinates.
-
-    Args:
-        df: DataFrame with annotations that have negative coordinates
-        output_dir: Directory to save plots
-        root_dir: Root directory for images (optional)
-        num_examples: Number of examples to plot (default: 3)
-    """
-    if df.empty:
-        print("No examples with negative coordinates to plot.")
-        return
-
-    # Get unique images with negative coordinates
-    unique_images = df["image_path"].unique()
-    num_examples = min(num_examples, len(unique_images))
-
-    print(f"\nPlotting {num_examples} examples with negative coordinates...")
-
-    # Create plots directory
-    plots_dir = os.path.join(output_dir, "negative_coordinate_examples")
-    os.makedirs(plots_dir, exist_ok=True)
-
-    for i, img_path in enumerate(unique_images[:num_examples]):
-        # Get annotations for this image
-        img_annotations = df[df["image_path"] == img_path].copy()
-
-        # Try to load the image
-        if root_dir:
-            full_img_path = os.path.join(root_dir, img_path)
-        else:
-            full_img_path = img_path
-
-        if not os.path.exists(full_img_path):
-            print(f"  Warning: Image not found: {full_img_path}")
-            continue
-
-        try:
-            img = Image.open(full_img_path)
-            img_array = np.array(img)
-
-            # Create plot
-            fig, ax = plt.subplots(1, 1, figsize=(12, 8))
-            ax.imshow(img_array)
-            ax.set_title(f"Image: {os.path.basename(img_path)}\nNegative coordinates detected", fontsize=12)
-
-            # Draw bounding boxes
-            for idx, row in img_annotations.iterrows():
-                xmin, ymin, xmax, ymax = row["xmin"], row["ymin"], row["xmax"], row["ymax"]
-                # Draw rectangle
-                rect = plt.Rectangle(
-                    (xmin, ymin),
-                    xmax - xmin,
-                    ymax - ymin,
-                    fill=False,
-                    edgecolor="red",
-                    linewidth=2,
-                )
-                ax.add_patch(rect)
-                # Add text with coordinates
-                ax.text(
-                    xmin,
-                    ymin - 5,
-                    f"xmin={xmin:.1f}, ymin={ymin:.1f}\nxmax={xmax:.1f}, ymax={ymax:.1f}",
-                    color="red",
-                    fontsize=8,
-                    bbox=dict(boxstyle="round,pad=0.3", facecolor="yellow", alpha=0.7),
-                )
-
-            ax.axis("off")
-            plt.tight_layout()
-
-            # Save plot
-            plot_filename = f"negative_coords_example_{i+1}_{os.path.basename(img_path)}.png"
-            plot_path = os.path.join(plots_dir, plot_filename)
-            plt.savefig(plot_path, dpi=150, bbox_inches="tight")
-            plt.close()
-
-            print(f"  Saved: {plot_path}")
-
-        except Exception as e:
-            print(f"  Error plotting {img_path}: {e}")
-            continue
-
-    print(f"\nPlots saved to: {plots_dir}")
 
 
 def main():
@@ -677,9 +593,6 @@ def main():
         print(f"    xmax < 0: {(combined_df['xmax'] < 0).sum()}")
         print(f"    ymax < 0: {(combined_df['ymax'] < 0).sum()}")
 
-        # Plot examples before clipping
-        plot_negative_coordinate_examples(negative_coords_df, args.output_dir, root_dir=args.output_dir)
-
         # Clip boxes to image boundaries
         print("\nClipping bounding boxes to image boundaries...")
         combined_df = clip_boxes_to_image_bounds(combined_df, args.output_dir)
@@ -709,30 +622,41 @@ def main():
     print(f"\nTotal annotations: {len(combined_df)}")
     print(f"Total unique images: {combined_df['image_path'].nunique()}")
 
-    # Split into train/test by image_path (to avoid data leakage)
-    print(f"\nSplitting into train/test ({1-args.test_size:.0%}/{args.test_size:.0%})...")
-    unique_images = combined_df["image_path"].unique()
-    train_images, test_images = train_test_split(
-        unique_images, test_size=args.test_size, random_state=args.seed
-    )
-
-    train_df = combined_df[combined_df["image_path"].isin(train_images)].copy()
-    test_df = combined_df[combined_df["image_path"].isin(test_images)].copy()
-
     # Save CSV files
     train_csv = os.path.join(args.output_dir, "train.csv")
     test_csv = os.path.join(args.output_dir, "test.csv")
 
     # Ensure required columns are present and in correct order
     required_cols = ["image_path", "xmin", "ymin", "xmax", "ymax", "label"]
-    train_df = train_df[required_cols]
-    test_df = test_df[required_cols]
 
-    train_df.to_csv(train_csv, index=False)
-    test_df.to_csv(test_csv, index=False)
+    # If existing test dataset is provided, skip split and put all new data in train
+    if EXISTING_TEST and os.path.exists(EXISTING_TEST):
+        print(f"\nUsing existing test dataset: {EXISTING_TEST}")
+        print("Putting all new data in training set...")
+        train_df = combined_df[required_cols].copy()
+        train_df.to_csv(train_csv, index=False)
+        print(f"\nSaved training annotations: {train_csv} ({len(train_df)} annotations, {train_df['image_path'].nunique()} images)")
+        print(f"Using existing test dataset: {EXISTING_TEST}")
+    else:
+        # Split into train/test by image_path (to avoid data leakage)
+        print(f"\nSplitting into train/test ({1-args.test_size:.0%}/{args.test_size:.0%})...")
+        unique_images = combined_df["image_path"].unique()
+        train_images, test_images = train_test_split(
+            unique_images, test_size=args.test_size, random_state=args.seed
+        )
 
-    print(f"\nSaved training annotations: {train_csv} ({len(train_df)} annotations, {len(train_images)} images)")
-    print(f"Saved test annotations: {test_csv} ({len(test_df)} annotations, {len(test_images)} images)")
+        train_df = combined_df[combined_df["image_path"].isin(train_images)].copy()
+        test_df = combined_df[combined_df["image_path"].isin(test_images)].copy()
+
+        train_df = train_df[required_cols]
+        test_df = test_df[required_cols]
+
+        train_df.to_csv(train_csv, index=False)
+        test_df.to_csv(test_csv, index=False)
+
+        print(f"\nSaved training annotations: {train_csv} ({len(train_df)} annotations, {len(train_images)} images)")
+        print(f"Saved test annotations: {test_csv} ({len(test_df)} annotations, {len(test_images)} images)")
+
     print(f"\nOutput directory: {args.output_dir}")
     print("\nData preparation complete!")
 

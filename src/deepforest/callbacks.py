@@ -39,7 +39,7 @@ class ImagesCallback(Callback):
         prediction_samples=2,
         dataset_samples=5,
         every_n_epochs=5,
-        select_random=False,
+        select_random=True,
         color=None,
         thickness=2,
     ):
@@ -56,6 +56,10 @@ class ImagesCallback(Callback):
         start."""
 
         if trainer.fast_dev_run:
+            return
+
+        # Only run on rank 0 to avoid file I/O synchronization issues in DDP
+        if trainer.global_rank != 0:
             return
 
         self.trainer = trainer
@@ -75,6 +79,10 @@ class ImagesCallback(Callback):
     def on_validation_end(self, trainer, pl_module):
         """Run callback at validation end."""
         if trainer.sanity_checking or trainer.fast_dev_run:
+            return
+
+        # Only run on rank 0 to avoid file I/O synchronization issues in DDP
+        if trainer.global_rank != 0:
             return
 
         if (trainer.current_epoch + 1) % self.every_n_epochs == 0:
@@ -141,6 +149,10 @@ class ImagesCallback(Callback):
         else:
             df = pd.DataFrame()
 
+        # Skip logging if there are no predictions
+        if df.empty or "image_path" not in df.columns:
+            return
+
         out_dir = os.path.join(self.savedir, "predictions")
         os.makedirs(out_dir, exist_ok=True)
 
@@ -151,19 +163,21 @@ class ImagesCallback(Callback):
             df["root_dir"] = dataset.root_dir
 
         # Limit to n images, potentially randomly selected
+        unique_images = df.image_path.unique()
+        n_samples = min(self.prediction_samples, len(unique_images))
+        if n_samples == 0:
+            return
         if self.select_random:
-            selected_images = np.random.choice(
-                df.image_path.unique(), self.prediction_samples
-            )
+            selected_images = np.random.choice(unique_images, n_samples, replace=False)
         else:
-            selected_images = df.image_path.unique()[: self.prediction_samples]
+            selected_images = unique_images[:n_samples]
 
-            # Ensure color is correctly assigned
-            if self.color is None:
-                num_classes = len(df["label"].unique())
-                results_color = sv.ColorPalette.from_matplotlib("viridis", num_classes)
-            else:
-                results_color = self.color
+        # Ensure color is correctly assigned
+        if self.color is None:
+            num_classes = len(df["label"].unique())
+            results_color = sv.ColorPalette.from_matplotlib("viridis", num_classes)
+        else:
+            results_color = self.color
 
         for image_name in selected_images:
             pred_df = df[df.image_path == image_name]
