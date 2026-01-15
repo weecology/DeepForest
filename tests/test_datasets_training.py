@@ -53,7 +53,7 @@ def test_BoxDataset(csv_file, label_dict):
         assert len(np.unique(targets["labels"])) == len(raw_data.label.unique())
 
 
-def test_single_class_with_empty(tmpdir):
+def test_single_class_with_empty(tmp_path):
     """Add fake empty annotations to test parsing"""
     csv_file1 = get_data("example.csv")
     csv_file2 = get_data("OSBS_029.csv")
@@ -67,11 +67,11 @@ def test_single_class_with_empty(tmpdir):
     df.loc[df.image_path == "OSBS_029.tif", "xmax"] = 0
     df.loc[df.image_path == "OSBS_029.tif", "ymax"] = 0
 
-    df.to_csv(f"{tmpdir}_test_empty.csv")
+    df.to_csv(f"{tmp_path}_test_empty.csv")
 
     root_dir = os.path.dirname(get_data("OSBS_029.png"))
     ds = BoxDataset(
-        csv_file=f"{tmpdir}_test_empty.csv", root_dir=root_dir, label_dict={"Tree": 0}
+        csv_file=f"{tmp_path}_test_empty.csv", root_dir=root_dir, label_dict={"Tree": 0}
     )
     assert len(ds) == 2
     # First image has annotations
@@ -140,14 +140,13 @@ def test_BoxDataset_format():
     assert image.shape[0] == 3
 
 
-def test_multi_image_warning():
-    tmpdir = tempfile.gettempdir()
+def test_multi_image_warning(tmp_path):
     csv_file1 = get_data("example.csv")
     csv_file2 = get_data("OSBS_029.csv")
     df1 = pd.read_csv(csv_file1)
     df2 = pd.read_csv(csv_file2)
     df = pd.concat([df1, df2])
-    csv_file = f"{tmpdir}/multiple.csv"
+    csv_file = str(tmp_path.joinpath("multiple.csv"))
     df.to_csv(csv_file)
 
     root_dir = os.path.dirname(csv_file1)
@@ -208,8 +207,8 @@ def test_BoxDataset_validate_labels():
         BoxDataset(csv_file=csv_file, root_dir=root_dir, label_dict={"Bird": 0})
 
 
-def test_validate_BoxDataset_missing_image(tmpdir, raster_path):
-    csv_path = os.path.join(tmpdir, "test.csv")
+def test_validate_BoxDataset_missing_image(tmp_path, raster_path):
+    csv_path = str(tmp_path / "test.csv")
     df = pd.DataFrame(
         {
             "image_path": ["missing.tif"],
@@ -226,7 +225,7 @@ def test_validate_BoxDataset_missing_image(tmpdir, raster_path):
         _ = BoxDataset(csv_file=csv_path, root_dir=root_dir)
 
 
-def test_BoxDataset_validate_coordinates(tmpdir, raster_path):
+def test_BoxDataset_validate_coordinates(tmp_path, raster_path):
     # Valid case: uses example.csv with all valid boxes
     csv_path = get_data("example.csv")
     root_dir = os.path.dirname(csv_path)
@@ -244,7 +243,7 @@ def test_BoxDataset_validate_coordinates(tmpdir, raster_path):
     ]
 
     for box in invalid_boxes:
-        csv_path = os.path.join(tmpdir, "test.csv")
+        csv_path = str(tmp_path / "test.csv")
         df = pd.DataFrame(
             {
                 "image_path": ["OSBS_029.tif"],
@@ -261,7 +260,7 @@ def test_BoxDataset_validate_coordinates(tmpdir, raster_path):
             BoxDataset(csv_file=csv_path, root_dir=root_dir)
 
 
-def test_BoxDataset_validate_non_rectangular_polygon(tmpdir, raster_path):
+def test_BoxDataset_validate_non_rectangular_polygon(tmp_path, raster_path):
     # Create a non-rectangular polygon (triangle)
     non_rect_polygon = geometry.Polygon([(10, 10), (50, 10), (30, 40)])
 
@@ -276,7 +275,7 @@ def test_BoxDataset_validate_non_rectangular_polygon(tmpdir, raster_path):
 
     # Convert to GeoDataFrame and save
     gdf = gpd.GeoDataFrame(df, geometry="geometry")
-    csv_path = os.path.join(tmpdir, "non_rect.csv")
+    csv_path = str(tmp_path / "non_rect.csv")
     gdf.to_csv(csv_path, index=False)
 
     root_dir = os.path.dirname(raster_path)
@@ -286,7 +285,7 @@ def test_BoxDataset_validate_non_rectangular_polygon(tmpdir, raster_path):
         BoxDataset(csv_file=csv_path, root_dir=root_dir)
 
 
-def test_BoxDataset_with_projected_shapefile(tmpdir, raster_path):
+def test_BoxDataset_with_projected_shapefile(tmp_path, raster_path):
     """Test that BoxDataset can load a shapefile with projected coordinates and converts to pixel coordinates"""
     import geopandas as gpd
 
@@ -324,7 +323,7 @@ def test_BoxDataset_with_projected_shapefile(tmpdir, raster_path):
     gdf = gpd.GeoDataFrame(df, geometry="geometry", crs=raster_crs)
 
     # Save as shapefile
-    shapefile_path = os.path.join(tmpdir, "annotations.shp")
+    shapefile_path = str(tmp_path / "annotations.shp")
     gdf.to_file(shapefile_path)
 
     # Load with BoxDataset

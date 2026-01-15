@@ -60,28 +60,28 @@ def gdf_box():
     return gdf
 
 
-def test_predict_image_and_plot(m, tmpdir):
+def test_predict_image_and_plot(m, tmp_path):
     sample_image_path = get_data("OSBS_029.png")
     results = m.predict_image(path=sample_image_path)
-    visualize.plot_results(results, savedir=tmpdir)
+    visualize.plot_results(results, savedir=tmp_path)
 
-    assert os.path.exists(os.path.join(tmpdir, "OSBS_029.png"))
+    assert os.path.exists(os.path.join(tmp_path, "OSBS_029.png"))
 
 
-def test_predict_tile_and_plot(m, tmpdir):
+def test_predict_tile_and_plot(m, tmp_path):
     sample_image_path = get_data("OSBS_029.png")
     results = m.predict_tile(path=sample_image_path)
-    visualize.plot_results(results, savedir=tmpdir)
+    visualize.plot_results(results, savedir=tmp_path)
 
-    assert os.path.exists(os.path.join(tmpdir, "OSBS_029.png"))
+    assert os.path.exists(os.path.join(tmp_path, "OSBS_029.png"))
 
 
-def test_multi_class_plot(tmpdir):
+def test_multi_class_plot(tmp_path):
     results = pd.read_csv(get_data("testfile_multi.csv"))
     results = utilities.read_file(results, root_dir=os.path.dirname(get_data("SOAP_061.png")))
-    visualize.plot_results(results, savedir=tmpdir)
+    visualize.plot_results(results, savedir=tmp_path)
 
-    assert os.path.exists(os.path.join(tmpdir, "SOAP_061.png"))
+    assert os.path.exists(os.path.join(tmp_path, "SOAP_061.png"))
 
 
 def test_convert_to_sv_format(gdf_box):
@@ -103,42 +103,41 @@ def test_convert_to_sv_format(gdf_box):
 
 
 
-def test_plot_annotations(gdf_box, tmpdir):
+def test_plot_annotations(gdf_box, tmp_path):
 
     # Call the function
-    visualize.plot_annotations(gdf_box, savedir=tmpdir)
+    visualize.plot_annotations(gdf_box, savedir=tmp_path)
 
     # Assertions
-    assert os.path.exists(os.path.join(tmpdir, "OSBS_029.png"))
+    assert (tmp_path / "OSBS_029.png").exists()
 
 
-def test_plot_results_box(gdf_box, tmpdir):
+def test_plot_results_box(gdf_box, tmp_path):
 
     # Call the function
-    visualize.plot_results(gdf_box, savedir=tmpdir)
+    visualize.plot_results(gdf_box, savedir=tmp_path)
 
     # Assertions
-    assert os.path.exists(os.path.join(tmpdir, "OSBS_029.png"))
+    assert (tmp_path / "OSBS_029.png").exists()
 
 
-def test_plot_results_point(gdf_point, tmpdir):
+def test_plot_results_point(gdf_point, tmp_path):
 
     # Call the function
-    visualize.plot_results(gdf_point, savedir=tmpdir)
+    visualize.plot_results(gdf_point, savedir=tmp_path)
 
     # Assertions
-    assert os.path.exists(os.path.join(tmpdir, "OSBS_029.png"))
+    assert (tmp_path / "OSBS_029.png").exists()
 
-
-def test_plot_results_polygon(gdf_poly, tmpdir):
+def test_plot_results_polygon(gdf_poly, tmp_path):
     # Call the function without height/width
-    visualize.plot_results(gdf_poly, savedir=tmpdir)
+    visualize.plot_results(gdf_poly, savedir=tmp_path)
 
     # Assertions
-    assert os.path.exists(os.path.join(tmpdir, "OSBS_029.png"))
+    assert (tmp_path / "OSBS_029.png").exists()
 
 
-def test_plot_with_relative_paths(tmpdir):
+def test_plot_with_relative_paths(tmp_path):
     # Test that plot_results and plot_annotations work with relative paths and root_dir
     full_path = get_data("OSBS_029.png")
     relative_name = os.path.basename(full_path)
@@ -153,9 +152,9 @@ def test_plot_with_relative_paths(tmpdir):
     gdf = gpd.GeoDataFrame(data)
     gdf.root_dir = root_dir
 
-    visualize.plot_results(gdf, savedir=tmpdir, show=False)
-    visualize.plot_annotations(gdf, savedir=tmpdir, show=False)
-    assert os.path.exists(os.path.join(tmpdir, "OSBS_029.png"))
+    visualize.plot_results(gdf, savedir=tmp_path, show=False)
+    visualize.plot_annotations(gdf, savedir=tmp_path, show=False)
+    assert (tmp_path / "OSBS_029.png").exists()
 
 
 

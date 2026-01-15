@@ -41,7 +41,7 @@ def test_float_warning(config):
     assert annotations.xmin.dtype is np.dtype('int64')
 
 
-def test_read_file(tmpdir):
+def test_read_file(tmp_path):
     sample_geometry = [geometry.Point(404211.9 + 10, 3285102 + 20), geometry.Point(404211.9 + 20, 3285102 + 20)]
     labels = ["Tree", "Tree"]
     df = pd.DataFrame({"geometry": sample_geometry, "label": labels})
@@ -49,8 +49,8 @@ def test_read_file(tmpdir):
     gdf["geometry"] = [geometry.box(left, bottom, right, top) for left, bottom, right, top in
                        gdf.geometry.buffer(0.5).bounds.values]
     gdf["image_path"] = os.path.basename(get_data("OSBS_029.tif"))
-    gdf.to_file("{}/annotations.shp".format(tmpdir))
-    shp = utilities.read_file(input="{}/annotations.shp".format(tmpdir), root_dir=os.path.dirname(get_data("OSBS_029.tif")))
+    gdf.to_file(tmp_path / "annotations.shp")
+    shp = utilities.read_file(input=str(tmp_path / "annotations.shp"), root_dir=os.path.dirname(get_data("OSBS_029.tif")))
 
     assert shp.shape[0] == 2
     assert "image_path" in shp.columns
@@ -58,7 +58,7 @@ def test_read_file(tmpdir):
     assert hasattr(shp, "root_dir")
 
 
-def test_read_file_multiple_images(tmpdir):
+def test_read_file_multiple_images(tmp_path):
     sample_geometry = [geometry.Point(404211.9 + 10, 3285102 + 20), geometry.Point(404211.9 + 20, 3285102 + 20)]
     labels = ["Tree", "Tree"]
     df = pd.DataFrame({"geometry": sample_geometry, "label": labels})
@@ -66,8 +66,8 @@ def test_read_file_multiple_images(tmpdir):
     gdf["geometry"] = [geometry.box(left, bottom, right, top) for left, bottom, right, top in
                        gdf.geometry.buffer(0.5).bounds.values]
     gdf["image_path"] = [os.path.basename(get_data("OSBS_029.tif")), os.path.basename(get_data("2018_SJER_3_252000_4107000_image_477.tif"))]
-    gdf.to_file("{}/annotations.shp".format(tmpdir))
-    shp = utilities.read_file(input="{}/annotations.shp".format(tmpdir), root_dir=os.path.dirname(get_data("OSBS_029.tif")))
+    gdf.to_file(tmp_path / "annotations.shp")
+    shp = utilities.read_file(input=str(tmp_path / "annotations.shp"), root_dir=os.path.dirname(get_data("OSBS_029.tif")))
 
     assert shp.shape[0] == 2
     assert "image_path" in shp.columns
@@ -127,28 +127,26 @@ def test_read_file_in_memory_dataframe():
     assert result.root_dir == os.path.dirname(get_data("OSBS_029.tif"))
 
 
-def test_convert_point_to_bbox(tmpdir):
+def test_convert_point_to_bbox():
     sample_geometry = [geometry.Point(10, 20), geometry.Point(20, 40)]
     labels = ["Tree", "Tree"]
     df = pd.DataFrame({"geometry": sample_geometry, "label": labels})
     gdf = gpd.GeoDataFrame(df, geometry="geometry")
-    gdf.to_file("{}/annotations.shp".format(tmpdir))
-    image_path = get_data("OSBS_029.png")
     shp = utilities.convert_point_to_bbox(gdf=gdf, buffer_size=10)
     assert shp.shape[0] == 2
 
 
-def test_read_file_shapefile_without_image_path(tmpdir):
+def test_read_file_shapefile_without_image_path(tmp_path):
     # Create a shapefile with no image_path or label columns
     sample_geometry = [geometry.Point(10, 20), geometry.Point(20, 40)]
     df = pd.DataFrame({"geometry": sample_geometry})
     gdf = gpd.GeoDataFrame(df, geometry="geometry")
-    shp_path = "{}/annotations_no_image_label.shp".format(tmpdir)
+    shp_path = tmp_path / "annotations_no_image_label.shp"
     gdf.to_file(shp_path)
 
     # Provide image_path and label via read_file to fill missing columns
     rgb = os.path.basename(get_data("OSBS_029.png"))
-    result = utilities.read_file(input=shp_path, image_path=rgb,label="Tree", root_dir=os.path.dirname(get_data("OSBS_029.png")))
+    result = utilities.read_file(input=str(shp_path), image_path=rgb,label="Tree", root_dir=os.path.dirname(get_data("OSBS_029.png")))
 
     assert result.shape[0] == 2
     # image_path should be taken from the provided rgb_path
@@ -157,19 +155,18 @@ def test_read_file_shapefile_without_image_path(tmpdir):
     assert "label" in result.columns
     assert hasattr(result, "root_dir")
 
-def test_shapefile_to_annotations_invalid_epsg(tmpdir):
+def test_shapefile_to_annotations_invalid_epsg(tmp_path):
     sample_geometry = [geometry.Point(404211.9 + 10, 3285102 + 20), geometry.Point(404211.9 + 20, 3285102 + 20)]
     labels = ["Tree", "Tree"]
     df = pd.DataFrame({"geometry": sample_geometry, "label": labels})
     gdf = gpd.GeoDataFrame(df, geometry="geometry", crs="EPSG:4326")
-    gdf.to_file("{}/annotations.shp".format(tmpdir))
+    gdf.to_file(tmp_path / "annotations.shp")
     assert gdf.crs.to_string() == "EPSG:4326"
     image_path = get_data("OSBS_029.tif")
     with pytest.raises(ValueError):
-        shp = utilities.read_file(input="{}/annotations.shp".format(tmpdir), image_path=image_path)
+        _ = utilities.read_file(input=str(tmp_path / "annotations.shp"), image_path=image_path)
 
-
-def test_read_file_boxes_projected(tmpdir):
+def test_read_file_boxes_projected(tmp_path):
     sample_geometry = [geometry.Point(404211.9 + 10, 3285102 + 20), geometry.Point(404211.9 + 20, 3285102 + 20)]
     labels = ["Tree", "Tree"]
     df = pd.DataFrame({"geometry": sample_geometry, "label": labels})
@@ -178,24 +175,24 @@ def test_read_file_boxes_projected(tmpdir):
                        gdf.geometry.buffer(0.5).bounds.values]
     image_path = get_data("OSBS_029.tif")
     gdf["image_path"] = os.path.basename(image_path)
-    gdf.to_file("{}/test_read_file_boxes_projected.shp".format(tmpdir))
+    gdf.to_file(tmp_path / "test_read_file_boxes_projected.shp")
     image_path = get_data("OSBS_029.tif")
 
-    shp = utilities.read_file(input="{}/test_read_file_boxes_projected.shp".format(tmpdir), root_dir=os.path.dirname(get_data("OSBS_029.tif")))
+    shp = utilities.read_file(input=str(tmp_path / "test_read_file_boxes_projected.shp"), root_dir=os.path.dirname(get_data("OSBS_029.tif")))
     assert shp.shape[0] == 2
     assert "image_path" in shp.columns
     assert "label" in shp.columns
     assert hasattr(shp, "root_dir")
 
 
-def test_read_file_points_csv(tmpdir):
+def test_read_file_points_csv(tmp_path):
     x = [10, 20]
     y = [20, 20]
     labels = ["Tree", "Tree"]
     image_path = [os.path.basename(get_data("OSBS_029.tif")), os.path.basename(get_data("OSBS_029.tif"))]
     df = pd.DataFrame({"x": x, "y": y, "label": labels, "image_path": image_path})
-    df.to_csv("{}/test_read_file_points.csv".format(tmpdir), index=False)
-    read_df = utilities.read_file(input="{}/test_read_file_points.csv".format(tmpdir), root_dir=os.path.dirname(get_data("OSBS_029.tif")))
+    df.to_csv(tmp_path / "test_read_file_points.csv", index=False)
+    read_df = utilities.read_file(input=str(tmp_path / "test_read_file_points.csv"), root_dir=os.path.dirname(get_data("OSBS_029.tif")))
 
     assert read_df.shape[0] == 2
     assert "image_path" in read_df.columns
@@ -203,7 +200,7 @@ def test_read_file_points_csv(tmpdir):
     assert hasattr(read_df, "root_dir")
 
 
-def test_read_file_polygons_csv(tmpdir):
+def test_read_file_polygons_csv(tmp_path):
     # Create a sample GeoDataFrame with polygon geometries with 6 points
     sample_geometry = [geometry.Polygon([(0, 0), (0, 2), (1, 1), (1, 0), (0, 0)]),
                        geometry.Polygon([(2, 2), (2, 4), (3, 3), (3, 2), (2, 2)])]
@@ -211,10 +208,10 @@ def test_read_file_polygons_csv(tmpdir):
     labels = ["Tree", "Tree"]
     image_path = os.path.basename(get_data("OSBS_029.png"))
     df = pd.DataFrame({"geometry": sample_geometry, "label": labels, "image_path": os.path.basename(image_path)})
-    df.to_csv("{}/test_read_file_polygons.csv".format(tmpdir), index=False)
+    df.to_csv(tmp_path / "test_read_file_polygons.csv", index=False)
 
     # Call the function under test
-    annotations = utilities.read_file(input="{}/test_read_file_polygons.csv".format(tmpdir), root_dir=os.path.dirname(get_data("OSBS_029.tif")))
+    annotations = utilities.read_file(input=str(tmp_path / "test_read_file_polygons.csv"), root_dir=os.path.dirname(get_data("OSBS_029.tif")))
 
     # Assert the expected number of annotations
     assert annotations.shape[0] == 2
@@ -224,7 +221,7 @@ def test_read_file_polygons_csv(tmpdir):
     assert hasattr(annotations, "root_dir")
 
 
-def test_read_file_polygons_projected(tmpdir):
+def test_read_file_polygons_projected(tmp_path):
     sample_geometry = [geometry.Point(404211.9 + 10, 3285102 + 20), geometry.Point(404211.9 + 20, 3285102 + 20)]
     labels = ["Tree", "Tree"]
     df = pd.DataFrame({"geometry": sample_geometry, "label": labels})
@@ -233,8 +230,8 @@ def test_read_file_polygons_projected(tmpdir):
                        left, bottom, right, top in gdf.geometry.buffer(0.5).bounds.values]
     image_path = get_data("OSBS_029.tif")
     gdf["image_path"] = os.path.basename(image_path)
-    gdf.to_file("{}/test_read_file_polygons_projected.shp".format(tmpdir))
-    shp = utilities.read_file(input="{}/test_read_file_polygons_projected.shp".format(tmpdir), root_dir=os.path.dirname(get_data("OSBS_029.tif")))
+    gdf.to_file(tmp_path / "test_read_file_polygons_projected.shp")
+    shp = utilities.read_file(input=str(tmp_path / "test_read_file_polygons_projected.shp"), root_dir=os.path.dirname(get_data("OSBS_029.tif")))
 
     assert shp.shape[0] == 2
     assert "image_path" in shp.columns
@@ -242,15 +239,15 @@ def test_read_file_polygons_projected(tmpdir):
     assert hasattr(shp, "root_dir")
 
 
-def test_read_file_points_projected(tmpdir):
+def test_read_file_points_projected(tmp_path):
     sample_geometry = [geometry.Point(404211.9 + 10, 3285102 + 20), geometry.Point(404211.9 + 20, 3285102 + 20)]
     labels = ["Tree", "Tree"]
     df = pd.DataFrame({"geometry": sample_geometry, "label": labels})
     gdf = gpd.GeoDataFrame(df, geometry="geometry", crs="EPSG:32617")
     image_path = get_data("OSBS_029.tif")
     gdf["image_path"] = os.path.basename(image_path)
-    gdf.to_file("{}/test_read_file_points_projected.shp".format(tmpdir))
-    shp = utilities.read_file(input="{}/test_read_file_points_projected.shp".format(tmpdir), root_dir=os.path.dirname(get_data("OSBS_029.tif")))
+    gdf.to_file(tmp_path / "test_read_file_points_projected.shp")
+    shp = utilities.read_file(input=str(tmp_path / "test_read_file_points_projected.shp"), root_dir=os.path.dirname(get_data("OSBS_029.tif")))
 
     assert shp.shape[0] == 2
     assert shp.geometry.iloc[0].type == "Point"
@@ -259,7 +256,7 @@ def test_read_file_points_projected(tmpdir):
     assert hasattr(shp, "root_dir")
 
 
-def test_read_file_boxes_unprojected(tmpdir):
+def test_read_file_boxes_unprojected(tmp_path):
     # Create a sample GeoDataFrame with box geometries
     sample_geometry = [geometry.box(0, 0, 1, 1), geometry.box(2, 2, 3, 3)]
     labels = ["Tree", "Tree"]
@@ -267,8 +264,8 @@ def test_read_file_boxes_unprojected(tmpdir):
     gdf = gpd.GeoDataFrame(df, geometry="geometry")
     image_path = get_data("OSBS_029.png")
     gdf["image_path"] = os.path.basename(image_path)
-    gdf.to_file("{}/test_read_file_boxes_unprojected.shp".format(tmpdir))
-    annotations = utilities.read_file(input="{}/test_read_file_boxes_unprojected.shp".format(tmpdir), root_dir=os.path.dirname(get_data("OSBS_029.png")))
+    gdf.to_file(tmp_path / "test_read_file_boxes_unprojected.shp")
+    annotations = utilities.read_file(input=str(tmp_path / "test_read_file_boxes_unprojected.shp"), root_dir=os.path.dirname(get_data("OSBS_029.png")))
 
     # Assert the expected number of annotations and geometry type
     assert annotations.shape[0] == 2
@@ -278,7 +275,7 @@ def test_read_file_boxes_unprojected(tmpdir):
     assert hasattr(annotations, "root_dir")
 
 
-def test_read_file_points_unprojected(tmpdir):
+def test_read_file_points_unprojected(tmp_path):
     # Create a sample GeoDataFrame with point geometries
     sample_geometry = [geometry.Point(0.5, 0.5), geometry.Point(2.5, 2.5)]
     labels = ["Tree", "Tree"]
@@ -286,9 +283,9 @@ def test_read_file_points_unprojected(tmpdir):
     gdf = gpd.GeoDataFrame(df, geometry="geometry")
     image_path = get_data("OSBS_029.png")
     gdf["image_path"] = os.path.basename(image_path)
-    gdf.to_file("{}/test_read_file_points_unprojected.shp".format(tmpdir))
+    gdf.to_file(tmp_path / "test_read_file_points_unprojected.shp")
 
-    annotations = utilities.read_file(input="{}/test_read_file_points_unprojected.shp".format(tmpdir), root_dir=os.path.dirname(get_data("OSBS_029.png")))
+    annotations = utilities.read_file(input=str(tmp_path / "test_read_file_points_unprojected.shp"), root_dir=os.path.dirname(get_data("OSBS_029.png")))
 
     # Assert the expected number of annotations
     assert annotations.shape[0] == 2
@@ -298,7 +295,7 @@ def test_read_file_points_unprojected(tmpdir):
     assert hasattr(annotations, "root_dir")
 
 
-def test_read_file_polygons_unprojected(tmpdir):
+def test_read_file_polygons_unprojected(tmp_path):
     # Create a sample GeoDataFrame with polygon geometries with 6 points
     sample_geometry = [geometry.Polygon([(0, 0), (0, 2), (1, 1), (1, 0), (0, 0)]),
                        geometry.Polygon([(2, 2), (2, 4), (3, 3), (3, 2), (2, 2)])]
@@ -308,10 +305,10 @@ def test_read_file_polygons_unprojected(tmpdir):
     gdf = gpd.GeoDataFrame(df, geometry="geometry")
     image_path = get_data("OSBS_029.png")
     gdf["image_path"] = os.path.basename(image_path)
-    gdf.to_file("{}/test_read_file_polygons_unprojected.shp".format(tmpdir))
+    gdf.to_file(tmp_path / "test_read_file_polygons_unprojected.shp")
 
     # Call the function under test
-    annotations = utilities.read_file(input="{}/test_read_file_polygons_unprojected.shp".format(tmpdir), root_dir=os.path.dirname(get_data("OSBS_029.png")))
+    annotations = utilities.read_file(input=str(tmp_path / "test_read_file_polygons_unprojected.shp"), root_dir=os.path.dirname(get_data("OSBS_029.png")))
 
     # Assert the expected number of annotations
     assert annotations.shape[0] == 2
@@ -321,7 +318,7 @@ def test_read_file_polygons_unprojected(tmpdir):
     assert hasattr(annotations, "root_dir")
 
 
-def test_crop_raster_valid_crop(tmpdir):
+def test_crop_raster_valid_crop(tmp_path):
     rgb_path = get_data("2018_SJER_3_252000_4107000_image_477.tif")
     raster_bounds = rio.open(rgb_path).bounds
 
@@ -329,10 +326,10 @@ def test_crop_raster_valid_crop(tmpdir):
     bounds = (raster_bounds[0] + 10, raster_bounds[1] + 10, raster_bounds[0] + 30, raster_bounds[1] + 30)
 
     # Call the function under test
-    result = utilities.crop_raster(bounds, rgb_path=rgb_path, savedir=tmpdir, filename="crop")
+    result = utilities.crop_raster(bounds, rgb_path=rgb_path, savedir=tmp_path, filename="crop")
 
     # Assert the output filename (normalize both paths)
-    expected_filename = str(tmpdir.join("crop.tif"))
+    expected_filename = str(tmp_path / "crop.tif")
     assert os.path.normpath(result) == os.path.normpath(expected_filename)
 
     # Assert the saved crop
@@ -344,7 +341,7 @@ def test_crop_raster_valid_crop(tmpdir):
         assert src.dtypes == ("uint8", "uint8", "uint8")
 
 
-def test_crop_raster_invalid_crop(tmpdir):
+def test_crop_raster_invalid_crop(tmp_path):
     rgb_path = get_data("2018_SJER_3_252000_4107000_image_477.tif")
     raster_bounds = rio.open(rgb_path).bounds
 
@@ -353,10 +350,10 @@ def test_crop_raster_invalid_crop(tmpdir):
 
     # Call the function under test
     with pytest.raises(ValueError):
-        result = utilities.crop_raster(bounds, rgb_path=rgb_path, savedir=tmpdir, filename="crop")
+        _ = utilities.crop_raster(bounds, rgb_path=rgb_path, savedir=tmp_path, filename="crop")
 
 
-def test_crop_raster_no_savedir(tmpdir):
+def test_crop_raster_no_savedir():
     rgb_path = get_data("2018_SJER_3_252000_4107000_image_477.tif")
     raster_bounds = rio.open(rgb_path).bounds
 
@@ -371,20 +368,20 @@ def test_crop_raster_no_savedir(tmpdir):
     assert isinstance(result, np.ndarray)
 
 
-def test_crop_raster_png_unprojected(tmpdir):
+def test_crop_raster_png_unprojected(tmp_path):
     # Define the bounds for cropping
     bounds = (0, 0, 100, 100)
 
     # Set the paths
     rgb_path = get_data("OSBS_029.png")
-    savedir = str(tmpdir)
+    savedir = str(tmp_path)
     filename = "crop"
 
     # Call the function under test
     result = utilities.crop_raster(bounds, rgb_path=rgb_path, savedir=savedir, filename=filename, driver="PNG")
 
     # Assert the output filename (normalize both paths)
-    expected_filename = os.path.join(savedir, "crop.png")
+    expected_filename = str(tmp_path / "crop.png")
     assert os.path.normpath(result) == os.path.normpath(expected_filename)
 
     # Assert the saved crop
@@ -396,7 +393,7 @@ def test_crop_raster_png_unprojected(tmpdir):
         assert src.crs is None
 
 
-def test_geo_to_image_coordinates_UTM_N(tmpdir):
+def test_geo_to_image_coordinates_UTM_N():
     """Read in a csv file, make a projected shapefile, convert to image coordinates and view the results"""
     annotations = get_data("2018_SJER_3_252000_4107000_image_477.csv")
     path_to_raster = get_data("2018_SJER_3_252000_4107000_image_477.tif")
@@ -427,7 +424,7 @@ def test_geo_to_image_coordinates_UTM_N(tmpdir):
         annotations).shape[0]
 
 
-def test_geo_to_image_coordinates_UTM_S(tmpdir):
+def test_geo_to_image_coordinates_UTM_S():
     """Read in a csv file, make a projected shapefile, convert to image coordinates and view the results"""
     annotations = get_data("australia.shp")
     path_to_raster = get_data("australia.tif")
@@ -454,7 +451,7 @@ def test_geo_to_image_coordinates_UTM_S(tmpdir):
     assert image_coords[image_coords.intersects(numpy_window)].shape[0] == gpd.read_file(annotations).shape[0]
 
 
-def test_image_to_geo_coordinates(tmpdir):
+def test_image_to_geo_coordinates():
     annotations = get_data("2018_SJER_3_252000_4107000_image_477.csv")
     path_to_raster = get_data("2018_SJER_3_252000_4107000_image_477.tif")
 
@@ -485,7 +482,7 @@ def test_image_to_geo_coordinates(tmpdir):
     assert (geo_coords["ymax"] == bounds.maxy).all()
 
 
-def test_image_to_geo_coordinates_boxes(tmpdir):
+def test_image_to_geo_coordinates_boxes():
     annotations = get_data("2018_SJER_3_252000_4107000_image_477.csv")
     path_to_raster = get_data("2018_SJER_3_252000_4107000_image_477.tif")
 
@@ -509,7 +506,7 @@ def test_image_to_geo_coordinates_boxes(tmpdir):
     # plt.show()
 
 
-def test_image_to_geo_coordinates_points(tmpdir):
+def test_image_to_geo_coordinates_points():
     annotations = get_data("2018_SJER_3_252000_4107000_image_477.csv")
     path_to_raster = get_data("2018_SJER_3_252000_4107000_image_477.tif")
 
@@ -534,7 +531,7 @@ def test_image_to_geo_coordinates_points(tmpdir):
     # plt.show()
 
 
-def test_image_to_geo_coordinates_polygons(tmpdir):
+def test_image_to_geo_coordinates_polygons():
     annotations = get_data("2018_SJER_3_252000_4107000_image_477.csv")
     path_to_raster = get_data("2018_SJER_3_252000_4107000_image_477.tif")
 
@@ -561,7 +558,7 @@ def test_image_to_geo_coordinates_polygons(tmpdir):
 
 
 
-def test_read_coco_json(tmpdir):
+def test_read_coco_json(tmp_path):
     """Test reading a COCO format JSON file"""
     # Create a sample COCO JSON structure
     coco_data = {
@@ -588,7 +585,7 @@ def test_read_coco_json(tmpdir):
     }
 
     # Write the sample JSON to a temporary file
-    json_path = tmpdir.join("test_coco.json")
+    json_path = tmp_path / "annotations.json"
     with open(json_path, "w") as f:
         json.dump(coco_data, f)
 

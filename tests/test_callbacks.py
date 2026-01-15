@@ -52,10 +52,10 @@ def m(download_release, tmp_path_factory):
     return m
 
 
-def test_log_images_dummy_comet(m, tmpdir):
+def test_log_images_dummy_comet(m, tmp_path):
     """Test for Comet-style loggers with log_image method"""
     logger = MockCometLogger()
-    im_callback = callbacks.ImagesCallback(save_dir=tmpdir,
+    im_callback = callbacks.ImagesCallback(save_dir=tmp_path,
                                            every_n_epochs=1,
                                            prediction_samples=1,
                                            dataset_samples=1)
@@ -66,10 +66,10 @@ def test_log_images_dummy_comet(m, tmpdir):
     # Expect 1 from each dataset, 1 from prediction
     assert logger.experiment.log_image.call_count >= 3
 
-def test_log_images_dummy_tb(m, tmpdir):
+def test_log_images_dummy_tb(m, tmp_path):
     """Test for Tensorboard-style loggers with add_image method"""
     logger = MockTBLogger()
-    im_callback = callbacks.ImagesCallback(save_dir=tmpdir,
+    im_callback = callbacks.ImagesCallback(save_dir=tmp_path,
                                            every_n_epochs=1,
                                            prediction_samples=1,
                                            dataset_samples=1)
@@ -81,12 +81,12 @@ def test_log_images_dummy_tb(m, tmpdir):
     assert logger.experiment.add_image.call_count >= 3
 
 
-def test_log_images_dummy_both(m, tmpdir):
+def test_log_images_dummy_both(m, tmp_path):
     """Test for the correct logger precedence is respected (TB > Comet)."""
     comet = MockCometLogger()
     tensorboard = MockTBLogger()
     loggers = [comet, tensorboard]
-    im_callback = callbacks.ImagesCallback(save_dir=tmpdir,
+    im_callback = callbacks.ImagesCallback(save_dir=tmp_path,
                                            every_n_epochs=1,
                                            prediction_samples=1,
                                            dataset_samples=1)
@@ -98,62 +98,62 @@ def test_log_images_dummy_both(m, tmpdir):
     assert tensorboard.experiment.add_image.call_count >= 3
     assert comet.experiment.log_image.call_count == 0
 
-def test_log_images_file(m, tmpdir):
-    im_callback = callbacks.ImagesCallback(save_dir=tmpdir, every_n_epochs=1, prediction_samples=5)
+def test_log_images_file(m, tmp_path):
+    im_callback = callbacks.ImagesCallback(save_dir=tmp_path, every_n_epochs=1, prediction_samples=5)
 
     m.create_trainer(callbacks=[im_callback], fast_dev_run = False)
     m.trainer.fit(m)
 
-    assert os.path.exists(os.path.join(tmpdir, "predictions"))
-    saved_images = glob.glob("{}/predictions/*.png".format(tmpdir))
+    assert (tmp_path / "predictions").exists()
+    saved_images = list((tmp_path / "predictions").glob("*.png"))
     assert len(saved_images) == m.current_epoch*min(len(m.val_dataloader().dataset), im_callback.prediction_samples)
-    saved_meta = glob.glob("{}/predictions/*.json".format(tmpdir))
+    saved_meta = list((tmp_path / "predictions").glob("*.json"))
     assert len(saved_meta) == m.current_epoch*min(len(m.val_dataloader().dataset), im_callback.prediction_samples)
 
-    assert os.path.exists(os.path.join(tmpdir, "train_sample"))
-    train_images = glob.glob("{}/train_sample/*".format(tmpdir))
+    assert (tmp_path / "train_sample").exists()
+    train_images = list((tmp_path / "train_sample").glob("*"))
     assert len(train_images) == min(len(m.train_dataloader().dataset), im_callback.dataset_samples)
 
-    assert os.path.exists(os.path.join(tmpdir, "validation_sample"))
-    val_images = glob.glob("{}/validation_sample/*".format(tmpdir))
+    assert (tmp_path / "validation_sample").exists()
+    val_images = list((tmp_path / "validation_sample").glob("*"))
     assert len(val_images) == min(len(m.val_dataloader().dataset), im_callback.dataset_samples)
 
-def test_log_images_fast(m, tmpdir):
+def test_log_images_fast(m, tmp_path):
     """Test that no images are logged if fast_dev_run is active"""
-    im_callback = callbacks.ImagesCallback(save_dir=tmpdir, every_n_epochs=1)
+    im_callback = callbacks.ImagesCallback(save_dir=tmp_path, every_n_epochs=1)
 
     m.create_trainer(callbacks=[im_callback], fast_dev_run=True)
     m.trainer.fit(m)
 
-    assert not os.path.exists(os.path.join(tmpdir, "predictions"))
-    assert not os.path.exists(os.path.join(tmpdir, "train_sample"))
-    assert not os.path.exists(os.path.join(tmpdir, "validation_sample"))
+    assert not (tmp_path / "predictions").exists()
+    assert not (tmp_path / "train_sample").exists()
+    assert not (tmp_path / "validation_sample").exists()
 
-def test_log_images_no_pred(m, tmpdir):
+def test_log_images_no_pred(m, tmp_path):
     """Test disabling prediction logging"""
-    im_callback = callbacks.ImagesCallback(save_dir=tmpdir, prediction_samples=0, every_n_epochs=1)
+    im_callback = callbacks.ImagesCallback(save_dir=tmp_path, prediction_samples=0, every_n_epochs=1)
 
     m.create_trainer(callbacks=[im_callback], fast_dev_run=False)
     m.trainer.fit(m)
 
-    assert not os.path.exists(os.path.join(tmpdir, "predictions"))
-    assert os.path.exists(os.path.join(tmpdir, "train_sample"))
-    assert os.path.exists(os.path.join(tmpdir, "validation_sample"))
+    assert not (tmp_path / "predictions").exists()
+    assert (tmp_path / "train_sample").exists()
+    assert (tmp_path / "validation_sample").exists()
 
-def test_log_images_no_dataset(m, tmpdir):
+def test_log_images_no_dataset(m, tmp_path):
     """Test disabling dataset sample logging"""
-    im_callback = callbacks.ImagesCallback(save_dir=tmpdir, dataset_samples=0, every_n_epochs=1)
+    im_callback = callbacks.ImagesCallback(save_dir=tmp_path, dataset_samples=0, every_n_epochs=1)
 
     m.create_trainer(callbacks=[im_callback], fast_dev_run=False)
     m.trainer.fit(m)
 
-    assert os.path.exists(os.path.join(tmpdir, "predictions"))
-    assert not os.path.exists(os.path.join(tmpdir, "train_sample"))
-    assert not os.path.exists(os.path.join(tmpdir, "validation_sample"))
+    assert (tmp_path / "predictions").exists()
+    assert not (tmp_path / "train_sample").exists()
+    assert not (tmp_path / "validation_sample").exists()
 
-def test_log_image_empty_annotations(m, tmpdir):
+def test_log_image_empty_annotations(m, tmp_path):
     """Test that images with no annotations are logged without error"""
-    im_callback = callbacks.ImagesCallback(save_dir=tmpdir, every_n_epochs=1, prediction_samples=1)
+    im_callback = callbacks.ImagesCallback(save_dir=tmp_path, every_n_epochs=1, prediction_samples=1)
     im_callback.trainer = m.trainer
 
     # Drop targets from all samples
@@ -169,15 +169,15 @@ def test_log_image_empty_annotations(m, tmpdir):
     )
 
     im_callback._log_dataset_sample(empty_dataset, split="validation")
-    assert os.path.exists(os.path.join(tmpdir, "validation_sample"))
-    val_images = glob.glob("{}/validation_sample/*".format(tmpdir))
+    assert os.path.exists(os.path.join(tmp_path, "validation_sample"))
+    val_images = list((tmp_path / "validation_sample").glob("*"))
     assert len(val_images) == 1
 
-def test_create_checkpoint(m, tmpdir):
+def test_create_checkpoint(m, tmp_path):
     """Test checkpoint creation"""
     checkpoint_callback = ModelCheckpoint(
         filename='model',
-        dirpath=tmpdir,
+        dirpath=tmp_path,
         save_top_k=1,
         monitor="val_classification",
         mode="max",
@@ -187,4 +187,4 @@ def test_create_checkpoint(m, tmpdir):
     m.create_trainer(callbacks=[checkpoint_callback], fast_dev_run=False)
     m.trainer.fit(m)
 
-    assert os.path.exists(os.path.join(tmpdir, 'model.ckpt'))
+    assert (tmp_path / 'model.ckpt').exists()
