@@ -1,114 +1,101 @@
+# NOTE: Added profiling for predict_tile performance
 import gc
-import glob
 import os
 import time
-
 import numpy as np
-import psutil
-import torch
 from tabulate import tabulate
-
 from deepforest import main
 
+try:
+    import torch
+    import psutil
+except ImportError:
+    pass  # Optional if psutil or torch not available
 
-def get_memory_usage():
-    """Get current memory usage in MB"""
-    process = psutil.Process(os.getpid())
-    return process.memory_info().rss / 1024 / 1024  # Convert to MB
+def profile_predict_tile(model, image_paths, device="cpu", workers=0, patch_size=1500, patch_overlap=0.05, num_runs=2, strategy="single"):
+    """Profile predict_tile function with given parameters"""
+    print(f"\nProfiling predict_tile on {device} with {workers} workers using {strategy} strategy...")
 
-def profile_predict_tile(model, paths, device, workers=0, patch_size=1500, patch_overlap=0.05, num_runs=2, dataloader_strategy="single"):
-    """Profile predict_tile function for a given device and worker configuration"""
-    print(f"\nProfiling predict_tile on {device} with {workers} workers using {dataloader_strategy} strategy...")
-
-    # Update worker configuration
+    # Configure model
     model.config["workers"] = workers
 
-    # Time profiling
     times = []
     for i in range(num_runs):
         start_time = time.time()
-        if dataloader_strategy == "batch":
-            # change batch size to 2 for batch strategy
+        if strategy == "batch":
             model.config["batch_size"] = 2
             model.predict_tile(
-                paths=paths,
+                paths=image_paths,
                 patch_size=patch_size,
                 patch_overlap=patch_overlap,
-                dataloader_strategy=dataloader_strategy
+                dataloader_strategy=strategy
             )
         else:
-            for path in paths:
+            for path in image_paths:
                 model.predict_tile(
                     path=path,
                     patch_size=patch_size,
                     patch_overlap=patch_overlap,
-                    dataloader_strategy=dataloader_strategy
+                    dataloader_strategy=strategy
                 )
-        end_time = time.time()
-        times.append(end_time - start_time)
+        times.append(time.time() - start_time)
         print(f"Run {i+1}/{num_runs}: {times[-1]:.2f} seconds")
 
-    # Clean up
-    gc.collect()
-    if device == "cuda":
-        torch.cuda.empty_cache()
+        # Cleanup
+        gc.collect()
+        if device == "cuda" and torch.cuda.is_available():
+            torch.cuda.empty_cache()
 
     return {
         "device": device,
         "workers": workers,
-        "strategy": dataloader_strategy,
+        "strategy": strategy,
         "mean_time": np.mean(times),
-        "std_time": np.std(times),
+        "std_time": np.std(times)
     }
+
 
 def run():
     # Initialize model
-    m = main.deepforest()
-    m.create_model()
-    m.load_model("Weecology/deepforest-bird")
-    m.config["train"]["fast_dev_run"] = False
-    m.config["batch_size"] = 3
+    model = main.deepforest()
+    model.create_model()
+    model.use_release()  # load the default pretrained model
+
+    # Use sample images included in tests/sample_images folder
+    # You can add a few small JPGs here to test
+    sample_dir = os.path.join(os.path.dirname(__file__), "sample_images")
+    os.makedirs(sample_dir, exist_ok=True)
+    image_paths = [os.path.join(sample_dir, f) for f in os.listdir(sample_dir) if f.endswith(".jpg")]
+    if not image_paths:
+        print("No sample images found in tests/sample_images/. Add a few JPGs to run the profiler.")
+        return
+
+    # Test different configurations
     strategies = ["single", "batch"]
+    worker_configs = [0, 2]  # small numbers to keep test quick
+    devices = ["cpu"]
+    if torch.cuda.is_available():
+        devices.append("cuda")
 
-    # Get test data
-    paths = glob.glob("/blue/ewhite/b.weinstein/BOEM/JPG_20241220_145900/*.jpg")[:20]
-
-    # Test configurations
-    worker_configs = [0, 5]
-    devices = ["cuda"]
-
-    # Run all configurations
     results = []
+
     for strategy in strategies:
         for device in devices:
             if strategy == "single":
-                # Only run workers = 0 for single strategy
-                m.create_trainer()  # Recreate trainer for each configuration
-                result = profile_predict_tile(m, paths, device, workers=0, dataloader_strategy=strategy)
-                results.append(result)
+                results.append(profile_predict_tile(model, image_paths, device=device, workers=0, strategy=strategy))
             else:
                 for workers in worker_configs:
-                    m.create_trainer()  # Recreate trainer for each configuration
-                    result = profile_predict_tile(m, paths, device, workers, dataloader_strategy=strategy)
-                    results.append(result)
-    # Create comparison table
-    table_data = []
+                    results.append(profile_predict_tile(model, image_paths, device=device, workers=workers, strategy=strategy))
+
+    # Display table
     headers = ["Device", "Workers", "Strategy", "Mean Time (s)", "Std Time (s)"]
-
-    for result in results:
-        table_data.append([
-            result["device"],
-            result["workers"],
-            result["strategy"],
-            f"{result['mean_time']:.2f}",
-            f"{result['std_time']:.2f}",
-        ])
-
-    # Print results
+    table = []
+    for r in results:
+        table.append([r["device"], r["workers"], r["strategy"], f"{r['mean_time']:.2f}", f"{r['std_time']:.2f}"])
     print("\nProfiling Results Comparison:")
-    print("persistant workers")
-    print("=" * 140)
-    print(tabulate(table_data, headers=headers, tablefmt="grid"))
+    print("="*80)
+    from tabulate import tabulate
+    print(tabulate(table, headers=headers, tablefmt="grid"))
 
 
 if __name__ == "__main__":
