@@ -199,15 +199,15 @@ def split_raster(
             )
 
     # Convert from channels-last (H x W x C) to channels-first (C x H x W)
-    if numpy_image.shape[2] in [3, 4]:
+    if len(numpy_image.shape) == 3 and numpy_image.shape[2] in [3, 4]:
         print(
             f"Image shape is {numpy_image.shape[2]}, assuming this is channels last, "
             "converting to channels first"
         )
         numpy_image = numpy_image.transpose(2, 0, 1)
 
-    # Check that it's 3 bands
-    bands = numpy_image.shape[2]
+    # Check that it's 3 bands (after transpose, shape is (C, H, W), so bands is shape[0])
+    bands = numpy_image.shape[0]
     if not bands == 3:
         warnings.warn(
             f"Input image had non-3 band shape of {numpy_image.shape}, selecting first 3 bands",

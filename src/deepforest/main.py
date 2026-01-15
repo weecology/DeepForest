@@ -844,21 +844,26 @@ class deepforest(pl.LightningModule):
         self.log_epoch_metrics()
 
         if (self.current_epoch + 1) % self.config.validation.val_accuracy_interval == 0:
-            if len(self.predictions) > 0:
-                predictions = pd.concat(self.predictions)
+            # Only run evaluate on rank 0 to avoid file I/O synchronization issues in DDP
+            if self.trainer.global_rank == 0:
+                if len(self.predictions) > 0:
+                    predictions = pd.concat(self.predictions)
+                else:
+                    predictions = pd.DataFrame()
+
+                results = self.evaluate(
+                    self.config.validation.csv_file,
+                    root_dir=self.config.validation.root_dir,
+                    size=self.config.validation.size,
+                    predictions=predictions,
+                )
+
+                self.__evaluation_logs__(results)
+
+                return results
             else:
-                predictions = pd.DataFrame()
-
-            results = self.evaluate(
-                self.config.validation.csv_file,
-                root_dir=self.config.validation.root_dir,
-                size=self.config.validation.size,
-                predictions=predictions,
-            )
-
-            self.__evaluation_logs__(results)
-
-            return results
+                # Other ranks return None - metrics are already logged via log_epoch_metrics
+                return None
 
     def predict_step(self, batch, batch_idx):
         """Predict a batch of images with the deepforest model. If batch is a
