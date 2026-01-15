@@ -28,4 +28,5 @@ def test_white_image_predict_tile_no_predictions_bird_model(model_name):
         patch_overlap=0.0,
         iou_threshold=m.config.nms_thresh,
     )
-    assert (res is None) or (isinstance(res, pd.DataFrame) and res.empty)
+    assert len(res) == 0
+    #assert (res is None) or (isinstance(res, pd.DataFrame) and res.empty)
