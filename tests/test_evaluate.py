@@ -80,7 +80,7 @@ def test_evaluate_empty(m, tmp_path):
     m = main.deepforest(config_args={"model": {"name": None},
                                      "log_root": str(tmp_path)})
     csv_file = get_data("OSBS_029.csv")
-    results = m.evaluate(csv_file, iou_threshold=0.4)
+    results = m.evaluate(csv_file, iou_threshold=0.4, root_dir=os.path.dirname(csv_file))
 
     # Does this make reasonable predictions, we know the model works.
     assert np.isnan(results["box_precision"])

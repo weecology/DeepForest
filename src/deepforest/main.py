@@ -1026,6 +1026,8 @@ class deepforest(pl.LightningModule):
         """
         self.model.eval()
         if root_dir is None:
+            if self.config.validation.root_dir is None:
+                raise ValueError("root_dir must be specified if not provided in config")
             root_dir = self.config.validation.root_dir
 
         ground_df = utilities.read_file(csv_file, root_dir=root_dir)

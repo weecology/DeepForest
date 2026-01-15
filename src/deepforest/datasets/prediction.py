@@ -11,7 +11,7 @@ from torch.nn import functional as F
 from torch.utils.data import Dataset
 
 from deepforest import preprocess
-from deepforest.utilities import format_geometry
+from deepforest.utilities import format_geometry, read_file
 
 
 # Base prediction class
@@ -205,7 +205,9 @@ class FromCSVFile(PredictionDataset):
         super().__init__()
 
     def prepare_items(self):
-        self.annotations = pd.read_csv(self.csv_file)
+        self.annotations = read_file(self.csv_file)
+        if self.root_dir is None:
+            self.root_dir = self.annotations.root_dir
         self.image_names = self.annotations.image_path.unique()
         self.image_paths = [os.path.join(self.root_dir, x) for x in self.image_names]
 

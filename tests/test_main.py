@@ -1162,6 +1162,10 @@ def test_predict_file_mixed_sizes(m, tmp_path):
     # Build a CSV with just image_path column (prediction path)
     csv_path = os.path.join(tmp_path, "mixed_images.csv")
     df = pd.DataFrame({"image_path": [small_name, large_name]})
+    df["label"] = "Tree"
+    # Borrow the geometry from the OSBS_029.csv file
+    geometry = read_file(get_data("OSBS_029.csv"))["geometry"]
+    df["geometry"] = [geometry.iloc[0] for _ in range(len(df))]
     df.to_csv(csv_path, index=False)
 
     m.config.validation.size = 200
