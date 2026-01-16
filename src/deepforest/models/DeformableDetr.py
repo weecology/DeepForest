@@ -39,28 +39,27 @@ class DeformableDetrWrapper(nn.Module):
             # If the user passed in a different number of classes to the model,
             # then the model will be modified on load. So we ignore
             # mismatched sizes here.
+            model_kwargs = {
+                "ignore_mismatched_sizes": True,
+                **hf_args,
+            }
+
+            # Only override label mapping if config provides it
+            if self.config.label_dict:
+                model_kwargs["label2id"] = dict(self.config.label_dict)
+                model_kwargs["id2label"] = {
+                    v: k for k, v in self.config.label_dict.items()
+                }
+                model_kwargs["num_labels"] = len(self.config.label_dict)
+
             self.net = DeformableDetrForObjectDetection.from_pretrained(
                 name,
                 revision=revision,
-                num_labels=self.config.num_classes,
-                ignore_mismatched_sizes=True,
-                **hf_args,
+                **model_kwargs,
             )
             self.processor = DeformableDetrImageProcessor.from_pretrained(
                 name, revision=revision, **hf_args
             )
-
-            # If user-provided label_dict doesn't match the model's id2label:
-            if self.net.config.label2id != self.config.label_dict:
-                warnings.warn(
-                    "Your supplied label dict differs from the model."
-                    "This is expected if you plan to fine-tune this model on your own data.",
-                    stacklevel=2,
-                )
-                self.net.config.label2id = self.config.label_dict
-                self.net.config.id2label = {
-                    v: k for k, v in self.config.label_dict.items()
-                }
 
             # For consistency with other DeepForest components
             self.label_dict = self.net.config.label2id
@@ -188,6 +187,11 @@ class DeformableDetrWrapper(nn.Module):
             return results
         else:
             return preds.loss_dict
+
+    def save_pretrained(self, save_directory, push_to_hub=False, **kwargs):
+        """Save the model and processor to a directory or push to HF Hub."""
+        self.net.save_pretrained(save_directory, push_to_hub=push_to_hub, **kwargs)
+        self.processor.save_pretrained(save_directory, push_to_hub=push_to_hub, **kwargs)
 
 
 class Model(BaseModel):

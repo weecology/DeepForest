@@ -77,7 +77,7 @@ which will create an initialized RetinaNet model with 3 classes, ready for train
 
 ## Custom datasets with other classes
 
-If you need to re-train a "tree" detection model to work in your specific survey area or ecosystem, you don't need to do anything. Models themselves have no understanding of the label "tree", they output predictions corresponding to numerical class IDs (starting at 0). The default config sets `{"Tree": 0}`.
+If you need to re-train a "tree" detection model to work in your specific survey area or ecosystem, you don't need to do anything. Models themselves have no understanding of the label "tree", they output predictions corresponding to numerical class IDs (starting at 0). By default, the `label_dict` in the config is populated when the model is pulled from the hub (or a local checkpoint), which is `{ Tree: 0 }`.
 
 However, if you want to train on multiple classes or detect something that isn't a tree (for example we host a model for multiple Everglades bird species), you need to specify:
 
@@ -101,9 +101,10 @@ m = main.deepforest(config_args=config_args)
 Under the hood, the following steps are taken:
 
 1. DeepForest loads a model from a checkpoint (for fine-tuning), or it initializes a model ready for training.
-2. If your class count and label dict are the same, nothing happens
-3. If the class count is the same, but your label dict differs (e.g. you set `{"Bird": 0}` over a tree model) then the model will be modified to reflect the new class list. At this point your model is technically unmodified, but the assumption is that you will re-train it.
-4. If the class count differs, then the model is modified with the desired number of classes (and it will not provide good predictions until re-trained).
+2. The model initialization code compares the label_dict in the config to the model.
+3. If the config is empty, or it matches the model checkpoint, the checkpoint label_dict is used.
+4. If your label dict differs (e.g. you set `{"Bird": 0}` and specify a `Tree` checkpoint) then the model will be modified to reflect the new class list. At this point your model is technically unmodified, but the assumption is that you will re-train it.
+5. If the class count differs, then the model is modified with the desired number of classes (and it will not provide good predictions until re-trained).
 
 If you modify the defaulf configuration, we assume that you intend to train on your own data, and we will respect your overrides.
 
@@ -192,7 +193,12 @@ Excessive use of negative samples may have a negative impact on model performanc
 
 ### Model checkpoints
 
-Pytorch lightning allows you to [save a model](https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#checkpoint-callback) at the end of each epoch. By default this behevaior is turned off since it slows down training and quickly fills up storage. To restore model checkpointing
+Model checkpoints are the output of training. They represent the learned weights that can be distributed and used by anyone with DeepForest installed to perform prediction or fine-tuning. There are two main types of checkpoint that we work with:
+
+1. Lightning checkpoints: these contain a full snapshot of the training state of the model and can be used to resume or continue training. These are accesseed via the `save_checkpoint` and `load_from_checkpoint` functions on a `main.deepforest` object. You can also pass `config` and `config_args` to `load_from_checkpoint` to modify the training conditions (such as training for more epochs). This is a single `.ckpt` file.
+2. Hugging Face Hub checkpoints: these are the preferred way to distribute your model once you're happy, and this is what is set in the config as the model name. These checkpoints contain minimial information required to load a model - the weights and a config file that tells the code how to construct the architecture (such as number of classes or other options). You call `save_pretrained` and `load_pretrained` on the model object (e.g. `main.deepforest.model`). This is a folder with a `.safetensors` weight file, and a JSON config.
+
+Pytorch lightning allows you to [save a model](https://pytorch-lighting.readthedocs.io/en/stable/common/trainer.html#checkpoint-callback) at the end of each epoch. By default this behavior is turned off since it slows down training and quickly fills up storage. To restore model checkpointing:
 
 ```python
 from pytorch_lightning.callbacks import ModelCheckpoint
@@ -208,6 +214,33 @@ model.create_trainer(logger=TensorBoardLogger(save_dir='logdir/'),
 model.trainer.fit(model)
 ```
 ### Saving and loading models
+
+To save a model ready to push to HuggingFace Hub, you can use `save_pretrained` with any of the options documented [here](https://huggingface.co/docs/transformers/v5.0.0rc2/en/main_classes/model#transformers.PreTrainedModel.save_pretrained). This is the preferred way to "export" your models for later use.
+
+```python
+m = main.deepforest()
+m.load_model("weecology/deepforest-tree")
+
+# ... do some training
+
+# Note this is called on the model instance
+m.model.save_pretrained("local_path/to/your/checkpoint", push_to_hub=True, repo_id="your_repo")
+```
+
+Then you can reload this model later
+
+```python
+m = main.deepforest()
+m.load_model("local_path/to/your/checkpoint") # or pass "username/your_repo"
+
+# or
+
+m = main.deepforest(config_args={'model': {'name': "username/your_repo"}})
+```
+
+Other settings like the score threshold, etc are taken from the config file or `config_args` as usual.
+
+If you want to load a checkpoint that was saved during training (or if you manually called `save_checkpoint`), then just call `load_from_checkpoint`. Note that `config.model.name` must point to a _HuggingFace format checkpoint_, it cannot point to a Lightning checkpoint.
 
 ```python
 import tempfile
@@ -240,7 +273,7 @@ pd.testing.assert_frame_equal(pred_after_train,pred_after_reload)
 
 ---
 
-Note that when reloading models, you should carefully inspect the model parameters, such as the score_thresh and nms_thresh. These parameters are updated during model creation and the config file is not read when loading from checkpoint!
+Note that when reloading models via `load_from_checkpoint`, you should carefully inspect the model parameters, such as the score_thresh and nms_thresh. These parameters are updated during model creation and the config file is not read when loading from checkpoint!
 
 It is best to be direct to specify after loading checkpoint. If you want to save hyperparameters, edit the deepforest_config.yml directly. This will allow the hyperparameters to be reloaded on deepforest.save_model().
 
@@ -250,7 +283,7 @@ It is best to be direct to specify after loading checkpoint. If you want to save
 after.model.score_thresh = 0.3
 ```
 
-Some users have reported a pytorch lightning module error on save
+Some users have reported a pytorch lightning module error on save.
 
 In this case, just saving the torch model is an easy fix.
 

@@ -68,3 +68,20 @@ def test_maintain_parameters(config):
     x = [torch.rand(3, 300, 400), torch.rand(3, 500, 400)]
     predictions = retinanet_model(x)
     assert retinanet_model.score_thresh == 0.9
+
+def test_retinanet_override_class(tmpdir):
+    # Check we correctly override num_classes and label_dict
+    model = retinanet.RetinaNetHub.from_pretrained("weecology/deepforest-tree", num_classes=2, label_dict={"Tree": 0, "Shrub": 1})
+    assert model.label_dict == {"Tree": 0, "Shrub": 1}
+    assert model.head.classification_head.num_classes == 2
+
+    # Confirm it persists when reloading
+    model.save_pretrained(tmpdir)
+    model2 = retinanet.RetinaNetHub.from_pretrained(tmpdir)
+    assert model2.label_dict == {"Tree": 0, "Shrub": 1}
+    assert model2.head.classification_head.num_classes == 2
+
+def test_retinanet_override_class_error():
+    # Mismatch between label_dict and class count
+    with pytest.raises(ValueError):
+        retinanet.RetinaNetHub.from_pretrained("weecology/deepforest-tree", num_classes=1, label_dict={"Tree": 0, "Shrub": 1})

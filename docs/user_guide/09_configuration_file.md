@@ -18,7 +18,6 @@ batch_size: 1
 
 # Model Architecture
 architecture: 'retinanet'
-num_classes: 1
 nms_thresh: 0.05
 score_thresh: 0.1
 
@@ -29,9 +28,16 @@ model:
 
 # If this label dict is specified, and it differs
 # from the model downloaded from the hub, the model
-# will be updated to reflect the new class list.
+# will be updated to reflect the new class list. By
+# default, this is blank and is populated when the
+# model is loaded.
+#
+# label_dict:
+#   Tree: 0
+# num_classes: 1
+#
 label_dict:
-    Tree: 0
+num_classes:
 
 # Pre-processing parameters
 path_to_raster:

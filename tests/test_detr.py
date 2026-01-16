@@ -52,10 +52,7 @@ def test_check_model(config):
     model.check_model()
 
 
-# The test case "2" currently fails due to a bug in transformers
-# which is fixed in transformers-4.53.0, related to the
-# from_pretrained logic.
-@pytest.mark.parametrize("num_classes", [1, 5, 10])
+@pytest.mark.parametrize("num_classes", [1, 2, 5, 10])
 def test_create_model(config, num_classes):
     """
     Test that we can instantiate a model with differing numbers
