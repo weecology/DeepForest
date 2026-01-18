@@ -520,6 +520,7 @@ def __check_and_assign_label__(
                     f"Label {existing_labels[0]} found in dataframe, overriding and assigning {label} to all rows!",
                     stacklevel=2,
                 )
+            df["label"] = label
         else:
             df["label"] = label
 
