@@ -295,10 +295,9 @@ def test_filter_boxes():
         [0., 0., 0., 10.],         # Too small
     ])
     labels = torch.tensor([0, 1, 2, 3, 4, 5])
-    image_shape = (3, 200, 200)
 
     dataset = BoxDataset.__new__(BoxDataset)
-    filtered_boxes, filtered_labels = dataset.filter_boxes(boxes, labels, image_shape)
+    filtered_boxes, filtered_labels = dataset.filter_boxes(boxes, labels, width=200, height=200, min_size=1)
 
     assert filtered_boxes.shape[0] == 3
     assert torch.equal(filtered_labels, torch.tensor([2, 3, 4]))
