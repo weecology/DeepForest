@@ -30,7 +30,7 @@ def test_config_main_empty_config():
     m = main.deepforest(config=None)
     assert m.config.model.name == "weecology/deepforest-tree"
 
-def test_custom_config_file(tmpdir):
+def test_custom_config_file(tmp_path):
     # Verify that we can use a custom config file which overrides the default
     config = {
         'label_dict': {
@@ -38,22 +38,22 @@ def test_custom_config_file(tmpdir):
         }
     }
 
-    config_path = os.path.join(tmpdir, "custom-config.yaml")
+    config_path = tmp_path / "custom-config.yaml"
     with open(config_path, 'w') as fp:
         yaml.dump(config, fp)
 
-    m = main.deepforest(config = config_path)
+    m = main.deepforest(config = str(config_path))
     assert 'foo' in m.config.label_dict
     assert 'Tree' not in m.config.label_dict
 
 
-def test_load_config_missing_field(m, tmpdir):
+def test_load_config_missing_field(m, tmp_path):
     """Test that checkpoints load successfully when they're
     missing fields added to the schema
     """
     # Calling fit/predict etc. is required before save_model
     m.predict_tile(get_data("SOAP_061.png"))
-    checkpoint_path = tmpdir / "checkpoint.pl"
+    checkpoint_path = tmp_path / "checkpoint.pl"
     m.save_model(checkpoint_path)
 
     # Load the checkpoint and remove "batch size"
@@ -66,12 +66,12 @@ def test_load_config_missing_field(m, tmpdir):
     loaded = main.deepforest.load_from_checkpoint(checkpoint_path)
     assert isinstance(loaded.config.batch_size, int)
 
-def test_config_additional_field(m, tmpdir):
+def test_config_additional_field(m, tmp_path):
     """Test that checkpoints with extra fields not in schema still load successfully,
     such as added config items in newer versions of DeepForest.
     """
     m.predict_tile(get_data("SOAP_061.png"))
-    checkpoint_path = tmpdir / "checkpoint.pl"
+    checkpoint_path = tmp_path / "checkpoint.pl"
     m.save_model(checkpoint_path)
 
     # Load the checkpoint and add a field not in the current schema
@@ -94,11 +94,11 @@ def test_strict_mode_rejects_unknown_fields():
     with pytest.raises(omegaconf_errors.ConfigKeyError):
         utilities.load_config(overrides=config_with_unknown_field, strict=True)
 
-def test_load_checkpoint_with_dictconfig(m, tmpdir):
+def test_load_checkpoint_with_dictconfig(m, tmp_path):
     """Test that we can load an older checkpoint with a DictConfig in it.
     """
     m.predict_tile(get_data("SOAP_061.png"))
-    checkpoint_path = tmpdir / "checkpoint.pl"
+    checkpoint_path = tmp_path / "checkpoint.pl"
     m.save_model(checkpoint_path)
 
     # Load the checkpoint and replace the config dict with a DictConfig

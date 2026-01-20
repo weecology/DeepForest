@@ -82,6 +82,7 @@ class deepforest(pl.LightningModule):
         self.create_trainer()
 
         self.model = model
+        self.original_batch_structure = []
 
         if self.model is None:
             self.create_model()
@@ -234,6 +235,7 @@ class deepforest(pl.LightningModule):
             "callbacks": callbacks,
             "limit_val_batches": limit_val_batches,
             "num_sanity_val_steps": num_sanity_val_steps,
+            "default_root_dir": self.config.log_root,
         }
         # Update with kwargs to allow them to override config
         trainer_args.update(kwargs)
@@ -461,7 +463,6 @@ class deepforest(pl.LightningModule):
             result["label"] = result.label.apply(lambda x: self.numeric_to_label_dict[x])
 
         if path is None:
-            result = utilities.read_file(result)
             warnings.warn(
                 "An image was passed directly to predict_image, the result.root_dir attribute "
                 "will be None in the output dataframe, to use visualize.plot_results, "
@@ -475,7 +476,10 @@ class deepforest(pl.LightningModule):
         return result
 
     def predict_file(
-        self, csv_file, root_dir, crop_model=None, size=None, batch_size=None
+        self,
+        csv_file,
+        root_dir,
+        crop_model=None,
     ):
         """Create a dataset and predict entire annotation file CSV file format
         is .csv file with the columns "image_path", "xmin","ymin","xmax","ymax"
@@ -492,8 +496,8 @@ class deepforest(pl.LightningModule):
             df: pandas dataframe with bounding boxes, label and scores for each image in the csv file
         """
 
-        ds = prediction.FromCSVFile(csv_file=csv_file, root_dir=root_dir, size=size)
-        dataloader = self.predict_dataloader(ds, batch_size=batch_size)
+        ds = prediction.FromCSVFile(csv_file=csv_file, root_dir=root_dir)
+        dataloader = self.predict_dataloader(ds, batch_size=self.config.batch_size)
         results = predict._dataloader_wrapper_(
             model=self,
             crop_model=crop_model,
@@ -583,31 +587,45 @@ class deepforest(pl.LightningModule):
                         patch_size=patch_size,
                     )
 
-                batched_results = self.trainer.predict(self, self.predict_dataloader(ds))
+                dataloader = self.predict_dataloader(ds)
+                batched_results = self.trainer.predict(self, dataloader)
 
                 # Flatten list from batched prediction
-                prediction_list = []
-                for batch in batched_results:
-                    for images in batch:
-                        prediction_list.append(images)
-                image_results.append(ds.postprocess(prediction_list))
+                # Track global window index across batches
+                global_window_idx = 0
+                for _idx, batch in enumerate(batched_results):
+                    for _window_idx, window_result in enumerate(batch):
+                        formatted_result = ds.postprocess(
+                            window_result, global_window_idx
+                        )
+                        image_results.append(formatted_result)
+                        global_window_idx += 1
 
-            results = pd.concat(image_results)
+            if not image_results:
+                results = pd.DataFrame()
+            else:
+                results = pd.concat(image_results)
 
         elif dataloader_strategy == "batch":
+            self.original_batch_structure.clear()
             ds = prediction.MultiImage(
                 paths=paths, patch_overlap=patch_overlap, patch_size=patch_size
             )
 
-            batched_results = self.trainer.predict(self, self.predict_dataloader(ds))
+            dataloader = self.predict_dataloader(ds)
+            batched_results = self.trainer.predict(self, dataloader)
 
             # Flatten list from batched prediction
-            prediction_list = []
-            for batch in batched_results:
-                for images in batch:
-                    prediction_list.append(images)
-            image_results.append(ds.postprocess(prediction_list))
-            results = pd.concat(image_results)
+            for idx, batch in enumerate(batched_results):
+                formatted_result = ds.postprocess(
+                    batch, idx, self.original_batch_structure
+                )
+                image_results.append(formatted_result)
+
+            if not image_results:
+                results = pd.DataFrame()
+            else:
+                results = pd.concat(image_results)
 
         else:
             raise ValueError(f"Invalid dataloader_strategy: {dataloader_strategy}")
@@ -636,7 +654,7 @@ class deepforest(pl.LightningModule):
             root_dir = os.path.dirname(paths[0])
         else:
             print(
-                "No image path provided, root_dir will be None, since either "
+                "No image path provided, root_dir of the output results dataframe will be None, since either "
                 "images were directly provided or there were multiple image paths"
             )
             root_dir = None
@@ -658,7 +676,8 @@ class deepforest(pl.LightningModule):
         else:
             cropmodel_results = mosaic_results
 
-        formatted_results = utilities.read_file(cropmodel_results, root_dir=root_dir)
+        formatted_results = utilities.__pandas_to_geodataframe__(cropmodel_results)
+        formatted_results.root_dir = root_dir
 
         return formatted_results
 
@@ -676,10 +695,12 @@ class deepforest(pl.LightningModule):
 
         # Log loss
         for key, value in loss_dict.items():
-            self.log(f"train_{key}", value, on_epoch=True, batch_size=len(images))
+            self.log(
+                f"train_{key}", value.detach(), on_epoch=True, batch_size=len(images)
+            )
 
         # Log sum of losses
-        self.log("train_loss", losses, on_epoch=True, batch_size=len(images))
+        self.log("train_loss", losses.detach(), on_epoch=True, batch_size=len(images))
 
         return losses
 
@@ -699,14 +720,16 @@ class deepforest(pl.LightningModule):
         # Log losses
         try:
             for key, value in loss_dict.items():
-                self.log(f"val_{key}", value, on_epoch=True, batch_size=len(images))
+                self.log(
+                    f"val_{key}", value.detach(), on_epoch=True, batch_size=len(images)
+                )
 
-            self.log("val_loss", losses, on_epoch=True, batch_size=len(images))
+            self.log("val_loss", losses.detach(), on_epoch=True, batch_size=len(images))
         except MisconfigurationException:
             pass
 
         # In eval model, return predictions to calculate prediction metrics
-        preds = self.model.eval()
+        self.model.eval()
         with torch.no_grad():
             preds = self.model.forward(images, targets)
 
@@ -811,8 +834,13 @@ class deepforest(pl.LightningModule):
             self.iou_metric.reset()
             output = self.mAP_metric.compute()
 
-            # Remove classes from output dict
-            output = {key: value for key, value in output.items() if not key == "classes"}
+            # Keep only overall mAP; drop extra map_* and classes clutter
+            if isinstance(output, dict):
+                # Remove classes entry if present
+                if "classes" in output:
+                    output.pop("classes", None)
+                # Reduce to only overall 'map' and map_50   if available
+                output = {k: v for k, v in output.items() if k in ["map", "map_50"]}
             try:
                 self.log_dict(output)
             except MisconfigurationException:
@@ -844,10 +872,9 @@ class deepforest(pl.LightningModule):
             else:
                 predictions = pd.DataFrame()
 
-            results = self.evaluate(
+            results = self.__evaluate__(
                 self.config.validation.csv_file,
                 root_dir=self.config.validation.root_dir,
-                size=self.config.validation.size,
                 predictions=predictions,
             )
 
@@ -866,28 +893,18 @@ class deepforest(pl.LightningModule):
 
         Returns:
         """
-        split_results = False
-        # If batch is a list, concatenate the images, predict and then split the results
-        if isinstance(batch, list):
-            original_list_length = len(batch)
-            combined_batch = torch.cat(batch, dim=0)
-            split_results = True
+        if isinstance(batch, dict):
+            images = batch["images"]
+            sublist_lengths = batch["sublist_lengths"]
+            self.original_batch_structure.append(sublist_lengths)
         else:
-            combined_batch = batch
+            sublist_lengths = None
+            images = batch
 
-        batch_results = self.model(combined_batch)
-
-        # If batch is a list, split the results
-        if split_results:
-            results = []
-            batch_size = len(batch_results) // original_list_length
-            for i in range(original_list_length):
-                start_idx = i * batch_size
-                end_idx = start_idx + batch_size
-                results.append(batch_results[start_idx:end_idx])
-            return results
-        else:
-            return batch_results
+        self.model.eval()
+        with torch.no_grad():
+            preds = self.model.forward(images)
+        return preds
 
     def predict_batch(self, images, preprocess_fn=None):
         """Predict a batch of images with the deepforest model.
@@ -921,7 +938,7 @@ class deepforest(pl.LightningModule):
                 continue
             geom_type = utilities.determine_geometry_type(pred)
             result = utilities.format_geometry(pred, geom_type=geom_type)
-            results.append(utilities.read_file(result))
+            results.append(result)
 
         return results
 
@@ -989,39 +1006,38 @@ class deepforest(pl.LightningModule):
         else:
             return optimizer
 
-    def evaluate(
+    def __evaluate__(
         self,
         csv_file,
         iou_threshold=None,
         root_dir=None,
-        size=None,
-        batch_size=None,
         predictions=None,
     ):
-        """Compute intersection-over-union and precision/recall for a given
-        iou_threshold.
+        """Internal method to compute intersection-over-union and
+        precision/recall for a given iou_threshold.
 
         Args:
             csv_file: location of a csv file with columns "name","xmin","ymin","xmax","ymax","label"
             iou_threshold: float [0,1] intersection-over-union threshold for true positive
-            batch_size: int, the batch size to use for prediction. If None, uses the batch size of the model.
-            size: int, the size to resize the images to. If None, no resizing is done.
             predictions: list of predictions to use for evaluation. If None, predictions are generated from the model.
 
         Returns:
             dict: Results dictionary containing precision, recall and other metrics
         """
         self.model.eval()
-        ground_df = utilities.read_file(csv_file)
-        ground_df["label"] = ground_df.label.apply(lambda x: self.label_dict[x])
-
         if root_dir is None:
-            root_dir = os.path.dirname(csv_file)
+            if self.config.validation.root_dir is None:
+                raise ValueError("root_dir must be specified if not provided in config")
+            root_dir = self.config.validation.root_dir
+
+        ground_df = utilities.read_file(csv_file, root_dir=root_dir)
+        ground_df["label"] = ground_df.label.apply(lambda x: self.label_dict[x])
 
         if predictions is None:
             # Get the predict dataloader and use predict_batch
             predictions = self.predict_file(
-                csv_file, root_dir, size=size, batch_size=batch_size
+                csv_file,
+                root_dir,
             )
 
         if iou_threshold is None:
@@ -1042,11 +1058,51 @@ class deepforest(pl.LightningModule):
 
         return results
 
+    def evaluate(
+        self,
+        csv_file,
+        iou_threshold=None,
+        root_dir=None,
+        predictions=None,
+    ):
+        """Compute intersection-over-union and precision/recall for a given
+        iou_threshold.
+
+        .. deprecated:: 2.0.0
+            This method is deprecated. Users should use `trainer.validate()` instead
+            to get evaluation statistics during training. This method will be removed
+            in a future version.
+
+        Args:
+            csv_file: location of a csv file with columns "name","xmin","ymin","xmax","ymax","label"
+            iou_threshold: float [0,1] intersection-over-union threshold for true positive
+            predictions: list of predictions to use for evaluation. If None, predictions are generated from the model.
+
+        Returns:
+            dict: Results dictionary containing precision, recall and other metrics
+        """
+        warnings.warn(
+            "deepforest.evaluate() is deprecated and will be removed in a future version. "
+            "Please use trainer.validate() instead to get evaluation statistics during training.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self.__evaluate__(
+            csv_file=csv_file,
+            iou_threshold=iou_threshold,
+            root_dir=root_dir,
+            predictions=predictions,
+        )
+
     def __evaluation_logs__(self, results):
         """Log metrics from evaluation results."""
         # Log metrics
         for key, value in results.items():
-            if type(value) in [pd.DataFrame, gpd.GeoDataFrame]:
+            if type(value) in [
+                pd.DataFrame,
+                gpd.GeoDataFrame,
+                utilities.DeepForest_DataFrame,
+            ]:
                 pass
             elif value is None:
                 pass
@@ -1057,7 +1113,7 @@ class deepforest(pl.LightningModule):
                     pass
 
         # Log each key value pair of the results dict
-        if results["class_recall"] is not None:
+        if results["class_recall"] is not None and self.config.num_classes > 1:
             for key, value in results.items():
                 if key in ["class_recall"]:
                     for _, row in value.iterrows():

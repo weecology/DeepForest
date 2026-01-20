@@ -54,7 +54,7 @@ jobs:
         run: uv sync --all-extras --dev
 
       - name: Run pytest with coverage
-        run: uv run pytest -v --cov=src/deepforest --cov-report=xml --cov-report=term-missing
+        run: uv run pytest -v --cov=src/deepforest --cov-report=xml --cov-report=term-missing -o tmp_path_retention=none tests/
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4

@@ -201,12 +201,20 @@ def _dataloader_wrapper_(model, trainer, dataloader, root_dir, crop_model):
 
     # Flatten list from batched prediction
     prediction_list = []
-    for batch in batched_results:
-        for images in batch:
-            prediction_list.append(images)
+    global_image_idx = 0
+    for _idx, batch in enumerate(batched_results):
+        for _image_idx, image_result in enumerate(batch):
+            formatted_result = dataloader.dataset.postprocess(
+                image_result, global_image_idx
+            )
+            global_image_idx += 1
+            prediction_list.append(formatted_result)
 
-    # Postprocess predictions
-    results = dataloader.dataset.postprocess(prediction_list)
+    # Postprocess predictions, return empty dataframe if no predictions
+    if not prediction_list:
+        return pd.DataFrame()
+
+    results = pd.concat(prediction_list)
 
     if results.empty:
         return results

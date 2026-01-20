@@ -26,7 +26,7 @@ def crop_model():
 
 
 @pytest.fixture()
-def crop_model_data(crop_model, tmpdir):
+def crop_model_data(crop_model, tmp_path):
     df = pd.read_csv(get_data("testfile_multi.csv"))
     boxes = df[['xmin', 'ymin', 'xmax', 'ymax']].values.tolist()
     root_dir = os.path.dirname(get_data("SOAP_061.png"))
@@ -36,7 +36,7 @@ def crop_model_data(crop_model, tmpdir):
                            labels=df.label.values,
                            root_dir=root_dir,
                            images=images,
-                           savedir=tmpdir)
+                           savedir=tmp_path)
 
     return None
 
@@ -56,10 +56,10 @@ def test_crop_model(crop_model):
     val_loss = crop_model.validation_step(val_batch, batch_idx=0)
     assert isinstance(val_loss, torch.Tensor)
 
-def test_crop_model_train(crop_model, tmpdir, crop_model_data):
+def test_crop_model_train(crop_model, tmp_path, crop_model_data):
     # Create a trainer
-    crop_model.create_trainer(fast_dev_run=True)
-    crop_model.load_from_disk(train_dir=tmpdir, val_dir=tmpdir)
+    crop_model.create_trainer(fast_dev_run=True, default_root_dir=tmp_path)
+    crop_model.load_from_disk(train_dir=tmp_path, val_dir=tmp_path)
 
     # Test training dataloader
     train_loader = crop_model.train_dataloader()
@@ -121,7 +121,7 @@ def test_crop_model_configurable_resize():
     assert output.shape == (4, 2)
 
 
-def test_crop_model_load_checkpoint(tmpdir, crop_model):
+def test_crop_model_load_checkpoint(tmp_path_factory, crop_model):
     """Test loading crop model from checkpoint with different numbers of classes"""
     for num_classes in [2, 5]:
         # Create data for example
@@ -130,20 +130,22 @@ def test_crop_model_load_checkpoint(tmpdir, crop_model):
         root_dir = os.path.dirname(get_data("SOAP_061.png"))
         images = df.image_path.values
         labels = np.random.randint(0, num_classes, size=len(df)).astype(str)
+        out_tmp = tmp_path_factory.mktemp(f"num_classes_{num_classes}")
+        crop_data_dir = str(out_tmp)
         crop_model.write_crops(boxes=boxes,
                             labels=labels,
                             root_dir=root_dir,
                             images=images,
-                            savedir=tmpdir)
+                            savedir=crop_data_dir)
 
         # Create initial model and save checkpoint
         crop_model = model.CropModel()
-        crop_model.create_trainer(fast_dev_run=False, limit_train_batches=1, limit_val_batches=1, max_epochs=1)
-        crop_model.load_from_disk(train_dir=tmpdir, val_dir=tmpdir)
+        crop_model.create_trainer(fast_dev_run=False, limit_train_batches=1, limit_val_batches=1, max_epochs=1, default_root_dir=tmp_path_factory.mktemp("logs"))
+        crop_model.load_from_disk(train_dir=crop_data_dir, val_dir=crop_data_dir)
         # Initialize classification head based on discovered labels
         crop_model.create_model(num_classes=len(crop_model.label_dict))
         crop_model.trainer.fit(crop_model)
-        checkpoint_path = os.path.join(tmpdir, "epoch=0-step=0.ckpt")
+        checkpoint_path = out_tmp.joinpath("epoch=0-step=0.ckpt")
         crop_model.trainer.save_checkpoint(checkpoint_path)
 
         # Load from checkpoint
@@ -189,12 +191,12 @@ def test_expand_bbox_to_square_edge_cases(crop_model):
     result = crop_model.expand_bbox_to_square(bbox, image_width, image_height)
     assert result == expected
 
-def test_crop_model_val_dataset_confusion(tmpdir, crop_model, crop_model_data):
-    crop_model.create_trainer(fast_dev_run=True)
-    crop_model.load_from_disk(train_dir=tmpdir, val_dir=tmpdir)
+def test_crop_model_val_dataset_confusion(tmp_path, crop_model, crop_model_data):
+    crop_model.create_trainer(fast_dev_run=True, default_root_dir=tmp_path)
+    crop_model.load_from_disk(train_dir=tmp_path, val_dir=tmp_path)
     crop_model.trainer.fit(crop_model)
 
-    crop_model.create_trainer(fast_dev_run=False)
+    crop_model.create_trainer(fast_dev_run=False, default_root_dir=tmp_path)
     images, labels, predictions = crop_model.val_dataset_confusion(return_images=True)
 
     # There are 37 images in the testfile_multi.csv

@@ -409,10 +409,12 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
 
     def on_validation_epoch_end(self):
         metric_dict = self.metrics.compute()
-        for index, value in enumerate(metric_dict["Class Accuracy"]):
-            key = self.numeric_to_label_dict[index]
-            metric_name = f"Class Accuracy_{key}"
-            self.log(metric_name, value, on_step=False, on_epoch=True)
+        # Only log per-class metrics when there are multiple classes
+        if len(self.numeric_to_label_dict) > 1:
+            for index, value in enumerate(metric_dict["Class Accuracy"]):
+                key = self.numeric_to_label_dict[index]
+                metric_name = f"Class Accuracy_{key}"
+                self.log(metric_name, value, on_step=False, on_epoch=True)
 
         self.log(
             "Micro-Average Accuracy",
