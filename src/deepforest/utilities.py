@@ -56,9 +56,15 @@ def load_config(
     base = OmegaConf.structured(StructuredConfig)
     OmegaConf.set_struct(base, strict)
 
-    # Label dict has model-specific keys, so needs to be mutable.
-    # Validated elsewhere
-    OmegaConf.set_struct(base.label_dict, False)
+    # Disable struct mode on nested configs to allow extra fields
+    if not strict:
+        for key in base:
+            value = base[key]
+            if OmegaConf.is_dict(value):
+                OmegaConf.set_struct(value, False)
+    else:
+        # Label dict has model-specific keys, so needs to be mutable even in strict mode
+        OmegaConf.set_struct(base.label_dict, False)
 
     # Load target (potentially derived) config
     yaml_cfg = OmegaConf.load(yaml_path)

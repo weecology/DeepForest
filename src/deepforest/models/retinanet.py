@@ -59,6 +59,13 @@ class RetinaNetHub(RetinaNet, PyTorchModelHubMixin):
 
         # Override class info if specified
         if num_classes is not None and label_dict is not None:
+            # Validate that num_classes matches label_dict
+            if len(label_dict) != num_classes:
+                raise ValueError(
+                    f"num_classes ({num_classes}) does not match the number of labels "
+                    f"in label_dict ({len(label_dict)})."
+                )
+
             if num_classes != model.num_classes:
                 warnings.warn(
                     f"The number of classes in your config differs "
@@ -94,7 +101,7 @@ class RetinaNetHub(RetinaNet, PyTorchModelHubMixin):
 
     def update_config(self):
         # Stored as config on HF
-        self.config = {
+        self._hub_mixin_config = {
             "num_classes": self.num_classes,
             "nms_thresh": self.nms_thresh,
             "score_thresh": self.score_thresh,
@@ -182,13 +189,16 @@ class Model(BaseModel):
             model: a pytorch nn module
         """
 
+        # Avoid serializing non plain data
+        label_dict = dict(self.config.label_dict) if self.config.label_dict else None
+
         if pretrained is None:
             model = RetinaNetHub(
                 backbone_weights="COCO_V1",
                 num_classes=self.config.num_classes,
                 nms_thresh=self.config.nms_thresh,
                 score_thresh=self.config.score_thresh,
-                label_dict=self.config.label_dict,
+                label_dict=label_dict,
             )
         else:
             # Pre 2.0 compatibility, the score_threshold used to be stored under retinanet.score_thresh
@@ -201,7 +211,7 @@ class Model(BaseModel):
                 pretrained,
                 revision=revision,
                 num_classes=self.config.num_classes,
-                label_dict=self.config.label_dict,
+                label_dict=label_dict,
                 nms_thresh=self.config.nms_thresh,
                 score_thresh=self.config.score_thresh,
                 **hf_args,

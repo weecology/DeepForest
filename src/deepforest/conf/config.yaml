@@ -9,7 +9,6 @@ batch_size: 1
 
 # Model Architecture
 architecture: 'retinanet'
-num_classes: 1
 nms_thresh: 0.05
 score_thresh: 0.1
 
@@ -18,8 +17,11 @@ model:
     name: 'weecology/deepforest-tree'
     revision: 'main'
 
+# Specify a label_dict to override model settings.
+# By default, this will be populated from the model
+# checkpoint that is selected in model.name/revision.
 label_dict:
-    Tree: 0
+num_classes:
 
 # Pre-processing parameters
 path_to_raster:

@@ -133,8 +133,8 @@ class Config:
     batch_size: int = 1
 
     architecture: str = "retinanet"
-    num_classes: int = 1
-    label_dict: DictConfig = field(default_factory=lambda: OmegaConf.create({"Tree": 0}))
+    num_classes: int | None = None
+    label_dict: DictConfig | None = field(default_factory=lambda: OmegaConf.create({}))
 
     nms_thresh: float = 0.05
     score_thresh: float = 0.1

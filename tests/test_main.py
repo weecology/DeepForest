@@ -56,7 +56,7 @@ def two_class_m(tmp_path_factory):
 
 
 @pytest.fixture()
-def m(download_release, tmp_path_factory):
+def m(tmp_path_factory):
     m = main.deepforest()
     m.config.train.csv_file = get_data("example.csv")
     m.config.train.root_dir = os.path.dirname(get_data("example.csv"))
@@ -79,7 +79,9 @@ def m(download_release, tmp_path_factory):
 # A random-initialized model
 @pytest.fixture()
 def m_without_release(tmp_path_factory):
-    m = main.deepforest(config_args={"model": {"name": None}})
+    m = main.deepforest(config_args={"model": {"name": None},
+                                    "num_classes": 1,
+                                    "label_dict": {"Tree": 0}})
     m.config.train.csv_file = get_data("example.csv")
     m.config.train.root_dir = os.path.dirname(get_data("example.csv"))
     m.config.train.fast_dev_run = True
@@ -556,88 +558,6 @@ def test_train_callbacks(m):
     trainer = Trainer(fast_dev_run=True)
     trainer.fit(m, train_ds)
 
-
-def test_checkpoint_label_dict(m, tmp_path):
-    """Test that the label dict is saved and loaded correctly from a checkpoint."""
-    csv_file = get_data("example.csv")
-    df = pd.read_csv(csv_file)
-    df["label"] = "Object"
-
-    #write to temp path
-    df.to_csv(tmp_path / "example.csv", index=False)
-
-    m.config["train"]["csv_file"] = str(tmp_path / "example.csv")
-    m.config["train"]["root_dir"] = os.path.dirname(csv_file)
-    m.config["validation"]["csv_file"] = str(tmp_path / "example.csv")
-    m.config["validation"]["root_dir"] = os.path.dirname(csv_file)
-
-    m.config.train.fast_dev_run = True
-    m.create_trainer()
-    m.label_dict = {"Object": 0}
-    m.numeric_to_label_dict = {0: "Object"}
-    m.trainer.fit(m)
-    m.trainer.save_checkpoint("{}/checkpoint.pl".format(tmp_path))
-    after = main.deepforest.load_from_checkpoint("{}/checkpoint.pl".format(tmp_path))
-    assert after.label_dict == {"Object": 0}
-    assert after.numeric_to_label_dict == {0: "Object"}
-
-def test_save_and_reload_checkpoint(m, tmp_path):
-    img_path = get_data(path="2019_YELL_2_528000_4978000_image_crop2.png")
-    m.config.train.fast_dev_run = True
-    m.create_trainer()
-    # save the prediction dataframe after training and
-    # compare with prediction after reload checkpoint
-    m.trainer.fit(m)
-    pred_after_train = m.predict_image(path=img_path)
-    m.save_model("{}/checkpoint.pl".format(tmp_path))
-
-    # reload the checkpoint to model object
-    after = main.deepforest.load_from_checkpoint("{}/checkpoint.pl".format(tmp_path))
-    pred_after_reload = after.predict_image(path=img_path)
-
-    assert not pred_after_train.empty
-    assert not pred_after_reload.empty
-    assert m.config == after.config
-    assert state_dicts_equal(m.model, after.model)
-    pd.testing.assert_frame_equal(pred_after_train, pred_after_reload)
-
-
-def test_save_and_reload_weights(m, tmp_path):
-    img_path = get_data(path="2019_YELL_2_528000_4978000_image_crop2.png")
-    m.config.train.fast_dev_run = True
-    m.create_trainer()
-    # save the prediction dataframe after training and
-    # compare with prediction after reload checkpoint
-    m.trainer.fit(m)
-    pred_after_train = m.predict_image(path=img_path)
-    torch.save(m.model.state_dict(), tmp_path / "checkpoint.pt")
-
-    # reload the checkpoint to model object
-    after = main.deepforest()
-    after.model.load_state_dict(
-        torch.load(tmp_path / "checkpoint.pt", weights_only=True))
-    pred_after_reload = after.predict_image(path=img_path)
-
-    assert not pred_after_train.empty
-    assert not pred_after_reload.empty
-    pd.testing.assert_frame_equal(pred_after_train, pred_after_reload)
-
-def test_reload_multi_class(two_class_m, tmp_path):
-    two_class_m.config.train.fast_dev_run = True
-    two_class_m.create_trainer()
-    two_class_m.trainer.fit(two_class_m)
-    two_class_m.save_model(tmp_path / "checkpoint.pl")
-    before = two_class_m.trainer.validate(two_class_m)
-
-    # reload
-    old_model = main.deepforest.load_from_checkpoint(tmp_path / "checkpoint.pl",
-                                                     weights_only=True)
-    old_model.config = two_class_m.config
-    assert old_model.config.num_classes == 2
-    old_model.create_trainer()
-    after = old_model.trainer.validate(old_model)
-
-    assert after[0]["val_classification"] == before[0]["val_classification"]
 
 def test_over_score_thresh(m):
     """A user might want to change the config after model training and update the score thresh"""

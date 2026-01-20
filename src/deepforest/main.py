@@ -51,6 +51,7 @@ class deepforest(pl.LightningModule):
             config = utilities.load_config(config_name=config, overrides=config_args)
         # Checkpoint load
         elif isinstance(config, dict):
+            config = OmegaConf.merge(config, config_args or {})
             config = utilities.load_config(overrides=config)
         # Hub overrides
         elif "config_args" in config:
@@ -129,22 +130,8 @@ class deepforest(pl.LightningModule):
             pretrained=model_name, revision=revision
         )
 
-        # Handle label override
-        cfg_labels = self.config.label_dict
-        model_labels = self.model.label_dict
-
-        # If user specified labels, and they differ from the model:
-        if cfg_labels != model_labels:
-            warnings.warn(
-                "Your supplied label dict differs from the model. "
-                "This is expected if you plan to fine-tune this model on your own data.",
-                stacklevel=2,
-            )
-            label_dict = cfg_labels
-        else:
-            label_dict = model_labels
-
-        self.set_labels(label_dict)
+        self.config.num_classes = self.model.num_classes
+        self.set_labels(self.model.label_dict)
 
         return
 
@@ -160,8 +147,7 @@ class deepforest(pl.LightningModule):
                 "Label dictionary not found. Check it was set in your config file or config_args."
             )
 
-        # Label encoder and decoder
-        if not len(label_dict) == self.config.num_classes:
+        if len(label_dict) != self.config.num_classes:
             raise ValueError(
                 f"label_dict {label_dict} does not match requested number of "
                 f"classes {self.config.num_classes}, please supply a label_dict argument "
