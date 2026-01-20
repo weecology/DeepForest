@@ -443,7 +443,7 @@ def test_predict_dataloader(m, batch_size, path):
     ds = prediction.SingleImage(image=tile, path=path, patch_overlap=0.1, patch_size=100)
     dl = m.predict_dataloader(ds)
     batch = next(iter(dl))
-    assert batch.shape[0] == batch_size
+    assert len(batch) == batch_size
 
 def test_predict_tile_empty(m_without_release, path):
     m = m_without_release
@@ -467,7 +467,7 @@ def test_predict_tile(m, path, dataloader_strategy):
     prediction = m.predict_tile(path=image_path,
                                 patch_size=300,
                                 dataloader_strategy=dataloader_strategy,
-                                patch_overlap=0.1)
+                                patch_overlap=0)
 
     assert isinstance(prediction, pd.DataFrame)
     assert set(prediction.columns) == {
@@ -958,7 +958,7 @@ def test_batch_inference_consistency(m, path):
 
     single_predictions = []
     for image in ds:
-        image = np.rollaxis(image, 0, 3) * 255
+        image = np.rollaxis(image.numpy(), 0, 3) * 255.0
         single_prediction = m.predict_image(image=image)
         single_predictions.append(single_prediction)
 
@@ -1138,3 +1138,36 @@ def test_set_labels_invalid_length(m): # Expect a ValueError when setting an inv
     invalid_mapping = {"Object": 0, "Extra": 1}
     with pytest.raises(ValueError):
         m.set_labels(invalid_mapping)
+
+def test_predict_file_mixed_sizes(m, tmp_path):
+    """Mixed-size images should yield predictions in original image coordinates."""
+    # Prepare two images at different sizes
+    src_path = get_data("OSBS_029.tif")
+    img = Image.open(src_path).convert("RGB")
+
+    # Create a smaller and a larger variant (bounded to avoid extreme sizes)
+    w, h = img.size
+    small = img.resize((max(64, w // 2), max(64, h // 2)))
+    large = img.resize((min(w * 2, 2 * w), min(h * 2, 2 * h)))
+
+    # Save both to tmp directory as PNGs
+    small_name = "mixed_small.png"
+    large_name = "mixed_large.png"
+    small_path = os.path.join(tmp_path, small_name)
+    large_path = os.path.join(tmp_path, large_name)
+    small.save(small_path)
+    large.save(large_path)
+
+    # Build a CSV with just image_path column (prediction path)
+    csv_path = os.path.join(tmp_path, "mixed_images.csv")
+    df = pd.DataFrame({"image_path": [small_name, large_name]})
+    df["label"] = "Tree"
+    # Borrow the geometry from the OSBS_029.csv file
+    geometry = read_file(get_data("OSBS_029.csv"))["geometry"]
+    df["geometry"] = [geometry.iloc[0] for _ in range(len(df))]
+    df.to_csv(csv_path, index=False)
+
+    m.config.validation.size = 200
+    preds = m.predict_file(csv_file=csv_path, root_dir=str(tmp_path))
+
+    assert preds.ymax.max() > 200  # The larger image should have predictions outside the 200px limit
