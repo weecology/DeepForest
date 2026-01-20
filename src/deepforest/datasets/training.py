@@ -184,25 +184,24 @@ class BoxDataset(TrainingDataset):
         if errors:
             raise ValueError("\n".join(errors))
 
-    def filter_boxes(self, boxes, labels, image_shape, min_size=1) -> tuple:
+    def filter_boxes(self, boxes, labels, width, height, min_size=1):
         """Clamp boxes to image bounds and filter by minimum dimension.
 
         Args:
             boxes (torch.Tensor): Bounding boxes of shape (N, 4) in xyxy format.
             labels (torch.Tensor): Labels of shape (N,).
-            image_shape (tuple): Image shape as (C, H, W).
+            width (int): Image width in pixels.
+            height (int): Image height in pixels.
             min_size (int): Minimum box width/height in pixels. Defaults to 1.
 
         Returns:
             tuple: A tuple of (filtered_boxes, filtered_labels)
         """
-        _, H, W = image_shape
-
         # Clamp boxes to image bounds
-        boxes[:, 0] = torch.clamp(boxes[:, 0], min=0, max=W)  # x1
-        boxes[:, 1] = torch.clamp(boxes[:, 1], min=0, max=H)  # y1
-        boxes[:, 2] = torch.clamp(boxes[:, 2], min=0, max=W)  # x2
-        boxes[:, 3] = torch.clamp(boxes[:, 3], min=0, max=H)  # y2
+        boxes[:, 0] = torch.clamp(boxes[:, 0], min=0, max=width)  # x1
+        boxes[:, 1] = torch.clamp(boxes[:, 1], min=0, max=height)  # y1
+        boxes[:, 2] = torch.clamp(boxes[:, 2], min=0, max=width)  # x2
+        boxes[:, 3] = torch.clamp(boxes[:, 3], min=0, max=height)  # y2
 
         # Filter boxes with minimum size
         width = boxes[:, 2] - boxes[:, 0]
@@ -275,7 +274,15 @@ class BoxDataset(TrainingDataset):
         labels = torch.from_numpy(targets["labels"].astype(np.int64))
 
         # Filter invalid boxes after augmentation
-        boxes, labels = self.filter_boxes(boxes, labels, image.shape)
+        # Since the augmentation operation may change image size, we take the smallest
+        # of the source and transformed dimensions assuming that padding is always the
+        # last operation in the pipeline.
+        boxes, labels = self.filter_boxes(
+            boxes,
+            labels,
+            width=min(image_tensor.shape[3], image.shape[2]),
+            height=min(image_tensor.shape[2], image.shape[1]),
+        )
 
         # Edge case if all labels were augmented away, keep the image
         if len(boxes) == 0:
@@ -386,25 +393,23 @@ class PointDataset(TrainingDataset):
         if errors:
             raise ValueError("\n".join(errors))
 
-    def filter_points(self, points, labels, image_shape) -> tuple:
+    def filter_points(self, points, labels, width, height) -> tuple:
         """Filter points to be within the image.
 
         Args:
             points (torch.Tensor): Points of shape (N, 2) in xy format.
             labels (torch.Tensor): Labels of shape (N,).
-            image_shape (tuple): Image shape as (C, H, W).
+            width (int): Image width in pixels.
+            height (int): Image height in pixels.
 
         Returns:
             tuple: A tuple of (filtered_points, filtered_labels)
         """
-        _, H, W = image_shape
-
-        # Filter out of bounds
         valid_mask = (
             (points[:, 0] >= 0)
-            & (points[:, 0] <= W)
+            & (points[:, 0] <= width)
             & (points[:, 1] >= 0)
-            & (points[:, 1] <= H)
+            & (points[:, 1] <= height)
         )
 
         return points[valid_mask], labels[valid_mask]
@@ -541,8 +546,14 @@ class PointDataset(TrainingDataset):
         points = augmented_points.squeeze(0)
         labels = torch.from_numpy(targets["labels"].astype(np.int64))
 
-        # Filter out-of-bounds points after augmentation
-        points, labels = self.filter_points(points, labels, image.shape)
+        # Filter out-of-bounds points after augmentation accounting for
+        # potential size changes due to augmentation.
+        points, labels = self.filter_points(
+            points,
+            labels,
+            width=min(image_tensor.shape[3], image.shape[2]),
+            height=min(image_tensor.shape[2], image.shape[1]),
+        )
 
         # Edge case if all labels were augmented away, keep the image
         if len(points) == 0:
@@ -763,6 +774,26 @@ class PolygonDataset(TrainingDataset):
         iscrowd = torch.as_tensor(targets["iscrowd"], dtype=torch.bool)
         area = torch.as_tensor(targets["area"])
         image_id = targets["image_id"]
+
+        # Filter out-of-bounds boxes and sync with transformed
+        # segmentation masks
+        filter_w = min(image_tensor.shape[3], image.shape[2])
+        filter_h = min(image_tensor.shape[2], image.shape[1])
+        if boxes.dim() == 2 and boxes.shape[0] > 0:
+            boxes[:, 0] = torch.clamp(boxes[:, 0], min=0, max=filter_w)
+            boxes[:, 1] = torch.clamp(boxes[:, 1], min=0, max=filter_h)
+            boxes[:, 2] = torch.clamp(boxes[:, 2], min=0, max=filter_w)
+            boxes[:, 3] = torch.clamp(boxes[:, 3], min=0, max=filter_h)
+            box_w = boxes[:, 2] - boxes[:, 0]
+            box_h = boxes[:, 3] - boxes[:, 1]
+            valid = (box_w >= 1) & (box_h >= 1)
+
+            boxes = boxes[valid]
+            labels = labels[valid]
+            if masks.dim() == 3:
+                masks = masks[valid]
+            iscrowd = iscrowd[valid]
+            area = area[valid]
 
         targets = {
             "image_id": image_id,
