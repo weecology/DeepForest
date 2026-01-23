@@ -162,7 +162,7 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
                 "Macro Precision": self.macro_precision,    
             }
         )
-
+        
         self.model = simple_resnet_50(num_classes=num_classes)
 
     def create_trainer(self, **kwargs):
