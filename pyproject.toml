@@ -100,6 +100,22 @@ docs = [
     "sphinx_rtd_theme",
 ]
 
+double_counting = [
+    "opencv-python==4.11.0.86",
+    "numpy<2.0",
+    "pandas",
+    "matplotlib",
+    "h5py",
+    "shapely>2.0.0",
+    "geopandas",
+    "torch>=2.2.0",
+    "torchvision>=0.17.0",
+    "pycolmap>=0.6.0",
+    "hloc>=1.4.0",
+    "kornia>=0.7.0",
+    "kornia-feature>=0.7.0",
+]
+
 [project.scripts]
 deepforest = "deepforest.scripts.cli:main"
 
