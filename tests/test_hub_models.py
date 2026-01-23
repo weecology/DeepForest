@@ -17,10 +17,7 @@ def test_hub_model_labels(model_name, expected_label):
     """
     m = main.deepforest()
 
-    print(f"Testing model: {model_name}")
     m.load_model(model_name=model_name)
-
-    print(f"DEBUG: Loaded label_dict: {m.label_dict}")
 
     assert expected_label in m.label_dict.keys(), \
         f"Model {model_name} label_dict {m.label_dict} does not contain '{expected_label}'"
