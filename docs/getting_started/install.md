@@ -2,6 +2,17 @@
 # Installation
 
 DeepForest has Windows, Linux, and macOS prebuilt wheels on PyPI. We *strongly* recommend using uv or a virtualenv to create a clean installation container.
+### Python Version Compatibility
+
+DeepForest relies on several dependencies that may not yet support the latest Python releases.
+
+| Python Version | Status | Notes |
+| :--- | :--- | :--- |
+| **3.10 / 3.11** | **Stable** | **Highly Recommended** |
+| 3.12 | Compatible | Most features work stable. |
+| 3.13 / 3.14+ | Experimental | Known `AST` issues via `docformatter` (see [PyCQA/docformatter#327](https://github.com/PyCQA/docformatter/issues/327)). |
+
+**Recommendation:** If you encounter installation errors on newer Python versions, please use a virtual environment with Python 3.11.
 
 ```bash
 pip install deepforest
