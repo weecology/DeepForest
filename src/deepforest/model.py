@@ -152,17 +152,17 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
             num_classes=num_classes, task="multiclass"
         )
         self.macro_precision = torchmetrics.Precision(
-        num_classes=num_classes, task="multiclass", average="macro"
+            num_classes=num_classes, task="multiclass", average="macro"
         )
         self.metrics = torchmetrics.MetricCollection(
             {
                 "Class Accuracy": self.accuracy,
                 "Accuracy": self.total_accuracy,
                 "Precision": self.precision_metric,
-                "Macro Precision": self.macro_precision,    
+                "Macro Precision": self.macro_precision,
             }
         )
-        
+
         self.model = simple_resnet_50(num_classes=num_classes)
 
     def create_trainer(self, **kwargs):
