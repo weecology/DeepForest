@@ -151,11 +151,15 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
         self.precision_metric = torchmetrics.Precision(
             num_classes=num_classes, task="multiclass"
         )
+        self.macro_precision = torchmetrics.Precision(
+        num_classes=num_classes, task="multiclass", average="macro"
+        )
         self.metrics = torchmetrics.MetricCollection(
             {
                 "Class Accuracy": self.accuracy,
                 "Accuracy": self.total_accuracy,
                 "Precision": self.precision_metric,
+                "Macro Precision": self.macro_precision,    
             }
         )
 
@@ -423,6 +427,12 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
         self.log(
             "Micro-Average Precision",
             metric_dict["Precision"],
+            on_step=False,
+            on_epoch=True,
+        )
+        self.log(
+            "Macro-Average Precision",
+            metric_dict["Macro Precision"],
             on_step=False,
             on_epoch=True,
         )
