@@ -1,10 +1,10 @@
 """Dataset model for object detection tasks."""
 
-import math
 import os
 
 import kornia.augmentation as K
 import numpy as np
+import pandas as pd
 import shapely
 import torch
 from PIL import Image
@@ -103,8 +103,7 @@ class BoxDataset(Dataset):
             )
 
     def _validate_coordinates(self):
-        """
-        Validate that all bounding box coordinates occur within the image.
+        """Validate that all bounding box coordinates occur within the image.
         Vectorized implementation for performance.
 
         Raises:
@@ -119,19 +118,27 @@ class BoxDataset(Dataset):
             full_path = os.path.join(self.root_dir, img_path_rel)
             try:
                 with Image.open(full_path) as img:
-                    image_dims[img_path_rel] = img.size # (width, height)
+                    image_dims[img_path_rel] = img.size
             except Exception as e:
                 errors.append(f"Failed to open image {full_path}: {e}")
 
         if errors:
             raise ValueError("\n".join(errors))
 
-        self.annotations["_img_width"] = self.annotations["image_path"].map(lambda x: image_dims.get(x, (0,0))[0])
-        self.annotations["_img_height"] = self.annotations["image_path"].map(lambda x: image_dims.get(x, (0,0))[1])
+        self.annotations["_img_width"] = self.annotations["image_path"].map(
+            lambda x: image_dims.get(x, (0, 0))[0]
+        )
+        self.annotations["_img_height"] = self.annotations["image_path"].map(
+            lambda x: image_dims.get(x, (0, 0))[1]
+        )
 
         if not {"xmin", "ymin", "xmax", "ymax"}.issubset(self.annotations.columns):
             bounds = self.annotations["geometry"].apply(lambda x: x.bounds).tolist()
-            bounds_df = pd.DataFrame(bounds, columns=["xmin", "ymin", "xmax", "ymax"], index=self.annotations.index)
+            bounds_df = pd.DataFrame(
+                bounds,
+                columns=["xmin", "ymin", "xmax", "ymax"],
+                index=self.annotations.index,
+            )
             working_df = pd.concat([self.annotations, bounds_df], axis=1)
         else:
             working_df = self.annotations
@@ -146,15 +153,32 @@ class BoxDataset(Dataset):
             bad_count = invalid_neg.sum()
             errors.append(f"Found {bad_count} annotations with negative coordinates.")
 
-        oob_mask = (working_df["xmax"] > working_df["_img_width"]) | \
-                (working_df["ymax"] > working_df["_img_height"])
+        oob_mask = (working_df["xmax"] > working_df["_img_width"]) | (
+            working_df["ymax"] > working_df["_img_height"]
+        )
         invalid_oob = oob_mask & (~empty_mask)
 
         if invalid_oob.any():
             bad_rows = working_df[invalid_oob]
             bad_count = len(bad_rows)
-            example_str = bad_rows[['image_path', 'xmin', 'ymin', 'xmax', 'ymax', '_img_width', '_img_height']].head().to_string()
-            errors.append(f"Found {bad_count} boxes exceeding image dimensions. Examples:\n{example_str}")
+            example_str = (
+                bad_rows[
+                    [
+                        "image_path",
+                        "xmin",
+                        "ymin",
+                        "xmax",
+                        "ymax",
+                        "_img_width",
+                        "_img_height",
+                    ]
+                ]
+                .head()
+                .to_string()
+            )
+            errors.append(
+                f"Found {bad_count} boxes exceeding image dimensions. Examples:\n{example_str}"
+            )
 
         self.annotations.drop(columns=["_img_width", "_img_height"], inplace=True)
 
