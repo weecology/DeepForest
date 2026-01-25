@@ -344,3 +344,37 @@ def test_BoxDataset_with_projected_shapefile(tmp_path, raster_path):
     )
     assert torch.all(boxes[:, 2] > boxes[:, 0]), "xmax should be greater than xmin"
     assert torch.all(boxes[:, 3] > boxes[:, 1]), "ymax should be greater than ymin"
+
+def test_validate_coordinates_negative(tmpdir):
+    """
+    Ensure vectorized validation catches negative coordinates
+    """
+    img_path = os.path.join(tmpdir, "test_neg.jpg")
+    Image.new('RGB', (100, 100), color='white').save(img_path)
+
+    df = pd.DataFrame({
+        'image_path': ["test_neg.jpg"],
+        'xmin': [-5], 'ymin': [10],
+        'xmax': [50], 'ymax': [50],
+        'label': ["Tree"]
+    })
+
+    with pytest.raises(ValueError, match="negative coordinates"):
+        training.BoxDataset(annotation_dict=df, root_dir=str(tmpdir))
+
+def test_validate_coordinates_out_of_bounds(tmpdir):
+    """
+    Ensure vectorized validation catches OOB coordinates
+    """
+    img_path = os.path.join(tmpdir, "test_oob.jpg")
+    Image.new('RGB', (100, 100), color='white').save(img_path)
+
+    df = pd.DataFrame({
+        'image_path': ["test_oob.jpg"],
+        'xmin': [10], 'ymin': [10],
+        'xmax': [150], 'ymax': [50],
+        'label': ["Tree"]
+    })
+
+    with pytest.raises(ValueError, match="exceeding image dimensions"):
+        training.BoxDataset(annotation_dict=df, root_dir=str(tmpdir))
