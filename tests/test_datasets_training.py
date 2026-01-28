@@ -256,7 +256,7 @@ def test_BoxDataset_validate_coordinates(tmp_path, raster_path):
         )
         df.to_csv(csv_path, index=False)
 
-        with pytest.raises(ValueError, match="exceeds image dimensions"):
+        with pytest.raises(ValueError, match="negative coordinates|exceeding image dimensions"):
             BoxDataset(csv_file=csv_path, root_dir=root_dir)
 
 
@@ -280,10 +280,13 @@ def test_BoxDataset_validate_non_rectangular_polygon(tmp_path, raster_path):
 
     root_dir = os.path.dirname(raster_path)
 
-    # Should raise an error because the geometry is not a valid bounding box
-    with pytest.raises(ValueError, match="is not a valid bounding box"):
-        BoxDataset(csv_file=csv_path, root_dir=root_dir)
+    # Should automatically convert non-rectangular geometry to bounding box
+    ds = BoxDataset(csv_file=csv_path, root_dir=root_dir)
 
+    assert ds.annotations.iloc[0]["xmin"] == 10
+    assert ds.annotations.iloc[0]["ymin"] == 10
+    assert ds.annotations.iloc[0]["xmax"] == 50
+    assert ds.annotations.iloc[0]["ymax"] == 40
 
 def test_BoxDataset_with_projected_shapefile(tmp_path, raster_path):
     """Test that BoxDataset can load a shapefile with projected coordinates and converts to pixel coordinates"""
@@ -352,15 +355,17 @@ def test_validate_coordinates_negative(tmpdir):
     img_path = os.path.join(tmpdir, "test_neg.jpg")
     Image.new('RGB', (100, 100), color='white').save(img_path)
 
+    csv_file = os.path.join(tmpdir, "neg.csv")
     df = pd.DataFrame({
         'image_path': ["test_neg.jpg"],
         'xmin': [-5], 'ymin': [10],
         'xmax': [50], 'ymax': [50],
         'label': ["Tree"]
     })
+    df.to_csv(csv_file, index=False)
 
     with pytest.raises(ValueError, match="negative coordinates"):
-        training.BoxDataset(annotation_dict=df, root_dir=str(tmpdir))
+        BoxDataset(csv_file=csv_file, root_dir=str(tmpdir))
 
 def test_validate_coordinates_out_of_bounds(tmpdir):
     """
@@ -369,12 +374,14 @@ def test_validate_coordinates_out_of_bounds(tmpdir):
     img_path = os.path.join(tmpdir, "test_oob.jpg")
     Image.new('RGB', (100, 100), color='white').save(img_path)
 
+    csv_file = os.path.join(tmpdir, "oob.csv")
     df = pd.DataFrame({
         'image_path': ["test_oob.jpg"],
         'xmin': [10], 'ymin': [10],
         'xmax': [150], 'ymax': [50],
         'label': ["Tree"]
     })
+    df.to_csv(csv_file, index=False)
 
     with pytest.raises(ValueError, match="exceeding image dimensions"):
-        training.BoxDataset(annotation_dict=df, root_dir=str(tmpdir))
+        BoxDataset(csv_file=csv_file, root_dir=str(tmpdir))

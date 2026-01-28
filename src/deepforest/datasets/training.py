@@ -103,11 +103,9 @@ class BoxDataset(Dataset):
             )
 
     def _validate_coordinates(self):
-        """Validate that all bounding box coordinates occur within the image.
+        """
+        Validate that all bounding box coordinates occur within the image.
         Vectorized implementation for performance.
-
-        Raises:
-            ValueError: If any bounding box coordinate occurs outside the image
         """
         errors = []
 
@@ -139,11 +137,13 @@ class BoxDataset(Dataset):
                 columns=["xmin", "ymin", "xmax", "ymax"],
                 index=self.annotations.index,
             )
-            working_df = pd.concat([self.annotations, bounds_df], axis=1)
+            self.annotations = pd.concat([self.annotations, bounds_df], axis=1)
+            working_df = self.annotations
         else:
             working_df = self.annotations
 
         cols = ["xmin", "ymin", "xmax", "ymax"]
+
         empty_mask = (working_df[cols] == 0).all(axis=1)
 
         neg_mask = (working_df[cols] < 0).any(axis=1)
