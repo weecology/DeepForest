@@ -23,11 +23,39 @@ IOU_THRESH = 0.0
 
 @pytest.mark.parametrize("model_name, expected_label", MODEL_NAMES)
 def test_white_image_no_predictions(model_name, expected_label):
+    """Initialize model using config_args (Declarative style)"""
     model = deepforest(config_args={"model": {"name": model_name}})
 
-    # Verify correct label is loaded immediately
     assert expected_label in model.label_dict.keys(), \
         f"Model {model_name} label_dict {model.label_dict} does not contain '{expected_label}'"
+
+    model.config.score_thresh = SCORE_THRESH
+    if hasattr(model, "model") and hasattr(model.model, "score_thresh"):
+        model.model.score_thresh = SCORE_THRESH
+
+    white = np.full(WHITE_IMAGE_SIZE, 255, dtype=np.uint8)
+    results = model.predict_tile(
+        image=white,
+        patch_size=PATCH_SIZE,
+        patch_overlap=PATCH_OVERLAP,
+        iou_threshold=IOU_THRESH,
+    )
+
+    if isinstance(results, tuple):
+        results = results[0]
+
+    assert results is None or (isinstance(results, pd.DataFrame) and results.empty), (
+        f"{model_name} produced {len(results)} predictions"
+    )
+
+@pytest.mark.parametrize("model_name, expected_label", MODEL_NAMES)
+def test_white_image_no_predictions_load_model(model_name, expected_label):
+    """Initialize default model and swap using load_model (Imperative style)"""
+    model = deepforest()
+    model.load_model(model_name=model_name)
+
+    assert expected_label in model.label_dict.keys(), \
+        f"Model {model_name} label_dict {model.label_dict} does not contain '{expected_label}' after load_model"
 
     model.config.score_thresh = SCORE_THRESH
     if hasattr(model, "model") and hasattr(model.model, "score_thresh"):
