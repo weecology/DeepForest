@@ -256,7 +256,7 @@ def test_BoxDataset_validate_coordinates(tmp_path, raster_path):
         )
         df.to_csv(csv_path, index=False)
 
-        with pytest.raises(ValueError, match="negative coordinates|exceeding image dimensions"):
+        with pytest.raises(ValueError, match="invalid bounding boxes"):
             BoxDataset(csv_file=csv_path, root_dir=root_dir)
 
 
@@ -364,7 +364,7 @@ def test_validate_coordinates_negative(tmpdir):
     })
     df.to_csv(csv_file, index=False)
 
-    with pytest.raises(ValueError, match="negative coordinates"):
+    with pytest.raises(ValueError, match="invalid bounding boxes"):
         BoxDataset(csv_file=csv_file, root_dir=str(tmpdir))
 
 def test_validate_coordinates_out_of_bounds(tmpdir):
@@ -383,5 +383,5 @@ def test_validate_coordinates_out_of_bounds(tmpdir):
     })
     df.to_csv(csv_file, index=False)
 
-    with pytest.raises(ValueError, match="exceeding image dimensions"):
+    with pytest.raises(ValueError, match="invalid bounding boxes"):
         BoxDataset(csv_file=csv_file, root_dir=str(tmpdir))

@@ -103,8 +103,7 @@ class BoxDataset(Dataset):
             )
 
     def _validate_coordinates(self):
-        """Validate that all bounding box coordinates occur within the
-        image."""
+        """Validate that all bounding box coordinates occur within the image."""
         errors = []
 
         unique_images = self.annotations["image_path"].unique()
@@ -147,37 +146,20 @@ class BoxDataset(Dataset):
         empty_mask = (working_df[cols] == 0).all(axis=1)
 
         neg_mask = (working_df[cols] < 0).any(axis=1)
-        invalid_neg = neg_mask & (~empty_mask)
-
-        if invalid_neg.any():
-            bad_count = invalid_neg.sum()
-            errors.append(f"Found {bad_count} annotations with negative coordinates.")
 
         oob_mask = (working_df["xmax"] > working_df["_img_width"]) | (
             working_df["ymax"] > working_df["_img_height"]
         )
-        invalid_oob = oob_mask & (~empty_mask)
 
-        if invalid_oob.any():
-            bad_rows = working_df[invalid_oob]
-            bad_count = len(bad_rows)
-            example_str = (
-                bad_rows[
-                    [
-                        "image_path",
-                        "xmin",
-                        "ymin",
-                        "xmax",
-                        "ymax",
-                        "_img_width",
-                        "_img_height",
-                    ]
-                ]
-                .head()
-                .to_string()
-            )
+        bad_mask = (neg_mask | oob_mask) & (~empty_mask)
+
+        if bad_mask.any():
+            bad_rows = working_df[bad_mask]
+
+            report = bad_rows[["image_path", "xmin", "ymin", "xmax", "ymax"]]
+
             errors.append(
-                f"Found {bad_count} boxes exceeding image dimensions. Examples:\n{example_str}"
+                f"Found {len(bad_rows)} invalid bounding boxes (negative or out-of-bounds):\n{report.to_string()}"
             )
 
         self.annotations.drop(columns=["_img_width", "_img_height"], inplace=True)
