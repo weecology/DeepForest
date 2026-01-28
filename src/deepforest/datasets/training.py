@@ -103,7 +103,8 @@ class BoxDataset(Dataset):
             )
 
     def _validate_coordinates(self):
-        """Validate that all bounding box coordinates occur within the image"""
+        """Validate that all bounding box coordinates occur within the
+        image."""
         errors = []
 
         unique_images = self.annotations["image_path"].unique()
