@@ -350,7 +350,7 @@ def test_BoxDataset_with_projected_shapefile(tmp_path, raster_path):
 
 def test_validate_coordinates_negative(tmpdir):
     """
-    Ensure vectorized validation catches negative coordinates
+    Ensure validation catches negative coordinates
     """
     img_path = os.path.join(tmpdir, "test_neg.jpg")
     Image.new('RGB', (100, 100), color='white').save(img_path)
@@ -369,7 +369,7 @@ def test_validate_coordinates_negative(tmpdir):
 
 def test_validate_coordinates_out_of_bounds(tmpdir):
     """
-    Ensure vectorized validation catches OOB coordinates
+    Ensure validation catches OOB coordinates
     """
     img_path = os.path.join(tmpdir, "test_oob.jpg")
     Image.new('RGB', (100, 100), color='white').save(img_path)

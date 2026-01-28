@@ -103,10 +103,7 @@ class BoxDataset(Dataset):
             )
 
     def _validate_coordinates(self):
-        """Validate that all bounding box coordinates occur within the image.
-
-        Vectorized implementation for performance.
-        """
+        """Validate that all bounding box coordinates occur within the image"""
         errors = []
 
         unique_images = self.annotations["image_path"].unique()
@@ -144,6 +141,8 @@ class BoxDataset(Dataset):
 
         cols = ["xmin", "ymin", "xmax", "ymax"]
 
+        # All coordinates equal to zero is how we code empty frames.
+        # These are valid coordinates even though they would fail other checks.
         empty_mask = (working_df[cols] == 0).all(axis=1)
 
         neg_mask = (working_df[cols] < 0).any(axis=1)
