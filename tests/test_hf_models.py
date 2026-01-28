@@ -49,17 +49,3 @@ def test_load_all_weecology_models(repo_id):
         assert df.model is not None
         # detection models should have label_dict on the underlying model
         assert getattr(df.model, "label_dict", None) is not None
-
-@pytest.mark.parametrize("model_name, expected_label", [
-    ("weecology/deepforest-bird", "Bird"),
-    ("weecology/deepforest-tree", "Tree"),
-    ("weecology/deepforest-livestock", "Livestock")
-])
-def test_hub_model_labels(model_name, expected_label):
-    """
-    Ensure models loaded from Hub via config and return their specific labels.
-    """
-    m = main.deepforest(config_args={"model": {"name": model_name}})
-
-    assert expected_label in m.label_dict.keys(), \
-        f"Model {model_name} label_dict {m.label_dict} does not contain '{expected_label}'"
