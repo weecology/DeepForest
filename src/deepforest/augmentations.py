@@ -87,6 +87,59 @@ class RandomPadTo(GeometricAugmentationBase2D):
         return input[..., : size[0], : size[1]]
 
 
+class PadIfNeeded(GeometricAugmentationBase2D):
+    r"""Pad the image to a fixed size if it is smaller than the given size.
+
+    Args:
+        size: Tuple of (height, width) specifying the target size.
+        pad_mode: Padding mode (constant, reflect, replicate, circular).
+        pad_value: Fill value for constant padding mode.
+        p: Probability of applying the transform.
+        same_on_batch: Apply same transformation to all batch elements.
+        keepdim: Maintain shape (not used for this transform).
+    """
+
+    def __init__(
+        self,
+        size: tuple[int, int],
+        pad_mode: str = "constant",
+        pad_value: float = 0,
+        p: float = 0.5,
+        same_on_batch: bool = False,
+        keepdim: bool = False,
+    ) -> None:
+        super().__init__(p=p, same_on_batch=same_on_batch, p_batch=1.0, keepdim=keepdim)
+        self.flags = {"pad_mode": pad_mode, "pad_value": pad_value, "size": size}
+
+    def compute_transformation(
+        self, input: Tensor, params: dict[str, Tensor], flags: dict[str, Any]
+    ) -> Tensor:
+        return self.identity_matrix(input)
+
+    def apply_transform(
+        self,
+        input: Tensor,
+        params: dict[str, Tensor],
+        flags: dict[str, Any],
+        transform: Tensor | None = None,
+    ) -> Tensor:
+        target_h, target_w = flags["size"]
+        _, _, h, w = input.shape
+
+        pad_height = max(0, target_h - h)
+        pad_width = max(0, target_w - w)
+
+        if pad_height == 0 and pad_width == 0:
+            return input
+
+        return torch.nn.functional.pad(
+            input,
+            [0, pad_width, 0, pad_height],
+            mode=flags["pad_mode"],
+            value=flags["pad_value"],
+        )
+
+
 class ZoomBlur(IntensityAugmentationBase2D):
     """Apply zoom blur effect by averaging multiple zoomed versions of the
     image.
@@ -165,7 +218,11 @@ _SUPPORTED_TRANSFORMS = {
         RandomPadTo,
         {"pad_range": (0, 10), "pad_mode": "constant", "pad_value": 0, "p": 0.5},
     ),
-    "PadIfNeeded": (K.PadTo, {"size": (800, 800)}),
+    "PadIfNeeded": (
+        PadIfNeeded,
+        {"size": (800, 800), "pad_mode": "constant", "pad_value": 0},
+    ),
+    "PadTo": (K.PadTo, {"size": (800, 800)}),
     "Rotate": (K.RandomRotation, {"degrees": 15, "p": 0.5}),
     "RandomBrightnessContrast": (
         K.ColorJiggle,
