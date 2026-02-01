@@ -67,29 +67,50 @@ img = model.predict_image(path=sample_image_path)
 plot_results(img)
 ```
 
-## Predict a tile using model.predict_tile
+# Predicting Large Images with `model.predict_tile`
 
-Large tiles covering wide geographic extents cannot fit into memory during prediction and would yield poor results due to the density of bounding boxes. Often provided as geospatial .tif files, remote sensing data is best suited for the `predict_tile` function, which splits the tile into overlapping windows, performs prediction on each of the windows, and then reassembles the resulting annotations.
+`predict_tile` is designed for **large images that cannot fit into memory** during prediction. It splits the image into overlapping tiles, predicts each tile individually, and merges the results. This ensures accurate predictions while keeping memory usage low, making it ideal for high-resolution geospatial data such as `.tif` remote sensing images.
 
-Let's show an example with a small image. For larger images, patch_size should be increased.
+## Key Parameters
+
+- **`path`**: Path to your input raster image.
+- **`patch_size`**: Size (in pixels) of each tile/window. Larger tiles cover more area but use more memory. Typical values: **300–800 px per tile**.
+- **`patch_overlap`**: Fractional overlap between adjacent tiles (default `0.25`). Helps avoid missing objects at tile borders.
+- **`dataloader_strategy`**: Controls how tiles are loaded into memory:
+  - `"single"`: Loads tiles one at a time on CPU and sends them individually to GPU. Memory-efficient.
+  - `"batch"`: Processes multiple tiles in batches on GPU. More efficient if GPU memory allows, but tiles are still used rather than loading the full image.
+  - `"window"`: Reads only the requested tile from the raster dataset. **Most memory-efficient**, but cannot parallelize across windows.
+
+> **Tip:** Always test your workflow on a smaller image first to avoid memory issues.
+
+## Example Usage
 
 ```python
+from deepforest import main, get_data
+from deepforest.visualize import plot_predictions
 
-from deepforest import main
-from deepforest import get_data
-from deepforest.visualize import plot_results
-import matplotlib.pyplot as plt
-
-# Initialize the model class
+# Initialize the DeepForest model
 model = main.deepforest()
+model.use_release()  # Load a pretrained tree detection model
 
-# Load a pretrained tree detection model from Hugging Face
-model.load_model(model_name="weecology/deepforest-tree", revision="main")
-
-# Predict on large geospatial tiles using overlapping windows
+# Load example raster image
 path = get_data("OSBS_029.tif")
-predicted_raster = model.predict_tile(path, patch_size=300, patch_overlap=0.25)
-plot_results(predicted_raster)
+
+# Predict using tiled strategy
+predicted_raster = model.predict_tile(
+    path,
+    patch_size=300,
+    patch_overlap=0.25,
+    dataloader_strategy="window"
+)
+
+# Visualize predicted bounding boxes (if using in-memory predictions)
+# Note: plot_predictions expects a list of bounding boxes, not a raster file
+# predictions = model.predict_image(path)  # Optional: for small image testing
+# plot_predictions(predictions)
+
+# To save the merged raster predictions:
+# predicted_raster.save("predicted_output.tif")
 ```
 
 ### dataloader-strategy
