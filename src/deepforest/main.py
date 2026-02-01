@@ -587,6 +587,10 @@ class deepforest(pl.LightningModule):
                         image_results.append(formatted_result)
                         global_window_idx += 1
 
+                # Ensure raster datasets are closed promptly
+                if hasattr(ds, "close"):
+                    ds.close()
+
             if not image_results:
                 results = pd.DataFrame()
             else:
