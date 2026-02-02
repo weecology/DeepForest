@@ -132,9 +132,16 @@ class PadIfNeeded(GeometricAugmentationBase2D):
         if pad_height == 0 and pad_width == 0:
             return input
 
+        # Use symmetric padding to keep image centered
+        # Distribute padding evenly on both sides
+        pad_left = pad_width // 2
+        pad_right = pad_width - pad_left
+        pad_top = pad_height // 2
+        pad_bottom = pad_height - pad_top
+
         return torch.nn.functional.pad(
             input,
-            [0, pad_width, 0, pad_height],
+            [pad_left, pad_right, pad_top, pad_bottom],  # [left, right, top, bottom]
             mode=flags["pad_mode"],
             value=flags["pad_value"],
         )
