@@ -91,7 +91,12 @@ from deepforest.visualize import plot_predictions
 
 # Initialize the DeepForest model
 model = main.deepforest()
-model.use_release()  # Load a pretrained tree detection model
+
+# Load pretrained tree detection model explicitly
+model.load_model(
+    model_name="weecology/deepforest-tree",
+    revision="main"
+)
 
 # Load example raster image
 path = get_data("OSBS_029.tif")
