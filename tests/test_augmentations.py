@@ -287,14 +287,14 @@ def test_random_pad_to():
 
 def test_pad_if_needed():
     """Test PadIfNeeded augmentation.
-    
+
     Should pad if smaller, do nothing if larger.
     """
     # Case 1: Image smaller than target -> Should Pad
     transform_pad = get_transform(augmentations={"PadIfNeeded": {"size": (800, 800)}})
     image_small = torch.randn(1, 3, 600, 600)
     bboxes = torch.tensor([[[10., 10., 50., 50.]]])
-    
+
     out_small, _ = transform_pad(image_small, bboxes)
     assert out_small.shape == (1, 3, 800, 800), "Failed to pad small image"
 
