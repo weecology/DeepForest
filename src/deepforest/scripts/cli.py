@@ -1,4 +1,5 @@
 import argparse
+import json
 import os
 
 from hydra import compose, initialize, initialize_config_dir
@@ -29,7 +30,7 @@ def predict(
     provided path and optionally visualizing the results.
 
     Args:
-        config (DictConfig): Hydra configuration.
+        config (DictConfig): DeepForest configuration.
         input_path (str): Path to the input image.
         output_path (Optional[str]): Path to save the prediction results.
         plot (Optional[bool]): Whether to plot the results.
@@ -51,6 +52,39 @@ def predict(
 
     if plot:
         plot_results(res)
+
+
+def evaluate(config: DictConfig, output_path: str | None = None) -> None:
+    """Evaluate predictions against ground truth using the specified
+    configuration. Target data is taken from config (e.g. validation.csv_file,
+    validation.root_dir.)
+
+    Output documents (predictions.csv and results.json) are saved to output_path if provided.
+
+    Args:
+            config (DictConfig): DeepForest configuration.
+            output_path (str): Directory to save evaluation results.
+
+    Returns:
+        None
+    """
+    config.validation.val_accuracy_interval = 1
+    m = deepforest(config=config)
+
+    if output_path:
+        os.makedirs(output_path, exist_ok=True)
+
+    eval_results = m.trainer.validate(m)[0]
+
+    if output_path and eval_results.get("results", None):
+        eval_results.to_csv(os.path.join(output_path, "predictions.csv"), index=False)
+
+    with (
+        open(os.path.join(output_path, "results.json"), "w")
+        if output_path
+        else os.sys.stdout as f
+    ):
+        json.dump(eval_results, f, indent=1)
 
 
 def main():
@@ -79,7 +113,17 @@ def main():
     predict_parser.add_argument("-o", "--output", help="Path to prediction results")
     predict_parser.add_argument("--plot", action="store_true", help="Plot results")
 
-    # Show config subcommand
+    # Evaluate subcommand
+    evaluate_parser = subparsers.add_parser(
+        "evaluate",
+        help="Evaluate predictions against the given validation dataset. Set validation parameters like thresholds via config.",
+        epilog="Any remaining arguments <key>=<value> will be passed to Hydra to override the current config.",
+    )
+    evaluate_parser.add_argument(
+        "-o", "--output", help="Directory to save evaluation results"
+    )
+
+    # Show config subcommand``
     subparsers.add_parser("config", help="Show the current config")
 
     # Config options for Hydra
@@ -105,6 +149,10 @@ def main():
         train(cfg)
     elif args.command == "config":
         print(OmegaConf.to_yaml(cfg, resolve=True))
+    elif args.command == "evaluate":
+        evaluate(cfg, output_path=args.output)
+    else:
+        parser.print_help()
 
 
 if __name__ == "__main__":
