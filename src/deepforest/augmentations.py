@@ -104,7 +104,7 @@ class PadIfNeeded(GeometricAugmentationBase2D):
         size: tuple[int, int],
         pad_mode: str = "constant",
         pad_value: float = 0,
-        p: float = 0.5,
+        p: float = 1.0,
         same_on_batch: bool = False,
         keepdim: bool = False,
     ) -> None:
