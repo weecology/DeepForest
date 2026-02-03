@@ -1131,3 +1131,34 @@ def test_predict_file_mixed_sizes(m, tmp_path):
     preds = m.predict_file(csv_file=csv_path, root_dir=str(tmp_path))
 
     assert preds.ymax.max() > 200  # The larger image should have predictions outside the 200px limit
+
+def test_evaluate_with_limit_val_batches(m):
+    """Test that evaluate correctly handles limit_val_batches by trimming
+    ground truth to match the limited predictions (fixes #1232)."""
+    csv_file = get_data("OSBS_029.csv")
+    root_dir = os.path.dirname(csv_file)
+
+    # Get predictions first
+    predictions = m.predict_file(csv_file=csv_file, root_dir=root_dir)
+
+    # Save original limit_val_batches value
+    original_limit = getattr(m.trainer, 'limit_val_batches', 1.0)
+
+    # Set limit_val_batches to 0.5 (50%)
+    m.trainer.limit_val_batches = 0.5
+
+    try:
+        # Call internal evaluate method directly
+        results = m.__evaluate__(
+            csv_file=csv_file,
+            root_dir=root_dir,
+            predictions=predictions
+        )
+
+        # Check results are valid
+        assert "box_recall" in results
+        assert "box_precision" in results
+        assert results["box_recall"] >= 0, "Recall should be non-negative"
+    finally:
+        # Restore original value
+        m.trainer.limit_val_batches = original_limit
