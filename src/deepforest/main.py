@@ -1027,13 +1027,12 @@ class deepforest(pl.LightningModule):
         ground_df["label"] = ground_df.label.apply(lambda x: self.label_dict[x])
 
         # Trim ground_df if limit_val_batches is set
-        if hasattr(self, "trainer") and self.trainer is not None:
-            limit_val_batches = getattr(self.trainer, "limit_val_batches", 1.0)
-            if limit_val_batches is not None and limit_val_batches != 1.0:
-                unique_images = ground_df["image_path"].unique()
-                n_images = math.ceil(limit_val_batches * len(unique_images))
-                images_to_keep = unique_images[:n_images]
-                ground_df = ground_df[ground_df["image_path"].isin(images_to_keep)]
+        limit_val_batches = self.trainer.limit_val_batches
+        if limit_val_batches is not None and limit_val_batches != 1.0:
+            unique_images = ground_df["image_path"].unique()
+            n_images = math.ceil(limit_val_batches * len(unique_images))
+            images_to_keep = unique_images[:n_images]
+            ground_df = ground_df[ground_df["image_path"].isin(images_to_keep)]
 
         if predictions is None:
             # Get the predict dataloader and use predict_batch
