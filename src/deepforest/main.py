@@ -1026,7 +1026,7 @@ class deepforest(pl.LightningModule):
         ground_df = utilities.read_file(csv_file, root_dir=root_dir)
         ground_df["label"] = ground_df.label.apply(lambda x: self.label_dict[x])
 
-        # Trim ground_df if limit_val_batches is set (fixes #1232)
+        # Trim ground_df if limit_val_batches is set
         if hasattr(self, "trainer") and self.trainer is not None:
             limit_val_batches = getattr(self.trainer, "limit_val_batches", 1.0)
             if limit_val_batches is not None and limit_val_batches != 1.0:
