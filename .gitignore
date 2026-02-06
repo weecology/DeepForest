@@ -26,3 +26,7 @@ tests/data/*
 .vscode/
 *ipynb_checkpoints/
 docs/user_guide/deepforestr.md
+# Virtual environment
+venv/
+.env/
+.env*/
