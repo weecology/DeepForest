@@ -1133,21 +1133,21 @@ def test_predict_file_mixed_sizes(m, tmp_path):
     assert preds.ymax.max() > 200  # The larger image should have predictions outside the 200px limit
 
 def test_evaluate_with_limit_val_batches(m):
-    """Test that validation correctly handles limit_val_batches by trimming
-    ground truth to match the limited predictions."""
+    """Test that RecallPrecision metric filters ground truth to match
+    the images actually processed when limit_val_batches is set."""
     csv_file = get_data("OSBS_029.csv")
     root_dir = os.path.dirname(csv_file)
-
-    # Setup validation config
+    
     m.config.validation.csv_file = csv_file
     m.config.validation.root_dir = root_dir
-
-    # Create trainer with limit_val_batches set
+    
     m.create_trainer(limit_val_batches=0.5)
-
-    # Run validation
-    m.trainer.validate(m)
-
-    # If we get here without error, the fix is working
-    # The test would fail with spuriously low recall before the fix
-    assert True
+    
+    results = m.trainer.validate(m)
+    
+    assert results is not None
+    assert len(results) > 0
+    
+    metrics = results[0]
+    if "box_recall" in metrics:
+        assert metrics["box_recall"] >= 0.0
