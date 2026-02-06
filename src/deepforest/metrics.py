@@ -118,7 +118,7 @@ class RecallPrecision(Metric):
         if not predictions.empty:
             predicted_images = predictions["image_path"].unique()
             ground_df = ground_df[ground_df["image_path"].isin(predicted_images)]
-        
+
         results = __evaluate_wrapper__(
             predictions=predictions,
             ground_df=ground_df,

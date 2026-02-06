@@ -1137,17 +1137,17 @@ def test_evaluate_with_limit_val_batches(m):
     the images actually processed when limit_val_batches is set."""
     csv_file = get_data("OSBS_029.csv")
     root_dir = os.path.dirname(csv_file)
-    
+
     m.config.validation.csv_file = csv_file
     m.config.validation.root_dir = root_dir
-    
+
     m.create_trainer(limit_val_batches=0.5)
-    
+
     results = m.trainer.validate(m)
-    
+
     assert results is not None
     assert len(results) > 0
-    
+
     metrics = results[0]
     if "box_recall" in metrics:
         assert metrics["box_recall"] >= 0.0

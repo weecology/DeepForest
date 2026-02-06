@@ -1025,7 +1025,6 @@ class deepforest(pl.LightningModule):
         ground_df = utilities.read_file(csv_file, root_dir=root_dir)
         ground_df["label"] = ground_df.label.apply(lambda x: self.label_dict[x])
 
-
         if predictions is None:
             # Get the predict dataloader and use predict_batch
             predictions = self.predict_file(
