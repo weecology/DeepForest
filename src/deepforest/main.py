@@ -1040,6 +1040,7 @@ class deepforest(pl.LightningModule):
             ground_df=ground_df,
             iou_threshold=iou_threshold,
             numeric_to_label_dict=self.numeric_to_label_dict,
+            geometry_type="box",
         )
 
         # empty frame accuracy
