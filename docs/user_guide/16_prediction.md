@@ -1,12 +1,12 @@
 # Prediction
 
-There are atleast four ways to make predictions with DeepForest.
+There are at least four ways to make predictions with DeepForest.
 
 1. Predict an image using [model.predict_image](https://deepforest.readthedocs.io/en/latest/source/deepforest.html#deepforest.main.deepforest.predict_image). The entire image is passed to the model.
 
-2. Predict a large number, which we call a 'tile', using [model.predict_tile](https://deepforest.readthedocs.io/en/latest/source/deepforest.html#deepforest.main.deepforest.predict_tile). The tile is cut into smaller windows and each window is predicted.
+2. Predict a large image (a "tile"), using [model.predict_tile](https://deepforest.readthedocs.io/en/latest/source/deepforest.html#deepforest.main.deepforest.predict_tile). The tile is cut into smaller windows and each window is predicted.
 
-3. Predict a directory of images using a csv file using [model.predict_file](https://deepforest.readthedocs.io/en/latest/source/deepforest.html#deepforest.main.deepforest.predict_file). Each unique image listed in a csv file is predicted.
+3. Predict a directory of images using a CSV file with [model.predict_file](https://deepforest.readthedocs.io/en/latest/source/deepforest.html#deepforest.main.deepforest.predict_file). Each unique image listed in a CSV file is predicted.
 
 4. Predict a batch of images using [model.predict_batch](https://deepforest.readthedocs.io/en/latest/source/deepforest.html#deepforest.main.deepforest.predict_batch). This is useful when you have an existing dataloader from outside DeepForest that yields data in batches.
 
@@ -45,11 +45,11 @@ deepforest predict ./path/to/your/image.tif -o results.csv patch_size=250 patch_
 
 We use [Hydra](https://hydra.cc/docs/intro/) for configuration management, and the format for specifying predictions is a space-separated list of `<key>=<value>`s, like the example above.
 
-To see the default configuration and to check what options you can set, you can run `deepforest --show-config` flag (no other options are required).
+To see the default configuration and to check what options you can set, you can run `deepforest --show-config` command (no other options are required).
 
 ## Predict an image using model.predict_image
 
-This is most commonly used for small images or pre-cropped windows of large tiles. Passing a large tile to predict_image will lead to poor performance, use predict_tile.
+This is most commonly used for small images or pre-cropped windows of large tiles. Passing a large tile to predict_image will lead to poor performance; use predict_tile.
 
 ```python
 from deepforest import get_data
@@ -67,63 +67,83 @@ img = model.predict_image(path=sample_image_path)
 plot_results(img)
 ```
 
-# Predicting Large Images with `model.predict_tile`
+# Predicting Large Images with `predict_tile`
 
-`predict_tile` is designed for **large images that cannot fit into memory** during prediction. It splits the image into overlapping tiles, predicts each tile individually, and merges the results. This ensures accurate predictions while keeping memory usage low, making it ideal for high-resolution geospatial data such as `.tif` remote sensing images.
+`predict_tile` is designed for making predictions on large raster images
+(e.g., high-resolution `.tif` remote-sensing data) that may not fit into memory.
+
+Instead of loading the full image at once, the method:
+1. Splits the image into overlapping tiles
+2. Runs prediction on each tile independently
+3. Merges tile-level predictions into a single pandas DataFrame
+
+This tiled approach reduces memory usage while ensuring objects near tile
+boundaries are not missed.
+
+---
+
+## Return Type
+
+Both `predict_tile` and `predict_file` return a pandas DataFrame.
+`predict_batch` returns a list of pandas DataFrames, one per batch.
+
+Each row in the DataFrame corresponds to one detected object and typically
+includes bounding box coordinates, confidence scores, and class labels.
+
+These methods do **not** return raster files or images.
+
+---
 
 ## Key Parameters
 
-- **`path`**: Path to your input raster image.
-- **`patch_size`**: Size (in pixels) of each tile/window. Larger tiles cover more area but use more memory. Typical values: **300–800 px per tile**.
-- **`patch_overlap`**: Fractional overlap between adjacent tiles (default `0.25`). Helps avoid missing objects at tile borders.
-- **`dataloader_strategy`**: Controls how tiles are loaded into memory:
-  - `"single"`: Loads tiles one at a time on CPU and sends them individually to GPU. Memory-efficient.
-  - `"batch"`: Processes multiple tiles in batches on GPU. More efficient if GPU memory allows, but tiles are still used rather than loading the full image.
-  - `"window"`: Reads only the requested tile from the raster dataset. **Most memory-efficient**, but cannot parallelize across windows.
+- **`path`**
+  Path to the input raster image.
 
-> **Tip:** Always test your workflow on a smaller image first to avoid memory issues.
+- **`patch_size`**
+  Size (in pixels) of each tile. Larger values provide more spatial context
+  but increase memory usage. Typical values range from 300 to 800 pixels.
+
+- **`patch_overlap`**
+  Fractional overlap between adjacent tiles (default: 0.25). Overlap helps
+  ensure objects at tile edges are detected correctly.
+
+- **`dataloader_strategy`**
+  Strategy used to load tiles during prediction:
+  - `"single"`: Loads and predicts one tile at a time.
+  - `"batch"`: Processes multiple tiles together on the GPU.
+  - `"window"`: Reads only the requested window from disk.
+
+---
 
 ## Example Usage
 
 ```python
 from deepforest import main, get_data
-from deepforest.visualize import plot_predictions
 
-# Initialize the DeepForest model
 model = main.deepforest()
-
-# Load pretrained tree detection model explicitly
 model.load_model(
     model_name="weecology/deepforest-tree",
     revision="main"
 )
 
-# Load example raster image
 path = get_data("OSBS_029.tif")
 
-# Predict using tiled strategy
-predicted_raster = model.predict_tile(
-    path,
+predictions = model.predict_tile(
+    path=path,
     patch_size=300,
     patch_overlap=0.25,
     dataloader_strategy="window"
 )
 
-# Visualize predicted bounding boxes (if using in-memory predictions)
-# Note: plot_predictions expects a list of bounding boxes, not a raster file
-# predictions = model.predict_image(path)  # Optional: for small image testing
-# plot_predictions(predictions)
-
-# To save the merged raster predictions:
-# predicted_raster.save("predicted_output.tif")
+print(predictions.head())
 ```
 
-### dataloader-strategy
+### `dataloader_strategy`
 
 An optional argument to predict_tile allows the user to control how to scale prediction of tiles and how the windows are created within tiles.
 
 ```python
-prediction_single = m.predict_tile(path=path, patch_size=300, dataloader_strategy="single")
+prediction_single = model.predict_tile(path=path, patch_size=300, dataloader_strategy="single")
 ```
 
 The `dataloader_strategy` parameter has three options:
@@ -143,15 +163,17 @@ The image shows that the speed of the predict_tile function is related to the st
 The _predict_tile_ function is sensitive to _patch_size_, especially when using the prebuilt model on new data.
 We encourage users to experiment with various patch sizes. For 0.1m data, 400-800px per window is appropriate, but it will depend on the density of tree plots. For coarser resolution tiles, >800px patch sizes have been effective.
 
-## Predict a directory of using a csv file using model.predict_file
+## Predict a directory of images using a CSV file with model.predict_file
 
-For a list of images with annotations in a csv file, the `predict_file` function will return a dataframe with the predicted bounding boxes for each image as a single dataframe. This is useful for making predictions on a large number of images that have ground truth annotations.
+For a list of images specified in a CSV file, the `predict_file` function will return a dataframe with the predicted bounding boxes for each image as a single dataframe. This is useful for making predictions on a large number of images that have ground truth annotations.
 
 ```python
-
+import os
+import pandas as pd
+from deepforest import get_data
 csv_file = get_data("OSBS_029.csv")
 original_file = pd.read_csv(csv_file)
-df = m.predict_file(csv_file, root_dir=os.path.dirname(csv_file))
+df = model.predict_file(csv_file, root_dir=os.path.dirname(csv_file))
 ```
 
 ```
@@ -173,6 +195,7 @@ from deepforest.datasets.training import BoxDataset
 from torch.utils.data import DataLoader
 import numpy as np
 from PIL import Image
+from deepforest import get_data
 
 path = get_data("OSBS_029.tif")
 tile = np.array(Image.open(path))
@@ -182,6 +205,6 @@ dl = DataLoader(ds, batch_size=3)
 # Perform prediction
 predictions = []
 for batch in dl:
-    prediction = m.predict_batch(batch)
+    prediction = model.predict_batch(batch)
     predictions.append(prediction)
 ```
