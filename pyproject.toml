@@ -60,7 +60,7 @@ dependencies = [
     "torch>=2.2.0",
     "torchvision>=0.17.0",
     "tqdm",
-    "transformers",
+    "transformers!=5.1.0,!=4.57",
     "xmltodict",
 ]
 
