@@ -1,4 +1,5 @@
 import os
+import warnings
 
 import numpy as np
 import pandas as pd
@@ -12,6 +13,70 @@ from torch.utils.data import Dataset
 
 from deepforest import preprocess
 from deepforest.utilities import format_geometry, read_file
+
+
+def _load_image_array(
+    image_path: str | None = None, image: np.ndarray | Image.Image | None = None
+) -> np.ndarray:
+    """Load image from path or array; converts to RGB when loading from path."""
+    if image is None:
+        if image_path is None:
+            raise ValueError("Either image_path or image must be provided")
+        return np.asarray(Image.open(image_path).convert("RGB"))
+
+    return image if isinstance(image, np.ndarray) else np.asarray(image)
+
+
+def _ensure_rgb_chw(image: np.ndarray) -> np.ndarray:
+    """Return 3-channel RGB in CHW order (no normalization). Raises if grayscale or wrong shape."""
+    if image.ndim == 2:
+        raise ValueError("Grayscale images are not supported (expected 3-channel RGB)")
+    if image.ndim != 3:
+        raise ValueError(f"Expected 3D image array, got shape {image.shape}")
+
+    # Ensure channels-first (C, H, W)
+    if image.shape[0] == 3:
+        chw = image
+    elif image.shape[-1] == 3:
+        chw = np.moveaxis(image, -1, 0)
+    else:
+        raise ValueError(f"Expected image with 3 channels, got shape {image.shape}")
+
+    return np.ascontiguousarray(chw)
+
+
+def _ensure_rgb_chw_float32(image: np.ndarray) -> np.ndarray:
+    """Normalize to RGB CHW float32 in [0, 1]. Accepts HWC/CHW uint8 or float. Raises if invalid."""
+    chw = _ensure_rgb_chw(image)
+
+    # Normalize based primarily on dtype
+    if chw.dtype == np.uint8:
+        chw = chw.astype(np.float32)
+        chw /= 255.0
+    elif np.issubdtype(chw.dtype, np.floating):
+        if chw.dtype != np.float32:
+            chw = chw.astype(np.float32)
+
+        # Allow already-normalized float images.
+        # If values look like 0-255 floats, normalize.
+        max_val = float(chw.max())
+        min_val = float(chw.min())
+        if min_val < 0:
+            raise ValueError(
+                f"Expected float image in [0, 1] or [0, 255], got min {min_val}"
+            )
+        if max_val > 1.0:
+            if max_val <= 255.0:
+                chw /= 255.0
+            else:
+                raise ValueError(
+                    f"Expected float image in [0, 1] or [0, 255], got max {max_val}"
+                )
+    else:
+        # Integers other than uint8 are ambiguous; be explicit.
+        raise ValueError(f"Unsupported image dtype {chw.dtype}. Expected uint8 or float.")
+
+    return np.ascontiguousarray(chw)
 
 
 # Base prediction class
@@ -48,32 +113,9 @@ class PredictionDataset(Dataset):
     def load_and_preprocess_image(
         self, image_path: str = None, image: np.ndarray | Image.Image = None
     ):
-        if image is None:
-            if image_path is None:
-                raise ValueError("Either image_path or image must be provided")
-            image = np.array(Image.open(image_path).convert("RGB"))
-        else:
-            image = np.array(image)
-        # If dtype is not float32, convert to float32
-        if image.dtype != "float32":
-            image = image.astype("float32")
-
-        # If image is not normalized, normalize to [0, 1]
-        if image.max() > 1 or image.min() < 0:
-            image = image / 255.0
-
-        # If image is not in CHW format, convert to CHW
-        if image.shape[0] != 3:
-            if image.shape[-1] != 3:
-                raise ValueError(
-                    f"Expected 3 channel image, got image shape {image.shape}"
-                )
-            else:
-                image = np.rollaxis(image, 2, 0)
-
-        image = torch.from_numpy(image)
-
-        return image
+        image_arr = _load_image_array(image_path=image_path, image=image)
+        image_arr = _ensure_rgb_chw_float32(image_arr)
+        return torch.from_numpy(image_arr)
 
     def prepare_items(self):
         """Prepare the items for the dataset.
@@ -169,7 +211,11 @@ class SingleImage(PredictionDataset):
         )
 
     def prepare_items(self):
-        self.image = self.load_and_preprocess_image(self.path, image=self.image)
+        image_arr = _load_image_array(image_path=self.path, image=self.image)
+        image = _ensure_rgb_chw(image_arr)
+
+        # Keep as uint8/float in CHW; normalize per-crop to avoid full-image float copy
+        self.image = image
         self.windows = preprocess.compute_windows(
             self.image, self.patch_size, self.patch_overlap
         )
@@ -182,8 +228,11 @@ class SingleImage(PredictionDataset):
 
     def get_crop(self, idx):
         crop = self.image[self.windows[idx].indices()]
-
-        return crop
+        if crop.dtype != "float32":
+            crop = crop.astype("float32")
+        if crop.max() > 1 or crop.min() < 0:
+            crop /= 255.0
+        return torch.from_numpy(crop)
 
     def get_image_basename(self, idx):
         if self.path is not None:
@@ -433,24 +482,25 @@ class TiledRaster(PredictionDataset):
     def __init__(self, path, patch_size, patch_overlap):
         if path is None:
             raise ValueError("path is required for a memory raster dataset")
+        self._src = None
         super().__init__(path=path, patch_size=patch_size, patch_overlap=patch_overlap)
 
     def prepare_items(self):
-        # Get raster shape without keeping file open
-        with rio.open(self.path) as src:
-            width = src.shape[0]
-            height = src.shape[1]
+        # Open once; workers=0 is enforced by caller for this dataset.
+        self._src = rio.open(self.path)
+        height = self._src.height
+        width = self._src.width
 
-            # Check is tiled
-            if not src.is_tiled:
-                raise ValueError(
-                    "Out-of-memory dataset is selected, but raster is not tiled, "
-                    "leading to entire raster being read into memory and defeating "
-                    "the purpose of an out-of-memory dataset. "
-                    "\nPlease run: "
-                    "\ngdal_translate -of GTiff -co TILED=YES <input> <output> "
-                    "to create a tiled raster"
-                )
+        # Warn on non-tiled rasters: window reads may still be efficient (strip-based),
+        # but performance can degrade depending on driver/strip layout.
+        if not self._src.is_tiled:
+            warnings.warn(
+                "dataloader_strategy='window' is selected, but raster is not tiled. "
+                "Windowed reads may be slower depending on file layout. If needed, "
+                "create a tiled GeoTIFF with: "
+                "gdal_translate -of GTiff -co TILED=YES <input> <output>",
+                stacklevel=2,
+            )
 
         # Generate sliding windows
         self.windows = slidingwindow.generateForSize(
@@ -469,12 +519,15 @@ class TiledRaster(PredictionDataset):
 
     def get_crop(self, idx):
         window = self.windows[idx]
-        with rio.open(self.path) as src:
-            window_data = src.read(window=Window(window.x, window.y, window.w, window.h))
+        assert self._src is not None, "Raster dataset is not open"
+        window_data = self._src.read(
+            window=Window(window.x, window.y, window.w, window.h)
+        )
 
         # Rasterio already returns (C, H, W), just normalize and convert
-        window_data = window_data.astype("float32") / 255.0
-        window_data = torch.from_numpy(window_data).float()
+        window_data = window_data.astype(np.float32)
+        window_data /= 255.0
+        window_data = torch.from_numpy(window_data)
         if window_data.shape[0] != 3:
             raise ValueError(
                 f"Expected 3 channel image, got {window_data.shape[0]} channels"
@@ -487,3 +540,16 @@ class TiledRaster(PredictionDataset):
 
     def get_crop_bounds(self, idx):
         return self.window_list()[idx]
+
+    def close(self) -> None:
+        """Close the underlying raster dataset."""
+        if self._src is not None:
+            self._src.close()
+            self._src = None
+
+    def __del__(self):
+        # Best-effort cleanup
+        try:
+            self.close()
+        except Exception:
+            pass

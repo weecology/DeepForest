@@ -600,6 +600,10 @@ class deepforest(pl.LightningModule):
                         image_results.append(formatted_result)
                         global_window_idx += 1
 
+                # Ensure raster datasets are closed promptly
+                if hasattr(ds, "close"):
+                    ds.close()
+
             if not image_results:
                 results = pd.DataFrame()
             else:
@@ -895,8 +899,7 @@ class deepforest(pl.LightningModule):
 
         self.model.eval()
         with torch.no_grad():
-            preds = self.model.forward(images)
-        return preds
+            return self.model.forward(images)
 
     def predict_batch(self, images, preprocess_fn=None):
         """Predict a batch of images with the deepforest model.
