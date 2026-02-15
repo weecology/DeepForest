@@ -74,6 +74,8 @@ def _ensure_rgb_chw_float32(image: np.ndarray) -> np.ndarray:
             )
         if max_val > 1.0:
             if max_val <= 255.0:
+                if np.shares_memory(chw, image):
+                    chw = chw.copy()
                 chw /= 255.0
             else:
                 raise ValueError(
