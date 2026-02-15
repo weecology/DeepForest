@@ -555,6 +555,19 @@ class TiledRaster(PredictionDataset):
             self._src.close()
             self._src = None
 
+    def __getstate__(self) -> dict:
+        """Make picklable for multiprocessing; rasterio handles are not
+        serializable."""
+        state = self.__dict__.copy()
+        state["_src"] = None  # Exclude handle; __setstate__ will reopen in new process
+        return state
+
+    def __setstate__(self, state: dict) -> None:
+        """Restore after unpickle; reopen raster since handle was excluded."""
+        self.__dict__.update(state)
+        if self._src is None and self.path is not None:
+            self._src = rio.open(self.path)
+
     def __del__(self):
         # Best-effort cleanup
         try:

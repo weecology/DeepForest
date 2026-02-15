@@ -606,23 +606,24 @@ class deepforest(pl.LightningModule):
                         patch_size=patch_size,
                     )
 
-                dataloader = self.predict_dataloader(ds)
-                batched_results = self.trainer.predict(self, dataloader)
+                try:
+                    dataloader = self.predict_dataloader(ds)
+                    batched_results = self.trainer.predict(self, dataloader)
 
-                # Flatten list from batched prediction
-                # Track global window index across batches
-                global_window_idx = 0
-                for _idx, batch in enumerate(batched_results):
-                    for _window_idx, window_result in enumerate(batch):
-                        formatted_result = ds.postprocess(
-                            window_result, global_window_idx
-                        )
-                        image_results.append(formatted_result)
-                        global_window_idx += 1
-
-                # Ensure raster datasets are closed promptly
-                if hasattr(ds, "close"):
-                    ds.close()
+                    # Flatten list from batched prediction
+                    # Track global window index across batches
+                    global_window_idx = 0
+                    for _idx, batch in enumerate(batched_results):
+                        for _window_idx, window_result in enumerate(batch):
+                            formatted_result = ds.postprocess(
+                                window_result, global_window_idx
+                            )
+                            image_results.append(formatted_result)
+                            global_window_idx += 1
+                finally:
+                    # Ensure raster datasets are closed even if predict/postprocess raises
+                    if hasattr(ds, "close"):
+                        ds.close()
 
             if not image_results:
                 results = pd.DataFrame()
