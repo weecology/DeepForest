@@ -18,7 +18,8 @@ from deepforest.utilities import format_geometry, read_file
 def _load_image_array(
     image_path: str | None = None, image: np.ndarray | Image.Image | None = None
 ) -> np.ndarray:
-    """Load image from path or array; converts to RGB when loading from path."""
+    """Load image from path or array; converts to RGB when loading from
+    path."""
     if image is None:
         if image_path is None:
             raise ValueError("Either image_path or image must be provided")
@@ -28,7 +29,10 @@ def _load_image_array(
 
 
 def _ensure_rgb_chw(image: np.ndarray) -> np.ndarray:
-    """Return 3-channel RGB in CHW order (no normalization). Raises if grayscale or wrong shape."""
+    """Return 3-channel RGB in CHW order (no normalization).
+
+    Raises if grayscale or wrong shape.
+    """
     if image.ndim == 2:
         raise ValueError("Grayscale images are not supported (expected 3-channel RGB)")
     if image.ndim != 3:
@@ -46,7 +50,10 @@ def _ensure_rgb_chw(image: np.ndarray) -> np.ndarray:
 
 
 def _ensure_rgb_chw_float32(image: np.ndarray) -> np.ndarray:
-    """Normalize to RGB CHW float32 in [0, 1]. Accepts HWC/CHW uint8 or float. Raises if invalid."""
+    """Normalize to RGB CHW float32 in [0, 1].
+
+    Accepts HWC/CHW uint8 or float. Raises if invalid.
+    """
     chw = _ensure_rgb_chw(image)
 
     # Normalize based primarily on dtype
@@ -228,10 +235,11 @@ class SingleImage(PredictionDataset):
 
     def get_crop(self, idx):
         crop = self.image[self.windows[idx].indices()]
-        if crop.dtype != "float32":
-            crop = crop.astype("float32")
-        if crop.max() > 1 or crop.min() < 0:
-            crop /= 255.0
+        # Copy to avoid in-place modification corrupting self.image when crop is a
+        # view (e.g. overlapping windows or float32 input). Reuse dtype-based
+        # normalization to avoid heuristic edge cases (e.g. uint8 all-0/1 crops).
+        crop = np.array(crop, copy=True)
+        crop = _ensure_rgb_chw_float32(crop)
         return torch.from_numpy(crop)
 
     def get_image_basename(self, idx):
