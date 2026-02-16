@@ -52,7 +52,8 @@ def _ensure_rgb_chw(image: np.ndarray) -> np.ndarray:
 def _ensure_rgb_chw_float32(image: np.ndarray) -> np.ndarray:
     """Normalize to RGB CHW float32 in [0, 1].
 
-    Accepts HWC/CHW uint8 or float. Raises if invalid.
+    Accepts HWC/CHW uint8 or float. Raises if invalid. For float images,
+    uses full-image heuristic (max > 1.0 -> divide by 255).
     """
     chw = _ensure_rgb_chw(image)
 
@@ -221,12 +222,12 @@ class SingleImage(PredictionDataset):
 
     def prepare_items(self):
         image_arr = _load_image_array(image_path=self.path, image=self.image)
-        image = _ensure_rgb_chw(image_arr)
-
-        # Keep as uint8/float in CHW; normalize per-crop to avoid full-image float copy
-        self.image = image
+        # Normalize full image once so all crops share consistent treatment
+        # (uniform across dtype, float [0,1] vs [0,255], and dark vs bright regions).
+        image_norm = _ensure_rgb_chw_float32(image_arr)
+        self.image = torch.from_numpy(image_norm)
         self.windows = preprocess.compute_windows(
-            self.image, self.patch_size, self.patch_overlap
+            image_norm, self.patch_size, self.patch_overlap
         )
 
     def __len__(self):
@@ -237,12 +238,9 @@ class SingleImage(PredictionDataset):
 
     def get_crop(self, idx):
         crop = self.image[self.windows[idx].indices()]
-        # Copy to avoid in-place modification corrupting self.image when crop is a
-        # view (e.g. overlapping windows or float32 input). Reuse dtype-based
-        # normalization to avoid heuristic edge cases (e.g. uint8 all-0/1 crops).
-        crop = np.array(crop, copy=True)
-        crop = _ensure_rgb_chw_float32(crop)
-        return torch.from_numpy(crop)
+        # Clone to avoid in-place modification corrupting self.image when crop
+        # is a view (overlapping windows).
+        return crop.clone()
 
     def get_image_basename(self, idx):
         if self.path is not None:
