@@ -513,13 +513,26 @@ class TiledRaster(PredictionDataset):
             )
 
         # Generate sliding windows
-        self.windows = slidingwindow.generateForSize(
+        all_windows = slidingwindow.generateForSize(
             height,
             width,
             dimOrder=slidingwindow.DimOrder.ChannelHeightWidth,
             maxWindowSize=self.patch_size,
             overlapPercent=self.patch_overlap,
         )
+        # Filter out invalid windows: zero-size or extending past raster bounds.
+        # Rasterio returns (C,0,W) or (C,H,0) for out-of-bounds reads, which breaks RetinaNet.
+        self.windows = [
+            w
+            for w in all_windows
+            if w.w > 0 and w.h > 0 and w.x + w.w <= width and w.y + w.h <= height
+        ]
+        n_filtered = len(all_windows) - len(self.windows)
+        if n_filtered > 0:
+            warnings.warn(
+                f"Filtered {n_filtered} window(s) extending past raster bounds or zero-size.",
+                stacklevel=2,
+            )
 
     def __len__(self):
         return len(self.windows)
@@ -534,7 +547,11 @@ class TiledRaster(PredictionDataset):
             window=Window(window.x, window.y, window.w, window.h)
         )
 
-        # Rasterio already returns (C, H, W), just normalize and convert
+        if window_data.shape[1] == 0 or window_data.shape[2] == 0:
+            raise ValueError(
+                f"Window {idx} returned zero-size array (shape={window_data.shape}). "
+                "RetinaNet cannot process images with zero height or width."
+            )
         window_data = window_data.astype(np.float32)
         window_data /= 255.0
         window_data = torch.from_numpy(window_data)
