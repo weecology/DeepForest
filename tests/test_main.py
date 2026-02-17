@@ -33,13 +33,12 @@ import unittest.mock as mock
 
 ALL_ARCHITECTURES = ["retinanet", "DeformableDetr"]
 
+
 @pytest.fixture()
 def two_class_m(tmp_path_factory):
-    m = main.deepforest(config_args={"num_classes": 2,
-                                    "label_dict": {
-                                        "Alive": 0,
-                                        "Dead": 1
-                                    }})
+    m = main.deepforest(
+        config_args={"num_classes": 2, "label_dict": {"Alive": 0, "Dead": 1}}
+    )
     m.config.train.csv_file = get_data("testfile_multi.csv")
     m.config.train.root_dir = os.path.dirname(get_data("testfile_multi.csv"))
     m.config.train.fast_dev_run = True
@@ -66,7 +65,7 @@ def m(tmp_path_factory):
 
     m.config.validation.csv_file = get_data("example.csv")
     m.config.validation.root_dir = os.path.dirname(get_data("example.csv"))
-    m.config.workers= 0
+    m.config.workers = 0
     m.config.validation.val_accuracy_interval = 1
     m.config.train.epochs = 2
 
@@ -77,12 +76,13 @@ def m(tmp_path_factory):
 
     return m
 
+
 # A random-initialized model
 @pytest.fixture()
 def m_without_release(tmp_path_factory):
-    m = main.deepforest(config_args={"model": {"name": None},
-                                    "num_classes": 1,
-                                    "label_dict": {"Tree": 0}})
+    m = main.deepforest(
+        config_args={"model": {"name": None}, "num_classes": 1, "label_dict": {"Tree": 0}}
+    )
     m.config.train.csv_file = get_data("example.csv")
     m.config.train.root_dir = os.path.dirname(get_data("example.csv"))
     m.config.train.fast_dev_run = True
@@ -102,7 +102,7 @@ def m_without_release(tmp_path_factory):
 
 @pytest.fixture()
 def path():
-    return get_data(path='OSBS_029.tif')
+    return get_data(path="OSBS_029.tif")
 
 
 @pytest.fixture()
@@ -112,8 +112,9 @@ def big_file(tmp_path):
 
     big_frame = []
     for x in range(3):
-        img = Image.open("{}/{}".format(os.path.dirname(csv_file),
-                                        df.image_path.unique()[0]))
+        img = Image.open(
+            "{}/{}".format(os.path.dirname(csv_file), df.image_path.unique()[0])
+        )
         cv2.imwrite(str(tmp_path.joinpath("{}.png".format(x))), np.array(img))
         new_df = df.copy()
         new_df.image_path = "{}.png".format(x)
@@ -123,6 +124,7 @@ def big_file(tmp_path):
     big_frame.to_csv(tmp_path / "annotations.csv")
 
     return str(tmp_path / "annotations.csv")
+
 
 def state_dicts_equal(model_a, model_b):
     state_dict_a = model_a.state_dict()
@@ -142,6 +144,7 @@ def state_dicts_equal(model_a, model_b):
 def test_m_has_tree_model_loaded(m):
     boxes = m.predict_image(path=get_data("OSBS_029.tif"))
     assert not boxes.empty
+
 
 def test_tensorboard_logger(m, tmp_path):
     # Check if TensorBoard is installed
@@ -167,38 +170,42 @@ def test_tensorboard_logger(m, tmp_path):
         print("TensorBoard is not installed. Skipping test_tensorboard_logger.")
 
 
-
 def test_load_model(m):
     imgpath = get_data("OSBS_029.png")
-    m.load_model('ethanwhite/df-test')
+    m.load_model("ethanwhite/df-test")
     boxes = m.predict_image(path=imgpath)
     assert not boxes.empty
 
 
 def test_train_empty_train_csv(m, tmp_path):
-    empty_csv = pd.DataFrame({
-        "image_path": ["OSBS_029.png", "OSBS_029.tif"],
-        "xmin": [0, 10],
-        "xmax": [0, 20],
-        "ymin": [0, 20],
-        "ymax": [0, 30],
-        "label": ["Tree", "Tree"]
-    })
+    empty_csv = pd.DataFrame(
+        {
+            "image_path": ["OSBS_029.png", "OSBS_029.tif"],
+            "xmin": [0, 10],
+            "xmax": [0, 20],
+            "ymin": [0, 20],
+            "ymax": [0, 30],
+            "label": ["Tree", "Tree"],
+        }
+    )
     empty_csv.to_csv(tmp_path / "empty.csv")
     m.config.train.csv_file = str(tmp_path / "empty.csv")
     m.config.batch_size = 2
     m.create_trainer(fast_dev_run=True)
     m.trainer.fit(m)
 
+
 def test_train_with_empty_validation_csv(m, tmp_path):
-    empty_csv = pd.DataFrame({
-        "image_path": ["OSBS_029.png", "OSBS_029.tif"],
-        "xmin": [0, 10],
-        "xmax": [0, 20],
-        "ymin": [0, 20],
-        "ymax": [0, 30],
-        "label": ["Tree", "Tree"]
-    })
+    empty_csv = pd.DataFrame(
+        {
+            "image_path": ["OSBS_029.png", "OSBS_029.tif"],
+            "xmin": [0, 10],
+            "xmax": [0, 20],
+            "ymin": [0, 20],
+            "ymax": [0, 30],
+            "label": ["Tree", "Tree"],
+        }
+    )
     empty_csv.to_csv(tmp_path / "empty.csv")
     m.config.train.csv_file = str(tmp_path / "empty.csv")
     m.config.validation.csv_file = str(tmp_path / "empty.csv")
@@ -213,9 +220,10 @@ def test_validation_step(m):
     batch = next(iter(val_dataloader))
     m.predictions = []
     m.targets = {}
-    with mock.patch.object(m, 'log') as _:
+    with mock.patch.object(m, "log") as _:
         val_loss = m.validation_step(batch, 0)
     assert val_loss != 0
+
 
 def test_validation_step_empty(m_without_release):
     """If the model returns an empty prediction, the metrics should not fail"""
@@ -228,9 +236,10 @@ def test_validation_step_empty(m_without_release):
     batch = next(iter(val_dataloader))
     m.predictions = []
     m.targets = {}
-    with mock.patch.object(m, 'log') as _:
+    with mock.patch.object(m, "log") as _:
         _ = m.validation_step(batch, 0)
     assert m.iou_metric.compute()["iou"] == 0
+
 
 def test_validate(m):
     m.trainer = None
@@ -281,7 +290,8 @@ def test_train_geometry_column(m, tmp_path):
         geometry=[
             shapely.geometry.box(xmin, ymin, xmax, ymax)
             for xmin, ymin, xmax, ymax in zip(df.xmin, df.ymin, df.xmax, df.ymax)
-        ])
+        ],
+    )
 
     # Add image path
     gdf["image_path"] = "OSBS_029.tif"
@@ -302,23 +312,25 @@ def test_train_geometry_column(m, tmp_path):
     m.create_trainer(fast_dev_run=True)
     m.trainer.fit(m)
 
+
 def test_train_multi(two_class_m):
     two_class_m.create_trainer(fast_dev_run=True)
     two_class_m.trainer.fit(two_class_m)
 
+
 def test_model_multi_from_single(tmp_path):
     # Check we can go from a single-class model to multi
-    labels = {
-        "Alive": 0,
-        "Dead": 1
-    }
+    labels = {"Alive": 0, "Dead": 1}
     # Explicitly load a single-class tree model
-    m = main.deepforest(config_args={"architecture": "retinanet",
-                         "num_classes": 2,
-                         "model": {"name": "weecology/deepforest-tree"},
-                         "label_dict": labels,
-                         "log_root": str(tmp_path)
-                        })
+    m = main.deepforest(
+        config_args={
+            "architecture": "retinanet",
+            "num_classes": 2,
+            "model": {"name": "weecology/deepforest-tree"},
+            "label_dict": labels,
+            "log_root": str(tmp_path),
+        }
+    )
 
     # Check model shape is correct:
     assert m.model.num_classes == 2
@@ -326,23 +338,28 @@ def test_model_multi_from_single(tmp_path):
     # Check our label dict was not overriden
     assert m.label_dict == labels
 
+
 def test_model_single_from_multi(tmp_path):
     # Check we can go from a multi-class model to a single-class.
     labels = {
         "Test": 0,
     }
-    m = main.deepforest(config_args={"architecture": "retinanet",
-                                     "num_classes": 1,
-                                    "label_dict": labels,
-                                    "model": {"name": "weecology/everglades-bird-species-detector"},
-                                    "log_root": str(tmp_path)
-                                    })
+    m = main.deepforest(
+        config_args={
+            "architecture": "retinanet",
+            "num_classes": 1,
+            "label_dict": labels,
+            "model": {"name": "weecology/everglades-bird-species-detector"},
+            "log_root": str(tmp_path),
+        }
+    )
 
     # Check model shape is correct:
     assert m.model.num_classes == 1
 
     # Check label dict is as expected
     assert m.label_dict == labels
+
 
 @pytest.mark.parametrize("architecture", ALL_ARCHITECTURES)
 def test_empty_model_labels_single(architecture, tmp_path):
@@ -350,18 +367,22 @@ def test_empty_model_labels_single(architecture, tmp_path):
     labels = {
         "Test": 0,
     }
-    m = main.deepforest(config_args={"architecture": architecture,
-                                     "num_classes": 1,
-                                    "label_dict": labels,
-                                    "model": {"name": None},
-                                    "log_root": str(tmp_path)
-                                    })
+    m = main.deepforest(
+        config_args={
+            "architecture": architecture,
+            "num_classes": 1,
+            "label_dict": labels,
+            "model": {"name": None},
+            "log_root": str(tmp_path),
+        }
+    )
 
     # Check model shape is correct:
     assert m.model.num_classes == 1
 
     # Check label dict is as expected
     assert m.label_dict == labels
+
 
 @pytest.mark.parametrize("architecture", ALL_ARCHITECTURES)
 def test_empty_model_labels_multi(architecture, tmp_path):
@@ -370,18 +391,22 @@ def test_empty_model_labels_multi(architecture, tmp_path):
         "Test": 0,
         "Test_2": 1,
     }
-    m = main.deepforest(config_args={"architecture": architecture,
-                                     "num_classes": 2,
-                                    "label_dict": labels,
-                                    "model": {"name": None},
-                                    "log_root": str(tmp_path)
-                                    })
+    m = main.deepforest(
+        config_args={
+            "architecture": architecture,
+            "num_classes": 2,
+            "label_dict": labels,
+            "model": {"name": None},
+            "log_root": str(tmp_path),
+        }
+    )
 
     # Check model shape is correct:
     assert m.model.num_classes == 2
 
     # Check label dict is as expected
     assert m.label_dict == labels
+
 
 def test_train_no_validation(m):
     m.config.train.fast_dev_run = False
@@ -404,7 +429,14 @@ def test_predict_image_fromfile(m):
 
     assert isinstance(prediction, pd.DataFrame)
     assert set(prediction.columns) == {
-        "xmin", "ymin", "xmax", "ymax", "label", "score", "image_path", "geometry"
+        "xmin",
+        "ymin",
+        "xmax",
+        "ymax",
+        "label",
+        "score",
+        "image_path",
+        "geometry",
     }
     assert not prediction.empty
 
@@ -422,24 +454,48 @@ def test_predict_image_fromarray(m):
         prediction = m.predict_image(image=image)
 
     assert isinstance(prediction, pd.DataFrame)
-    assert set(prediction.columns) == {"xmin", "ymin", "xmax", "ymax", "label", "score", "geometry"}
-    assert not hasattr(prediction, 'root_dir')
+    assert set(prediction.columns) == {
+        "xmin",
+        "ymin",
+        "xmax",
+        "ymax",
+        "label",
+        "score",
+        "geometry",
+    }
+    assert not hasattr(prediction, "root_dir")
+
 
 def test_predict_big_file(m, big_file):
     m.config.train.fast_dev_run = False
     m.create_trainer()
-    df = m.predict_file(csv_file=big_file,
-                        root_dir=os.path.dirname(big_file))
+    df = m.predict_file(csv_file=big_file, root_dir=os.path.dirname(big_file))
     assert set(df.columns) == {
-        'label', 'score', 'image_path', 'geometry', "xmin", "ymin", "xmax", "ymax"
+        "label",
+        "score",
+        "image_path",
+        "geometry",
+        "xmin",
+        "ymin",
+        "xmax",
+        "ymax",
     }
+
 
 def test_predict_small_file(m):
     csv_file = get_data("OSBS_029.csv")
     df = m.predict_file(csv_file, root_dir=os.path.dirname(csv_file))
     assert set(df.columns) == {
-        'label', 'score', 'image_path', 'geometry', "xmin", "ymin", "xmax", "ymax"
+        "label",
+        "score",
+        "image_path",
+        "geometry",
+        "xmin",
+        "ymin",
+        "xmax",
+        "ymax",
     }
+
 
 @pytest.mark.parametrize("batch_size", [1, 2])
 def test_predict_dataloader(m, batch_size, path):
@@ -450,10 +506,12 @@ def test_predict_dataloader(m, batch_size, path):
     batch = next(iter(dl))
     assert len(batch) == batch_size
 
+
 def test_predict_tile_empty(m_without_release, path):
     m = m_without_release
     predictions = m.predict_tile(path=path, patch_size=300, patch_overlap=0)
     assert predictions is None
+
 
 @pytest.mark.parametrize("dataloader_strategy", ["single", "window", "batch"])
 def test_predict_tile(m, path, dataloader_strategy):
@@ -469,14 +527,23 @@ def test_predict_tile(m, path, dataloader_strategy):
     else:
         image_path = [path]
 
-    prediction = m.predict_tile(path=image_path,
-                                patch_size=300,
-                                dataloader_strategy=dataloader_strategy,
-                                patch_overlap=0)
+    prediction = m.predict_tile(
+        path=image_path,
+        patch_size=300,
+        dataloader_strategy=dataloader_strategy,
+        patch_overlap=0,
+    )
 
     assert isinstance(prediction, pd.DataFrame)
     assert set(prediction.columns) == {
-        "xmin", "ymin", "xmax", "ymax", "label", "score", "image_path", "geometry"
+        "xmin",
+        "ymin",
+        "xmax",
+        "ymax",
+        "label",
+        "score",
+        "image_path",
+        "geometry",
     }
     assert not prediction.empty
 
@@ -497,8 +564,13 @@ def test_predict_tile_serial_single(m):
     m.config.train.fast_dev_run = False
     m.create_trainer()
     m.load_model("weecology/deepforest-tree")
-    prediction = m.predict_tile(path=[path1, path2], patch_size=300, patch_overlap=0, dataloader_strategy="batch")
-    assert prediction.image_path.unique().tolist() == [os.path.basename(path1), os.path.basename(path2)]
+    prediction = m.predict_tile(
+        path=[path1, path2], patch_size=300, patch_overlap=0, dataloader_strategy="batch"
+    )
+    assert prediction.image_path.unique().tolist() == [
+        os.path.basename(path1),
+        os.path.basename(path2),
+    ]
 
     # view the predictions of each image
     prediction_1 = prediction[prediction.image_path == os.path.basename(path1)]
@@ -509,14 +581,20 @@ def test_predict_tile_serial_single(m):
     plot_results(prediction_1, show=False)
     plot_results(prediction_2, show=False)
 
+
 # test equivalence for within and out of memory dataset strategies
 def test_predict_tile_equivalence(m):
     path = get_data("test_tiled.tif")
-    in_memory_prediction = m.predict_tile(path=path, patch_size=300, patch_overlap=0, dataloader_strategy="single")
-    not_in_memory_prediction = m.predict_tile(path=path, patch_size=300, patch_overlap=0, dataloader_strategy="window")
+    in_memory_prediction = m.predict_tile(
+        path=path, patch_size=300, patch_overlap=0, dataloader_strategy="single"
+    )
+    not_in_memory_prediction = m.predict_tile(
+        path=path, patch_size=300, patch_overlap=0, dataloader_strategy="window"
+    )
 
     # Assert same number of predictions
     assert len(in_memory_prediction) == len(not_in_memory_prediction)
+
 
 def test_predict_tile_from_array(m, path):
     image = np.array(Image.open(path))
@@ -525,6 +603,7 @@ def test_predict_tile_from_array(m, path):
     prediction = m.predict_tile(image=image, patch_size=300)
 
     assert not prediction.empty
+
 
 def test_evaluate(m):
     csv_file = get_data("OSBS_029.csv")
@@ -547,19 +626,19 @@ def test_train_callbacks(m):
     train_ds = m.load_dataset(csv_file, root_dir=root_dir)
 
     class MyPrintingCallback(Callback):
-
         def on_init_start(self, trainer):
-            print('Starting to init trainer!')
+            print("Starting to init trainer!")
 
         def on_init_end(self, trainer):
-            print('trainer is init now')
+            print("trainer is init now")
 
         def on_train_end(self, trainer, pl_module):
-            print('do something when training ends')
+            print("do something when training ends")
 
     trainer = Trainer(callbacks=[MyPrintingCallback()])
     trainer = Trainer(fast_dev_run=True)
     trainer.fit(m, train_ds)
+
 
 def test_over_score_thresh(m):
     """A user might want to change the config after model training and update the score thresh"""
@@ -574,6 +653,7 @@ def test_over_score_thresh(m):
     assert all(boxes.score > high_thresh)
     assert m.model.score_thresh == high_thresh
     assert not m.model.score_thresh == original_score_thresh
+
 
 def test_logged_metrics(m, tmp_path):
     """Test that all expected metrics are logged during training."""
@@ -595,31 +675,32 @@ def test_logged_metrics(m, tmp_path):
 
     # Torchmetrics + training metrics
     metrics = [
-        'train_loss_step',
-        'train_classification_step', # RetinaNet specific
-        'train_bbox_regression_step', # RetinaNet specific
-        'val_loss',
-        'val_classification',
-        'val_bbox_regression',
-        'iou',
-        'map',
-        'map_50',
-        'map_75',
-        'box_precision',
-        'box_recall',
-        'empty_frame_accuracy'
+        "train_loss_step",
+        "train_classification_step",  # RetinaNet specific
+        "train_bbox_regression_step",  # RetinaNet specific
+        "val_loss",
+        "val_classification",
+        "val_bbox_regression",
+        "iou",
+        "map",
+        "map_50",
+        "map_75",
+        "box_precision",
+        "box_recall",
+        "empty_frame_accuracy",
     ]
     for metric in metrics:
-        assert metric in logged, f"Expected metric '{metric}' not found in logged metrics."
+        assert metric in logged, (
+            f"Expected metric '{metric}' not found in logged metrics."
+        )
+
 
 def test_config_args(m):
     assert not m.config.num_classes == 2
 
-    m = main.deepforest(config_args={"num_classes": 2,
-                                    "label_dict": {
-                                        "Alive": 0,
-                                        "Dead": 1
-                                    }})
+    m = main.deepforest(
+        config_args={"num_classes": 2, "label_dict": {"Alive": 0, "Dead": 1}}
+    )
     assert m.config.num_classes == 2
 
     # These call also be nested for train and val arguments
@@ -642,15 +723,23 @@ def existing_loader(m, tmp_path):
     # Copy the new images to the temp dir
     train.image_path.unique()
     image_path = train.image_path.unique()[0]
-    shutil.copyfile("{}/{}".format(m.config.train.root_dir, image_path),
-                    tmp_path / "{}".format(image_path))
-    shutil.copyfile("{}/{}".format(m.config.train.root_dir, image_path),
-                    tmp_path / "{}".format(image_path + "2"))
-    shutil.copyfile("{}/{}".format(m.config.train.root_dir, image_path),
-                    tmp_path / "{}".format(image_path + "3"))
-    existing_loader = m.load_dataset(csv_file=str(tmp_path / "train.csv"),
-                                     root_dir=str(tmp_path),
-                                     batch_size=m.config.batch_size + 1)
+    shutil.copyfile(
+        "{}/{}".format(m.config.train.root_dir, image_path),
+        tmp_path / "{}".format(image_path),
+    )
+    shutil.copyfile(
+        "{}/{}".format(m.config.train.root_dir, image_path),
+        tmp_path / "{}".format(image_path + "2"),
+    )
+    shutil.copyfile(
+        "{}/{}".format(m.config.train.root_dir, image_path),
+        tmp_path / "{}".format(image_path + "3"),
+    )
+    existing_loader = m.load_dataset(
+        csv_file=str(tmp_path / "train.csv"),
+        root_dir=str(tmp_path),
+        batch_size=m.config.batch_size + 1,
+    )
     return existing_loader
 
 
@@ -686,20 +775,25 @@ def test_existing_val_dataloader(m, tmp_path, existing_loader):
 
 def test_existing_predict_dataloader(m):
     # Predict datasets yield only images
-    ds = prediction.TiledRaster(path=get_data("test_tiled.tif"),
-                             patch_overlap=0.1,
-                             patch_size=100)
+    ds = prediction.TiledRaster(
+        path=get_data("test_tiled.tif"), patch_overlap=0.1, patch_size=100
+    )
     existing_loader = m.predict_dataloader(ds)
     batches = m.trainer.predict(m, existing_loader)
     len(batches[0]) == m.config.batch_size + 1
 
 
 # Test train with each scheduler
-@pytest.mark.parametrize("scheduler,expected",
-                         [("cosine", "CosineAnnealingLR"), ("lambdaLR", "LambdaLR"),
-                            ("stepLR", "StepLR"),
-                          ("multistepLR", "MultiStepLR"),
-                          ("reduceLROnPlateau", "ReduceLROnPlateau")])
+@pytest.mark.parametrize(
+    "scheduler,expected",
+    [
+        ("cosine", "CosineAnnealingLR"),
+        ("lambdaLR", "LambdaLR"),
+        ("stepLR", "StepLR"),
+        ("multistepLR", "MultiStepLR"),
+        ("reduceLROnPlateau", "ReduceLROnPlateau"),
+    ],
+)
 def test_configure_optimizers(scheduler, expected, tmp_path):
     scheduler_config = {
         "type": scheduler,
@@ -710,7 +804,6 @@ def test_configure_optimizers(scheduler, expected, tmp_path):
             "step_size": 30,  # For stepLR
             "gamma": 0.1,  # For stepLR, multistepLR, and exponentialLR
             "milestones": [50, 100],  # For multistepLR
-
             # ReduceLROnPlateau parameters (used if type is not explicitly mentioned)
             "mode": "min",
             "factor": 0.1,
@@ -719,8 +812,8 @@ def test_configure_optimizers(scheduler, expected, tmp_path):
             "threshold_mode": "rel",
             "cooldown": 0,
             "min_lr": 0,
-            "eps": 1e-08
-        }
+            "eps": 1e-08,
+        },
     }
 
     annotations_file = get_data("testfile_deepforest.csv")
@@ -734,11 +827,8 @@ def test_configure_optimizers(scheduler, expected, tmp_path):
             "root_dir": root_dir,
             "fast_dev_run": False,
         },
-        "validation": {
-            "csv_file": annotations_file,
-            "root_dir": root_dir
-        },
-        "log_root": str(tmp_path)
+        "validation": {"csv_file": annotations_file, "root_dir": root_dir},
+        "log_root": str(tmp_path),
     }
 
     # Initialize the model with the config arguments
@@ -749,7 +839,40 @@ def test_configure_optimizers(scheduler, expected, tmp_path):
     m.trainer.fit(m)
 
     # Assert the scheduler type
-    assert type(m.trainer.lr_scheduler_configs[0].scheduler).__name__ == expected, f"Scheduler type mismatch for {scheduler_config['type']}"
+    assert type(m.trainer.lr_scheduler_configs[0].scheduler).__name__ == expected, (
+        f"Scheduler type mismatch for {scheduler_config['type']}"
+    )
+
+
+def test_configure_optimizers_rejects_unsafe_lr_lambda(tmp_path):
+    """Regression test: malicious lr_lambda expressions must be rejected."""
+    annotations_file = get_data("testfile_deepforest.csv")
+    root_dir = os.path.dirname(get_data("testfile_deepforest.csv"))
+
+    config_args = {
+        "train": {
+            "lr": 0.01,
+            "scheduler": {
+                "type": "lambdaLR",
+                "params": {
+                    "lr_lambda": "__import__('os').system('echo injected')",
+                },
+            },
+            "csv_file": annotations_file,
+            "root_dir": root_dir,
+            "fast_dev_run": False,
+        },
+        "validation": {
+            "csv_file": None,
+            "root_dir": root_dir,
+        },
+        "log_root": str(tmp_path),
+    }
+
+    m = main.deepforest(model=torch.nn.Linear(1, 1), config_args=config_args)
+
+    with pytest.raises(ValueError, match="Unsafe lr_lambda"):
+        m.configure_optimizers()
 
 
 @pytest.fixture()
@@ -773,17 +896,27 @@ def test_predict_tile_with_crop_model(m, config):
     # Call the predict_tile method with the crop_model
     m.config.train.fast_dev_run = False
     m.create_trainer()
-    result = m.predict_tile(path=path,
-                            patch_size=patch_size,
-                            patch_overlap=patch_overlap,
-                            iou_threshold=iou_threshold,
-                            crop_model=crop_model)
+    result = m.predict_tile(
+        path=path,
+        patch_size=patch_size,
+        patch_overlap=patch_overlap,
+        iou_threshold=iou_threshold,
+        crop_model=crop_model,
+    )
 
     # Assert the result
     assert isinstance(result, pd.DataFrame)
     assert set(result.columns) == {
-        "xmin", "ymin", "xmax", "ymax", "label", "score", "cropmodel_label", "geometry",
-        "cropmodel_score", "image_path"
+        "xmin",
+        "ymin",
+        "xmax",
+        "ymax",
+        "label",
+        "score",
+        "cropmodel_label",
+        "geometry",
+        "cropmodel_score",
+        "image_path",
     }
 
     # Assert cropmodel_label is in the label_dict
@@ -805,15 +938,17 @@ def test_predict_tile_with_crop_model_empty(m_without_release):
     # Call the predict_tile method with the crop_model
     m.config.train.fast_dev_run = False
     m.create_trainer()
-    result = m.predict_tile(path=path,
-                            patch_size=400,
-                            patch_overlap=0.05,
-                            iou_threshold=0.15,
-                            crop_model=crop_model)
-
+    result = m.predict_tile(
+        path=path,
+        patch_size=400,
+        patch_overlap=0.05,
+        iou_threshold=0.15,
+        crop_model=crop_model,
+    )
 
     # Assert the result
     assert result is None or result.empty
+
 
 def test_predict_tile_with_multiple_crop_models(m, config):
     path = get_data("SOAP_061.png")
@@ -835,17 +970,28 @@ def test_predict_tile_with_multiple_crop_models(m, config):
     # Call predict_tile with multiple crop models
     m.config.train.fast_dev_run = False
     m.create_trainer()
-    result = m.predict_tile(path=path,
-                            patch_size=patch_size,
-                            patch_overlap=patch_overlap,
-                            iou_threshold=iou_threshold,
-                            crop_model=crop_model)
+    result = m.predict_tile(
+        path=path,
+        patch_size=patch_size,
+        patch_overlap=patch_overlap,
+        iou_threshold=iou_threshold,
+        crop_model=crop_model,
+    )
 
     # Assert result type
     assert isinstance(result, pd.DataFrame)
 
     # Check column names dynamically for multiple crop models
-    expected_cols = {"xmin", "ymin", "xmax", "ymax", "label", "score", "geometry", "image_path"}
+    expected_cols = {
+        "xmin",
+        "ymin",
+        "xmax",
+        "ymax",
+        "label",
+        "score",
+        "geometry",
+        "image_path",
+    }
     for i in range(len(crop_model)):
         expected_cols.add(f"cropmodel_label_{i}")
         expected_cols.add(f"cropmodel_score_{i}")
@@ -871,13 +1017,16 @@ def test_predict_tile_with_multiple_crop_models_empty(m_without_release):
 
     m.config.train.fast_dev_run = False
     m.create_trainer()
-    result = m.predict_tile(path=path,
-                            patch_size=400,
-                            patch_overlap=0.05,
-                            iou_threshold=0.15,
-                            crop_model=[crop_model_1, crop_model_2])
+    result = m.predict_tile(
+        path=path,
+        patch_size=400,
+        patch_overlap=0.05,
+        iou_threshold=0.15,
+        crop_model=[crop_model_1, crop_model_2],
+    )
 
     assert result is None or result.empty  # Ensure empty result is handled properly
+
 
 def test_batch_prediction(m, path):
     # Prepare input data
@@ -897,6 +1046,7 @@ def test_batch_prediction(m, path):
         assert "label" in image_pred.columns
         assert "score" in image_pred.columns
         assert "geometry" in image_pred.columns
+
 
 def test_batch_inference_consistency(m, path):
     ds = prediction.SingleImage(path=path, patch_overlap=0.1, patch_size=300)
@@ -920,23 +1070,27 @@ def test_batch_inference_consistency(m, path):
     for col in ["xmin", "ymin", "xmax", "ymax"]:
         batch_df[col] = batch_df[col].astype(int)
         single_df[col] = single_df[col].astype(int)
-    pd.testing.assert_frame_equal(batch_df[["xmin", "ymin", "xmax", "ymax"]], single_df[["xmin", "ymin", "xmax", "ymax"]], check_dtype=False)
+    pd.testing.assert_frame_equal(
+        batch_df[["xmin", "ymin", "xmax", "ymax"]],
+        single_df[["xmin", "ymin", "xmax", "ymax"]],
+        check_dtype=False,
+    )
 
 
 def test_epoch_evaluation_end(m, tmp_path):
-    """Test the epoch evaluation end method by """
-    preds = [{
-        'boxes': torch.tensor([
-            [690.3572, 902.9113, 781.1031, 996.5151],
-            [998.1990, 655.7919, 172.4619, 321.8518]
-        ]),
-        'scores': torch.tensor([
-            1.0, 1.0
-        ]),
-        'labels': torch.tensor([
-            0, 0
-        ])
-    }]
+    """Test the epoch evaluation end method by"""
+    preds = [
+        {
+            "boxes": torch.tensor(
+                [
+                    [690.3572, 902.9113, 781.1031, 996.5151],
+                    [998.1990, 655.7919, 172.4619, 321.8518],
+                ]
+            ),
+            "scores": torch.tensor([1.0, 1.0]),
+            "labels": torch.tensor([0, 0]),
+        }
+    ]
     targets = preds
 
     m.iou_metric.update(preds, targets)
@@ -959,20 +1113,23 @@ def test_epoch_evaluation_end(m, tmp_path):
     m.setup_metrics()
     m.precision_recall_metric.update(preds, ["test"])
 
-    with mock.patch.object(m, 'log_dict') as mock_log:
+    with mock.patch.object(m, "log_dict") as mock_log:
         m.on_validation_epoch_end()
         logged_metrics = mock_log.call_args[0][0]
 
     assert logged_metrics["box_precision"] == 1.0
     assert logged_metrics["box_recall"] == 1.0
 
+
 def test_epoch_evaluation_end_empty(m):
     """If the model returns an empty prediction, the metrics should not fail"""
-    preds = [{
-        'boxes': torch.zeros((1, 4)),
-        'scores': torch.zeros(1),
-        'labels': torch.zeros(1, dtype=torch.int64)
-    }]
+    preds = [
+        {
+            "boxes": torch.zeros((1, 4)),
+            "scores": torch.zeros(1),
+            "labels": torch.zeros(1, dtype=torch.int64),
+        }
+    ]
     targets = preds
 
     m.iou_metric.update(preds, targets)
@@ -982,8 +1139,9 @@ def test_epoch_evaluation_end_empty(m):
     boxes["image_path"] = "test"
     m.predictions = [boxes]
 
-    with mock.patch.object(m, 'log_dict') as _:
+    with mock.patch.object(m, "log_dict") as _:
         m.on_validation_epoch_end()
+
 
 def test_empty_frame_accuracy_all_empty_with_predictions(m, tmp_path):
     """Test empty frame accuracy when all frames are empty but model predicts objects.
@@ -1007,19 +1165,22 @@ def test_empty_frame_accuracy_all_empty_with_predictions(m, tmp_path):
     assert results[0]["empty_frame_accuracy"] == 0.0
     assert results[0]["box_precision"] == 0.0
 
+
 def test_empty_frame_accuracy_mixed_frames_with_predictions(m, tmp_path):
     """Test empty frame accuracy with a mix of empty and non-empty frames.
     Model predicts objects in all frames, so accuracy for empty frames should be 0."""
     # Create ground truth with mix of empty and non-empty frames
     tree_ground_df = pd.read_csv(get_data("testfile_deepforest.csv"))
-    empty_ground_df = pd.DataFrame({
-        "image_path": ["AWPE Pigeon Lake 2020 DJI_0005.JPG"],
-        "xmin": [0],
-        "ymin": [0],
-        "xmax": [0],
-        "ymax": [0],
-        "label": ["Tree"]
-    })
+    empty_ground_df = pd.DataFrame(
+        {
+            "image_path": ["AWPE Pigeon Lake 2020 DJI_0005.JPG"],
+            "xmin": [0],
+            "ymin": [0],
+            "xmax": [0],
+            "ymax": [0],
+            "label": ["Tree"],
+        }
+    )
 
     ground_df = pd.concat([tree_ground_df, empty_ground_df])
 
@@ -1032,6 +1193,7 @@ def test_empty_frame_accuracy_mixed_frames_with_predictions(m, tmp_path):
     m.create_trainer()
     results = m.trainer.validate(m)
     assert results[0]["empty_frame_accuracy"] == 0
+
 
 def test_empty_frame_accuracy_without_predictions(m_without_release, tmp_path):
     """Create a ground truth with empty frames, the accuracy should be 1 with a random model"""
@@ -1052,6 +1214,7 @@ def test_empty_frame_accuracy_without_predictions(m_without_release, tmp_path):
     results = m.trainer.validate(m)
     assert results[0]["empty_frame_accuracy"] == 1
 
+
 def test_multi_class_with_empty_frame_accuracy_without_predictions(two_class_m, tmp_path):
     """Create a ground truth with empty frames, the accuracy should be 1 with a random model"""
     # Create ground truth with empty frames
@@ -1068,11 +1231,14 @@ def test_multi_class_with_empty_frame_accuracy_without_predictions(two_class_m, 
     # Save the ground truth to a temporary file
     ground_df.to_csv(tmp_path / "ground_truth.csv", index=False)
     two_class_m.config.validation["csv_file"] = str(tmp_path / "ground_truth.csv")
-    two_class_m.config.validation["root_dir"] = os.path.dirname(get_data("testfile_deepforest.csv"))
+    two_class_m.config.validation["root_dir"] = os.path.dirname(
+        get_data("testfile_deepforest.csv")
+    )
 
     two_class_m.create_trainer()
     results = two_class_m.trainer.validate(two_class_m)
     assert results[0]["empty_frame_accuracy"] == 1
+
 
 def test_evaluate_on_epoch_interval(m):
     m.config.validation.val_accuracy_interval = 1
@@ -1081,6 +1247,7 @@ def test_evaluate_on_epoch_interval(m):
     m.trainer.fit(m)
     assert m.trainer.logged_metrics["box_precision"]
     assert m.trainer.logged_metrics["box_recall"]
+
 
 def test_set_labels_updates_mapping(m):
     new_mapping = {"Object": 0}
@@ -1093,11 +1260,15 @@ def test_set_labels_updates_mapping(m):
     expected_inverse = {0: "Object"}
     assert m.numeric_to_label_dict == expected_inverse
 
-def test_set_labels_invalid_length(m): # Expect a ValueError when setting an invalid label mapping.
+
+def test_set_labels_invalid_length(
+    m,
+):  # Expect a ValueError when setting an invalid label mapping.
     # This mapping has two entries, which should be invalid since m.config.num_classes is 1.
     invalid_mapping = {"Object": 0, "Extra": 1}
     with pytest.raises(ValueError):
         m.set_labels(invalid_mapping)
+
 
 def test_predict_file_mixed_sizes(m, tmp_path):
     """Mixed-size images should yield predictions in original image coordinates."""
@@ -1131,6 +1302,7 @@ def test_predict_file_mixed_sizes(m, tmp_path):
     preds = m.predict_file(csv_file=csv_path, root_dir=str(tmp_path))
 
     assert preds.ymax.max() > 200  # The larger image should have predictions outside the 200px limit
+
 def test_custom_log_root(m, tmpdir):
     """Test that setting a custom log_root creates logs in the expected location"""
     custom_log_dir = tmpdir.join("custom_logs")

@@ -1,4 +1,5 @@
 # entry point for deepforest model
+import ast
 import importlib
 import os
 import warnings
@@ -951,7 +952,7 @@ class deepforest(pl.LightningModule):
 
         # Assume the lambda is a function of epoch
         def lr_lambda(epoch):
-            return eval(params.lr_lambda)
+            return self._safe_eval_lr_lambda(params.lr_lambda, epoch)
 
         if scheduler_type == "cosine":
             scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
@@ -1003,6 +1004,69 @@ class deepforest(pl.LightningModule):
             }
         else:
             return optimizer
+
+    @staticmethod
+    def _safe_eval_lr_lambda(expr: str, epoch: int) -> float:
+        """Safely evaluate arithmetic scheduler expressions against `epoch`.
+
+        Supported syntax is intentionally limited to numeric constants,
+        parentheses, unary +/- and arithmetic operators (+, -, *, /, //, %, **),
+        with `epoch` as the only allowed variable name.
+        """
+
+        allowed_binary_ops = (
+            ast.Add,
+            ast.Sub,
+            ast.Mult,
+            ast.Div,
+            ast.FloorDiv,
+            ast.Mod,
+            ast.Pow,
+        )
+        allowed_unary_ops = (ast.UAdd, ast.USub)
+
+        def _eval(node):
+            if isinstance(node, ast.Expression):
+                return _eval(node.body)
+
+            if isinstance(node, ast.Constant) and isinstance(node.value, (int, float)):
+                return node.value
+
+            if isinstance(node, ast.Name) and node.id == "epoch":
+                return epoch
+
+            if isinstance(node, ast.BinOp) and isinstance(node.op, allowed_binary_ops):
+                left = _eval(node.left)
+                right = _eval(node.right)
+                if isinstance(node.op, ast.Add):
+                    return left + right
+                if isinstance(node.op, ast.Sub):
+                    return left - right
+                if isinstance(node.op, ast.Mult):
+                    return left * right
+                if isinstance(node.op, ast.Div):
+                    return left / right
+                if isinstance(node.op, ast.FloorDiv):
+                    return left // right
+                if isinstance(node.op, ast.Mod):
+                    return left % right
+                if isinstance(node.op, ast.Pow):
+                    return left**right
+
+            if isinstance(node, ast.UnaryOp) and isinstance(node.op, allowed_unary_ops):
+                operand = _eval(node.operand)
+                if isinstance(node.op, ast.UAdd):
+                    return +operand
+                if isinstance(node.op, ast.USub):
+                    return -operand
+
+            raise ValueError(f"Unsafe lr_lambda expression: {expr}")
+
+        try:
+            parsed = ast.parse(expr, mode="eval")
+            return float(_eval(parsed))
+        except (SyntaxError, TypeError, ValueError, ZeroDivisionError) as exc:
+            raise ValueError(f"Unsafe lr_lambda expression: {expr}") from exc
 
     def __evaluate__(
         self,
