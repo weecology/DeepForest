@@ -20,6 +20,8 @@ class DeformableDetrWrapper(nn.Module):
     """This class wraps a transformers DeformableDetrForObjectDetection model
     so that input pre- and post-processing happens transparently."""
 
+    task: str = "box"
+
     def __init__(self, config, name, revision, use_nms=False, **hf_args):
         """Initialize a DeformableDetrForObjectDetection model.
 
