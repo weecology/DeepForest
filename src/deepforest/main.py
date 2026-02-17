@@ -109,14 +109,11 @@ class deepforest(pl.LightningModule):
 
     def load_model(self, model_name=None, revision=None):
         """Loads a model that has already been pretrained for a specific task,
-        like tree crown detection.
 
         Models (technically model weights) are distributed via Hugging Face
         and designated the Hugging Face repository ID (model_name), which
         is in the form: 'organization/repository'. For a list of models distributed
         by the DeepForest team (and the associated model names) see the
-        documentation:
-        https://deepforest.readthedocs.io/en/stable/user_guide/02_prebuilt.html
 
         Args:
             model_name (str): A repository ID for huggingface in the form of organization/repository
