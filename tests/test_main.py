@@ -1146,3 +1146,24 @@ def test_custom_log_root(m, tmpdir):
 
     version_dir = version_dirs[0]
     assert version_dir.join("hparams.yaml").exists(), "hparams.yaml not found"
+
+def test_detections_per_img_and_topk_candidates_config():
+    """Test that detections_per_img and topk_candidates can be configured
+    and are passed through to the underlying model."""
+    m = main.deepforest()
+
+    # Check default values
+    assert m.config.detections_per_img == 300
+    assert m.config.topk_candidates == 1000
+
+    # Test custom values
+    m.config.detections_per_img = 500
+    m.config.topk_candidates = 2000
+
+    assert m.config.detections_per_img == 500
+    assert m.config.topk_candidates == 2000
+
+    # Verify values are passed to actual model
+    m.create_model()
+    assert m.model.detections_per_img == 500
+    assert m.model.topk_candidates == 2000
