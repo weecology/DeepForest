@@ -144,6 +144,8 @@ class Config:
 
     nms_thresh: float = 0.05
     score_thresh: float = 0.1
+    detections_per_img: int = 300
+    topk_candidates: int = 1000
     model: ModelConfig = field(default_factory=ModelConfig)
 
     log_root: str = "./"
