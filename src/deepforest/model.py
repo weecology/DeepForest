@@ -12,6 +12,7 @@ from huggingface_hub import PyTorchModelHubMixin, hf_hub_download
 from omegaconf import OmegaConf
 from PIL import Image
 from pytorch_lightning import LightningModule, Trainer
+from safetensors.torch import load_file
 from torchvision import models, transforms
 
 from deepforest import utilities
@@ -66,8 +67,49 @@ class BaseModel:
         assert model_keys == ["boxes", "labels", "scores"]
 
 
+_CROP_BACKBONES: dict[str, tuple] = {
+    "resnet18": (models.resnet18, models.ResNet18_Weights.DEFAULT),
+    "resnet50": (models.resnet50, models.ResNet50_Weights.DEFAULT),
+}
+
+
+def create_crop_backbone(
+    architecture: str = "resnet50",
+    num_classes: int = 2,
+    pretrained: bool = True,
+) -> torch.nn.Module:
+    """Create a classification backbone for :class:`CropModel`.
+
+    Args:
+        architecture: One of the keys in ``_CROP_BACKBONES``
+            (currently ``"resnet18"`` or ``"resnet50"``).
+        num_classes: Number of output classes for the final layer.
+        pretrained: Whether to load ImageNet-pretrained weights.
+
+    Returns:
+        torch.nn.Module: Model with the final FC layer adjusted to
+        ``num_classes``.
+
+    Raises:
+        ValueError: If ``architecture`` is not recognized.
+    """
+    if architecture not in _CROP_BACKBONES:
+        raise ValueError(
+            f"Unknown CropModel architecture '{architecture}'. "
+            f"Choose from {sorted(_CROP_BACKBONES)}."
+        )
+    factory, default_weights = _CROP_BACKBONES[architecture]
+    m = factory(weights=default_weights if pretrained else None)
+    num_ftrs = m.fc.in_features
+    m.fc = torch.nn.Linear(num_ftrs, num_classes)
+    return m
+
+
 def simple_resnet_50(num_classes: int = 2) -> torch.nn.Module:
     """Create a simple ResNet-50 model for classification.
+
+    .. deprecated::
+        Use :func:`create_crop_backbone` instead.
 
     Args:
         num_classes: Number of output classes for the final layer
@@ -75,11 +117,7 @@ def simple_resnet_50(num_classes: int = 2) -> torch.nn.Module:
     Returns:
         torch.nn.Module: ResNet-50 model with modified final layer
     """
-    m = models.resnet50(weights=models.ResNet50_Weights.DEFAULT)
-    num_ftrs = m.fc.in_features
-    m.fc = torch.nn.Linear(num_ftrs, num_classes)
-
-    return m
+    return create_crop_backbone("resnet50", num_classes=num_classes)
 
 
 class CropModel(LightningModule, PyTorchModelHubMixin):
@@ -140,8 +178,18 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
         num_classes = len(self.label_dict)
         self.create_model(num_classes)
 
-    def create_model(self, num_classes):
-        """Create a model with the given number of classes."""
+    def create_model(self, num_classes: int, architecture: str | None = None):
+        """Create classification backbone and metrics for ``num_classes``.
+
+        Args:
+            num_classes: Number of output classes.
+            architecture: Backbone name (e.g. ``"resnet18"``, ``"resnet50"``).
+                Falls back to ``self.config["cropmodel"]["architecture"]``
+                then ``"resnet50"``.
+        """
+        if architecture is None:
+            architecture = self.config["cropmodel"].get("architecture", "resnet50")
+
         self.accuracy = torchmetrics.Accuracy(
             average="none", num_classes=num_classes, task="multiclass"
         )
@@ -163,7 +211,10 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
             }
         )
 
-        self.model = simple_resnet_50(num_classes=num_classes)
+        self.model = create_crop_backbone(
+            architecture=architecture,
+            num_classes=num_classes,
+        )
 
     def create_trainer(self, **kwargs):
         """Create a pytorch lightning trainer object."""
@@ -505,6 +556,7 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
         """
         config = OmegaConf.to_container(self.config, resolve=True, enum_to_str=True)
         config["cropmodel"]["label_dict"] = self.label_dict
+        config["cropmodel"].setdefault("architecture", "resnet50")
         super().push_to_hub(repo_id, **kwargs, config=config)
 
     def push_to_hub(self, repo_id, commit_message="Add model", **kwargs):
@@ -513,23 +565,46 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
         )
 
     @classmethod
-    def from_pretrained(cls, repo_id: str, **kwargs):
+    def from_pretrained(cls, repo_id: str, revision: str | None = None):
         """Load a model from the Hugging Face Hub.
+
+        Reads config.json to determine architecture and labels, creates
+        the model, then loads weights.
 
         Args:
             repo_id: Hugging Face repo id, e.g. "username/my-cropmodel".
-            **kwargs: Additional arguments to pass to the from_pretrained method.
+            revision: Optional git revision, branch, or tag. Defaults to
+                the repo default branch.
         """
-        model = super().from_pretrained(repo_id, **kwargs)
-
-        # Restore labels from config.json
-        cfg_path = hf_hub_download(repo_id, "config.json")
+        # Download config to determine architecture and labels before loading weights
+        cfg_path = hf_hub_download(repo_id, "config.json", revision=revision)
         with open(cfg_path) as f:
             cfg = json.load(f)
-            model.label_dict = {
-                k: int(v) for k, v in cfg["cropmodel"]["label_dict"].items()
-            }
-            model.numeric_to_label_dict = {v: k for k, v in model.label_dict.items()}
-        model.num_classes = len(model.label_dict)
-        model.eval()
-        return model
+
+        label_dict = {k: int(v) for k, v in cfg["cropmodel"]["label_dict"].items()}
+        num_classes = len(label_dict)
+        architecture = cfg["cropmodel"].get("architecture", "resnet50")
+
+        # Create instance with correct architecture before loading weights
+        instance = cls.__new__(cls)
+        LightningModule.__init__(instance)
+
+        instance.config = cfg
+        if cfg["cropmodel"].get("balance_classes", False):
+            instance._sampler_type = "weighted_random"
+        else:
+            instance._sampler_type = "random"
+
+        instance.create_model(num_classes, architecture=architecture)
+
+        # Load weights
+        model_path = hf_hub_download(repo_id, "model.safetensors", revision=revision)
+        state_dict = load_file(model_path)
+        instance.load_state_dict(state_dict, strict=True)
+
+        instance.label_dict = label_dict
+        instance.numeric_to_label_dict = {v: k for k, v in label_dict.items()}
+        instance.num_classes = num_classes
+        instance.eval()
+
+        return instance
