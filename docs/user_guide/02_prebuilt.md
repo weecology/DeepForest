@@ -122,6 +122,29 @@ Table S1 Confusion matrix for the Alive/Dead model in Weinstein et al. 2023
 
 Citation: Weinstein, Ben G., et al. "Capturing long‐tailed individual tree diversity using an airborne imaging and a multi‐temporal hierarchical model." Remote Sensing in Ecology and Conservation 9.5 (2023): 656-670.
 
+### NEON Tree Species and Genus Classification
+
+Two ResNet-18 crop classifiers trained on RGB crown images from the National Ecological Observatory Network (NEON). The training data includes hand-annotated tree crowns from multiple NEON sites across the US.
+
+- **Species model**: 167 species classes, trained on ~48k crown crops. HuggingFace repo: `ritesh313/neon-tree-resnet18-species`
+- **Genus model**: 60 genus classes, same training data aggregated to genus level. HuggingFace repo: `ritesh313/neon-tree-resnet18-genus`
+
+Both models use a torchvision ResNet-18 backbone pretrained on ImageNet and fine-tuned on NEON RGB data. Input images are resized to 224x224 and normalized with standard ImageNet statistics.
+
+```python
+from deepforest.model import CropModel
+
+# Load the species classifier
+species_model = CropModel.load_model("ritesh313/neon-tree-resnet18-species")
+
+# Load the genus classifier
+genus_model = CropModel.load_model("ritesh313/neon-tree-resnet18-genus")
+```
+
+Use these as a second stage after tree crown detection: detect crowns with a DeepForest model, then classify each crop.
+
+For more details on the training data and code, see [NeonTreeClassification](https://github.com/GatorSense/NeonTreeClassification).
+
 ## Want more pretrained models?
 
 Please consider contributing your data to open source repositories, such as zenodo or lila.science. The more data we gather, the more we can combine the annotation and data collection efforts of hundreds of researchers to built models available to everyone. We welcome suggestions on what models and data are most urgently [needed](https://github.com/weecology/DeepForest/discussions).
