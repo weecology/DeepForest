@@ -509,6 +509,32 @@ def test_predict_tile_serial_single(m):
     plot_results(prediction_1, show=False)
     plot_results(prediction_2, show=False)
 
+
+def test_predict_tile_batch_uses_global_image_indices(m, tmp_path):
+    """Batch strategy must assign image_path using global dataset indices, not batch position.
+    """
+    source = get_data("OSBS_029.png")
+    num_images = 5
+    paths = []
+    for i in range(num_images):
+        dest = tmp_path / f"image_{i}.png"
+        shutil.copy(source, dest)
+        paths.append(str(dest))
+    m.config.train.fast_dev_run = False
+    m.create_trainer()
+    m.load_model("weecology/deepforest-tree")
+    prediction = m.predict_tile(
+        path=paths,
+        patch_size=300,
+        patch_overlap=0,
+        dataloader_strategy="batch",
+    )
+    unique_paths = prediction.image_path.unique().tolist()
+    assert len(unique_paths) == num_images
+    expected_basenames = sorted(os.path.basename(p) for p in paths)
+    assert sorted(unique_paths) == expected_basenames
+
+
 # test equivalence for within and out of memory dataset strategies
 def test_predict_tile_equivalence(m):
     path = get_data("test_tiled.tif")
