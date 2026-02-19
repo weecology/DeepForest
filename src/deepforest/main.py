@@ -10,6 +10,7 @@ import torch
 from omegaconf import DictConfig, OmegaConf
 from PIL import Image
 from pytorch_lightning.callbacks import LearningRateMonitor
+from pytorch_lightning.loggers import CSVLogger
 from torch import optim
 from torchmetrics.classification import BinaryAccuracy
 from torchmetrics.detection import IntersectionOverUnion, MeanAveragePrecision
@@ -205,6 +206,11 @@ class deepforest(pl.LightningModule):
 
         if callbacks is None:
             callbacks = []
+
+        # Set default logger to use log_root from config instead of lightning_logs
+        if logger is None:
+            logger = CSVLogger(save_dir=self.config.log_root, name="")
+
         # If val data is passed, monitor learning rate and setup classification metrics
         if self.config.validation.csv_file is not None:
             if logger is not None:
@@ -887,10 +893,10 @@ class deepforest(pl.LightningModule):
         """
         if isinstance(batch, dict):
             images = batch["images"]
-            sublist_lengths = batch["sublist_lengths"]
-            self.original_batch_structure.append(sublist_lengths)
+            batch_indices = batch["batch_indices"]
+            self.original_batch_structure.append(batch_indices)
         else:
-            sublist_lengths = None
+            batch_indices = None
             images = batch
 
         self.model.eval()
@@ -1040,6 +1046,7 @@ class deepforest(pl.LightningModule):
             ground_df=ground_df,
             iou_threshold=iou_threshold,
             numeric_to_label_dict=self.numeric_to_label_dict,
+            geometry_type="box",
         )
 
         # empty frame accuracy

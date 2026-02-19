@@ -509,6 +509,32 @@ def test_predict_tile_serial_single(m):
     plot_results(prediction_1, show=False)
     plot_results(prediction_2, show=False)
 
+
+def test_predict_tile_batch_uses_global_image_indices(m, tmp_path):
+    """Batch strategy must assign image_path using global dataset indices, not batch position.
+    """
+    source = get_data("OSBS_029.png")
+    num_images = 5
+    paths = []
+    for i in range(num_images):
+        dest = tmp_path / f"image_{i}.png"
+        shutil.copy(source, dest)
+        paths.append(str(dest))
+    m.config.train.fast_dev_run = False
+    m.create_trainer()
+    m.load_model("weecology/deepforest-tree")
+    prediction = m.predict_tile(
+        path=paths,
+        patch_size=300,
+        patch_overlap=0,
+        dataloader_strategy="batch",
+    )
+    unique_paths = prediction.image_path.unique().tolist()
+    assert len(unique_paths) == num_images
+    expected_basenames = sorted(os.path.basename(p) for p in paths)
+    assert sorted(unique_paths) == expected_basenames
+
+
 # test equivalence for within and out of memory dataset strategies
 def test_predict_tile_equivalence(m):
     path = get_data("test_tiled.tif")
@@ -1131,3 +1157,18 @@ def test_predict_file_mixed_sizes(m, tmp_path):
     preds = m.predict_file(csv_file=csv_path, root_dir=str(tmp_path))
 
     assert preds.ymax.max() > 200  # The larger image should have predictions outside the 200px limit
+def test_custom_log_root(m, tmpdir):
+    """Test that setting a custom log_root creates logs in the expected location"""
+    custom_log_dir = tmpdir.join("custom_logs")
+    m.config.log_root = str(custom_log_dir)
+    m.config.train.fast_dev_run = False
+
+    m.create_trainer(limit_train_batches=1, limit_val_batches=1, max_epochs=1)
+    m.trainer.fit(m)
+
+    assert custom_log_dir.exists()
+    version_dirs = [d for d in custom_log_dir.listdir() if d.basename.startswith("version_")]
+    assert len(version_dirs) > 0, "No version directory found in custom log directory"
+
+    version_dir = version_dirs[0]
+    assert version_dir.join("hparams.yaml").exists(), "hparams.yaml not found"
