@@ -126,8 +126,8 @@ Citation: Weinstein, Ben G., et al. "Capturing long‐tailed individual tree div
 
 Two ResNet-18 crop classifiers trained on RGB crown images from the National Ecological Observatory Network (NEON). The training data includes hand-annotated tree crowns from multiple NEON sites across the US.
 
-- **Species model**: 167 species classes, trained on ~48k crown crops. HuggingFace repo: `ritesh313/neon-tree-resnet18-species`
-- **Genus model**: 60 genus classes, same training data aggregated to genus level. HuggingFace repo: `ritesh313/neon-tree-resnet18-genus`
+- **Species model**: 167 species classes, trained on ~48k crown crops. HuggingFace repo: `weecology/cropmodel-neon-resnet18-species`
+- **Genus model**: 60 genus classes, same training data aggregated to genus level. HuggingFace repo: `weecology/cropmodel-neon-resnet18-genus`
 
 Both models use a torchvision ResNet-18 backbone pretrained on ImageNet and fine-tuned on NEON RGB data. Input images are resized to 224x224 and normalized with standard ImageNet statistics.
 
@@ -135,10 +135,10 @@ Both models use a torchvision ResNet-18 backbone pretrained on ImageNet and fine
 from deepforest.model import CropModel
 
 # Load the species classifier
-species_model = CropModel.load_model("ritesh313/neon-tree-resnet18-species")
+species_model = CropModel.load_model("weecology/cropmodel-neon-resnet18-species")
 
 # Load the genus classifier
-genus_model = CropModel.load_model("ritesh313/neon-tree-resnet18-genus")
+genus_model = CropModel.load_model("weecology/cropmodel-neon-resnet18-genus")
 ```
 
 Use these as a second stage after tree crown detection: detect crowns with a DeepForest model, then classify each crop.
