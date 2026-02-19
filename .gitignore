@@ -20,6 +20,7 @@ current_release.csv
 docs/_build/
 env/
 .venv/
+logs/*
 lightning_logs/*
 public/
 tests/__pycache__
