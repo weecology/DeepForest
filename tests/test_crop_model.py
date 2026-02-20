@@ -9,7 +9,8 @@ import numpy as np
 
 from deepforest import get_data
 from deepforest import model
-from deepforest.model import CropModel
+from deepforest.model import CropModel, create_crop_backbone, _CROP_BACKBONES
+
 
 # The model object is architecture agnostic container.
 def test_model_no_args(config):
@@ -28,17 +29,20 @@ def crop_model():
 @pytest.fixture()
 def crop_model_data(crop_model, tmp_path):
     df = pd.read_csv(get_data("testfile_multi.csv"))
-    boxes = df[['xmin', 'ymin', 'xmax', 'ymax']].values.tolist()
+    boxes = df[["xmin", "ymin", "xmax", "ymax"]].values.tolist()
     root_dir = os.path.dirname(get_data("SOAP_061.png"))
     images = df.image_path.values
 
-    crop_model.write_crops(boxes=boxes,
-                           labels=df.label.values,
-                           root_dir=root_dir,
-                           images=images,
-                           savedir=tmp_path)
+    crop_model.write_crops(
+        boxes=boxes,
+        labels=df.label.values,
+        root_dir=root_dir,
+        images=images,
+        savedir=tmp_path,
+    )
 
     return None
+
 
 def test_crop_model(crop_model):
     # Test forward pass
@@ -55,6 +59,7 @@ def test_crop_model(crop_model):
     val_batch = (x, torch.tensor([0, 1, 0, 1]))
     val_loss = crop_model.validation_step(val_batch, batch_idx=0)
     assert isinstance(val_loss, torch.Tensor)
+
 
 def test_crop_model_train(crop_model, tmp_path, crop_model_data):
     # Create a trainer
@@ -92,6 +97,7 @@ def test_crop_model_custom_transform(crop_model):
     output = crop_model.forward(x)
     assert output.shape == (4, 2)
 
+
 def test_crop_model_configurable_resize():
     """Test that CropModel resize dimensions can be configured"""
     # Test with default resize dimensions
@@ -100,7 +106,9 @@ def test_crop_model_configurable_resize():
     transform = default_model.get_transform(augmentations=None)
 
     # Check that default resize is [224, 224]
-    resize_transform = [t for t in transform.transforms if isinstance(t, transforms.Resize)]
+    resize_transform = [
+        t for t in transform.transforms if isinstance(t, transforms.Resize)
+    ]
     assert len(resize_transform) == 1
     assert resize_transform[0].size == [224, 224]
 
@@ -111,7 +119,9 @@ def test_crop_model_configurable_resize():
     custom_transform = custom_model.get_transform(augmentations=None)
 
     # Check that custom resize is applied
-    custom_resize_transform = [t for t in custom_transform.transforms if isinstance(t, transforms.Resize)]
+    custom_resize_transform = [
+        t for t in custom_transform.transforms if isinstance(t, transforms.Resize)
+    ]
     assert len(custom_resize_transform) == 1
     assert custom_resize_transform[0].size == [300, 300]
 
@@ -126,21 +136,29 @@ def test_crop_model_load_checkpoint(tmp_path_factory, crop_model):
     for num_classes in [2, 5]:
         # Create data for example
         df = pd.read_csv(get_data("testfile_multi.csv"))
-        boxes = df[['xmin', 'ymin', 'xmax', 'ymax']].values.tolist()
+        boxes = df[["xmin", "ymin", "xmax", "ymax"]].values.tolist()
         root_dir = os.path.dirname(get_data("SOAP_061.png"))
         images = df.image_path.values
         labels = np.random.randint(0, num_classes, size=len(df)).astype(str)
         out_tmp = tmp_path_factory.mktemp(f"num_classes_{num_classes}")
         crop_data_dir = str(out_tmp)
-        crop_model.write_crops(boxes=boxes,
-                            labels=labels,
-                            root_dir=root_dir,
-                            images=images,
-                            savedir=crop_data_dir)
+        crop_model.write_crops(
+            boxes=boxes,
+            labels=labels,
+            root_dir=root_dir,
+            images=images,
+            savedir=crop_data_dir,
+        )
 
         # Create initial model and save checkpoint
         crop_model = model.CropModel()
-        crop_model.create_trainer(fast_dev_run=False, limit_train_batches=1, limit_val_batches=1, max_epochs=1, default_root_dir=tmp_path_factory.mktemp("logs"))
+        crop_model.create_trainer(
+            fast_dev_run=False,
+            limit_train_batches=1,
+            limit_val_batches=1,
+            max_epochs=1,
+            default_root_dir=tmp_path_factory.mktemp("logs"),
+        )
         crop_model.load_from_disk(train_dir=crop_data_dir, val_dir=crop_data_dir)
         # Initialize classification head based on discovered labels
         crop_model.create_model(num_classes=len(crop_model.label_dict))
@@ -164,6 +182,7 @@ def test_crop_model_load_checkpoint(tmp_path_factory, crop_model):
         # Check model parameters were loaded
         for p1, p2 in zip(crop_model.parameters(), loaded_model.parameters()):
             assert torch.equal(p1, p2)
+
 
 def test_expand_bbox_to_square_edge_cases(crop_model):
     """Test cases for the expand_bbox_to_square function."""
@@ -191,6 +210,7 @@ def test_expand_bbox_to_square_edge_cases(crop_model):
     result = crop_model.expand_bbox_to_square(bbox, image_width, image_height)
     assert result == expected
 
+
 def test_crop_model_val_dataset_confusion(tmp_path, crop_model, crop_model_data):
     crop_model.create_trainer(fast_dev_run=True, default_root_dir=tmp_path)
     crop_model.load_from_disk(train_dir=tmp_path, val_dir=tmp_path)
@@ -203,5 +223,38 @@ def test_crop_model_val_dataset_confusion(tmp_path, crop_model, crop_model_data)
     assert len(images) == 37
 
     # There was just one batch in the fast_dev_run
-    assert len(labels) ==37
+    assert len(labels) == 37
     assert len(predictions) == 37
+
+
+@pytest.mark.parametrize("architecture", list(_CROP_BACKBONES.keys()))
+def test_create_crop_backbone(architecture):
+    """Backbone factory produces correct output shape."""
+    num_classes = 5
+    net = create_crop_backbone(architecture, num_classes=num_classes, pretrained=False)
+    x = torch.rand(2, 3, 224, 224)
+    out = net(x)
+    assert out.shape == (2, num_classes)
+
+
+def test_create_crop_backbone_unknown():
+    """Unknown architecture raises ValueError."""
+    with pytest.raises(ValueError, match="Unknown CropModel architecture"):
+        create_crop_backbone("mobilenet_v99", num_classes=2)
+
+
+def test_crop_model_resnet18():
+    """CropModel works with resnet18 backbone."""
+    cm = CropModel(config_args={"architecture": "resnet18"})
+    cm.create_model(num_classes=3)
+    x = torch.rand(2, 3, 224, 224)
+    out = cm(x)
+    assert out.shape == (2, 3)
+
+
+def test_crop_model_default_architecture_is_resnet50():
+    """When no architecture is specified, CropModel defaults to resnet50."""
+    cm = CropModel()
+    cm.create_model(num_classes=2)
+    # resnet50 has 2048 fc.in_features, resnet18 has 512
+    assert cm.model.fc.in_features == 2048

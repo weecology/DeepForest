@@ -99,6 +99,7 @@ predict:
     pin_memory: False
 
 cropmodel:
+    architecture: resnet50
     batch_size: 4
     num_workers: 0
     lr: 0.0001

@@ -101,6 +101,7 @@ class CropModelConfig:
     This section controls the standalone crop classification module.
     """
 
+    architecture: str = "resnet50"
     batch_size: int = 4
     num_workers: int = 0
     lr: float = 0.0001
