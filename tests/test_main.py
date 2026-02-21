@@ -511,6 +511,32 @@ def test_predict_tile_serial_single(m):
     plot_results(prediction_1, show=False)
     plot_results(prediction_2, show=False)
 
+
+def test_predict_tile_batch_uses_global_image_indices(m, tmp_path):
+    """Batch strategy must assign image_path using global dataset indices, not batch position.
+    """
+    source = get_data("OSBS_029.png")
+    num_images = 5
+    paths = []
+    for i in range(num_images):
+        dest = tmp_path / f"image_{i}.png"
+        shutil.copy(source, dest)
+        paths.append(str(dest))
+    m.config.train.fast_dev_run = False
+    m.create_trainer()
+    m.load_model("weecology/deepforest-tree")
+    prediction = m.predict_tile(
+        path=paths,
+        patch_size=300,
+        patch_overlap=0,
+        dataloader_strategy="batch",
+    )
+    unique_paths = prediction.image_path.unique().tolist()
+    assert len(unique_paths) == num_images
+    expected_basenames = sorted(os.path.basename(p) for p in paths)
+    assert sorted(unique_paths) == expected_basenames
+
+
 # test equivalence for within and out of memory dataset strategies
 def test_predict_tile_equivalence(m):
     path = get_data("test_tiled.tif")
@@ -1169,7 +1195,34 @@ def test_recall_not_lowered_by_unprocessed_images(tmp_path):
     # Verify only 2 images were processed
     assert len(metric.image_indices) == 2
 
+    
     # With filtering, recall should be 1.0 (2/2 filtered images)
     assert math.isclose(results['box_recall'], 1.0, rel_tol=1e-5), (
         f"box_recall={results['box_recall']:.2f}, expected 1.0"
     )
+
+    version_dir = version_dirs[0]
+    assert version_dir.join("hparams.yaml").exists(), "hparams.yaml not found"
+
+def test_huggingface_model_loads_correct_label_dict():
+    """Regression test for #1286:
+    HuggingFace models should load correct label_dict from config.json.
+    """
+    from deepforest import main
+
+    m = main.deepforest()
+    m.load_model(model_name="weecology/everglades-bird-species-detector")
+
+    expected = {
+        "Anhinga",
+        "Great Blue Heron",
+        "Great Egret",
+        "Roseate Spoonbill",
+        "Snowy Egret",
+        "White Ibis",
+        "Wood Stork",
+    }
+
+    actual = set(m.label_dict.keys())
+    assert actual == expected, f"Expected {expected}, got {actual}"
+
