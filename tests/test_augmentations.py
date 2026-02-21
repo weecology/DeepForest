@@ -281,7 +281,32 @@ def test_random_pad_to():
     output_image, output_bboxes = transform(image, bboxes)
 
     assert output_image.shape == torch.Size([1, 3, 105, 105])
+    assert output_image.shape == torch.Size([1, 3, 105, 105])
     assert torch.equal(output_bboxes, bboxes)
+
+
+def test_pad_if_needed():
+    """Test PadIfNeeded augmentation.
+
+    Should pad if smaller, do nothing if larger.
+    """
+    # Case 1: Image smaller than target -> Should Pad
+    transform_pad = get_transform(augmentations={"PadIfNeeded": {"size": (800, 800)}})
+    image_small = torch.randn(1, 3, 600, 600)
+    bboxes = torch.tensor([[[10., 10., 50., 50.]]])
+
+    out_small, _ = transform_pad(image_small, bboxes)
+    assert out_small.shape == (1, 3, 800, 800), "Failed to pad small image"
+
+    # Case 2: Image larger than target -> Should NOT Crop (The Fix)
+    image_large = torch.randn(1, 3, 1000, 1000)
+    out_large, _ = transform_pad(image_large, bboxes)
+    assert out_large.shape == (1, 3, 1000, 1000), "Incorrectly cropped large image"
+
+    # Case 3: Verify PadTo alias still exists and crops (Backward Comp)
+    transform_crop = get_transform(augmentations={"PadTo": {"size": (800, 800)}})
+    out_crop, _ = transform_crop(image_large, bboxes)
+    assert out_crop.shape == (1, 3, 800, 800), "PadTo alias failed to crop"
 
 
 def test_filter_boxes():
