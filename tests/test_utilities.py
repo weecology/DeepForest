@@ -558,7 +558,7 @@ def test_image_to_geo_coordinates_polygons():
 
 
 
-def test_read_coco_json(tmp_path):
+def test_read_coco_json_polygon(tmp_path):
     """Test reading a COCO format JSON file"""
     # Create a sample COCO JSON structure
     coco_data = {
@@ -608,6 +608,47 @@ def test_read_coco_json(tmp_path):
         assert geom.is_valid
         assert isinstance(geom, shapely.geometry.Polygon)
 
+def test_read_coco_json_bbox(tmp_path):
+    """Test reading a COCO format JSON file"""
+    # Create a sample COCO JSON structure
+    coco_data = {
+        "images": [
+            {"id": 1, "file_name": "OSBS_029.png"},
+            {"id": 2, "file_name": "OSBS_029.tif"}
+        ],
+        "categories": [
+            {"id": 0, "name": "Tree"},
+            {"id": 1, "name": "Bird"}
+        ],
+        "annotations": [
+            {
+                "image_id": 1,
+                "bbox": [0, 0, 10, 10],  # x, y, width, height
+                "category_id": 0
+            },
+            {
+                "image_id": 2,
+                "bbox": [5, 5, 10, 10],
+                "category_id": 1
+            }
+        ]
+    }
+
+    # Write the sample JSON to a temporary file
+    json_path = tmp_path / "annotations.json"
+    with open(json_path, "w") as f:
+        json.dump(coco_data, f)
+
+    # Read the file using our utility
+    df = utilities.read_file(str(json_path), root_dir=os.path.dirname(get_data("OSBS_029.png")))
+
+    # Assert the dataframe has the expected structure
+    assert df.shape[0] == 2  # Two annotations
+
+    # Check bboxes:
+    expected_boxes = [geometry.box(0, 0, 10, 10), geometry.box(5, 5, 15, 15)]
+    for geom, expected in zip(df.geometry, expected_boxes):
+        assert geom.equals(expected)
 
 def test_format_geometry_box():
     """Test formatting box geometry from model predictions"""
