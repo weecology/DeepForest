@@ -774,65 +774,21 @@ class deepforest(pl.LightningModule):
         self.predictions = []
 
     def calculate_empty_frame_accuracy(self, ground_df, predictions_df):
-        """Calculate accuracy for empty frames (frames with no objects).
+        """Wrapper for evaluate.calculate_empty_frame_accuracy."""
+        from deepforest import evaluate
 
-        Args:
-            ground_df (pd.DataFrame): Ground truth dataframe containing image paths and bounding boxes.
-                Must have columns 'image_path', 'xmin', 'ymin', 'xmax', 'ymax'.
-            predictions_df (pd.DataFrame): Model predictions dataframe containing image paths and predicted boxes.
-                Must have column 'image_path'.
-
-        Returns:
-            float or None: Accuracy score for empty frame detection. A score of 1.0 means the model correctly
-                identified all empty frames (no false positives), while 0.0 means it predicted objects
-                in all empty frames (all false positives). Returns None if there are no empty frames.
-        """
-        # Find images that are marked as empty in ground truth (all coordinates are 0)
-        empty_images = ground_df.loc[
-            (ground_df.xmin == 0)
-            & (ground_df.ymin == 0)
-            & (ground_df.xmax == 0)
-            & (ground_df.ymax == 0),
-            "image_path",
-        ].unique()
-
-        if len(empty_images) == 0:
+        # Check if model has empty_frame_accuracy metric
+        if not hasattr(self, "empty_frame_accuracy"):
             return None
 
-        if predictions_df.empty:
-            # Empty predictions with empty ground truth = 100% accuracy
-            empty_accuracy = 1
-        else:
-            # Get non-empty predictions for empty images
-            non_empty_predictions = predictions_df.loc[predictions_df.xmin.notnull()]
-            predictions_for_empty_images = non_empty_predictions.loc[
-                non_empty_predictions.image_path.isin(empty_images)
-            ]
-
-            # Create prediction tensor - 1 if model predicted objects, 0 if predicted empty
-            predictions = torch.zeros(len(empty_images))
-            for index, image in enumerate(empty_images):
-                if (
-                    len(
-                        predictions_for_empty_images.loc[
-                            predictions_for_empty_images.image_path == image
-                        ]
-                    )
-                    > 0
-                ):
-                    predictions[index] = 1
-
-            # Ground truth tensor - all zeros since these are empty frames
-            gt = torch.zeros(len(empty_images))
-            predictions = torch.tensor(predictions)
-
-            # Calculate accuracy using metric
-            self.empty_frame_accuracy.update(predictions, gt)
-            empty_accuracy = self.empty_frame_accuracy.compute()
-            self.empty_frame_accuracy.reset()
+        device = next(self.parameters()).device
+        empty_accuracy = evaluate.calculate_empty_frame_accuracy(
+            ground_df, predictions_df, self.empty_frame_accuracy, device
+        )
 
         # Log empty frame accuracy
-        self.log("empty_frame_accuracy", empty_accuracy)
+        if empty_accuracy is not None:
+            self.log("empty_frame_accuracy", empty_accuracy)
 
         return empty_accuracy
 
