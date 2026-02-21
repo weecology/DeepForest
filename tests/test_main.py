@@ -556,8 +556,12 @@ def test_evaluate(m):
     csv_file = get_data("OSBS_029.csv")
     results = m.evaluate(csv_file, iou_threshold=0.4)
 
-    assert np.round(results["box_precision"], 2) > 0.5
-    assert np.round(results["box_recall"], 2) > 0.5
+    # Relaxed assertions (Sanity Check only)
+    # Allows model improvements without breaking tests
+    assert results["box_precision"] > 0.7
+    assert results["box_recall"] > 0.5
+
+    # Structure and Label checks
     assert len(results["results"].predicted_label.dropna().unique()) == 1
     assert results["results"].predicted_label.dropna().unique()[0] == "Tree"
     assert results["predictions"].shape[0] > 0
@@ -565,7 +569,6 @@ def test_evaluate(m):
 
     df = pd.read_csv(csv_file)
     assert results["results"].shape[0] == df.shape[0]
-
 
 def test_train_callbacks(m):
     csv_file = get_data("example.csv")
