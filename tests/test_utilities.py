@@ -770,3 +770,116 @@ def test_read_file_column_names():
     assert "image_path" in result.columns
     assert "label" in result.columns
     assert hasattr(result, "root_dir")
+
+
+@pytest.fixture
+def sample_shapefile_gdf():
+    """Create a sample GeoDataFrame for shapefile testing."""
+    sample_geometry = [geometry.Point(404211.9 + 10, 3285102 + 20),
+                       geometry.Point(404211.9 + 20, 3285102 + 20)]
+    df = pd.DataFrame({"geometry": sample_geometry})
+    gdf = gpd.GeoDataFrame(df, geometry="geometry", crs="EPSG:32617")
+    gdf["geometry"] = [geometry.box(left, bottom, right, top) for left, bottom, right, top
+                       in gdf.geometry.buffer(0.5).bounds.values]
+    return gdf
+
+
+def test_read_file_shapefile_with_image_path_argument(tmp_path, sample_shapefile_gdf):
+    """Test reading a shapefile without image_path column by passing image_path argument.
+
+    This tests the fix for issue #997.
+    """
+    # Create shapefile without image_path column
+    gdf = sample_shapefile_gdf.copy()
+    gdf["label"] = "Tree"
+    shp_path = tmp_path / "no_image_path.shp"
+    gdf.to_file(str(shp_path))
+
+    # Read with image_path argument
+    image_path_full = get_data("OSBS_029.tif")
+    image_path = os.path.basename(image_path_full)
+    root_dir = os.path.dirname(image_path_full)
+
+    with pytest.warns(UserWarning, match="You have passed an image_path argument"):
+        result = utilities.read_file(
+            input=str(shp_path),
+            image_path=image_path,
+            root_dir=root_dir
+        )
+
+    assert result.shape[0] == 2
+    assert "image_path" in result.columns
+    assert result["image_path"].iloc[0] == image_path
+
+
+def test_read_file_shapefile_with_label_argument(tmp_path, sample_shapefile_gdf):
+    """Test reading a shapefile without label column by passing label argument.
+
+    This tests the fix for issue #997.
+    """
+    # Create shapefile without label column
+    gdf = sample_shapefile_gdf.copy()
+    image_path_full = get_data("OSBS_029.tif")
+    gdf["image_path"] = os.path.basename(image_path_full)
+    shp_path = tmp_path / "no_label.shp"
+    gdf.to_file(str(shp_path))
+
+    # Read with label argument - no warning expected when shapefile has no label column
+    root_dir = os.path.dirname(image_path_full)
+    result = utilities.read_file(
+        input=str(shp_path),
+        label="CustomTree",
+        root_dir=root_dir
+    )
+
+    assert result.shape[0] == 2
+    assert "label" in result.columns
+    assert result["label"].iloc[0] == "CustomTree"
+
+
+def test_read_file_shapefile_with_image_path_and_label_arguments(tmp_path, sample_shapefile_gdf):
+    """Test reading a shapefile without image_path and label columns.
+
+    This tests the fix for issue #997 where users can pass both arguments.
+    """
+    # Create shapefile without image_path and label columns
+    gdf = sample_shapefile_gdf.copy()
+    shp_path = tmp_path / "no_image_path_no_label.shp"
+    gdf.to_file(str(shp_path))
+
+    # Read with both image_path and label arguments
+    image_path_full = get_data("OSBS_029.tif")
+    image_path = os.path.basename(image_path_full)
+    root_dir = os.path.dirname(image_path_full)
+
+    with pytest.warns(UserWarning, match="You have passed an image_path argument"):
+        result = utilities.read_file(
+            input=str(shp_path),
+            image_path=image_path,
+            label="Tree",
+            root_dir=root_dir
+        )
+
+    assert result.shape[0] == 2
+    assert "image_path" in result.columns
+    assert "label" in result.columns
+    assert result["image_path"].iloc[0] == image_path
+    assert result["label"].iloc[0] == "Tree"
+
+
+def test_read_file_shapefile_without_image_path_raises_error(tmp_path):
+    """Test that reading a shapefile without image_path column raises an error.
+
+    This documents the expected behavior when no image_path is provided.
+    """
+    # Create a simple shapefile without image_path column
+    sample_geometry = [geometry.Point(10, 20), geometry.Point(20, 40)]
+    labels = ["Tree", "Tree"]
+    df = pd.DataFrame({"geometry": sample_geometry, "label": labels})
+    gdf = gpd.GeoDataFrame(df, geometry="geometry")
+    shp_path = tmp_path / "no_image_path.shp"
+    gdf.to_file(str(shp_path))
+
+    # Should raise ValueError when image_path is not provided
+    with pytest.raises(ValueError, match="No image_path column found"):
+        utilities.read_file(input=str(shp_path))
