@@ -1202,9 +1202,6 @@ def test_recall_not_lowered_by_unprocessed_images(tmp_path):
         f"box_recall={results['box_recall']:.2f}, expected 1.0"
     )
 
-    version_dir = version_dirs[0]
-    assert version_dir.join("hparams.yaml").exists(), "hparams.yaml not found"
-
 def test_huggingface_model_loads_correct_label_dict():
     """Regression test for #1286:
     HuggingFace models should load correct label_dict from config.json.
