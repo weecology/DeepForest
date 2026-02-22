@@ -1195,7 +1195,7 @@ def test_recall_not_lowered_by_unprocessed_images(tmp_path):
     # Verify only 2 images were processed
     assert len(metric.image_indices) == 2
 
-    
+
     # With filtering, recall should be 1.0 (2/2 filtered images)
     assert math.isclose(results['box_recall'], 1.0, rel_tol=1e-5), (
         f"box_recall={results['box_recall']:.2f}, expected 1.0"
@@ -1225,4 +1225,3 @@ def test_huggingface_model_loads_correct_label_dict():
 
     actual = set(m.label_dict.keys())
     assert actual == expected, f"Expected {expected}, got {actual}"
-
