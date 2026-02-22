@@ -62,6 +62,7 @@ class TrainConfig:
 
     csv_file: str | None = None
     root_dir: str | None = None
+    batch_size: int = 2
     lr: float = 0.001
     scheduler: SchedulerConfig = field(default_factory=SchedulerConfig)
     epochs: int = 1
@@ -81,6 +82,7 @@ class ValidationConfig:
 
     csv_file: str | None = None
     root_dir: str | None = None
+    batch_size: int = 8
     preload_images: bool = False
     size: int | None = None
     iou_threshold: float = 0.4
@@ -91,6 +93,7 @@ class ValidationConfig:
 
 @dataclass
 class PredictConfig:
+    batch_size: int = 8
     pin_memory: bool = False
 
 
@@ -130,7 +133,6 @@ class Config:
     workers: int = 0
     devices: int | str = "auto"
     accelerator: str = "auto"
-    batch_size: int = 1
 
     architecture: str = "retinanet"
     num_classes: int | None = None
