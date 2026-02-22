@@ -373,7 +373,7 @@ class deepforest(pl.LightningModule):
             preload_images=self.config.train.preload_images,
             shuffle=True,
             transforms=self.transforms,
-            batch_size=self.config.batch_size,
+            batch_size=self.config.train.batch_size,
         )
 
         return loader
@@ -398,7 +398,7 @@ class deepforest(pl.LightningModule):
                 augmentations=self.config.validation.augmentations,
                 shuffle=False,
                 preload_images=self.config.validation.preload_images,
-                batch_size=self.config.batch_size,
+                batch_size=self.config.validation.batch_size,
             )
 
         return loader
@@ -413,7 +413,7 @@ class deepforest(pl.LightningModule):
             torch.utils.data.DataLoader: A dataloader object that can be used for prediction.
         """
         if batch_size is None:
-            batch_size = self.config.batch_size
+            batch_size = self.config.predict.batch_size
         else:
             batch_size = batch_size
         loader = torch.utils.data.DataLoader(
@@ -504,7 +504,7 @@ class deepforest(pl.LightningModule):
         """
 
         ds = prediction.FromCSVFile(csv_file=csv_file, root_dir=root_dir)
-        dataloader = self.predict_dataloader(ds, batch_size=self.config.batch_size)
+        dataloader = self.predict_dataloader(ds, batch_size=self.config.predict.batch_size)
         results = predict._dataloader_wrapper_(
             model=self,
             crop_model=crop_model,

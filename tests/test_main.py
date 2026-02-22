@@ -43,7 +43,9 @@ def two_class_m(tmp_path_factory):
     m.config.train.csv_file = get_data("testfile_multi.csv")
     m.config.train.root_dir = os.path.dirname(get_data("testfile_multi.csv"))
     m.config.train.fast_dev_run = True
-    m.config.batch_size = 2
+    m.config.train.batch_size = 2
+    m.config.validation.batch_size = 2
+    m.config.predict.batch_size = 2
 
     m.config.validation["csv_file"] = get_data("testfile_multi.csv")
     m.config.validation["root_dir"] = os.path.dirname(get_data("testfile_multi.csv"))
@@ -62,7 +64,9 @@ def m(tmp_path_factory):
     m.config.train.csv_file = get_data("example.csv")
     m.config.train.root_dir = os.path.dirname(get_data("example.csv"))
     m.config.train.fast_dev_run = True
-    m.config.batch_size = 2
+    m.config.train.batch_size = 2
+    m.config.validation.batch_size = 2
+    m.config.predict.batch_size = 2
 
     m.config.validation.csv_file = get_data("example.csv")
     m.config.validation.root_dir = os.path.dirname(get_data("example.csv"))
@@ -86,7 +90,9 @@ def m_without_release(tmp_path_factory):
     m.config.train.csv_file = get_data("example.csv")
     m.config.train.root_dir = os.path.dirname(get_data("example.csv"))
     m.config.train.fast_dev_run = True
-    m.config.batch_size = 2
+    m.config.train.batch_size = 2
+    m.config.validation.batch_size = 2
+    m.config.predict.batch_size = 2
 
     m.config.validation.csv_file = get_data("example.csv")
     m.config.validation.root_dir = os.path.dirname(get_data("example.csv"))
@@ -186,7 +192,9 @@ def test_train_empty_train_csv(m, tmp_path):
     })
     empty_csv.to_csv(tmp_path / "empty.csv")
     m.config.train.csv_file = str(tmp_path / "empty.csv")
-    m.config.batch_size = 2
+    m.config.train.batch_size = 2
+    m.config.validation.batch_size = 2
+    m.config.predict.batch_size = 2
     m.create_trainer(fast_dev_run=True)
     m.trainer.fit(m)
 
@@ -202,7 +210,9 @@ def test_train_with_empty_validation_csv(m, tmp_path):
     empty_csv.to_csv(tmp_path / "empty.csv")
     m.config.train.csv_file = str(tmp_path / "empty.csv")
     m.config.validation.csv_file = str(tmp_path / "empty.csv")
-    m.config.batch_size = 2
+    m.config.train.batch_size = 2
+    m.config.validation.batch_size = 2
+    m.config.predict.batch_size = 2
     m.create_trainer(fast_dev_run=True)
     m.trainer.fit(m)
     m.trainer.validate(m)
@@ -443,7 +453,7 @@ def test_predict_small_file(m):
 
 @pytest.mark.parametrize("batch_size", [1, 2])
 def test_predict_dataloader(m, batch_size, path):
-    m.config.batch_size = batch_size
+    m.config.predict.batch_size = batch_size
     tile = np.array(Image.open(path))
     ds = prediction.SingleImage(image=tile, path=path, patch_overlap=0.1, patch_size=100)
     dl = m.predict_dataloader(ds)
@@ -676,7 +686,7 @@ def existing_loader(m, tmp_path):
                     tmp_path / "{}".format(image_path + "3"))
     existing_loader = m.load_dataset(csv_file=str(tmp_path / "train.csv"),
                                      root_dir=str(tmp_path),
-                                     batch_size=m.config.batch_size + 1)
+                                     batch_size=m.config.train.batch_size + 1)
     return existing_loader
 
 
@@ -688,7 +698,7 @@ def test_load_existing_train_dataloader(m, tmp_path, existing_loader):
     m.config.train.csv_file = str(tmp_path / "train.csv")
     m.config.train.root_dir = str(tmp_path)
     batch = next(iter(m.train_dataloader()))
-    assert len(batch[0]) == m.config.batch_size
+    assert len(batch[0]) == m.config.train.batch_size
 
     # Existing train dataloader
     m.config.train.csv_file = str(tmp_path / "train.csv")
@@ -697,7 +707,7 @@ def test_load_existing_train_dataloader(m, tmp_path, existing_loader):
     m.create_trainer(fast_dev_run=True)
     m.trainer.fit(m)
     batch = next(iter(m.train_dataloader()))
-    assert len(batch[0]) == m.config.batch_size + 1
+    assert len(batch[0]) == m.config.train.batch_size + 1
 
 
 def test_existing_val_dataloader(m, tmp_path, existing_loader):
@@ -707,7 +717,7 @@ def test_existing_val_dataloader(m, tmp_path, existing_loader):
     m.create_trainer()
     m.trainer.validate(m)
     batch = next(iter(m.val_dataloader()))
-    assert len(batch[0]) == m.config.batch_size + 1
+    assert len(batch[0]) == m.config.train.batch_size + 1
 
 
 def test_existing_predict_dataloader(m):
@@ -717,7 +727,7 @@ def test_existing_predict_dataloader(m):
                              patch_size=100)
     existing_loader = m.predict_dataloader(ds)
     batches = m.trainer.predict(m, existing_loader)
-    len(batches[0]) == m.config.batch_size + 1
+    assert len(batches[0]) == m.config.predict.batch_size
 
 
 # Test train with each scheduler
@@ -1194,6 +1204,29 @@ def test_huggingface_model_loads_correct_label_dict():
 
     actual = set(m.label_dict.keys())
     assert actual == expected, f"Expected {expected}, got {actual}"
+def test_batch_sizes(m):
+    """Each mode (train, validation, predict) should use its own batch_size."""
+    m.config.train.batch_size = 5
+    m.config.validation.batch_size = 7
+    m.config.predict.batch_size = 9
+
+    # Train DataLoader should be configured with train.batch_size
+    train_dl = m.train_dataloader()
+    assert train_dl.batch_size == 5
+
+    # Validation DataLoader should be configured with validation.batch_size
+    val_dl = m.val_dataloader()
+    assert val_dl.batch_size == 7
+
+    # Predict DataLoader should be configured with predict.batch_size
+    from deepforest.datasets import prediction
+    from deepforest import get_data
+    ds = prediction.TiledRaster(path=get_data("test_tiled.tif"),
+                                patch_overlap=0.1,
+                                patch_size=100)
+    predict_dl = m.predict_dataloader(ds)
+    assert predict_dl.batch_size == 9
+
 import pytest
 from deepforest.main import deepforest
 

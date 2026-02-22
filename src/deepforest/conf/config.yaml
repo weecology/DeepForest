@@ -5,17 +5,15 @@
 workers: 0
 devices: auto
 accelerator: auto
-batch_size: 1
-
 # Model Architecture
-architecture: 'retinanet'
+architecture: "retinanet"
 nms_thresh: 0.05
 score_thresh: 0.1
 
 # Set model name to None to initialize from scratch
 model:
-    name: 'weecology/deepforest-tree'
-    revision: 'main'
+  name: "weecology/deepforest-tree"
+  revision: "main"
 
 # Specify a label_dict to override model settings.
 # By default, this will be populated from the model
@@ -34,88 +32,91 @@ path_to_rgb:
 log_root: ./lightning_logs
 
 train:
-    csv_file:
-    root_dir:
+  csv_file:
+  root_dir:
+  batch_size: 2
 
-    # Optimizer initial learning rate
-    lr: 0.001
+  # Optimizer initial learning rate
+  lr: 0.001
 
-    # Data augmentations for training
-    # Augmentations must be a list of augmentation names, or a list
-    # of dicts with augmentation names and parameters.
-    # Examples:
-    # augmentations:
-    #   - HorizontalFlip: {p: 0.5}
-    #   - Downscale: {scale_min: 0.25, scale_max: 0.75, p: 0.5}
-    augmentations:
-        - HorizontalFlip: {p: 0.5}
-    scheduler:
-        type:
-        params:
-            # Common parameters
-            T_max: 10
-            eta_min: 0.00001
-            lr_lambda: "0.95 ** epoch"  # For lambdaLR and multiplicativeLR
-            step_size: 30  # For stepLR
-            gamma: 0.1  # For stepLR, multistepLR, and exponentialLR
-            milestones: [50, 100]  # For multistepLR
+  # Data augmentations for training
+  # Augmentations must be a list of augmentation names, or a list
+  # of dicts with augmentation names and parameters.
+  # Examples:
+  # augmentations:
+  #   - HorizontalFlip: {p: 0.5}
+  #   - Downscale: {scale_min: 0.25, scale_max: 0.75, p: 0.5}
+  augmentations:
+    - HorizontalFlip: { p: 0.5 }
+  scheduler:
+    type:
+    params:
+      # Common parameters
+      T_max: 10
+      eta_min: 0.00001
+      lr_lambda: "0.95 ** epoch" # For lambdaLR and multiplicativeLR
+      step_size: 30 # For stepLR
+      gamma: 0.1 # For stepLR, multistepLR, and exponentialLR
+      milestones: [50, 100] # For multistepLR
 
-            # ReduceLROnPlateau parameters (used if type is not explicitly mentioned)
-            mode: "min"
-            factor: 0.1
-            patience: 10
-            threshold: 0.0001
-            threshold_mode: "rel"
-            cooldown: 0
-            min_lr: 0
-            eps: 0.00000001
+      # ReduceLROnPlateau parameters (used if type is not explicitly mentioned)
+      mode: "min"
+      factor: 0.1
+      patience: 10
+      threshold: 0.0001
+      threshold_mode: "rel"
+      cooldown: 0
+      min_lr: 0
+      eps: 0.00000001
 
-    # How many epochs to run for
-    epochs: 1
-    # Useful debugging flag in pytorch lightning, set to True to get a single batch of training to test settings.
-    fast_dev_run: False
-    # preload images to GPU memory for fast training. This depends on GPU size and number of images.
-    preload_images: False
+  # How many epochs to run for
+  epochs: 1
+  # Useful debugging flag in pytorch lightning, set to True to get a single batch of training to test settings.
+  fast_dev_run: False
+  # preload images to GPU memory for fast training. This depends on GPU size and number of images.
+  preload_images: False
 
 validation:
-    csv_file:
-    root_dir:
-    preload_images: False
-    size:
+  csv_file:
+  root_dir:
+  batch_size: 8
+  preload_images: False
+  size:
 
-    # For retinanet you may prefer val_classification, but the default val_loss
-    # should work with all models
-    lr_plateau_target: val_loss
+  # For retinanet you may prefer val_classification, but the default val_loss
+  # should work with all models
+  lr_plateau_target: val_loss
 
-    # Intersection over union evaluation
-    iou_threshold: 0.4
-    val_accuracy_interval: 20
+  # Intersection over union evaluation
+  iou_threshold: 0.4
+  val_accuracy_interval: 20
 
-    # Data augmentation is none by default for validation, but you can specify:
-    # augmentations:
-    # if you need to apply augmentations during the val stage.
+  # Data augmentation is none by default for validation, but you can specify:
+  # augmentations:
+  # if you need to apply augmentations during the val stage.
 
 predict:
-    pin_memory: False
+  batch_size: 8
+  pin_memory: False
 
 cropmodel:
-    batch_size: 4
-    num_workers: 0
-    lr: 0.0001
-    scheduler:
-        type: ReduceLROnPlateau
-        params:
-            mode: min
-            factor: 0.5
-            patience: 5
-            threshold: 0.0001
-            threshold_mode: rel
-            cooldown: 0
-            min_lr: 0
-            eps: 1.0e-08
-    balance_classes: False
-    resize:
-        - 224
-        - 224
-    # Number of pixels to expand bbox crop windows for better prediction context.
-    expand: 0
+  batch_size: 4
+  num_workers: 0
+  lr: 0.0001
+  scheduler:
+    type: ReduceLROnPlateau
+    params:
+      mode: min
+      factor: 0.5
+      patience: 5
+      threshold: 0.0001
+      threshold_mode: rel
+      cooldown: 0
+      min_lr: 0
+      eps: 1.0e-08
+  balance_classes: False
+  resize:
+    - 224
+    - 224
+  # Number of pixels to expand bbox crop windows for better prediction context.
+  expand: 0
