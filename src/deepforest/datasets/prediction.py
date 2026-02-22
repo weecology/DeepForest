@@ -11,7 +11,7 @@ from torch.nn import functional as F
 from torch.utils.data import Dataset
 
 from deepforest import preprocess
-from deepforest.utilities import format_geometry, read_file
+from deepforest.utilities import format_prediction, format_geometry, read_file
 
 
 # Base prediction class
@@ -135,7 +135,7 @@ class PredictionDataset(Dataset):
         if sub_idx is None:
             sub_idx = idx
         geom_type = self.determine_geometry_type(batch)
-        result = format_geometry(batch, geom_type=geom_type)
+        result = format_prediction(batch, geom_type=geom_type)
         if result is None:
             return None
 
@@ -235,7 +235,7 @@ class FromCSVFile(PredictionDataset):
             sub_idx: Unused (kept for compatibility with base class signature)
         """
         geom_type = self.determine_geometry_type(batch)
-        result = format_geometry(batch, geom_type=geom_type)
+        result = format_prediction(batch, geom_type=geom_type)
         if result is None:
             return None
 

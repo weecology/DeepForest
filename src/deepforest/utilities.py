@@ -388,17 +388,22 @@ def format_geometry(predictions, scores=True, geom_type=None):
     return df
 
 
-def format_prediction(prediction):
+def format_prediction(prediction, geom_type=None, scores=True):
     """
     Format a prediction dictionary into a pandas dataframe.
     This seamlessly handles empty predictions where the model found no objects.
 
     Args:
         prediction: a dictionary with keys dependent on the geometry (e.g., 'boxes', 'labels', 'scores')
+        geom_type: string geometry type ('box', 'point', 'polygon'). If None, derived automatically.
+        scores: boolean, Whether boxes come with scores
     Returns:
         df: a pandas dataframe formatted using format_geometry
     """
-    geometry = determine_geometry_type(prediction)
+    if geom_type is None:
+        geometry = determine_geometry_type(prediction)
+    else:
+        geometry = geom_type
 
     # Map geometry type back to the dictionary key
     geom_to_key = {"box": "boxes", "point": "points", "polygon": "polygon"}
@@ -411,9 +416,9 @@ def format_prediction(prediction):
         y_pred["boxes"] = torch.zeros((1, 4))
         y_pred["labels"] = torch.zeros(1, dtype=torch.long)
         y_pred["scores"] = torch.zeros(1)
-        return format_geometry(y_pred, geom_type="box", scores=True)
+        return format_geometry(y_pred, geom_type="box", scores=scores)
 
-    return format_geometry(prediction, geom_type=geometry)
+    return format_geometry(prediction, geom_type=geometry, scores=scores)
 
 
 def format_boxes(prediction, scores=True):

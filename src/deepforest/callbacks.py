@@ -169,7 +169,9 @@ class ImagesCallback(Callback):
             pred_df = df[df.image_path == image_name]
 
             targets = utilities.format_geometry(
-                dataset.annotations_for_path(image_name, return_tensor=True), scores=False
+                dataset.annotations_for_path(image_name, return_tensor=True),
+                scores=False,
+                geom_type="box",
             )
 
             # Assume that validation images are un-augmented

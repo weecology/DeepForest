@@ -635,6 +635,9 @@ class deepforest(pl.LightningModule):
         else:
             raise ValueError(f"Invalid dataloader_strategy: {dataloader_strategy}")
 
+        # Filter out empty placeholder dataframes (all zero bounding boxes)
+        results = results[~((results.xmin == 0) & (results.ymin == 0) & (results.xmax == 0) & (results.ymax == 0))]
+
         if results.empty:
             warnings.warn("No predictions made, returning None", stacklevel=2)
             return None
@@ -763,7 +766,7 @@ class deepforest(pl.LightningModule):
 
         # Log the predictions if you want to use them for evaluation logs
         for i, result in enumerate(preds):
-            formatted_result = utilities.format_geometry(result)
+            formatted_result = utilities.format_prediction(result)
             if formatted_result is not None:
                 formatted_result["image_path"] = image_names[i]
                 self.predictions.append(formatted_result)
@@ -932,10 +935,8 @@ class deepforest(pl.LightningModule):
         # convert predictions to dataframes
         results = []
         for pred in predictions:
-            if len(pred["boxes"]) == 0:
-                continue
             geom_type = utilities.determine_geometry_type(pred)
-            result = utilities.format_geometry(pred, geom_type=geom_type)
+            result = utilities.format_prediction(pred, geom_type=geom_type)
             results.append(result)
 
         return results
