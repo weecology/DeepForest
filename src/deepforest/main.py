@@ -1,4 +1,6 @@
 # entry point for deepforest model
+import ast
+import operator
 import importlib
 import os
 import warnings
@@ -941,6 +943,49 @@ class deepforest(pl.LightningModule):
 
         return results
 
+    @staticmethod
+    def _safe_eval_lr_lambda(expr: str, epoch: int):
+        """Safely evaluate lr_lambda expressions using AST.
+        Allows basic arithmetic, numeric constants, and the 'epoch' variable.
+        """
+        allowed_operators = {
+            ast.Add: operator.add,
+            ast.Sub: operator.sub,
+            ast.Mult: operator.mul,
+            ast.Div: operator.truediv,
+            ast.FloorDiv: operator.floordiv,
+            ast.Mod: operator.mod,
+            ast.Pow: operator.pow,
+            ast.USub: operator.neg,
+            ast.UAdd: operator.pos,
+        }
+
+        def _eval(node):
+            if isinstance(node, ast.Expression):
+                return _eval(node.body)
+            elif isinstance(node, ast.Constant) and isinstance(node.value, (int, float)):
+                return node.value
+            elif isinstance(node, ast.Name) and node.id == "epoch":
+                return epoch
+            elif isinstance(node, ast.BinOp):
+                left = _eval(node.left)
+                right = _eval(node.right)
+                op_type = type(node.op)
+                if op_type in allowed_operators:
+                    return allowed_operators[op_type](left, right)
+            elif isinstance(node, ast.UnaryOp):
+                operand = _eval(node.operand)
+                op_type = type(node.op)
+                if op_type in allowed_operators:
+                    return allowed_operators[op_type](operand)
+            raise ValueError(f"Unsafe or unsupported lr_lambda expression component: {ast.dump(node)}")
+
+        try:
+            tree = ast.parse(expr, mode='eval')
+            return _eval(tree)
+        except SyntaxError as e:
+            raise ValueError(f"Invalid lr_lambda expression syntax: {expr}") from e
+
     def configure_optimizers(self):
         optimizer = optim.SGD(
             self.model.parameters(), lr=self.config.train.lr, momentum=0.9
@@ -951,8 +996,8 @@ class deepforest(pl.LightningModule):
         params = scheduler_config.params
 
         # Assume the lambda is a function of epoch
-        def lr_lambda(epoch):
-            return eval(params.lr_lambda)
+        def lr_lambda(epoch_val):
+            return self._safe_eval_lr_lambda(params.lr_lambda, epoch=epoch_val)
 
         if scheduler_type == "cosine":
             scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(

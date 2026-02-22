@@ -1194,3 +1194,18 @@ def test_huggingface_model_loads_correct_label_dict():
 
     actual = set(m.label_dict.keys())
     assert actual == expected, f"Expected {expected}, got {actual}"
+import pytest
+from deepforest.main import deepforest
+
+def test_configure_optimizers_rejects_unsafe_lr_lambda():
+    model = deepforest()
+    try:
+        model._safe_eval_lr_lambda("__import__('os').system('echo ARBITRARY_CODE_EXECUTED')", epoch=0)
+        assert False, "Should have raised ValueError"
+    except ValueError as e:
+        pass
+
+def test_configure_optimizers_accepts_safe_lr_lambda():
+    model = deepforest()
+    res = model._safe_eval_lr_lambda("0.95 ** epoch", epoch=2)
+    assert res == 0.9025
