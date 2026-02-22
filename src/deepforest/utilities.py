@@ -388,6 +388,34 @@ def format_geometry(predictions, scores=True, geom_type=None):
     return df
 
 
+def format_prediction(prediction):
+    """
+    Format a prediction dictionary into a pandas dataframe.
+    This seamlessly handles empty predictions where the model found no objects.
+
+    Args:
+        prediction: a dictionary with keys dependent on the geometry (e.g., 'boxes', 'labels', 'scores')
+    Returns:
+        df: a pandas dataframe formatted using format_geometry
+    """
+    geometry = determine_geometry_type(prediction)
+
+    # Map geometry type back to the dictionary key
+    geom_to_key = {"box": "boxes", "point": "points", "polygon": "polygon"}
+    key = geom_to_key[geometry]
+
+    # Handle the empty edge case
+    if len(prediction[key]) == 0:
+        import torch
+        y_pred = {}
+        y_pred["boxes"] = torch.zeros((1, 4))
+        y_pred["labels"] = torch.zeros(1, dtype=torch.long)
+        y_pred["scores"] = torch.zeros(1)
+        return format_geometry(y_pred, geom_type="box", scores=True)
+
+    return format_geometry(prediction, geom_type=geometry)
+
+
 def format_boxes(prediction, scores=True):
     """Format a retinanet prediction into a pandas dataframe for a single
     image.

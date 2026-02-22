@@ -650,6 +650,53 @@ def test_format_geometry_empty():
     # Check output format
     assert result is None
 
+
+def test_format_prediction_empty():
+    """Test formatting empty predictions using format_prediction"""
+    # Create empty prediction
+    prediction = {
+        "boxes": torch.tensor([]),
+        "labels": torch.tensor([]),
+        "scores": torch.tensor([])
+    }
+
+    # Format prediction
+    result = utilities.format_prediction(prediction)
+
+    # Check output format
+    assert isinstance(result, pd.DataFrame)
+    assert len(result) == 1
+    assert result.iloc[0]["xmin"] == 0
+    assert result.iloc[0]["ymin"] == 0
+    assert result.iloc[0]["xmax"] == 0
+    assert result.iloc[0]["ymax"] == 0
+    assert result.iloc[0]["label"] == 0
+    assert result.iloc[0]["score"] == 0
+
+
+def test_format_prediction_empty_point():
+    """Test formatting empty point predictions using format_prediction"""
+    # Create empty point prediction
+    prediction = {
+        "points": torch.tensor([]),
+        "labels": torch.tensor([]),
+        "scores": torch.tensor([])
+    }
+
+    # Format prediction
+    result = utilities.format_prediction(prediction)
+
+    # Check output format is explicitly box filled with zeroes as a fallback
+    assert isinstance(result, pd.DataFrame)
+    assert len(result) == 1
+    assert result.iloc[0]["xmin"] == 0
+    assert result.iloc[0]["ymin"] == 0
+    assert result.iloc[0]["xmax"] == 0
+    assert result.iloc[0]["ymax"] == 0
+    assert result.iloc[0]["label"] == 0
+    assert result.iloc[0]["score"] == 0
+
+
 def test_format_geometry_multi_class():
     """Test formatting predictions with multiple classes"""
     # Create predictions with different classes
