@@ -799,32 +799,28 @@ class deepforest(pl.LightningModule):
         if len(empty_images) == 0:
             return None
 
+        # Get model device for DDP compatibility (follows validation_step pattern lines 741-756)
+        device = next(self.parameters()).device
+
         if predictions_df.empty:
-            # Empty predictions with empty ground truth = 100% accuracy
             empty_accuracy = 1
         else:
-            # Get non-empty predictions for empty images
+            # Get non-empty predictions
             non_empty_predictions = predictions_df.loc[predictions_df.xmin.notnull()]
-            predictions_for_empty_images = non_empty_predictions.loc[
-                non_empty_predictions.image_path.isin(empty_images)
-            ]
 
-            # Create prediction tensor - 1 if model predicted objects, 0 if predicted empty
-            predictions = torch.zeros(len(empty_images))
-            for index, image in enumerate(empty_images):
-                if (
-                    len(
-                        predictions_for_empty_images.loc[
-                            predictions_for_empty_images.image_path == image
-                        ]
-                    )
-                    > 0
-                ):
-                    predictions[index] = 1
+            # Use set for O(1) lookup instead of O(N×M) pandas filtering
+            images_with_predictions = set(
+                non_empty_predictions.loc[
+                    non_empty_predictions.image_path.isin(empty_images), "image_path"
+                ]
+            )
 
-            # Ground truth tensor - all zeros since these are empty frames
-            gt = torch.zeros(len(empty_images))
-            predictions = torch.tensor(predictions)
+            # Create tensors directly on model device for DDP compatibility
+            predictions = torch.tensor(
+                [1.0 if img in images_with_predictions else 0.0 for img in empty_images],
+                device=device,
+            )
+            gt = torch.zeros(len(empty_images), device=device)
 
             # Calculate accuracy using metric
             self.empty_frame_accuracy.update(predictions, gt)
