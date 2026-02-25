@@ -1,6 +1,6 @@
 # DeepForest Changelog
 
-## Version 2.0.1 (Date: TBD)
+## Version 2.0.1 (Date: February 25, 2026)
 
 The most important changes since 2.0.0:
 
