@@ -8,10 +8,10 @@ CropModel, and performs sanity checks on the results.
 
 Usage:
     # Sanity check with bundled OSBS tile
-    python tests/validate_cropmodel.py --model weecology/cropmodel-neon-resnet18-species
+    python tests/validate_cropmodel.py --model weecology/cropmodel-tree-species
 
     # Sanity check with a custom tile
-    python tests/validate_cropmodel.py --model weecology/cropmodel-neon-resnet18-species --tile path/to/tile.tif
+    python tests/validate_cropmodel.py --model weecology/cropmodel-tree-species --tile path/to/tile.tif
 """
 
 import argparse
