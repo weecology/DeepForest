@@ -2,6 +2,26 @@
 
 DeepForest comes with prebuilt models to help you get started. These models are available on Hugging Face and are loaded using the `load_model` function, they always are seen as the starting point for further training, rather than a general purpose tool for new imagery.
 
+## Hugging Face Authentication
+
+Models are downloaded from [Hugging Face Hub](https://huggingface.co). Authentication is **optional** for public models but is recommended to benefit from higher rate limits and faster downloads.
+
+If no token is configured, DeepForest will emit a one-time warning when loading a model. To suppress this warning and enable authenticated requests, you can:
+
+- **Log in via the CLI** (token is saved locally):
+
+  ```bash
+  huggingface-cli login
+  ```
+
+- **Set the `HF_TOKEN` environment variable**:
+
+  ```bash
+  export HF_TOKEN=hf_...
+  ```
+
+For more details, see the [Hugging Face token documentation](https://huggingface.co/docs/hub/security-tokens).
+
 ## Demo
 
 The prebuilt models can be viewed on the hugging face demo. These are for individual images only using the predict_image function. Large files that would typically be run with predict_tile and cut into smaller pieces will not produce accurate results.

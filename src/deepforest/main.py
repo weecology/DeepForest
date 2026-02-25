@@ -20,6 +20,46 @@ from deepforest import predict, utilities
 from deepforest.datasets import prediction, training
 from deepforest.metrics import RecallPrecision
 
+try:
+    from huggingface_hub import get_token as _hf_get_token
+except Exception:
+    _hf_get_token = None  # type: ignore[assignment]
+
+# Sentinel to emit the HF token warning at most once per process.
+_hf_token_warning_issued = False
+
+
+def _warn_if_no_hf_token() -> None:
+    """Emit a one-time warning when no Hugging Face token is configured.
+
+    Authentication is optional for public models but recommended for higher
+    rate limits and faster downloads.
+    """
+    global _hf_token_warning_issued
+    if _hf_token_warning_issued:
+        return
+
+    token = None
+    try:
+        if _hf_get_token is not None:
+            token = _hf_get_token()
+    except Exception:
+        pass
+
+    if not token:
+        warnings.warn(
+            "No Hugging Face token found. Downloads of models from the Hub will "
+            "use unauthenticated requests, which have lower rate limits. "
+            "Authentication is optional for public models but recommended. "
+            "To authenticate, run `huggingface-cli login` or set the HF_TOKEN "
+            "environment variable. "
+            "See https://huggingface.co/docs/hub/security-tokens for details.",
+            UserWarning,
+            stacklevel=3,
+        )
+
+    _hf_token_warning_issued = True
+
 
 class deepforest(pl.LightningModule):
     """DeepForest model for tree crown detection in RGB images.
@@ -126,6 +166,8 @@ class deepforest(pl.LightningModule):
         Returns:
             None
         """
+
+        _warn_if_no_hf_token()
 
         if model_name is None:
             model_name = self.config.model.name
