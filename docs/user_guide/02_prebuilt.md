@@ -124,10 +124,10 @@ Citation: Weinstein, Ben G., et al. "Capturing long‐tailed individual tree div
 
 ### NEON Tree Species and Genus Classification
 
-Two ResNet-18 crop classifiers trained on RGB crown images from the National Ecological Observatory Network (NEON). The training data includes hand-annotated tree crowns from multiple NEON sites across the US.
+Two ResNet-18 crop classifiers trained on RGB crown images from the National Ecological Observatory Network (NEON). The training data includes deduplicated hand-annotated tree crowns from 29 NEON sites across the US.
 
-- **Species model**: 167 species classes, trained on ~48k crown crops. HuggingFace repo: `weecology/cropmodel-neon-resnet18-species`
-- **Genus model**: 60 genus classes, same training data aggregated to genus level. HuggingFace repo: `weecology/cropmodel-neon-resnet18-genus`
+- **Species model**: 148 species classes, trained on ~16k deduplicated crown crops. HuggingFace repo: `weecology/cropmodel-tree-species`
+- **Genus model**: 54 genus classes, same training data aggregated to genus level. HuggingFace repo: `weecology/cropmodel-tree-genus`
 
 Both models use a torchvision ResNet-18 backbone pretrained on ImageNet and fine-tuned on NEON RGB data. Input images are resized to 224x224 using nearest-neighbor interpolation (`resize_interpolation: nearest` in the model config) and normalized with standard ImageNet statistics. The interpolation mode is loaded automatically from the HuggingFace config — no user action required.
 
@@ -135,10 +135,10 @@ Both models use a torchvision ResNet-18 backbone pretrained on ImageNet and fine
 from deepforest.model import CropModel
 
 # Load the species classifier
-species_model = CropModel.load_model("weecology/cropmodel-neon-resnet18-species")
+species_model = CropModel.load_model("weecology/cropmodel-tree-species")
 
 # Load the genus classifier
-genus_model = CropModel.load_model("weecology/cropmodel-neon-resnet18-genus")
+genus_model = CropModel.load_model("weecology/cropmodel-tree-genus")
 ```
 
 Use these as a second stage after tree crown detection: detect crowns with a DeepForest model, then classify each crop.
