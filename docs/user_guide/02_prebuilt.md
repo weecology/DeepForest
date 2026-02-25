@@ -129,7 +129,7 @@ Two ResNet-18 crop classifiers trained on RGB crown images from the National Eco
 - **Species model**: 167 species classes, trained on ~48k crown crops. HuggingFace repo: `weecology/cropmodel-neon-resnet18-species`
 - **Genus model**: 60 genus classes, same training data aggregated to genus level. HuggingFace repo: `weecology/cropmodel-neon-resnet18-genus`
 
-Both models use a torchvision ResNet-18 backbone pretrained on ImageNet and fine-tuned on NEON RGB data. Input images are resized to 224x224 and normalized with standard ImageNet statistics.
+Both models use a torchvision ResNet-18 backbone pretrained on ImageNet and fine-tuned on NEON RGB data. Input images are resized to 224x224 using nearest-neighbor interpolation (`resize_interpolation: nearest` in the model config) and normalized with standard ImageNet statistics. The interpolation mode is loaded automatically from the HuggingFace config — no user action required.
 
 ```python
 from deepforest.model import CropModel

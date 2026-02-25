@@ -109,6 +109,7 @@ class CropModelConfig:
     scheduler: SchedulerConfig = field(default_factory=SchedulerConfig)
     balance_classes: bool = False
     resize: list[int] = field(default_factory=lambda: [224, 224])
+    resize_interpolation: str = "bilinear"
     normalize: Any = None
     expand: int = 0
 

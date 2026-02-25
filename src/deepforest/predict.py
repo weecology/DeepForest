@@ -277,11 +277,13 @@ def _predict_crop_model_(
 
     # Get config from crop_model if not using custom transform
     resize = None
+    resize_interpolation = "bilinear"
     normalize = None
     expand = 0
     if transform is None and hasattr(crop_model, "config"):
         cropmodel_cfg = crop_model.config.get("cropmodel", {})
         resize = cropmodel_cfg.get("resize", [224, 224])
+        resize_interpolation = cropmodel_cfg.get("resize_interpolation", "bilinear")
         norm_transform = crop_model.normalize()
         if norm_transform is None:
             normalize = False
@@ -296,6 +298,7 @@ def _predict_crop_model_(
         transform=transform,
         augmentations=augmentations,
         resize=resize,
+        resize_interpolation=resize_interpolation,
         normalize=normalize,
         expand=expand,
     )

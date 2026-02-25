@@ -118,6 +118,8 @@ cropmodel:
     resize:
         - 224
         - 224
+    # Interpolation mode for resizing crops: 'nearest' or 'bilinear'.
+    resize_interpolation: bilinear
     # Image normalization. Defaults to ImageNet stats when null.
     # Set to false to disable, or provide custom mean/std:
     #   normalize:
