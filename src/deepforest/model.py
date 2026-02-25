@@ -2,7 +2,6 @@
 import json
 import os
 
-import cv2
 import numpy as np
 import rasterio
 import torch
@@ -356,7 +355,7 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
                 image_basename = os.path.splitext(os.path.basename(image))[0]
                 img_path = os.path.join(savedir, label, f"{image_basename}_{index}.png")
                 img = np.rollaxis(img, 0, 3)
-                cv2.imwrite(img_path, img)
+                Image.fromarray(img).save(img_path)
 
     def normalize(self):
         return transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
