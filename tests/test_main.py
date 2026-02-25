@@ -10,6 +10,7 @@ import torch
 import tempfile
 import copy
 import importlib.util
+import warnings
 
 from deepforest import main, get_data, model
 from deepforest.utilities import read_file, format_geometry
@@ -1194,3 +1195,43 @@ def test_huggingface_model_loads_correct_label_dict():
 
     actual = set(m.label_dict.keys())
     assert actual == expected, f"Expected {expected}, got {actual}"
+
+    # ---- HuggingFace token warning tests ----
+
+
+def test_hf_token_warning_emitted_when_no_token(monkeypatch):
+    """Warning is emitted when no HF token is configured."""
+    import deepforest.main as main_module
+
+    monkeypatch.setattr(main_module, "_hf_token_warning_issued", False)
+    monkeypatch.setattr(main_module, "_hf_get_token", lambda: None)
+
+    with pytest.warns(UserWarning, match="No HuggingFace token found"):
+        main_module._warn_if_no_hf_token()
+
+
+def test_hf_token_warning_suppressed_when_token_present(monkeypatch):
+    """No warning when HF token is present."""
+    import deepforest.main as main_module
+
+    monkeypatch.setattr(main_module, "_hf_token_warning_issued", False)
+    monkeypatch.setattr(main_module, "_hf_get_token", lambda: "hf_test_token")
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", UserWarning)
+        main_module._warn_if_no_hf_token()
+
+
+def test_hf_token_warning_emitted_only_once(monkeypatch):
+    """Warning emitted only once per process."""
+    import deepforest.main as main_module
+
+    monkeypatch.setattr(main_module, "_hf_token_warning_issued", False)
+    monkeypatch.setattr(main_module, "_hf_get_token", lambda: None)
+
+    with pytest.warns(UserWarning, match="No HuggingFace token found"):
+        main_module._warn_if_no_hf_token()
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", UserWarning)
+        main_module._warn_if_no_hf_token()
