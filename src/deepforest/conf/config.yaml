@@ -118,5 +118,7 @@ cropmodel:
     resize:
         - 224
         - 224
+    # Interpolation mode for resizing crops: 'nearest' or 'bilinear'.
+    resize_interpolation: bilinear
     # Number of pixels to expand bbox crop windows for better prediction context.
     expand: 0

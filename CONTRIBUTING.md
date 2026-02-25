@@ -316,6 +316,7 @@ Example `config.json`:
     "num_workers": 0,
     "lr": 0.0001,
     "resize": [224, 224],
+    "resize_interpolation": "bilinear",
     "expand": 0,
     "scheduler": {
       "type": "ReduceLROnPlateau",

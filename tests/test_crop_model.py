@@ -130,6 +130,18 @@ def test_crop_model_configurable_resize():
     output = custom_model.forward(x)
     assert output.shape == (4, 2)
 
+    # Default interpolation should be bilinear (backward-compatible)
+    assert resize_transform[0].interpolation == transforms.InterpolationMode.BILINEAR
+
+    # Test with nearest interpolation (as used by NEON crop models)
+    nearest_model = model.CropModel(config_args={"resize_interpolation": "nearest"})
+    nearest_model.create_model(num_classes=2)
+    nearest_transform = nearest_model.get_transform(augmentations=None)
+    nearest_resize = [
+        t for t in nearest_transform.transforms if isinstance(t, transforms.Resize)
+    ]
+    assert nearest_resize[0].interpolation == transforms.InterpolationMode.NEAREST
+
 
 def test_crop_model_load_checkpoint(tmp_path_factory, crop_model):
     """Test loading crop model from checkpoint with different numbers of classes"""
