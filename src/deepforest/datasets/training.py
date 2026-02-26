@@ -151,25 +151,25 @@ class BoxDataset(Dataset):
         if errors:
             raise ValueError("\n".join(errors))
 
-    def filter_boxes(self, boxes, labels, image_shape, min_size=1):
+    def filter_boxes(self, boxes, labels, width, height, min_size=1):
         """Clamp boxes to image bounds and filter by minimum dimension.
 
         Args:
             boxes (torch.Tensor): Bounding boxes of shape (N, 4) in xyxy format.
             labels (torch.Tensor): Labels of shape (N,).
-            image_shape (tuple): Image shape as (C, H, W).
+            width (int): Image width in pixels.
+            height (int): Image height in pixels.
             min_size (int): Minimum box width/height in pixels. Defaults to 1.
 
         Returns:
             tuple: A tuple of (filtered_boxes, filtered_labels)
         """
-        _, H, W = image_shape
 
         # Clamp boxes to image bounds
-        boxes[:, 0] = torch.clamp(boxes[:, 0], min=0, max=W)  # x1
-        boxes[:, 1] = torch.clamp(boxes[:, 1], min=0, max=H)  # y1
-        boxes[:, 2] = torch.clamp(boxes[:, 2], min=0, max=W)  # x2
-        boxes[:, 3] = torch.clamp(boxes[:, 3], min=0, max=H)  # y2
+        boxes[:, 0] = torch.clamp(boxes[:, 0], min=0, max=width)  # x1
+        boxes[:, 1] = torch.clamp(boxes[:, 1], min=0, max=height)  # y1
+        boxes[:, 2] = torch.clamp(boxes[:, 2], min=0, max=width)  # x2
+        boxes[:, 3] = torch.clamp(boxes[:, 3], min=0, max=height)  # y2
 
         # Filter boxes with minimum size
         width = boxes[:, 2] - boxes[:, 0]
@@ -264,7 +264,15 @@ class BoxDataset(Dataset):
         labels = torch.from_numpy(targets["labels"].astype(np.int64))
 
         # Filter invalid boxes after augmentation
-        boxes, labels = self.filter_boxes(boxes, labels, image.shape)
+        # Since the augmentation operation may change image size, we take the smallest
+        # of the source and transformed dimensions assuming that padding is always the
+        # last operation in the pipeline.
+        boxes, labels = self.filter_boxes(
+            boxes,
+            labels,
+            width=min(image_tensor.shape[3], image.shape[2]),
+            height=min(image_tensor.shape[2], image.shape[1]),
+        )
 
         # Edge case if all labels were augmented away, keep the image
         if len(boxes) == 0:
