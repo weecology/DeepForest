@@ -11,6 +11,9 @@ import torch
 from lightning_fabric.utilities.exceptions import MisconfigurationException
 from omegaconf import DictConfig, OmegaConf
 from PIL import Image
+
+Image.MAX_IMAGE_PIXELS = None
+
 from pytorch_lightning.callbacks import LearningRateMonitor
 from torch import optim
 from torchmetrics.classification import BinaryAccuracy
