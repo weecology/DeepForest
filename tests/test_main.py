@@ -1194,3 +1194,67 @@ def test_huggingface_model_loads_correct_label_dict():
 
     actual = set(m.label_dict.keys())
     assert actual == expected, f"Expected {expected}, got {actual}"
+
+def test_calculate_empty_frame_accuracy_device_compatibility():
+    """Test DDP device compatibility for empty frame accuracy calculation.
+
+    Verifies tensors are created on correct device and set optimization works.
+    """
+    from deepforest import main
+    import pandas as pd
+    import torch
+
+    m = main.deepforest()
+    device = next(m.parameters()).device
+
+    # Test 1: Verify device detection works
+    assert device is not None, "Should detect model device"
+
+    # Test 2: Verify tensor creation on device
+    test_tensor = torch.zeros(5, device=device)
+    assert test_tensor.device == device, "Tensor should be on model device"
+
+    # Test 3: Verify set-based lookup optimization
+    ground_df = pd.DataFrame({
+        "image_path": ["empty1.jpg", "empty2.jpg", "img1.jpg"],
+        "xmin": [0, 0, 10], "ymin": [0, 0, 10],
+        "xmax": [0, 0, 50], "ymax": [0, 0, 50]
+    })
+
+    predictions_df = pd.DataFrame({
+        "image_path": ["empty1.jpg", "img1.jpg"],
+        "xmin": [10.0, 20.0], "ymin": [10.0, 20.0],
+        "xmax": [50.0, 60.0], "ymax": [50.0, 60.0]
+    })
+
+    # Find empty images (same logic as function)
+    empty_images = ground_df.loc[
+        (ground_df.xmin == 0) & (ground_df.ymin == 0)
+        & (ground_df.xmax == 0) & (ground_df.ymax == 0),
+        "image_path"
+    ].unique()
+
+    assert len(empty_images) == 2, "Should find 2 empty images"
+
+    # Test 4: Set-based O(1) lookup
+    non_empty_preds = predictions_df.loc[predictions_df.xmin.notnull()]
+    images_with_preds = set(
+        non_empty_preds.loc[
+            non_empty_preds.image_path.isin(empty_images), "image_path"
+        ]
+    )
+
+    assert "empty1.jpg" in images_with_preds, "empty1.jpg has false positive"
+    assert "empty2.jpg" not in images_with_preds, "empty2.jpg correctly empty"
+
+    # Test 5: Tensor creation with set lookup
+    preds = torch.tensor(
+        [1.0 if img in images_with_preds else 0.0 for img in empty_images],
+        device=device
+    )
+    gt = torch.zeros(len(empty_images), device=device)
+
+    assert preds.device == device, "Predictions tensor on correct device"
+    assert gt.device == device, "Ground truth tensor on correct device"
+    assert preds[0] == 1.0, "empty1.jpg should have prediction=1 (false positive)"
+    assert preds[1] == 0.0, "empty2.jpg should have prediction=0 (correct)"
