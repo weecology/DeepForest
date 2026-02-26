@@ -121,6 +121,8 @@ class RecallPrecision(Metric):
             numeric_to_label_dict=numeric_to_label_dict,
         )
 
+        self.results = results
+
         filtered_results = {}
 
         # Extract per-class recall/precision for multi class prediction only.
