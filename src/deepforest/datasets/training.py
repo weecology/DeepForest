@@ -1,10 +1,10 @@
 """Dataset model for object detection tasks."""
 
-import math
 import os
 
 import kornia.augmentation as K
 import numpy as np
+import pandas as pd
 import shapely
 import torch
 from PIL import Image
@@ -103,50 +103,67 @@ class BoxDataset(Dataset):
             )
 
     def _validate_coordinates(self):
-        """Validate that all bounding box coordinates occur within the image.
-
-        Raises:
-            ValueError: If any bounding box coordinate occurs outside the image
-        """
+        """Validate that all bounding box coordinates occur within the
+        image."""
         errors = []
-        for _idx, row in self.annotations.iterrows():
-            img_path = os.path.join(self.root_dir, row["image_path"])
+
+        unique_images = self.annotations["image_path"].unique()
+        image_dims = {}
+
+        for img_path_rel in unique_images:
+            full_path = os.path.join(self.root_dir, img_path_rel)
             try:
-                with Image.open(img_path) as img:
-                    width, height = img.size
+                with Image.open(full_path) as img:
+                    image_dims[img_path_rel] = img.size
             except Exception as e:
-                errors.append(f"Failed to open image {img_path}: {e}")
-                continue
+                errors.append(f"Failed to open image {full_path}: {e}")
 
-            # Extract bounding box
-            geom = row["geometry"]
-            xmin, ymin, xmax, ymax = geom.bounds
+        if errors:
+            raise ValueError("\n".join(errors))
 
-            # All coordinates equal to zero is how we code empty frames.
-            # Therefore these are valid coordinates even though they would
-            # fail other checks.
-            if xmin == 0 and ymin == 0 and xmax == 0 and ymax == 0:
-                continue
+        self.annotations["_img_width"] = self.annotations["image_path"].map(
+            lambda x: image_dims.get(x, (0, 0))[0]
+        )
+        self.annotations["_img_height"] = self.annotations["image_path"].map(
+            lambda x: image_dims.get(x, (0, 0))[1]
+        )
 
-            # Check if box is valid
-            oob_issues = []
-            if not geom.equals(shapely.envelope(geom)):
-                oob_issues.append(f"geom ({geom}) is not a valid bounding box")
-            if xmin < 0:
-                oob_issues.append(f"xmin ({xmin}) < 0")
-            if xmax > width:
-                oob_issues.append(f"xmax ({xmax}) > image width ({width})")
-            if ymin < 0:
-                oob_issues.append(f"ymin ({ymin}) < 0")
-            if ymax > height:
-                oob_issues.append(f"ymax ({ymax}) > image height ({height})")
-            if math.isclose(geom.area, 1):
-                oob_issues.append("area of bounding box is a single pixel")
+        if not {"xmin", "ymin", "xmax", "ymax"}.issubset(self.annotations.columns):
+            bounds = self.annotations["geometry"].apply(lambda x: x.bounds).tolist()
+            bounds_df = pd.DataFrame(
+                bounds,
+                columns=["xmin", "ymin", "xmax", "ymax"],
+                index=self.annotations.index,
+            )
+            self.annotations = pd.concat([self.annotations, bounds_df], axis=1)
+            working_df = self.annotations
+        else:
+            working_df = self.annotations
 
-            if oob_issues:
-                errors.append(
-                    f"Box, ({xmin}, {ymin}, {xmax}, {ymax}) exceeds image dimensions, ({width}, {height}). Issues: {', '.join(oob_issues)}."
-                )
+        cols = ["xmin", "ymin", "xmax", "ymax"]
+
+        # All coordinates equal to zero is how we code empty frames.
+        # These are valid coordinates even though they would fail other checks.
+        empty_mask = (working_df[cols] == 0).all(axis=1)
+
+        neg_mask = (working_df[cols] < 0).any(axis=1)
+
+        oob_mask = (working_df["xmax"] > working_df["_img_width"]) | (
+            working_df["ymax"] > working_df["_img_height"]
+        )
+
+        bad_mask = (neg_mask | oob_mask) & (~empty_mask)
+
+        if bad_mask.any():
+            bad_rows = working_df[bad_mask]
+
+            report = bad_rows[["image_path", "xmin", "ymin", "xmax", "ymax"]]
+
+            errors.append(
+                f"Found {len(bad_rows)} invalid bounding boxes (negative or out-of-bounds):\n{report.to_string()}"
+            )
+
+        self.annotations.drop(columns=["_img_width", "_img_height"], inplace=True)
 
         if errors:
             raise ValueError("\n".join(errors))
