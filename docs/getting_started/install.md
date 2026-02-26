@@ -59,6 +59,16 @@ uv sync --all-extras --dev
 
 This installs DeepForest in editable mode with development and documentation dependencies.
 
+## HuggingFace Authentication (Optional)
+
+Models are downloaded from [Hugging Face Hub](https://huggingface.co). Authentication is optional for public models but recommended for higher rate limits and faster downloads.
+
+To authenticate:
+- Run `huggingface-cli login`, or
+- Set the `HF_TOKEN` environment variable
+
+For details, see the [Hugging Face token documentation](https://huggingface.co/docs/hub/security-tokens).
+
 ## GPU support
 
 PyTorch can be run on GPUs to allow faster model training and prediction. DeepForest is a PyTorch Lightning module, which automatically distributes data to available GPUs. If using a release model with training, the module can be moved from CPU to GPU for prediction using the `pytorch.to()` method.
@@ -78,43 +88,3 @@ Current device is cuda:0
 ```
 
 Distributed multi-GPU prediction outside of the training module is not yet implemented. We welcome pull requests for additional support.
-
-
-## HuggingFace Authentication (Optional)
-
-When downloading models from HuggingFace Hub, you may see a warning about unauthenticated requests. Setting a HuggingFace token provides higher rate limits and faster downloads.
-
-### Get Your Token
-
-1. Create a free account at [huggingface.co](https://huggingface.co)
-2. Go to [Settings → Access Tokens](https://huggingface.co/settings/tokens)
-3. Create a new token (read access is sufficient)
-
-### Set Your Token
-
-**Linux/Mac:**
-
-```bash
-export HF_TOKEN=your_token_here
-```
-
-**Windows (Command Prompt):**
-
-```bash
-set HF_TOKEN=your_token_here
-```
-
-**Windows (PowerShell):**
-
-```PowerShell
-$env:HF_TOKEN="your_token_here"
-```
-
-**Python:**
-
-```Python
-import os
-os.environ["HF_TOKEN"] = "your_token_here"
-```
-
-This is optional but recommended for frequent model downloads.

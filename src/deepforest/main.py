@@ -20,34 +20,6 @@ from deepforest import predict, utilities
 from deepforest.datasets import prediction, training
 from deepforest.metrics import RecallPrecision
 
-try:
-    from huggingface_hub import get_token as _hf_get_token
-except ImportError:
-    _hf_get_token = None
-
-_hf_token_warning_issued = False
-
-
-def _warn_if_no_hf_token():
-    global _hf_token_warning_issued
-    if _hf_token_warning_issued:
-        return
-    token = None
-    if _hf_get_token is not None:
-        try:
-            token = _hf_get_token()
-        except Exception:
-            pass
-    if not token:
-        warnings.warn(
-            "No HuggingFace token found. Downloads may have lower rate limits. "
-            "To authenticate, set HF_TOKEN environment variable or run "
-            "'huggingface-cli login'. See docs/getting_started/install.md for details.",
-            UserWarning,
-            stacklevel=3,
-        )
-    _hf_token_warning_issued = True
-
 
 class deepforest(pl.LightningModule):
     """DeepForest model for tree crown detection in RGB images.
@@ -154,7 +126,6 @@ class deepforest(pl.LightningModule):
         Returns:
             None
         """
-        _warn_if_no_hf_token()
 
         if model_name is None:
             model_name = self.config.model.name
