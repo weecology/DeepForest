@@ -94,19 +94,21 @@ class deepforest(pl.LightningModule):
         if not self.config.validation.csv_file:
             return
 
-        # Metrics
-        self.iou_metric = IntersectionOverUnion(
-            class_metrics=True, iou_threshold=self.config.validation.iou_threshold
-        )
-        self.mAP_metric = MeanAveragePrecision(backend="faster_coco_eval")
+        # Box Metrics
+        if self.model.task == "box":
+            self.iou_metric = IntersectionOverUnion(
+                class_metrics=True, iou_threshold=self.config.validation.iou_threshold
+            )
+
+            self.mAP_metric = MeanAveragePrecision(backend="faster_coco_eval")
+
+            self.precision_recall_metric = RecallPrecision(
+                csv_file=self.config.validation.csv_file,
+                label_dict=self.label_dict,
+            )
 
         # Empty frame accuracy
         self.empty_frame_accuracy = BinaryAccuracy()
-
-        self.precision_recall_metric = RecallPrecision(
-            csv_file=self.config.validation.csv_file,
-            label_dict=self.label_dict,
-        )
 
     def load_model(self, model_name=None, revision=None):
         """Loads a model that has already been pretrained for a specific task,
@@ -332,14 +334,29 @@ class deepforest(pl.LightningModule):
             ds: a pytorch dataset
         """
 
-        ds = training.BoxDataset(
-            csv_file=csv_file,
-            root_dir=root_dir,
-            transforms=transforms,
-            label_dict=self.label_dict,
-            augmentations=augmentations,
-            preload_images=preload_images,
-        )
+        if self.model.task == "box":
+            ds = training.BoxDataset(
+                csv_file=csv_file,
+                root_dir=root_dir,
+                transforms=transforms,
+                label_dict=self.label_dict,
+                augmentations=augmentations,
+                preload_images=preload_images,
+            )
+        elif self.model.task == "keypoint":
+            ds = training.KeypointDataset(
+                csv_file=csv_file,
+                root_dir=root_dir,
+                transforms=transforms,
+                label_dict=self.label_dict,
+                augmentations=augmentations,
+                preload_images=preload_images,
+            )
+        else:
+            raise ValueError(
+                f"Invalid task type: {self.model.task}, expected 'box' or 'keypoint'"
+            )
+
         if len(ds) == 0:
             raise ValueError(
                 f"Dataset from {csv_file} is empty. Check CSV for valid entries and columns."

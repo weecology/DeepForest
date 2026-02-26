@@ -206,8 +206,9 @@ def get_available_augmentations() -> list[str]:
 
 def get_transform(
     augmentations: str | list[str] | dict[str, Any] | None = None,
+    data_keys: list[DataKey] | None = None,
 ) -> K.AugmentationSequential:
-    """Create Kornia transform for bounding boxes.
+    """Create Kornia transform pipeline.
 
     Args:
         augmentations: Augmentation configuration:
@@ -215,6 +216,8 @@ def get_transform(
             - list: List of augmentation names
             - dict: Dict with names as keys and params as values
             - None: No augmentations
+        data_keys: Kornia DataKey list describing the inputs.
+            Defaults to [DataKey.IMAGE, DataKey.BBOX_XYXY].
 
     Returns:
         Kornia AugmentationSequential
@@ -235,6 +238,9 @@ def get_transform(
         ...                              "VerticalFlip"
         ...                          })
     """
+    if data_keys is None:
+        data_keys = [DataKey.IMAGE, DataKey.BBOX_XYXY]
+
     transforms_list = []
 
     if augmentations is not None:
@@ -245,9 +251,7 @@ def get_transform(
             transforms_list.append(aug_transform)
 
     # Create a sequential container for all transforms
-    return K.AugmentationSequential(
-        *transforms_list, data_keys=[DataKey.IMAGE, DataKey.BBOX_XYXY]
-    )
+    return K.AugmentationSequential(*transforms_list, data_keys=data_keys)
 
 
 def _parse_augmentations(
