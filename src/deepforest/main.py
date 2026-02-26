@@ -956,7 +956,6 @@ class deepforest(pl.LightningModule):
 
         Args:
             csv_file: location of a csv file with columns "name","xmin","ymin","xmax","ymax","label"
-            iou_threshold: float [0,1] intersection-over-union threshold for true positive
 
         Returns:
             dict: Results dictionary containing precision, recall and other metrics
@@ -970,7 +969,12 @@ class deepforest(pl.LightningModule):
 
         # Set input csv file to validation csv file
         self.config.validation.csv_file = csv_file
-        self.config.validation.root_dir = root_dir
+        if root_dir is not None:
+            self.config.validation.root_dir = root_dir
+
+        if iou_threshold is not None:
+            self.config.validation.iou_threshold = iou_threshold
+
         self.create_trainer()
         self.trainer.validate(self)
 
