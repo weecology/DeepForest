@@ -13,12 +13,16 @@ from torch.utils.data import Dataset
 from torchvision import transforms
 
 
-def bounding_box_transform(augmentations=None, resize=None):
+def bounding_box_transform(
+    augmentations=None, resize=None, resize_interpolation="bilinear"
+):
     """Create transform pipeline for bounding box data.
 
     Args:
         augmentations: Augmentation configuration (str, list, or dict)
         resize: Optional list of [height, width] for resizing. Defaults to [224, 224]
+        resize_interpolation: Interpolation mode for resizing ('nearest' or 'bilinear').
+            Defaults to 'bilinear'.
 
     Returns:
         Composed transform pipeline
@@ -26,10 +30,16 @@ def bounding_box_transform(augmentations=None, resize=None):
     if resize is None:
         resize = [224, 224]
 
+    interp = (
+        transforms.InterpolationMode.NEAREST
+        if resize_interpolation == "nearest"
+        else transforms.InterpolationMode.BILINEAR
+    )
+
     data_transforms = []
     data_transforms.append(transforms.ToTensor())
     data_transforms.append(resnet_normalize)
-    data_transforms.append(transforms.Resize(resize))
+    data_transforms.append(transforms.Resize(resize, interpolation=interp))
     if augmentations:
         data_transforms.append(transforms.RandomHorizontalFlip(0.5))
     return transforms.Compose(data_transforms)
@@ -64,13 +74,16 @@ class BoundingBoxDataset(Dataset):
         transform=None,
         augmentations=None,
         resize=None,
+        resize_interpolation: str = "bilinear",
         expand: int = 0,
     ):
         self.df = df
 
         if transform is None:
             self.transform = bounding_box_transform(
-                augmentations=augmentations, resize=resize
+                augmentations=augmentations,
+                resize=resize,
+                resize_interpolation=resize_interpolation,
             )
         else:
             self.transform = transform
