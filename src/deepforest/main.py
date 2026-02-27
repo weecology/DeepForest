@@ -975,13 +975,12 @@ class deepforest(pl.LightningModule):
         if iou_threshold is not None:
             self.config.validation.iou_threshold = iou_threshold
 
+        self.config.validation.val_accuracy_interval = 1
+
         self.create_trainer()
         self.trainer.validate(self)
 
         # Read back the full results stashed by RecallPrecision.compute()
         results = self.precision_recall_metric.results
-
-        if self.empty_frame_accuracy.update_called:
-            results["empty_frame_accuracy"] = self.empty_frame_accuracy.compute().item()
 
         return results
