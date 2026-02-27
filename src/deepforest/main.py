@@ -15,7 +15,6 @@ from torch import optim
 from torchmetrics.classification import BinaryAccuracy
 from torchmetrics.detection import IntersectionOverUnion, MeanAveragePrecision
 
-from deepforest import evaluate as evaluate_iou
 from deepforest import predict, utilities
 from deepforest.datasets import prediction, training
 from deepforest.metrics import RecallPrecision
@@ -773,69 +772,6 @@ class deepforest(pl.LightningModule):
     def on_validation_epoch_start(self):
         self.predictions = []
 
-    def calculate_empty_frame_accuracy(self, ground_df, predictions_df):
-        """Calculate accuracy for empty frames (frames with no objects).
-
-        Args:
-            ground_df (pd.DataFrame): Ground truth dataframe containing image paths and bounding boxes.
-                Must have columns 'image_path', 'xmin', 'ymin', 'xmax', 'ymax'.
-            predictions_df (pd.DataFrame): Model predictions dataframe containing image paths and predicted boxes.
-                Must have column 'image_path'.
-
-        Returns:
-            float or None: Accuracy score for empty frame detection. A score of 1.0 means the model correctly
-                identified all empty frames (no false positives), while 0.0 means it predicted objects
-                in all empty frames (all false positives). Returns None if there are no empty frames.
-        """
-        # Find images that are marked as empty in ground truth (all coordinates are 0)
-        empty_images = ground_df.loc[
-            (ground_df.xmin == 0)
-            & (ground_df.ymin == 0)
-            & (ground_df.xmax == 0)
-            & (ground_df.ymax == 0),
-            "image_path",
-        ].unique()
-
-        if len(empty_images) == 0:
-            return None
-
-        if predictions_df.empty:
-            # Empty predictions with empty ground truth = 100% accuracy
-            empty_accuracy = 1
-        else:
-            # Get non-empty predictions for empty images
-            non_empty_predictions = predictions_df.loc[predictions_df.xmin.notnull()]
-            predictions_for_empty_images = non_empty_predictions.loc[
-                non_empty_predictions.image_path.isin(empty_images)
-            ]
-
-            # Create prediction tensor - 1 if model predicted objects, 0 if predicted empty
-            predictions = torch.zeros(len(empty_images))
-            for index, image in enumerate(empty_images):
-                if (
-                    len(
-                        predictions_for_empty_images.loc[
-                            predictions_for_empty_images.image_path == image
-                        ]
-                    )
-                    > 0
-                ):
-                    predictions[index] = 1
-
-            # Ground truth tensor - all zeros since these are empty frames
-            gt = torch.zeros(len(empty_images))
-            predictions = torch.tensor(predictions)
-
-            # Calculate accuracy using metric
-            self.empty_frame_accuracy.update(predictions, gt)
-            empty_accuracy = self.empty_frame_accuracy.compute()
-            self.empty_frame_accuracy.reset()
-
-        # Log empty frame accuracy
-        self.log("empty_frame_accuracy", empty_accuracy)
-
-        return empty_accuracy
-
     def _compute_epoch_metrics(self) -> dict:
         """Compute metrics and returns a Lightning-loggable dictionary.
 
@@ -1004,63 +940,11 @@ class deepforest(pl.LightningModule):
         else:
             return optimizer
 
-    def __evaluate__(
-        self,
-        csv_file,
-        iou_threshold=None,
-        root_dir=None,
-        predictions=None,
-    ):
-        """Internal method to compute intersection-over-union and
-        precision/recall for a given iou_threshold.
-
-        Args:
-            csv_file: location of a csv file with columns "name","xmin","ymin","xmax","ymax","label"
-            iou_threshold: float [0,1] intersection-over-union threshold for true positive
-            predictions: list of predictions to use for evaluation. If None, predictions are generated from the model.
-
-        Returns:
-            dict: Results dictionary containing precision, recall and other metrics
-        """
-        self.model.eval()
-        if root_dir is None:
-            if self.config.validation.root_dir is None:
-                raise ValueError("root_dir must be specified if not provided in config")
-            root_dir = self.config.validation.root_dir
-
-        ground_df = utilities.read_file(csv_file, root_dir=root_dir)
-        ground_df["label"] = ground_df.label.apply(lambda x: self.label_dict[x])
-
-        if predictions is None:
-            # Get the predict dataloader and use predict_batch
-            predictions = self.predict_file(
-                csv_file,
-                root_dir,
-            )
-
-        if iou_threshold is None:
-            iou_threshold = self.config.validation.iou_threshold
-
-        results = evaluate_iou.__evaluate_wrapper__(
-            predictions=predictions,
-            ground_df=ground_df,
-            iou_threshold=iou_threshold,
-            numeric_to_label_dict=self.numeric_to_label_dict,
-            geometry_type="box",
-        )
-
-        # empty frame accuracy
-        empty_accuracy = self.calculate_empty_frame_accuracy(ground_df, predictions)
-        results["empty_frame_accuracy"] = empty_accuracy
-
-        return results
-
     def evaluate(
         self,
         csv_file,
         iou_threshold=None,
         root_dir=None,
-        predictions=None,
     ):
         """Compute intersection-over-union and precision/recall for a given
         iou_threshold.
@@ -1072,8 +956,6 @@ class deepforest(pl.LightningModule):
 
         Args:
             csv_file: location of a csv file with columns "name","xmin","ymin","xmax","ymax","label"
-            iou_threshold: float [0,1] intersection-over-union threshold for true positive
-            predictions: list of predictions to use for evaluation. If None, predictions are generated from the model.
 
         Returns:
             dict: Results dictionary containing precision, recall and other metrics
@@ -1084,9 +966,21 @@ class deepforest(pl.LightningModule):
             DeprecationWarning,
             stacklevel=2,
         )
-        return self.__evaluate__(
-            csv_file=csv_file,
-            iou_threshold=iou_threshold,
-            root_dir=root_dir,
-            predictions=predictions,
-        )
+
+        # Set input csv file to validation csv file
+        self.config.validation.csv_file = csv_file
+        if root_dir is not None:
+            self.config.validation.root_dir = root_dir
+
+        if iou_threshold is not None:
+            self.config.validation.iou_threshold = iou_threshold
+
+        self.config.validation.val_accuracy_interval = 1
+
+        self.create_trainer()
+        self.trainer.validate(self)
+
+        # Read back the full results stashed by RecallPrecision.compute()
+        results = self.precision_recall_metric.results
+
+        return results

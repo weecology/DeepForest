@@ -41,7 +41,7 @@ dependencies = [
     "hydra-core",
     "kornia>=0.8.2",
     "matplotlib",
-    "numpy",
+    "numpy<2.0.0",
     "omegaconf",
     "opencv-python-headless>=4.5.4",
     "pandas",
@@ -102,6 +102,15 @@ docs = [
 
 [project.scripts]
 deepforest = "deepforest.scripts.cli:main"
+
+[tool.uv]
+required-environments = [
+    "sys_platform == 'linux' and platform_machine == 'x86_64'",
+    "sys_platform == 'linux' and platform_machine == 'aarch64'",
+    "sys_platform == 'darwin' and platform_machine == 'arm64'",
+    "sys_platform == 'darwin' and platform_machine == 'x86_64'",
+    "sys_platform == 'win32' and platform_machine == 'AMD64'",
+]
 
 [build-system]
 requires = ["setuptools>=61.0", "wheel"]
