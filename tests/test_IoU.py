@@ -24,6 +24,6 @@ def test_compute_IoU(m):
     ground_truth.label = 0
     predictions.label = 0
 
-    result = IoU.compute_IoU(ground_truth, predictions)
+    result = IoU.match_polygons(ground_truth, predictions)
     assert result.shape[0] == ground_truth.shape[0]
     assert sum(result.IoU) > 10

@@ -2,7 +2,6 @@
 import json
 import os
 
-import cv2
 import numpy as np
 import rasterio
 import torch
@@ -151,11 +150,15 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
         self.precision_metric = torchmetrics.Precision(
             num_classes=num_classes, task="multiclass"
         )
+        self.macro_precision = torchmetrics.Precision(
+            num_classes=num_classes, task="multiclass", average="macro"
+        )
         self.metrics = torchmetrics.MetricCollection(
             {
                 "Class Accuracy": self.accuracy,
                 "Accuracy": self.total_accuracy,
                 "Precision": self.precision_metric,
+                "Macro Precision": self.macro_precision,
             }
         )
 
@@ -301,7 +304,7 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
                 image_basename = os.path.splitext(os.path.basename(image))[0]
                 img_path = os.path.join(savedir, label, f"{image_basename}_{index}.png")
                 img = np.rollaxis(img, 0, 3)
-                cv2.imwrite(img_path, img)
+                Image.fromarray(img).save(img_path)
 
     def normalize(self):
         return transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
@@ -426,7 +429,12 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
             on_step=False,
             on_epoch=True,
         )
-
+        self.log(
+            "Macro-Average Precision",
+            metric_dict["Macro Precision"],
+            on_step=False,
+            on_epoch=True,
+        )
         self.metrics.reset()
 
     def configure_optimizers(self):
