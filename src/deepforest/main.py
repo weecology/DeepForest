@@ -107,7 +107,7 @@ class deepforest(pl.LightningModule):
         is in the form: 'organization/repository'. For a list of models distributed
         by the DeepForest team (and the associated model names) see the
         documentation:
-        https://deepforest.readthedocs.io/en/latest/installation_and_setup/prebuilt.html
+        https://deepforest.readthedocs.io/en/stable/user_guide/02_prebuilt.html
 
         Args:
             model_name (str): A repository ID for huggingface in the form of organization/repository
