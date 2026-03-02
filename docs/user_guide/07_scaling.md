@@ -34,7 +34,15 @@ https://lightning.ai/docs/pytorch/latest/clouds/cluster_advanced.html#troublesho
 
 ## Prediction
 
-Often we have a large number of tiles we want to predict. DeepForest uses [PyTorch Lightning](https://lightning.ai/docs/pytorch/stable/) to scale inference. This gives us access to powerful tools for scaling without any changes to user code. DeepForest automatically detects whether you are running on GPU or CPU.
+Often we have a large number of tiles we want to predict. DeepForest uses [PyTorch Lightning](https://lightning.ai/docs/pytorch/stable/) to scale inference. With multiple GPUs, `predict_tile` and `predict_file` use file-based gathering to merge results from all ranks into a single output on rank 0.
+
+**Multi-GPU prediction requires torchrun** so all processes run the full script:
+```bash
+torchrun --nproc_per_node=N python your_script.py
+```
+With a single Python process (`python script.py`), use `devices=1` for prediction to avoid hangs.
+
+DeepForest automatically detects whether you are running on GPU or CPU.
 
 There are three dataset strategies that *balance cpu memory, gpu memory, and gpu utilization* using batch sizes.
 

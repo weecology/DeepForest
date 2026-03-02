@@ -1,6 +1,8 @@
 # entry point for deepforest model
+import atexit
 import importlib
 import os
+import tempfile
 import warnings
 
 import numpy as np
@@ -10,7 +12,10 @@ import torch
 from omegaconf import DictConfig, OmegaConf
 from PIL import Image
 from pytorch_lightning.callbacks import LearningRateMonitor
+from pytorch_lightning.plugins import TorchSyncBatchNorm
+from pytorch_lightning.strategies import DDPStrategy
 from torch import optim
+from torch.utils.data import Sampler
 from torchmetrics.classification import BinaryAccuracy
 from torchmetrics.detection import IntersectionOverUnion, MeanAveragePrecision
 
@@ -18,6 +23,78 @@ from deepforest import evaluate as evaluate_iou
 from deepforest import predict, utilities
 from deepforest.datasets import prediction, training
 from deepforest.metrics import RecallPrecision
+
+
+def _gather_results_filebased(results: pd.DataFrame, world_size: int, rank: int) -> pd.DataFrame:
+    """Gather DataFrame results from all DDP ranks using temp files.
+
+    Avoids all_gather_object which can timeout with large DataFrames.
+    """
+    gather_dir = os.path.join(
+        os.environ.get("TMPDIR", tempfile.gettempdir()),
+        f"deepforest_gather_{os.getppid()}",
+    )
+    if rank == 0:
+        os.makedirs(gather_dir, exist_ok=True)
+    torch.distributed.barrier()
+    rank_file = os.path.join(gather_dir, f"rank{rank}.pkl")
+    results.to_pickle(rank_file)
+    torch.distributed.barrier()
+
+    if rank == 0:
+        all_parts = []
+        for r in range(world_size):
+            f = os.path.join(gather_dir, f"rank{r}.pkl")
+            if os.path.exists(f):
+                try:
+                    df = pd.read_pickle(f)
+                    if df is not None and not df.empty:
+                        all_parts.append(df)
+                except Exception:
+                    pass
+        out = pd.concat(all_parts, ignore_index=True) if all_parts else pd.DataFrame()
+        for r in range(world_size):
+            try:
+                os.remove(os.path.join(gather_dir, f"rank{r}.pkl"))
+            except OSError:
+                pass
+        try:
+            os.rmdir(gather_dir)
+        except OSError:
+            pass
+    else:
+        out = pd.DataFrame()
+    torch.distributed.barrier()
+    if rank != 0:
+        try:
+            os.remove(rank_file)
+        except OSError:
+            pass
+    torch.distributed.barrier()
+    return out if rank == 0 else pd.DataFrame()
+
+
+class _ConsecutiveChunkSampler(Sampler):
+    """Splits dataset into consecutive chunks per rank for DDP prediction.
+
+    Unlike DistributedSampler (which uses interleaved indices 0,2,4.. vs 1,3,5..),
+    this gives spatially contiguous windows per rank, avoiding checkerboard gaps.
+    """
+
+    def __init__(self, dataset, num_replicas: int, rank: int):
+        self.dataset = dataset
+        self.num_replicas = num_replicas
+        self.rank = rank
+        self.length = len(dataset)
+        chunk_size = (self.length + num_replicas - 1) // num_replicas
+        self.start = rank * chunk_size
+        self.end = min(self.start + chunk_size, self.length)
+
+    def __iter__(self):
+        return iter(range(self.start, self.end))
+
+    def __len__(self):
+        return self.end - self.start
 
 
 class deepforest(pl.LightningModule):
@@ -224,11 +301,40 @@ class deepforest(pl.LightningModule):
         else:
             enable_checkpointing = False
 
+        # Use DDP strategy when multiple GPUs requested (NVIDIA-style multi-GPU).
+        # In single-process context (e.g. pytest, plain python), use 1 device to avoid
+        # DDP hangs; DDP requires torchrun/spawn for multi-process.
+        # torchrun sets WORLD_SIZE before init_process_group; use that to detect launch.
+        _devices = kwargs.get("devices", self.config.devices)
+        _num_devices = (
+            torch.cuda.device_count()
+            if _devices in ("auto", None)
+            else (_devices if isinstance(_devices, int) else 1)
+        )
+        _is_distributed_launch = int(os.environ.get("WORLD_SIZE", 1)) > 1
+        if (
+            _num_devices > 1
+            and not _is_distributed_launch
+            and not torch.distributed.is_initialized()
+        ):
+            _num_devices = 1
+            kwargs["devices"] = 1
+        elif _is_distributed_launch and "strategy" not in kwargs:
+            # When launched via torchrun, predict_tile uses a manual DDP loop and
+            # manages the process group itself. Avoid Lightning DDP/SyncBatchNorm to
+            # prevent hangs from strategy/collective interference with our manual loop.
+            _num_devices = 1
+            kwargs["devices"] = 1
+        elif _num_devices > 1 and "strategy" not in kwargs:
+            strategy = DDPStrategy()
+            strategy._layer_sync = TorchSyncBatchNorm()
+            kwargs["strategy"] = strategy
+
         trainer_args = {
             "logger": logger,
             "max_epochs": self.config.train.epochs,
             "enable_checkpointing": enable_checkpointing,
-            "devices": self.config.devices,
+            "devices": kwargs.get("devices", self.config.devices),
             "accelerator": self.config.accelerator,
             "fast_dev_run": self.config.train.fast_dev_run,
             "callbacks": callbacks,
@@ -415,23 +521,25 @@ class deepforest(pl.LightningModule):
 
         return loader
 
-    def predict_dataloader(self, ds, batch_size=None):
+    def predict_dataloader(self, ds, batch_size=None, sampler=None):
         """Create a PyTorch dataloader for prediction.
 
         Args:
             ds (torchvision.datasets.Dataset): A torchvision dataset to be wrapped into a dataloader using config args.
+            batch_size: Batch size. Defaults to config.batch_size.
+            sampler: Optional sampler (e.g. DistributedSampler for DDP). If provided, shuffle is ignored.
 
         Returns:
             torch.utils.data.DataLoader: A dataloader object that can be used for prediction.
         """
         if batch_size is None:
             batch_size = self.config.batch_size
-        else:
-            batch_size = batch_size
+        shuffle = sampler is None
         loader = torch.utils.data.DataLoader(
             ds,
             batch_size=batch_size,
-            shuffle=False,
+            shuffle=shuffle,
+            sampler=sampler,
             num_workers=self.config.workers,
             collate_fn=ds.collate_fn,
         )
@@ -516,7 +624,18 @@ class deepforest(pl.LightningModule):
         """
 
         ds = prediction.FromCSVFile(csv_file=csv_file, root_dir=root_dir)
-        dataloader = self.predict_dataloader(ds, batch_size=self.config.batch_size)
+        if (
+            self.trainer.world_size > 1
+            and torch.distributed.is_initialized()
+        ):
+            sampler = _ConsecutiveChunkSampler(
+                ds, self.trainer.world_size, self.trainer.global_rank
+            )
+            dataloader = self.predict_dataloader(
+                ds, batch_size=self.config.batch_size, sampler=sampler
+            )
+        else:
+            dataloader = self.predict_dataloader(ds, batch_size=self.config.batch_size)
         results = predict._dataloader_wrapper_(
             model=self,
             crop_model=crop_model,
@@ -524,6 +643,17 @@ class deepforest(pl.LightningModule):
             dataloader=dataloader,
             root_dir=root_dir,
         )
+
+        # With DDP, gather results from all ranks (same as predict_tile)
+        if (
+            self.trainer.world_size > 1
+            and torch.distributed.is_initialized()
+        ):
+            results = _gather_results_filebased(
+                results, self.trainer.world_size, self.trainer.global_rank
+            )
+            if self.trainer.global_rank != 0:
+                return None
 
         results.root_dir = root_dir
 
@@ -582,6 +712,26 @@ class deepforest(pl.LightningModule):
         else:
             paths = path
 
+        # Init process group when launched via torchrun but we bypass trainer.predict
+        _world_size = int(os.environ.get("WORLD_SIZE", 1))
+        _rank = int(os.environ.get("RANK", 0))
+        _local_rank = int(os.environ.get("LOCAL_RANK", _rank)) if torch.cuda.is_available() else 0
+        if _world_size > 1 and not torch.distributed.is_initialized():
+            if torch.cuda.is_available():
+                torch.cuda.set_device(_local_rank)
+            torch.distributed.init_process_group(
+                backend="nccl" if torch.cuda.is_available() else "gloo",
+                init_method="env://",
+            )
+            atexit.register(torch.distributed.destroy_process_group)
+
+        # Device for this rank (each rank uses its own GPU in DDP)
+        _device = (
+            torch.device("cuda", _local_rank)
+            if _world_size > 1 and torch.cuda.is_available()
+            else self.device
+        )
+
         image_results = []
         if dataloader_strategy in ["single", "window"]:
             for image_path in paths:
@@ -607,19 +757,54 @@ class deepforest(pl.LightningModule):
                     )
 
                 try:
-                    dataloader = self.predict_dataloader(ds)
-                    batched_results = self.trainer.predict(self, dataloader)
-
-                    # Flatten list from batched prediction
-                    # Track global window index across batches
-                    global_window_idx = 0
-                    for _idx, batch in enumerate(batched_results):
-                        for _window_idx, window_result in enumerate(batch):
-                            formatted_result = ds.postprocess(
-                                window_result, global_window_idx
-                            )
-                            image_results.append(formatted_result)
-                            global_window_idx += 1
+                    # With DDP, bypass trainer.predict() and run our own loop so the
+                    # dataloader sampler is preserved (Lightning replaces it otherwise).
+                    _use_ddp_loop = _world_size > 1
+                    if _use_ddp_loop:
+                        rank_sampler = _ConsecutiveChunkSampler(ds, _world_size, _rank)
+                        rank_indices = list(rank_sampler)
+                        # Skip dataloader if this rank has no samples (avoids empty-sampler assert)
+                        if len(rank_indices) == 0:
+                            pass  # image_results stays empty
+                        else:
+                            dataloader = self.predict_dataloader(ds, sampler=rank_sampler)
+                            self.model.to(_device)
+                            self.model.eval()
+                            idx_in_rank = 0
+                            for batch in dataloader:
+                                images = torch.stack(list(batch)).to(_device)
+                                with torch.no_grad():
+                                    preds = self.model.forward(images)
+                                for pred in preds:
+                                    true_idx = (
+                                        rank_indices[idx_in_rank]
+                                        if idx_in_rank < len(rank_indices)
+                                        else idx_in_rank
+                                    )
+                                    formatted_result = ds.postprocess(pred, true_idx)
+                                    if (
+                                        formatted_result is not None
+                                        and not formatted_result.empty
+                                    ):
+                                        image_results.append(formatted_result)
+                                    idx_in_rank += 1
+                    else:
+                        rank_indices = list(range(len(ds)))
+                        dataloader = self.predict_dataloader(ds)
+                        batched_results = self.trainer.predict(self, dataloader)
+                        idx_in_rank = 0
+                        for _idx, batch in enumerate(batched_results):
+                            for _window_idx, window_result in enumerate(batch):
+                                true_idx = (
+                                    rank_indices[idx_in_rank]
+                                    if idx_in_rank < len(rank_indices)
+                                    else idx_in_rank
+                                )
+                                formatted_result = ds.postprocess(
+                                    window_result, true_idx
+                                )
+                                image_results.append(formatted_result)
+                                idx_in_rank += 1
                 finally:
                     # Ensure raster datasets are closed even if predict/postprocess raises
                     if hasattr(ds, "close"):
@@ -635,8 +820,16 @@ class deepforest(pl.LightningModule):
             ds = prediction.MultiImage(
                 paths=paths, patch_overlap=patch_overlap, patch_size=patch_size
             )
-
-            dataloader = self.predict_dataloader(ds)
+            if (
+                self.trainer.world_size > 1
+                and torch.distributed.is_initialized()
+            ):
+                sampler = _ConsecutiveChunkSampler(
+                    ds, self.trainer.world_size, self.trainer.global_rank
+                )
+                dataloader = self.predict_dataloader(ds, sampler=sampler)
+            else:
+                dataloader = self.predict_dataloader(ds)
             batched_results = self.trainer.predict(self, dataloader)
 
             # Flatten list from batched prediction
@@ -654,8 +847,17 @@ class deepforest(pl.LightningModule):
         else:
             raise ValueError(f"Invalid dataloader_strategy: {dataloader_strategy}")
 
+        # With DDP, each rank has only its shard. Use file-based gather (avoids
+        # all_gather_object timeout/hang with large DataFrames).
+        # Use torch.distributed when we init ourselves (trainer may not be set up).
+        _ddp_size = torch.distributed.get_world_size() if torch.distributed.is_initialized() else 1
+        _ddp_rank = torch.distributed.get_rank() if torch.distributed.is_initialized() else 0
+        if _ddp_size > 1 and torch.distributed.is_initialized():
+            results = _gather_results_filebased(results, _ddp_size, _ddp_rank)
+
         if results.empty:
-            warnings.warn("No predictions made, returning None", stacklevel=2)
+            if _ddp_rank == 0:
+                warnings.warn("No predictions made, returning None", stacklevel=2)
             return None
 
         # Perform mosaic for each image_path, or all if image_path is None
@@ -703,6 +905,10 @@ class deepforest(pl.LightningModule):
         formatted_results = utilities.__pandas_to_geodataframe__(cropmodel_results)
         formatted_results.root_dir = root_dir
 
+        # With DDP, only rank 0 should write outputs; return None on other ranks
+        # so callers can check and skip I/O (e.g. shapefile save) on non-main ranks.
+        if _ddp_size > 1 and _ddp_rank != 0:
+            return None
         return formatted_results
 
     def training_step(self, batch, batch_idx):
@@ -1055,6 +1261,9 @@ class deepforest(pl.LightningModule):
                 csv_file,
                 root_dir,
             )
+            # With DDP, non-zero ranks get None from predict_file
+            if predictions is None:
+                return {}
 
         if iou_threshold is None:
             iou_threshold = self.config.validation.iou_threshold

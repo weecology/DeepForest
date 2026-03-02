@@ -452,6 +452,7 @@ def test_predict_dataloader(m, batch_size, path):
 
 def test_predict_tile_empty(m_without_release, path):
     m = m_without_release
+    m.create_trainer()
     predictions = m.predict_tile(path=path, patch_size=300, patch_overlap=0)
     assert predictions is None
 
@@ -511,6 +512,7 @@ def test_predict_tile_serial_single(m):
 
 # test equivalence for within and out of memory dataset strategies
 def test_predict_tile_equivalence(m):
+    m.create_trainer()
     path = get_data("test_tiled.tif")
     in_memory_prediction = m.predict_tile(path=path, patch_size=300, patch_overlap=0, dataloader_strategy="single")
     not_in_memory_prediction = m.predict_tile(path=path, patch_size=300, patch_overlap=0, dataloader_strategy="window")
@@ -810,7 +812,6 @@ def test_predict_tile_with_crop_model_empty(m_without_release):
                             patch_overlap=0.05,
                             iou_threshold=0.15,
                             crop_model=crop_model)
-
 
     # Assert the result
     assert result is None or result.empty
