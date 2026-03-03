@@ -11,7 +11,6 @@ def evaluate(
     config: DictConfig,
     ground_truth: str | None = None,
     root_dir: str | None = None,
-    predictions: str | None = None,
     output_path: str | None = None,
     save_predictions: str | None = None,
 ) -> None:
@@ -33,7 +32,6 @@ def evaluate(
         config (DictConfig): DeepForest configuration
         ground_truth (Optional[str]): Path to ground truth CSV file with annotations. If None, uses config.validation.csv_file.
         root_dir (Optional[str]): Root directory containing images. If None, uses config value or directory of csv_file.
-        predictions (Optional[str]): Path to existing predictions CSV file. If None, generates predictions.
         output_path (Optional[str]): Path to save evaluation metrics summary CSV.
         save_predictions (Optional[str]): Path to save generated predictions CSV. Only used when predictions is None.
 
@@ -53,18 +51,13 @@ def evaluate(
     if root_dir is None:
         root_dir = config.validation.root_dir
 
-    # TODO: Use trainer.validate in future?
-    if predictions:
-        predictions = pd.read_csv(predictions)
-
-    results = m.__evaluate__(
+    results = m.evaluate(
         csv_file=ground_truth,
         root_dir=root_dir,
-        predictions=predictions,
     )
 
     # Save generated predictions if requested and they were generated (not loaded from file)
-    if save_predictions is not None and predictions is None:
+    if save_predictions is not None:
         predictions_df = results.get("predictions")
         if predictions_df is not None and not predictions_df.empty:
             if os.path.dirname(save_predictions):
@@ -76,11 +69,6 @@ def evaluate(
                 "Warning: No predictions to save (predictions dataframe is empty)",
                 stacklevel=2,
             )
-    elif save_predictions is not None and predictions is not None:
-        warn(
-            "--save-predictions is ignored when --predictions is provided (predictions already exist)",
-            stacklevel=2,
-        )
 
     # Print results to console
     m.print("Evaluation Results:")

@@ -554,7 +554,7 @@ def test_predict_tile_from_array(m, path):
 
 def test_evaluate(m):
     csv_file = get_data("OSBS_029.csv")
-    results = m.evaluate(csv_file, iou_threshold=0.4)
+    results = m.evaluate(csv_file)
 
     assert np.round(results["box_precision"], 2) > 0.5
     assert np.round(results["box_recall"], 2) > 0.5
