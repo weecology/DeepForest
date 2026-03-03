@@ -104,10 +104,7 @@ def main():
         "--root-dir",
         help="Root directory containing images. Defaults to CSV directory if not specified.",
     )
-    evaluate_parser.add_argument(
-        "--predictions",
-        help="Path to existing predictions CSV file. If not provided, predictions will be generated.",
-    )
+
     evaluate_parser.add_argument(
         "--save-predictions",
         help="Path to save generated predictions CSV (only used when --predictions is not provided)",
@@ -165,7 +162,6 @@ def main():
             cfg,
             ground_truth=args.csv_file,
             root_dir=args.root_dir,
-            predictions=args.predictions,
             output_path=args.output,
             save_predictions=args.save_predictions,
         )

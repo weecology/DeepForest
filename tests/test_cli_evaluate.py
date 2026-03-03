@@ -102,31 +102,6 @@ def test_evaluate_saves_predictions(tmp_path):
     assert len(predictions) > 0
 
 
-def test_evaluate_with_existing_predictions(tmp_path):
-    csv_file = get_data("OSBS_029.csv")
-    root_dir = os.path.dirname(csv_file)
-    config = load_config()
-
-    predictions_path = tmp_path / "predictions.csv"
-    evaluate(
-        config,
-        ground_truth=csv_file,
-        root_dir=root_dir,
-        save_predictions=str(predictions_path),
-    )
-    assert predictions_path.exists()
-
-    output_path = tmp_path / "eval_results.csv"
-    evaluate(
-        config,
-        ground_truth=csv_file,
-        root_dir=root_dir,
-        predictions=str(predictions_path),
-        output_path=str(output_path),
-    )
-    assert output_path.exists()
-
-
 def test_cli_evaluate_subcommand(tmp_path):
     csv_file = get_data("OSBS_029.csv")
     root_dir = os.path.dirname(csv_file)
