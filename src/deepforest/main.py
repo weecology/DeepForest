@@ -534,7 +534,9 @@ class deepforest(pl.LightningModule):
         """
         if batch_size is None:
             batch_size = self.config.batch_size
-        shuffle = sampler is None
+        # Prediction order must be stable (and aligned with validation/evaluation
+        # expectations). Do not shuffle at inference time.
+        shuffle = False
         loader = torch.utils.data.DataLoader(
             ds,
             batch_size=batch_size,
