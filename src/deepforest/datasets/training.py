@@ -1,10 +1,12 @@
 """Dataset model for object detection tasks."""
 
+import datetime
 import math
 import os
 
 import kornia.augmentation as K
 import numpy as np
+import pandas as pd
 import shapely
 import torch
 from PIL import Image
@@ -346,3 +348,65 @@ def create_aligned_image_folders(
     )
 
     return train_ds, val_ds
+
+
+class MetadataImageFolder(Dataset):
+    """Wrapper that adds spatial-temporal metadata to an ImageFolder dataset.
+
+    Expects a CSV sidecar file with columns: filename, lat, lon, date.
+    The date column should be an ISO format string (e.g., "2024-06-15")
+    and will be converted to day_of_year internally.
+
+    Args:
+        image_folder: A FixedClassImageFolder (or ImageFolder) dataset.
+        metadata_csv: Path to CSV with columns filename, lat, lon, date.
+
+    Returns per sample:
+        (image, label, metadata_tensor) where metadata_tensor is shape (3,)
+        containing [lat, lon, day_of_year].
+    """
+
+    def __init__(self, image_folder, metadata_csv):
+        self.image_folder = image_folder
+        metadata_df = pd.read_csv(metadata_csv)
+        self._meta_lookup = {}
+        for _, row in metadata_df.iterrows():
+            date = datetime.datetime.strptime(str(row["date"]), "%Y-%m-%d")
+            doy = float(date.timetuple().tm_yday)
+            self._meta_lookup[row["filename"]] = (
+                float(row["lat"]),
+                float(row["lon"]),
+                doy,
+            )
+
+    def __len__(self):
+        return len(self.image_folder)
+
+    def __getitem__(self, idx):
+        image, label = self.image_folder[idx]
+        filepath = self.image_folder.samples[idx][0]
+        filename = os.path.basename(filepath)
+
+        if filename in self._meta_lookup:
+            lat, lon, doy = self._meta_lookup[filename]
+        else:
+            lat, lon, doy = 0.0, 0.0, 1.0
+
+        metadata = torch.tensor([lat, lon, doy], dtype=torch.float32)
+        return image, label, metadata
+
+    @property
+    def targets(self):
+        return self.image_folder.targets
+
+    @property
+    def class_to_idx(self):
+        return self.image_folder.class_to_idx
+
+    @property
+    def samples(self):
+        return self.image_folder.samples
+
+    @property
+    def imgs(self):
+        return self.image_folder.imgs

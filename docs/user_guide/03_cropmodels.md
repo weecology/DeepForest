@@ -21,7 +21,110 @@ While that approach is certainly valid, there are a few key benefits to using Cr
 ## Considerations
 
 - **Efficiency**: Using a CropModel will be slower, as for each detection, the sensor data needs to be cropped and passed to the detector. This is less efficient than using a combined classification/detection system like multi-class detection models. While modern GPUs mitigate this to some extent, it is still something to be mindful of.
-- **Lack of Spatial Awareness**: The model knows only about the pixels inside the crop and cannot use features outside the bounding box. This lack of spatial awareness can be a major limitation. It is possible, but untested, that multi-class detection models might perform better in such tasks. A box attention mechanism, like in [this paper](https://arxiv.org/abs/2111.13087), could be a better approach.
+- **Lack of Spatial Awareness**: The model knows only about the pixels inside the crop and cannot use features outside the bounding box. This lack of spatial awareness can be a major limitation. It is possible, but untested, that multi-class detection models might perform better in such tasks. A box attention mechanism, like in [this paper](https://arxiv.org/abs/2111.13087), could be a better approach. See [Spatial-Temporal Metadata](#spatial-temporal-metadata) below for an optional way to incorporate location and season information.
+
+## Spatial-Temporal Metadata
+
+In biodiversity monitoring, species distributions vary by location and season. A bird common in Florida may be rare in Alaska, and migratory species shift seasonally. The CropModel supports an optional spatial-temporal metadata embedding that provides location and date context alongside image features to improve classification.
+
+The metadata signal is intentionally "gentle" — it contributes only ~1.5% of the feature vector (32 dimensions vs. 2048 image features). This means the model still classifies primarily from visual appearance but can use location/season as a soft prior. When metadata is not provided at inference time, the model gracefully degrades to image-only classification.
+
+### How It Works
+
+When `use_metadata=True`, the CropModel:
+
+1. Encodes `(lat, lon, day_of_year)` using sinusoidal features (smooth, periodic representation)
+2. Projects the 6 sinusoidal features through a small MLP to a 32-dim embedding
+3. Concatenates this with the 2048-dim ResNet image features
+4. Classifies from the combined 2080-dim vector
+
+### Inference with Metadata
+
+Pass a `metadata` dict to `predict_tile`:
+
+```python
+from deepforest import main
+from deepforest.model import CropModel
+
+m = main.deepforest()
+m.create_trainer()
+
+crop_model = CropModel(config_args={"use_metadata": True})
+crop_model.load_from_disk(train_dir="path/to/train", val_dir="path/to/val",
+                          metadata_csv="metadata.csv")
+crop_model.create_trainer(max_epochs=10)
+crop_model.trainer.fit(crop_model)
+
+result = m.predict_tile(
+    path="image.tif",
+    crop_model=crop_model,
+    metadata={"lat": 35.2, "lon": -120.4, "date": "2024-06-15"}
+)
+```
+
+All detected crops in the tile share the same metadata. If `metadata` is omitted, the model falls back to image-only classification.
+
+### Training with Metadata
+
+Training requires a CSV sidecar file that maps each crop image filename to its spatial-temporal metadata:
+
+```csv
+filename,lat,lon,date
+bird_001.png,35.2,-120.4,2024-06-15
+bird_002.png,35.2,-120.4,2024-06-15
+mammal_001.png,40.1,-105.3,2024-07-20
+```
+
+- `filename` matches the image basename inside the ImageFolder class directories
+- `date` is an ISO format string, converted to day-of-year internally
+- One CSV covers both train and val sets (filenames are unique)
+
+The existing ImageFolder directory structure is unchanged:
+
+```
+train/
+  Bird/
+    bird_001.png
+    bird_002.png
+  Mammal/
+    mammal_001.png
+```
+
+Pass the CSV when loading data:
+
+```python
+from deepforest.model import CropModel
+
+crop_model = CropModel(config_args={"use_metadata": True})
+crop_model.load_from_disk(
+    train_dir="path/to/train",
+    val_dir="path/to/val",
+    metadata_csv="metadata.csv"
+)
+crop_model.create_trainer(max_epochs=10)
+crop_model.trainer.fit(crop_model)
+```
+
+### Configuration
+
+The metadata embedding is controlled by three config parameters:
+
+```python
+crop_model = CropModel(config_args={
+    "use_metadata": True,      # Enable metadata fusion (default: False)
+    "metadata_dim": 32,        # Embedding dimension (default: 32)
+    "metadata_dropout": 0.5,   # Dropout on metadata path (default: 0.5)
+})
+```
+
+Or in `config.yaml`:
+
+```yaml
+cropmodel:
+    use_metadata: True
+    metadata_dim: 32
+    metadata_dropout: 0.5
+```
 
 ## Single Crop Model
 
