@@ -68,7 +68,7 @@ All detected crops in the tile share the same metadata. If `metadata` is omitted
 
 Training requires a CSV sidecar file that maps each crop image filename to its spatial-temporal metadata:
 
-```csv
+```text
 filename,lat,lon,date
 bird_001.png,35.2,-120.4,2024-06-15
 bird_002.png,35.2,-120.4,2024-06-15
