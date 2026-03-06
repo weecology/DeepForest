@@ -23,6 +23,7 @@ While that approach is certainly valid, there are a few key benefits to using Cr
 - **Efficiency**: Using a CropModel will be slower, as for each detection, the sensor data needs to be cropped and passed to the detector. This is less efficient than using a combined classification/detection system like multi-class detection models. While modern GPUs mitigate this to some extent, it is still something to be mindful of.
 - **Lack of Spatial Awareness**: The model knows only about the pixels inside the crop and cannot use features outside the bounding box. This lack of spatial awareness can be a major limitation. It is possible, but untested, that multi-class detection models might perform better in such tasks. A box attention mechanism, like in [this paper](https://arxiv.org/abs/2111.13087), could be a better approach. See [Spatial-Temporal Metadata](#spatial-temporal-metadata) below for an optional way to incorporate location and season information.
 
+(spatial-temporal-metadata)=
 ## Spatial-Temporal Metadata
 
 In biodiversity monitoring, species distributions vary by location and season. A bird common in Florida may be rare in Alaska, and migratory species shift seasonally. The CropModel supports an optional spatial-temporal metadata embedding that provides location and date context alongside image features to improve classification.
