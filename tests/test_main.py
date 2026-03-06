@@ -1173,6 +1173,31 @@ def test_custom_log_root(m, tmpdir):
     version_dir = version_dirs[0]
     assert version_dir.join("hparams.yaml").exists(), "hparams.yaml not found"
 
+def test_recall_precision_string_label_dict(tmp_path):
+    """Test that RecallPrecision handles string-based numeric values in label_dict."""
+    from deepforest.metrics import RecallPrecision
+    import torch
+
+    ground_df = pd.read_csv(get_data("example.csv"))
+    csv_file = tmp_path / "ground_truth.csv"
+    ground_df.to_csv(csv_file, index=False)
+
+    # Initialize with string '0' instead of int 0
+    metric = RecallPrecision(csv_file=str(csv_file), label_dict={"Tree": "0"})
+
+    preds = [{
+        'boxes': torch.tensor([[0.0, 0.0, 10.0, 10.0]]),
+        'scores': torch.tensor([1.0]),
+        'labels': torch.tensor([0])
+    }]
+
+    image_name = ground_df.image_path.iloc[0]
+    metric.update(preds, [image_name])
+
+    results = metric.compute()
+    assert "box_precision" in results
+    assert "box_recall" in results
+
 def test_huggingface_model_loads_correct_label_dict():
     """Regression test for #1286:
     HuggingFace models should load correct label_dict from config.json.

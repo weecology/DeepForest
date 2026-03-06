@@ -94,7 +94,7 @@ class RecallPrecision(Metric):
         """Computes the recall/precision metrics."""
 
         ground_df = utilities.read_file(self.csv_file)
-        numeric_to_label_dict = {v: k for k, v in self.label_dict.items()}
+        numeric_to_label_dict = {int(v): k for k, v in self.label_dict.items()}
         ground_df["label"] = ground_df.label.apply(lambda x: self.label_dict[x])
 
         predictions = pd.DataFrame()
