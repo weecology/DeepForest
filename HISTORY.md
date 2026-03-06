@@ -1,5 +1,43 @@
 # DeepForest Changelog
 
+## Version 2.1.0 (Date: February 25, 2026)
+
+The most important changes since 2.0.0:
+
+1. **Replace Albumentations with Kornia** - Migrated augmentations to Kornia (#1230)
+2. **CLI restructure** - Split CLI into sub-scripts for clearer organization
+3. **Evaluation improvements** - Refactored evaluation to support other geometries; migrated to torchmetrics
+4. **Prediction and training API** - Simplified evaluation and prediction to mirror training; standardized train, eval and predict to accept lists not batches
+5. **Numpy 2.x support** - Removed restriction to numpy<2.0
+6. **CropModel enhancements** - Added macro-precision metric and expand context pixels for BoundingBoxDataset
+
+### Bug Fixes
+
+- **Fix:** Image color format when saving; now uses PIL instead of OpenCV to preserve colors
+- **Fix:** MultiImage dataset using same indices during batch processing
+- **Fix:** `evaluate_boxes` TypeError when ground truth has non-default index
+- **Fix:** DETR box coordinates
+- **Fix:** Support empty annotations in image callback
+- **Fix:** Detach losses when logging to avoid graph retention
+- **Fix:** CropModel docstring to match `__init__` signature
+
+### Features and Enhancements
+
+- **Config:** Added `log_root` config option; improved config handling; serialize dictconfig as plain data
+- **read_file:** Refactored for readability and to allow multiple image files; assume dataframe has root dir to simplify viz code
+- **Bounding boxes:** Add validation checks for boxes outside image boundaries
+- **Compatibility:** Block incompatible transformers versions; remove numpy<2.0 restriction
+- **CropModel:** Add expand context pixels for BoundingBoxDataset via `cropmodel.expand` config
+
+### Internal / Developer
+
+- Switch from tmpdir to tmp_path in tests
+- Add white-image model inference test; add regression test for HuggingFace model label_dict loading
+- Codecov test target and threshold; disable build failures from patch coverage diffs
+- New contributing guidelines and dev guidelines
+
+---
+
 ## Version 2.0.0 (Date: November 4, 2025)
 
 The major innovations are:

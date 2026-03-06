@@ -31,7 +31,7 @@ annotations_xml:
 rgb_dir:
 path_to_rgb:
 
-log_root: ./
+log_root: ./lightning_logs
 
 train:
     csv_file:

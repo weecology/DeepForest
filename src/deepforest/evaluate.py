@@ -1,19 +1,42 @@
 """Evaluation module."""
 
-import warnings
-
 import geopandas as gpd
 import numpy as np
 import pandas as pd
-import shapely
 
 from deepforest import IoU
-from deepforest.utilities import determine_geometry_type
+from deepforest.utilities import __pandas_to_geodataframe__
 
 
-def evaluate_image_boxes(predictions, ground_df):
+def _empty_result_dataframe_(group, image_path, task="box"):
+    """Create an empty result dataframe for images with no predictions."""
+
+    result_dict = {
+        "truth_id": group.index.values,
+        "prediction_id": pd.Series([None] * len(group), dtype="object"),
+        "geometry": group.geometry,
+        "image_path": image_path,
+        "match": pd.Series([False] * len(group), dtype="bool"),
+        "score": pd.Series([None] * len(group), dtype="float64"),
+        "predicted_label": pd.Series([None] * len(group), dtype="object"),
+        "true_label": group.label,
+    }
+
+    if task == "box" or task == "polygon":
+        result_dict.update(
+            {
+                "IoU": pd.Series([0.0] * len(group), dtype="float64"),
+            }
+        )
+
+    return pd.DataFrame(result_dict)
+
+
+def match_predictions(predictions, ground_df, task="box"):
     """Compute intersection-over-union matching among prediction and ground
-    truth boxes for one image.
+    truth geometries for one image. The returned results are guaranteed to be
+    at most one-to-one, but are not filtered for "quality" of match (i.e. IoU
+    threshold).
 
     Args:
         predictions: a geopandas dataframe with geometry columns
@@ -27,7 +50,12 @@ def evaluate_image_boxes(predictions, ground_df):
         raise ValueError(f"More than one plot passed to image crown: {plot_names}")
 
     # match
-    result = IoU.compute_IoU(ground_df, predictions)
+    if task in ["box", "polygon"]:
+        result = IoU.match_polygons(ground_df, predictions)
+    elif task == "point":
+        result = IoU.match_points(ground_df, predictions, norm="l2")
+    else:
+        raise NotImplementedError(f"Geometry type {task} not implemented")
 
     # Map prediction/truth IDs back to their original labels from input dataframes
     pred_label_dict = predictions.label.to_dict()
@@ -55,115 +83,128 @@ def compute_class_recall(results):
         class_recall = None
         return class_recall
 
-    for name, group in box_results.groupby("true_label"):
-        class_recall_dict[name] = (
-            sum(group.true_label == group.predicted_label) / group.shape[0]
-        )
-        number_of_predictions = box_results[box_results.predicted_label == name].shape[0]
-        if number_of_predictions == 0:
-            class_precision_dict[name] = 0
-        else:
-            class_precision_dict[name] = (
-                sum(group.true_label == group.predicted_label) / number_of_predictions
-            )
-        class_size[name] = group.shape[0]
+    # Get all labels from both predictions and ground truth
+    predicted_labels = set(box_results["predicted_label"].dropna())
+    true_labels = set(box_results["true_label"].dropna())
+    all_labels = predicted_labels.union(true_labels)
 
-    class_recall = pd.DataFrame(
-        {
-            "label": class_recall_dict.keys(),
-            "recall": pd.Series(class_recall_dict),
-            "precision": pd.Series(class_precision_dict),
-            "size": pd.Series(class_size),
-        }
-    ).reset_index(drop=True)
+    for label in all_labels:
+        # Recall: of all ground truth boxes with this label, how many were correctly predicted?
+        ground_df = box_results[box_results["true_label"] == label]
+        n_ground_boxes = ground_df.shape[0]
+        if n_ground_boxes > 0:
+            class_recall_dict[label] = (
+                sum(ground_df.true_label == ground_df.predicted_label) / n_ground_boxes
+            )
+
+        # Precision: of all predictions with this label, how many were correct?
+        pred_df = box_results[box_results["predicted_label"] == label]
+        n_pred_boxes = pred_df.shape[0]
+        if n_pred_boxes > 0:
+            class_precision_dict[label] = (
+                sum(pred_df.true_label == pred_df.predicted_label) / n_pred_boxes
+            )
+
+        class_size[label] = n_ground_boxes
+
+    # fillna(0) handles labels with no ground truth (recall=0) or no predictions (precision=0)
+    class_recall = (
+        pd.DataFrame(
+            {
+                "recall": pd.Series(class_recall_dict),
+                "precision": pd.Series(class_precision_dict),
+                "size": pd.Series(class_size),
+            }
+        )
+        .reset_index(names="label")
+        .fillna(0)
+        .sort_values("label")
+    )
 
     return class_recall
 
 
-def __evaluate_wrapper__(predictions, ground_df, iou_threshold, numeric_to_label_dict):
-    """Evaluate a set of predictions against a ground truth csv file
+def __evaluate_wrapper__(
+    predictions: pd.DataFrame | gpd.GeoDataFrame,
+    ground_df: pd.DataFrame | gpd.GeoDataFrame,
+    numeric_to_label_dict: dict,
+    iou_threshold: float = 0.4,
+    l2_threshold: float = 10.0,
+    geometry_type: str | None = "box",
+) -> dict:
+    """Evaluate a set of predictions against ground truth
     Args:
-        predictions: a pandas dataframe, if supplied a root dir is needed to give the relative path of files in df.name. The labels in ground truth and predictions must match. If one is numeric, the other must be numeric.
-        ground_df: a pandas dataframe, if supplied a root dir is needed to give the relative path of files in df.name
+        predictions: a pandas dataframe with a root dir attribute is needed to give the relative path of files in df.name. The labels in ground truth and predictions must match. If one is numeric, the other must be numeric.
+        ground_df: a pandas dataframe with a root dir attribute is needed to give the relative path of files in df.name
         iou_threshold: intersection-over-union threshold, see deepforest.evaluate
+        numeric_to_label_dict: mapping from numeric class codes to string labels
+        geometry_type: 'box', 'polygon' or 'point'
     Returns:
         results: a dictionary of results with keys, results, box_recall, box_precision, class_recall
     """
-    # remove empty samples from ground truth
-    ground_df = ground_df[~((ground_df.xmin == 0) & (ground_df.xmax == 0))]
 
-    # Default results for blank predictions
-    if predictions.empty:
-        results = {
-            "results": None,
-            "box_recall": 0,
-            "box_precision": np.nan,
-            "class_recall": None,
-            "predictions": predictions,
-            "ground_df": ground_df,
-        }
-        return results
+    # Convert labels to consistent types prior to eval
+    # Use shallow copy to avoid duplicating large data arrays
+    predictions = predictions.copy(deep=False)
+    ground_df = ground_df.copy(deep=False)
 
-    # Convert pandas to geopandas if needed
-    if not isinstance(predictions, gpd.GeoDataFrame):
-        warnings.warn(
-            "Converting predictions to GeoDataFrame using geometry column", stacklevel=2
-        )
-        # Check if we have bounding box columns and need to create geometry
-        if "geometry" not in predictions.columns and all(
-            col in predictions.columns for col in ["xmin", "ymin", "xmax", "ymax"]
-        ):
-            # Create geometry from bounding box columns
-            predictions = predictions.copy()
-            predictions["geometry"] = shapely.box(
-                predictions["xmin"],
-                predictions["ymin"],
-                predictions["xmax"],
-                predictions["ymax"],
-            )
-        predictions = gpd.GeoDataFrame(predictions, geometry="geometry")
-
-    # Also ensure ground_df is a GeoDataFrame
-    if not isinstance(ground_df, gpd.GeoDataFrame):
-        # Check if we have bounding box columns and need to create geometry
-        if "geometry" not in ground_df.columns and all(
-            col in ground_df.columns for col in ["xmin", "ymin", "xmax", "ymax"]
-        ):
-            # Create geometry from bounding box columns
-            ground_df = ground_df.copy()
-            ground_df["geometry"] = shapely.box(
-                ground_df["xmin"], ground_df["ymin"], ground_df["xmax"], ground_df["ymax"]
-            )
-        ground_df = gpd.GeoDataFrame(ground_df, geometry="geometry")
-
-    prediction_geometry = determine_geometry_type(predictions)
-    if prediction_geometry == "point":
-        raise NotImplementedError("Point evaluation is not yet implemented")
-    elif prediction_geometry == "box":
-        results = evaluate_boxes(
-            predictions=predictions, ground_df=ground_df, iou_threshold=iou_threshold
-        )
-    else:
-        raise NotImplementedError(f"Geometry type {prediction_geometry} not implemented")
-
-    if results["results"] is not None:
-        # Convert numeric class codes to string labels for results
-        results["results"]["predicted_label"] = results["results"]["predicted_label"].map(
+    # Apply numeric_to_label_dict mapping to ensure type consistency. Checking
+    # for labels guards against empty frames.
+    if not predictions.empty and "label" in predictions.columns:
+        predictions["label"] = predictions["label"].map(
             lambda x: numeric_to_label_dict.get(x, x) if pd.notnull(x) else x
         )
-        results["results"]["true_label"] = results["results"]["true_label"].map(
-            numeric_to_label_dict
+    if not ground_df.empty and "label" in ground_df.columns:
+        ground_df["label"] = ground_df["label"].map(
+            lambda x: numeric_to_label_dict.get(x, x) if pd.notnull(x) else x
         )
+
+    results = evaluate_geometry(
+        predictions=predictions,
+        ground_df=ground_df,
+        iou_threshold=iou_threshold,
+        distance_threshold=l2_threshold,
+        geometry_type=geometry_type,
+    )
+
+    # Store the converted predictions for reference
+    if results["results"] is not None:
         results["predictions"] = predictions
-        # Also convert labels in the original predictions for consistency
-        results["predictions"]["label"] = results["predictions"]["label"].map(
-            numeric_to_label_dict
-        )
 
     return results
 
 
-def evaluate_boxes(predictions, ground_df, iou_threshold=0.4):
+def evaluate_boxes(
+    predictions: pd.DataFrame | gpd.GeoDataFrame,
+    ground_df: pd.DataFrame | gpd.GeoDataFrame,
+    iou_threshold: float = 0.4,
+) -> dict:
+    """Evaluate bounding box predictions against ground truth. Calls
+    evaluate_geometry.
+
+    Args:
+        predictions: a pandas dataframe with geometry columns. The labels in ground truth and predictions must match. If one is numeric, the other must be numeric.
+        ground_df: a pandas dataframe with geometry columns
+        iou_threshold: intersection-over-union threshold, see deepforest.evaluate
+
+    Returns:
+        results: a dictionary of results with keys, results, box_recall, box_precision, class_recall
+    """
+    return evaluate_geometry(
+        predictions=predictions,
+        ground_df=ground_df,
+        iou_threshold=iou_threshold,
+        geometry_type="box",
+    )
+
+
+def evaluate_geometry(
+    predictions: pd.DataFrame | gpd.GeoDataFrame,
+    ground_df: pd.DataFrame | gpd.GeoDataFrame,
+    iou_threshold: float = 0.4,
+    distance_threshold: float = 10.0,
+    geometry_type: str = "box",
+) -> dict:
     """Image annotated crown evaluation routine submission can be submitted as
     a .shp, existing pandas dataframe or .csv path.
 
@@ -171,6 +212,8 @@ def evaluate_boxes(predictions, ground_df, iou_threshold=0.4):
         predictions: a pandas dataframe with geometry columns. The labels in ground truth and predictions must match. If one is numeric, the other must be numeric.
         ground_df: a pandas dataframe with geometry columns
         iou_threshold: intersection-over-union threshold, see deepforest.evaluate
+        l2_threshold: L2 distance threshold for point matching
+        geometry_type: 'box', 'polygon' or 'point'
 
     Returns:
         results: a dataframe of match bounding boxes
@@ -179,44 +222,52 @@ def evaluate_boxes(predictions, ground_df, iou_threshold=0.4):
         class_recall: a pandas dataframe of class level recall and precision with class sizes
     """
 
+    if geometry_type not in ["box", "polygon", "point"]:
+        raise ValueError(
+            f"Unknown geometry type {geometry_type}. Must be one of 'box', 'polygon' or 'point'."
+        )
+
+    # If no predictions, return 0 recall, NaN precision
+    if predictions.empty:
+        return {
+            "results": None,
+            f"{geometry_type}_recall": 0,
+            f"{geometry_type}_precision": np.nan,
+            "class_recall": None,
+            "predictions": predictions,
+            "ground_df": ground_df,
+        }
+    elif not isinstance(predictions, gpd.GeoDataFrame):
+        predictions = __pandas_to_geodataframe__(predictions)
+
+    # Remove empty ground truth boxes
+    if geometry_type == "box":
+        ground_df = ground_df[
+            ~(
+                (ground_df.xmin == 0)
+                & (ground_df.xmax == 0)
+                & (ground_df.ymin == 0)
+                & (ground_df.ymax == 0)
+            )
+        ]
+    elif geometry_type == "polygon":
+        ground_df = ground_df[~ground_df.geometry.is_empty]
+    elif geometry_type == "point":
+        ground_df = ground_df[~((ground_df.x == 0) & (ground_df.y == 0))]
+
     # If all empty ground truth, return 0 recall and precision
     if ground_df.empty:
         return {
             "results": None,
-            "box_recall": None,
-            "box_precision": 0,
+            f"{geometry_type}_recall": None,
+            f"{geometry_type}_precision": 0,
             "class_recall": None,
             "predictions": predictions,
             "ground_df": ground_df,
         }
 
-    # Convert pandas to geopandas if needed
-    if not isinstance(predictions, gpd.GeoDataFrame):
-        # Check if we have bounding box columns and need to create geometry
-        if "geometry" not in predictions.columns and all(
-            col in predictions.columns for col in ["xmin", "ymin", "xmax", "ymax"]
-        ):
-            # Create geometry from bounding box columns
-            predictions = predictions.copy()
-            predictions["geometry"] = shapely.box(
-                predictions["xmin"],
-                predictions["ymin"],
-                predictions["xmax"],
-                predictions["ymax"],
-            )
-        predictions = gpd.GeoDataFrame(predictions, geometry="geometry")
-
     if not isinstance(ground_df, gpd.GeoDataFrame):
-        # Check if we have bounding box columns and need to create geometry
-        if "geometry" not in ground_df.columns and all(
-            col in ground_df.columns for col in ["xmin", "ymin", "xmax", "ymax"]
-        ):
-            # Create geometry from bounding box columns
-            ground_df = ground_df.copy()
-            ground_df["geometry"] = shapely.box(
-                ground_df["xmin"], ground_df["ymin"], ground_df["xmax"], ground_df["ymax"]
-            )
-        ground_df = gpd.GeoDataFrame(ground_df, geometry="geometry")
+        ground_df = __pandas_to_geodataframe__(ground_df)
 
     # Pre-group predictions by image
     predictions_by_image = {
@@ -226,59 +277,55 @@ def evaluate_boxes(predictions, ground_df, iou_threshold=0.4):
 
     # Run evaluation on all plots
     results = []
-    box_recalls = []
-    box_precisions = []
+    per_image_recalls = []
+    per_image_precisions = []
     for image_path, group in ground_df.groupby("image_path"):
         # Predictions for this image
         image_predictions = predictions_by_image.get(image_path, pd.DataFrame())
-        if not isinstance(image_predictions, pd.DataFrame) or image_predictions.empty:
-            image_predictions = pd.DataFrame()
 
         # If empty, add to list without computing IoU
         if image_predictions.empty:
             # Reset index
             group = group.reset_index(drop=True)
-            result = pd.DataFrame(
-                {
-                    "truth_id": group.index.values,
-                    "prediction_id": pd.Series([None] * len(group), dtype="object"),
-                    "IoU": pd.Series([0.0] * len(group), dtype="float64"),
-                    "predicted_label": pd.Series([None] * len(group), dtype="object"),
-                    "score": pd.Series([None] * len(group), dtype="float64"),
-                    "match": pd.Series([False] * len(group), dtype="bool"),
-                    "true_label": group.label.astype("object"),
-                    "geometry": group.geometry,
-                    "image_path": image_path,
-                }
-            )
+            result = _empty_result_dataframe_(group, image_path, task=geometry_type)
             # An empty prediction set has recall of 0, precision of NA.
-            box_recalls.append(0)
+            per_image_recalls.append(0)
             results.append(result)
             continue
         else:
             group = group.reset_index(drop=True)
-            result = evaluate_image_boxes(predictions=image_predictions, ground_df=group)
+            result = match_predictions(
+                predictions=image_predictions, ground_df=group, task=geometry_type
+            )
 
         result["image_path"] = image_path
-        result["match"] = result.IoU > iou_threshold
+
+        # Determine matches based on IoU or distance thresholds
+        if geometry_type == "box" or geometry_type == "polygon":
+            result["match"] = result.IoU > iou_threshold
+        elif geometry_type == "point":
+            result["match"] = result.distance < distance_threshold
+
         # Convert None to False for boolean consistency
         result["match"] = result["match"].fillna(False)
         true_positive = sum(result["match"])
         recall = true_positive / result.shape[0]
         precision = true_positive / image_predictions.shape[0]
 
-        box_recalls.append(recall)
-        box_precisions.append(precision)
+        per_image_recalls.append(recall)
+        per_image_precisions.append(precision)
         results.append(result)
 
     # Concatenate results
     if results:
         results = pd.concat(results, ignore_index=True)
+        # Convert back to GeoDataFrame if it has geometry column
+        if "geometry" in results.columns:
+            results = gpd.GeoDataFrame(results, geometry="geometry")
     else:
         columns = [
             "truth_id",
             "prediction_id",
-            "IoU",
             "predicted_label",
             "score",
             "match",
@@ -286,10 +333,16 @@ def evaluate_boxes(predictions, ground_df, iou_threshold=0.4):
             "geometry",
             "image_path",
         ]
-        results = pd.DataFrame(columns=columns)
 
-    box_precision = np.mean(box_precisions)
-    box_recall = np.mean(box_recalls)
+        if geometry_type == "box" or geometry_type == "polygon":
+            columns.append("IoU")
+        elif geometry_type == "point":
+            columns.append("distance")
+
+        results = gpd.GeoDataFrame(columns=columns)
+
+    mean_precision = np.mean(per_image_precisions)
+    mean_recall = np.mean(per_image_recalls)
 
     # Only matching boxes are considered in class recall
     matched_results = results[results.match]
@@ -297,107 +350,9 @@ def evaluate_boxes(predictions, ground_df, iou_threshold=0.4):
 
     return {
         "results": results,
-        "box_precision": box_precision,
-        "box_recall": box_recall,
+        f"{geometry_type}_precision": mean_precision,
+        f"{geometry_type}_recall": mean_recall,
         "class_recall": class_recall,
         "predictions": predictions,
         "ground_df": ground_df,
     }
-
-
-def _point_recall_image_(predictions, ground_df):
-    """Compute intersection-over-union matching among prediction and ground
-    truth boxes for one image.
-
-    Args:
-        predictions: a pandas dataframe. The labels in ground truth and predictions must match. For example, if one is numeric, the other must be numeric.
-        ground_df: a pandas dataframe
-
-    Returns:
-        result: pandas dataframe with crown ids of prediciton and ground truth and the IoU score.
-    """
-    plot_names = predictions["image_path"].unique()
-    if len(plot_names) > 1:
-        raise ValueError(f"More than one image passed to function: {plot_names[0]}")
-
-    predictions["geometry"] = predictions.apply(
-        lambda x: shapely.geometry.box(x.xmin, x.ymin, x.xmax, x.ymax), axis=1
-    )
-    predictions = gpd.GeoDataFrame(predictions, geometry="geometry")
-
-    ground_df["geometry"] = ground_df.apply(
-        lambda x: shapely.geometry.Point(x.x, x.y), axis=1
-    )
-    ground_df = gpd.GeoDataFrame(ground_df, geometry="geometry")
-
-    # Which points in boxes
-    result = gpd.sjoin(ground_df, predictions, predicate="within", how="left")
-    result = result.rename(
-        columns={
-            "label_left": "true_label",
-            "label_right": "predicted_label",
-            "image_path_left": "image_path",
-        }
-    )
-    result = result.drop(columns=["index_right"])
-
-    return result
-
-
-def point_recall(predictions, ground_df):
-    """Evaluate the proportion on ground truth points overlap with predictions
-    submission can be submitted as a .shp, existing pandas dataframe or .csv
-    path For bounding box recall, see evaluate().
-
-    Args:
-        predictions: a pandas dataframe, if supplied a root dir is needed to give the relative path of files in df.name. The labels in ground truth and predictions must match. If one is numeric, the other must be numeric.
-        ground_df: a pandas dataframe, if supplied a root dir is needed to give the relative path of files in df.name
-
-    Returns:
-        results: a dataframe of matched bounding boxes and ground truth labels
-        box_recall: proportion of true positives between predicted boxes and ground truth points, regardless of class
-        class_recall: a pandas dataframe of class level recall and precision with class sizes
-    """
-    # Run evaluation on all images
-    results = []
-    box_recalls = []
-    for image_path, group in ground_df.groupby("image_path"):
-        image_predictions = predictions[
-            predictions["image_path"] == image_path
-        ].reset_index(drop=True)
-
-        # If empty, add to list without computing recall
-        if image_predictions.empty:
-            result = pd.DataFrame(
-                {
-                    "recall": 0,
-                    "predicted_label": None,
-                    "score": None,
-                    "true_label": group.label,
-                }
-            )
-            # An empty prediction set has recall of 0, precision of NA.
-            box_recalls.append(0)
-            results.append(result)
-            continue
-        else:
-            group = group.reset_index(drop=True)
-            result = _point_recall_image_(predictions=image_predictions, ground_df=group)
-
-        result["image_path"] = image_path
-
-        # What proportion of boxes match? Regardless of label
-        true_positive = sum(result.predicted_label.notnull())
-        recall = true_positive / result.shape[0]
-
-        box_recalls.append(recall)
-        results.append(result)
-
-    results = pd.concat(results)
-    box_recall = np.mean(box_recalls)
-
-    # Only matching boxes are considered in class recall
-    matched_results = results[results.predicted_label.notnull()]
-    class_recall = compute_class_recall(matched_results)
-
-    return {"results": results, "box_recall": box_recall, "class_recall": class_recall}

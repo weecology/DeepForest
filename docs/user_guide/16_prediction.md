@@ -21,23 +21,28 @@ If you are using `uv` to manage your Python environment, remember to prefix thes
 ```
 
 ```bash
-> deepforest predict -h
-
-usage: deepforest predict [-h] [-o OUTPUT] [--plot] input
+usage: deepforest predict [-h] [-o OUTPUT] [--plot] [--root-dir ROOT_DIR] [--mode {single,tile,csv}] [input]
 
 positional arguments:
-  input                 Path to input raster
+  input                 Path to input image or CSV file (optional if specified in config)
 
 options:
   -h, --help            show this help message and exit
   -o OUTPUT, --output OUTPUT
-                        Path to prediction results
-  --plot                Plot results
+                        Path to save prediction results CSV
+  --plot                Visualize predictions
+  --root-dir ROOT_DIR   Root directory containing images when input is a CSV file. Defaults to CSV directory if not specified.
+  --mode {single,tile,csv}
+                        Prediction mode: 'single' for single image, 'tile' for tiled image prediction, 'csv' for batch prediction from CSV file. Defaults to 'single'.
 
 Any remaining arguments <key>=<value> will be passed to Hydra to override the current config.
 ```
 
-You should provide an `input` path, to an image you'd like predictions for. If you want to save the results as a CSV file, use `-o`. If you want to plot the results in a GUI, you can use the `--plot` flag. Any and all other configuration options can be provided afterwards, for example if you wanted to change the patch size:
+You should provide an `input` path, to an image you'd like predictions for. If you want to save the results as a CSV file, use `-o`. If you want to plot the results in a GUI, you can use the `--plot` flag.
+
+The CLI allows access to the three prediction modes that DeepForest supports. If you're predicting from a CSV file with a list of images, you need to also provide a `root_dir` so DeepForest knows where they're located. If you don't provide this, DeepForest will check `config.validation.root_dir`.
+
+Any and all other configuration options can be provided afterwards, for example if you wanted to change the patch size:
 
 ```bash
 deepforest predict ./path/to/your/image.tif -o results.csv patch_size=250 patch_overlap=0.1

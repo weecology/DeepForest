@@ -10,7 +10,7 @@ from deepforest import get_data, main, utilities
 
 
 @pytest.fixture
-def config(architecture, tmp_path):
+def config(architecture, tmp_path_factory):
     # Basic from-scratch config for fast tests
     config = {
         "architecture": architecture,
@@ -22,12 +22,12 @@ def config(architecture, tmp_path):
             "root_dir": os.path.dirname(get_data("OSBS_029.csv")),
             "epochs": 1,
             "fast_dev_run": False,  # Required for multi-epoch testing
-            "log_root": str(tmp_path / "logs"),
         },
         "validation": {
             "csv_file": get_data("OSBS_029.csv"),
             "root_dir": os.path.dirname(get_data("OSBS_029.csv")),
         },
+        "log_root": str(tmp_path_factory.mktemp("logs"))
     }
 
     return config
@@ -57,7 +57,7 @@ def test_train_reload_checkpoint(config):
 
     # Train and save model
     m.trainer.fit(m)
-    checkpoint_path = f"{m.config.train.log_root}/pretrain.ckpt"
+    checkpoint_path = f"{m.config.log_root}/pretrain.ckpt"
     m.save_model(checkpoint_path)
 
     # Load checkpoint
@@ -76,7 +76,7 @@ def test_train_and_resume(config):
     # Train and save model
     m.trainer.fit(m)
     assert m.trainer.current_epoch == 1
-    checkpoint_path = f"{m.config.train.log_root}/pretrain.ckpt"
+    checkpoint_path = f"{m.config.log_root}/pretrain.ckpt"
     m.save_model(checkpoint_path)
 
     # Load checkpoint
@@ -98,7 +98,7 @@ def test_train_fit_ckpt(config):
     # Train and save model
     m.trainer.fit(m)
     assert m.trainer.current_epoch == 1
-    checkpoint_path = f"{m.config.train.log_root}/pretrain.ckpt"
+    checkpoint_path = f"{m.config.log_root}/pretrain.ckpt"
     m.save_model(checkpoint_path)
 
     # Load checkpoint
@@ -116,23 +116,23 @@ def test_pretrain_finetune(config):
     pretrain.trainer.fit(pretrain)
 
     # Save checkpoint
-    pretrain_checkpoint = f"{pretrain.config.train.log_root}/pretrain.ckpt"
+    pretrain_checkpoint = f"{pretrain.config.log_root}/pretrain.ckpt"
     pretrain.save_model(pretrain_checkpoint)
 
     # Fine-tune on "new" data (same data for test)
-    log_dir = str(config["train"]["log_root"]) + "_finetune"
+    log_dir = str(config["log_root"]) + "_finetune"
     finetune = main.deepforest.load_from_checkpoint(
         pretrain_checkpoint,
         config_args={
             "train": {
-                "log_root": log_dir,
                 "epochs": 1,
-            }
+            },
+            "log_root": log_dir,
         },
     )
     finetune.trainer.fit(finetune)
     finetune.save_model(f"{log_dir}/finetune.ckpt")
-    assert finetune.config.train.log_root == log_dir
+    assert finetune.config.log_root == log_dir
 
     os.remove(pretrain_checkpoint)
     os.remove(f"{log_dir}/finetune.ckpt")
@@ -147,7 +147,7 @@ def test_local_hf_checkpoint(config):
     pretrain.trainer.fit(pretrain)
 
     # Save HF compatible checkpoints
-    pretrain_checkpoint = f"{pretrain.config.train.log_root}/pretrain_ckpt"
+    pretrain_checkpoint = f"{pretrain.config.log_root}/pretrain_ckpt"
     pretrain.model.save_pretrained(pretrain_checkpoint)
 
     # Load via model.name
@@ -212,7 +212,7 @@ def test_save_and_reload_checkpoint(config):
     pred_after_train = m.predict_image(path=img_path)
 
     # Save checkpoint
-    checkpoint_path = f"{m.config.train.log_root}/checkpoint.ckpt"
+    checkpoint_path = f"{m.config.log_root}/checkpoint.ckpt"
     m.save_model(checkpoint_path)
 
     # Reload and predict
@@ -247,7 +247,7 @@ def test_load_from_checkpoint_with_overrides(config):
     m = main.deepforest(config=config)
     m.trainer.fit(m)
 
-    checkpoint_path = f"{m.config.train.log_root}/pretrain.ckpt"
+    checkpoint_path = f"{m.config.log_root}/pretrain.ckpt"
     m.save_model(checkpoint_path)
 
     # Load with config_args overrides
@@ -278,7 +278,7 @@ def test_load_from_checkpoint_with_config_dict(config):
     m = main.deepforest(config=config)
     m.trainer.fit(m)
 
-    checkpoint_path = f"{m.config.train.log_root}/pretrain.ckpt"
+    checkpoint_path = f"{m.config.log_root}/pretrain.ckpt"
     m.save_model(checkpoint_path)
 
     # Create a modified config with different training parameters

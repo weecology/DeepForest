@@ -30,7 +30,7 @@ jobs:
 
     steps:
       - name: "Checkout code"
-        uses: "actions/checkout@v4"
+        uses: "actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd"
 
       - name: Install opencv dependencies
         run: |
@@ -43,7 +43,7 @@ jobs:
           sudo apt-get install -y pandoc
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@5a095e7a2014a4212f075830d4f7277575a9d098
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -57,7 +57,7 @@ jobs:
         run: uv run pytest -v --cov=src/deepforest --cov-report=xml --cov-report=term-missing -o tmp_path_retention=none tests/
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de
         with:
           file: ./coverage.xml
           flags: unittests

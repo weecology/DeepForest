@@ -41,7 +41,7 @@ Deepforest can be installed using any system that uses PyPI as the source includ
 
 **Install using Pip**
 
-Installing with Pip uses [dev_requirements.txt](https://github.com/weecology/DeepForest/blob/main/dev_requirements.txt).
+Installing with Pip uses the optional `[dev,docs]` dependencies defined in [pyproject.toml](https://github.com/weecology/DeepForest/blob/main/pyproject.toml).
 
 ```bash
 pip install .'[dev,docs]'
@@ -233,7 +233,7 @@ make html  # Run
 1. **Run Pytest tests** – seriously, run them now. And Test build artifacts
    - Run `Pytest -v`
    - Run `pip install build && python -m build && twine check dist/*`
-2. Ensure `HISTORY.rst` is up to date with all changes since the last release.
+2. Ensure `HISTORY.md` is up to date with all changes since the last release.
 3. Use `bump-my-version show-bump` to determine the appropriate version bump.
 4. Update the version for release: `bump-my-version bump [minor | patch | pre_l | pre_n]`. If show-bump does not have the right option, we can manually set it `bump-my-version bump --new-version 1.4.0`
 5. Publish the release to PyPi

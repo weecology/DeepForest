@@ -244,6 +244,15 @@ class FromCSVFile(PredictionDataset):
         return result
 
 
+class _IndexedCrops(list):
+    """List of crops with the dataset index attached for correct batch
+    collation."""
+
+    def __init__(self, index: int, crops: list):
+        super().__init__(crops)
+        self.index = index
+
+
 class MultiImage(PredictionDataset):
     """Take in a list of image paths, preprocess and batch together.
 
@@ -260,7 +269,7 @@ class MultiImage(PredictionDataset):
         self.paths = paths
         self.patch_size = patch_size
         self.patch_overlap = patch_overlap
-        self.sublist_lengths = []
+        self.batch_indices = []
 
         image = self.load_and_preprocess_image(image_path=self.paths[0])
         self.image_height = image.shape[1]
@@ -347,28 +356,25 @@ class MultiImage(PredictionDataset):
 
         return windows
 
+    def __getitem__(self, idx):
+        """Return crops with dataset index so collate_fn can use global
+        indices."""
+        return _IndexedCrops(idx, self.get_crop(idx))
+
     def collate_fn(self, batch):
         """Collate the batch into a single list of crops.
 
-        Keep track of the lengths of each sublist.
+        Keep track of the lengths of each sublist using global dataset
+        indices (item.index), not batch position, so postprocess assigns
+        image_path correctly.
         """
-        # Create a list of lengths of each sublist
-        sub_list_length = [
-            [idx, sub_idx]
-            for idx, sublist in enumerate(batch)
-            for sub_idx in range(len(sublist))
+        # item.index is the global dataset index; sublist is the list of crops
+        batch_indices = [
+            [item.index, sub_idx] for item in batch for sub_idx in range(len(item))
         ]
-        self.sublist_lengths.append(sub_list_length)
-
-        # Flatten list of lists of crops
-        flattened_batch = [crop for sublist in batch for crop in sublist]
-        sublist_lengths = [
-            [idx, sub_idx]
-            for idx, sublist in enumerate(batch)
-            for sub_idx in range(len(sublist))
-        ]
-
-        return {"images": flattened_batch, "sublist_lengths": sublist_lengths}
+        self.batch_indices.append(batch_indices)
+        flattened_batch = [crop for item in batch for crop in item]
+        return {"images": flattened_batch, "batch_indices": batch_indices}
 
     def __len__(self):
         return len(self.paths)
@@ -395,15 +401,15 @@ class MultiImage(PredictionDataset):
         """
         if prediction_index >= len(original_batch_structure):
             raise ValueError(
-                f"prediction_index {prediction_index} exceeds sublist_lengths length {len(original_batch_structure)}. "
+                f"prediction_index {prediction_index} exceeds batch_indices length {len(original_batch_structure)}. "
                 "This may indicate a mismatch between collate_fn calls and postprocess calls."
             )
 
-        batch_sublist_lengths = original_batch_structure[prediction_index]
+        current_batch_indices = original_batch_structure[prediction_index]
         formatted_results = []
 
-        # batch_sublist_lengths[i] = [image_idx, window_idx] corresponds to batch[i]
-        for batch_position, (image_idx, window_idx) in enumerate(batch_sublist_lengths):
+        # current_batch_indices[i] = [image_idx, window_idx] corresponds to batch[i]
+        for batch_position, (image_idx, window_idx) in enumerate(current_batch_indices):
             prediction = batch[batch_position]
 
             # Format with correct image index and window index
