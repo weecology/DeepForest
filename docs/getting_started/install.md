@@ -59,6 +59,16 @@ uv sync --all-extras --dev
 
 This installs DeepForest in editable mode with development and documentation dependencies.
 
+## HuggingFace Authentication (Optional)
+
+Models are downloaded from [Hugging Face Hub](https://huggingface.co). Authentication is optional for public models but recommended for higher rate limits and faster downloads.
+
+To authenticate:
+- Run `huggingface-cli login`, or
+- Set the `HF_TOKEN` environment variable
+
+For details, see the [Hugging Face token documentation](https://huggingface.co/docs/hub/security-tokens).
+
 ## GPU support
 
 PyTorch can be run on GPUs to allow faster model training and prediction. DeepForest is a PyTorch Lightning module, which automatically distributes data to available GPUs. If using a release model with training, the module can be moved from CPU to GPU for prediction using the `pytorch.to()` method.
