@@ -206,8 +206,8 @@ def split_raster(
         )
         numpy_image = numpy_image.transpose(2, 0, 1)
 
-    # Check that it's 3 bands
-    bands = numpy_image.shape[2]
+    # Check that it's 3 bands (image is now channels-first: C x H x W)
+    bands = numpy_image.shape[0]
     if not bands == 3:
         warnings.warn(
             f"Input image had non-3 band shape of {numpy_image.shape}, selecting first 3 bands",
