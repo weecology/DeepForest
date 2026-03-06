@@ -554,7 +554,7 @@ def test_predict_tile_from_array(m, path):
 
 def test_evaluate(m):
     csv_file = get_data("OSBS_029.csv")
-    results = m.evaluate(csv_file, iou_threshold=0.4)
+    results = m.evaluate(csv_file)
 
     assert np.round(results["box_precision"], 2) > 0.5
     assert np.round(results["box_recall"], 2) > 0.5
@@ -1172,3 +1172,25 @@ def test_custom_log_root(m, tmpdir):
 
     version_dir = version_dirs[0]
     assert version_dir.join("hparams.yaml").exists(), "hparams.yaml not found"
+
+def test_huggingface_model_loads_correct_label_dict():
+    """Regression test for #1286:
+    HuggingFace models should load correct label_dict from config.json.
+    """
+    from deepforest import main
+
+    m = main.deepforest()
+    m.load_model(model_name="weecology/everglades-bird-species-detector")
+
+    expected = {
+        "Anhinga",
+        "Great Blue Heron",
+        "Great Egret",
+        "Roseate Spoonbill",
+        "Snowy Egret",
+        "White Ibis",
+        "Wood Stork",
+    }
+
+    actual = set(m.label_dict.keys())
+    assert actual == expected, f"Expected {expected}, got {actual}"
