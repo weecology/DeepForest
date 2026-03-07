@@ -9,6 +9,9 @@ import pytorch_lightning as pl
 import torch
 from omegaconf import DictConfig, OmegaConf
 from PIL import Image
+
+Image.MAX_IMAGE_PIXELS = None
+
 from pytorch_lightning.callbacks import LearningRateMonitor
 from pytorch_lightning.loggers import CSVLogger
 from torch import optim
