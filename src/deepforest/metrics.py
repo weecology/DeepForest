@@ -113,6 +113,10 @@ class RecallPrecision(Metric):
                     self.index_to_path[int(idx.item())]
                     for idx in torch.cat(self.image_indices)
                 ]
+        # Filter ground_df to only include images that were actually predicted
+        if not predictions.empty:
+            predicted_images = predictions["image_path"].unique()
+            ground_df = ground_df[ground_df["image_path"].isin(predicted_images)]
 
         results = __evaluate_wrapper__(
             predictions=predictions,
