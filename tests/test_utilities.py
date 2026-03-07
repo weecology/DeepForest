@@ -150,8 +150,8 @@ def test_read_file_dataframe_with_geometry_returns_geodataframe():
     )
 
     assert isinstance(result_wkt, gpd.GeoDataFrame)
-    assert isinstance(result_wkt.geometry, gpd.GeoSeries)
     assert 'geometry' in result_wkt.columns
+    assert isinstance(result_wkt.geometry, gpd.GeoSeries)
     assert all(result_wkt.geometry.geom_type == 'Polygon')
     assert len(result_wkt) == 2
 
@@ -172,8 +172,8 @@ def test_read_file_dataframe_with_geometry_returns_geodataframe():
     )
 
     assert isinstance(result_shapely, gpd.GeoDataFrame)
-    assert isinstance(result_shapely.geometry, gpd.GeoSeries)
-    assert 'geometry' in result_shapely.columns
+    assert 'geometry' in result_wkt.columns
+    assert isinstance(result_wkt.geometry, gpd.GeoSeries)
     assert all(result_shapely.geometry.geom_type == 'Polygon')
     assert len(result_shapely) == 2
 
