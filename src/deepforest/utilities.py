@@ -224,13 +224,27 @@ def shapefile_to_annotations(
     convert_point: bool = False,
     label: str | None = None,
 ) -> gpd.GeoDataFrame:
-    raise DeprecationWarning(
-        "shapefile_to_annotations is deprecated, use read_file instead"
+    warnings.warn(
+        "shapefile_to_annotations is deprecated, use read_file instead",
+        DeprecationWarning,
+        stacklevel=2,
     )
 
     if buffer_size is not None and convert_point:
-        raise DeprecationWarning(
-            "buffer_size argument is deprecated, use convert_point_to_bbox instead"
+        warnings.warn(
+            "buffer_size argument is deprecated, use convert_point_to_bbox instead",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
+    if isinstance(shapefile, str):
+        shapefile_path = shapefile
+        shapefile = gpd.read_file(shapefile_path)
+        shapefile = DeepForest_DataFrame(shapefile)
+        shapefile = __assign_image_path__(shapefile, image_path=rgb)
+        shapefile = __check_and_assign_label__(shapefile, label=label)
+        shapefile = __assign_root_dir__(
+            input=shapefile_path, gdf=shapefile, root_dir=root_dir
         )
 
     return __shapefile_to_annotations__(shapefile)
@@ -247,12 +261,13 @@ def __assign_image_path__(gdf, image_path: str) -> str:
             pass
     else:
         if "image_path" in gdf.columns:
-            existing_image_path = gdf.image_path.unique()[0]
-            if len(existing_image_path) > 1:
+            existing_image_paths = gdf.image_path.unique()
+            if len(existing_image_paths) > 1:
                 warnings.warn(
-                    f"Multiple image_paths found in dataframe: {existing_image_path}, overriding and assigning {image_path} to all rows!",
+                    f"Multiple image_paths found in dataframe: {existing_image_paths}, overriding and assigning {image_path} to all rows!",
                     stacklevel=2,
                 )
+            existing_image_path = existing_image_paths[0]
             if existing_image_path != image_path:
                 warnings.warn(
                     f"Image path {existing_image_path} found in dataframe, overriding and assigning {image_path} to all rows!",
