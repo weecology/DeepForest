@@ -18,11 +18,6 @@ While that approach is certainly valid, there are a few key benefits to using Cr
 - **Simpler and Extendable**: CropModels decouple detection and classification workflows, allowing separate handling of challenges like class imbalance and incomplete labels, without reducing the quality of the detections. Two-stage object detection models can be finicky with similar classes and often require expertise in managing learning rates.
 - **New Data and Multi-sensor Learning**: In many applications, the data needed for detection and classification may differ. The CropModel concept provides an extendable piece that allows for advanced pipelines.
 
-## Considerations
-
-- **Efficiency**: Using a CropModel will be slower, as for each detection, the sensor data needs to be cropped and passed to the detector. This is less efficient than using a combined classification/detection system like multi-class detection models. While modern GPUs mitigate this to some extent, it is still something to be mindful of.
-- **Lack of Spatial Awareness**: The model knows only about the pixels inside the crop and cannot use features outside the bounding box. This lack of spatial awareness can be a major limitation. It is possible, but untested, that multi-class detection models might perform better in such tasks. A box attention mechanism, like in [this paper](https://arxiv.org/abs/2111.13087), could be a better approach. See [Spatial-Temporal Metadata](#spatial-temporal-metadata) below for an optional way to incorporate location and season information.
-
 (spatial-temporal-metadata)=
 ## Spatial-Temporal Metadata
 
@@ -126,6 +121,11 @@ cropmodel:
     metadata_dim: 32
     metadata_dropout: 0.5
 ```
+
+## Considerations
+
+- **Efficiency**: Using a CropModel will be slower, as for each detection, the sensor data needs to be cropped and passed to the detector. This is less efficient than using a combined classification/detection system like multi-class detection models. While modern GPUs mitigate this to some extent, it is still something to be mindful of.
+- **Lack of Spatial Awareness**: The model knows only about the pixels inside the crop and cannot use features outside the bounding box. This lack of spatial awareness can be a major limitation. It is possible, but untested, that multi-class detection models might perform better in such tasks. A box attention mechanism, like in [this paper](https://arxiv.org/abs/2111.13087), could be a better approach. See the [Spatial-Temporal Metadata](#spatial-temporal-metadata) section for an optional way to incorporate location and season information.
 
 ## Single Crop Model
 
