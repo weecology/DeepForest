@@ -119,3 +119,8 @@ cropmodel:
         - 224
     # Number of pixels to expand bbox crop windows for better prediction context.
     expand: 0
+    # Spatial-temporal metadata fusion (optional).
+    # When True, the model accepts (lat, lon, date) alongside image crops.
+    use_metadata: False
+    metadata_dim: 32
+    metadata_dropout: 0.5
