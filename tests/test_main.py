@@ -554,16 +554,26 @@ def test_predict_tile_from_array(m, path):
 
 def test_evaluate(m):
     csv_file = get_data("OSBS_029.csv")
+    df = pd.read_csv(csv_file)
     results = m.evaluate(csv_file)
 
+    # Metrics are sane
     assert np.round(results["box_precision"], 2) > 0.5
     assert np.round(results["box_recall"], 2) > 0.5
+
+    # Class names are correct
     assert len(results["results"].predicted_label.dropna().unique()) == 1
     assert results["results"].predicted_label.dropna().unique()[0] == "Tree"
     assert results["predictions"].shape[0] > 0
     assert results["predictions"].label.dropna().unique()[0] == "Tree"
 
-    df = pd.read_csv(csv_file)
+    # Image path matches the CSV
+    assert "image_path" in results["results"].columns
+    assert results["results"]["image_path"].notna().all()
+    expected_images = df["image_path"].unique()
+    assert all(im in expected_images for im in results["results"]["image_path"].unique())
+
+    # Check we have match results for every ground truth box
     assert results["results"].shape[0] == df.shape[0]
 
 
@@ -983,7 +993,7 @@ def test_epoch_evaluation_end(m, tmp_path):
     m.config.validation.root_dir = str(tmp_path)
     # Recreate metrics after changing validation csv_file
     m.setup_metrics()
-    m.precision_recall_metric.update(preds, ["test"])
+    m.precision_recall_metric.update(preds, targets)
 
     with mock.patch.object(m, 'log_dict') as mock_log:
         m.on_validation_epoch_end()
