@@ -155,6 +155,47 @@ def test_read_file_shapefile_without_image_path(tmp_path):
     assert "label" in result.columns
     assert hasattr(result, "root_dir")
 
+def test_shapefile_to_annotations_deprecation_warning(tmp_path):
+    """shapefile_to_annotations should emit DeprecationWarning, not raise it."""
+    import warnings
+    sample_geometry = [geometry.Point(404211.9 + 10, 3285102 + 20)]
+    labels = ["Tree"]
+    df = pd.DataFrame({"geometry": sample_geometry, "label": labels})
+    gdf = gpd.GeoDataFrame(df, geometry="geometry", crs="EPSG:32617")
+    gdf["geometry"] = [geometry.box(left, bottom, right, top) for left, bottom, right, top in
+                       gdf.geometry.buffer(0.5).bounds.values]
+    gdf["image_path"] = os.path.basename(get_data("OSBS_029.tif"))
+    shp_path = str(tmp_path / "annotations.shp")
+    gdf.to_file(shp_path)
+
+    with pytest.warns(DeprecationWarning, match="shapefile_to_annotations is deprecated"):
+        result = utilities.shapefile_to_annotations(shp_path, root_dir=os.path.dirname(get_data("OSBS_029.tif")))
+    assert result is not None
+
+def test_assign_image_path_warns_on_override():
+    """__assign_image_path__ should warn when overriding an existing image_path."""
+    import warnings
+    sample_geometry = [geometry.box(0, 0, 1, 1)]
+    df = pd.DataFrame({"geometry": sample_geometry, "label": ["Tree"], "image_path": ["old_image.tif"]})
+    gdf = gpd.GeoDataFrame(df, geometry="geometry")
+
+    with pytest.warns(UserWarning, match="overriding and assigning"):
+        utilities.__assign_image_path__(gdf, image_path="new_image.tif")
+
+def test_assign_image_path_warns_multiple_paths():
+    """__assign_image_path__ should warn when multiple image_paths exist."""
+    import warnings
+    sample_geometry = [geometry.box(0, 0, 1, 1), geometry.box(2, 2, 3, 3)]
+    df = pd.DataFrame({
+        "geometry": sample_geometry,
+        "label": ["Tree", "Tree"],
+        "image_path": ["image_a.tif", "image_b.tif"]
+    })
+    gdf = gpd.GeoDataFrame(df, geometry="geometry")
+
+    with pytest.warns(UserWarning, match="Multiple image_paths found"):
+        utilities.__assign_image_path__(gdf, image_path="override.tif")
+
 def test_shapefile_to_annotations_invalid_epsg(tmp_path):
     sample_geometry = [geometry.Point(404211.9 + 10, 3285102 + 20), geometry.Point(404211.9 + 20, 3285102 + 20)]
     labels = ["Tree", "Tree"]
