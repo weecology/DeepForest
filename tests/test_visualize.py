@@ -212,3 +212,24 @@ def test_check_float_image_non_unitary():
 def test_image_empty():
     image = visualize._load_image()
     assert image is not None
+
+
+def test_convert_to_sv_format_empty_dataframe():
+    """Test that convert_to_sv_format handles empty DataFrame gracefully.
+
+    Regression test for https://github.com/weecology/DeepForest/issues/1346
+    """
+    import supervision as sv
+
+    # Create empty GeoDataFrame
+    empty_df = gpd.GeoDataFrame({
+        'geometry': [],
+        'label': [],
+        'score': []
+    })
+
+    # Should return empty Detections, not crash
+    result = visualize.convert_to_sv_format(empty_df)
+
+    assert isinstance(result, sv.Detections)
+    assert len(result) == 0

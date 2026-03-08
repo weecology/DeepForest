@@ -147,6 +147,10 @@ def convert_to_sv_format(
     Returns:
         sv.Detections | sv.KeyPoints: Object type depends on geometry.
     """
+    # Handle empty DataFrame gracefully (fixes #1346)
+    if df.empty:
+        return sv.Detections.empty()
+
     geom_type = determine_geometry_type(df)
 
     if geom_type == "box":
