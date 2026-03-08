@@ -490,17 +490,13 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
         return loss
 
     def predict_step(self, batch, batch_idx):
-        metadata = None
-        if isinstance(batch, (list, tuple)):
-            if len(batch) == 3:
-                x, y, metadata = batch
-            elif len(batch) == 2:
-                x, y = batch
-            else:
-                x = batch[0]
+        # Inference: batch is (images, metadata) from DataLoader or a single images tensor.
+        if isinstance(batch, (list, tuple)) and len(batch) == 2:
+            images, metadata = batch
         else:
-            x = batch
-        outputs = self.forward(x, metadata=metadata)
+            images = batch
+            metadata = None
+        outputs = self.forward(images, metadata=metadata)
         yhat = F.softmax(outputs, 1)
 
         return yhat
