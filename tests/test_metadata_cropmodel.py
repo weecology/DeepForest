@@ -135,7 +135,7 @@ def test_predict_step_with_metadata():
     cm.create_model(num_classes=3)
     x = torch.rand(4, 3, 224, 224)
     meta = torch.rand(4, 3)
-    batch = (x, torch.zeros(4), meta)
+    batch = (x, meta)
     yhat = cm.predict_step(batch, 0)
     assert yhat.shape == (4, 3)
     # Softmax output should sum to ~1
