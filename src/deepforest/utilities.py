@@ -416,7 +416,7 @@ def format_boxes(prediction, scores=True):
     return df
 
 
-def read_coco(json_file):
+def read_coco(json_file, mode="box"):
     """Read a COCO format JSON file and return a pandas dataframe.
 
     Args:
@@ -439,18 +439,29 @@ def read_coco(json_file):
     filenames = []
     labels = []
 
+    # Format reference: https://cocodataset.org/#format-data
     for annotation in coco_data["annotations"]:
-        segmentation = annotation.get("segmentation")
-        if not segmentation:
-            continue
-        # COCO polygons are usually a list of lists; take the first (assume "single part")
-        segmentation_mask = segmentation[0]
-        # Convert flat list to coordinate pairs
-        pairs = [
-            (segmentation_mask[i], segmentation_mask[i + 1])
-            for i in range(0, len(segmentation_mask), 2)
-        ]
-        polygon = shapely.geometry.Polygon(pairs)
+        if mode == "box":
+            # COCO bbox format is [x, y, width, height]
+            x, y, width, height = annotation["bbox"]
+            # Shapely box format is [minx, miny, maxx, maxy]
+            polygon = shapely.box(x, y, x + width, y + height)
+        elif mode == "segm":
+            # COCO polygons are usually a list of lists; take the first (assume "single part")
+            segmentation = annotation.get("segmentation")
+            if not segmentation or len(segmentation) == 0:
+                continue
+
+            segmentation_mask = segmentation[0]
+            # Convert flat list to coordinate pairs
+            pairs = [
+                (segmentation_mask[i], segmentation_mask[i + 1])
+                for i in range(0, len(segmentation_mask), 2)
+            ]
+            polygon = shapely.geometry.Polygon(pairs)
+        elif mode == "keypoint":
+            raise NotImplementedError
+
         filenames.append(image_ids[annotation["image_id"]])
         polygons.append(polygon.wkt)
         cat_id = annotation.get("category_id")
@@ -578,7 +589,7 @@ def read_file(
             df = pd.read_csv(input)
             gdf = _pandas_to_deepforest_format__(input, df, image_path, root_dir, label)
         elif input.endswith(".json"):
-            df = read_coco(input)
+            df = read_coco(input, mode="box")
             gdf = _pandas_to_deepforest_format__(input, df, image_path, root_dir, label)
         elif input.endswith(".xml"):
             df = read_pascal_voc(input)
