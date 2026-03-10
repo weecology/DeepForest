@@ -117,5 +117,11 @@ cropmodel:
     resize:
         - 224
         - 224
+    # Image normalization. Defaults to ImageNet stats when null.
+    # Set to false to disable, or provide custom mean/std:
+    #   normalize:
+    #       mean: [0.5, 0.5, 0.5]
+    #       std: [0.5, 0.5, 0.5]
+    normalize:
     # Number of pixels to expand bbox crop windows for better prediction context.
     expand: 0

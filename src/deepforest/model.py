@@ -208,7 +208,9 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
         """
         data_transforms = []
         data_transforms.append(transforms.ToTensor())
-        data_transforms.append(self.normalize())
+        norm = self.normalize()
+        if norm is not None:
+            data_transforms.append(norm)
 
         # Get resize dimensions from config, default to [224, 224] if not specified
         resize_dims = self.config["cropmodel"].get("resize", [224, 224])
@@ -308,7 +310,36 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
                 cv2.imwrite(img_path, img)
 
     def normalize(self):
-        return transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        """Build the normalization transform from config.
+
+        Returns:
+            transforms.Normalize or None: The normalization transform,
+                or None if normalization is disabled.
+
+        Raises:
+            ValueError: If only one of ``mean`` or ``std`` is provided.
+        """
+        norm_cfg = self.config["cropmodel"].get("normalize", None)
+
+        if norm_cfg is None:
+            return transforms.Normalize(
+                mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+            )
+
+        if norm_cfg is False:
+            return None
+
+        has_mean = "mean" in norm_cfg
+        has_std = "std" in norm_cfg
+        if has_mean != has_std:
+            raise ValueError(
+                "Both 'mean' and 'std' must be provided for custom normalization, "
+                f"got only {'mean' if has_mean else 'std'}."
+            )
+
+        return transforms.Normalize(
+            mean=list(norm_cfg["mean"]), std=list(norm_cfg["std"])
+        )
 
     def forward(self, x):
         if self.model is None:

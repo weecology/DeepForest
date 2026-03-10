@@ -4,6 +4,7 @@ import os
 import numpy as np
 import pandas as pd
 import torch
+from torchvision import transforms
 from torchvision.ops import nms
 
 from deepforest import utilities
@@ -275,11 +276,19 @@ def _predict_crop_model_(
     results = results[results.xmin != results.xmax]
     results = results[results.ymin != results.ymax]
 
-    # Get resize dimensions from crop_model config if not using custom transform
+    # Get config from crop_model if not using custom transform
     resize = None
+    normalize = None
     expand = 0
     if transform is None and hasattr(crop_model, "config"):
         resize = crop_model.config.get("cropmodel", {}).get("resize", [224, 224])
+        norm_cfg = crop_model.config.get("cropmodel", {}).get("normalize", None)
+        if norm_cfg is False:
+            normalize = False
+        elif norm_cfg is not None and "mean" in norm_cfg and "std" in norm_cfg:
+            normalize = transforms.Normalize(
+                mean=list(norm_cfg["mean"]), std=list(norm_cfg["std"])
+            )
         expand = crop_model.config.get("cropmodel", {}).get("expand", 0)
 
     # Create dataset
@@ -289,6 +298,7 @@ def _predict_crop_model_(
         transform=transform,
         augmentations=augmentations,
         resize=resize,
+        normalize=normalize,
         expand=expand,
     )
 

@@ -10,6 +10,7 @@ import numpy as np
 from deepforest import get_data
 from deepforest import model
 from deepforest.model import CropModel
+from deepforest.datasets.cropmodel import bounding_box_transform
 
 # The model object is architecture agnostic container.
 def test_model_no_args(config):
@@ -205,3 +206,89 @@ def test_crop_model_val_dataset_confusion(tmp_path, crop_model, crop_model_data)
     # There was just one batch in the fast_dev_run
     assert len(labels) ==37
     assert len(predictions) == 37
+
+def test_crop_model_default_normalization(crop_model):
+    """Test that default normalization uses ImageNet stats."""
+    norm = crop_model.normalize()
+    assert norm is not None
+    assert list(norm.mean) == pytest.approx([0.485, 0.456, 0.406])
+    assert list(norm.std) == pytest.approx([0.229, 0.224, 0.225])
+
+    transform = crop_model.get_transform(augmentations=None)
+    norm_transforms = [
+        t for t in transform.transforms if isinstance(t, transforms.Normalize)
+    ]
+    assert len(norm_transforms) == 1
+
+def test_crop_model_custom_normalization():
+    """Test that custom normalization stats are used when configured."""
+    custom_mean = [0.5, 0.5, 0.5]
+    custom_std = [0.25, 0.25, 0.25]
+    custom_model = model.CropModel(
+        config_args={"normalize": {"mean": custom_mean, "std": custom_std}}
+    )
+    custom_model.create_model(num_classes=2)
+
+    norm = custom_model.normalize()
+    assert norm is not None
+    assert list(norm.mean) == pytest.approx(custom_mean)
+    assert list(norm.std) == pytest.approx(custom_std)
+
+    transform = custom_model.get_transform(augmentations=None)
+    norm_transforms = [
+        t for t in transform.transforms if isinstance(t, transforms.Normalize)
+    ]
+    assert len(norm_transforms) == 1
+    assert list(norm_transforms[0].mean) == pytest.approx(custom_mean)
+
+def test_crop_model_disabled_normalization():
+    """Test that normalization can be disabled with normalize: false."""
+    no_norm_model = model.CropModel(config_args={"normalize": False})
+    no_norm_model.create_model(num_classes=2)
+
+    norm = no_norm_model.normalize()
+    assert norm is None
+
+    transform = no_norm_model.get_transform(augmentations=None)
+    norm_transforms = [
+        t for t in transform.transforms if isinstance(t, transforms.Normalize)
+    ]
+    assert len(norm_transforms) == 0
+
+def test_crop_model_normalize_missing_mean_or_std():
+    """Test that providing only mean or only std raises ValueError."""
+    mean_only = model.CropModel(
+        config_args={"normalize": {"mean": [0.5, 0.5, 0.5]}}
+    )
+    mean_only.create_model(num_classes=2)
+    with pytest.raises(ValueError, match="Both 'mean' and 'std'"):
+        mean_only.normalize()
+
+    std_only = model.CropModel(
+        config_args={"normalize": {"std": [0.25, 0.25, 0.25]}}
+    )
+    std_only.create_model(num_classes=2)
+    with pytest.raises(ValueError, match="Both 'mean' and 'std'"):
+        std_only.normalize()
+
+def test_bounding_box_transform_normalize():
+    """Test bounding_box_transform respects normalize parameter."""
+    default_t = bounding_box_transform()
+    norm_default = [
+        t for t in default_t.transforms if isinstance(t, transforms.Normalize)
+    ]
+    assert len(norm_default) == 1
+
+    custom_norm = transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.25, 0.25, 0.25])
+    custom_t = bounding_box_transform(normalize=custom_norm)
+    norm_custom = [
+        t for t in custom_t.transforms if isinstance(t, transforms.Normalize)
+    ]
+    assert len(norm_custom) == 1
+    assert list(norm_custom[0].mean) == pytest.approx([0.5, 0.5, 0.5])
+
+    no_norm_t = bounding_box_transform(normalize=False)
+    norm_none = [
+        t for t in no_norm_t.transforms if isinstance(t, transforms.Normalize)
+    ]
+    assert len(norm_none) == 0
