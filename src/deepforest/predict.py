@@ -4,7 +4,6 @@ import os
 import numpy as np
 import pandas as pd
 import torch
-from torchvision import transforms
 from torchvision.ops import nms
 
 from deepforest import utilities

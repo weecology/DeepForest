@@ -1,6 +1,7 @@
 # Model - common class
 import json
 import os
+from collections.abc import Mapping
 
 import cv2
 import numpy as np
@@ -329,6 +330,12 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
 
         if norm_cfg is False:
             return None
+
+        if not isinstance(norm_cfg, Mapping):
+            raise ValueError(
+                f"'normalize' must be null, false, or a mapping with 'mean' and 'std', "
+                f"got {type(norm_cfg).__name__}."
+            )
 
         has_mean = "mean" in norm_cfg
         has_std = "std" in norm_cfg
