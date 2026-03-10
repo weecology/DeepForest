@@ -281,15 +281,14 @@ def _predict_crop_model_(
     normalize = None
     expand = 0
     if transform is None and hasattr(crop_model, "config"):
-        resize = crop_model.config.get("cropmodel", {}).get("resize", [224, 224])
-        norm_cfg = crop_model.config.get("cropmodel", {}).get("normalize", None)
-        if norm_cfg is False:
+        cropmodel_cfg = crop_model.config.get("cropmodel", {})
+        resize = cropmodel_cfg.get("resize", [224, 224])
+        norm_transform = crop_model.normalize()
+        if norm_transform is None:
             normalize = False
-        elif norm_cfg is not None and "mean" in norm_cfg and "std" in norm_cfg:
-            normalize = transforms.Normalize(
-                mean=list(norm_cfg["mean"]), std=list(norm_cfg["std"])
-            )
-        expand = crop_model.config.get("cropmodel", {}).get("expand", 0)
+        else:
+            normalize = norm_transform
+        expand = cropmodel_cfg.get("expand", 0)
 
     # Create dataset
     bounding_box_dataset = cropmodel.BoundingBoxDataset(

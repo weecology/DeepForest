@@ -317,7 +317,8 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
                 or None if normalization is disabled.
 
         Raises:
-            ValueError: If only one of ``mean`` or ``std`` is provided.
+            ValueError: If ``mean`` or ``std`` is missing from the
+                normalize mapping.
         """
         norm_cfg = self.config["cropmodel"].get("normalize", None)
 
@@ -331,10 +332,11 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
 
         has_mean = "mean" in norm_cfg
         has_std = "std" in norm_cfg
-        if has_mean != has_std:
+        if not (has_mean and has_std):
+            missing = [k for k, v in [("mean", has_mean), ("std", has_std)] if not v]
             raise ValueError(
                 "Both 'mean' and 'std' must be provided for custom normalization, "
-                f"got only {'mean' if has_mean else 'std'}."
+                f"missing: {missing}."
             )
 
         return transforms.Normalize(

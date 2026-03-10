@@ -271,6 +271,11 @@ def test_crop_model_normalize_missing_mean_or_std():
     with pytest.raises(ValueError, match="Both 'mean' and 'std'"):
         std_only.normalize()
 
+    empty_norm = model.CropModel(config_args={"normalize": {}})
+    empty_norm.create_model(num_classes=2)
+    with pytest.raises(ValueError, match="Both 'mean' and 'std'"):
+        empty_norm.normalize()
+
 def test_bounding_box_transform_normalize():
     """Test bounding_box_transform respects normalize parameter."""
     default_t = bounding_box_transform()
