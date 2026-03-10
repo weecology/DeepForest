@@ -322,7 +322,7 @@ crop_model = CropModel(config_args={"resize": [300, 300]})
 
 ### use_metadata
 
-Boolean flag to enable spatial-temporal metadata fusion. When `True`, the model accepts `(lat, lon, date)` alongside image crops and learns a small embedding that is concatenated with image features. Default is `False`. See [Spatial-Temporal Metadata](03_cropmodels.md#spatial-temporal-metadata) for usage details.
+Boolean flag to enable spatial-temporal metadata fusion. When `True`, the model accepts `(lat, lon, date)` alongside image crops and learns a small embedding that is concatenated with image features. Default is `False`. See {ref}`spatial-temporal-metadata` for usage details.
 
 ### metadata_dim
 
