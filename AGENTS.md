@@ -19,6 +19,7 @@ Imagery is of a relatively high resolution and is generally not satellite data.
 - `/src/scripts`: Contains CLI interface(s) to DeepForest
 - `/tests`: Contains the unit tests; we use pytest
 - `/docs`: Contains documentation for the project, build using Sphinx and hosted on readthedocs.
+- `/scratch`: Should be used for throw-away test scripts and other debug files.
 
 ## Libraries
 
