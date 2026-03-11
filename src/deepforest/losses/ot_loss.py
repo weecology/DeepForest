@@ -3,7 +3,7 @@ from typing import cast
 import torch
 from torch.nn import Module
 
-from .bregman_pytorch import sinkhorn
+from .sinkhorn import sinkhorn_knopp
 
 
 class OT_Loss(Module):
@@ -57,7 +57,7 @@ class OT_Loss(Module):
                 )
 
                 # use sinkhorn to solve OT, compute optimal beta.
-                P, log = sinkhorn(
+                P, log = sinkhorn_knopp(
                     target_prob,
                     source_prob,
                     dis,
