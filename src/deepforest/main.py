@@ -716,10 +716,15 @@ class deepforest(pl.LightningModule):
 
         # allow for empty data if data augmentation is generated
         images, targets, image_names = batch
-        loss_dict = self.model.forward(images, targets)
 
-        # sum of regression and classification loss
-        losses = sum(loss_dict.values())
+        if self.model.task == "keypoint":
+            images = torch.stack(images)
+            points = [t["points"] for t in targets]
+            loss_dict = self.model(images, points=points)
+            losses = loss_dict["loss"]
+        else:
+            loss_dict = self.model.forward(images, targets)
+            losses = sum(loss_dict.values())
 
         # Log loss
         for key, value in loss_dict.items():
