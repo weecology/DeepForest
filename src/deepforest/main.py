@@ -15,7 +15,6 @@ Image.MAX_IMAGE_PIXELS = None
 from pytorch_lightning.callbacks import LearningRateMonitor
 from pytorch_lightning.loggers import CSVLogger
 from torch import optim
-from torchmetrics.classification import BinaryAccuracy
 from torchmetrics.detection import IntersectionOverUnion, MeanAveragePrecision
 
 from deepforest import predict, utilities
@@ -102,11 +101,8 @@ class deepforest(pl.LightningModule):
         )
         self.mAP_metric = MeanAveragePrecision(backend="faster_coco_eval")
 
-        # Empty frame accuracy
-        self.empty_frame_accuracy = BinaryAccuracy()
-
         self.precision_recall_metric = RecallPrecision(
-            csv_file=self.config.validation.csv_file,
+            iou_threshold=self.config.validation.iou_threshold,
             label_dict=self.label_dict,
         )
 
@@ -735,33 +731,19 @@ class deepforest(pl.LightningModule):
         with torch.no_grad():
             preds = self.model.forward(images, targets)
 
-        if len(targets) > 0:
-            # Remove empty targets and corresponding predictions
-            filtered_preds = []
-            filtered_targets = []
+        # Compute precision, recall and empty frame metrics.
+        self.precision_recall_metric.update(preds, targets, image_names)
 
-            for i, target in enumerate(targets):
-                # Empty frame accuracy
-                is_empty_frame = target["boxes"].numel() == 0 or torch.all(
-                    target["boxes"] == 0
-                )
-                if is_empty_frame:
-                    # 0 indicates empty frame or predication
-                    device = target["boxes"].device
-                    self.empty_frame_accuracy.update(
-                        torch.tensor([min(len(preds[i]["boxes"]), 1)], device=device),
-                        torch.tensor([0.0], device=device),
-                    )
-                else:
-                    # Non-empty frames go to all metrics
-                    filtered_preds.append(preds[i])
-                    filtered_targets.append(target)
+        # Filter out empty frames for IoU/mAP metrics. pred + target
+        non_empty_pred = []
+        non_empty_target = []
+        for pred, target in zip(preds, targets, strict=True):
+            if not (target["boxes"].numel() == 0 or torch.all(target["boxes"] == 0)):
+                non_empty_pred.append(pred)
+                non_empty_target.append(target)
 
-            # IoU and mAP metrics need preds/targets to exist
-            self.iou_metric.update(filtered_preds, filtered_targets)
-            self.mAP_metric.update(filtered_preds, filtered_targets)
-            # Precision recall metric can handle empty frames internally
-            self.precision_recall_metric.update(preds, image_names)
+        self.iou_metric.update(non_empty_pred, non_empty_target)
+        self.mAP_metric.update(non_empty_pred, non_empty_target)
 
         # Log the predictions if you want to use them for evaluation logs
         for i, result in enumerate(preds):
@@ -795,10 +777,6 @@ class deepforest(pl.LightningModule):
         # Box recall/precision
         metrics.update(self.precision_recall_metric.compute())
 
-        # Empty frame accuracy
-        if self.empty_frame_accuracy.update_called:
-            metrics["empty_frame_accuracy"] = self.empty_frame_accuracy.compute()
-
         return metrics
 
     def on_validation_epoch_end(self):
@@ -817,7 +795,6 @@ class deepforest(pl.LightningModule):
         self.precision_recall_metric.reset()
         self.iou_metric.reset()
         self.mAP_metric.reset()
-        self.empty_frame_accuracy.reset()
 
     def predict_step(self, batch, batch_idx):
         """Predict a batch of images with the deepforest model. If batch is a
@@ -983,7 +960,27 @@ class deepforest(pl.LightningModule):
         self.create_trainer()
         self.trainer.validate(self)
 
-        # Read back the full results stashed by RecallPrecision.compute()
-        results = self.precision_recall_metric.results
+        # Gather predictions from all ranks in multi-GPU settings
+        if self.trainer.world_size > 1:
+            all_predictions = [None] * self.trainer.world_size
+            torch.distributed.all_gather_object(all_predictions, self.predictions)
+            self.predictions = [pred for preds in all_predictions for pred in preds]
+
+        # Concat prediction dataframes and convert numeric labels to strings
+        if len(self.predictions) > 0:
+            self.predictions = pd.concat(self.predictions, ignore_index=True)
+            if "label" in self.predictions.columns:
+                self.predictions["label"] = self.predictions["label"].map(
+                    lambda x: self.numeric_to_label_dict.get(int(x), x)
+                    if pd.notna(x)
+                    else x
+                )
+        else:
+            self.predictions = pd.DataFrame()
+
+        results = {}
+        results.update(self.trainer.logged_metrics)
+        results["predictions"] = self.predictions
+        results["results"] = self.precision_recall_metric.get_results()
 
         return results
