@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from typing import Any
 
 from omegaconf import DictConfig, OmegaConf
 
@@ -107,6 +108,7 @@ class CropModelConfig:
     scheduler: SchedulerConfig = field(default_factory=SchedulerConfig)
     balance_classes: bool = False
     resize: list[int] = field(default_factory=lambda: [224, 224])
+    normalize: Any = None
     expand: int = 0
 
 

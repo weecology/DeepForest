@@ -1,6 +1,7 @@
 # Model - common class
 import json
 import os
+from collections.abc import Mapping
 
 import numpy as np
 import rasterio
@@ -207,7 +208,9 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
         """
         data_transforms = []
         data_transforms.append(transforms.ToTensor())
-        data_transforms.append(self.normalize())
+        norm = self.normalize()
+        if norm is not None:
+            data_transforms.append(norm)
 
         # Get resize dimensions from config, default to [224, 224] if not specified
         resize_dims = self.config["cropmodel"].get("resize", [224, 224])
@@ -307,7 +310,44 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
                 Image.fromarray(img).save(img_path)
 
     def normalize(self):
-        return transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        """Build the normalization transform from config.
+
+        Returns:
+            transforms.Normalize or None: The normalization transform,
+                or None if normalization is disabled.
+
+        Raises:
+            ValueError: If ``mean`` or ``std`` is missing from the
+                normalize mapping.
+        """
+        norm_cfg = self.config["cropmodel"].get("normalize", None)
+
+        if norm_cfg is None:
+            return transforms.Normalize(
+                mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+            )
+
+        if norm_cfg is False:
+            return None
+
+        if not isinstance(norm_cfg, Mapping):
+            raise ValueError(
+                f"'normalize' must be null, false, or a mapping with 'mean' and 'std', "
+                f"got {type(norm_cfg).__name__}."
+            )
+
+        has_mean = "mean" in norm_cfg
+        has_std = "std" in norm_cfg
+        if not (has_mean and has_std):
+            missing = [k for k, v in [("mean", has_mean), ("std", has_std)] if not v]
+            raise ValueError(
+                "Both 'mean' and 'std' must be provided for custom normalization, "
+                f"missing: {missing}."
+            )
+
+        return transforms.Normalize(
+            mean=list(norm_cfg["mean"]), std=list(norm_cfg["std"])
+        )
 
     def forward(self, x):
         if self.model is None:

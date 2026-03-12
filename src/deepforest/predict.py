@@ -275,12 +275,19 @@ def _predict_crop_model_(
     results = results[results.xmin != results.xmax]
     results = results[results.ymin != results.ymax]
 
-    # Get resize dimensions from crop_model config if not using custom transform
+    # Get config from crop_model if not using custom transform
     resize = None
+    normalize = None
     expand = 0
     if transform is None and hasattr(crop_model, "config"):
-        resize = crop_model.config.get("cropmodel", {}).get("resize", [224, 224])
-        expand = crop_model.config.get("cropmodel", {}).get("expand", 0)
+        cropmodel_cfg = crop_model.config.get("cropmodel", {})
+        resize = cropmodel_cfg.get("resize", [224, 224])
+        norm_transform = crop_model.normalize()
+        if norm_transform is None:
+            normalize = False
+        else:
+            normalize = norm_transform
+        expand = cropmodel_cfg.get("expand", 0)
 
     # Create dataset
     bounding_box_dataset = cropmodel.BoundingBoxDataset(
@@ -289,6 +296,7 @@ def _predict_crop_model_(
         transform=transform,
         augmentations=augmentations,
         resize=resize,
+        normalize=normalize,
         expand=expand,
     )
 
