@@ -290,3 +290,87 @@ crop_model.from_pretrained("Weecology/cropmodel-deadtrees")
 Please name the cropmodel based on what is being classified.
 
 Note: You must have appropriate permissions in the weecology organization to upload models to weecology. If you are not already an active collaborator we recommend initially uploading new models to your own huggingface account and then letting us know and the model and whether or not you are interested in having them hosted on weecology's account.
+
+#### Contributing a user-trained CropModel
+
+If you have trained a classification model and want others to be able to load it through DeepForest, follow these steps.
+
+##### 1. Model format
+
+Your model must be a `torchvision` classification backbone (e.g. `resnet18`, `resnet50`) with the final FC layer sized to your number of classes.
+
+The uploaded repo needs two files:
+
+- `model.safetensors` with state dict keys prefixed by `model.` (e.g. `model.layer1.0.conv1.weight`)
+- `config.json` with a `cropmodel` section containing at minimum `label_dict`, `architecture`, and `balance_classes`
+
+Example `config.json`:
+
+```json
+{
+  "cropmodel": {
+    "architecture": "resnet18",
+    "label_dict": {"ClassA": 0, "ClassB": 1},
+    "balance_classes": false,
+    "batch_size": 4,
+    "num_workers": 0,
+    "lr": 0.0001,
+    "resize": [224, 224],
+    "resize_interpolation": "bilinear",
+    "expand": 0,
+    "scheduler": {
+      "type": "ReduceLROnPlateau",
+      "params": {
+        "mode": "min",
+        "factor": 0.5,
+        "patience": 5,
+        "threshold": 0.0001,
+        "threshold_mode": "rel",
+        "cooldown": 0,
+        "min_lr": 0,
+        "eps": 1e-08
+      }
+    }
+  }
+}
+```
+
+##### 2. Label dictionary
+
+The model must have a `label_dict` mapping class names to integer indices: `{"ClassA": 0, "ClassB": 1, ...}`. This is stored in `config.json` and loaded automatically by `CropModel.load_model()`.
+
+##### 3. Normalization
+
+CropModel applies ImageNet normalization by default through `self.normalize()`. If your model was trained with standard ImageNet preprocessing, no changes are needed.
+
+##### 4. Upload
+
+You can either use `CropModel.push_to_hub()` directly, or build the two files manually and upload via `huggingface_hub.HfApi.upload_folder()`.
+
+Using `push_to_hub()`:
+
+```python
+from deepforest.model import CropModel
+
+crop_model = CropModel(config_args={"architecture": "resnet18"})
+crop_model.create_model(num_classes=10)
+# ... load your trained weights ...
+crop_model.label_dict = {"SpeciesA": 0, "SpeciesB": 1}
+crop_model.push_to_hub("your-username/cropmodel-yourmodel")
+```
+
+##### 5. Verify the model loads correctly
+
+```python
+from deepforest.model import CropModel
+import torch
+
+m = CropModel.load_model("your-username/cropmodel-yourmodel")
+x = torch.rand(1, 3, 224, 224)
+out = m(x)
+assert out.shape[1] == len(m.label_dict)
+```
+
+##### 6. Document the model
+
+Add a brief description of your model to `docs/user_guide/02_prebuilt.md` under the Crop Classifiers section. Include the species or categories it classifies, the training data source, and a code snippet showing how to load it.
