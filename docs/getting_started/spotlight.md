@@ -1,6 +1,6 @@
 # Spotlight Integration
 
-DeepForest integrates with [Renumics Spotlight](https://github.com/Renumics/spotlight) for interactive visualization of forest detection results. This integration allows you to explore predictions, analyze model performance, and assess data quality through Spotlight's web interface.
+DeepForest integrates with [Renumics Spotlight](https://github.com/Renumics/spotlight) for interactive visualization of detection results. This integration allows you to explore predictions, analyze model performance, and assess data quality through Spotlight's web interface.
 
 > **Note**: The Spotlight manifest format is experimental. For production use, consider the Hugging Face datasets export which offers broader tool compatibility.
 
@@ -156,14 +156,6 @@ write_gallery_html("forest_gallery")
 hf_dataset = export_to_spotlight_dataset("forest_gallery")
 ```
 
-## Export Formats
-
-| Format | Status | Files Created | Use Case |
-|--------|--------|---------------|----------|
-| Direct Spotlight | Stable | None | Interactive visualization |
-| Gallery + HTML | Stable | Thumbnail images | Local browsing, sharing |
-| HuggingFace Dataset | Stable | Uses existing images | Data science workflows |
-
 ## Command Line Interface
 
 ```bash
@@ -176,78 +168,3 @@ python -m deepforest.scripts.cli gallery spotlight --gallery forest_gallery --ou
 # Package for Spotlight
 python -m deepforest.scripts.cli gallery spotlight --gallery forest_gallery --out spotlight_package
 ```
-
-## Implementation Notes
-
-The Spotlight export creates a minimal package containing:
-- `manifest.json` - Image and annotation metadata
-- `images/` folder - When generated from gallery export
-
-See `src/deepforest/visualize/spotlight_export.py` for packaging utilities and `src/deepforest/visualize/spotlight_adapter.py` for the data format mapping.
-
-## Alternative Export Options
-
-For integration with other tools, you can export the gallery data in standard formats and use external tools for further processing.
-
-## Data Format Flexibility
-
-The Spotlight integration supports flexible column naming for image references:
-
-```python
-# All of these column names work for image references:
-df_path = pd.DataFrame({"image_path": ["img.jpg"], ...})
-df_file = pd.DataFrame({"file_name": ["img.jpg"], ...})
-df_source = pd.DataFrame({"source_image": ["img.jpg"], ...})
-df_image = pd.DataFrame({"image": ["img.jpg"], ...})
-
-# All will work with Spotlight
-for df in [df_path, df_file, df_source, df_image]:
-    spotlight_data = view_with_spotlight(df)
-```
-
-The integration also handles missing values gracefully:
-- NaN values in optional columns (label, score) are excluded from output
-- Empty DataFrames raise clear error messages
-- Missing required columns (bbox coordinates) are validated
-
-## Error Handling
-
-The integration provides clear error messages for common issues:
-
-```python
-# Empty DataFrame
-df_empty = pd.DataFrame()
-# Raises: ValueError("DataFrame is empty")
-
-# Missing image reference
-df_no_image = pd.DataFrame({"xmin": [10], "ymin": [10], "xmax": [50], "ymax": [50]})
-# Raises: ValueError("DataFrame must contain an image reference column")
-
-# Missing bbox columns
-df_no_bbox = pd.DataFrame({"image_path": ["test.jpg"], "label": ["Tree"]})
-# Raises: ValueError("Missing required bbox column")
-
-# Invalid format
-df.spotlight(format="invalid")
-# Raises: ValueError("Unsupported format: invalid")
-```
-
-## Testing
-
-Run the comprehensive test suite:
-
-```bash
-python -m pip install -U pytest pandas
-python -m pytest -q tests/test_spotlight.py
-```
-
-The test suite covers:
-- Basic functionality and error handling
-- Multiple image reference column formats
-- NaN value handling
-- Format consistency between "objects" and "lightly" formats
-- Complete prediction workflows
-- DataFrame accessor methods
-- Export functionality
-
-Tests are consolidated in `tests/test_spotlight.py`.
