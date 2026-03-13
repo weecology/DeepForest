@@ -23,7 +23,7 @@ DeepForest is a python package for training and predicting ecological objects in
 
 [DeepForest is documented on readthedocs](https://deepforest.readthedocs.io/)
 
-## How does deepforest work?
+## How does DeepForest work?
 
 DeepForest uses deep learning object detection networks to predict bounding boxes corresponding to individual trees in RGB imagery.
 DeepForest is built on the object detection module from the [torchvision package](http://pytorch.org/vision/stable/index.html) and designed to make training models for detection simpler.
