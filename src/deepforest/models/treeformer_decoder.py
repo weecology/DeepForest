@@ -81,8 +81,9 @@ class DropOutDecoder(nn.Module):
 
 
 class Regression(nn.Module):
-    def __init__(self):
+    def __init__(self, num_classes: int = 1):
         super().__init__()
+        self.num_classes = num_classes
 
         self.v1 = nn.Sequential(
             nn.Upsample(scale_factor=2, mode="bilinear", align_corners=True),
@@ -133,7 +134,7 @@ class Regression(nn.Module):
             nn.Conv2d(256, 128, 3, padding=1, dilation=1),
             nn.BatchNorm2d(128),
             nn.ReLU(inplace=True),
-            nn.Conv2d(128, 1, 3, padding=1, dilation=1),
+            nn.Conv2d(128, num_classes, 3, padding=1, dilation=1),
             nn.ReLU(inplace=True),
         )
 
@@ -144,7 +145,7 @@ class Regression(nn.Module):
             nn.Conv2d(128, 64, 3, padding=1, dilation=1),
             nn.BatchNorm2d(64),
             nn.ReLU(inplace=True),
-            nn.Conv2d(64, 1, 3, padding=1, dilation=1),
+            nn.Conv2d(64, num_classes, 3, padding=1, dilation=1),
             nn.ReLU(inplace=True),
         )
 
@@ -152,52 +153,56 @@ class Regression(nn.Module):
             nn.Conv2d(128, 64, 3, padding=1, dilation=1),
             nn.BatchNorm2d(64),
             nn.ReLU(inplace=True),
-            nn.Conv2d(64, 1, 3, padding=1, dilation=1),
+            nn.Conv2d(64, num_classes, 3, padding=1, dilation=1),
             nn.ReLU(inplace=True),
         )
 
-        self.noise2 = DropOutDecoder(1, 512, 512)
+        self.noise2 = nn.Dropout2d(p=0.3)
         self.noise1 = FeatureDropDecoder(1, 256, 256)
         self.noise0 = FeatureNoiseDecoder(1, 128, 128)
+        self.noise_cls = nn.Dropout(p=0.3)
 
         self.upsam2 = nn.Upsample(scale_factor=2, mode="bilinear", align_corners=True)
         self.upsam4 = nn.Upsample(scale_factor=4, mode="bilinear", align_corners=True)
 
-        self.conv1 = nn.Conv2d(1024, 512, kernel_size=1, bias=False)
-        self.conv2 = nn.Conv2d(512, 256, kernel_size=1, bias=False)
-        self.conv3 = nn.Conv2d(256, 128, kernel_size=1, bias=False)
-        self.conv4 = nn.Conv2d(128, 1, kernel_size=1, bias=False)
+        self.cls_lin1 = nn.Linear(1024, 512, bias=False)
+        self.cls_lin2 = nn.Linear(512, 256, bias=False)
+        self.cls_lin3 = nn.Linear(256, 128, bias=False)
+        self.cls_lin4 = nn.Linear(128, num_classes, bias=False)
 
         self.init_param()
 
     def forward(self, x, cls):
-        x0 = x[0]
-        x1 = x[1]
-        x2 = x[2]
-        x3 = x[3]
-        cls0 = cls[0].view(cls[0].shape[0], cls[0].shape[1], 1, 1)
-        cls1 = cls[1].view(cls[1].shape[0], cls[1].shape[1], 1, 1)
-        cls2 = cls[2].view(cls[2].shape[0], cls[2].shape[1], 1, 1)
+        x0, x1, x2, x3 = x[0], x[1], x[2], x[3]
 
         x2_1 = self.ca2(x2) + self.v3(x3)
         x1_1 = self.ca1(x1) + self.v2(x2_1)
         x0_1 = self.ca0(x0) + self.v1(x1_1)
 
         if self.training:
-            yc2 = self.conv4(
-                self.conv3(self.conv2(self.noise2(self.conv1(cls2))))
+            lin1_out = self.cls_lin1(cls[2])
+            yc2 = self.cls_lin4(
+                self.cls_lin3(self.cls_lin2(self.noise_cls(lin1_out)))
             ).squeeze()
-            yc1 = self.conv4(self.conv3(self.noise1(self.conv2(cls1)))).squeeze()
-            yc0 = self.conv4(self.noise0(self.conv3(cls0))).squeeze()
+
+            lin2_out = self.cls_lin2(cls[1])
+            lin2_noisy = self.noise1(lin2_out[:, :, None, None]).squeeze(-1).squeeze(-1)
+            yc1 = self.cls_lin4(self.cls_lin3(lin2_noisy)).squeeze()
+
+            lin3_out = self.cls_lin3(cls[0])
+            lin3_noisy = self.noise0(lin3_out[:, :, None, None]).squeeze(-1).squeeze(-1)
+            yc0 = self.cls_lin4(lin3_noisy).squeeze()
 
             y2 = self.res2(self.upsam4(self.noise2(x2_1)))
             y1 = self.res1(self.upsam2(self.noise1(x1_1)))
             y0 = self.res0(self.noise0(x0_1))
 
         else:
-            yc2 = self.conv4(self.conv3(self.conv2(self.conv1(cls2)))).squeeze()
-            yc1 = self.conv4(self.conv3(self.conv2(cls1))).squeeze()
-            yc0 = self.conv4(self.conv3(cls0)).squeeze()
+            yc2 = self.cls_lin4(
+                self.cls_lin3(self.cls_lin2(self.cls_lin1(cls[2])))
+            ).squeeze()
+            yc1 = self.cls_lin4(self.cls_lin3(self.cls_lin2(cls[1]))).squeeze()
+            yc0 = self.cls_lin4(self.cls_lin3(cls[0])).squeeze()
 
             y2 = self.res2(self.upsam4(x2_1))
             y1 = self.res1(self.upsam2(x1_1))
@@ -207,7 +212,7 @@ class Regression(nn.Module):
 
     def init_param(self):
         for m in self.modules():
-            if isinstance(m, nn.Conv2d):
+            if isinstance(m, (nn.Conv2d, nn.Linear)):
                 nn.init.normal_(m.weight, std=0.01)
                 if m.bias is not None:
                     nn.init.constant_(m.bias, 0)

@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 import rasterio
 import shapely
+import torch
 import xmltodict
 from omegaconf import DictConfig, OmegaConf
 from PIL import Image
@@ -383,8 +384,36 @@ def format_geometry(predictions, scores=True, geom_type=None):
     elif geom_type == "polygon":
         raise ValueError("Polygon predictions are not yet supported for formatting")
     elif geom_type == "point":
-        raise ValueError("Point predictions are not yet supported for formatting")
+        df = format_keypoints(predictions, scores=scores)
+        if df is None:
+            return None
 
+    return df
+
+
+def format_keypoints(prediction, scores=True):
+    """Format a retinanet prediction into a pandas dataframe for a single
+    image.
+
+    Args:
+        prediction: a dictionary with keys 'boxes' and 'labels' coming from a retinanet
+        scores: Whether boxes come with scores, during prediction, or without scores, as in during training.
+    Returns:
+        df: a pandas dataframe
+    """
+    if len(prediction["points"]) == 0:
+        return None
+
+    df = pd.DataFrame(
+        prediction["points"].cpu().detach().numpy(),
+        columns=["x", "y"],
+    )
+    df["label"] = prediction["labels"].cpu().detach().numpy()
+
+    if scores:
+        df["score"] = prediction["scores"].cpu().detach().numpy()
+
+    df["geometry"] = df.apply(lambda x: shapely.geometry.Point(x.x, x.y), axis=1)
     return df
 
 
@@ -905,3 +934,47 @@ def image_to_geo_coordinates(gdf, root_dir=None, flip_y_axis=False):
 def collate_fn(batch):
     batch = list(filter(lambda x: x is not None, batch))
     return tuple(zip(*batch, strict=False))
+
+
+def density_to_points(
+    density_map: torch.Tensor, score_thresh: float = 0.1
+) -> list[dict[str, torch.Tensor]]:
+    """Extract peak point predictions from a density map.
+
+    Uses max-pooling as a local-maxima filter and keeps peaks above
+    ``score_thresh``.
+
+    Args:
+        density_map: (B, C, H, W) density map tensor.
+        score_thresh: Minimum density value for a peak to be retained.
+
+    Returns:
+        List of dicts with ``"points"`` (N, 2), ``"scores"`` (N,), and
+        ``"labels"`` (N,) for each image in the batch. The dict is
+        compatible with ``format_geometry``.
+    """
+    kernel = 3
+    pad = kernel // 2
+    pooled = torch.nn.functional.max_pool2d(
+        density_map, kernel_size=kernel, stride=1, padding=pad
+    )
+    is_peak = (density_map == pooled) & (density_map > score_thresh)
+
+    results = []
+    for b in range(density_map.shape[0]):
+        peak_mask = is_peak[b].any(dim=0)
+        yx = peak_mask.nonzero(as_tuple=False).float()
+        xy = yx[:, [1, 0]]
+        n = xy.shape[0]
+        if n > 0:
+            scores = density_map[b, 0][peak_mask].detach()
+        else:
+            scores = torch.zeros(0, device=density_map.device)
+        results.append(
+            {
+                "points": xy.detach(),
+                "scores": scores,
+                "labels": torch.zeros(n, dtype=torch.long, device=density_map.device),
+            }
+        )
+    return results

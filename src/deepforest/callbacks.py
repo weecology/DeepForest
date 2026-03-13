@@ -141,6 +141,10 @@ class ImagesCallback(Callback):
         else:
             df = pd.DataFrame()
 
+        if df.empty or "image_path" not in df.columns:
+            pl_module.print("No predictions above score_thresh to log.")
+            return
+
         out_dir = os.path.join(self.savedir, "predictions")
         os.makedirs(out_dir, exist_ok=True)
 

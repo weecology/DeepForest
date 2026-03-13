@@ -27,6 +27,7 @@ matmul_precision: highest
 # Specify a label_dict to override model settings.
 # By default, this will be populated from the model
 # checkpoint that is selected in model.name/revision.
+# e.g. { "Tree": 0 }
 label_dict:
 num_classes:
 
@@ -46,6 +47,8 @@ train:
 
     # Optimizer initial learning rate
     lr: 0.001
+    optimizer: sgd
+    weight_decay: 0.0001
 
     # Data augmentations for training
     # Augmentations must be a list of augmentation names, or a list
@@ -83,6 +86,7 @@ train:
     fast_dev_run: False
     # preload images to GPU memory for fast training. This depends on GPU size and number of images.
     preload_images: False
+    limit_batches: 1.0
 
 
 validation:
@@ -97,7 +101,11 @@ validation:
 
     # Intersection over union evaluation
     iou_threshold: 0.4
+    # Distance threshold (pixels) for keypoint recall/precision matching
+    distance_threshold: 10.0
     val_accuracy_interval: 20
+
+    limit_batches: 1.0
 
     # Data augmentation is none by default for validation, but you can specify:
     # augmentations:
@@ -136,3 +144,9 @@ cropmodel:
     normalize:
     # Number of pixels to expand bbox crop windows for better prediction context.
     expand: 0
+
+keypoint:
+    density_sigma_start: 4.0
+    density_sigma_end: 2.0
+    mae_weight: 0.025
+    count_cls_weight: 0.025

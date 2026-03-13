@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 import pytorch_lightning as pl
 import torch
+import torchmetrics
 from omegaconf import DictConfig, OmegaConf
 from PIL import Image
 from pytorch_lightning.callbacks import LearningRateMonitor
@@ -94,7 +95,6 @@ class deepforest(pl.LightningModule):
         if not self.config.validation.csv_file and self.existing_val_dataloader is None:
             return
 
-        # Box Metrics
         if self.model.task == "box":
             self.iou_metric = IntersectionOverUnion(
                 class_metrics=True, iou_threshold=self.config.validation.iou_threshold
@@ -102,10 +102,17 @@ class deepforest(pl.LightningModule):
 
             self.mAP_metric = MeanAveragePrecision(backend="faster_coco_eval")
 
-        self.precision_recall_metric = RecallPrecision(
-            iou_threshold=self.config.validation.iou_threshold,
-            label_dict=self.label_dict,
-        )
+            self.precision_recall_metric = RecallPrecision(
+                csv_file=self.config.validation.csv_file,
+                label_dict=self.label_dict,
+            )
+        elif self.model.task == "keypoint":
+            self.mae_metric = torchmetrics.MeanAbsoluteError()
+            self.precision_recall_metric = RecallPrecision(
+                task="keypoint",
+                distance_threshold=self.config.validation.distance_threshold,
+                label_dict=self.label_dict,
+            )
 
     def load_model(self, model_name=None, revision=None):
         """Loads a model that has already been pretrained for a specific task,
@@ -217,7 +224,7 @@ class deepforest(pl.LightningModule):
             if logger is not None:
                 lr_monitor = LearningRateMonitor(logging_interval="epoch")
                 callbacks.append(lr_monitor)
-            limit_val_batches = 1.0
+            limit_val_batches = self.config.validation.limit_batches
             num_sanity_val_steps = 2
         else:
             # Disable validation, don't use trainer defaults
@@ -242,6 +249,7 @@ class deepforest(pl.LightningModule):
             "accelerator": self.config.accelerator,
             "fast_dev_run": self.config.train.fast_dev_run,
             "callbacks": callbacks,
+            "limit_train_batches": self.config.train.limit_batches,
             "limit_val_batches": limit_val_batches,
             "num_sanity_val_steps": num_sanity_val_steps,
             "default_root_dir": self.config.log_root,
@@ -715,16 +723,9 @@ class deepforest(pl.LightningModule):
         self.model.train()
 
         # allow for empty data if data augmentation is generated
-        images, targets, image_names = batch
-
-        if self.model.task == "keypoint":
-            images = torch.stack(images)
-            points = [t["points"] for t in targets]
-            loss_dict = self.model(images, points=points)
-            losses = loss_dict["loss"]
-        else:
-            loss_dict = self.model.forward(images, targets)
-            losses = sum(loss_dict.values())
+        images, targets, _image_names = batch
+        loss_dict = self.model.forward(images, targets)
+        losses = sum(loss_dict.values())
 
         # Log loss
         for key, value in loss_dict.items():
@@ -759,30 +760,53 @@ class deepforest(pl.LightningModule):
         # In eval model, return predictions to calculate prediction metrics
         self.model.eval()
         with torch.no_grad():
-            preds = self.model.forward(images, targets)
+            if self.model.task == "keypoint":
+                density_map, _ = self.model(images)
+                pred_counts = density_map.sum(dim=[1, 2, 3])
+                true_counts = torch.tensor(
+                    [t["points"].shape[0] for t in targets],
+                    dtype=torch.float32,
+                    device=density_map.device,
+                )
+                self.mae_metric.update(pred_counts, true_counts)
+                preds_pts = utilities.density_to_points(
+                    density_map, score_thresh=self.config.score_thresh
+                )
+                self.precision_recall_metric.update(preds_pts, targets, image_names)
 
-        # Compute precision, recall and empty frame metrics.
-        self.precision_recall_metric.update(preds, targets, image_names)
+            else:
+                preds = self.model.forward(images, targets)
 
-        # Filter out empty frames for IoU/mAP metrics. pred + target
-        non_empty_pred = []
-        non_empty_target = []
-        for pred, target in zip(preds, targets, strict=True):
-            if not (target["boxes"].numel() == 0 or torch.all(target["boxes"] == 0)):
-                non_empty_pred.append(pred)
-                non_empty_target.append(target)
+                # Compute precision, recall and empty frame metrics.
+                self.precision_recall_metric.update(preds, targets, image_names)
 
-        self.iou_metric.update(non_empty_pred, non_empty_target)
-        self.mAP_metric.update(non_empty_pred, non_empty_target)
+                # Filter out empty frames for IoU/mAP metrics. pred + target
+                non_empty_pred = []
+                non_empty_target = []
+                for pred, target in zip(preds, targets, strict=True):
+                    if not (
+                        target["boxes"].numel() == 0 or torch.all(target["boxes"] == 0)
+                    ):
+                        non_empty_pred.append(pred)
+                        non_empty_target.append(target)
+
+                self.iou_metric.update(non_empty_pred, non_empty_target)
+                self.mAP_metric.update(non_empty_pred, non_empty_target)
 
         # Log the predictions if you want to use them for evaluation logs
-        for i, result in enumerate(preds):
+        results_to_format = preds_pts if self.model.task == "keypoint" else preds
+        for i, result in enumerate(results_to_format):
             formatted_result = utilities.format_geometry(result)
             if formatted_result is not None:
                 formatted_result["image_path"] = image_names[i]
                 self.predictions.append(formatted_result)
 
         return losses
+
+    def on_train_epoch_start(self):
+        """Update density_sigma schedule for keypoint models."""
+        if self.model.task == "keypoint" and hasattr(self.model, "set_epoch"):
+            self.model.set_epoch(self.current_epoch, self.trainer.max_epochs)
 
     def on_validation_epoch_start(self):
         self.predictions = []
@@ -794,8 +818,11 @@ class deepforest(pl.LightningModule):
         """
         metrics = {}
 
+        if self.model.task == "keypoint":
+            metrics["val_mae"] = self.mae_metric.compute()
+            metrics.update(self.precision_recall_metric.compute())
         # IoU and mAP
-        if len(self.iou_metric.groundtruth_labels) > 0:
+        elif self.model.task == "box" and len(self.iou_metric.groundtruth_labels) > 0:
             metrics.update(self.iou_metric.compute())
             # Lightning bug: claims this is a warning but it's not. See issue #16218 in Lightning-AI/pytorch-lightning
             output = self.mAP_metric.compute()
@@ -822,9 +849,13 @@ class deepforest(pl.LightningModule):
 
         # Manual reset. Lightning does not do this automatically
         # unless we log the metric objects directly
+        # TODO: Make this a metric collection?
         self.precision_recall_metric.reset()
-        self.iou_metric.reset()
-        self.mAP_metric.reset()
+        if self.model.task == "keypoint":
+            self.mae_metric.reset()
+        else:
+            self.iou_metric.reset()
+            self.mAP_metric.reset()
 
     def predict_step(self, batch, batch_idx):
         """Predict a batch of images with the deepforest model. If batch is a
@@ -887,9 +918,19 @@ class deepforest(pl.LightningModule):
         return results
 
     def configure_optimizers(self):
-        optimizer = optim.SGD(
-            self.model.parameters(), lr=self.config.train.lr, momentum=0.9
-        )
+        if self.config.train.optimizer == "adamw":
+            optimizer = torch.optim.AdamW(
+                self.model.parameters(),
+                lr=self.config.train.lr,
+                weight_decay=self.config.train.weight_decay,
+            )
+        else:
+            optimizer = optim.SGD(
+                self.model.parameters(),
+                lr=self.config.train.lr,
+                momentum=0.9,
+                weight_decay=self.config.train.weight_decay,
+            )
 
         scheduler_config = self.config.train.scheduler
         scheduler_type = scheduler_config.type

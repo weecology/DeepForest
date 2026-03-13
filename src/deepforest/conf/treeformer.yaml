@@ -1,0 +1,33 @@
+# Allow hyra to inherit from the base,
+# then override with this file.
+defaults:
+  - config
+  - _self_
+
+architecture: treeformer
+accelerator: mps
+label_dict:
+    Tree: 0
+num_classes: 1
+batch_size: 1
+
+model:
+    name: ~
+
+train:
+    csv_file: /Users/josh/data/Neon_benchmark/train.csv
+    root_dir: /Users/josh/data/Neon_benchmark/images
+    optimizer: adamw
+    lr: 1e-5
+    epochs: 60
+
+validation:
+    val_accuracy_interval: 1
+    csv_file: /Users/josh/data/Neon_benchmark/test.csv
+    root_dir: /Users/josh/data/Neon_benchmark/images
+
+keypoint:
+  density_sigma_start: 7.8
+  density_sigma_end: 1.6
+  mae_weight: 0.025
+  count_cls_weight: 0.025
