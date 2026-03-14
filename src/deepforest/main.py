@@ -9,9 +9,6 @@ import pytorch_lightning as pl
 import torch
 from omegaconf import DictConfig, OmegaConf
 from PIL import Image
-
-Image.MAX_IMAGE_PIXELS = None # to fix
-
 from pytorch_lightning.callbacks import LearningRateMonitor
 from pytorch_lightning.loggers import CSVLogger
 from torch import optim
@@ -21,6 +18,8 @@ from torchmetrics.detection import IntersectionOverUnion, MeanAveragePrecision
 from deepforest import predict, utilities
 from deepforest.datasets import prediction, training
 from deepforest.metrics import RecallPrecision
+
+Image.MAX_IMAGE_PIXELS = None
 
 
 class deepforest(pl.LightningModule):
