@@ -444,8 +444,8 @@ class TiledRaster(PredictionDataset):
     def prepare_items(self):
         # Get raster shape without keeping file open
         with rio.open(self.path) as src:
-            width = src.shape[0]
-            height = src.shape[1]
+            height = src.shape[0]
+            width = src.shape[1]
 
             # Check is tiled
             if not src.is_tiled:
@@ -460,8 +460,8 @@ class TiledRaster(PredictionDataset):
 
         # Generate sliding windows
         self.windows = slidingwindow.generateForSize(
-            height,
             width,
+            height,
             dimOrder=slidingwindow.DimOrder.ChannelHeightWidth,
             maxWindowSize=self.patch_size,
             overlapPercent=self.patch_overlap,
