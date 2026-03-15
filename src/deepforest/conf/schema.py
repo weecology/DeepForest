@@ -127,12 +127,28 @@ class KeypointConfig:
     Parameters control the Gaussian density map generation and loss weighting.
     ``density_sigma_start`` and ``density_sigma_end`` define a cosine annealing
     schedule for the Gaussian sigma over training epochs.
+
+    ``density_sigma_schedule_epochs`` sets the number of epochs over which the
+    sigma annealing runs. Defaults to ``None``, which uses ``train.epochs``.
+    Set to a smaller value (e.g. 50) so the full sigma curriculum completes
+    before early stopping.
+
+    ``losses`` controls which loss terms are active. ``None`` enables all.
+    Valid values: ``count``, ``ot``, ``density_l1``, ``count_cls``.
+
+    ``norm_cood`` normalises OT coordinates to [-1, 1], enabling global
+    optimal transport (full output-map coverage). Default ``False`` matches
+    the reference TreeFormer implementation (local OT only).
     """
 
     density_sigma_start: float = 4.0
     density_sigma_end: float = 2.0
     mae_weight: float = 0.025
     count_cls_weight: float = 0.025
+    score_integration_radius: int = 5
+    density_sigma_schedule_epochs: int | None = None
+    losses: list[str] | None = None
+    norm_cood: bool = False
 
 
 @dataclass

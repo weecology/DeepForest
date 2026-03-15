@@ -6,7 +6,7 @@ Forward signatures:
 
 density_map:    (B, 1, H', W') raw density predictions
 normed_density: density_map normalised to sum to 1 per image
-loss_dict keys: 'loss' (total), 'count_loss', 'ot_loss', 'tv_loss', 'count_cls_loss'
+loss_dict keys: 'loss' (total), 'count_loss', 'ot_loss', 'density_l1_loss', 'count_cls_loss'
 """
 
 import numpy as np
@@ -57,36 +57,17 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         density_sigma: float = 5.0,
         density_sigma_start: float | None = None,
         density_sigma_end: float | None = None,
+        density_sigma_schedule_epochs: int | None = None,
         mae_weight: float = 1.0,
         ot_weight: float = 0.1,
-        tv_weight: float = 0.01,
+        density_l1_weight: float = 0.01,
         count_cls_weight: float = 1.0,
         losses: list | None = None,
+        norm_cood: bool = False,
         enforce_count: bool = True,
         **kwargs,
     ):
-        """
-        Args:
-            mae_weight: Scalar applied to the MAE count loss (alpha_1 in the paper,
-                default 1.0 per the original TreeFormer, calibrated for KCL-London
-                with 256x256 training crops). The default is dataset- and
-                crop-size-specific: count loss magnitude scales linearly with the
-                number of trees per crop. For portability across datasets or crop
-                sizes, set ``mae_weight = 1 / (tree_density * crop_size**2)`` where
-                ``tree_density`` is trees per pixel in the training set. This keeps
-                the expected count loss ~= 1 at initialisation regardless of scene
-                density or crop size, and simplifies relative tuning of the other
-                loss weights.
-            count_cls_weight: Scalar applied to the CLS-token count consistency
-                loss. Measures the same quantity as ``mae_weight`` (tree count MAE)
-                so should be set to the same value:
-                ``count_cls_weight = 1 / (tree_density * crop_size**2)``.
-            density_sigma: Gaussian sigma (pixels) applied in *output-map* space
-                (stride-4 downsampled). The default of 5.0 was chosen for 256x256
-                crops (64x64 output maps). Scale proportionally with crop size to
-                maintain the same blob-to-map ratio:
-                ``density_sigma = 5.0 * (crop_size / 256)``.
-        """
+        """Initialize TreeFormerModel."""
         super().__init__()
         self.processor = AutoImageProcessor.from_pretrained(
             backbone,
@@ -123,7 +104,6 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         # scaling factor.
         self.downsample_ratio = 4
 
-        self.norm_cood = norm_coord
         self.sinkhorn_reg = sinkhorn_reg
 
         # If start/end provided, use start as initial sigma; else use the single density_sigma.
@@ -134,20 +114,22 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
             density_sigma_end if density_sigma_end is not None else density_sigma
         )
         self.density_sigma = self.density_sigma_start
+        self.density_sigma_schedule_epochs = density_sigma_schedule_epochs
 
         self.mae_weight = mae_weight
         self.ot_weight = ot_weight
-        self.tv_weight = tv_weight
+        self.density_l1_weight = density_l1_weight
         self.count_cls_weight = count_cls_weight
         self.enforce_count = enforce_count
+        self.norm_cood = norm_cood
 
         if losses is None:
-            losses = ["count", "ot", "tv", "count_cls"]
+            losses = ["count", "ot", "density_l1", "count_cls"]
         self.active_losses = set(losses)
 
         # Losses that don't require a device are set up eagerly.
-        self.tvloss = nn.L1Loss(reduction="none")
-        self.mae = nn.L1Loss()
+        self.density_l1 = nn.L1Loss(reduction="none")
+        self.cls_l1 = nn.L1Loss()
 
         # OT_Loss creates device-bound tensors; initialised lazily on first
         # forward call once the model's device is known.
@@ -169,9 +151,11 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
 
         Args:
             epoch: Current zero-based epoch index.
-            total_epochs: Total number of training epochs.
+            total_epochs: Total number of training epochs. Overridden by
+                ``self.density_sigma_schedule_epochs`` if set.
         """
-        t = np.pi * epoch / max(total_epochs - 1, 1)
+        schedule_epochs = self.density_sigma_schedule_epochs or total_epochs
+        t = np.pi * epoch / max(schedule_epochs - 1, 1)
         self.density_sigma = float(
             self.density_sigma_end
             + 0.5 * (self.density_sigma_start - self.density_sigma_end) * (1 + np.cos(t))
@@ -378,7 +362,7 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
 
         # ---- MAE count loss -----------------------------------------------
         count_loss = (
-            self.mae(density_map.view(B, -1).sum(1), point_counts) * self.mae_weight
+            self.cls_l1(density_map.view(B, -1).sum(1), point_counts) * self.mae_weight
             if "count" in active
             else zero
         )
@@ -390,81 +374,82 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         else:
             ot_loss = zero
 
-        # ---- TV loss (predicted vs GT discrete density) --------------------
-        if "tv" in active:
+        # ---- Density L1 loss (pixel-wise L1 between normalized density maps) ----
+        if "density_l1" in active:
             gt_discrete_normed = gt_discrete / (point_counts.view(B, 1, 1, 1) + 1e-6)
-            tv_loss = (
-                self.tvloss(normed_density, gt_discrete_normed)
+            density_l1_loss = (
+                self.density_l1(normed_density, gt_discrete_normed)
                 .sum(dim=[1, 2, 3])
                 .mul(point_counts)
                 .mean()
-                * self.tv_weight
+                * self.density_l1_weight
             )
         else:
-            tv_loss = zero
+            density_l1_loss = zero
 
-        # ---- CLS-token count consistency (labeled) -------------------------
+        # ---- Stage GAP count regression ----
         # cls_outputs entries may collapse to a 0-dim tensor when B=1 due to
         # .squeeze() in Regression; reshape to (B,) for safe stacking.
         if "count_cls" in active:
             cls_preds = torch.stack([c.reshape(B) for c in cls_outputs])  # (3, B)
             gt_counts = point_counts.unsqueeze(0).expand(3, -1)  # (3, B)
-            count_cls_loss = self.mae(cls_preds, gt_counts) * self.count_cls_weight
+            count_cls_loss = self.cls_l1(cls_preds, gt_counts) * self.count_cls_weight
         else:
             count_cls_loss = zero
 
-        total = count_loss + ot_loss + tv_loss + count_cls_loss
+        total = count_loss + ot_loss + density_l1_loss + count_cls_loss
         return {
             "loss": total,
             "count_loss": count_loss,
             "ot_loss": ot_loss,
-            "tv_loss": tv_loss,
+            "density_l1_loss": density_l1_loss,
             "count_cls_loss": count_cls_loss,
         }
 
     def forward(
         self,
-        inputs: torch.Tensor,
+        inputs: torch.Tensor | list[torch.Tensor],
         targets: list | None = None,
         gt_discrete: torch.Tensor | None = None,
     ):
         """Forward pass.
 
-        Train mode: ``points`` must be provided; returns a loss dict.
-        Eval mode:  returns ``(density_map, normed_density)``.
+        Train mode: targets must be provided; returns a loss dict.
+        Eval mode:  returns (density_map, normed_density).
 
-        Args:
-            inputs:      (B, C, H, W) image batch
-            targets:     list of B tensors, each (N_i, 2) keypoints in image
-                         space - required in training mode
-            gt_discrete: optional pre-computed (B, 1, H', W') discrete GT map
-                         for the TV loss; computed from targets if None
+        inputs: (B, C, H, W) tensor or list of (C, H, W) tensors (variable sizes).
         """
-        encoded_inputs = self.processor.preprocess(
-            images=inputs,
+        # Batch-pad variable-size images; record original sizes for output crop.
+        if isinstance(inputs, list):
+            shapes = [(img.shape[-2], img.shape[-1]) for img in inputs]
+            H = max(h for h, _ in shapes)
+            W = max(w for _, w in shapes)
+            batch = inputs[0].new_zeros(len(inputs), inputs[0].shape[0], H, W)
+            for i, img in enumerate(inputs):
+                batch[i, :, : shapes[i][0], : shapes[i][1]] = img
+        else:
+            shapes = [(inputs.shape[2], inputs.shape[3])] * inputs.shape[0]
+            batch = inputs
+
+        # Pad to next multiple of 32 for PvT stride compatibility.
+        H, W = batch.shape[2:]
+        batch = F.pad(batch, (0, (32 - W % 32) % 32, 0, (32 - H % 32) % 32))
+        padded_h, padded_w = batch.shape[2:]
+
+        encoded = self.processor.preprocess(
+            images=batch,
             return_tensors="pt",
             do_rescale=False,
             do_resize=False,
         )["pixel_values"].to(self.device)
 
-        # Pad to next multiple of 32 so all PvT stride-2 stages divide evenly.
-        orig_h, orig_w = encoded_inputs.shape[2:]
-        pad_h = (32 - orig_h % 32) % 32
-        pad_w = (32 - orig_w % 32) % 32
-        if pad_h or pad_w:
-            encoded_inputs = F.pad(encoded_inputs, (0, pad_w, 0, pad_h))
-        padded_h, padded_w = encoded_inputs.shape[2:]
-
-        label_feats, l_cls = self.forward_features(encoded_inputs)
+        label_feats, l_cls = self.forward_features(encoded)
         out_L, out_cls_l = self.regression(label_feats, l_cls)
-
-        density_map, label_normed = self._normalize_density(out_L[0], out_cls_l[0])
 
         if self.training:
             if targets is None:
                 raise ValueError("targets must be provided in training mode")
-            # We compute loss on padded images to avoid complications around
-            # rescaling when passing to the loss.
+            density_map, label_normed = self._normalize_density(out_L[0], out_cls_l[0])
             return self.compute_loss(
                 [density_map] + out_L[1:],
                 label_normed,
@@ -475,15 +460,18 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
                 gt_discrete=gt_discrete,
             )
 
-        # Crop output back to match original (unpadded) input resolution.
-        out_h = orig_h // self.downsample_ratio
-        out_w = orig_w // self.downsample_ratio
-        score_map_cropped = out_L[0][:, :, :out_h, :out_w].contiguous()
-        density_map, label_normed = self._normalize_density(
-            score_map_cropped, out_cls_l[0]
-        )
+        # Eval: crop each output back to its original spatial extent.
+        dr = self.downsample_ratio
+        density_list, normed_list = [], []
+        for i, (h, w) in enumerate(shapes):
+            crop = out_L[0][i : i + 1, :, : h // dr, : w // dr].contiguous()
+            dm, nd = self._normalize_density(crop, out_cls_l[0][i : i + 1])
+            density_list.append(dm)
+            normed_list.append(nd)
 
-        return density_map, label_normed
+        if isinstance(inputs, torch.Tensor):
+            return torch.cat(density_list), torch.cat(normed_list)
+        return density_list, normed_list
 
 
 class Model(BaseModel):
@@ -523,8 +511,11 @@ class Model(BaseModel):
                 label_dict=label_dict,
                 density_sigma_start=cfg.density_sigma_start,
                 density_sigma_end=cfg.density_sigma_end,
+                density_sigma_schedule_epochs=cfg.density_sigma_schedule_epochs,
                 mae_weight=cfg.mae_weight,
                 count_cls_weight=cfg.count_cls_weight,
+                losses=list(cfg.losses) if cfg.losses is not None else None,
+                norm_cood=cfg.norm_cood,
                 enforce_count=True,
                 **hf_args,
             )

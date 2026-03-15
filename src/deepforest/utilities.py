@@ -937,42 +937,75 @@ def collate_fn(batch):
 
 
 def density_to_points(
-    density_map: torch.Tensor, score_thresh: float = 0.1
+    density_map: torch.Tensor | list[torch.Tensor],
+    score_thresh: float = 0.1,
+    score_integration_radius: int = 5,
 ) -> list[dict[str, torch.Tensor]]:
     """Extract peak point predictions from a density map.
 
-    Uses max-pooling as a local-maxima filter and keeps peaks above
-    ``score_thresh``.
+    Integrates density values within ``score_integration_radius`` pixels of
+    each location (so scores converge to ~1.0 per tree), then finds local
+    maxima using ``scipy.ndimage.maximum_filter``. Connected plateau regions
+    (flat-topped bumps) are reduced to their centroid so each tree yields
+    exactly one prediction.
 
     Args:
-        density_map: (B, C, H, W) density map tensor.
-        score_thresh: Minimum density value for a peak to be retained.
+        density_map: ``(B, C, H, W)`` density map tensor **or** a list of
+            per-image ``(1, C, H_i, W_i)`` tensors with potentially varying
+            spatial sizes (as returned by ``TreeFormerModel.forward`` when the
+            input is a list).
+        score_thresh: Minimum integrated density score for a peak to be
+            retained. With integration, ~1.0 corresponds to one tree, so
+            0.1–0.5 is a reasonable range.
+        score_integration_radius: Radius in density-map pixels over which to
+            sum density values for the peak score. Should be approximately
+            ``density_sigma / downsample_ratio * 2``.
 
     Returns:
         List of dicts with ``"points"`` (N, 2), ``"scores"`` (N,), and
         ``"labels"`` (N,) for each image in the batch. The dict is
         compatible with ``format_geometry``.
     """
-    kernel = 3
-    pad = kernel // 2
-    pooled = torch.nn.functional.max_pool2d(
-        density_map, kernel_size=kernel, stride=1, padding=pad
-    )
-    is_peak = (density_map == pooled) & (density_map > score_thresh)
+    from scipy.ndimage import center_of_mass, label, maximum_filter
+
+    if isinstance(density_map, list):
+        results = []
+        for dm in density_map:
+            results.extend(density_to_points(dm, score_thresh, score_integration_radius))
+        return results
+
+    # Integrated score: sum density within score_integration_radius of each pixel.
+    int_k = 2 * score_integration_radius + 1
+    integrated = torch.nn.functional.avg_pool2d(
+        density_map, kernel_size=int_k, stride=1, padding=score_integration_radius
+    ) * (int_k**2)
 
     results = []
     for b in range(density_map.shape[0]):
-        peak_mask = is_peak[b].any(dim=0)
-        yx = peak_mask.nonzero(as_tuple=False).float()
-        xy = yx[:, [1, 0]]
-        n = xy.shape[0]
-        if n > 0:
-            scores = density_map[b, 0][peak_mask].detach()
+        density_np = integrated[b, 0].detach().cpu().numpy()
+
+        # reflect mode avoids false peaks at boundaries caused by zero-padding.
+        local_max = maximum_filter(density_np, size=int_k, mode="reflect")
+        is_peak = (density_np == local_max) & (density_np > score_thresh)
+
+        # Label connected plateau regions and reduce each to its centroid so
+        # flat-topped bumps produce exactly one prediction per tree.
+        labeled, n_peaks = label(is_peak)
+        if n_peaks > 0:
+            centroids = center_of_mass(density_np, labeled, range(1, n_peaks + 1))
+            yx = torch.tensor(centroids, dtype=torch.float32)
+            xy = yx[:, [1, 0]]
+            rows = yx[:, 0].long()
+            cols = yx[:, 1].long()
+            scores = integrated[b, 0][rows, cols].detach()
         else:
+            xy = torch.zeros((0, 2))
             scores = torch.zeros(0, device=density_map.device)
+
+        n = xy.shape[0]
         results.append(
             {
-                "points": xy.detach(),
+                "points": xy.to(density_map.device),
                 "scores": scores,
                 "labels": torch.zeros(n, dtype=torch.long, device=density_map.device),
             }

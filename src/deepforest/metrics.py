@@ -45,7 +45,7 @@ class RecallPrecision(Metric):
         self.label_dict = label_dict or {}
         self.numeric_to_label_dict = {v: k for k, v in self.label_dict.items()}
 
-        if task not in ("box", "point", "keypoint"):
+        if task not in ("box", "point"):
             raise ValueError(f"Unsupported task: {task!r}. Use 'box' or 'keypoint'.")
 
         if self.task == "box":

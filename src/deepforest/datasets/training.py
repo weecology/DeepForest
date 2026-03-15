@@ -341,6 +341,14 @@ class KeypointDataset(TrainingDataset):
             )
         self.output = output
 
+    def mean_count(self) -> float:
+        """Compute the mean number of annotations per image in the dataset.
+
+        Returns:
+            float: Mean annotation count per sample.
+        """
+        return len(self.annotations) / len(self.image_names)
+
     def _validate_coordinates(self) -> None:
         """Validate that all points occur within the image.
 

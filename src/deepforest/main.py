@@ -103,13 +103,15 @@ class deepforest(pl.LightningModule):
             self.mAP_metric = MeanAveragePrecision(backend="faster_coco_eval")
 
             self.precision_recall_metric = RecallPrecision(
-                csv_file=self.config.validation.csv_file,
                 label_dict=self.label_dict,
             )
         elif self.model.task == "keypoint":
             self.mae_metric = torchmetrics.MeanAbsoluteError()
+            self.rmse_metric = torchmetrics.MeanSquaredError(squared=False)
+            self.r2_metric = torchmetrics.R2Score()
+            self.spatial_corr_metric = torchmetrics.PearsonCorrCoef()
             self.precision_recall_metric = RecallPrecision(
-                task="keypoint",
+                task="point",
                 distance_threshold=self.config.validation.distance_threshold,
                 label_dict=self.label_dict,
             )
@@ -761,18 +763,93 @@ class deepforest(pl.LightningModule):
         self.model.eval()
         with torch.no_grad():
             if self.model.task == "keypoint":
+                # density_map is a list[Tensor] when images is a list (each
+                # element has its own spatial size); a Tensor when images is a
+                # pre-stacked uniform batch.
                 density_map, _ = self.model(images)
-                pred_counts = density_map.sum(dim=[1, 2, 3])
+                if isinstance(density_map, list):
+                    pred_counts = torch.stack([dm.sum() for dm in density_map])
+                    device = density_map[0].device
+                else:
+                    pred_counts = density_map.sum(dim=[1, 2, 3])
+                    device = density_map.device
                 true_counts = torch.tensor(
                     [t["points"].shape[0] for t in targets],
                     dtype=torch.float32,
-                    device=density_map.device,
+                    device=device,
                 )
                 self.mae_metric.update(pred_counts, true_counts)
-                preds_pts = utilities.density_to_points(
-                    density_map, score_thresh=self.config.score_thresh
+                self.rmse_metric.update(pred_counts, true_counts)
+                self.r2_metric.update(pred_counts, true_counts)
+
+                # Pearson correlation between normalized density maps — pure spatial
+                # alignment independent of count magnitude.
+                dm_list = (
+                    density_map
+                    if isinstance(density_map, list)
+                    else [density_map[i : i + 1] for i in range(density_map.shape[0])]
                 )
+                for i, dm_i in enumerate(dm_list):
+                    _, _, H_i, W_i = dm_i.shape
+                    image_h_i = images[i].shape[-2]
+                    image_w_i = images[i].shape[-1]
+                    scaled_pts_i = self.model._scale_points_to_output(
+                        [targets[i]["points"]], image_h_i, image_w_i, H_i, W_i
+                    )
+                    gt_i = self.model._make_gt_density(
+                        scaled_pts_i, H_i, W_i, image_h_i, image_w_i
+                    ).squeeze()
+                    pred_i = dm_i.squeeze()
+                    gt_norm = gt_i / (gt_i.sum() + 1e-6)
+                    pred_norm = pred_i / (pred_i.sum() + 1e-6)
+                    self.spatial_corr_metric.update(
+                        pred_norm.flatten(), gt_norm.flatten()
+                    )
+
+                preds_pts = utilities.density_to_points(
+                    density_map,
+                    score_thresh=self.config.score_thresh,
+                    score_integration_radius=self.config.keypoint.score_integration_radius,
+                )
+                # Scale predicted points from density-map space back to image space.
+                for i, pred in enumerate(preds_pts):
+                    if len(pred["points"]) > 0:
+                        h_img, w_img = images[i].shape[-2:]
+                        dm_i = dm_list[i]
+                        h_dm, w_dm = dm_i.shape[-2:]
+                        scale = pred["points"].new_tensor([w_img / w_dm, h_img / h_dm])
+                        pred["points"] = pred["points"] * scale
                 self.precision_recall_metric.update(preds_pts, targets, image_names)
+
+                # Collect density map samples for callback visualization.
+                # Build gt density per-image because images may have different
+                # spatial sizes.
+                n_needed = 4 - len(self.density_samples)
+                if n_needed > 0:
+                    dm_list = (
+                        density_map
+                        if isinstance(density_map, list)
+                        else [density_map[i : i + 1] for i in range(density_map.shape[0])]
+                    )
+                    for i in range(min(len(dm_list), n_needed)):
+                        dm_i = dm_list[i]  # (1, 1, H_i, W_i)
+                        _, _, H_i, W_i = dm_i.shape
+                        image_h_i = images[i].shape[-2]
+                        image_w_i = images[i].shape[-1]
+                        scaled_pts_i = self.model._scale_points_to_output(
+                            [targets[i]["points"]], image_h_i, image_w_i, H_i, W_i
+                        )
+                        gt_density_i = self.model._make_gt_density(
+                            scaled_pts_i, H_i, W_i, image_h_i, image_w_i
+                        )
+                        self.density_samples.append(
+                            {
+                                "image": images[i].detach().cpu(),
+                                "pred_density": dm_i[0, 0].detach().cpu(),
+                                "gt_density": gt_density_i[0, 0].detach().cpu(),
+                                "image_name": image_names[i],
+                            }
+                        )
 
             else:
                 preds = self.model.forward(images, targets)
@@ -810,6 +887,7 @@ class deepforest(pl.LightningModule):
 
     def on_validation_epoch_start(self):
         self.predictions = []
+        self.density_samples = []
 
     def _compute_epoch_metrics(self) -> dict:
         """Compute metrics and returns a Lightning-loggable dictionary.
@@ -820,6 +898,9 @@ class deepforest(pl.LightningModule):
 
         if self.model.task == "keypoint":
             metrics["val_mae"] = self.mae_metric.compute()
+            metrics["val_rmse"] = self.rmse_metric.compute()
+            metrics["val_r2"] = self.r2_metric.compute()
+            metrics["val_spatial_corr"] = self.spatial_corr_metric.compute()
             metrics.update(self.precision_recall_metric.compute())
         # IoU and mAP
         elif self.model.task == "box" and len(self.iou_metric.groundtruth_labels) > 0:
@@ -853,6 +934,9 @@ class deepforest(pl.LightningModule):
         self.precision_recall_metric.reset()
         if self.model.task == "keypoint":
             self.mae_metric.reset()
+            self.rmse_metric.reset()
+            self.r2_metric.reset()
+            self.spatial_corr_metric.reset()
         else:
             self.iou_metric.reset()
             self.mAP_metric.reset()
@@ -1042,9 +1126,9 @@ class deepforest(pl.LightningModule):
             self.predictions = pd.concat(self.predictions, ignore_index=True)
             if "label" in self.predictions.columns:
                 self.predictions["label"] = self.predictions["label"].map(
-                    lambda x: self.numeric_to_label_dict.get(int(x), x)
-                    if pd.notna(x)
-                    else x
+                    lambda x: (
+                        self.numeric_to_label_dict.get(int(x), x) if pd.notna(x) else x
+                    )
                 )
         else:
             self.predictions = pd.DataFrame()

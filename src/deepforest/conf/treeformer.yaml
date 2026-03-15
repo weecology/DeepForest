@@ -9,7 +9,7 @@ accelerator: mps
 label_dict:
     Tree: 0
 num_classes: 1
-batch_size: 1
+batch_size: 8
 
 model:
     name: ~
@@ -19,7 +19,24 @@ train:
     root_dir: /Users/josh/data/Neon_benchmark/images
     optimizer: adamw
     lr: 1e-5
-    epochs: 60
+    epochs: 100
+    scheduler:
+        type: cosine
+        params:
+            T_max: 100
+            eta_min: 1e-7
+    augmentations:
+        - HorizontalFlip:
+            p: 0.5
+        - VerticalFlip:
+            p: 0.5
+        - Rotate:
+            degrees: 180
+            p: 0.5
+        - RandomBrightnessContrast:
+            brightness: 0.2
+            contrast: 0.2
+            p: 0.5
 
 validation:
     val_accuracy_interval: 1
@@ -31,3 +48,7 @@ keypoint:
   density_sigma_end: 1.6
   mae_weight: 0.025
   count_cls_weight: 0.025
+  score_integration_radius: 5
+  density_sigma_schedule_epochs: 50
+  losses: ~
+  norm_cood: false

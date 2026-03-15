@@ -183,15 +183,15 @@ class Regression(nn.Module):
             lin1_out = self.cls_lin1(cls[2])
             yc2 = self.cls_lin4(
                 self.cls_lin3(self.cls_lin2(self.noise_cls(lin1_out)))
-            ).squeeze()
+            ).squeeze(-1)
 
             lin2_out = self.cls_lin2(cls[1])
             lin2_noisy = self.noise1(lin2_out[:, :, None, None]).squeeze(-1).squeeze(-1)
-            yc1 = self.cls_lin4(self.cls_lin3(lin2_noisy)).squeeze()
+            yc1 = self.cls_lin4(self.cls_lin3(lin2_noisy)).squeeze(-1)
 
             lin3_out = self.cls_lin3(cls[0])
             lin3_noisy = self.noise0(lin3_out[:, :, None, None]).squeeze(-1).squeeze(-1)
-            yc0 = self.cls_lin4(lin3_noisy).squeeze()
+            yc0 = self.cls_lin4(lin3_noisy).squeeze(-1)
 
             y2 = self.res2(self.upsam4(self.noise2(x2_1)))
             y1 = self.res1(self.upsam2(self.noise1(x1_1)))
@@ -200,9 +200,9 @@ class Regression(nn.Module):
         else:
             yc2 = self.cls_lin4(
                 self.cls_lin3(self.cls_lin2(self.cls_lin1(cls[2])))
-            ).squeeze()
-            yc1 = self.cls_lin4(self.cls_lin3(self.cls_lin2(cls[1]))).squeeze()
-            yc0 = self.cls_lin4(self.cls_lin3(cls[0])).squeeze()
+            ).squeeze(-1)
+            yc1 = self.cls_lin4(self.cls_lin3(self.cls_lin2(cls[1]))).squeeze(-1)
+            yc0 = self.cls_lin4(self.cls_lin3(cls[0])).squeeze(-1)
 
             y2 = self.res2(self.upsam4(x2_1))
             y1 = self.res1(self.upsam2(x1_1))

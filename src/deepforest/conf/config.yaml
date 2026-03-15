@@ -145,8 +145,26 @@ cropmodel:
     # Number of pixels to expand bbox crop windows for better prediction context.
     expand: 0
 
+# These parameters are applied to keypoint detection models.
+# Currently we offer a density prediction model.
 keypoint:
+    # Density sigma is annealed during training to
+    # help tighten predictions as the model learns
     density_sigma_start: 4.0
     density_sigma_end: 2.0
+    # MAE/count weight; set to 1/mean_count to normalise the count loss to
+    # the same scale as other losses. Use dataset.mean_count() to compute.
     mae_weight: 0.025
     count_cls_weight: 0.025
+    # Radius to integrate to compute "score" for peak
+    # extraction, i.e. approximate crown radius.
+    score_integration_radius: 5
+    # Number of epochs over which density_sigma anneals.
+    # Defaults to train.epochs; set lower (e.g. 50) so the full
+    # sigma curriculum completes before early stopping kicks in.
+    density_sigma_schedule_epochs: ~
+    # Active loss terms. null enables all: count, ot, density_l1, count_cls.
+    losses: ~
+    # Normalize OT coordinates to [-1, 1] for global optimal transport.
+    # Default false matches the reference TreeFormer (local OT only).
+    norm_cood: false

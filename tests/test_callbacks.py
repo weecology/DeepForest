@@ -1,15 +1,17 @@
 # test callbacks
 import glob
 import os
+import types
 from unittest.mock import MagicMock, Mock
 
+import pandas as pd
 import pytest
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.loggers.logger import DummyLogger
 
 from deepforest import get_data
 from deepforest import callbacks, main
-from deepforest.datasets.training import BoxDataset
+from deepforest.datasets.training import BoxDataset, KeypointDataset
 
 class MockCometLogger(DummyLogger):
     def __init__(self, *args, **kwargs):
@@ -188,3 +190,130 @@ def test_create_checkpoint(m, tmp_path):
     m.trainer.fit(m)
 
     assert (tmp_path / 'model.ckpt').exists()
+
+
+# --- Keypoint / point-data callback tests ---
+
+
+@pytest.fixture(scope="module")
+def keypoint_ds():
+    csv_file = get_data("2019_BLAN_3_751000_4330000_image_crop_keypoints.csv")
+    root_dir = os.path.dirname(csv_file)
+    return KeypointDataset(
+        csv_file=csv_file,
+        root_dir=root_dir,
+        label_dict={"Tree": 0},
+    )
+
+
+@pytest.fixture(scope="module")
+def keypoint_preds(keypoint_ds):
+    """Load keypoint predictions directly from the repo CSV file.
+
+    Returns a list of per-image DataFrames matching the format that
+    pl_module.predictions contains after validation_step.
+    """
+    from deepforest import utilities
+
+    csv_file = get_data("2019_BLAN_3_751000_4330000_image_crop_keypoints.csv")
+    df = utilities.read_file(csv_file)
+    df["root_dir"] = keypoint_ds.root_dir
+    return [group for _, group in df.groupby("image_path")]
+
+
+def test_log_dataset_sample_keypoints(keypoint_ds, tmp_path):
+    """_log_dataset_sample should save images from a KeypointDataset without error."""
+    im_callback = callbacks.ImagesCallback(
+        save_dir=tmp_path, every_n_epochs=1, dataset_samples=1
+    )
+    # trainer attribute is only needed for _log_to_all; wire up a minimal stand-in
+    im_callback.trainer = types.SimpleNamespace(
+        global_step=0,
+        loggers=[],
+    )
+
+    im_callback._log_dataset_sample(keypoint_ds, split="validation")
+
+    out_dir = tmp_path / "validation_sample"
+    assert out_dir.exists()
+    assert len(list(out_dir.glob("*.png"))) >= 1
+
+
+def test_log_last_predictions_keypoints(keypoint_ds, keypoint_preds, tmp_path):
+    """_log_last_predictions should save PNG + JSON for point predictions."""
+    im_callback = callbacks.ImagesCallback(
+        save_dir=tmp_path, every_n_epochs=1, prediction_samples=1
+    )
+
+    trainer = types.SimpleNamespace(
+        global_step=0,
+        loggers=[],
+        val_dataloaders=types.SimpleNamespace(dataset=keypoint_ds),
+    )
+    pl_module = types.SimpleNamespace(
+        predictions=keypoint_preds,
+        print=lambda *a, **kw: None,
+    )
+
+    im_callback._log_last_predictions(trainer, pl_module)
+
+    out_dir = tmp_path / "predictions"
+    assert out_dir.exists()
+    assert len(list(out_dir.glob("*.png"))) >= 1
+    assert len(list(out_dir.glob("*.json"))) >= 1
+
+
+def test_log_last_predictions_keypoints_select_random(keypoint_ds, keypoint_preds, tmp_path):
+    """select_random=True should also succeed for point predictions."""
+    im_callback = callbacks.ImagesCallback(
+        save_dir=tmp_path, every_n_epochs=1, prediction_samples=1, select_random=True
+    )
+
+    trainer = types.SimpleNamespace(
+        global_step=0,
+        loggers=[],
+        val_dataloaders=types.SimpleNamespace(dataset=keypoint_ds),
+    )
+    pl_module = types.SimpleNamespace(
+        predictions=keypoint_preds,
+        print=lambda *a, **kw: None,
+    )
+
+    im_callback._log_last_predictions(trainer, pl_module)
+
+    out_dir = tmp_path / "predictions"
+    assert out_dir.exists()
+    assert len(list(out_dir.glob("*.png"))) >= 1
+
+def test_log_density_plots(tmp_path):
+    """_log_density_plots should save side-by-side PNG files for density samples."""
+    import torch
+
+    im_callback = callbacks.ImagesCallback(
+        save_dir=tmp_path, every_n_epochs=1, prediction_samples=1
+    )
+
+    density_samples = [
+        {
+            "image": torch.rand(3, 128, 128),
+            "pred_density": torch.rand(32, 32),
+            "gt_density": torch.rand(32, 32),
+            "image_name": "test_image.tif",
+        }
+    ]
+
+    trainer = types.SimpleNamespace(
+        global_step=10,
+        current_epoch=1,
+        loggers=[],
+    )
+    pl_module = types.SimpleNamespace(
+        density_samples=density_samples,
+        print=lambda *a, **kw: None,
+    )
+
+    im_callback._log_density_plots(trainer, pl_module)
+
+    out_dir = tmp_path / "density_plots"
+    assert out_dir.exists()
+    assert len(list(out_dir.glob("*.png"))) == 1

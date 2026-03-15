@@ -80,6 +80,9 @@ class ImagesCallback(Callback):
         if (trainer.current_epoch + 1) % self.every_n_epochs == 0:
             pl_module.print("Logging prediction samples")
             self._log_last_predictions(trainer, pl_module)
+            if hasattr(pl_module, "density_samples") and pl_module.density_samples:
+                pl_module.print("Logging density map samples")
+                self._log_density_plots(trainer, pl_module)
 
     def _log_dataset_sample(self, dataset: BoxDataset, split: str):
         """Log random samples from a DeepForest BoxDataset."""
@@ -162,12 +165,12 @@ class ImagesCallback(Callback):
         else:
             selected_images = df.image_path.unique()[: self.prediction_samples]
 
-            # Ensure color is correctly assigned
-            if self.color is None:
-                num_classes = len(df["label"].unique())
-                results_color = sv.ColorPalette.from_matplotlib("viridis", num_classes)
-            else:
-                results_color = self.color
+        # Ensure color is correctly assigned
+        if self.color is None:
+            num_classes = len(df["label"].unique())
+            results_color = sv.ColorPalette.from_matplotlib("viridis", num_classes)
+        else:
+            results_color = self.color
 
         for image_name in selected_images:
             pred_df = df[df.image_path == image_name]
@@ -212,6 +215,65 @@ class ImagesCallback(Callback):
                 trainer=trainer,
                 tag="prediction sample",
                 metadata=metadata,
+            )
+
+    def _log_density_plots(self, trainer, pl_module):
+        """Save and log side-by-side predicted vs GT density map plots."""
+        out_dir = os.path.join(self.savedir, "density_plots")
+        os.makedirs(out_dir, exist_ok=True)
+
+        for sample in pl_module.density_samples:
+            image_name = sample["image_name"]
+            basename = Path(image_name).stem + f"_{trainer.global_step}"
+
+            pred = sample["pred_density"].numpy()
+            gt = sample["gt_density"].numpy()
+            # RGB image from CHW float tensor
+            img = (
+                (255 * sample["image"].numpy().transpose(1, 2, 0))
+                .clip(0, 255)
+                .astype(np.uint8)
+            )
+
+            vmax = max(pred.max(), gt.max(), 1e-6)
+
+            fig = plt.figure(figsize=(16, 5))
+            gs = fig.add_gridspec(1, 4, width_ratios=[1, 1, 1, 0.05], wspace=0.3)
+            ax0 = fig.add_subplot(gs[0])
+            ax1 = fig.add_subplot(gs[1])
+            ax2 = fig.add_subplot(gs[2])
+            cax = fig.add_subplot(gs[3])
+
+            ax0.imshow(img)
+            ax0.axis("off")
+
+            ax1.imshow(gt, cmap="hot", vmin=0, vmax=vmax)
+            ax1.set_title(f"GT density  (sum={gt.sum():.1f})")
+            ax1.axis("off")
+
+            im2 = ax2.imshow(pred, cmap="hot", vmin=0, vmax=vmax)
+            ax2.set_title(f"Pred density  (sum={pred.sum():.1f})")
+            ax2.axis("off")
+
+            fig.colorbar(im2, cax=cax)
+
+            fig.suptitle(
+                f"{os.path.basename(image_name)}  epoch={trainer.current_epoch}",
+                fontsize=10,
+            )
+
+            out_path = os.path.join(out_dir, basename + ".png")
+            fig.savefig(out_path, dpi=100)
+            plt.close(fig)
+
+            self._log_to_all(
+                image=out_path,
+                trainer=trainer,
+                tag="density plot",
+                metadata={
+                    "gt_sum": float(gt.sum()),
+                    "pred_sum": float(pred.sum()),
+                },
             )
 
     def _log_to_all(self, image: str, trainer, tag, metadata: dict | None = None):
