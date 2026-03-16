@@ -1,5 +1,7 @@
 import json
+import logging
 import os
+import time
 import warnings
 
 import geopandas as gpd
@@ -15,6 +17,8 @@ from tqdm import tqdm
 
 from deepforest import _ROOT
 from deepforest.conf.schema import Config as StructuredConfig
+
+log = logging.getLogger(__name__)
 
 
 def load_config(
@@ -504,17 +508,17 @@ def __pandas_to_geodataframe__(df: pd.DataFrame):
     else:
         geom_type = determine_geometry_type(df)
         if geom_type == "box":
-            df["geometry"] = df.apply(
-                lambda x: shapely.geometry.box(x.xmin, x.ymin, x.xmax, x.ymax), axis=1
+            df["geometry"] = shapely.box(
+                df.xmin.to_numpy(dtype=float),
+                df.ymin.to_numpy(dtype=float),
+                df.xmax.to_numpy(dtype=float),
+                df.ymax.to_numpy(dtype=float),
             )
         elif geom_type == "polygon":
             df["geometry"] = gpd.GeoSeries.from_wkt(df["polygon"])
         elif geom_type == "point":
-            df["geometry"] = gpd.GeoSeries(
-                [
-                    shapely.geometry.Point(x, y)
-                    for x, y in zip(df.x.astype(float), df.y.astype(float), strict=False)
-                ]
+            df["geometry"] = shapely.points(
+                df.x.to_numpy(dtype=float), df.y.to_numpy(dtype=float)
             )
     gdf = gpd.GeoDataFrame(df, geometry="geometry")
     gdf = DeepForest_DataFrame(gdf)
@@ -604,8 +608,20 @@ def read_file(
     # read file
     if isinstance(input, str):
         if input.endswith(".csv"):
+            t0 = time.perf_counter()
+            log.info("[read_file] pd.read_csv start: %s", input)
             df = pd.read_csv(input)
+            log.info(
+                "[read_file] pd.read_csv done: %d rows, %.1fs",
+                len(df),
+                time.perf_counter() - t0,
+            )
+            t1 = time.perf_counter()
             gdf = _pandas_to_deepforest_format__(input, df, image_path, root_dir, label)
+            log.info(
+                "[read_file] geodataframe conversion done: %.1fs",
+                time.perf_counter() - t1,
+            )
         elif input.endswith(".json"):
             df = read_coco(input)
             gdf = _pandas_to_deepforest_format__(input, df, image_path, root_dir, label)

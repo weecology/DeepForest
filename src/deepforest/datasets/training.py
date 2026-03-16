@@ -1,7 +1,9 @@
 """Dataset model for object detection tasks."""
 
+import logging
 import math
 import os
+import time
 from abc import abstractmethod
 from typing import Any
 
@@ -17,6 +19,8 @@ from torchvision.datasets import ImageFolder
 
 from deepforest import utilities
 from deepforest.augmentations import get_transform
+
+log = logging.getLogger(__name__)
 
 
 class TrainingDataset(Dataset):
@@ -44,7 +48,15 @@ class TrainingDataset(Dataset):
             image_size (tuple[int, int] | None): Fixed (width, height) for all images. When set, skips
                 opening each image during coordinate validation, which is significant for large datasets.
         """
+        t0 = time.perf_counter()
+        log.info("[dataset] read_file start: %s", csv_file)
         self.annotations = utilities.read_file(csv_file, root_dir=root_dir)
+        log.info(
+            "[dataset] read_file done: %d rows, %.1fs",
+            len(self.annotations),
+            time.perf_counter() - t0,
+        )
+
         self.root_dir = root_dir
         self.image_size = image_size
 
@@ -54,9 +66,12 @@ class TrainingDataset(Dataset):
         self.label_dict = label_dict
 
         if transforms is None:
+            t1 = time.perf_counter()
+            log.info("[dataset] building augmentation transform")
             self.transform = get_transform(
                 augmentations=augmentations, data_keys=self._data_keys
             )
+            log.info("[dataset] transform done: %.1fs", time.perf_counter() - t1)
         else:
             if not isinstance(transforms, K.AugmentationSequential):
                 raise ValueError(
@@ -65,10 +80,17 @@ class TrainingDataset(Dataset):
             self.transform = transforms
 
         self.image_names = self.annotations.image_path.unique()
+        # Pre-build per-image annotation index to avoid O(N) scan in __getitem__
+        self._annotations_index = dict(list(self.annotations.groupby("image_path")))
+        log.info("[dataset] unique images: %d", len(self.image_names))
         self.preload_images = preload_images
 
         self._validate_labels()
+
+        t2 = time.perf_counter()
+        log.info("[dataset] _validate_coordinates start (image_size=%s)", self.image_size)
         self._validate_coordinates()
+        log.info("[dataset] _validate_coordinates done: %.1fs", time.perf_counter() - t2)
 
         # Pin data to memory if desired
         if self.preload_images:
@@ -76,6 +98,7 @@ class TrainingDataset(Dataset):
             self.image_dict = {}
             for idx, _ in enumerate(self.image_names):
                 self.image_dict[idx] = self.load_image(idx)
+        log.info("[dataset] __init__ complete: total %.1fs", time.perf_counter() - t0)
 
     def _validate_labels(self) -> None:
         """Validate that all labels in annotations exist in label_dict.
@@ -143,30 +166,13 @@ class BoxDataset(TrainingDataset):
             ValueError: If any bounding box coordinate occurs outside the image
         """
         errors = []
-        for _idx, row in self.annotations.iterrows():
-            if self.image_size is not None:
-                width, height = self.image_size
-            else:
-                img_path = os.path.join(self.root_dir, row["image_path"])
-                try:
-                    with Image.open(img_path) as img:
-                        width, height = img.size
-                except Exception as e:
-                    errors.append(f"Failed to open image {img_path}: {e}")
-                    continue
 
-            for _idx, row in group.iterrows():
-                # Extract bounding box
+        def _check_boxes(df, width, height):
+            for _idx, row in df.iterrows():
                 geom = row["geometry"]
                 xmin, ymin, xmax, ymax = geom.bounds
-
-                # All coordinates equal to zero is how we code empty frames.
-                # Therefore these are valid coordinates even though they would
-                # fail other checks.
                 if xmin == 0 and ymin == 0 and xmax == 0 and ymax == 0:
                     continue
-
-                # Check if box is valid
                 oob_issues = []
                 if not geom.equals(shapely.envelope(geom)):
                     oob_issues.append(f"geom ({geom}) is not a valid bounding box")
@@ -180,11 +186,23 @@ class BoxDataset(TrainingDataset):
                     oob_issues.append(f"ymax ({ymax}) > image height ({height})")
                 if math.isclose(geom.area, 1):
                     oob_issues.append("area of bounding box is a single pixel")
-
                 if oob_issues:
                     errors.append(
                         f"Box, ({xmin}, {ymin}, {xmax}, {ymax}) exceeds image dimensions, ({width}, {height}). Issues: {', '.join(oob_issues)}."
                     )
+
+        if self.image_size is not None:
+            _check_boxes(self.annotations, *self.image_size)
+        else:
+            for image_path, group in self.annotations.groupby("image_path"):
+                img_path = os.path.join(self.root_dir, image_path)
+                try:
+                    with Image.open(img_path) as img:
+                        width, height = img.size
+                except Exception as e:
+                    errors.append(f"Failed to open image {img_path}: {e}")
+                    continue
+                _check_boxes(group, width, height)
 
         if errors:
             raise ValueError("\n".join(errors))
@@ -227,7 +245,7 @@ class BoxDataset(TrainingDataset):
         Returns:
             target dictionary with boxes and labels entries
         """
-        image_annotations = self.annotations[self.annotations.image_path == image_path]
+        image_annotations = self._annotations_index[image_path]
         targets = {}
 
         if "geometry" in image_annotations.columns:
@@ -365,41 +383,40 @@ class KeypointDataset(TrainingDataset):
             ValueError: If any point occurs outside the image
         """
         errors = []
-        for _idx, row in self.annotations.iterrows():
-            if self.image_size is not None:
-                width, height = self.image_size
-            else:
-                img_path = os.path.join(self.root_dir, row["image_path"])
+
+        def _check_points(df, width, height):
+            centroids = df["geometry"].apply(lambda g: g.centroid)
+            xs = centroids.apply(lambda c: c.x).to_numpy()
+            ys = centroids.apply(lambda c: c.y).to_numpy()
+            non_zero = ~((xs == 0) & (ys == 0))
+            oob = non_zero & ((xs < 0) | (xs > width) | (ys < 0) | (ys > height))
+            for i in np.where(oob)[0]:
+                x, y = xs[i], ys[i]
+                issues = []
+                if x < 0:
+                    issues.append(f"x ({x}) < 0")
+                if x > width:
+                    issues.append(f"x ({x}) > image width ({width})")
+                if y < 0:
+                    issues.append(f"y ({y}) < 0")
+                if y > height:
+                    issues.append(f"y ({y}) > image height ({height})")
+                errors.append(
+                    f"Point, ({x}, {y}) exceeds image dimensions, ({width}, {height}). Issues: {', '.join(issues)}."
+                )
+
+        if self.image_size is not None:
+            _check_points(self.annotations, *self.image_size)
+        else:
+            for image_path, group in self.annotations.groupby("image_path"):
+                img_path = os.path.join(self.root_dir, image_path)
                 try:
                     with Image.open(img_path) as img:
                         width, height = img.size
                 except Exception as e:
                     errors.append(f"Failed to open image {img_path}: {e}")
                     continue
-
-            # Extract point coordinates (use centroid so boxes/polygons also work)
-            centroid = row["geometry"].centroid
-            x, y = centroid.x, centroid.y
-
-            # All coordinates equal to zero is how we code empty frames.
-            if x == 0 and y == 0:
-                continue
-
-            # Check if point is valid
-            oob_issues = []
-            if x < 0:
-                oob_issues.append(f"x ({x}) < 0")
-            if x > width:
-                oob_issues.append(f"x ({x}) > image width ({width})")
-            if y < 0:
-                oob_issues.append(f"y ({y}) < 0")
-            if y > height:
-                oob_issues.append(f"y ({y}) > image height ({height})")
-
-            if oob_issues:
-                errors.append(
-                    f"Point, ({x}, {y}) exceeds image dimensions, ({width}, {height}). Issues: {', '.join(oob_issues)}."
-                )
+                _check_points(group, width, height)
 
         if errors:
             raise ValueError("\n".join(errors))
@@ -438,7 +455,7 @@ class KeypointDataset(TrainingDataset):
         Returns:
             target dictionary with points and labels entries
         """
-        image_annotations = self.annotations[self.annotations.image_path == image_path]
+        image_annotations = self._annotations_index[image_path]
         targets = {}
 
         if "geometry" in image_annotations.columns:

@@ -59,6 +59,9 @@ def train(
         the same experiment.
     """
 
+    if torch.cuda.is_available():
+        torch.set_float32_matmul_precision("high")
+
     if trace:
         if not torch.cuda.is_available():
             warnings.warn("Cuda is not available, skipping trace.", stacklevel=2)
@@ -148,6 +151,7 @@ def train(
         gradient_clip_val=0.5,
         accelerator=config.accelerator,
         strategy=strategy,
+        precision="16-mixed" if torch.cuda.is_available() else "32-true",
     )
 
     # Add experiment ID to hyperparameters if available

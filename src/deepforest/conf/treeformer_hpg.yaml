@@ -1,0 +1,18 @@
+# Allow hyra to inherit from the base,
+# then override with this file.
+defaults:
+  - treeformer
+  - _self_
+
+batch_size: 64
+workers: 16
+accelerator: auto
+logs: ./logs/treeformer
+
+train:
+    csv_file: /Users/josh/data/Neon_benchmark/train.csv
+    root_dir: /Users/josh/data/Neon_benchmark/images
+
+validation:
+    csv_file: /Users/josh/data/Neon_benchmark/test.csv
+    root_dir: /Users/josh/data/Neon_benchmark/images

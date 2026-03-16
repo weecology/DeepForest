@@ -1,6 +1,8 @@
 # entry point for deepforest model
 import importlib
+import logging
 import os
+import time
 import warnings
 
 import numpy as np
@@ -20,6 +22,7 @@ from deepforest.datasets import prediction, training
 from deepforest.metrics import RecallPrecision
 
 Image.MAX_IMAGE_PIXELS = None
+log = logging.getLogger(__name__)
 
 
 class deepforest(pl.LightningModule):
@@ -351,6 +354,8 @@ class deepforest(pl.LightningModule):
             ds: a pytorch dataset
         """
 
+        t0 = time.perf_counter()
+        log.info("[load_dataset] creating %s dataset from %s", self.model.task, csv_file)
         if self.model.task == "box":
             ds = training.BoxDataset(
                 csv_file=csv_file,
@@ -375,12 +380,18 @@ class deepforest(pl.LightningModule):
             raise ValueError(
                 f"Invalid task type: {self.model.task}, expected 'box' or 'keypoint'"
             )
+        log.info(
+            "[load_dataset] dataset init done: %d images, %.1fs",
+            len(ds),
+            time.perf_counter() - t0,
+        )
 
         if len(ds) == 0:
             raise ValueError(
                 f"Dataset from {csv_file} is empty. Check CSV for valid entries and columns."
             )
 
+        t1 = time.perf_counter()
         data_loader = torch.utils.data.DataLoader(
             ds,
             batch_size=batch_size,
@@ -388,6 +399,7 @@ class deepforest(pl.LightningModule):
             collate_fn=ds.collate_fn,
             num_workers=self.config.workers,
         )
+        log.info("[load_dataset] DataLoader created: %.1fs", time.perf_counter() - t1)
 
         return data_loader
 
@@ -400,6 +412,7 @@ class deepforest(pl.LightningModule):
         if self.existing_train_dataloader:
             return self.existing_train_dataloader
 
+        log.info("[train_dataloader] start")
         loader = self.load_dataset(
             csv_file=self.config.train.csv_file,
             root_dir=self.config.train.root_dir,
@@ -412,6 +425,7 @@ class deepforest(pl.LightningModule):
             transforms=self.transforms,
             batch_size=self.config.batch_size,
         )
+        log.info("[train_dataloader] done")
 
         return loader
 
@@ -429,6 +443,7 @@ class deepforest(pl.LightningModule):
             return self.existing_val_dataloader
 
         if self.config.validation.csv_file is not None:
+            log.info("[val_dataloader] start")
             loader = self.load_dataset(
                 csv_file=self.config.validation.csv_file,
                 root_dir=self.config.validation.root_dir,
@@ -437,6 +452,7 @@ class deepforest(pl.LightningModule):
                 preload_images=self.config.validation.preload_images,
                 batch_size=self.config.batch_size,
             )
+            log.info("[val_dataloader] done")
 
         return loader
 
