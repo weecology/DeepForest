@@ -8,6 +8,7 @@ import os
 
 import numpy as np
 import rasterio as rio
+import torch
 from rasterio.windows import Window
 from torch.utils.data import Dataset
 from torchvision import transforms
@@ -71,6 +72,7 @@ class BoundingBoxDataset(Dataset):
         resize=None,
         normalize=None,
         expand: int = 0,
+        metadata=None,
     ):
         self.df = df
 
@@ -85,6 +87,10 @@ class BoundingBoxDataset(Dataset):
         if expand < 0:
             raise ValueError("expand must be >= 0")
         self.expand = int(expand)
+
+        # Optional spatial-temporal metadata per crop.
+        # Dict mapping crop index to (lat, lon, day_of_year).
+        self.metadata = metadata
 
         unique_image = self.df["image_path"].unique()
         assert len(unique_image) == 1, (
@@ -134,5 +140,10 @@ class BoundingBoxDataset(Dataset):
             image = self.transform(box)
         else:
             image = box
+
+        if self.metadata is not None:
+            lat, lon, doy = self.metadata[idx]
+            meta_tensor = torch.tensor([lat, lon, doy], dtype=torch.float32)
+            return image, meta_tensor
 
         return image

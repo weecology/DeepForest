@@ -110,6 +110,9 @@ class CropModelConfig:
     resize: list[int] = field(default_factory=lambda: [224, 224])
     normalize: Any = None
     expand: int = 0
+    use_metadata: bool = False
+    metadata_dim: int = 32
+    metadata_dropout: float = 0.5
 
 
 @dataclass

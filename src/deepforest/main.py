@@ -1,4 +1,5 @@
 # entry point for deepforest model
+import datetime
 import importlib
 import os
 import warnings
@@ -526,6 +527,7 @@ class deepforest(pl.LightningModule):
         iou_threshold=0.15,
         dataloader_strategy="single",
         crop_model=None,
+        metadata=None,
     ):
         """For images too large to input into the model, predict_tile cuts the
         image into overlapping windows, predicts trees on each window and
@@ -542,6 +544,10 @@ class deepforest(pl.LightningModule):
                 - "batch" loads the entire image into GPU memory and creates views of an image as batch, requires in the entire tile to fit into GPU memory. CPU parallelization is possible for loading images.
                 - "window" loads only the desired window of the image from the raster dataset. Most memory efficient option, but cannot parallelize across windows.
             crop_model: a deepforest.model.CropModel object to predict on crops
+            metadata: Optional dict with keys "lat", "lon", "date" for
+                spatial-temporal context. "date" should be an ISO format
+                string (e.g., "2024-06-15"). Used by CropModel when
+                use_metadata=True in config.
 
         Returns:
             pd.DataFrame or tuple: Predictions dataframe or (predictions, crops) tuple
@@ -667,6 +673,20 @@ class deepforest(pl.LightningModule):
             root_dir = None
 
         if crop_model is not None:
+            # Build per-crop metadata from image-level metadata dict
+            if metadata is not None:
+                date_str = metadata.get("date", None)
+                if date_str is not None:
+                    doy = float(
+                        datetime.datetime.strptime(str(date_str), "%Y-%m-%d")
+                        .timetuple()
+                        .tm_yday
+                    )
+                else:
+                    doy = 1.0
+                lat = float(metadata.get("lat", 0.0))
+                lon = float(metadata.get("lon", 0.0))
+
             cropmodel_results = []
             for path in paths:
                 image_result = mosaic_results[
@@ -675,8 +695,19 @@ class deepforest(pl.LightningModule):
                 if image_result.empty:
                     continue
                 image_result.root_dir = os.path.dirname(path)
+
+                # Create per-crop metadata dict if metadata was provided
+                per_crop_metadata = None
+                if metadata is not None:
+                    per_crop_metadata = dict.fromkeys(
+                        range(len(image_result)), (lat, lon, doy)
+                    )
+
                 cropmodel_result = predict._crop_models_wrapper_(
-                    crop_model, self.trainer, image_result
+                    crop_model,
+                    self.trainer,
+                    image_result,
+                    metadata=per_crop_metadata,
                 )
                 cropmodel_results.append(cropmodel_result)
             cropmodel_results = pd.concat(cropmodel_results)

@@ -1,5 +1,6 @@
 # Model - common class
 import json
+import math
 import os
 from collections.abc import Mapping
 
@@ -82,6 +83,69 @@ def simple_resnet_50(num_classes: int = 2) -> torch.nn.Module:
     return m
 
 
+def resnet50_backbone():
+    """Create a ResNet-50 backbone that outputs 2048-dim feature vectors.
+
+    Returns:
+        tuple: (backbone, feature_dim) where backbone is the model and
+            feature_dim is the output dimension (2048).
+    """
+    m = models.resnet50(weights=models.ResNet50_Weights.DEFAULT)
+    feature_dim = m.fc.in_features
+    m.fc = torch.nn.Identity()
+    return m, feature_dim
+
+
+class SpatialTemporalEncoder(torch.nn.Module):
+    """Encode (lat, lon, day_of_year) into a fixed-size embedding.
+
+    Uses sinusoidal features for smooth, periodic representation of
+    geographic coordinates and seasonality, followed by a small MLP.
+
+    Args:
+        embed_dim: Output embedding dimension. Default 32.
+        dropout: Dropout rate on the embedding. Default 0.5.
+
+    Input:
+        metadata: tensor of shape (batch, 3) with [lat, lon, day_of_year].
+            lat in [-90, 90], lon in [-180, 180], day_of_year in [1, 366].
+
+    Output:
+        tensor of shape (batch, embed_dim).
+    """
+
+    def __init__(self, embed_dim: int = 32, dropout: float = 0.5):
+        super().__init__()
+        self.mlp = torch.nn.Sequential(
+            torch.nn.Linear(6, embed_dim),
+            torch.nn.ReLU(),
+            torch.nn.Dropout(dropout),
+        )
+
+    def forward(self, metadata):
+        lat = metadata[:, 0:1]
+        lon = metadata[:, 1:2]
+        doy = metadata[:, 2:3]
+
+        lat_norm = lat / 90.0
+        lon_norm = lon / 180.0
+        doy_norm = (doy - 1) / 365.0
+
+        features = torch.cat(
+            [
+                torch.sin(math.pi * lat_norm),
+                torch.cos(math.pi * lat_norm),
+                torch.sin(math.pi * lon_norm),
+                torch.cos(math.pi * lon_norm),
+                torch.sin(2 * math.pi * doy_norm),
+                torch.cos(2 * math.pi * doy_norm),
+            ],
+            dim=1,
+        )
+
+        return self.mlp(features)
+
+
 class CropModel(LightningModule, PyTorchModelHubMixin):
     """A PyTorch Lightning module for classifying image crops from object
     detection models.
@@ -113,6 +177,9 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
         super().__init__()
 
         self.model = model
+        self.backbone = None
+        self.metadata_encoder = None
+        self.classifier = None
         # Set the argument as the self.config, this way when reloading the checkpoint, self.config exists and is not overwritten.
         self.config = config
         if self.config is None:
@@ -163,18 +230,39 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
             }
         )
 
-        self.model = simple_resnet_50(num_classes=num_classes)
+        use_metadata = self.config["cropmodel"].get("use_metadata", False)
+
+        if use_metadata:
+            metadata_dim = self.config["cropmodel"].get("metadata_dim", 32)
+            metadata_dropout = self.config["cropmodel"].get("metadata_dropout", 0.5)
+
+            backbone, feature_dim = resnet50_backbone()
+            self.backbone = backbone
+            self.metadata_encoder = SpatialTemporalEncoder(
+                embed_dim=metadata_dim, dropout=metadata_dropout
+            )
+            self.classifier = torch.nn.Linear(feature_dim + metadata_dim, num_classes)
+            self.model = None
+        else:
+            self.backbone = None
+            self.metadata_encoder = None
+            self.classifier = None
+            self.model = simple_resnet_50(num_classes=num_classes)
 
     def create_trainer(self, **kwargs):
         """Create a pytorch lightning trainer object."""
         self.trainer = Trainer(**kwargs)
 
-    def load_from_disk(self, train_dir, val_dir):
+    def load_from_disk(self, train_dir, val_dir, metadata_csv=None):
         """Load the training and validation datasets from disk.
 
         Args:
             train_dir (str): The directory containing the training dataset.
             val_dir (str): The directory containing the validation dataset.
+            metadata_csv (str, optional): Path to a CSV file mapping image
+                filenames to spatial-temporal metadata. The CSV should have
+                columns: filename, lat, lon, date. Required when
+                use_metadata=True in config. Defaults to None.
 
         Returns:
             None
@@ -185,6 +273,15 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
             transform_train=self.get_transform(augmentations=["HorizontalFlip"]),
             transform_val=self.get_transform(augmentations=None),
         )
+
+        if metadata_csv is not None and self.config["cropmodel"].get(
+            "use_metadata", False
+        ):
+            from deepforest.datasets.training import MetadataImageFolder
+
+            self.train_ds = MetadataImageFolder(self.train_ds, metadata_csv)
+            self.val_ds = MetadataImageFolder(self.val_ds, metadata_csv)
+
         self.label_dict = self.train_ds.class_to_idx
 
         # Create a reverse mapping from numeric indices to class labels
@@ -192,7 +289,7 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
 
         self.num_classes = len(self.label_dict)
 
-        if self.model is None:
+        if self.model is None and self.backbone is None:
             self.create_model(self.num_classes)
 
     def get_transform(self, augmentations):
@@ -349,14 +446,24 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
             mean=list(norm_cfg["mean"]), std=list(norm_cfg["std"])
         )
 
-    def forward(self, x):
-        if self.model is None:
+    def forward(self, x, metadata=None):
+        if self.backbone is not None:
+            image_features = self.backbone(x)
+            if metadata is not None:
+                meta_features = self.metadata_encoder(metadata)
+            else:
+                meta_dim = self.classifier.in_features - image_features.shape[1]
+                meta_features = torch.zeros(
+                    x.shape[0], meta_dim, device=x.device, dtype=x.dtype
+                )
+            combined = torch.cat([image_features, meta_features], dim=1)
+            return self.classifier(combined)
+        elif self.model is not None:
+            return self.model(x)
+        else:
             raise AttributeError(
                 "CropModel is not initialized. Provide 'num_classes' or load from a checkpoint."
             )
-        output = self.model(x)
-
-        return output
 
     def train_dataloader(self):
         """Train data loader."""
@@ -411,20 +518,27 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
         return val_loader
 
     def training_step(self, batch, batch_idx):
-        x, y = batch
-        outputs = self.forward(x)
+        if len(batch) == 3:
+            x, y, metadata = batch
+        else:
+            x, y = batch
+            metadata = None
+        outputs = self.forward(x, metadata=metadata)
         loss = F.cross_entropy(outputs, y)
         self.log("train_loss", loss)
 
         return loss
 
     def predict_step(self, batch, batch_idx):
-        # Check if batch is a tuple for validation_dataloader
-        if isinstance(batch, list):
-            x, y = batch
+        # Inference: batch may be (images, metadata), (images, labels, metadata), or a single images tensor.
+        if isinstance(batch, (list, tuple)) and len(batch) == 3:
+            images, _labels, metadata = batch
+        elif isinstance(batch, (list, tuple)) and len(batch) == 2:
+            images, metadata = batch
         else:
-            x = batch
-        outputs = self.forward(x)
+            images = batch
+            metadata = None
+        outputs = self.forward(images, metadata=metadata)
         yhat = F.softmax(outputs, 1)
 
         return yhat
@@ -438,8 +552,12 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
         return label, score
 
     def validation_step(self, batch, batch_idx):
-        x, y = batch
-        outputs = self(x)
+        if len(batch) == 3:
+            x, y, metadata = batch
+        else:
+            x, y = batch
+            metadata = None
+        outputs = self(x, metadata=metadata)
         loss = F.cross_entropy(outputs, y)
         self.log("val_loss", loss)
 
