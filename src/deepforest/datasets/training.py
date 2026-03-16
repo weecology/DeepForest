@@ -306,6 +306,7 @@ class KeypointDataset(TrainingDataset):
         augmentations=None,
         label_dict=None,
         preload_images=False,
+        image_size: tuple[int, int] | None = None,
         density_sigma=4.0,
         output="centroid",
     ):
@@ -338,6 +339,7 @@ class KeypointDataset(TrainingDataset):
             augmentations=augmentations,
             label_dict=label_dict,
             preload_images=preload_images,
+            image_size=image_size,
         )
 
         self.density_sigma = density_sigma
