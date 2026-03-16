@@ -123,8 +123,10 @@ class OT_Loss(Module):
         loss = torch.zeros([1]).to(self.device)
         ot_obj_values = torch.zeros([1]).to(self.device)
         wd = 0  # wasserstain distance
+        n_active = 0
         for idx, im_points in enumerate(points):
             if len(im_points) > 0:
+                n_active += 1
                 # compute l2 square distance, it should be source target distance. [#gt, #cood * #cood]
                 if self.norm_cood:
                     x = im_points[:, 0].unsqueeze(1) / output_w * 2 - 1
@@ -176,4 +178,7 @@ class OT_Loss(Module):
                 loss += torch.sum(unnormed_density[idx] * im_grad)
                 wd += torch.sum(dis * P).item()
 
+        if n_active > 0:
+            loss = loss / n_active
+            ot_obj_values = ot_obj_values / n_active
         return loss, wd, ot_obj_values

@@ -52,6 +52,7 @@ keypoint:
   density_sigma_end: 1.6
   mae_weight: 0.025
   count_cls_weight: 0.025
+  ot_weight: 0.4
   score_integration_radius: 5
   density_sigma_schedule_epochs: 50
   losses: ~

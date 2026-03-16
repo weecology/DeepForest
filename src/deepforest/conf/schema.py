@@ -145,6 +145,7 @@ class KeypointConfig:
     density_sigma_end: float = 2.0
     mae_weight: float = 0.025
     count_cls_weight: float = 0.025
+    ot_weight: float = 0.4
     score_integration_radius: int = 5
     density_sigma_schedule_epochs: int | None = None
     losses: list[str] | None = None
