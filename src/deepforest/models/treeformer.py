@@ -513,6 +513,7 @@ class Model(BaseModel):
                 density_sigma_end=cfg.density_sigma_end,
                 density_sigma_schedule_epochs=cfg.density_sigma_schedule_epochs,
                 mae_weight=cfg.mae_weight,
+                ot_weight=cfg.ot_weight,
                 count_cls_weight=cfg.count_cls_weight,
                 losses=list(cfg.losses) if cfg.losses is not None else None,
                 norm_cood=cfg.norm_cood,
