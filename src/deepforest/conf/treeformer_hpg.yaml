@@ -10,9 +10,9 @@ accelerator: auto
 logs: ./logs/treeformer
 
 train:
-    csv_file: /Users/josh/data/Neon_benchmark/train.csv
-    root_dir: /Users/josh/data/Neon_benchmark/images
+    csv_file: /home/veitchmichaelisj/code/DeepForest_jvm/data/neon_train.csv
+    root_dir: /home/veitchmichaelisj/code/DeepForest_jvm/data/neon_images
 
 validation:
-    csv_file: /Users/josh/data/Neon_benchmark/test.csv
-    root_dir: /Users/josh/data/Neon_benchmark/images
+    csv_file: /home/veitchmichaelisj/code/DeepForest_jvm/data/neon_test.csv
+    root_dir: /home/veitchmichaelisj/code/DeepForest_jvm/data/neon_images
