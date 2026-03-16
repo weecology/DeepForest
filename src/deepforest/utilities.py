@@ -943,30 +943,30 @@ def density_to_points(
 ) -> list[dict[str, torch.Tensor]]:
     """Extract peak point predictions from a density map.
 
-    Integrates density values within ``score_integration_radius`` pixels of
-    each location (so scores converge to ~1.0 per tree), then finds local
-    maxima using ``scipy.ndimage.maximum_filter``. Connected plateau regions
-    (flat-topped bumps) are reduced to their centroid so each tree yields
-    exactly one prediction.
+    Normalises the density map to [0, 1] per image then finds local maxima
+    using ``skimage.feature.peak_local_max`` with a relative threshold.
+    Using a relative threshold makes detection scale-invariant — it works
+    correctly at any density_sigma value during training, unlike an absolute
+    threshold which would miss peaks when sigma is large.
 
     Args:
         density_map: ``(B, C, H, W)`` density map tensor **or** a list of
             per-image ``(1, C, H_i, W_i)`` tensors with potentially varying
             spatial sizes (as returned by ``TreeFormerModel.forward`` when the
             input is a list).
-        score_thresh: Minimum integrated density score for a peak to be
-            retained. With integration, ~1.0 corresponds to one tree, so
-            0.1–0.5 is a reasonable range.
-        score_integration_radius: Radius in density-map pixels over which to
-            sum density values for the peak score. Should be approximately
-            ``density_sigma / downsample_ratio * 2``.
+        score_thresh: Relative peak threshold in [0, 1]. Peaks below
+            ``score_thresh * max(density_map)`` are discarded. Default 0.1
+            keeps all peaks above 10% of the strongest peak.
+        score_integration_radius: ``min_distance`` for ``peak_local_max`` —
+            suppresses duplicate detections within this many density-map pixels
+            (one tree-sized neighbourhood).
 
     Returns:
         List of dicts with ``"points"`` (N, 2), ``"scores"`` (N,), and
         ``"labels"`` (N,) for each image in the batch. The dict is
         compatible with ``format_geometry``.
     """
-    from scipy.ndimage import center_of_mass, label, maximum_filter
+    from skimage.feature import peak_local_max
 
     if isinstance(density_map, list):
         results = []
@@ -974,30 +974,27 @@ def density_to_points(
             results.extend(density_to_points(dm, score_thresh, score_integration_radius))
         return results
 
-    # Integrated score: sum density within score_integration_radius of each pixel.
-    int_k = 2 * score_integration_radius + 1
-    integrated = torch.nn.functional.avg_pool2d(
-        density_map, kernel_size=int_k, stride=1, padding=score_integration_radius
-    ) * (int_k**2)
+    # Normalise to [0, 1] per image so threshold_rel is scale-invariant.
+    density_norm = density_map / density_map.amax(dim=(2, 3), keepdim=True).clamp(
+        min=1e-6
+    )
 
     results = []
     for b in range(density_map.shape[0]):
-        density_np = integrated[b, 0].detach().cpu().numpy()
+        density_np = density_norm[b, 0].detach().cpu().numpy()
 
-        # reflect mode avoids false peaks at boundaries caused by zero-padding.
-        local_max = maximum_filter(density_np, size=int_k, mode="reflect")
-        is_peak = (density_np == local_max) & (density_np > score_thresh)
+        # peak_local_max handles flat plateaus (returns one point per region)
+        # and uses reflect-padded maximum_filter internally.
+        coords = peak_local_max(
+            density_np,
+            min_distance=score_integration_radius,
+            threshold_rel=score_thresh,
+        )  # (N, 2) in (row, col) = (y, x)
 
-        # Label connected plateau regions and reduce each to its centroid so
-        # flat-topped bumps produce exactly one prediction per tree.
-        labeled, n_peaks = label(is_peak)
-        if n_peaks > 0:
-            centroids = center_of_mass(density_np, labeled, range(1, n_peaks + 1))
-            yx = torch.tensor(centroids, dtype=torch.float32)
+        if len(coords) > 0:
+            yx = torch.from_numpy(coords).float()
             xy = yx[:, [1, 0]]
-            rows = yx[:, 0].long()
-            cols = yx[:, 1].long()
-            scores = integrated[b, 0][rows, cols].detach()
+            scores = density_norm[b, 0][coords[:, 0], coords[:, 1]].detach()
         else:
             xy = torch.zeros((0, 2))
             scores = torch.zeros(0, device=density_map.device)

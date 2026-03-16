@@ -800,11 +800,16 @@ class deepforest(pl.LightningModule):
                         scaled_pts_i, H_i, W_i, image_h_i, image_w_i
                     ).squeeze()
                     pred_i = dm_i.squeeze()
-                    gt_norm = gt_i / (gt_i.sum() + 1e-6)
-                    pred_norm = pred_i / (pred_i.sum() + 1e-6)
-                    self.spatial_corr_metric.update(
-                        pred_norm.flatten(), gt_norm.flatten()
-                    )
+                    # PearsonCorrCoef returns NaN when either input has
+                    # near-zero variance (empty GT, single peak, or flat
+                    # prediction early in training). Guard on both.
+                    if gt_i.sum() > 0:
+                        gt_norm = gt_i / gt_i.sum()
+                        pred_norm = pred_i / (pred_i.sum() + 1e-6)
+                        gt_flat = gt_norm.flatten()
+                        pred_flat = pred_norm.flatten()
+                        if gt_flat.var() > 1e-8 and pred_flat.var() > 1e-8:
+                            self.spatial_corr_metric.update(pred_flat, gt_flat)
 
                 preds_pts = utilities.density_to_points(
                     density_map,
@@ -902,6 +907,9 @@ class deepforest(pl.LightningModule):
             metrics["val_r2"] = self.r2_metric.compute()
             metrics["val_spatial_corr"] = self.spatial_corr_metric.compute()
             metrics.update(self.precision_recall_metric.compute())
+            p = float(metrics.get("point_precision") or 0.0)
+            r = float(metrics.get("point_recall") or 0.0)
+            metrics["point_f1"] = 2 * p * r / (p + r) if (p + r) > 0 else 0.0
         # IoU and mAP
         elif self.model.task == "box" and len(self.iou_metric.groundtruth_labels) > 0:
             metrics.update(self.iou_metric.compute())

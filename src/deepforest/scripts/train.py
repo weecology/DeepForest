@@ -132,8 +132,8 @@ def train(
     if checkpoint:
         checkpoint_callback = ModelCheckpoint(
             dirpath=Path(csv_logger.log_dir) / "checkpoints",
-            filename=f"{config.architecture}-{{epoch:02d}}-{{val_loss:.4f}}",
-            monitor="val_loss",
+            filename=f"{config.architecture}-{{epoch:02d}}-{{val_mae:.2f}}",
+            monitor="val_mae",
             mode="min",
             save_top_k=1,
             save_last=True,
