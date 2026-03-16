@@ -332,6 +332,7 @@ class deepforest(pl.LightningModule):
         augmentations=None,
         preload_images=False,
         batch_size=1,
+        image_size: tuple[int, int] | None = None,
     ):
         """Create a dataset for inference or training. Csv file format is .csv
         file with the columns "image_path", "xmin","ymin","xmax","ymax" for the
@@ -358,6 +359,7 @@ class deepforest(pl.LightningModule):
                 label_dict=self.label_dict,
                 augmentations=augmentations,
                 preload_images=preload_images,
+                image_size=image_size,
             )
         elif self.model.task == "keypoint":
             ds = training.KeypointDataset(
@@ -367,6 +369,7 @@ class deepforest(pl.LightningModule):
                 label_dict=self.label_dict,
                 augmentations=augmentations,
                 preload_images=preload_images,
+                image_size=image_size,
             )
         else:
             raise ValueError(
@@ -402,6 +405,9 @@ class deepforest(pl.LightningModule):
             root_dir=self.config.train.root_dir,
             augmentations=self.config.train.augmentations,
             preload_images=self.config.train.preload_images,
+            image_size=tuple(self.config.train.image_size)
+            if self.config.train.image_size
+            else None,
             shuffle=True,
             transforms=self.transforms,
             batch_size=self.config.batch_size,

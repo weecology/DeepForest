@@ -31,6 +31,7 @@ class TrainingDataset(Dataset):
         augmentations=None,
         label_dict=None,
         preload_images=False,
+        image_size: tuple[int, int] | None = None,
     ):
         """
         Args:
@@ -40,9 +41,12 @@ class TrainingDataset(Dataset):
             label_dict (dict[str, int]): Mapping from string labels in the CSV to integer class IDs (e.g., {"Tree": 0}).
             augmentations (str | list | dict, optional): Augmentation configuration.
             preload_images (bool): If True, preload all images into memory. Defaults to False.
+            image_size (tuple[int, int] | None): Fixed (width, height) for all images. When set, skips
+                opening each image during coordinate validation, which is significant for large datasets.
         """
         self.annotations = utilities.read_file(csv_file, root_dir=root_dir)
         self.root_dir = root_dir
+        self.image_size = image_size
 
         # Initialize label_dict with default if None
         if label_dict is None:
@@ -139,14 +143,17 @@ class BoxDataset(TrainingDataset):
             ValueError: If any bounding box coordinate occurs outside the image
         """
         errors = []
-        for image_path, group in self.annotations.groupby("image_path"):
-            img_path = os.path.join(self.root_dir, image_path)
-            try:
-                with Image.open(img_path) as img:
-                    width, height = img.size
-            except Exception as e:
-                errors.append(f"Failed to open image {img_path}: {e}")
-                continue
+        for _idx, row in self.annotations.iterrows():
+            if self.image_size is not None:
+                width, height = self.image_size
+            else:
+                img_path = os.path.join(self.root_dir, row["image_path"])
+                try:
+                    with Image.open(img_path) as img:
+                        width, height = img.size
+                except Exception as e:
+                    errors.append(f"Failed to open image {img_path}: {e}")
+                    continue
 
             for _idx, row in group.iterrows():
                 # Extract bounding box
@@ -357,13 +364,16 @@ class KeypointDataset(TrainingDataset):
         """
         errors = []
         for _idx, row in self.annotations.iterrows():
-            img_path = os.path.join(self.root_dir, row["image_path"])
-            try:
-                with Image.open(img_path) as img:
-                    width, height = img.size
-            except Exception as e:
-                errors.append(f"Failed to open image {img_path}: {e}")
-                continue
+            if self.image_size is not None:
+                width, height = self.image_size
+            else:
+                img_path = os.path.join(self.root_dir, row["image_path"])
+                try:
+                    with Image.open(img_path) as img:
+                        width, height = img.size
+                except Exception as e:
+                    errors.append(f"Failed to open image {img_path}: {e}")
+                    continue
 
             # Extract point coordinates (use centroid so boxes/polygons also work)
             centroid = row["geometry"].centroid

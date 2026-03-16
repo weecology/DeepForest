@@ -1,0 +1,24 @@
+defaults:
+  - treeformer
+  - _self_
+
+train:
+    csv_file: ???
+    root_dir: ???
+    image_size: [1024, 1024]
+
+validation:
+    csv_file: ???
+    root_dir: ???
+    distance_threshold: 13.0
+
+keypoint:
+  density_sigma_start: 20.0
+  density_sigma_end: 4.0
+  mae_weight: 0.008
+  count_cls_weight: 0.008
+  ot_weight: 0.4
+  score_integration_radius: 13
+  density_sigma_schedule_epochs: 50
+  losses: ~
+  norm_cood: false
