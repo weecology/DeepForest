@@ -370,7 +370,7 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         # ---- Optimal transport loss ----------------------------------------
         if "ot" in active:
             ot_raw, _, _ = self._get_ot_loss()(normed_density, density_map, scaled_points)
-            ot_loss = ot_raw * self.ot_weight
+            ot_loss = (ot_raw / B) * self.ot_weight
         else:
             ot_loss = zero
 
