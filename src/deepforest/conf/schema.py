@@ -96,6 +96,7 @@ class ValidationConfig:
     lr_plateau_target: str = "val_loss"
     augmentations: list[str] | None = field(default_factory=lambda: [])
     limit_batches: float = 1.0
+    image_size: list[int] | None = None
 
 
 @dataclass

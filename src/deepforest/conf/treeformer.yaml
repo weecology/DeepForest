@@ -10,7 +10,7 @@ label_dict:
     Tree: 0
 num_classes: 1
 batch_size: 4
-
+log_root: ./logs/treeformer
 model:
     name: ~
 
@@ -43,9 +43,6 @@ score_thresh: 0.3
 
 validation:
     val_accuracy_interval: 1
-    csv_file: /Users/josh/data/Neon_benchmark/test.csv
-    root_dir: /Users/josh/data/Neon_benchmark/images
-    distance_threshold: 5.0
 
 keypoint:
   density_sigma_start: 7.8

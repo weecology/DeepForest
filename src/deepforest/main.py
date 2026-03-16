@@ -450,6 +450,9 @@ class deepforest(pl.LightningModule):
                 augmentations=self.config.validation.augmentations,
                 shuffle=False,
                 preload_images=self.config.validation.preload_images,
+                image_size=tuple(self.config.validation.image_size)
+                if self.config.validation.image_size
+                else None,
                 batch_size=self.config.batch_size,
             )
             log.info("[val_dataloader] done")

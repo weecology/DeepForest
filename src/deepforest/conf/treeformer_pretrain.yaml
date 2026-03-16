@@ -1,15 +1,16 @@
 defaults:
-  - treeformer
+  - treeformer_hpg
   - _self_
 
 train:
-    csv_file: ???
-    root_dir: ???
+    csv_file: /home/veitchmichaelisj/code/DeepForest_jvm/data/neon_train.csv
+    root_dir: /home/veitchmichaelisj/code/DeepForest_jvm/data/neon_images
     image_size: [1024, 1024]
 
 validation:
-    csv_file: ???
-    root_dir: ???
+    csv_file: /home/veitchmichaelisj/code/DeepForest_jvm/data/neon_test.csv
+    root_dir: /home/veitchmichaelisj/code/DeepForest_jvm/data/neon_images
+    image_size: [1024, 1024]
     distance_threshold: 13.0
 
 keypoint:

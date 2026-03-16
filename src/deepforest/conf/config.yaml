@@ -97,6 +97,7 @@ validation:
     root_dir:
     preload_images: False
     size:
+    image_size:
 
     # For retinanet you may prefer val_classification, but the default val_loss
     # should work with all models
