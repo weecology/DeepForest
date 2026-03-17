@@ -72,8 +72,8 @@ class TrainConfig:
     preload_images: bool = False
     augmentations: list[str] | None = field(default_factory=lambda: ["HorizontalFlip"])
     limit_batches: float = 1.0
-    image_size: list[int] | None = (
-        None  # [width, height]; skips per-image file open during coordinate validation
+    same_size_images: bool = (
+        False  # if True, opens image_names[0] to get dimensions for coordinate validation
     )
 
 
@@ -96,7 +96,7 @@ class ValidationConfig:
     lr_plateau_target: str = "val_loss"
     augmentations: list[str] | None = field(default_factory=lambda: [])
     limit_batches: float = 1.0
-    image_size: list[int] | None = None
+    same_size_images: bool = False
 
 
 @dataclass

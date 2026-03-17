@@ -87,7 +87,9 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
                 )
             self.backbone = PvtV2Model(config)
 
-        self.backbone.gradient_checkpointing_enable()
+        self.backbone.gradient_checkpointing_enable(
+            gradient_checkpointing_kwargs={"use_reentrant": False}
+        )
 
         variant = backbone.split("/")[-1]
         src = self.HIDDEN_SIZES[variant]

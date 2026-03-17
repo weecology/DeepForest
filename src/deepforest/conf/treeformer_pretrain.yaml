@@ -5,12 +5,29 @@ defaults:
 train:
     csv_file: /home/veitchmichaelisj/code/DeepForest_jvm/data/neon_train.csv
     root_dir: /home/veitchmichaelisj/code/DeepForest_jvm/data/neon_images
-    image_size: [1024, 1024]
+    same_size_images: true
+
+    augmentations:
+      - HorizontalFlip:
+          p: 0.5
+      - VerticalFlip:
+          p: 0.5
+      - Rotate:
+          degrees: 180
+          p: 0.5
+      - RandomBrightnessContrast:
+          brightness: 0.2
+          contrast: 0.2
+          p: 0.5
+      - RandomCrop:
+          size: [512, 512]
+          p: 1.0
+
 
 validation:
     csv_file: /home/veitchmichaelisj/code/DeepForest_jvm/data/neon_test.csv
     root_dir: /home/veitchmichaelisj/code/DeepForest_jvm/data/neon_images
-    image_size: [1024, 1024]
+    same_size_images: true
     distance_threshold: 13.0
 
 keypoint:

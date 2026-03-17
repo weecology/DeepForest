@@ -7,7 +7,11 @@ from pathlib import Path
 
 import torch
 from omegaconf import DictConfig, OmegaConf
-from pytorch_lightning.callbacks import DeviceStatsMonitor, ModelCheckpoint
+from pytorch_lightning.callbacks import (
+    DeviceStatsMonitor,
+    ModelCheckpoint,
+    TQDMProgressBar,
+)
 from pytorch_lightning.loggers import CSVLogger, TensorBoardLogger
 
 from deepforest.callbacks import ImagesCallback
@@ -123,6 +127,7 @@ def train(
         )
         loggers.append(tensorboard_logger)
 
+    callbacks.append(TQDMProgressBar(refresh_rate=1))
     callbacks.append(
         ImagesCallback(
             save_dir=Path(csv_logger.log_dir) / "images",

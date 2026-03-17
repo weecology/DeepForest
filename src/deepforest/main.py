@@ -335,7 +335,7 @@ class deepforest(pl.LightningModule):
         augmentations=None,
         preload_images=False,
         batch_size=1,
-        image_size: tuple[int, int] | None = None,
+        same_size_images: bool = False,
     ):
         """Create a dataset for inference or training. Csv file format is .csv
         file with the columns "image_path", "xmin","ymin","xmax","ymax" for the
@@ -364,7 +364,7 @@ class deepforest(pl.LightningModule):
                 label_dict=self.label_dict,
                 augmentations=augmentations,
                 preload_images=preload_images,
-                image_size=image_size,
+                same_size_images=same_size_images,
             )
         elif self.model.task == "keypoint":
             ds = training.KeypointDataset(
@@ -374,7 +374,7 @@ class deepforest(pl.LightningModule):
                 label_dict=self.label_dict,
                 augmentations=augmentations,
                 preload_images=preload_images,
-                image_size=image_size,
+                same_size_images=same_size_images,
             )
         else:
             raise ValueError(
@@ -418,9 +418,7 @@ class deepforest(pl.LightningModule):
             root_dir=self.config.train.root_dir,
             augmentations=self.config.train.augmentations,
             preload_images=self.config.train.preload_images,
-            image_size=tuple(self.config.train.image_size)
-            if self.config.train.image_size
-            else None,
+            same_size_images=self.config.train.same_size_images,
             shuffle=True,
             transforms=self.transforms,
             batch_size=self.config.batch_size,
@@ -450,9 +448,7 @@ class deepforest(pl.LightningModule):
                 augmentations=self.config.validation.augmentations,
                 shuffle=False,
                 preload_images=self.config.validation.preload_images,
-                image_size=tuple(self.config.validation.image_size)
-                if self.config.validation.image_size
-                else None,
+                same_size_images=self.config.validation.same_size_images,
                 batch_size=self.config.batch_size,
             )
             log.info("[val_dataloader] done")

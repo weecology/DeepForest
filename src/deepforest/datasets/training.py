@@ -35,7 +35,7 @@ class TrainingDataset(Dataset):
         augmentations=None,
         label_dict=None,
         preload_images=False,
-        image_size: tuple[int, int] | None = None,
+        same_size_images: bool = False,
     ):
         """
         Args:
@@ -45,8 +45,9 @@ class TrainingDataset(Dataset):
             label_dict (dict[str, int]): Mapping from string labels in the CSV to integer class IDs (e.g., {"Tree": 0}).
             augmentations (str | list | dict, optional): Augmentation configuration.
             preload_images (bool): If True, preload all images into memory. Defaults to False.
-            image_size (tuple[int, int] | None): Fixed (width, height) for all images. When set, skips
-                opening each image during coordinate validation, which is significant for large datasets.
+            same_size_images (bool): If True, opens only the first image to determine dimensions and
+                uses those for all coordinate validation. Assumes all images are the same size, which
+                is significant for large datasets.
         """
         t0 = time.perf_counter()
         log.info("[dataset] read_file start: %s", csv_file)
@@ -58,7 +59,7 @@ class TrainingDataset(Dataset):
         )
 
         self.root_dir = root_dir
-        self.image_size = image_size
+        self.same_size_images = same_size_images
 
         # Initialize label_dict with default if None
         if label_dict is None:
@@ -88,7 +89,10 @@ class TrainingDataset(Dataset):
         self._validate_labels()
 
         t2 = time.perf_counter()
-        log.info("[dataset] _validate_coordinates start (image_size=%s)", self.image_size)
+        log.info(
+            "[dataset] _validate_coordinates start (same_size_images=%s)",
+            self.same_size_images,
+        )
         self._validate_coordinates()
         log.info("[dataset] _validate_coordinates done: %.1fs", time.perf_counter() - t2)
 
@@ -191,8 +195,11 @@ class BoxDataset(TrainingDataset):
                         f"Box, ({xmin}, {ymin}, {xmax}, {ymax}) exceeds image dimensions, ({width}, {height}). Issues: {', '.join(oob_issues)}."
                     )
 
-        if self.image_size is not None:
-            _check_boxes(self.annotations, *self.image_size)
+        if self.same_size_images:
+            img_path = os.path.join(self.root_dir, self.image_names[0])
+            with Image.open(img_path) as img:
+                width, height = img.size
+            _check_boxes(self.annotations, width, height)
         else:
             for image_path, group in self.annotations.groupby("image_path"):
                 img_path = os.path.join(self.root_dir, image_path)
@@ -324,7 +331,7 @@ class KeypointDataset(TrainingDataset):
         augmentations=None,
         label_dict=None,
         preload_images=False,
-        image_size: tuple[int, int] | None = None,
+        same_size_images: bool = False,
         density_sigma=4.0,
         output="centroid",
     ):
@@ -357,7 +364,7 @@ class KeypointDataset(TrainingDataset):
             augmentations=augmentations,
             label_dict=label_dict,
             preload_images=preload_images,
-            image_size=image_size,
+            same_size_images=same_size_images,
         )
 
         self.density_sigma = density_sigma
@@ -405,8 +412,11 @@ class KeypointDataset(TrainingDataset):
                     f"Point, ({x}, {y}) exceeds image dimensions, ({width}, {height}). Issues: {', '.join(issues)}."
                 )
 
-        if self.image_size is not None:
-            _check_points(self.annotations, *self.image_size)
+        if self.same_size_images:
+            img_path = os.path.join(self.root_dir, self.image_names[0])
+            with Image.open(img_path) as img:
+                width, height = img.size
+            _check_points(self.annotations, width, height)
         else:
             for image_path, group in self.annotations.groupby("image_path"):
                 img_path = os.path.join(self.root_dir, image_path)

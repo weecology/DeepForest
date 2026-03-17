@@ -87,9 +87,9 @@ train:
     # preload images to GPU memory for fast training. This depends on GPU size and number of images.
     preload_images: False
     limit_batches: 1.0
-    # Fixed image size [width, height]. When set, skips opening each image during
-    # annotation coordinate validation
-    image_size:
+    # If true, opens only the first image to get dimensions for coordinate validation.
+    # Assumes all images are the same size.
+    same_size_images: false
 
 
 validation:
@@ -97,7 +97,7 @@ validation:
     root_dir:
     preload_images: False
     size:
-    image_size:
+    same_size_images: false
 
     # For retinanet you may prefer val_classification, but the default val_loss
     # should work with all models
