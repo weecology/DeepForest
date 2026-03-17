@@ -4,6 +4,7 @@ from warnings import warn
 import pandas as pd
 from omegaconf import DictConfig
 
+from deepforest import distributed
 from deepforest.main import deepforest
 
 
@@ -51,14 +52,19 @@ def evaluate(
     if root_dir is None:
         root_dir = config.validation.root_dir
 
-    results = m.evaluate(
-        csv_file=ground_truth,
-        root_dir=root_dir,
-    )
+    m.config.validation.csv_file = ground_truth
+    m.config.validation.root_dir = root_dir
+    m.config.validation.val_accuracy_interval = 1
+    m.create_trainer()
+    m.trainer.validate(m)
+    results = m.precision_recall_metric.results
 
     # Save generated predictions if requested and they were generated (not loaded from file)
-    if save_predictions is not None:
-        predictions_df = results.get("predictions")
+    if save_predictions is not None and distributed.is_global_zero(m.trainer):
+        if len(m.predictions) > 0:
+            predictions_df = pd.concat(m.predictions, ignore_index=True)
+        else:
+            predictions_df = pd.DataFrame()
         if predictions_df is not None and not predictions_df.empty:
             if os.path.dirname(save_predictions):
                 os.makedirs(os.path.dirname(save_predictions), exist_ok=True)
@@ -71,6 +77,9 @@ def evaluate(
             )
 
     # Print results to console
+    if not distributed.is_global_zero(m.trainer):
+        return
+
     m.print("Evaluation Results:")
     for key, value in results.items():
         if key not in ["predictions", "results", "ground_df", "class_recall"]:

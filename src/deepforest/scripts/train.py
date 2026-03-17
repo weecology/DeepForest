@@ -10,6 +10,7 @@ from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning.callbacks import DeviceStatsMonitor, ModelCheckpoint
 from pytorch_lightning.loggers import CSVLogger, TensorBoardLogger
 
+from deepforest import distributed
 from deepforest.callbacks import ImagesCallback
 from deepforest.main import deepforest
 
@@ -21,7 +22,7 @@ def train(
     tensorboard: bool = False,
     trace: bool = False,
     resume: str | None = None,
-    strategy: str = "auto",
+    strategy: str | None = None,
     experiment_name: str | None = None,
     tags: list[str] | None = None,
 ) -> bool:
@@ -142,13 +143,15 @@ def train(
         checkpoint_callback.CHECKPOINT_EQUALS_CHAR = ":"
         callbacks.append(checkpoint_callback)
 
-    m.create_trainer(
-        logger=loggers,
-        callbacks=callbacks,
-        gradient_clip_val=0.5,
-        accelerator=config.accelerator,
-        strategy=strategy,
-    )
+    trainer_kwargs = {
+        "logger": loggers,
+        "callbacks": callbacks,
+        "gradient_clip_val": 0.5,
+    }
+    if strategy is not None:
+        trainer_kwargs["strategy"] = strategy
+
+    m.create_trainer(**trainer_kwargs)
 
     # Add experiment ID to hyperparameters if available
     if experiment_id is not None:
@@ -157,8 +160,9 @@ def train(
         current_hparams["experiment_id"] = experiment_id
         m.save_hyperparameters(current_hparams)
 
-    os.makedirs(csv_logger.log_dir, exist_ok=True)
-    OmegaConf.save(config, Path(csv_logger.log_dir) / "config.yaml")
+    if distributed.is_global_zero(m.trainer):
+        os.makedirs(csv_logger.log_dir, exist_ok=True)
+        OmegaConf.save(config, Path(csv_logger.log_dir) / "config.yaml")
 
     train_success = False
     try:
@@ -171,12 +175,12 @@ def train(
         )
         warnings.warn(traceback.format_exc(), stacklevel=2)
 
-    if trace and torch.cuda.is_available():
+    if trace and torch.cuda.is_available() and distributed.is_global_zero(m.trainer):
         torch.cuda.memory._dump_snapshot(
             filename=Path(csv_logger.log_dir) / "dump_snapshot.pickle"
         )
 
-    if checkpoint:
+    if checkpoint and distributed.is_global_zero(m.trainer):
         for logger in m.trainer.loggers:
             if hasattr(logger.experiment, "log_model"):
                 for checkpoint in glob.glob(

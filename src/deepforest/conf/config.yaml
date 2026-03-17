@@ -5,6 +5,11 @@
 workers: 0
 devices: auto
 accelerator: auto
+num_nodes: 1
+strategy: auto
+precision: 32-true
+sync_batchnorm: False
+use_distributed_sampler: True
 batch_size: 1
 
 # Model Architecture

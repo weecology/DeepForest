@@ -37,12 +37,14 @@ class PredictionDataset(Dataset):
         images=None,
         patch_size=400,
         patch_overlap=0,
+        return_metadata=False,
     ):
         self.image = image
         self.images = images
         self.path = path
         self.patch_size = patch_size
         self.patch_overlap = patch_overlap
+        self.return_metadata = return_metadata
         self.items = self.prepare_items()
 
     def load_and_preprocess_image(
@@ -88,11 +90,18 @@ class PredictionDataset(Dataset):
 
     def __getitem__(self, idx):
         """Get the item at the given index."""
-        return self.get_crop(idx)
+        if not self.return_metadata:
+            return self.get_crop(idx)
+
+        return {"image": self.get_crop(idx), "metadata": self.get_metadata(idx)}
 
     def collate_fn(self, batch):
         """Collate the batch into a list."""
-
+        if self.return_metadata:
+            return {
+                "images": [item["image"] for item in batch],
+                "metadata": [item["metadata"] for item in batch],
+            }
         return batch
 
     def get_crop_bounds(self, idx):
@@ -107,6 +116,13 @@ class PredictionDataset(Dataset):
     def get_image_basename(self, idx):
         """Get the basename of the image at the given index."""
         raise NotImplementedError("Subclasses must implement this method")
+
+    def get_metadata(self, idx):
+        """Get metadata needed to postprocess a prediction item."""
+        return {
+            "image_path": self.get_image_basename(idx),
+            "window_bounds": self.get_crop_bounds(idx),
+        }
 
     def determine_geometry_type(self, batched_result):
         """Determine the geometry type of the batched result."""
@@ -163,9 +179,20 @@ class PredictionDataset(Dataset):
 class SingleImage(PredictionDataset):
     """Take in a single image path, preprocess and batch together."""
 
-    def __init__(self, path=None, image=None, patch_size=400, patch_overlap=0):
+    def __init__(
+        self,
+        path=None,
+        image=None,
+        patch_size=400,
+        patch_overlap=0,
+        return_metadata=False,
+    ):
         super().__init__(
-            path=path, image=image, patch_size=patch_size, patch_overlap=patch_overlap
+            path=path,
+            image=image,
+            patch_size=patch_size,
+            patch_overlap=patch_overlap,
+            return_metadata=return_metadata,
         )
 
     def prepare_items(self):
@@ -199,10 +226,10 @@ class FromCSVFile(PredictionDataset):
     """Take in a csv file with image paths and preprocess and batch
     together."""
 
-    def __init__(self, csv_file: str, root_dir: str):
+    def __init__(self, csv_file: str, root_dir: str, return_metadata=False):
         self.csv_file = csv_file
         self.root_dir = root_dir
-        super().__init__()
+        super().__init__(return_metadata=return_metadata)
 
     def prepare_items(self):
         self.annotations = read_file(self.csv_file)
@@ -248,9 +275,10 @@ class _IndexedCrops(list):
     """List of crops with the dataset index attached for correct batch
     collation."""
 
-    def __init__(self, index: int, crops: list):
+    def __init__(self, index: int, crops: list, metadata: list | None = None):
         super().__init__(crops)
         self.index = index
+        self.metadata = metadata or []
 
 
 class MultiImage(PredictionDataset):
@@ -259,7 +287,13 @@ class MultiImage(PredictionDataset):
     Note: This dataset will load the first image to determine the image dimensions. Images are expected to be the same size. For variable sized images, write a csv file and use the FromCSVFile dataset.
     """
 
-    def __init__(self, paths: list[str], patch_size: int, patch_overlap: float):
+    def __init__(
+        self,
+        paths: list[str],
+        patch_size: int,
+        patch_overlap: float,
+        return_metadata=False,
+    ):
         """
         Args:
             paths (List[str]): List of image paths.
@@ -270,6 +304,7 @@ class MultiImage(PredictionDataset):
         self.patch_size = patch_size
         self.patch_overlap = patch_overlap
         self.batch_indices = []
+        self.return_metadata = return_metadata
 
         image = self.load_and_preprocess_image(image_path=self.paths[0])
         self.image_height = image.shape[1]
@@ -359,7 +394,8 @@ class MultiImage(PredictionDataset):
     def __getitem__(self, idx):
         """Return crops with dataset index so collate_fn can use global
         indices."""
-        return _IndexedCrops(idx, self.get_crop(idx))
+        metadata = self.get_metadata(idx) if self.return_metadata else None
+        return _IndexedCrops(idx, self.get_crop(idx), metadata=metadata)
 
     def collate_fn(self, batch):
         """Collate the batch into a single list of crops.
@@ -369,6 +405,11 @@ class MultiImage(PredictionDataset):
         image_path correctly.
         """
         # item.index is the global dataset index; sublist is the list of crops
+        if self.return_metadata:
+            flattened_batch = [crop for item in batch for crop in item]
+            metadata = [meta for item in batch for meta in item.metadata]
+            return {"images": flattened_batch, "metadata": metadata}
+
         batch_indices = [
             [item.index, sub_idx] for item in batch for sub_idx in range(len(item))
         ]
@@ -391,6 +432,15 @@ class MultiImage(PredictionDataset):
 
     def get_crop_bounds(self, idx):
         return self.window_list()[idx]
+
+    def get_metadata(self, idx):
+        return [
+            {
+                "image_path": self.get_image_basename(idx),
+                "window_bounds": self.get_crop_bounds(window_idx),
+            }
+            for window_idx in range(len(self.window_list()))
+        ]
 
     def postprocess(self, batch, prediction_index, original_batch_structure):
         """Postprocess flattened batch of predictions from multiple images.
@@ -436,10 +486,15 @@ class TiledRaster(PredictionDataset):
         A dataset of raster windows
     """
 
-    def __init__(self, path, patch_size, patch_overlap):
+    def __init__(self, path, patch_size, patch_overlap, return_metadata=False):
         if path is None:
             raise ValueError("path is required for a memory raster dataset")
-        super().__init__(path=path, patch_size=patch_size, patch_overlap=patch_overlap)
+        super().__init__(
+            path=path,
+            patch_size=patch_size,
+            patch_overlap=patch_overlap,
+            return_metadata=return_metadata,
+        )
 
     def prepare_items(self):
         # Get raster shape without keeping file open
