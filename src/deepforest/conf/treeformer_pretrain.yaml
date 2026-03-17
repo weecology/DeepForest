@@ -20,6 +20,6 @@ keypoint:
   count_cls_weight: 0.008
   ot_weight: 0.4
   score_integration_radius: 13
-  density_sigma_schedule_epochs: 50
+  density_sigma_schedule_epochs: 10
   losses: ~
   norm_cood: false

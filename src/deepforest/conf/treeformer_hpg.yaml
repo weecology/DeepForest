@@ -5,5 +5,5 @@ defaults:
   - _self_
 
 batch_size: 64
-workers: 16
+workers: 32
 accelerator: auto

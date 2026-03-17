@@ -155,6 +155,7 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
                 ``self.density_sigma_schedule_epochs`` if set.
         """
         schedule_epochs = self.density_sigma_schedule_epochs or total_epochs
+        epoch = min(epoch, schedule_epochs - 1)
         t = np.pi * epoch / max(schedule_epochs - 1, 1)
         self.density_sigma = float(
             self.density_sigma_end
