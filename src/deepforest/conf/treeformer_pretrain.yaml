@@ -6,6 +6,10 @@ train:
     csv_file: /home/veitchmichaelisj/code/DeepForest_jvm/data/neon_train.csv
     root_dir: /home/veitchmichaelisj/code/DeepForest_jvm/data/neon_images
     same_size_images: true
+    epochs: 40
+    scheduler:
+        params:
+            T_max: 40
 
     augmentations:
       - HorizontalFlip:
@@ -19,9 +23,6 @@ train:
           brightness: 0.2
           contrast: 0.2
           p: 0.5
-      - RandomCrop:
-          size: [512, 512]
-          p: 1.0
 
 
 validation:
@@ -31,12 +32,12 @@ validation:
     distance_threshold: 13.0
 
 keypoint:
-  density_sigma_start: 20.0
-  density_sigma_end: 4.0
-  mae_weight: 0.008
-  count_cls_weight: 0.008
+  density_sigma_start: 7.0
+  density_sigma_end: 3.0
+  mae_weight: 0.025
+  count_cls_weight: 0.025
   ot_weight: 0.4
   score_integration_radius: 13
-  density_sigma_schedule_epochs: 10
+  density_sigma_schedule_epochs: 15
   losses: ~
   norm_cood: false
