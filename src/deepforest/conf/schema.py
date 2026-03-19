@@ -138,7 +138,8 @@ class KeypointConfig:
     before early stopping.
 
     ``losses`` controls which loss terms are active. ``None`` enables all.
-    Valid values: ``count``, ``ot``, ``density_l1``, ``count_cls``.
+    Valid values: ``count``, ``ot``, ``density_l1``, ``count_cls``,
+    ``uncertainty_mse``, ``uncertainty_reg``.
 
     ``norm_cood`` normalises OT coordinates to [-1, 1], enabling global
     optimal transport (full output-map coverage). Default ``False`` matches

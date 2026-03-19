@@ -23,6 +23,11 @@ train:
           brightness: 0.2
           contrast: 0.2
           p: 0.5
+      # Mimic training on Neon Eval
+      - RandomCrop:
+          size: [512, 512]
+          p: 1
+
 
 
 validation:
@@ -31,6 +36,11 @@ validation:
     same_size_images: true
     distance_threshold: 13.0
 
+    augmentations:
+      - RandomCrop:
+          size: [512, 512]
+          p: 1
+
 keypoint:
   density_sigma_start: 7.0
   density_sigma_end: 3.0
@@ -38,6 +48,7 @@ keypoint:
   count_cls_weight: 0.025
   ot_weight: 0.4
   score_integration_radius: 13
+  # After schedule is complete, sigma will flatline
   density_sigma_schedule_epochs: 15
   losses: ~
   norm_cood: false
