@@ -5,7 +5,6 @@ defaults:
   - _self_
 
 # At full size, bs 32 is the limit on a B200
-# Can go to 64 if you train at 512
 batch_size: 32
 workers: 16
 accelerator: auto

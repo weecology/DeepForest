@@ -19,7 +19,7 @@ train:
     root_dir: /Users/josh/data/Neon_benchmark/images
     optimizer: adamw
     lr: 1e-5
-    epochs: 100
+    epochs: 60
     scheduler:
         type: cosine
         params:
@@ -53,7 +53,7 @@ keypoint:
   count_cls_weight: 0.025
   ot_weight: 0.4
   score_integration_radius: 5
-  density_sigma_schedule_epochs: 50
+  density_sigma_schedule_epochs: 30
   losses: ~
   norm_cood: false
   log_count_loss: false
