@@ -1,13 +1,4 @@
-"""TreeFormer with PvT-V2 backbone (HuggingFace transformers).
-
-Forward signatures:
-  training:  model(inputs, points)           -> loss_dict
-  eval:      model(inputs)                   -> (density_map, normed_density)
-
-density_map:    (B, 1, H', W') raw density predictions
-normed_density: density_map normalised to sum to 1 per image
-loss_dict keys: 'loss' (total), 'count_loss', 'ot_loss', 'density_l1_loss', 'count_cls_loss'
-"""
+"""TreeFormer with PvT-V2 backbone."""
 
 import numpy as np
 import torch
@@ -422,10 +413,17 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
 
         # ---- Optimal transport loss ----------------------------------------
         if "ot" in active:
-            ot_raw, _, _ = self._get_ot_loss()(normed_density, density_map, scaled_points)
+            ot_raw, ot_wd_val, _ = self._get_ot_loss()(
+                normed_density, density_map, scaled_points
+            )
             ot_loss = ot_raw * self.ot_weight
+            # Wasserstein distance diagnostic, not used for backprop.
+            ot_wd = torch.tensor(
+                ot_wd_val, device=density_map.device, dtype=torch.float32
+            )
         else:
             ot_loss = zero
+            ot_wd = zero
 
         # ---- Density L1 loss (pixel-wise L1 between normalized density maps) ----
         if "density_l1" in active:
@@ -484,6 +482,7 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
             "loss": total,
             "count_loss": count_loss,
             "ot_loss": ot_loss,
+            "ot_wd": ot_wd,
             "density_l1_loss": density_l1_loss,
             "count_cls_loss": count_cls_loss,
             "uncertainty_mse_loss": uncertainty_mse_loss,

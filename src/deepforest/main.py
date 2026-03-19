@@ -748,7 +748,8 @@ class deepforest(pl.LightningModule):
         # allow for empty data if data augmentation is generated
         images, targets, _image_names = batch
         loss_dict = self.model.forward(images, targets)
-        losses = sum(loss_dict.values())
+
+        total_loss = loss_dict["loss"] if "loss" in loss_dict else sum(loss_dict.values())
 
         # Log loss
         for key, value in loss_dict.items():
@@ -757,9 +758,9 @@ class deepforest(pl.LightningModule):
             )
 
         # Log sum of losses
-        self.log("train_loss", losses.detach(), on_epoch=True, batch_size=len(images))
+        self.log("train_loss", total_loss.detach(), on_epoch=True, batch_size=len(images))
 
-        return losses
+        return total_loss
 
     def validation_step(self, batch, batch_idx):
         """Evaluate a batch."""
@@ -771,14 +772,14 @@ class deepforest(pl.LightningModule):
         with torch.no_grad():
             loss_dict = self.model.forward(images, targets)
 
-        # sum of regression and classification loss
-        losses = sum(loss_dict.values())
+        # Sum losses in dict, unless there's a "loss" key in which case we assume it's already the sum of components and use it directly to avoid double-counting.
+        total_loss = loss_dict["loss"] if "loss" in loss_dict else sum(loss_dict.values())
 
         # Log losses
         for key, value in loss_dict.items():
             self.log(f"val_{key}", value.detach(), on_epoch=True, batch_size=len(images))
 
-        self.log("val_loss", losses.detach(), on_epoch=True, batch_size=len(images))
+        self.log("val_loss", total_loss.detach(), on_epoch=True, batch_size=len(images))
 
         # In eval model, return predictions to calculate prediction metrics
         self.model.eval()
@@ -904,7 +905,7 @@ class deepforest(pl.LightningModule):
                 formatted_result["image_path"] = image_names[i]
                 self.predictions.append(formatted_result)
 
-        return losses
+        return total_loss
 
     def on_train_epoch_start(self):
         """Update density_sigma schedule for keypoint models."""
