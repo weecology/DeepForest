@@ -244,6 +244,12 @@ def get_transform(
             aug_transform = _create_augmentation(aug_name, aug_params)
             transforms_list.append(aug_transform)
 
+    # PadIfNeeded must be the last entry, if present:
+    for i, t in enumerate(transforms_list):
+        if isinstance(t, K.PadTo):
+            transforms_list.append(transforms_list.pop(i))
+            break
+
     # Create a sequential container for all transforms
     return K.AugmentationSequential(
         *transforms_list, data_keys=[DataKey.IMAGE, DataKey.BBOX_XYXY]
