@@ -475,7 +475,7 @@ class KeypointDataset(TrainingDataset):
                     x.centroid.coords[0]
                     if hasattr(x, "centroid")
                     else shapely.wkt.loads(x).centroid.coords[0]
-                    for x in image_annotations.geometry
+                    for x in image_annotations["geometry"]
                 ]
             ).astype("float32")
         else:

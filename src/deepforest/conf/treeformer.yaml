@@ -42,6 +42,8 @@ train:
 score_thresh: 0.3
 
 validation:
+    csv_file: /Users/josh/data/Neon_benchmark/test.csv
+    root_dir: /Users/josh/data/Neon_benchmark/images
     val_accuracy_interval: 1
 
 keypoint:
@@ -54,3 +56,7 @@ keypoint:
   density_sigma_schedule_epochs: 50
   losses: ~
   norm_cood: false
+  log_count_loss: false
+  use_uncertainty_head: false
+  uncertainty_delta: 0.2
+  uncertainty_mse_weight: 1.0

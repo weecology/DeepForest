@@ -154,6 +154,10 @@ class KeypointConfig:
     density_sigma_schedule_epochs: int | None = None
     losses: list[str] | None = None
     norm_cood: bool = False
+    log_count_loss: bool = False
+    use_uncertainty_head: bool = False
+    uncertainty_delta: float = 0.2
+    uncertainty_mse_weight: float = 1.0
 
 
 @dataclass

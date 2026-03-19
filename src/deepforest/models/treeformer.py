@@ -65,6 +65,10 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         losses: list | None = None,
         norm_cood: bool = False,
         enforce_count: bool = True,
+        log_count_loss: bool = False,
+        use_uncertainty_head: bool = False,
+        uncertainty_delta: float = 0.2,
+        uncertainty_mse_weight: float = 1.0,
         **kwargs,
     ):
         """Initialize TreeFormerModel."""
@@ -126,10 +130,27 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         self.count_cls_weight = count_cls_weight
         self.enforce_count = enforce_count
         self.norm_cood = norm_cood
+        self.log_count_loss = log_count_loss
+        self.uncertainty_delta = uncertainty_delta
+        self.uncertainty_mse_weight = uncertainty_mse_weight
+        self.use_uncertainty_head = use_uncertainty_head
 
         if losses is None:
             losses = ["count", "ot", "density_l1", "count_cls"]
         self.active_losses = set(losses)
+
+        if use_uncertainty_head:
+            self.uncertainty_head = nn.Sequential(
+                nn.Conv2d(128, 64, 3, padding=1),
+                nn.ReLU(inplace=True),
+                nn.Conv2d(64, 1, 1),
+            )
+            # Init final conv to near-zero so uncertainty
+            # is approx 0 at the start,
+            # matching Gominski et al's initialisation
+            # (softplus(-5) ≈ 0.007 pixels).
+            nn.init.zeros_(self.uncertainty_head[-1].weight)
+            nn.init.constant_(self.uncertainty_head[-1].bias, -5.0)
 
         # Losses that don't require a device are set up eagerly.
         self.density_l1 = nn.L1Loss(reduction="none")
@@ -301,6 +322,7 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         out_w: int,
         image_h: int,
         image_w: int,
+        uncertainty: torch.Tensor | None = None,
     ) -> torch.Tensor:
         """Build a batched Gaussian density map (B, 1, out_h, out_w) from point
         lists.
@@ -309,17 +331,36 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         applied with sigma rescaled from full-image pixels into output-
         map pixels, then count-normalized so each map sums to the number
         of ground-truth points.
+
+        When ``uncertainty`` (B, 1, out_h, out_w) is provided, each object's
+        Gaussian is drawn with ``sigma + uncertainty[b, 0, y, x]``, following
+        the spatial-uncertainty modulation in Gominsky et al.
         """
         # sigma is applied directly in output-map space (matching the reference
         # which uses sigma=5.0 on the 64x64 output map, not image-space pixels).
         sigma = self.density_sigma
         maps = []
-        for p in points:
+        for b_idx, p in enumerate(points):
             p_np = p.cpu().numpy()
             discrete = self.gen_discrete_map(out_h, out_w, p_np)
             if discrete.sum() > 0:
-                smoothed = gaussian_filter(discrete, sigma=sigma)
-                smoothed = smoothed * (discrete.sum() / smoothed.sum())  # count-normalize
+                if uncertainty is not None:
+                    unc_np = uncertainty[b_idx, 0].detach().cpu().numpy()
+                    smoothed = np.zeros((out_h, out_w), dtype=np.float32)
+                    p_int = p_np.round().astype(int)
+                    p_int[:, 0] = np.clip(p_int[:, 0], 0, out_w - 1)
+                    p_int[:, 1] = np.clip(p_int[:, 1], 0, out_h - 1)
+                    for pt in p_int:
+                        local_sigma = sigma + float(unc_np[pt[1], pt[0]])
+                        delta = np.zeros((out_h, out_w), dtype=np.float32)
+                        delta[pt[1], pt[0]] = 1.0
+                        smoothed += gaussian_filter(delta, sigma=max(local_sigma, 0.5))
+                    smoothed *= discrete.sum() / (smoothed.sum() + 1e-6)
+                else:
+                    smoothed = gaussian_filter(discrete, sigma=sigma)
+                    smoothed = smoothed * (
+                        discrete.sum() / smoothed.sum()
+                    )  # count-normalize
             else:
                 smoothed = discrete
             maps.append(smoothed)
@@ -334,6 +375,7 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         image_h: int,
         image_w: int,
         gt_discrete: torch.Tensor | None = None,
+        uncertainty: torch.Tensor | None = None,
     ) -> dict:
         """Compute supervised losses.
 
@@ -366,11 +408,17 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         zero = density_map.new_zeros(1)
 
         # ---- MAE count loss -----------------------------------------------
-        count_loss = (
-            self.cls_l1(density_map.view(B, -1).sum(1), point_counts) * self.mae_weight
-            if "count" in active
-            else zero
-        )
+        if "count" in active:
+            pred_sum = density_map.view(B, -1).sum(1)
+            if self.log_count_loss:
+                count_loss = (
+                    self.cls_l1(torch.log1p(pred_sum), torch.log1p(point_counts))
+                    * self.mae_weight
+                )
+            else:
+                count_loss = self.cls_l1(pred_sum, point_counts) * self.mae_weight
+        else:
+            count_loss = zero
 
         # ---- Optimal transport loss ----------------------------------------
         if "ot" in active:
@@ -398,17 +446,48 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         if "count_cls" in active:
             cls_preds = torch.stack([c.reshape(B) for c in cls_outputs])  # (3, B)
             gt_counts = point_counts.unsqueeze(0).expand(3, -1)  # (3, B)
-            count_cls_loss = self.cls_l1(cls_preds, gt_counts) * self.count_cls_weight
+            if self.log_count_loss:
+                count_cls_loss = (
+                    self.cls_l1(torch.log1p(cls_preds), torch.log1p(gt_counts))
+                    * self.count_cls_weight
+                )
+            else:
+                count_cls_loss = self.cls_l1(cls_preds, gt_counts) * self.count_cls_weight
         else:
             count_cls_loss = zero
 
-        total = count_loss + ot_loss + density_l1_loss + count_cls_loss
+        # ---- Uncertainty MSE + regularisation (Gominsky et al., arXiv 2508.21437) ----------
+        if uncertainty is not None and "uncertainty_mse" in active:
+            gt_uncertainty = self._make_gt_density(
+                scaled_points, H, W, image_h, image_w, uncertainty=uncertainty
+            )
+            uncertainty_mse_loss = (
+                F.mse_loss(density_map, gt_uncertainty) * self.uncertainty_mse_weight
+            )
+        else:
+            uncertainty_mse_loss = zero
+
+        if uncertainty is not None and "uncertainty_reg" in active:
+            uncertainty_reg_loss = uncertainty.pow(2).mean() * self.uncertainty_delta
+        else:
+            uncertainty_reg_loss = zero
+
+        total = (
+            count_loss
+            + ot_loss
+            + density_l1_loss
+            + count_cls_loss
+            + uncertainty_mse_loss
+            + uncertainty_reg_loss
+        )
         return {
             "loss": total,
             "count_loss": count_loss,
             "ot_loss": ot_loss,
             "density_l1_loss": density_l1_loss,
             "count_cls_loss": count_cls_loss,
+            "uncertainty_mse_loss": uncertainty_mse_loss,
+            "uncertainty_reg_loss": uncertainty_reg_loss,
         }
 
     def forward(
@@ -455,6 +534,11 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
             if targets is None:
                 raise ValueError("targets must be provided in training mode")
             density_map, label_normed = self._normalize_density(out_L[0], out_cls_l[0])
+            uncertainty = (
+                F.softplus(self.uncertainty_head(label_feats[0]))
+                if self.use_uncertainty_head
+                else None
+            )
             return self.compute_loss(
                 [density_map] + out_L[1:],
                 label_normed,
@@ -463,6 +547,7 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
                 image_h=padded_h,
                 image_w=padded_w,
                 gt_discrete=gt_discrete,
+                uncertainty=uncertainty,
             )
 
         # Eval: crop each output back to its original spatial extent.
@@ -523,6 +608,10 @@ class Model(BaseModel):
                 losses=list(cfg.losses) if cfg.losses is not None else None,
                 norm_cood=cfg.norm_cood,
                 enforce_count=True,
+                log_count_loss=cfg.log_count_loss,
+                use_uncertainty_head=cfg.use_uncertainty_head,
+                uncertainty_delta=cfg.uncertainty_delta,
+                uncertainty_mse_weight=cfg.uncertainty_mse_weight,
                 **hf_args,
             )
 
