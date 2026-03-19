@@ -7,6 +7,7 @@ train:
     root_dir: /home/veitchmichaelisj/code/DeepForest_jvm/data/neon_images
     same_size_images: true
     epochs: 25
+    lr: 1.6e-4
     scheduler:
         params:
             T_max: 25
