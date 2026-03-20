@@ -17,6 +17,13 @@ model:
     name: 'weecology/deepforest-tree'
     revision: 'main'
 
+# Trainer precision. Override to 16-mixed for faster training, 32-true for full precision.
+precision:
+
+# On CUDA, setting the matmul precision can provide speed up without affecting model performance
+# Start with 'high' for initial tests.
+matmul_precision: highest
+
 # Specify a label_dict to override model settings.
 # By default, this will be populated from the model
 # checkpoint that is selected in model.name/revision.
@@ -76,6 +83,7 @@ train:
     fast_dev_run: False
     # preload images to GPU memory for fast training. This depends on GPU size and number of images.
     preload_images: False
+
 
 validation:
     csv_file:

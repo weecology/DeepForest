@@ -227,6 +227,9 @@ class deepforest(pl.LightningModule):
         else:
             enable_checkpointing = False
 
+        if torch.cuda.is_available():
+            torch.set_float32_matmul_precision(self.config.matmul_precision)
+
         trainer_args = {
             "logger": logger,
             "max_epochs": self.config.train.epochs,
@@ -239,6 +242,8 @@ class deepforest(pl.LightningModule):
             "num_sanity_val_steps": num_sanity_val_steps,
             "default_root_dir": self.config.log_root,
         }
+        if self.config.precision is not None:
+            trainer_args["precision"] = self.config.precision
         # Update with kwargs to allow them to override config
         trainer_args.update(kwargs)
 
