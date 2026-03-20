@@ -153,9 +153,10 @@ cropmodel:
     resize:
         - 300
         - 300
+    resize_interpolation: nearest  # or 'bilinear' (default)
 ```
 
-This is particularly useful when using custom models that expect different input sizes or when working with high-resolution imagery where preserving more detail is important.
+The `resize_interpolation` option controls how crops are scaled to the target size. The default is `bilinear`. Use `nearest` when training on small crops where bilinear smoothing would blur important details. This is particularly useful when using custom models that expect different input sizes or when working with high-resolution imagery where preserving more detail is important.
 
 ## Custom Transforms
 

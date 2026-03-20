@@ -20,6 +20,7 @@ current_release.csv
 docs/_build/
 env/
 logs/*
+.venv/
 lightning_logs/*
 public/
 tests/__pycache__
@@ -27,3 +28,4 @@ tests/data/*
 .vscode/
 *ipynb_checkpoints/
 docs/user_guide/deepforestr.md
+uv.lock

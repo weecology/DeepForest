@@ -102,12 +102,14 @@ class CropModelConfig:
     This section controls the standalone crop classification module.
     """
 
+    architecture: str = "resnet50"
     batch_size: int = 4
     num_workers: int = 0
     lr: float = 0.0001
     scheduler: SchedulerConfig = field(default_factory=SchedulerConfig)
     balance_classes: bool = False
     resize: list[int] = field(default_factory=lambda: [224, 224])
+    resize_interpolation: str = "bilinear"
     normalize: Any = None
     expand: int = 0
 
