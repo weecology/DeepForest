@@ -30,6 +30,9 @@ repos:
         name: docformatter
         entry: docformatter
         language: python
+        # pre-commit.ci currently provisions Python 3.14 for hook envs; DeepForest's
+        # tooling stack doesn't support that yet (e.g., `untokenize` build errors).
+        language_version: python3.12
         additional_dependencies: [docformatter]
         types: [python]
         args: ["--in-place"]
