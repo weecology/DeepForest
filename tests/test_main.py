@@ -1183,6 +1183,36 @@ def test_custom_log_root(m, tmpdir):
     version_dir = version_dirs[0]
     assert version_dir.join("hparams.yaml").exists(), "hparams.yaml not found"
 
+def test_configure_optimizers_rejects_unsafe_lr_lambda(tmp_path):
+    """Regression test: malicious lr_lambda expressions must be rejected."""
+    annotations_file = get_data("testfile_deepforest.csv")
+    root_dir = os.path.dirname(get_data("testfile_deepforest.csv"))
+
+    config_args = {
+        "train": {
+            "lr": 0.01,
+            "scheduler": {
+                "type": "lambdaLR",
+                "params": {
+                    "lr_lambda": "__import__('os').system('echo injected')",
+                },
+            },
+            "csv_file": annotations_file,
+            "root_dir": root_dir,
+            "fast_dev_run": False,
+        },
+        "validation": {
+            "csv_file": None,
+            "root_dir": root_dir,
+        },
+        "log_root": str(tmp_path),
+    }
+
+    m = main.deepforest(model=torch.nn.Linear(1, 1), config_args=config_args)
+
+    with pytest.raises(ValueError, match="Unsafe lr_lambda"):
+        m.configure_optimizers()
+
 def test_huggingface_model_loads_correct_label_dict():
     """Regression test for #1286:
     HuggingFace models should load correct label_dict from config.json.
