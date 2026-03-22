@@ -12,6 +12,8 @@ from deepforest.model import BaseModel
 class RetinaNetHub(RetinaNet, PyTorchModelHubMixin):
     """RetinaNet extension that allows the use of the HF Hub API."""
 
+    task: str = "box"
+
     def __init__(
         self,
         backbone_weights: str | None = None,
