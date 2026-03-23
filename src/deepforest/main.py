@@ -441,7 +441,7 @@ class deepforest(pl.LightningModule):
             return self.existing_val_dataloader
 
         if self.config.validation.csv_file is not None:
-            log.info("[val_dataloader] start")
+            self.print(f"[rank {self.local_rank}] [val_dataloader] start")
             loader = self.load_dataset(
                 csv_file=self.config.validation.csv_file,
                 root_dir=self.config.validation.root_dir,
@@ -451,7 +451,7 @@ class deepforest(pl.LightningModule):
                 same_size_images=self.config.validation.same_size_images,
                 batch_size=self.config.batch_size,
             )
-            log.info("[val_dataloader] done")
+            self.print(f"[rank {self.local_rank}] [val_dataloader] done")
 
         return loader
 

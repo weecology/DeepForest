@@ -1,4 +1,5 @@
 import argparse
+import logging
 import sys
 
 from hydra import compose, initialize, initialize_config_dir
@@ -59,6 +60,11 @@ def main():
         default=[],
         dest="tags",
         help="Tag for the experiment (can be repeated, e.g. --tag baseline --tag v2). Applied to Comet if enabled.",
+    )
+    train_parser.add_argument(
+        "--verbose",
+        action="store_true",
+        help="Enable INFO-level logging from deepforest modules.",
     )
 
     # Predict subcommand
@@ -123,6 +129,9 @@ def main():
     )
 
     args, overrides = parser.parse_known_args()
+
+    if getattr(args, "verbose", False):
+        logging.basicConfig(level=logging.INFO, force=True)
 
     if args.config_dir is not None:
         initialize_config_dir(version_base=None, config_dir=args.config_dir)
