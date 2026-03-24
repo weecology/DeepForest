@@ -417,47 +417,79 @@ def format_boxes(prediction, scores=True):
 
 
 def read_coco(json_file):
-    """Read a COCO format JSON file and return a pandas dataframe.
-
-    Args:
-        json_file: Path to the COCO segmentation JSON file
-    Returns:
-        df: A pandas dataframe with image_path, geometry, and label columns
-    """
     with open(json_file) as f:
-        coco_data = json.load(f)
+        coco = json.load(f)
 
-    # Create mapping from image IDs to filenames
-    image_ids = {image["id"]: image["file_name"] for image in coco_data["images"]}
+    # Precompute mappings
+    image_ids = {img["id"]: img["file_name"] for img in coco["images"]}
+    cat_map = {cat["id"]: cat["name"] for cat in coco["categories"]}
 
-    # Create mapping from category IDs to category names
-    category_id_to_name = {
-        category["id"]: category["name"] for category in coco_data["categories"]
+    # Local references
+    annotations = coco["annotations"]
+    get_filename = image_ids.get
+    get_label = cat_map.get
+
+    # Output containers
+    data = {
+        "image_id": [],
+        "image_path": [],
+        "iscrowd": [],
+        "geometry": [],
+        "xmin": [],
+        "ymin": [],
+        "xmax": [],
+        "ymax": [],
+        "area": [],
+        "label": [],
     }
 
-    polygons = []
-    filenames = []
-    labels = []
+    # Pre-bind methods
+    append = {k: v.append for k, v in data.items()}
 
-    for annotation in coco_data["annotations"]:
-        segmentation = annotation.get("segmentation")
-        if not segmentation:
+    for ann in annotations:
+        segmentation = ann.get("segmentation")
+
+        if not isinstance(segmentation, list):
             continue
-        # COCO polygons are usually a list of lists; take the first (assume "single part")
-        segmentation_mask = segmentation[0]
-        # Convert flat list to coordinate pairs
-        pairs = [
-            (segmentation_mask[i], segmentation_mask[i + 1])
-            for i in range(0, len(segmentation_mask), 2)
-        ]
-        polygon = shapely.geometry.Polygon(pairs)
-        filenames.append(image_ids[annotation["image_id"]])
-        polygons.append(polygon.wkt)
-        cat_id = annotation.get("category_id")
-        label = category_id_to_name.get(cat_id, cat_id)
-        labels.append(label)
 
-    return pd.DataFrame({"image_path": filenames, "geometry": polygons, "label": labels})
+        poly_list = []
+
+        for seg in segmentation:
+            coords = list(zip(seg[::2], seg[1::2], strict=True))
+
+            if len(coords) < 3:
+                continue
+
+            poly = shapely.geometry.Polygon(coords)
+
+            if poly.is_valid and not poly.is_empty:
+                poly_list.append(poly)
+
+        if not poly_list:
+            continue
+
+        merged_poly = (
+            poly_list[0] if len(poly_list) == 1 else shapely.ops.unary_union(poly_list)
+        )
+
+        # Extract bbox
+        xmin, ymin, w, h = ann["bbox"]
+        xmax = xmin + w
+        ymax = ymin + h
+
+        # Append values
+        append["image_id"](ann["image_id"])
+        append["image_path"](get_filename(ann["image_id"]))
+        append["iscrowd"](ann.get("iscrowd", 0))
+        append["geometry"](merged_poly.wkt)
+        append["xmin"](xmin)
+        append["ymin"](ymin)
+        append["xmax"](xmax)
+        append["ymax"](ymax)
+        append["area"](ann.get("area", 0))
+        append["label"](get_label(ann.get("category_id")))
+
+    return pd.DataFrame(data)
 
 
 def __pandas_to_geodataframe__(df: pd.DataFrame):

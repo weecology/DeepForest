@@ -5,6 +5,7 @@ import os
 from abc import abstractmethod
 from typing import Any
 
+import cv2
 import kornia.augmentation as K
 import numpy as np
 import shapely
@@ -558,6 +559,220 @@ class KeypointDataset(TrainingDataset):
             )
 
         return image, targets, self.image_names[idx]
+
+
+class PolygonDataset(TrainingDataset):
+    _data_keys = [DataKey.IMAGE, DataKey.BBOX_XYXY, DataKey.MASK]
+
+    def __init__(
+        self,
+        annotation_file,
+        root_dir,
+        transforms=None,
+        augmentations=None,
+        label_dict=None,
+        preload_images=None,
+    ):
+        super().__init__(
+            csv_file=annotation_file,
+            root_dir=root_dir,
+            transforms=transforms,
+            augmentations=augmentations,
+            label_dict=label_dict,
+            preload_images=preload_images,
+        )
+
+    def _validate_coordinates(self) -> None:
+        """Validate that all points occur within the image.
+
+        Raises:
+            ValueError: If any point occurs outside the image
+        """
+        errors = []
+        for _, row in self.annotations.iterrows():
+            img_path = os.path.join(self.root_dir, row["image_path"])
+            try:
+                with Image.open(img_path) as img:
+                    width, height = img.size
+            except Exception as e:
+                errors.append(f"Failed to open image {img_path}: {e}")
+                continue
+
+            self._validate_segmentation_coordinates(row, errors, img_path, width, height)
+            self._validate_box_coordinates(row, errors, img_path, width, height)
+
+        if errors:
+            raise ValueError("\n".join(errors))
+
+    def _validate_segmentation_coordinates(self, row, errors, img_path, width, height):
+        coords = []
+        oob_issues = []
+        geom = row["geometry"]
+
+        if geom.area == 0:
+            errors.append(f"Polygon has zero area for image {img_path}")
+
+        if not geom.is_valid:
+            errors.append("Invalid polygon (self-intersecting)")
+
+        if geom.geom_type == "Polygon":
+            coords.extend(list(geom.exterior.coords))
+        elif geom.geom_type == "MultiPolygon":
+            for poly in geom.geoms:
+                coords.extend(list(poly.exterior.coords))
+
+        if len(set(coords)) < 3:
+            errors.append("Polygon has fewer than 3 unique points")
+
+        for x, y in coords:
+            if x < 0:
+                oob_issues.append(f"x ({x}) < 0")
+            if x > width:
+                oob_issues.append(f"x ({x}) > image width ({width})")
+            if y < 0:
+                oob_issues.append(f"y ({y}) < 0")
+            if y > height:
+                oob_issues.append(f"y ({y}) > image height ({height})")
+
+            if oob_issues:
+                errors.append(
+                    f"Point, ({x}, {y}) exceeds image dimensions, ({width}, {height}) for {img_path}. Issues: {', '.join(oob_issues)}."
+                )
+
+    def _validate_box_coordinates(self, row, errors, img_path, width, height):
+        xmin, ymin, xmax, ymax = row["xmin"], row["ymin"], row["xmax"], row["ymax"]
+        oob_issues = []
+        if xmin < 0:
+            oob_issues.append(f"xmin ({xmin}) < 0")
+        if xmax > width:
+            oob_issues.append(f"xmax ({xmax}) > image width ({width})")
+        if ymin < 0:
+            oob_issues.append(f"ymin ({ymin}) < 0")
+        if ymax > height:
+            oob_issues.append(f"ymax ({ymax}) > image height ({height})")
+        if oob_issues:
+            errors.append(
+                f"Box, ({xmin}, {ymin}, {xmax}, {ymax}) exceeds image dimensions, ({width}, {height}) for {img_path}. Issues: {', '.join(oob_issues)}."
+            )
+
+    def generate_mask(self, image_annotation, width, height):
+        mask = np.zeros((height, width), dtype=np.uint8)
+        geom = image_annotation["geometry"]
+
+        if isinstance(geom, str):
+            geom = shapely.wkt.loads(geom)
+
+        # -------------------------
+        # POLYGON
+        # -------------------------
+        if geom.geom_type == "Polygon":
+            coords = np.array(geom.exterior.coords, dtype=np.int32)
+            cv2.fillPoly(mask, [coords], color=255)
+
+        # -------------------------
+        # MULTIPOLYGON
+        # -------------------------
+        elif geom.geom_type == "MultiPolygon":
+            for poly in geom.geoms:
+                if not poly.is_empty:
+                    coords = np.array(poly.exterior.coords, dtype=np.int32)
+                    cv2.fillPoly(mask, [coords], color=255)
+        return mask
+
+    def annotations_for_path(self, image_name, image_path, return_tensor=False):
+        try:
+            print("opening image")
+            with Image.open(image_path) as img:
+                width, height = img.size
+        except Exception as e:
+            print(f"Failed to open image {image_path}: {e}")
+            return
+        image_annotations = self.annotations[self.annotations.image_path == image_name]
+        targets = {}
+        boxes = []
+        labels = []
+        masks = []
+        iscrowd = []
+        area = []
+
+        for _, ann in image_annotations.iterrows():
+            boxes.append([ann["xmin"], ann["ymin"], ann["xmax"], ann["ymax"]])
+            labels.append(self.label_dict[ann["label"]])
+            mask = self.generate_mask(ann, width, height)
+            masks.append(mask)
+            iscrowd.append(ann["iscrowd"])
+            area.append(ann["area"])
+
+        if return_tensor:
+            boxes = torch.as_tensor(boxes, dtype=torch.float32)
+            labels = torch.as_tensor(labels, dtype=torch.int64)
+            if len(masks) > 0:
+                masks = np.stack(masks)
+                masks = (masks > 0).astype(np.uint8)
+                masks = torch.as_tensor(masks, dtype=torch.uint8)
+            else:
+                masks = torch.zeros((0, height, width), dtype=torch.uint8)
+            iscrowd = torch.as_tensor(iscrowd, dtype=torch.bool)
+            area = torch.as_tensor(area)
+
+        image_id = image_annotations.iloc[0]["image_id"]
+
+        targets = {
+            "image_id": image_id,
+            "boxes": boxes,
+            "labels": labels,
+            "masks": masks,
+            "iscrowd": iscrowd,
+            "area": area,
+        }
+
+        return targets
+
+    def __getitem__(self, index):
+        image_id = self.image_names[index]
+        image_path = os.path.join(self.root_dir, image_id)
+        image = Image.open(image_path).convert("RGB")
+        width, height = image.size
+
+        targets = self.annotations_for_path(self.image_names[index], image_path)
+
+        # Apply augmentations
+        np_image = np.array(image)
+        image_tensor = (
+            torch.from_numpy(np_image).permute(2, 0, 1).unsqueeze(0).float() / 255.0
+        )
+        boxes_tensor = torch.as_tensor(targets["boxes"], dtype=torch.float32).unsqueeze(0)
+        masks = targets["masks"]
+        if len(masks) > 0:
+            masks = np.stack(masks)
+            masks = (masks > 0).astype(np.uint8)
+            masks = torch.as_tensor(masks, dtype=torch.uint8).unsqueeze(0)
+        else:
+            masks = torch.zeros((0, height, width), dtype=torch.uint8).unsqueeze(0)
+
+        augmented_image, augmented_boxes, augmented_masks = self.transform(
+            image_tensor, boxes_tensor, masks
+        )
+
+        # Convert to tensor
+        image = augmented_image.squeeze()
+        boxes = augmented_boxes.squeeze()
+        masks = augmented_masks.squeeze()
+        labels = torch.as_tensor(targets["labels"], dtype=torch.int64)
+        iscrowd = torch.as_tensor(targets["iscrowd"], dtype=torch.bool)
+        area = torch.as_tensor(targets["area"])
+        image_id = targets["image_id"]
+
+        targets = {
+            "image_id": image_id,
+            "boxes": boxes,
+            "labels": labels,
+            "masks": masks,
+            "iscrowd": iscrowd,
+            "area": area,
+        }
+
+        return image, targets
 
 
 # ---------- ImageFolder alignment utilities ----------
