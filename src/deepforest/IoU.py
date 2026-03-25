@@ -15,9 +15,9 @@ def _overlap_all(test_polys: "gpd.GeoDataFrame", truth_polys: "gpd.GeoDataFrame"
     dataframes.
 
     For efficient querying, truth polygons are stored in a spatial R-Tree
-    and we only compute intersections/unions for matching pairs. The output from the
-    function are Numpy arrays containing the all-to-all intersection and union areas and
-    the indices of intersecting ground truth and prediction polygons.
+    and we only compute intersections/unions for matching pairs. Returns sparse
+    parallel arrays containing the intersection and union areas and the indices
+    of intersecting ground truth and prediction polygons.
 
     This method works with any Shapely polygon, but may have
     reduced performance for the polygon case where bounding box intersection does
@@ -26,10 +26,13 @@ def _overlap_all(test_polys: "gpd.GeoDataFrame", truth_polys: "gpd.GeoDataFrame"
     edge cases are handled.
 
     Returns:
-      intersections  : (n_truth, n_pred) intersection areas
-      unions : (n_truth, n_pred) union areas
-      truth_ids : (n_truth,) truth index values (order matches rows of areas/unions)
-      pred_ids  : (n_pred,) prediction index values (order matches cols of areas/unions)
+      t_idx       : (M,) truth row indices for each overlapping pair, where M is the
+                    number of intersecting pairs found by the STRtree query
+      p_idx       : (M,) pred col indices for each overlapping pair
+      inter_areas : (M,) intersection area for each overlapping pair
+      union_areas : (M,) union area for each overlapping pair
+      truth_ids   : (n_truth,) truth index values
+      pred_ids    : (n_pred,) prediction index values
     """
     # geometry arrays
     pred_geoms = np.asarray(test_polys.geometry.values, dtype=object)
@@ -41,29 +44,27 @@ def _overlap_all(test_polys: "gpd.GeoDataFrame", truth_polys: "gpd.GeoDataFrame"
     n_pred = pred_geoms.size
     n_truth = truth_geoms.size
 
-    # empty cases
+    _empty = np.array([], dtype=np.intp)
+    _empty_f = np.array([], dtype=float)
+
     if n_pred == 0 or n_truth == 0:
-        return (
-            np.zeros((n_truth, n_pred), dtype=float),
-            np.zeros((n_truth, n_pred), dtype=float),
-            truth_ids,
-            pred_ids,
-        )
+        return _empty, _empty, _empty_f, _empty_f, truth_ids, pred_ids
 
     # spatial index on truth
     tree = STRtree(truth_geoms)
-    p_idx, t_idx = tree.query(pred_geoms, predicate="intersects")  # shape (2, M)
+    p_idx, t_idx = tree.query(pred_geoms, predicate="intersects")
 
-    intersections = np.zeros((n_truth, n_pred), dtype=float)
-    unions = np.zeros((n_truth, n_pred), dtype=float)
+    if p_idx.size == 0:
+        return _empty, _empty, _empty_f, _empty_f, truth_ids, pred_ids
 
-    if p_idx.size:
-        inter = shapely.intersection(truth_geoms[t_idx], pred_geoms[p_idx])
-        uni = shapely.union(truth_geoms[t_idx], pred_geoms[p_idx])
-        intersections[t_idx, p_idx] = shapely.area(inter)
-        unions[t_idx, p_idx] = shapely.area(uni)
+    inter_areas = shapely.area(
+        shapely.intersection(truth_geoms[t_idx], pred_geoms[p_idx])
+    )
+    all_truth_areas = shapely.area(truth_geoms)
+    all_pred_areas = shapely.area(pred_geoms)
+    union_areas = all_truth_areas[t_idx] + all_pred_areas[p_idx] - inter_areas
 
-    return intersections, unions, truth_ids, pred_ids
+    return t_idx, p_idx, inter_areas, union_areas, truth_ids, pred_ids
 
 
 def match_polygons(ground_truth: "gpd.GeoDataFrame", submission: "gpd.GeoDataFrame"):
@@ -96,62 +97,109 @@ def match_polygons(ground_truth: "gpd.GeoDataFrame", submission: "gpd.GeoDataFra
     if len(plot_names) > 1:
         raise ValueError(f"More than one image passed to function: {plot_names[0]}")
 
-    # Compute truth <> prediction overlaps
-    intersections, unions, truth_ids, pred_ids = _overlap_all(
+    # Compute truth <> prediction overlaps (sparse)
+    t_idx, p_idx, inter_areas, union_areas, truth_ids, pred_ids = _overlap_all(
         test_polys=submission, truth_polys=ground_truth
     )
 
-    # Cost matrix is the intersection area
-    matrix = intersections
-
-    if matrix.size == 0:
-        # No matches, early exit
-        return pd.DataFrame(
-            {
-                "prediction_id": pd.Series(dtype="float64"),
-                "truth_id": pd.Series(dtype=truth_ids.dtype),
-                "IoU": pd.Series(dtype="float64"),
-                "score": pd.Series(dtype="float64"),
-                "geometry": pd.Series(dtype=object),
-            }
+    if truth_ids.size == 0 or pred_ids.size == 0 or t_idx.size == 0:
+        records = [
+            {"prediction_id": None, "truth_id": tid, "IoU": 0.0, "score": None}
+            for tid in truth_ids
+        ]
+        iou_df = (
+            pd.DataFrame.from_records(records)
+            if records
+            else pd.DataFrame(
+                {
+                    "prediction_id": pd.Series(dtype="float64"),
+                    "truth_id": pd.Series(dtype=truth_ids.dtype),
+                    "IoU": pd.Series(dtype="float64"),
+                    "score": pd.Series(dtype="float64"),
+                    "geometry": pd.Series(dtype=object),
+                }
+            )
         )
+        if "geometry" not in iou_df.columns:
+            iou_df = iou_df.merge(
+                ground_truth.assign(truth_id=truth_ids)[["truth_id", "geometry"]],
+                on="truth_id",
+                how="left",
+            )
+        return iou_df
 
-    # Linear sum assignment + match lookup
-    row_ind, col_ind = linear_sum_assignment(matrix, maximize=True)
-    match_for_truth = dict(zip(row_ind, col_ind, strict=False))
+    # Sparse IoU for each overlapping pair
+    with np.errstate(divide="ignore", invalid="ignore"):
+        iou_values = np.where(union_areas > 0, inter_areas / union_areas, 0.0)
+    iou_lookup = dict(
+        zip(
+            zip(t_idx.tolist(), p_idx.tolist(), strict=True),
+            iou_values.tolist(),
+            strict=True,
+        )
+    )
 
     # Score lookup
     pred_scores = submission["score"].to_dict() if "score" in submission.columns else {}
 
-    # IoU matrix
+    # Stage 1: resolve unambiguous 1:1 matches directly.
+    # A pair is one-to-one when each side has exactly one overlapping partner
+    # and the intersection area is positive (excludes boundary-touching pairs).
+    truth_counts = np.bincount(t_idx, minlength=len(truth_ids))
+    pred_counts = np.bincount(p_idx, minlength=len(pred_ids))
+    one_to_one = (
+        (truth_counts[t_idx] == 1) & (pred_counts[p_idx] == 1) & (inter_areas > 0)
+    )
+
+    match_for_truth = dict(
+        zip(t_idx[one_to_one].tolist(), p_idx[one_to_one].tolist(), strict=True)
+    )
+
+    # Stage 2: Hungarian matching on ambiguous remainder only
+    ambig = ~one_to_one
+    if ambig.any():
+        amb_t = t_idx[ambig]
+        amb_p = p_idx[ambig]
+        amb_inter = inter_areas[ambig]
+
+        active_t = np.unique(amb_t)
+        active_p = np.unique(amb_p)
+        t_map = {int(v): i for i, v in enumerate(active_t)}
+        p_map = {int(v): i for i, v in enumerate(active_p)}
+
+        sub = np.zeros((len(active_t), len(active_p)), dtype=float)
+        for ti, pi, ia in zip(
+            amb_t.tolist(), amb_p.tolist(), amb_inter.tolist(), strict=True
+        ):
+            sub[t_map[ti], p_map[pi]] = ia
+
+        sub_r, sub_c = linear_sum_assignment(sub, maximize=True)
+        for r, c in zip(sub_r.tolist(), sub_c.tolist(), strict=True):
+            if sub[r, c] > 0:
+                match_for_truth[int(active_t[r])] = int(active_p[c])
+
+    # Compute IoU only for matched pairs
     with np.errstate(divide="ignore", invalid="ignore"):
-        iou_mat = np.divide(
-            intersections,
-            unions,
-            out=np.zeros_like(intersections, dtype=float),
-            where=unions > 0,
+        iou_values = np.where(union_areas > 0, inter_areas / union_areas, 0.0)
+    iou_lookup = dict(
+        zip(
+            zip(t_idx.tolist(), p_idx.tolist(), strict=True),
+            iou_values.tolist(),
+            strict=True,
         )
+    )
 
     # build rows for every truth element (unmatched => None, IoU 0)
     records = []
-    for t_idx, truth_id in enumerate(truth_ids):
-        # If we matched this truth box
-        if t_idx in match_for_truth:
-            # Look up matching prediction and corresponding IoU and score
-            p_idx = match_for_truth[t_idx]
-            matched_id = pred_ids[p_idx]
-            iou = float(iou_mat[t_idx, p_idx])
-            score = pred_scores.get(matched_id, None)
-        else:
-            matched_id = None
-            iou = 0.0
-            score = None
+    for ti, truth_id in enumerate(truth_ids):
+        pi = match_for_truth.get(ti)
+        matched_id = pred_ids[pi] if pi is not None else None
         records.append(
             {
                 "prediction_id": matched_id,
                 "truth_id": truth_id,
-                "IoU": iou,
-                "score": score,
+                "IoU": iou_lookup.get((ti, pi), 0.0),
+                "score": pred_scores.get(matched_id),
             }
         )
 
