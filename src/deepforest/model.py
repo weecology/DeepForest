@@ -265,11 +265,15 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
 
         resize_dims = self.config["cropmodel"].get("resize", [224, 224])
         interp_name = self.config["cropmodel"].get("resize_interpolation", "bilinear")
-        interp = (
-            transforms.InterpolationMode.NEAREST
-            if interp_name == "nearest"
-            else transforms.InterpolationMode.BILINEAR
-        )
+        if interp_name == "nearest":
+            interp = transforms.InterpolationMode.NEAREST
+        elif interp_name == "bilinear":
+            interp = transforms.InterpolationMode.BILINEAR
+        else:
+            raise ValueError(
+                f"Invalid resize_interpolation '{interp_name}'. "
+                "Supported values are ['nearest', 'bilinear']."
+            )
         data_transforms.append(transforms.Resize(resize_dims, interpolation=interp))
 
         # Apply augmentations if specified
