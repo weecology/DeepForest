@@ -285,7 +285,9 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
 
         return transforms.Compose(data_transforms)
 
-    def expand_bbox_to_square(self, bbox, image_width, image_height):
+    def expand_bbox_to_square(
+        self, bbox: list[float], image_width: int, image_height: int
+    ) -> list[float]:
         """Expand a bounding box to a square by extending the shorter side.
 
         Parameters:
