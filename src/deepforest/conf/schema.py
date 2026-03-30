@@ -135,6 +135,8 @@ class Config:
     devices: int | str = "auto"
     accelerator: str = "auto"
     batch_size: int = 1
+    precision: str | None = None
+    matmul_precision: str = "highest"
 
     architecture: str = "retinanet"
     num_classes: int | None = None
