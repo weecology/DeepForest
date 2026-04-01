@@ -9,7 +9,8 @@ train:
     lr: 1e-5
     scheduler:
         params:
-            T_max: 40
+            T_max: 60
+            eta_min: 1e-6
 
 validation:
     csv_file: /home/veitchmichaelisj/code/DeepForest_jvm/data/neon_test.csv
@@ -21,3 +22,7 @@ keypoint:
   density_sigma_start: 3.0
   density_sigma_end: 1.6
   density_sigma_schedule_epochs: 20
+  # Pretrain was on 1024x1024 images (~6x more trees per image than 400x400).
+  # Up-weight count losses to force fast recalibration of the count head.
+  mae_weight: 0.5
+  count_cls_weight: 0.5
