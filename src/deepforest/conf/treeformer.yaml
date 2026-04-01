@@ -55,7 +55,7 @@ keypoint:
   score_integration_radius: 5
   density_sigma_schedule_epochs: 30
   losses: ~
-  norm_cood: false
+  norm_cood: true
   log_count_loss: false
   use_uncertainty_head: false
   uncertainty_delta: 0.2

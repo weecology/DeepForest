@@ -46,4 +46,4 @@ keypoint:
   # After schedule is complete, sigma will flatline
   density_sigma_schedule_epochs: 15
   losses: ~
-  norm_cood: false
+  norm_cood: true

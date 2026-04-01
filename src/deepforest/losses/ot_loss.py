@@ -97,10 +97,10 @@ def sinkhorn_knopp(
 
 
 class OT_Loss(Module):
-    def __init__(self, norm_cood, device, num_of_iter_in_ot=100, reg=1.0):
+    def __init__(self, norm_coord, device, num_of_iter_in_ot=100, reg=1.0):
         super().__init__()
         self.device = device
-        self.norm_cood = norm_cood
+        self.norm_coord = norm_coord
         self.num_of_iter_in_ot = num_of_iter_in_ot
         self.reg = reg
 
@@ -110,30 +110,36 @@ class OT_Loss(Module):
         output_h = normed_density.size(2)
         output_w = normed_density.size(3)
 
+        # Define grid coordinates (centered)
         x_cood = (
             torch.arange(output_w, dtype=torch.float32, device=self.device) + 0.5
         ).unsqueeze(0)
         y_cood = (
             torch.arange(output_h, dtype=torch.float32, device=self.device) + 0.5
         ).unsqueeze(0)
-        if self.norm_cood:
+
+        # Optionally normalize coordinates to [-1, 1]
+        if self.norm_coord:
             x_cood = x_cood / output_w * 2 - 1
             y_cood = y_cood / output_h * 2 - 1
 
         loss = torch.zeros([1]).to(self.device)
         ot_obj_values = torch.zeros([1]).to(self.device)
-        wd = 0  # wasserstain distance
-        n_active = 0
+        wd = 0  # Wasserstein distance
+        n_active = 0 # Total number of points over all images
+
         for idx, im_points in enumerate(points):
             if len(im_points) > 0:
                 n_active += 1
+
                 # compute l2 square distance, it should be source target distance. [#gt, #cood * #cood]
-                if self.norm_cood:
+                if self.norm_coord:
                     x = im_points[:, 0].unsqueeze(1) / output_w * 2 - 1
                     y = im_points[:, 1].unsqueeze(1) / output_h * 2 - 1
                 else:
                     x = im_points[:, 0].unsqueeze(1)
                     y = im_points[:, 1].unsqueeze(1)
+    
                 x_dis = (
                     -2 * torch.matmul(x, x_cood) + x * x + x_cood * x_cood
                 )  # [#gt, #cood]
@@ -157,6 +163,8 @@ class OT_Loss(Module):
                     maxIter=self.num_of_iter_in_ot,
                     log=True,
                 )
+                wd += torch.sum(dis * P).item()
+
                 log = cast(dict[str, torch.Tensor], log)
                 beta = log["beta"]  # size is the same as source_prob: [#cood * #cood]
                 ot_obj_values += torch.sum(
@@ -176,9 +184,9 @@ class OT_Loss(Module):
                 im_grad = im_grad.detach().view([1, output_h, output_w])
                 # Define loss = <im_grad, predicted density>. The gradient of loss w.r.t prediced density is im_grad.
                 loss += torch.sum(unnormed_density[idx] * im_grad)
-                wd += torch.sum(dis * P).item()
 
         if n_active > 0:
             loss = loss / n_active
             ot_obj_values = ot_obj_values / n_active
+
         return loss, wd, ot_obj_values

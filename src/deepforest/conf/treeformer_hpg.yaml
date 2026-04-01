@@ -6,5 +6,6 @@ defaults:
 
 # At full size, bs 32 is the limit on a B200
 batch_size: 32
-workers: 16
+# Higher workers seems to OOM, be careful.
+workers: 8
 accelerator: auto

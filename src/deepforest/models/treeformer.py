@@ -14,12 +14,7 @@ from deepforest.models.treeformer_decoder import Regression
 
 
 class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
-    """PvT-V2 backbone + Regression head for tree density estimation.
-
-    1x1 projection layers adapt the backbone's native channel dims to the fixed
-    dims Regression expects, so swapping backbone size (b2/b3/b4) requires only
-    changing the ``backbone`` constructor argument.
-    """
+    """PvT-V2 backbone + Regression head for density estimation."""
 
     task = "keypoint"
 
@@ -33,7 +28,7 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         "pvt_v2_b5": [64, 128, 320, 512],
     }
 
-    # Fixed dims Regression expects (matches pvt_treeformer embed_dims).
+    # Fixed dims Regression expects
     REG_DIMS = [128, 256, 512, 1024]
 
     def __init__(
@@ -43,7 +38,6 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         num_classes: int = 1,
         label_dict: dict | None = None,
         num_of_iter_in_ot: int = 100,
-        norm_coord: bool = False,
         sinkhorn_reg: float = 1.0,
         density_sigma: float = 5.0,
         density_sigma_start: float | None = None,
@@ -87,7 +81,10 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         )
 
         variant = backbone.split("/")[-1]
-        src = self.HIDDEN_SIZES[variant]
+        src = self.HIDDEN_SIZES.get(variant, None)
+        if src is None:
+            raise ValueError(f"Backbone variant {variant} isn't supported. Please use one of {list(self.HIDDEN_SIZES.keys())}")
+        
         self.proj = nn.ModuleList(
             [nn.Conv2d(s, d, 1) for s, d in zip(src, self.REG_DIMS, strict=True)]
         )
@@ -105,6 +102,7 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
 
         self.sinkhorn_reg = sinkhorn_reg
 
+        # Sigma annealing
         # If start/end provided, use start as initial sigma; else use the single density_sigma.
         self.density_sigma_start = (
             density_sigma_start if density_sigma_start is not None else density_sigma
@@ -203,9 +201,9 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         Behaviour is controlled by ``self.enforce_count`` (set via the
         ``enforce_count`` constructor argument):
 
-        * ``False`` (default, v1 behaviour): density_map = score_map (unconstrained
+        * ``False`` (default): density_map = score_map (unconstrained
           scale). count_loss trains the spatial head directly.
-        * ``True`` (physically-consistent, v5 behaviour): density_map =
+        * ``True`` (physically-consistent): density_map =
           score_normed * cls_count, so density_map.sum() == cls_count by
           construction. OT/TV losses train the spatial distribution; count_loss
           trains the CLS branch.

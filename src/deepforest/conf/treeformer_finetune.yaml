@@ -1,0 +1,23 @@
+defaults:
+  - treeformer_hpg
+  - _self_
+
+train:
+    csv_file: /home/veitchmichaelisj/code/DeepForest_jvm/data/neon_train.csv
+    root_dir: /home/veitchmichaelisj/code/DeepForest_jvm/data/neon_images
+    epochs: 40
+    lr: 1e-5
+    scheduler:
+        params:
+            T_max: 40
+
+validation:
+    csv_file: /home/veitchmichaelisj/code/DeepForest_jvm/data/neon_test.csv
+    root_dir: /home/veitchmichaelisj/code/DeepForest_jvm/data/neon_images
+
+keypoint:
+  # Start where pretrain ended; anneal gently to tighten density maps
+  # toward human annotations.
+  density_sigma_start: 3.0
+  density_sigma_end: 1.6
+  density_sigma_schedule_epochs: 20

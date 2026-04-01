@@ -93,7 +93,7 @@ def train(
                 api_key=os.environ.get("COMET_API_KEY"),
                 workspace=os.environ.get("COMET_WORKSPACE"),
                 project=os.environ.get("COMET_PROJECT", default="DeepForest"),
-                experiment_name=experiment_name,
+                name=experiment_name,
                 offline_directory=config.log_root,
             )
 
@@ -172,6 +172,7 @@ def train(
 
     train_success = False
     try:
+        print(f"[train] calling trainer.fit, strategy={strategy}", flush=True)
         m.trainer.fit(m, ckpt_path=resume)
         train_success = True
     except Exception as e:
