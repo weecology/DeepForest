@@ -29,6 +29,7 @@ def train(
     strategy: str = "auto",
     experiment_name: str | None = None,
     tags: list[str] | None = None,
+    export_hf: bool = False,
 ) -> bool:
     """Train a DeepForest model with configurable logging and experiment
     tracking.
@@ -197,5 +198,18 @@ def train(
                     logger.experiment.log_model(
                         name=os.path.basename(checkpoint), file_or_folder=str(checkpoint)
                     )
+
+    if export_hf and checkpoint and train_success:
+        hf_export_path = Path(csv_logger.log_dir) / "hf_model"
+        best_ckpt = checkpoint_callback.best_model_path
+        ckpt = torch.load(best_ckpt, map_location="cpu", weights_only=False)
+        state = {
+            k.removeprefix("model."): v
+            for k, v in ckpt["state_dict"].items()
+            if k.startswith("model.")
+        }
+        m.model.load_state_dict(state)
+        m.model.save_pretrained(str(hf_export_path))
+        m.print(f"Exported HF model to {hf_export_path}")
 
     return train_success

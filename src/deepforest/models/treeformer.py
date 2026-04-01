@@ -157,6 +157,7 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         self._hub_mixin_config = {
             "num_classes": self.num_classes,
             "label_dict": self.label_dict,
+            "norm_cood": self.norm_cood,
             **self.kwargs,
         }
 
