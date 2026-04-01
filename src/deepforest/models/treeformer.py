@@ -51,6 +51,7 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         norm_cood: bool = False,
         enforce_count: bool = True,
         log_count_loss: bool = False,
+        normalize_count_by_area: bool = False,
         use_uncertainty_head: bool = False,
         uncertainty_delta: float = 0.2,
         uncertainty_mse_weight: float = 1.0,
@@ -84,7 +85,7 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         src = self.HIDDEN_SIZES.get(variant, None)
         if src is None:
             raise ValueError(f"Backbone variant {variant} isn't supported. Please use one of {list(self.HIDDEN_SIZES.keys())}")
-        
+
         self.proj = nn.ModuleList(
             [nn.Conv2d(s, d, 1) for s, d in zip(src, self.REG_DIMS, strict=True)]
         )
@@ -120,6 +121,7 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         self.enforce_count = enforce_count
         self.norm_cood = norm_cood
         self.log_count_loss = log_count_loss
+        self.normalize_count_by_area = normalize_count_by_area
         self.uncertainty_delta = uncertainty_delta
         self.uncertainty_mse_weight = uncertainty_mse_weight
         self.use_uncertainty_head = use_uncertainty_head
@@ -158,6 +160,7 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
             "num_classes": self.num_classes,
             "label_dict": self.label_dict,
             "norm_cood": self.norm_cood,
+            "normalize_count_by_area": self.normalize_count_by_area,
             **self.kwargs,
         }
 
@@ -400,13 +403,20 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         # ---- MAE count loss -----------------------------------------------
         if "count" in active:
             pred_sum = density_map.view(B, -1).sum(1)
+            area = H * W
+            if self.normalize_count_by_area:
+                pred_count = pred_sum / area
+                gt_count = point_counts / area
+            else:
+                pred_count = pred_sum
+                gt_count = point_counts
             if self.log_count_loss:
                 count_loss = (
-                    self.cls_l1(torch.log1p(pred_sum), torch.log1p(point_counts))
+                    self.cls_l1(torch.log1p(pred_count), torch.log1p(gt_count))
                     * self.mae_weight
                 )
             else:
-                count_loss = self.cls_l1(pred_sum, point_counts) * self.mae_weight
+                count_loss = self.cls_l1(pred_count, gt_count) * self.mae_weight
         else:
             count_loss = zero
 
@@ -443,6 +453,9 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         if "count_cls" in active:
             cls_preds = torch.stack([c.reshape(B) for c in cls_outputs])  # (3, B)
             gt_counts = point_counts.unsqueeze(0).expand(3, -1)  # (3, B)
+            if self.normalize_count_by_area:
+                cls_preds = cls_preds / (H * W)
+                gt_counts = gt_counts / (H * W)
             if self.log_count_loss:
                 count_cls_loss = (
                     self.cls_l1(torch.log1p(cls_preds), torch.log1p(gt_counts))
@@ -607,6 +620,7 @@ class Model(BaseModel):
                 norm_cood=cfg.norm_cood,
                 enforce_count=True,
                 log_count_loss=cfg.log_count_loss,
+                normalize_count_by_area=cfg.normalize_count_by_area,
                 use_uncertainty_head=cfg.use_uncertainty_head,
                 uncertainty_delta=cfg.uncertainty_delta,
                 uncertainty_mse_weight=cfg.uncertainty_mse_weight,

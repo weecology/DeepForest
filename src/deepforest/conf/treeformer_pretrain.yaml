@@ -3,8 +3,8 @@ defaults:
   - _self_
 
 train:
-    csv_file: /home/veitchmichaelisj/code/DeepForest_jvm/data/neon_train.csv
-    root_dir: /home/veitchmichaelisj/code/DeepForest_jvm/data/neon_images
+    csv_file: /blue/ewhite/veitchmichaelisj/deeplidar/output/folds/all_annotations_train_fold_0.csv
+    root_dir: /blue/ewhite/veitchmichaelisj/deeplidar/output
     same_size_images: true
     epochs: 25
     lr: 1.6e-4
@@ -31,8 +31,8 @@ train:
 #   size: [512, 512]
 
 validation:
-    csv_file: /home/veitchmichaelisj/code/DeepForest_jvm/data/neon_test.csv
-    root_dir: /home/veitchmichaelisj/code/DeepForest_jvm/data/neon_images
+    csv_file: /blue/ewhite/veitchmichaelisj/deeplidar/output/folds/all_annotations_val_fold_0.csv
+    root_dir: /blue/ewhite/veitchmichaelisj/deeplidar/output
     same_size_images: true
     distance_threshold: 13.0
 
@@ -47,3 +47,7 @@ keypoint:
   density_sigma_schedule_epochs: 15
   losses: ~
   norm_cood: true
+  # Large images have 100+ trees; log-space count loss prevents raw count
+  # errors from dominating OT/density losses early in training.
+  log_count_loss: true
+  normalize_count_by_area: true
