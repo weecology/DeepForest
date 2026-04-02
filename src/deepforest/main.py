@@ -803,6 +803,8 @@ class deepforest(pl.LightningModule):
                 self.mae_metric.update(pred_counts, true_counts)
                 self.rmse_metric.update(pred_counts, true_counts)
                 self.r2_metric.update(pred_counts, true_counts)
+                for name, s in zip(image_names, pred_counts.tolist(), strict=False):
+                    self.density_sum_by_image[name] = s
 
                 # Pearson correlation between normalized density maps — pure spatial
                 # alignment independent of count magnitude.
@@ -915,6 +917,7 @@ class deepforest(pl.LightningModule):
     def on_validation_epoch_start(self):
         self.predictions = []
         self.density_samples = []
+        self.density_sum_by_image: dict[str, float] = {}
 
     def _compute_epoch_metrics(self) -> dict:
         """Compute metrics and returns a Lightning-loggable dictionary.

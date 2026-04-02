@@ -460,7 +460,7 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
                 gt_counts = gt_counts / (image_h * image_w)
             if self.log_count_loss:
                 count_cls_loss = (
-                    self.cls_l1(torch.log1p(cls_preds), torch.log1p(gt_counts))
+                    self.cls_l1(torch.log1p(cls_preds.clamp(min=0)), torch.log1p(gt_counts))
                     * self.count_cls_weight
                 )
             else:

@@ -204,7 +204,12 @@ class ImagesCallback(Callback):
                 .to_dict()
             )
 
-            metadata = {"pred_count": len(pred_df), "gt_count": len(targets)}
+            density_sum = getattr(pl_module, "density_sum_by_image", {}).get(image_name)
+            metadata = {
+                "pred_count": len(pred_df),
+                "gt_count": len(targets),
+                "density_sum": round(density_sum, 2) if density_sum is not None else None,
+            }
             metadata.update(stats)
 
             with open(os.path.join(out_dir, basename + ".json"), "w") as fp:
