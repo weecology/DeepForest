@@ -36,13 +36,10 @@ validation:
     root_dir: /home/veitchmichaelisj/code/DeepForest_jvm/data/neon_images
 
 keypoint:
-  # Start where pretrain ended; anneal gently to tighten density maps
-  # toward human annotations.
   density_sigma_start: 3.0
   density_sigma_end: 1.6
   density_sigma_schedule_epochs: 20
-  # Pretrain images were 1024x1024 vs 400x400 here (same GSD, smaller spatial
-  # extent), so the count head needs to recalibrate downward.
-  mae_weight: 0.1
-  count_cls_weight: 0.1
+  losses: [ot, density_l1, count_cls]
+  count_cls_weight: 0.05
+  log_count_loss: true
   norm_cood: true

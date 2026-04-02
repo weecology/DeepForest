@@ -44,15 +44,11 @@ validation:
 keypoint:
   density_sigma_start: 7.0
   density_sigma_end: 3.0
-  mae_weight: 0.025
-  count_cls_weight: 0.025
+  count_cls_weight: 0.05
   ot_weight: 0.4
   score_integration_radius: 13
   # After schedule is complete, sigma will flatline
   density_sigma_schedule_epochs: 15
-  losses: ~
+  losses: [ot, density_l1, count_cls]
   norm_cood: true
-  # Large images have 100+ trees; log-space count loss prevents raw count
-  # errors from dominating OT/density losses early in training.
-  log_count_loss: false
-  normalize_count_by_area: true
+  log_count_loss: true
