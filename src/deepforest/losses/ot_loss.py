@@ -188,5 +188,10 @@ class OT_Loss(Module):
         if n_active > 0:
             loss = loss / n_active
             ot_obj_values = ot_obj_values / n_active
+        else:
+            # All images in this batch have zero points. Keep loss connected
+            # to unnormed_density so DDP gradient buckets fire on every rank;
+            # the 0.0 multiplier means no actual gradient flows.
+            loss = loss + 0.0 * unnormed_density.sum()
 
         return loss, wd, ot_obj_values

@@ -12,6 +12,10 @@
 
 printenv | grep -i slurm | sort
 
+export NCCL_IB_DISABLE=1
+export NCCL_NVLS_ENABLE=0
+export NCCL_DEBUG=INFO
+
 CONFIG_NAME=treeformer_pretrain
 export COMET_PROJECT="treeformer-deepforest"
 

@@ -403,7 +403,9 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         # ---- MAE count loss -----------------------------------------------
         if "count" in active:
             pred_sum = density_map.view(B, -1).sum(1)
-            area = H * W
+            # Normalise by input image area so the target is trees/px² in
+            # image space, which is consistent across different output strides.
+            area = image_h * image_w
             if self.normalize_count_by_area:
                 pred_count = pred_sum / area
                 gt_count = point_counts / area
@@ -454,8 +456,8 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
             cls_preds = torch.stack([c.reshape(B) for c in cls_outputs])  # (3, B)
             gt_counts = point_counts.unsqueeze(0).expand(3, -1)  # (3, B)
             if self.normalize_count_by_area:
-                cls_preds = cls_preds / (H * W)
-                gt_counts = gt_counts / (H * W)
+                cls_preds = cls_preds / (image_h * image_w)
+                gt_counts = gt_counts / (image_h * image_w)
             if self.log_count_loss:
                 count_cls_loss = (
                     self.cls_l1(torch.log1p(cls_preds), torch.log1p(gt_counts))
