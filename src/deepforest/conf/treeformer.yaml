@@ -57,6 +57,7 @@ keypoint:
   losses: ~
   norm_cood: true
   log_count_loss: false
+  normalize_count_by_area: false
   use_uncertainty_head: false
   uncertainty_delta: 0.2
   uncertainty_mse_weight: 1.0
