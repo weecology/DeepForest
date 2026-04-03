@@ -1240,6 +1240,38 @@ def test_recall_not_lowered_by_unprocessed_images():
         f"box_recall={results['box_recall']:.2f}, expected 1.0"
     )
 
+def test_predict_dataloader_small_dataset_rank_zero(monkeypatch, m):
+    ds = prediction.FromCSVFile(
+        csv_file=get_data("OSBS_029.csv"),
+        root_dir=os.path.dirname(get_data("OSBS_029.csv")),
+        return_metadata=True,
+    )
+
+    monkeypatch.setattr(main.distributed, "is_distributed", lambda: True)
+    monkeypatch.setattr(main.distributed, "get_world_size", lambda: 2)
+    monkeypatch.setattr(main.distributed, "get_rank", lambda: 0)
+
+    loader = m.predict_dataloader(ds, batch_size=1)
+
+    assert len(loader.sampler) == 1
+    assert list(iter(loader.sampler)) == [0]
+
+
+def test_predict_dataloader_small_dataset_extra_rank(monkeypatch, m):
+    ds = prediction.FromCSVFile(
+        csv_file=get_data("OSBS_029.csv"),
+        root_dir=os.path.dirname(get_data("OSBS_029.csv")),
+        return_metadata=True,
+    )
+
+    monkeypatch.setattr(main.distributed, "is_distributed", lambda: True)
+    monkeypatch.setattr(main.distributed, "get_world_size", lambda: 2)
+    monkeypatch.setattr(main.distributed, "get_rank", lambda: 1)
+
+    loader = m.predict_dataloader(ds, batch_size=1)
+
+    assert len(loader.sampler) == 0
+    assert list(iter(loader.sampler)) == []
 def test_custom_log_root(m, tmpdir):
     """Test that setting a custom log_root creates logs in the expected location"""
     custom_log_dir = tmpdir.join("custom_logs")
