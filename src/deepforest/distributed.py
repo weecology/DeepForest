@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from typing import Any
 
 import pandas as pd
 import torch.distributed as dist
+from torch.utils.data import Sampler
 
 
 def is_distributed() -> bool:
@@ -33,12 +35,41 @@ def should_sync(trainer: Any | None = None) -> bool:
     return is_distributed()
 
 
+def get_rank() -> int:
+    """Return the current distributed rank, defaulting to zero."""
+    if not is_distributed():
+        return 0
+
+    return dist.get_rank()
+
+
+def get_world_size() -> int:
+    """Return the distributed world size, defaulting to one."""
+    if not is_distributed():
+        return 1
+
+    return dist.get_world_size()
+
+
+class FixedOrderSampler(Sampler[int]):
+    """Yield a fixed sequence of dataset indices."""
+
+    def __init__(self, indices: list[int]):
+        self.indices = indices
+
+    def __iter__(self) -> Iterator[int]:
+        return iter(self.indices)
+
+    def __len__(self) -> int:
+        return len(self.indices)
+
+
 def gather_object(obj: Any) -> list[Any]:
     """Gather a Python object from every rank."""
     if not is_distributed():
         return [obj]
 
-    gathered = [None] * dist.get_world_size()
+    gathered = [None] * get_world_size()
     dist.all_gather_object(gathered, obj)
     return gathered
 

@@ -2,6 +2,7 @@
 import importlib
 import os
 import warnings
+from numbers import Number
 
 import numpy as np
 import pandas as pd
@@ -466,10 +467,21 @@ class deepforest(pl.LightningModule):
             batch_size = self.config.batch_size
         else:
             batch_size = batch_size
+        sampler = None
+        if (
+            self.config.use_distributed_sampler
+            and distributed.is_distributed()
+            and len(ds) < distributed.get_world_size()
+        ):
+            rank = distributed.get_rank()
+            local_indices = [rank] if rank < len(ds) else []
+            sampler = distributed.FixedOrderSampler(local_indices)
+
         loader = torch.utils.data.DataLoader(
             ds,
             batch_size=batch_size,
             shuffle=False,
+            sampler=sampler,
             num_workers=self.config.workers,
             collate_fn=ds.collate_fn,
             pin_memory=self.config.predict.pin_memory,
@@ -851,6 +863,20 @@ class deepforest(pl.LightningModule):
 
         return metrics
 
+    def _prepare_metrics_for_sync(self, metrics: dict) -> dict:
+        """Move scalar metrics onto the module device for NCCL reduction."""
+        synced_metrics = {}
+
+        for key, value in metrics.items():
+            if isinstance(value, torch.Tensor):
+                synced_metrics[key] = value.to(self.device)
+            elif isinstance(value, Number):
+                synced_metrics[key] = torch.tensor(value, device=self.device)
+            else:
+                synced_metrics[key] = value
+
+        return synced_metrics
+
     def on_validation_epoch_end(self):
         """Compute metrics and predictions at the end of the validation
         epoch."""
@@ -865,7 +891,10 @@ class deepforest(pl.LightningModule):
         # Log epoch metrics
         if (self.current_epoch + 1) % self.config.validation.val_accuracy_interval == 0:
             metrics = self._compute_epoch_metrics()
-            self.log_dict(metrics, sync_dist=distributed.should_sync(self.trainer))
+            should_sync = distributed.should_sync(self.trainer)
+            if should_sync:
+                metrics = self._prepare_metrics_for_sync(metrics)
+            self.log_dict(metrics, sync_dist=should_sync)
 
         # Manual reset. Lightning does not do this automatically
         # unless we log the metric objects directly

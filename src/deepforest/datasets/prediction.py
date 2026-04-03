@@ -394,8 +394,11 @@ class MultiImage(PredictionDataset):
     def __getitem__(self, idx):
         """Return crops with dataset index so collate_fn can use global
         indices."""
-        metadata = self.get_metadata(idx) if self.return_metadata else None
-        return _IndexedCrops(idx, self.get_crop(idx), metadata=metadata)
+        crops = self.get_crop(idx)
+        metadata = None
+        if self.return_metadata:
+            metadata = self.get_metadata(idx, crop_count=len(crops))
+        return _IndexedCrops(idx, crops, metadata=metadata)
 
     def collate_fn(self, batch):
         """Collate the batch into a single list of crops.
@@ -433,13 +436,17 @@ class MultiImage(PredictionDataset):
     def get_crop_bounds(self, idx):
         return self.window_list()[idx]
 
-    def get_metadata(self, idx):
+    def get_metadata(self, idx, crop_count=None):
+        if crop_count is None:
+            crop_count = len(self.get_crop(idx))
+
+        windows = self.window_list()
         return [
             {
                 "image_path": self.get_image_basename(idx),
-                "window_bounds": self.get_crop_bounds(window_idx),
+                "window_bounds": windows[window_idx] if window_idx < len(windows) else None,
             }
-            for window_idx in range(len(self.window_list()))
+            for window_idx in range(crop_count)
         ]
 
     def postprocess(self, batch, prediction_index, original_batch_structure):
