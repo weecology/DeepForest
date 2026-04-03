@@ -190,15 +190,16 @@ def train(
     if checkpoint:
         for logger in m.trainer.loggers:
             if hasattr(logger.experiment, "log_model"):
-                for checkpoint in glob.glob(
+                for ckpt_path in glob.glob(
                     os.path.join((checkpoint_callback.dirpath), "*.ckpt")
                 ):
-                    m.print(f"Uploading checkpoint {checkpoint}")
+                    m.print(f"Uploading checkpoint {ckpt_path}")
                     logger.experiment.log_model(
-                        name=os.path.basename(checkpoint), file_or_folder=str(checkpoint)
+                        name=os.path.basename(ckpt_path), file_or_folder=str(ckpt_path)
                     )
 
-    if export_hf and checkpoint and train_success:
+    is_rank_zero = m.trainer.is_global_zero
+    if export_hf and checkpoint and train_success and is_rank_zero:
         hf_export_path = Path(csv_logger.log_dir) / "hf_model"
         best_ckpt = checkpoint_callback.best_model_path
         ckpt = torch.load(best_ckpt, map_location="cpu", weights_only=False)
