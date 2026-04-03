@@ -444,7 +444,9 @@ class MultiImage(PredictionDataset):
         return [
             {
                 "image_path": self.get_image_basename(idx),
-                "window_bounds": windows[window_idx] if window_idx < len(windows) else None,
+                "window_bounds": windows[window_idx]
+                if window_idx < len(windows)
+                else None,
             }
             for window_idx in range(crop_count)
         ]

@@ -314,6 +314,9 @@ def __shapefile_to_annotations__(
             print(f"CRS of image is {raster_crs}")
             gdf = geo_to_image_coordinates(gdf, src.bounds, src.res[0])
 
+    gdf = DeepForest_DataFrame(gdf)
+    gdf.root_dir = os.path.dirname(full_image_path)
+
     return gdf
 
 
@@ -601,9 +604,11 @@ def read_file(
         gdf = __assign_image_path__(gdf, image_path=image_path)
         gdf = __assign_root_dir__(input, gdf, root_dir=root_dir)
         gdf = DeepForest_DataFrame(gdf)
+        original_root_dir = gdf.root_dir
         gdf_list = []
         for image_path in gdf.image_path.unique():
-            image_annotations = gdf[gdf.image_path == image_path]
+            image_annotations = DeepForest_DataFrame(gdf[gdf.image_path == image_path])
+            image_annotations.root_dir = original_root_dir
             gdf = __shapefile_to_annotations__(image_annotations)
             gdf_list.append(gdf)
 
@@ -611,6 +616,7 @@ def read_file(
         gdf = pd.concat(gdf_list)
         gdf = gpd.GeoDataFrame(gdf)
         gdf = DeepForest_DataFrame(gdf)
+        gdf.root_dir = original_root_dir
         gdf = __check_and_assign_label__(gdf, label=label)
 
     elif isinstance(input, pd.DataFrame):
@@ -751,6 +757,7 @@ def geo_to_image_coordinates(gdf, image_bounds, image_resolution):
     if len(image_bounds) != 4:
         raise ValueError("image_bounds must be a tuple of (left, bottom, right, top)")
 
+    root_dir = getattr(gdf, "root_dir", None)
     transformed_gdf = gdf.copy(deep=True)
     # unpack image bounds
     left, bottom, right, top = image_bounds
@@ -760,6 +767,9 @@ def geo_to_image_coordinates(gdf, image_bounds, image_resolution):
         xfact=1 / image_resolution, yfact=-1 / image_resolution, origin=(0, 0)
     )
     transformed_gdf.crs = None
+    transformed_gdf = DeepForest_DataFrame(transformed_gdf)
+    if root_dir is not None:
+        transformed_gdf.root_dir = root_dir
 
     return transformed_gdf
 
