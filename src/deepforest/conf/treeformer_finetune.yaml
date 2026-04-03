@@ -42,4 +42,5 @@ keypoint:
   losses: [ot, density_l1, count_cls]
   count_cls_weight: 0.05
   log_count_loss: true
+  normalize_count_by_area: true
   norm_cood: true
