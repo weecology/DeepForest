@@ -1,5 +1,7 @@
 # Scaling DeepForest using PyTorch Lightning
 
+For concise launch recipes, see the [multi-GPU and multi-node guide](distributed.md). If you are using Hipergator, see the [developer Hipergator guide](../development/hipergator.md).
+
 ## Increase batch size
 
 It is more efficient to run a larger batch size on a single GPU. This is because the overhead of loading data and moving data between the CPU and GPU is relatively large. By running a larger batch size, we can reduce the overhead of these operations.
