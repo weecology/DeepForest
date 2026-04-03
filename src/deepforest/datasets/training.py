@@ -159,17 +159,19 @@ class BoxDataset(TrainingDataset):
                 if xmin == 0 and ymin == 0 and xmax == 0 and ymax == 0:
                     continue
 
-                # Check if box is valid
+                # Check if box is valid. Use a small tolerance to allow for
+                # floating-point rounding errors (e.g. 500.0000000001 vs 500).
+                tol = 1e-6
                 oob_issues = []
                 if not geom.equals(shapely.envelope(geom)):
                     oob_issues.append(f"geom ({geom}) is not a valid bounding box")
-                if xmin < 0:
+                if xmin < -tol:
                     oob_issues.append(f"xmin ({xmin}) < 0")
-                if xmax > width:
+                if xmax > width + tol:
                     oob_issues.append(f"xmax ({xmax}) > image width ({width})")
-                if ymin < 0:
+                if ymin < -tol:
                     oob_issues.append(f"ymin ({ymin}) < 0")
-                if ymax > height:
+                if ymax > height + tol:
                     oob_issues.append(f"ymax ({ymax}) > image height ({height})")
                 if math.isclose(geom.area, 1):
                     oob_issues.append("area of bounding box is a single pixel")

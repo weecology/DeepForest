@@ -15,7 +15,7 @@
 
 # Example usage:
 # First prepare the data:
-#uv run python src/deepforest/scripts/prepare_birds.py --output_dir /blue/ewhite/b.weinstein/bird_detector_retrain/data/
+uv run python src/deepforest/scripts/prepare_birds.py --output_dir /blue/ewhite/b.weinstein/bird_detector_retrain/data/
 
 srun uv run python src/deepforest/scripts/train_birds.py \
     --data_dir /blue/ewhite/b.weinstein/bird_detector_retrain/data/ \
