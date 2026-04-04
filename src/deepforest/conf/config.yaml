@@ -22,9 +22,6 @@ model:
     name: 'weecology/deepforest-tree'
     revision: 'main'
 
-# Trainer precision. Override to 16-mixed for faster training, 32-true for full precision.
-precision:
-
 # On CUDA, setting the matmul precision can provide speed up without affecting model performance
 # Start with 'high' for initial tests.
 matmul_precision: highest

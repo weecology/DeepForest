@@ -52,18 +52,16 @@ def evaluate(
     if root_dir is None:
         root_dir = config.validation.root_dir
 
-    m.config.validation.csv_file = ground_truth
-    m.config.validation.root_dir = root_dir
-    m.config.validation.val_accuracy_interval = 1
-    m.create_trainer()
-    m.trainer.validate(m)
-    results = m.precision_recall_metric.results
+    results = m.evaluate(
+        csv_file=ground_truth,
+        root_dir=root_dir,
+    )
+    results["class_recall"] = getattr(m.precision_recall_metric, "_class_recall", None)
 
     # Save generated predictions if requested and they were generated (not loaded from file)
     if save_predictions is not None and distributed.is_global_zero(m.trainer):
-        if len(m.predictions) > 0:
-            predictions_df = pd.concat(m.predictions, ignore_index=True)
-        else:
+        predictions_df = results.get("predictions")
+        if predictions_df is None:
             predictions_df = pd.DataFrame()
         if predictions_df is not None and not predictions_df.empty:
             if os.path.dirname(save_predictions):

@@ -104,7 +104,6 @@ class deepforest(pl.LightningModule):
             self.mAP_metric = MeanAveragePrecision(backend="faster_coco_eval")
 
         self.precision_recall_metric = RecallPrecision(
-            iou_threshold=self.config.validation.iou_threshold,
             label_dict=self.label_dict,
             iou_threshold=self.config.validation.iou_threshold,
         )
@@ -1073,7 +1072,7 @@ class deepforest(pl.LightningModule):
         self.config.validation.val_accuracy_interval = 1
 
         self.create_trainer()
-        self.trainer.validate(self)
+        validation_results = self.trainer.validate(self)
 
         # Gather predictions from all ranks in multi-GPU settings
         if self.trainer.world_size > 1:
@@ -1094,7 +1093,11 @@ class deepforest(pl.LightningModule):
             self.predictions = pd.DataFrame()
 
         results = {}
-        results.update(self.trainer.logged_metrics)
+        if isinstance(validation_results, list):
+            if validation_results and isinstance(validation_results[0], dict):
+                results.update(validation_results[0])
+        elif isinstance(validation_results, dict):
+            results.update(validation_results)
         results["predictions"] = self.predictions
         results["results"] = self.precision_recall_metric.get_results()
 
