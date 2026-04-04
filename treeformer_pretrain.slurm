@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=Treeformer
+#SBATCH --job-name=Treeformer-pretrain
 #SBATCH --nodes=1
 #SBATCH --partition=hpg-b200
 #SBATCH --cpus-per-task=8

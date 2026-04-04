@@ -751,6 +751,9 @@ class deepforest(pl.LightningModule):
 
         total_loss = loss_dict["loss"] if "loss" in loss_dict else sum(loss_dict.values())
 
+        if not torch.isfinite(total_loss):
+            return None
+
         # Log loss
         for key, value in loss_dict.items():
             self.log(

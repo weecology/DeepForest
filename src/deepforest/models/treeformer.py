@@ -84,7 +84,9 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         variant = backbone.split("/")[-1]
         src = self.HIDDEN_SIZES.get(variant, None)
         if src is None:
-            raise ValueError(f"Backbone variant {variant} isn't supported. Please use one of {list(self.HIDDEN_SIZES.keys())}")
+            raise ValueError(
+                f"Backbone variant {variant} isn't supported. Please use one of {list(self.HIDDEN_SIZES.keys())}"
+            )
 
         self.proj = nn.ModuleList(
             [nn.Conv2d(s, d, 1) for s, d in zip(src, self.REG_DIMS, strict=True)]
@@ -223,7 +225,7 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         """
         B = score_map.size(0)
         score_sum = score_map.view(B, -1).sum(1).view(B, 1, 1, 1)
-        normed = score_map / (score_sum + 1e-6)
+        normed = score_map / (score_sum + 1e-4)
         if self.enforce_count:
             count = cls_count.view(B, 1, 1, 1).clamp(min=0)
             return normed * count, normed
@@ -439,7 +441,7 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
 
         # ---- Density L1 loss (pixel-wise L1 between normalized density maps) ----
         if "density_l1" in active:
-            gt_discrete_normed = gt_discrete / (point_counts.view(B, 1, 1, 1) + 1e-6)
+            gt_discrete_normed = gt_discrete / (point_counts.view(B, 1, 1, 1) + 1e-4)
             density_l1_loss = (
                 self.density_l1(normed_density, gt_discrete_normed)
                 .sum(dim=[1, 2, 3])
@@ -461,7 +463,9 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
                 gt_counts = gt_counts / (image_h * image_w)
             if self.log_count_loss:
                 count_cls_loss = (
-                    self.cls_l1(torch.log1p(cls_preds.clamp(min=0)), torch.log1p(gt_counts))
+                    self.cls_l1(
+                        torch.log1p(cls_preds.clamp(min=0)), torch.log1p(gt_counts)
+                    )
                     * self.count_cls_weight
                 )
             else:
