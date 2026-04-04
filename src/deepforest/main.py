@@ -1199,7 +1199,7 @@ class deepforest(pl.LightningModule):
         self.config.validation.val_accuracy_interval = 1
 
         self.create_trainer()
-        self.trainer.validate(self)
+        validation_results = self.trainer.validate(self)
 
         # Gather predictions from all ranks in multi-GPU settings
         if self.trainer.world_size > 1:
@@ -1220,7 +1220,11 @@ class deepforest(pl.LightningModule):
             self.predictions = pd.DataFrame()
 
         results = {}
-        results.update(self.trainer.logged_metrics)
+        if isinstance(validation_results, list):
+            if validation_results and isinstance(validation_results[0], dict):
+                results.update(validation_results[0])
+        elif isinstance(validation_results, dict):
+            results.update(validation_results)
         results["predictions"] = self.predictions
         if self.model.task == "box" or self.model.task == "point":
             results["results"] = self.precision_recall_metric.get_results()
