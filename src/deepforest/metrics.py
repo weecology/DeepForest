@@ -166,9 +166,11 @@ class RecallPrecision(Metric):
             for col in ["predicted_label", "true_label"]:
                 if col in self._all_results.columns:
                     self._all_results[col] = self._all_results[col].map(
-                        lambda x: self.numeric_to_label_dict.get(int(x), x)
-                        if pd.notna(x)
-                        else x
+                        lambda x: (
+                            self.numeric_to_label_dict.get(int(x), x)
+                            if pd.notna(x)
+                            else x
+                        )
                     )
             self._class_recall = compute_class_recall(
                 self._all_results[self._all_results["match"]]

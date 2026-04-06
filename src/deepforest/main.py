@@ -992,9 +992,9 @@ class deepforest(pl.LightningModule):
             self.predictions = pd.concat(self.predictions, ignore_index=True)
             if "label" in self.predictions.columns:
                 self.predictions["label"] = self.predictions["label"].map(
-                    lambda x: self.numeric_to_label_dict.get(int(x), x)
-                    if pd.notna(x)
-                    else x
+                    lambda x: (
+                        self.numeric_to_label_dict.get(int(x), x) if pd.notna(x) else x
+                    )
                 )
         else:
             self.predictions = pd.DataFrame()
