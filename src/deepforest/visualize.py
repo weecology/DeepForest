@@ -402,7 +402,7 @@ def plot_results(
     """
     # Initialize default colors if None
     if results_color is None:
-        results_color = [245, 135, 66]
+        results_color = [255, 0, 255]
     if ground_truth_color is None:
         ground_truth_color = [0, 165, 255]
     # Convert colors, check for multi-class labels
@@ -413,23 +413,29 @@ def plot_results(
     image = _load_image(image, results)
 
     fig, ax = plt.subplots()
+    geom_type = determine_geometry_type(results)
+    has_gt = ground_truth is not None
+
+    if has_gt:
+        # Draw GT first (circles), then predictions on top (triangles).
+        gt_radius = radius * 2 if geom_type == "point" else radius
+        annotated_scene = _plot_image_with_geometry(
+            df=ground_truth,
+            image=image,
+            sv_color=ground_truth_color_sv,
+            thickness=thickness,
+            radius=gt_radius,
+        )
+    else:
+        annotated_scene = image
+
     annotated_scene = _plot_image_with_geometry(
         df=results,
-        image=image,
+        image=annotated_scene,
         sv_color=results_color_sv,
         thickness=thickness,
         radius=radius,
     )
-
-    if ground_truth is not None:
-        # Plot the ground truth annotations
-        annotated_scene = _plot_image_with_geometry(
-            df=ground_truth,
-            image=annotated_scene,
-            sv_color=ground_truth_color_sv,
-            thickness=thickness,
-            radius=radius,
-        )
 
     if savedir:
         if basename is None:
@@ -453,7 +459,9 @@ def plot_results(
     return fig
 
 
-def _plot_image_with_geometry(df, image, sv_color, thickness=1, radius=3):
+def _plot_image_with_geometry(
+    df, image, sv_color, thickness=1, radius=3, use_triangle=False
+):
     """Annotates an image with the given results.
 
     Args:
@@ -482,22 +490,24 @@ def _plot_image_with_geometry(df, image, sv_color, thickness=1, radius=3):
             detections=detections,
         )
     elif geom_type == "point":
-        # Convert KeyPoints to Detections with fixed-size boxes so we can use
-        # CircleAnnotator, which draws clean circle outlines.
+        # Convert KeyPoints to Detections with fixed-size boxes for annotation.
         xy = detections.xy.reshape(-1, 2)
         xyxy = np.stack(
             [xy[:, 0] - radius, xy[:, 1] - radius, xy[:, 0] + radius, xy[:, 1] + radius],
             axis=1,
         )
-        circle_detections = sv.Detections(
+        point_detections = sv.Detections(
             xyxy=xyxy,
             class_id=detections.class_id,
             confidence=detections.confidence.reshape(-1)
             if detections.confidence is not None
             else None,
         )
-        point_annotator = sv.CircleAnnotator(color=sv_color, thickness=2)
+        if use_triangle:
+            point_annotator = sv.TriangleAnnotator(color=sv_color, height=radius * 2)
+        else:
+            point_annotator = sv.CircleAnnotator(color=sv_color, thickness=2)
         annotated_frame = point_annotator.annotate(
-            scene=image.copy(), detections=circle_detections
+            scene=image.copy(), detections=point_detections
         )
     return annotated_frame
