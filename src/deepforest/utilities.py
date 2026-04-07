@@ -997,7 +997,7 @@ def density_to_points(
 
     results = []
     for b in range(density_map.shape[0]):
-        density_np = density_norm[b, 0].detach().cpu().numpy()
+        density_np = density_norm[b, 0].detach().cpu().float().numpy()
 
         # peak_local_max handles flat plateaus (returns one point per region)
         # and uses reflect-padded maximum_filter internally.
