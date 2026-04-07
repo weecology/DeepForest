@@ -56,6 +56,7 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         use_uncertainty_head: bool = False,
         uncertainty_delta: float = 0.2,
         uncertainty_mse_weight: float = 1.0,
+        count_cls_bias: float | None = None,
         **kwargs,
     ):
         """Initialize TreeFormerModel."""
@@ -96,6 +97,8 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         self.num_classes = num_classes
         self.label_dict = label_dict
         self.regression = Regression(num_classes=num_classes)
+        if count_cls_bias is not None:
+            nn.init.constant_(self.regression.cls_lin4.bias, count_cls_bias)
 
         self.ot_iter = num_of_iter_in_ot
 
@@ -671,6 +674,7 @@ class Model(BaseModel):
                 use_uncertainty_head=cfg.use_uncertainty_head,
                 uncertainty_delta=cfg.uncertainty_delta,
                 uncertainty_mse_weight=cfg.uncertainty_mse_weight,
+                count_cls_bias=cfg.count_cls_bias,
                 **hf_args,
             )
 

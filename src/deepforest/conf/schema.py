@@ -168,6 +168,7 @@ class KeypointConfig:
     use_uncertainty_head: bool = False
     uncertainty_delta: float = 0.2
     uncertainty_mse_weight: float = 1.0
+    count_cls_bias: float | None = None
 
 
 @dataclass

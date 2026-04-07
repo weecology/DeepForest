@@ -168,7 +168,8 @@ class Regression(nn.Module):
         self.cls_lin1 = nn.Linear(1024, 512, bias=False)
         self.cls_lin2 = nn.Linear(512, 256, bias=False)
         self.cls_lin3 = nn.Linear(256, 128, bias=False)
-        self.cls_lin4 = nn.Linear(128, num_classes, bias=False)
+        self.cls_lin4 = nn.Linear(128, num_classes, bias=True)
+        nn.init.zeros_(self.cls_lin4.bias)
 
         self.init_param()
 

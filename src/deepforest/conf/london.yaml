@@ -49,6 +49,7 @@ keypoint:
   losses: [count, ot, density_l1, count_cls]
   enforce_count: true
   enforce_count_start_epoch: ~
+  count_cls_bias: 100.0
   norm_cood: false
   log_count_loss: false
   normalize_count_by_area: false
