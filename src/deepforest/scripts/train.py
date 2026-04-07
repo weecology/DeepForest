@@ -64,8 +64,7 @@ def train(
         the same experiment.
     """
 
-    if torch.cuda.is_available():
-        torch.set_float32_matmul_precision("high")
+    # matmul_precision is now set via config in create_trainer()
 
     if trace:
         if not torch.cuda.is_available():
@@ -158,7 +157,6 @@ def train(
         gradient_clip_val=0.5,
         accelerator=config.accelerator,
         strategy=strategy,
-        precision="16-mixed" if torch.cuda.is_available() else "32-true",
     )
 
     # Add experiment ID to hyperparameters if available

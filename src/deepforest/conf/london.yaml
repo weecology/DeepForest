@@ -14,6 +14,8 @@ defaults:
 batch_size: 16
 workers: 4
 accelerator: auto
+precision: 16-mixed
+matmul_precision: high
 
 train:
     csv_file: /home/veitchmichaelisj/code/DeepForest_jvm/data/kcl/london_train.csv
