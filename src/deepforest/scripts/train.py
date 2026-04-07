@@ -1,6 +1,5 @@
 import datetime
 import glob
-import logging
 import os
 import traceback
 import warnings
@@ -139,6 +138,7 @@ def train(
 
     # Setup checkpoint to store in log directory
     if checkpoint:
+        val_interval = config.validation.val_accuracy_interval
         checkpoint_callback = ModelCheckpoint(
             dirpath=Path(csv_logger.log_dir) / "checkpoints",
             filename=f"{config.architecture}-{{epoch:02d}}-{{val_mae:.2f}}",
@@ -146,6 +146,7 @@ def train(
             mode="min",
             save_top_k=1,
             save_last=True,
+            every_n_epochs=val_interval,
         )
         # Using equals causes a lot of strife with Hydra, so use colon instead.
         checkpoint_callback.CHECKPOINT_EQUALS_CHAR = ":"

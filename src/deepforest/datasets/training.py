@@ -80,7 +80,7 @@ class TrainingDataset(Dataset):
                 )
             self.transform = transforms
 
-        self.image_names = self.annotations.image_path.unique()
+        self.image_names = np.array(self.annotations.image_path.unique())
         # Pre-build per-image annotation index to avoid O(N) scan in __getitem__
         self._annotations_index = dict(list(self.annotations.groupby("image_path")))
         log.info("[dataset] unique images: %d", len(self.image_names))
@@ -199,7 +199,13 @@ class BoxDataset(TrainingDataset):
             img_path = os.path.join(self.root_dir, self.image_names[0])
             with Image.open(img_path) as img:
                 width, height = img.size
-            log.info("[rank %s] [BoxDataset] inferred size %dx%d from %s", os.environ.get("LOCAL_RANK", "?"), width, height, img_path)
+            log.info(
+                "[rank %s] [BoxDataset] inferred size %dx%d from %s",
+                os.environ.get("LOCAL_RANK", "?"),
+                width,
+                height,
+                img_path,
+            )
             _check_boxes(self.annotations, width, height)
         else:
             for image_path, group in self.annotations.groupby("image_path"):
@@ -417,7 +423,13 @@ class KeypointDataset(TrainingDataset):
             img_path = os.path.join(self.root_dir, self.image_names[0])
             with Image.open(img_path) as img:
                 width, height = img.size
-            log.info("[rank %s] [KeypointDataset] inferred size %dx%d from %s", os.environ.get("LOCAL_RANK", "?"), width, height, img_path)
+            log.info(
+                "[rank %s] [KeypointDataset] inferred size %dx%d from %s",
+                os.environ.get("LOCAL_RANK", "?"),
+                width,
+                height,
+                img_path,
+            )
             _check_points(self.annotations, width, height)
         else:
             for image_path, group in self.annotations.groupby("image_path"):
