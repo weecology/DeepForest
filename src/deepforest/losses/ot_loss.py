@@ -104,10 +104,13 @@ class OT_Loss(Module):
         self.num_of_iter_in_ot = num_of_iter_in_ot
         self.reg = reg
 
+    @torch.autocast("cuda", enabled=False)
+    @torch.autocast("cpu", enabled=False)
     def forward(self, normed_density, unnormed_density, points):
-        # Force float32 to prevent AMP float16 underflow in Sinkhorn.
-        # K = exp(C / -reg) underflows to zero in float16 for squared
-        # distances > ~11, collapsing the transport plan entirely.
+        # Disable AMP autocast and force float32 to prevent float16
+        # underflow in Sinkhorn. K = exp(C / -reg) underflows to zero
+        # in float16 for squared distances > ~11, collapsing the
+        # transport plan entirely.
         normed_density = normed_density.float()
         unnormed_density = unnormed_density.float()
         points = [p.float() for p in points]
