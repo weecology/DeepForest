@@ -144,6 +144,9 @@ class KeypointConfig:
     ``norm_cood`` normalises OT coordinates to [-1, 1], enabling global
     optimal transport (full output-map coverage). Default ``False`` matches
     the reference TreeFormer implementation (local OT only).
+
+    ``enforce_count`` controls whether the final density map is rescaled to
+    match the auxiliary CLS count prediction.
     """
 
     density_sigma_start: float = 4.0
@@ -151,10 +154,14 @@ class KeypointConfig:
     mae_weight: float = 0.025
     count_cls_weight: float = 0.025
     ot_weight: float = 0.4
+    density_l1_weight: float = 0.01
+    sinkhorn_reg: float = 1.0
+    num_of_iter_in_ot: int = 100
     score_integration_radius: int = 5
     density_sigma_schedule_epochs: int | None = None
     losses: list[str] | None = None
     norm_cood: bool = False
+    enforce_count: bool = True
     log_count_loss: bool = False
     normalize_count_by_area: bool = False
     use_uncertainty_head: bool = False

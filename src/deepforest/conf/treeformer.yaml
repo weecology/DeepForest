@@ -47,17 +47,21 @@ validation:
     val_accuracy_interval: 1
 
 keypoint:
-  density_sigma_start: 7.8
-  density_sigma_end: 1.6
-  mae_weight: 0.025
-  count_cls_weight: 0.025
-  ot_weight: 0.4
-  score_integration_radius: 5
-  density_sigma_schedule_epochs: 30
-  losses: ~
-  norm_cood: true
-  log_count_loss: false
-  normalize_count_by_area: false
-  use_uncertainty_head: false
-  uncertainty_delta: 0.2
-  uncertainty_mse_weight: 1.0
+    density_sigma_start: 7.8
+    density_sigma_end: 1.6
+    mae_weight: 0.025
+    count_cls_weight: 0.025
+    ot_weight: 0.4
+    density_l1_weight: 0.01
+    sinkhorn_reg: 1.0
+    num_of_iter_in_ot: 100
+    score_integration_radius: 5
+    density_sigma_schedule_epochs: 30
+    losses: ~
+    norm_cood: true
+    enforce_count: true
+    log_count_loss: false
+    normalize_count_by_area: false
+    use_uncertainty_head: false
+    uncertainty_delta: 0.2
+    uncertainty_mse_weight: 1.0

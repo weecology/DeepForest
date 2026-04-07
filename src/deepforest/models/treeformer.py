@@ -59,6 +59,7 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
     ):
         """Initialize TreeFormerModel."""
         super().__init__()
+        self.backbone_name = backbone
         self.processor = AutoImageProcessor.from_pretrained(
             backbone,
             use_fast=True,
@@ -130,7 +131,12 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
 
         if losses is None:
             losses = ["count", "ot", "density_l1", "count_cls"]
-        self.active_losses = set(losses)
+        self.losses = list(losses)
+        # enforce_count scales the density map by the GAP branch output, so
+        # count_cls must be active to train that branch.
+        if enforce_count and "count_cls" not in self.losses:
+            self.losses.append("count_cls")
+        self.active_losses = set(self.losses)
 
         if use_uncertainty_head:
             self.uncertainty_head = nn.Sequential(
@@ -142,8 +148,11 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
             # is approx 0 at the start,
             # matching Gominski et al's initialisation
             # (softplus(-5) ≈ 0.007 pixels).
-            nn.init.zeros_(self.uncertainty_head[-1].weight)
-            nn.init.constant_(self.uncertainty_head[-1].bias, -5.0)
+            final_uncertainty_layer = self.uncertainty_head[-1]
+            assert isinstance(final_uncertainty_layer, nn.Conv2d)
+            assert final_uncertainty_layer.bias is not None
+            nn.init.zeros_(final_uncertainty_layer.weight)
+            nn.init.constant_(final_uncertainty_layer.bias, -5.0)
 
         # Losses that don't require a device are set up eagerly.
         self.density_l1 = nn.L1Loss(reduction="none")
@@ -159,10 +168,26 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
     def update_config(self):
         # Stored as config on HF
         self._hub_mixin_config = {
+            "backbone": self.backbone_name,
             "num_classes": self.num_classes,
             "label_dict": self.label_dict,
+            "num_of_iter_in_ot": self.ot_iter,
+            "sinkhorn_reg": self.sinkhorn_reg,
+            "density_sigma_start": self.density_sigma_start,
+            "density_sigma_end": self.density_sigma_end,
+            "density_sigma_schedule_epochs": self.density_sigma_schedule_epochs,
+            "mae_weight": self.mae_weight,
+            "ot_weight": self.ot_weight,
+            "density_l1_weight": self.density_l1_weight,
+            "count_cls_weight": self.count_cls_weight,
+            "losses": self.losses,
             "norm_cood": self.norm_cood,
+            "enforce_count": self.enforce_count,
+            "log_count_loss": self.log_count_loss,
             "normalize_count_by_area": self.normalize_count_by_area,
+            "use_uncertainty_head": self.use_uncertainty_head,
+            "uncertainty_delta": self.uncertainty_delta,
+            "uncertainty_mse_weight": self.uncertainty_mse_weight,
             **self.kwargs,
         }
 
@@ -609,7 +634,9 @@ class Model(BaseModel):
         """
         cfg = self.config.keypoint
         label_dict = dict(self.config.label_dict) if self.config.label_dict else None
-        num_classes = len(label_dict)
+        num_classes = (
+            len(label_dict) if label_dict is not None else self.config.num_classes or 1
+        )
 
         if pretrained:
             model = TreeFormerModel.from_pretrained(
@@ -619,15 +646,18 @@ class Model(BaseModel):
             model = TreeFormerModel(
                 num_classes=num_classes,
                 label_dict=label_dict,
+                num_of_iter_in_ot=cfg.num_of_iter_in_ot,
+                sinkhorn_reg=cfg.sinkhorn_reg,
                 density_sigma_start=cfg.density_sigma_start,
                 density_sigma_end=cfg.density_sigma_end,
                 density_sigma_schedule_epochs=cfg.density_sigma_schedule_epochs,
                 mae_weight=cfg.mae_weight,
                 ot_weight=cfg.ot_weight,
+                density_l1_weight=cfg.density_l1_weight,
                 count_cls_weight=cfg.count_cls_weight,
                 losses=list(cfg.losses) if cfg.losses is not None else None,
                 norm_cood=cfg.norm_cood,
-                enforce_count=True,
+                enforce_count=cfg.enforce_count,
                 log_count_loss=cfg.log_count_loss,
                 normalize_count_by_area=cfg.normalize_count_by_area,
                 use_uncertainty_head=cfg.use_uncertainty_head,
