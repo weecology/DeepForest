@@ -113,6 +113,7 @@ class deepforest(pl.LightningModule):
             self.rmse_metric = torchmetrics.MeanSquaredError(squared=False)
             self.r2_metric = torchmetrics.R2Score()
             self.spatial_corr_metric = torchmetrics.PearsonCorrCoef()
+            self.cardinality_metric = torchmetrics.MeanAbsoluteError()
             self.precision_recall_metric = RecallPrecision(
                 task="point",
                 distance_threshold=self.config.validation.distance_threshold,
@@ -853,6 +854,12 @@ class deepforest(pl.LightningModule):
                         pred["points"] = pred["points"] * scale
                 self.precision_recall_metric.update(preds_pts, targets, image_names)
 
+                # Cardinality gap: |peak_count - gt_count| per image.
+                peak_counts = torch.tensor(
+                    [float(len(p["points"])) for p in preds_pts], dtype=torch.float32
+                )
+                self.cardinality_metric.update(peak_counts, true_counts)
+
                 # Collect density map samples for callback visualization.
                 # Build gt density per-image because images may have different
                 # spatial sizes.
@@ -942,6 +949,10 @@ class deepforest(pl.LightningModule):
             p = float(metrics.get("point_precision") or 0.0)
             r = float(metrics.get("point_recall") or 0.0)
             metrics["point_f1"] = 2 * p * r / (p + r) if (p + r) > 0 else 0.0
+            # Cardinality gap: mean |peak_count - gt_count| across images.
+            # Compared to val_mae (density sum vs gt), shows how much peak
+            # extraction diverges from GT independently of density magnitude.
+            metrics["val_cardinality_gap"] = self.cardinality_metric.compute()
         # IoU and mAP
         elif self.model.task == "box" and len(self.iou_metric.groundtruth_labels) > 0:
             metrics.update(self.iou_metric.compute())
@@ -977,6 +988,7 @@ class deepforest(pl.LightningModule):
             self.rmse_metric.reset()
             self.r2_metric.reset()
             self.spatial_corr_metric.reset()
+            self.cardinality_metric.reset()
         else:
             self.iou_metric.reset()
             self.mAP_metric.reset()

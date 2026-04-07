@@ -1,10 +1,9 @@
 #!/bin/bash
 #SBATCH --job-name=london-replicate
 #SBATCH --nodes=1
-#SBATCH --partition=hpg-default
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=64GB
-#SBATCH --time=6:00:00
+#SBATCH --time=4:00:00
 #SBATCH --gpus=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --output=./slurm_logs/%A.out
