@@ -2,6 +2,7 @@
 #SBATCH --job-name=london-replicate
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=8
+#SBATCH --partition=hpg-b200
 #SBATCH --mem=64GB
 #SBATCH --time=4:00:00
 #SBATCH --gpus=1
