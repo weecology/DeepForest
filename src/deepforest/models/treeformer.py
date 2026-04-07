@@ -497,16 +497,18 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
             + uncertainty_mse_loss
             + uncertainty_reg_loss
         )
-        return {
+        result = {
             "loss": total,
             "count_loss": count_loss,
             "ot_loss": ot_loss,
             "ot_wd": ot_wd,
             "density_l1_loss": density_l1_loss,
             "count_cls_loss": count_cls_loss,
-            "uncertainty_mse_loss": uncertainty_mse_loss,
-            "uncertainty_reg_loss": uncertainty_reg_loss,
         }
+        if uncertainty is not None:
+            result["uncertainty_mse_loss"] = uncertainty_mse_loss
+            result["uncertainty_reg_loss"] = uncertainty_reg_loss
+        return result
 
     def forward(
         self,
