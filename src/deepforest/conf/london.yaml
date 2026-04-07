@@ -12,8 +12,8 @@ defaults:
   - treeformer
   - _self_
 
-batch_size: 16
-workers: 4
+batch_size: 32
+workers: 8
 accelerator: auto
 precision: 16-mixed
 matmul_precision: high
