@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=london-replicate
 #SBATCH --nodes=1
-#SBATCH --partition=hpg-b200
+#SBATCH --partition=hpg-default
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=64GB
 #SBATCH --time=6:00:00

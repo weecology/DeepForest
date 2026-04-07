@@ -6,11 +6,11 @@ train:
     csv_file: /blue/ewhite/veitchmichaelisj/deeplidar/output/folds/all_annotations_train_fold_0.csv
     root_dir: /blue/ewhite/veitchmichaelisj/deeplidar/output
     same_size_images: true
-    epochs: 25
+    epochs: 40
     lr: 1.6e-4
     scheduler:
         params:
-            T_max: 25
+            T_max: 40
 
     augmentations:
       - HorizontalFlip:
