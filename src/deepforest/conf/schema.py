@@ -162,6 +162,7 @@ class KeypointConfig:
     losses: list[str] | None = None
     norm_cood: bool = False
     enforce_count: bool = True
+    enforce_count_start_epoch: int | None = None
     log_count_loss: bool = False
     normalize_count_by_area: bool = False
     use_uncertainty_head: bool = False

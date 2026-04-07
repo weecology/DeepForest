@@ -50,6 +50,7 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         losses: list | None = None,
         norm_cood: bool = False,
         enforce_count: bool = True,
+        enforce_count_start_epoch: int | None = None,
         log_count_loss: bool = False,
         normalize_count_by_area: bool = False,
         use_uncertainty_head: bool = False,
@@ -122,6 +123,7 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         self.density_l1_weight = density_l1_weight
         self.count_cls_weight = count_cls_weight
         self.enforce_count = enforce_count
+        self.enforce_count_start_epoch = enforce_count_start_epoch
         self.norm_cood = norm_cood
         self.log_count_loss = log_count_loss
         self.normalize_count_by_area = normalize_count_by_area
@@ -183,6 +185,7 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
             "losses": self.losses,
             "norm_cood": self.norm_cood,
             "enforce_count": self.enforce_count,
+            "enforce_count_start_epoch": self.enforce_count_start_epoch,
             "log_count_loss": self.log_count_loss,
             "normalize_count_by_area": self.normalize_count_by_area,
             "use_uncertainty_head": self.use_uncertainty_head,
@@ -192,7 +195,7 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         }
 
     def set_epoch(self, epoch: int, total_epochs: int) -> None:
-        """Update ``density_sigma`` using a cosine anneal from start to end.
+        """Update per-epoch schedules: density_sigma annealing and enforce_count delay.
 
         Args:
             epoch: Current zero-based epoch index.
@@ -200,12 +203,16 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
                 ``self.density_sigma_schedule_epochs`` if set.
         """
         schedule_epochs = self.density_sigma_schedule_epochs or total_epochs
-        epoch = min(epoch, schedule_epochs - 1)
-        t = np.pi * epoch / max(schedule_epochs - 1, 1)
+        clipped = min(epoch, schedule_epochs - 1)
+        t = np.pi * clipped / max(schedule_epochs - 1, 1)
         self.density_sigma = float(
             self.density_sigma_end
             + 0.5 * (self.density_sigma_start - self.density_sigma_end) * (1 + np.cos(t))
         )
+
+        # Delayed enforce_count: enable coupling once count_cls has had time to converge.
+        if self.enforce_count_start_epoch is not None:
+            self.enforce_count = epoch >= self.enforce_count_start_epoch
 
     @property
     def device(self) -> torch.device:
@@ -658,6 +665,7 @@ class Model(BaseModel):
                 losses=list(cfg.losses) if cfg.losses is not None else None,
                 norm_cood=cfg.norm_cood,
                 enforce_count=cfg.enforce_count,
+                enforce_count_start_epoch=cfg.enforce_count_start_epoch,
                 log_count_loss=cfg.log_count_loss,
                 normalize_count_by_area=cfg.normalize_count_by_area,
                 use_uncertainty_head=cfg.use_uncertainty_head,
