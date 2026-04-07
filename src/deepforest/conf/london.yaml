@@ -3,7 +3,8 @@
 # Supervised-only baseline matching the original TreeFormer paper:
 #   epochs=500, batch=16, lr=1e-4, weight_decay=1e-5, Adam (we use AdamW)
 #   loss weights: count=1.0, OT=0.1, TV/density_l1=0.01
-#   norm_cood=false, crop_size=256
+#   norm_cood=false, full 1024x1024 images (no crop)
+#   GSD=0.2m (2x coarser than NEON 0.1m)
 #
 # Compare to TreeFormer-S (supervised baseline) in Table 1:
 #   MAE=18.52, MSE=24.32, R2=0.72
@@ -31,9 +32,6 @@ train:
           p: 0.5
       - VerticalFlip:
           p: 0.5
-      - RandomCrop:
-          size: [256, 256]
-          p: 1.0
 
 validation:
     csv_file: /home/veitchmichaelisj/code/DeepForest_jvm/data/kcl/london_test.csv
@@ -41,16 +39,21 @@ validation:
     # Validation on full 1024x1024 images is slow; run infrequently.
     # Final evaluation should use scratch/treeformer/test.py (crop-and-stitch) for paper numbers.
     val_accuracy_interval: 5
-    distance_threshold: 10.0
+    # 5px at 0.2m GSD = 1m physical matching distance (same as 10px at NEON 0.1m GSD)
+    distance_threshold: 5.0
 
 keypoint:
   density_sigma_start: 5.0
   density_sigma_end: 5.0
   density_sigma_schedule_epochs: ~
   losses: [count, ot, density_l1, count_cls]
+  enforce_count: true
   norm_cood: false
   log_count_loss: false
   normalize_count_by_area: false
   mae_weight: 1.0
   ot_weight: 0.1
   density_l1_weight: 0.01
+  count_cls_weight: 0.025
+  # London GSD=0.2m vs NEON pretrain GSD=0.1m; scale radius proportionally: round(13 * 0.1 / 0.2) = 7
+  score_integration_radius: 7
