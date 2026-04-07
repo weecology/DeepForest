@@ -1,0 +1,53 @@
+# London dataset training config for TreeFormer replication.
+#
+# Supervised-only baseline matching the original TreeFormer paper:
+#   epochs=500, batch=16, lr=1e-4, weight_decay=1e-5, Adam (we use AdamW)
+#   loss weights: count=1.0, OT=0.1, TV/density_l1=0.01
+#   norm_cood=false, crop_size=256
+#
+# Compare to TreeFormer-S (supervised baseline) in Table 1.
+defaults:
+  - treeformer
+  - _self_
+
+batch_size: 16
+workers: 4
+accelerator: auto
+
+train:
+    csv_file: /home/veitchmichaelisj/code/DeepForest_jvm/data/kcl/london_train.csv
+    root_dir: /home/veitchmichaelisj/code/DeepForest_jvm/data/kcl/train_data/images
+    optimizer: adamw
+    lr: 1e-4
+    weight_decay: 1e-5
+    epochs: 500
+    scheduler:
+        type: constantLR
+    augmentations:
+      - HorizontalFlip:
+          p: 0.5
+      - VerticalFlip:
+          p: 0.5
+      - RandomCrop:
+          size: [256, 256]
+          p: 1.0
+
+validation:
+    csv_file: /home/veitchmichaelisj/code/DeepForest_jvm/data/kcl/london_test.csv
+    root_dir: /home/veitchmichaelisj/code/DeepForest_jvm/data/kcl/test_data/images
+    # Validation on full 1024x1024 images is slow; run infrequently.
+    # Final evaluation should use scratch/treeformer/test.py (crop-and-stitch) for paper numbers.
+    val_accuracy_interval: 5
+    distance_threshold: 10.0
+
+keypoint:
+  density_sigma_start: 5.0
+  density_sigma_end: 5.0
+  density_sigma_schedule_epochs: ~
+  losses: [count, ot, density_l1]
+  norm_cood: false
+  log_count_loss: false
+  normalize_count_by_area: false
+  mae_weight: 1.0
+  ot_weight: 0.1
+  # density_l1_weight defaults to 0.01 in model constructor (matches original TV weight)

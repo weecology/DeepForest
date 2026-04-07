@@ -1064,7 +1064,12 @@ class deepforest(pl.LightningModule):
         def lr_lambda(epoch):
             return eval(params.lr_lambda)
 
-        if scheduler_type == "cosine":
+        if scheduler_type is None or scheduler_type == "constantLR":
+            scheduler = torch.optim.lr_scheduler.ConstantLR(
+                optimizer, factor=1.0, total_iters=0
+            )
+
+        elif scheduler_type == "cosine":
             scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
                 optimizer, T_max=params.T_max, eta_min=params.eta_min
             )
