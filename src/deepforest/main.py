@@ -856,7 +856,9 @@ class deepforest(pl.LightningModule):
 
                 # Cardinality gap: |peak_count - gt_count| per image.
                 peak_counts = torch.tensor(
-                    [float(len(p["points"])) for p in preds_pts], dtype=torch.float32
+                    [float(len(p["points"])) for p in preds_pts],
+                    dtype=torch.float32,
+                    device=device,
                 )
                 self.cardinality_metric.update(peak_counts, true_counts)
 
