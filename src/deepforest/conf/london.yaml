@@ -5,7 +5,8 @@
 #   loss weights: count=1.0, OT=0.1, TV/density_l1=0.01
 #   norm_cood=false, crop_size=256
 #
-# Compare to TreeFormer-S (supervised baseline) in Table 1.
+# Compare to TreeFormer-S (supervised baseline) in Table 1:
+#   MAE=18.52, MSE=24.32, R2=0.72
 defaults:
   - treeformer
   - _self_
