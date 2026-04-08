@@ -1,5 +1,7 @@
 """TreeFormer with PvT-V2 backbone."""
 
+import warnings
+
 import numpy as np
 import torch
 import torch.nn as nn
@@ -137,10 +139,16 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         if losses is None:
             losses = ["count", "ot", "density_l1", "count_cls"]
         self.losses = list(losses)
-        # enforce_count scales the density map by the GAP branch output, so
-        # count_cls must be active to train that branch.
-        if enforce_count and "count_cls" not in self.losses:
-            self.losses.append("count_cls")
+        if "count_cls" not in self.losses and (
+            enforce_count or enforce_count_start_epoch is not None
+        ):
+            warnings.warn(
+                "enforce_count uses the CLS branch to rescale the density map, but "
+                "count_cls is not active in losses. This preserves the requested "
+                "legacy behavior, but it is unsafe and can degrade spatial quality.",
+                UserWarning,
+                stacklevel=2,
+            )
         self.active_losses = set(self.losses)
 
         if use_uncertainty_head:
