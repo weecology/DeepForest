@@ -1,6 +1,6 @@
 # Scaling DeepForest using PyTorch Lightning
 
-For concise launch recipes, see the [multi-GPU and multi-node guide](distributed.md). If you are using Hipergator, see the [developer Hipergator guide](../development/hipergator.md).
+For concise launch recipes, see the [multi-GPU and multi-node guide](distributed.md). If you are using a Slurm-managed cluster, see the [cluster developer guide](../development/cluster.md).
 
 ## Increase batch size
 

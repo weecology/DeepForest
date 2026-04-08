@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO_ROOT="/blue/ewhite/everglades/Henry_GPU/DeepForest"
+REPO_ROOT="/blue/ewhite/everglades/cluster_deepforest/DeepForest"
 DATA_ROOT="$REPO_ROOT/src/deepforest/data"
 TRAIN_CSV="${TRAIN_CSV:-$DATA_ROOT/OSBS_029.csv}"
 TRAIN_ROOT="${TRAIN_ROOT:-$DATA_ROOT}"

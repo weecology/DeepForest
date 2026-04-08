@@ -7,7 +7,7 @@ DeepForest uses PyTorch Lightning distributed execution. For most multi-GPU and 
 - `num_nodes=<nnodes>`
 - `strategy=ddp`
 
-If you are launching with Slurm on Hipergator, see the [Hipergator developer guide](../development/hipergator.md) for cluster-ready examples.
+If you are launching with Slurm on a cluster, see the [cluster developer guide](../development/cluster.md) for ready-to-run examples.
 
 ## Train
 
@@ -93,4 +93,4 @@ results = m.predict_tile(
 )
 ```
 
-Launch that script with the same `torchrun` pattern shown above. For a complete Slurm example, refer to the [Hipergator developer guide](../development/hipergator.md).
+Launch that script with the same `torchrun` pattern shown above. For a complete Slurm example, refer to the [cluster developer guide](../development/cluster.md).

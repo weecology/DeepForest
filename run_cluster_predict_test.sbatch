@@ -11,7 +11,7 @@
 
 set -euo pipefail
 
-REPO_ROOT="/blue/ewhite/everglades/Henry_GPU/DeepForest"
+REPO_ROOT="/blue/ewhite/everglades/cluster_deepforest/DeepForest"
 DEFAULT_BIRD_ROOT="/blue/ewhite/b.weinstein/bird_detector_retrain/zero_shot/avian_images_annotated/test_splits/patch_600"
 DEFAULT_BIRD_CSV="$DEFAULT_BIRD_ROOT/test_split_patch_600.csv"
 CONDA_MODULE="${CONDA_MODULE:-conda}"
@@ -20,10 +20,10 @@ CONDA_ENV_NAME="${CONDA_ENV_NAME:-predict}"
 export DEEPFOREST_HPC_PREDICT_CSV="${DEEPFOREST_HPC_PREDICT_CSV:-$DEFAULT_BIRD_CSV}"
 export DEEPFOREST_HPC_ROOT_DIR="${DEEPFOREST_HPC_ROOT_DIR:-$DEFAULT_BIRD_ROOT}"
 
-export RUN_HIPERGATOR_TESTS="${RUN_HIPERGATOR_TESTS:-1}"
+export RUN_CLUSTER_TESTS="${RUN_CLUSTER_TESTS:-1}"
 export DEEPFOREST_HPC_NNODES="${DEEPFOREST_HPC_NNODES:-${SLURM_NNODES:-2}}"
 export DEEPFOREST_HPC_GPUS_PER_NODE="${DEEPFOREST_HPC_GPUS_PER_NODE:-2}"
-export DEEPFOREST_HPC_OUTPUT_DIR="${DEEPFOREST_HPC_OUTPUT_DIR:-$REPO_ROOT/hipergator_test_outputs}"
+export DEEPFOREST_HPC_OUTPUT_DIR="${DEEPFOREST_HPC_OUTPUT_DIR:-$REPO_ROOT/cluster_test_outputs}"
 
 mkdir -p "$DEEPFOREST_HPC_OUTPUT_DIR"
 cd "$REPO_ROOT"
@@ -32,7 +32,7 @@ ml "$CONDA_MODULE"
 eval "$(conda shell.bash hook)"
 conda activate "$CONDA_ENV_NAME"
 
-echo "Running Hipergator predict integration test"
+echo "Running cluster predict integration test"
 echo "CSV: $DEEPFOREST_HPC_PREDICT_CSV"
 echo "ROOT_DIR: $DEEPFOREST_HPC_ROOT_DIR"
 echo "OUTPUT_DIR: $DEEPFOREST_HPC_OUTPUT_DIR"
@@ -51,4 +51,4 @@ if [[ ! -d "$DEEPFOREST_HPC_ROOT_DIR" ]]; then
     exit 1
 fi
 
-uv run pytest -m hipergator tests/test_hipergator_predict.py -s
+uv run pytest -m cluster tests/test_cluster_predict.py -s
