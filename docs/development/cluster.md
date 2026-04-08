@@ -1,6 +1,6 @@
-# Hipergator Distributed Runs
+# Cluster Distributed Runs
 
-This page shows the shortest supported patterns for running DeepForest across multiple GPUs and multiple nodes on Hipergator.
+This page shows the shortest supported patterns for running DeepForest across multiple GPUs and multiple nodes on a Slurm-managed cluster.
 
 ## Shared Settings
 
@@ -17,7 +17,7 @@ Use the same launch pattern for `train`, `evaluate`, and `predict`:
 ml conda
 eval "$(conda shell.bash hook)"
 conda activate predict
-cd /blue/ewhite/everglades/Henry_GPU/DeepForest
+cd /blue/ewhite/everglades/cluster_deepforest/DeepForest
 ```
 
 ## Train
@@ -26,7 +26,7 @@ For a quick distributed smoke test, use the helper script:
 
 ```bash
 salloc --time=05:30:00 --nodes=2 --ntasks-per-node=1 --gpus-per-node=2 --cpus-per-task=4 --mem=80G
-GPUS_PER_NODE=2 NNODES=2 srun --nodes=2 --ntasks=2 --ntasks-per-node=1 bash run_hipergator_multinode_smoke.sh
+GPUS_PER_NODE=2 NNODES=2 srun --nodes=2 --ntasks=2 --ntasks-per-node=1 bash run_cluster_multinode_smoke.sh
 ```
 
 For a real training run, replace the final command with:
@@ -41,7 +41,7 @@ srun --nodes="$NNODES" --ntasks="$NNODES" --ntasks-per-node=1 bash -lc '
 ml conda
 eval "$(conda shell.bash hook)"
 conda activate predict
-cd /blue/ewhite/everglades/Henry_GPU/DeepForest
+cd /blue/ewhite/everglades/cluster_deepforest/DeepForest
 uv run torchrun \
   --nnodes='"$NNODES"' \
   --nproc_per_node='"$GPUS_PER_NODE"' \
@@ -72,7 +72,7 @@ srun --nodes="$NNODES" --ntasks="$NNODES" --ntasks-per-node=1 bash -lc '
 ml conda
 eval "$(conda shell.bash hook)"
 conda activate predict
-cd /blue/ewhite/everglades/Henry_GPU/DeepForest
+cd /blue/ewhite/everglades/cluster_deepforest/DeepForest
 uv run torchrun \
   --nnodes='"$NNODES"' \
   --nproc_per_node='"$GPUS_PER_NODE"' \
@@ -93,10 +93,10 @@ uv run torchrun \
 
 ## Predict From CSV
 
-For the Hipergator regression test and example launcher, use:
+For the cluster regression test and example launcher, use:
 
 ```bash
-sbatch run_hipergator_predict_test.sbatch
+sbatch run_cluster_predict_test.sbatch
 ```
 
 To run your own CSV prediction job directly, use the same `torchrun` pattern as evaluation and replace the final module call with:
@@ -114,12 +114,12 @@ To run your own CSV prediction job directly, use the same `torchrun` pattern as 
 
 ## Predict A Large Tile
 
-For large rasters on Hipergator, prefer `predict_tile(..., dataloader_strategy="window")`.
+For large rasters on a cluster, prefer `predict_tile(..., dataloader_strategy="window")`.
 
 The ready-to-run test launcher is:
 
 ```bash
-sbatch run_hipergator_predict_tile_test.sbatch
+sbatch run_cluster_predict_tile_test.sbatch
 ```
 
 To run a real tiled prediction job directly, launch the driver with `torchrun`:
@@ -134,14 +134,14 @@ srun --nodes="$NNODES" --ntasks="$NNODES" --ntasks-per-node=1 bash -lc '
 ml conda
 eval "$(conda shell.bash hook)"
 conda activate predict
-cd /blue/ewhite/everglades/Henry_GPU/DeepForest
+cd /blue/ewhite/everglades/cluster_deepforest/DeepForest
 uv run torchrun \
   --nnodes='"$NNODES"' \
   --nproc_per_node='"$GPUS_PER_NODE"' \
   --node_rank=$SLURM_NODEID \
   --master_addr='"$MASTER_ADDR"' \
   --master_port='"$MASTER_PORT"' \
-  tests/hipergator_predict_tile_driver.py \
+  tests/cluster_predict_tile_driver.py \
   --input-path /path/to/tile.tif \
   --output-path tile_predictions.csv \
   --model-name weecology/everglades-bird-species-detector \

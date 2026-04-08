@@ -5,7 +5,7 @@
 ```{toctree}
 :maxdepth: 1
 
-hipergator
+cluster
 authors
 contributing
 code_of_conduct

@@ -39,7 +39,7 @@ uv run torchrun \\
   --node_rank=$SLURM_NODEID \\
   --master_addr="$MASTER_ADDR" \\
   --master_port={shlex.quote(str(master_port))} \\
-  tests/hipergator_predict_tile_driver.py \\
+  tests/cluster_predict_tile_driver.py \\
   --input-path {shlex.quote(tile_path)} \\
   --output-path {shlex.quote(str(output_path))} \\
   --model-name {shlex.quote(str(model_name))} \\
@@ -63,16 +63,16 @@ uv run torchrun \\
 
 
 @pytest.mark.integration
-@pytest.mark.hipergator
-def test_multinode_predict_tile_on_hipergator(tmp_path):
-    if os.environ.get("RUN_HIPERGATOR_TESTS") != "1":
-        pytest.skip("Set RUN_HIPERGATOR_TESTS=1 to enable Hipergator integration tests")
+@pytest.mark.cluster
+def test_multinode_predict_tile_on_cluster(tmp_path):
+    if os.environ.get("RUN_CLUSTER_TESTS") != "1":
+        pytest.skip("Set RUN_CLUSTER_TESTS=1 to enable cluster integration tests")
 
     if "SLURM_JOB_ID" not in os.environ:
         pytest.skip("This test must run inside a Slurm allocation")
 
     output_dir = Path(
-        os.environ.get("DEEPFOREST_HPC_OUTPUT_DIR", str(tmp_path / "hipergator_outputs"))
+        os.environ.get("DEEPFOREST_HPC_OUTPUT_DIR", str(tmp_path / "cluster_outputs"))
     )
     output_dir.mkdir(parents=True, exist_ok=True)
 
