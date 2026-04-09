@@ -3,7 +3,7 @@
 #SBATCH --nodes=1
 #SBATCH --partition=hpg-b200
 #SBATCH --cpus-per-task=8
-#SBATCH --mem=196GB
+#SBATCH --mem=256GB
 #SBATCH --time=12:00:00
 #SBATCH --gpus=4
 #SBATCH --output=./slurm_logs/%A.out
