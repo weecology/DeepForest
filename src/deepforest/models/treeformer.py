@@ -517,12 +517,18 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         zero = density_map.new_zeros(1)
 
         # ---- MAE count loss -----------------------------------------------
+        # In density mode with enforce_count, density_map.sum() equals
+        # raw_cls * area (absolute count). We must compare in density space
+        # (divide by area) to avoid area-amplified gradients on the CLS head.
         if "count" in active:
             pred_sum = density_map.view(B, -1).sum(1)
             # normalize_count_by_area and log_count_loss are mutually exclusive:
             # log1p already handles scale differences; dividing by area first
             # collapses the target to ~1e-6, making log1p(...) ≈ 0.
-            if self.normalize_count_by_area and not self.log_count_loss:
+            use_density_space = self.count_prediction_mode == "density" or (
+                self.normalize_count_by_area and not self.log_count_loss
+            )
+            if use_density_space and not self.log_count_loss:
                 pred_count = pred_sum / areas
                 gt_count = point_counts / areas
             else:
@@ -566,14 +572,19 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
             density_l1_loss = zero
 
         # ---- Stage GAP count regression ----
-        # cls_outputs entries may collapse to a 0-dim tensor when B=1 due to
-        # .squeeze() in Regression; reshape to (B,) for safe stacking.
+        # In density mode, keep the loss in density space: compare raw CLS
+        # output (count density) to gt_count/area directly. This avoids
+        # multiplying by area and then dividing it back out, which would
+        # amplify gradients by ~area^2 before Adam can adapt.
         if "count_cls" in active:
             cls_preds = torch.stack(
-                [self._cls_outputs_to_count(c, image_shapes) for c in cls_outputs]
-            )
+                [c.reshape(B) for c in cls_outputs]
+            )  # raw CLS outputs, (3, B)
             gt_counts = point_counts.unsqueeze(0).expand(3, -1)  # (3, B)
-            if self.normalize_count_by_area and not self.log_count_loss:
+            if self.count_prediction_mode == "density":
+                # Raw CLS predicts count density; GT must match.
+                gt_counts = gt_counts / areas.unsqueeze(0)
+            elif self.normalize_count_by_area and not self.log_count_loss:
                 cls_preds = cls_preds / areas.unsqueeze(0)
                 gt_counts = gt_counts / areas.unsqueeze(0)
             if self.log_count_loss:
