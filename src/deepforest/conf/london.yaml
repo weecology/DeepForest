@@ -62,10 +62,9 @@ keypoint:
   density_sigma_start: 5.0
   density_sigma_end: 5.0
   density_sigma_schedule_epochs: ~
-  losses: [ot, density_l1]
+  losses: [count, count_cls, ot, density_l1]
   enforce_count: false
   enforce_count_start_epoch: ~
-  count_cls_bias: ~
   count_prediction_mode: "absolute"
   norm_cood: false
   log_count_loss: false

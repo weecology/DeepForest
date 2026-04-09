@@ -61,7 +61,6 @@ keypoint:
     norm_cood: true
     enforce_count: true
     enforce_count_start_epoch: ~
-    count_cls_bias: ~
     count_prediction_mode: "absolute"
     log_count_loss: false
     normalize_count_by_area: false
