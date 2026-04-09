@@ -821,12 +821,14 @@ class deepforest(pl.LightningModule):
                     _, _, H_i, W_i = dm_i.shape
                     image_h_i = images[i].shape[-2]
                     image_w_i = images[i].shape[-1]
+                    image_shapes_i = [(image_h_i, image_w_i)]
+                    output_shapes_i = [(H_i, W_i)]
                     scaled_pts_i = self.model._scale_points_to_output(
-                        [targets[i]["points"]], image_h_i, image_w_i, H_i, W_i
+                        [targets[i]["points"]],
+                        image_shapes=image_shapes_i,
+                        output_shapes=output_shapes_i,
                     )
-                    gt_i = self.model._make_gt_density(
-                        scaled_pts_i, H_i, W_i, image_h_i, image_w_i
-                    ).squeeze()
+                    gt_i = self.model._make_gt_density(scaled_pts_i, H_i, W_i).squeeze()
                     pred_i = dm_i.squeeze()
                     # PearsonCorrCoef returns NaN when either input has
                     # near-zero variance (empty GT, single peak, or flat
@@ -854,7 +856,7 @@ class deepforest(pl.LightningModule):
                         pred["points"] = pred["points"] * scale
                 self.precision_recall_metric.update(preds_pts, targets, image_names)
 
-                # Cardinality gap: |peak_count - gt_count| per image.
+                # Peak-count MAE contribution: |peak_count - gt_count| per image.
                 peak_counts = torch.tensor(
                     [float(len(p["points"])) for p in preds_pts],
                     dtype=torch.float32,
@@ -877,12 +879,14 @@ class deepforest(pl.LightningModule):
                         _, _, H_i, W_i = dm_i.shape
                         image_h_i = images[i].shape[-2]
                         image_w_i = images[i].shape[-1]
+                        image_shapes_i = [(image_h_i, image_w_i)]
+                        output_shapes_i = [(H_i, W_i)]
                         scaled_pts_i = self.model._scale_points_to_output(
-                            [targets[i]["points"]], image_h_i, image_w_i, H_i, W_i
+                            [targets[i]["points"]],
+                            image_shapes=image_shapes_i,
+                            output_shapes=output_shapes_i,
                         )
-                        gt_density_i = self.model._make_gt_density(
-                            scaled_pts_i, H_i, W_i, image_h_i, image_w_i
-                        )
+                        gt_density_i = self.model._make_gt_density(scaled_pts_i, H_i, W_i)
                         self.density_samples.append(
                             {
                                 "image": images[i].detach().cpu(),
@@ -951,10 +955,10 @@ class deepforest(pl.LightningModule):
             p = float(metrics.get("point_precision") or 0.0)
             r = float(metrics.get("point_recall") or 0.0)
             metrics["point_f1"] = 2 * p * r / (p + r) if (p + r) > 0 else 0.0
-            # Cardinality gap: mean |peak_count - gt_count| across images.
-            # Compared to val_mae (density sum vs gt), shows how much peak
-            # extraction diverges from GT independently of density magnitude.
-            metrics["val_cardinality_gap"] = self.cardinality_metric.compute()
+            # Peak-count MAE: mean |peak_count - gt_count| across images.
+            # Compared to val_mae (density sum vs gt), this isolates the
+            # counting error after peak extraction from density calibration.
+            metrics["peak_count_mae"] = self.cardinality_metric.compute()
         # IoU and mAP
         elif self.model.task == "box" and len(self.iou_metric.groundtruth_labels) > 0:
             metrics.update(self.iou_metric.compute())

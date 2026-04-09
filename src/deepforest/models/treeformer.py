@@ -59,6 +59,7 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         uncertainty_delta: float = 0.2,
         uncertainty_mse_weight: float = 1.0,
         count_cls_bias: float | None = None,
+        count_prediction_mode: str = "absolute",
         **kwargs,
     ):
         """Initialize TreeFormerModel."""
@@ -132,6 +133,16 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         self.norm_cood = norm_cood
         self.log_count_loss = log_count_loss
         self.normalize_count_by_area = normalize_count_by_area
+        if count_prediction_mode not in {"absolute", "density"}:
+            raise ValueError(
+                "count_prediction_mode must be one of {'absolute', 'density'}"
+            )
+        if count_prediction_mode == "density" and normalize_count_by_area:
+            raise ValueError(
+                "count_prediction_mode='density' already scales the CLS branch by "
+                "per-image area. Set normalize_count_by_area=false for this mode."
+            )
+        self.count_prediction_mode = count_prediction_mode
         self.uncertainty_delta = uncertainty_delta
         self.uncertainty_mse_weight = uncertainty_mse_weight
         self.use_uncertainty_head = use_uncertainty_head
@@ -199,6 +210,7 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
             "enforce_count_start_epoch": self.enforce_count_start_epoch,
             "log_count_loss": self.log_count_loss,
             "normalize_count_by_area": self.normalize_count_by_area,
+            "count_prediction_mode": self.count_prediction_mode,
             "use_uncertainty_head": self.use_uncertainty_head,
             "uncertainty_delta": self.uncertainty_delta,
             "uncertainty_mse_weight": self.uncertainty_mse_weight,
@@ -259,7 +271,7 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
 
         Args:
             score_map:  (B, 1, H, W) raw non-negative output of the density head.
-            cls_count:  (B,) count prediction from the CLS branch.
+            cls_count:  (B,) absolute-count prediction from the CLS branch.
 
         Returns:
             density_map:    (B, 1, H, W) density used for count_loss and output.
@@ -274,22 +286,83 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
             return normed * count, normed
         return score_map, normed
 
-    def _scale_points_to_output(
-        self,
-        points: list,
-        image_h: int,
-        image_w: int,
-        out_h: int,
-        out_w: int,
-    ) -> list:
-        """Scale image-space point coordinates into output-map coordinates."""
-        scale = torch.tensor(
-            [out_w / image_w, out_h / image_h],
+    def _count_areas(self, image_shapes: list[tuple[int, int]]) -> torch.Tensor:
+        """Return per-image areas in input-pixel space."""
+        return torch.tensor(
+            [image_h * image_w for image_h, image_w in image_shapes],
             dtype=torch.float32,
             device=self.device,
         )
+
+    def _output_shapes(
+        self, image_shapes: list[tuple[int, int]]
+    ) -> list[tuple[int, int]]:
+        """Return the valid output-map extent for each input image.
+
+        This matches the existing eval-time crop behaviour, which keeps
+        the stride-4 region corresponding to the unpadded image and
+        ignores any batch-padding beyond it.
+        """
+        return [
+            (
+                max(image_h // self.downsample_ratio, 1),
+                max(image_w // self.downsample_ratio, 1),
+            )
+            for image_h, image_w in image_shapes
+        ]
+
+    def _build_output_mask(
+        self,
+        image_shapes: list[tuple[int, int]],
+        out_h: int,
+        out_w: int,
+        dtype: torch.dtype = torch.float32,
+    ) -> torch.Tensor:
+        """Mask padded decoder outputs so losses ignore batch padding."""
+        mask = torch.zeros(
+            len(image_shapes),
+            1,
+            out_h,
+            out_w,
+            device=self.device,
+            dtype=dtype,
+        )
+        for index, (valid_h, valid_w) in enumerate(self._output_shapes(image_shapes)):
+            mask[index, :, :valid_h, :valid_w] = 1.0
+        return mask
+
+    def _cls_outputs_to_count(
+        self,
+        cls_output: torch.Tensor,
+        image_shapes: list[tuple[int, int]],
+    ) -> torch.Tensor:
+        """Convert CLS-head outputs into absolute counts.
+
+        In ``absolute`` mode, the head predicts counts directly. In ``density``
+        mode, the head predicts count density and is converted to absolute count
+        using each image's true area.
+        """
+        absolute_count = cls_output.reshape(len(image_shapes))
+        if self.count_prediction_mode == "density":
+            absolute_count = absolute_count * self._count_areas(image_shapes)
+        return absolute_count
+
+    def _scale_points_to_output(
+        self,
+        points: list,
+        image_shapes: list[tuple[int, int]],
+        output_shapes: list[tuple[int, int]],
+    ) -> list:
+        """Scale image-space point coordinates into output-map coordinates."""
         scaled_points = []
-        for p in points:
+        for p, (image_h, image_w), (out_h, out_w) in zip(
+            points, image_shapes, output_shapes, strict=True
+        ):
+            scale = torch.tensor(
+                [out_w / image_w, out_h / image_h],
+                dtype=torch.float32,
+                device=self.device,
+            )
             if len(p) == 0:
                 scaled_points.append(p.clone())
             else:
@@ -358,8 +431,6 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         points: list,
         out_h: int,
         out_w: int,
-        image_h: int,
-        image_w: int,
         uncertainty: torch.Tensor | None = None,
     ) -> torch.Tensor:
         """Build a batched Gaussian density map (B, 1, out_h, out_w) from point
@@ -410,8 +481,7 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         normed_density: torch.Tensor,
         cls_outputs: list,
         targets: list,
-        image_h: int,
-        image_w: int,
+        image_shapes: list[tuple[int, int]],
         gt_discrete: torch.Tensor | None = None,
         uncertainty: torch.Tensor | None = None,
     ) -> dict:
@@ -422,8 +492,7 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
             normed_density: density_maps[0] normalised to sum to 1, (B, 1, H', W')
             cls_outputs:    [yc0, yc1, yc2] count scalars from CLS-token pathway
             targets:        list of B target dicts or point tensors in image space
-            image_h:        original image height
-            image_w:        original image width
+            image_shapes:   original (height, width) for each image in the batch
             gt_discrete:    optional pre-computed (B, 1, H', W') discrete map;
                             computed from points if None
 
@@ -433,14 +502,16 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         density_map = density_maps[0]  # primary output, (B, 1, H', W')
         B, _, H, W = density_map.shape
         points = self._coerce_points(targets)
+        output_shapes = self._output_shapes(image_shapes)
+        areas = self._count_areas(image_shapes)
 
         point_counts = torch.tensor(
             [len(p) for p in points], dtype=torch.float32, device=self.device
         )
-        scaled_points = self._scale_points_to_output(points, image_h, image_w, H, W)
+        scaled_points = self._scale_points_to_output(points, image_shapes, output_shapes)
 
         if gt_discrete is None:
-            gt_discrete = self._make_gt_density(scaled_points, H, W, image_h, image_w)
+            gt_discrete = self._make_gt_density(scaled_points, H, W)
 
         active = self.active_losses
         zero = density_map.new_zeros(1)
@@ -448,13 +519,12 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         # ---- MAE count loss -----------------------------------------------
         if "count" in active:
             pred_sum = density_map.view(B, -1).sum(1)
-            area = image_h * image_w
             # normalize_count_by_area and log_count_loss are mutually exclusive:
             # log1p already handles scale differences; dividing by area first
             # collapses the target to ~1e-6, making log1p(...) ≈ 0.
             if self.normalize_count_by_area and not self.log_count_loss:
-                pred_count = pred_sum / area
-                gt_count = point_counts / area
+                pred_count = pred_sum / areas
+                gt_count = point_counts / areas
             else:
                 pred_count = pred_sum
                 gt_count = point_counts
@@ -499,11 +569,13 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         # cls_outputs entries may collapse to a 0-dim tensor when B=1 due to
         # .squeeze() in Regression; reshape to (B,) for safe stacking.
         if "count_cls" in active:
-            cls_preds = torch.stack([c.reshape(B) for c in cls_outputs])  # (3, B)
+            cls_preds = torch.stack(
+                [self._cls_outputs_to_count(c, image_shapes) for c in cls_outputs]
+            )
             gt_counts = point_counts.unsqueeze(0).expand(3, -1)  # (3, B)
             if self.normalize_count_by_area and not self.log_count_loss:
-                cls_preds = cls_preds / (image_h * image_w)
-                gt_counts = gt_counts / (image_h * image_w)
+                cls_preds = cls_preds / areas.unsqueeze(0)
+                gt_counts = gt_counts / areas.unsqueeze(0)
             if self.log_count_loss:
                 count_cls_loss = (
                     self.cls_l1(
@@ -519,7 +591,7 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         # ---- Uncertainty MSE + regularisation (Gominsky et al., arXiv 2508.21437) ----------
         if uncertainty is not None and "uncertainty_mse" in active:
             gt_uncertainty = self._make_gt_density(
-                scaled_points, H, W, image_h, image_w, uncertainty=uncertainty
+                scaled_points, H, W, uncertainty=uncertainty
             )
             uncertainty_mse_loss = (
                 F.mse_loss(density_map, gt_uncertainty) * self.uncertainty_mse_weight
@@ -596,9 +668,19 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         if self.training:
             if targets is None:
                 raise ValueError("targets must be provided in training mode")
-            density_map, label_normed = self._normalize_density(out_L[0], out_cls_l[0])
+            output_mask = self._build_output_mask(
+                shapes,
+                out_L[0].shape[-2],
+                out_L[0].shape[-1],
+                dtype=out_L[0].dtype,
+            )
+            primary_counts = self._cls_outputs_to_count(out_cls_l[0], shapes)
+            density_map, label_normed = self._normalize_density(
+                out_L[0] * output_mask,
+                primary_counts,
+            )
             uncertainty = (
-                F.softplus(self.uncertainty_head(label_feats[0]))
+                F.softplus(self.uncertainty_head(label_feats[0])) * output_mask
                 if self.use_uncertainty_head
                 else None
             )
@@ -607,18 +689,17 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
                 label_normed,
                 out_cls_l,
                 targets,
-                image_h=padded_h,
-                image_w=padded_w,
+                image_shapes=shapes,
                 gt_discrete=gt_discrete,
                 uncertainty=uncertainty,
             )
 
         # Eval: crop each output back to its original spatial extent.
-        dr = self.downsample_ratio
         density_list, normed_list = [], []
-        for i, (h, w) in enumerate(shapes):
-            crop = out_L[0][i : i + 1, :, : h // dr, : w // dr].contiguous()
-            dm, nd = self._normalize_density(crop, out_cls_l[0][i : i + 1])
+        for i, (valid_h, valid_w) in enumerate(self._output_shapes(shapes)):
+            crop = out_L[0][i : i + 1, :, :valid_h, :valid_w].contiguous()
+            cls_count = self._cls_outputs_to_count(out_cls_l[0][i : i + 1], [shapes[i]])
+            dm, nd = self._normalize_density(crop, cls_count)
             density_list.append(dm)
             normed_list.append(nd)
 
@@ -679,6 +760,7 @@ class Model(BaseModel):
                 enforce_count_start_epoch=cfg.enforce_count_start_epoch,
                 log_count_loss=cfg.log_count_loss,
                 normalize_count_by_area=cfg.normalize_count_by_area,
+                count_prediction_mode=cfg.count_prediction_mode,
                 use_uncertainty_head=cfg.use_uncertainty_head,
                 uncertainty_delta=cfg.uncertainty_delta,
                 uncertainty_mse_weight=cfg.uncertainty_mse_weight,

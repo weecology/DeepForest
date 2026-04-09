@@ -147,6 +147,11 @@ class KeypointConfig:
 
     ``enforce_count`` controls whether the final density map is rescaled to
     match the auxiliary CLS count prediction.
+
+    ``count_prediction_mode`` controls the semantics of the auxiliary CLS
+    branch. ``absolute`` predicts counts directly. ``density`` predicts count
+    density and converts it to absolute count using each image's area before
+    any enforce-count coupling or count loss is applied.
     """
 
     density_sigma_start: float = 4.0
@@ -165,6 +170,7 @@ class KeypointConfig:
     enforce_count_start_epoch: int | None = None
     log_count_loss: bool = False
     normalize_count_by_area: bool = False
+    count_prediction_mode: str = "absolute"
     use_uncertainty_head: bool = False
     uncertainty_delta: float = 0.2
     uncertainty_mse_weight: float = 1.0
