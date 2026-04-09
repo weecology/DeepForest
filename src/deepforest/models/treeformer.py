@@ -278,7 +278,7 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         score_sum = score_map.view(B, -1).sum(1).view(B, 1, 1, 1)
         normed = score_map / (score_sum + 1e-4)
         if self.enforce_count:
-            count = cls_count.view(B, 1, 1, 1).clamp(min=0)
+            count = cls_count.view(B, 1, 1, 1).clamp(min=1e-4)
             return normed * count, normed
         return score_map, normed
 
