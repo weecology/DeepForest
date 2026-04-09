@@ -40,6 +40,7 @@ rgb_dir:
 path_to_rgb:
 
 log_root: ./lightning_logs
+ema_decay:
 
 train:
     csv_file:

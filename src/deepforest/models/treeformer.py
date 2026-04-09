@@ -52,9 +52,7 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         losses: list | None = None,
         norm_cood: bool = False,
         enforce_count: bool = True,
-        enforce_count_start_epoch: int | None = None,
         log_count_loss: bool = False,
-        normalize_count_by_area: bool = False,
         use_uncertainty_head: bool = False,
         uncertainty_delta: float = 0.2,
         uncertainty_mse_weight: float = 1.0,
@@ -125,18 +123,11 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         self.density_l1_weight = density_l1_weight
         self.count_cls_weight = count_cls_weight
         self.enforce_count = enforce_count
-        self.enforce_count_start_epoch = enforce_count_start_epoch
         self.norm_cood = norm_cood
         self.log_count_loss = log_count_loss
-        self.normalize_count_by_area = normalize_count_by_area
         if count_prediction_mode not in {"absolute", "density"}:
             raise ValueError(
                 "count_prediction_mode must be one of {'absolute', 'density'}"
-            )
-        if count_prediction_mode == "density" and normalize_count_by_area:
-            raise ValueError(
-                "count_prediction_mode='density' already scales the CLS branch by "
-                "per-image area. Set normalize_count_by_area=false for this mode."
             )
         self.count_prediction_mode = count_prediction_mode
         self.uncertainty_delta = uncertainty_delta
@@ -146,9 +137,7 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         if losses is None:
             losses = ["count", "ot", "density_l1", "count_cls"]
         self.losses = list(losses)
-        if "count_cls" not in self.losses and (
-            enforce_count or enforce_count_start_epoch is not None
-        ):
+        if "count_cls" not in self.losses and enforce_count:
             warnings.warn(
                 "enforce_count uses the CLS branch to rescale the density map, but "
                 "count_cls is not active in losses. This preserves the requested "
@@ -203,9 +192,7 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
             "losses": self.losses,
             "norm_cood": self.norm_cood,
             "enforce_count": self.enforce_count,
-            "enforce_count_start_epoch": self.enforce_count_start_epoch,
             "log_count_loss": self.log_count_loss,
-            "normalize_count_by_area": self.normalize_count_by_area,
             "count_prediction_mode": self.count_prediction_mode,
             "use_uncertainty_head": self.use_uncertainty_head,
             "uncertainty_delta": self.uncertainty_delta,
@@ -228,10 +215,6 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
             self.density_sigma_end
             + 0.5 * (self.density_sigma_start - self.density_sigma_end) * (1 + np.cos(t))
         )
-
-        # Delayed enforce_count: enable coupling once count_cls has had time to converge.
-        if self.enforce_count_start_epoch is not None:
-            self.enforce_count = epoch >= self.enforce_count_start_epoch
 
     @property
     def device(self) -> torch.device:
@@ -518,13 +501,7 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         # (divide by area) to avoid area-amplified gradients on the CLS head.
         if "count" in active:
             pred_sum = density_map.view(B, -1).sum(1)
-            # normalize_count_by_area and log_count_loss are mutually exclusive:
-            # log1p already handles scale differences; dividing by area first
-            # collapses the target to ~1e-6, making log1p(...) ≈ 0.
-            use_density_space = self.count_prediction_mode == "density" or (
-                self.normalize_count_by_area and not self.log_count_loss
-            )
-            if use_density_space and not self.log_count_loss:
+            if self.count_prediction_mode == "density" and not self.log_count_loss:
                 pred_count = pred_sum / areas
                 gt_count = point_counts / areas
             else:
@@ -579,9 +556,6 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
             gt_counts = point_counts.unsqueeze(0).expand(3, -1)  # (3, B)
             if self.count_prediction_mode == "density":
                 # Raw CLS predicts count density; GT must match.
-                gt_counts = gt_counts / areas.unsqueeze(0)
-            elif self.normalize_count_by_area and not self.log_count_loss:
-                cls_preds = cls_preds / areas.unsqueeze(0)
                 gt_counts = gt_counts / areas.unsqueeze(0)
             if self.log_count_loss:
                 count_cls_loss = (
@@ -764,9 +738,7 @@ class Model(BaseModel):
                 losses=list(cfg.losses) if cfg.losses is not None else None,
                 norm_cood=cfg.norm_cood,
                 enforce_count=cfg.enforce_count,
-                enforce_count_start_epoch=cfg.enforce_count_start_epoch,
                 log_count_loss=cfg.log_count_loss,
-                normalize_count_by_area=cfg.normalize_count_by_area,
                 count_prediction_mode=cfg.count_prediction_mode,
                 use_uncertainty_head=cfg.use_uncertainty_head,
                 uncertainty_delta=cfg.uncertainty_delta,

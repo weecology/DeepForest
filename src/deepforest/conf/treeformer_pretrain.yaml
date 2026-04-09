@@ -53,4 +53,3 @@ keypoint:
   norm_cood: true
   count_prediction_mode: "absolute"
   log_count_loss: true
-  normalize_count_by_area: true

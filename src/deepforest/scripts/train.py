@@ -127,6 +127,10 @@ def train(
         loggers.append(tensorboard_logger)
 
     callbacks.append(TQDMProgressBar(refresh_rate=1))
+    if config.get("ema_decay") is not None:
+        from pytorch_lightning.callbacks import EMAWeightAveraging
+
+        callbacks.append(EMAWeightAveraging(decay=config.ema_decay))
     callbacks.append(
         ImagesCallback(
             save_dir=Path(csv_logger.log_dir) / "images",

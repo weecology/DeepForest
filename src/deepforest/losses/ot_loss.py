@@ -136,7 +136,7 @@ class OT_Loss(Module):
         loss = torch.zeros([1]).to(self.device)
         ot_obj_values = torch.zeros([1]).to(self.device)
         wd = 0  # Wasserstein distance
-        n_active = 0 # Total number of points over all images
+        n_active = 0  # Total number of points over all images
 
         for idx, im_points in enumerate(points):
             if len(im_points) > 0:
@@ -149,7 +149,7 @@ class OT_Loss(Module):
                 else:
                     x = im_points[:, 0].unsqueeze(1)
                     y = im_points[:, 1].unsqueeze(1)
-    
+
                 x_dis = (
                     -2 * torch.matmul(x, x_cood) + x * x + x_cood * x_cood
                 )  # [#gt, #cood]

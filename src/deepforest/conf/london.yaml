@@ -64,11 +64,9 @@ keypoint:
   density_sigma_schedule_epochs: ~
   losses: [count, count_cls, ot, density_l1]
   enforce_count: false
-  enforce_count_start_epoch: ~
   count_prediction_mode: "absolute"
   norm_cood: false
   log_count_loss: false
-  normalize_count_by_area: false
   mae_weight: 1.0
   ot_weight: 0.1
   density_l1_weight: 0.01

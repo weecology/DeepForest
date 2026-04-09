@@ -167,9 +167,7 @@ class KeypointConfig:
     losses: list[str] | None = None
     norm_cood: bool = False
     enforce_count: bool = True
-    enforce_count_start_epoch: int | None = None
     log_count_loss: bool = False
-    normalize_count_by_area: bool = False
     count_prediction_mode: str = "absolute"
     use_uncertainty_head: bool = False
     uncertainty_delta: float = 0.2
@@ -209,6 +207,7 @@ class Config:
     model: ModelConfig = field(default_factory=ModelConfig)
 
     log_root: str = "./lightning_logs"
+    ema_decay: float | None = None
 
     # Preprocessing
     path_to_raster: str | None = None
