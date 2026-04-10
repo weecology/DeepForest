@@ -7,49 +7,12 @@ train:
     root_dir: /blue/ewhite/veitchmichaelisj/deeplidar/output
     same_size_images: true
     epochs: 40
-    lr: 1.6e-4
     scheduler:
         params:
             T_max: 40
-
-    augmentations:
-      - HorizontalFlip:
-          p: 0.5
-      - VerticalFlip:
-          p: 0.5
-      - Rotate:
-          degrees: 180
-          p: 0.5
-      - RandomBrightnessContrast:
-          brightness: 0.2
-          contrast: 0.2
-          p: 0.5
-      - RandomResizedCrop:
-          size: [1024, 1024]
-          scale: [0.25, 1.0]
-          ratio: [1.0, 1.0]
-          p: 0.5
-
-# Mimic training on Neon Eval - do the same for val if enabled.
-# - RandomCrop:
-#   p: 1
-#   size: [512, 512]
 
 validation:
     csv_file: /blue/ewhite/veitchmichaelisj/deeplidar/output/folds/all_annotations_val_fold_0.csv
     root_dir: /blue/ewhite/veitchmichaelisj/deeplidar/output
     same_size_images: true
-    distance_threshold: 13.0
-
-keypoint:
-  density_sigma_start: 7.0
-  density_sigma_end: 3.0
-  count_cls_weight: 0.05
-  ot_weight: 0.4
-  score_integration_radius: 13
-  # After schedule is complete, sigma will flatline
-  density_sigma_schedule_epochs: 15
-  losses: [ot, density_l1, count_cls]
-  norm_cood: true
-  count_prediction_mode: "absolute"
-  log_count_loss: true
+    distance_threshold: 10.0

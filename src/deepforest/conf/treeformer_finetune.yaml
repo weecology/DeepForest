@@ -19,28 +19,19 @@ train:
           contrast: 0.2
           p: 0.5
       - RandomResizedCrop:
-          size: [400, 400]
+          size: [256, 256]
           scale: [0.5, 1.0]
           ratio: [1.0, 1.0]
           p: 0.5
+
     lr: 1e-5
     scheduler:
         params:
             # T_max > epochs intentionally: keeps LR ~midpoint of cosine
             # decay at end of training rather than reaching eta_min.
             T_max: 60
-            eta_min: 1e-6
+            eta_min: 1e-7
 
 validation:
     csv_file: /home/veitchmichaelisj/code/DeepForest_jvm/data/neon_test.csv
     root_dir: /home/veitchmichaelisj/code/DeepForest_jvm/data/neon_images
-
-keypoint:
-  density_sigma_start: 3.0
-  density_sigma_end: 1.6
-  density_sigma_schedule_epochs: 20
-  losses: [ot, density_l1, count_cls]
-  count_cls_weight: 0.05
-  count_prediction_mode: "absolute"
-  log_count_loss: true
-  norm_cood: true

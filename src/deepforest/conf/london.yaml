@@ -14,40 +14,15 @@ defaults:
 
 batch_size: 32
 workers: 8
-accelerator: auto
-precision: 16-mixed
-matmul_precision: high
 
 train:
     csv_file: /home/veitchmichaelisj/code/DeepForest_jvm/data/kcl/london_train.csv
     root_dir: /home/veitchmichaelisj/code/DeepForest_jvm/data/kcl/train_data/images
-    optimizer: adamw
-    lr: 1e-4
-    weight_decay: 1e-5
+
     epochs: 500
     scheduler:
-        type: constantLR
-    augmentations:
-      - HorizontalFlip:
-          p: 0.5
-      - VerticalFlip:
-          p: 0.5
-      - Rotate:
-          degrees: 180
-          p: 0.5
-      - RandomBrightnessContrast:
-          brightness: 0.2
-          contrast: 0.2
-          p: 0.5
-      - HueSaturationValue:
-          hue: 0.05
-          saturation: 0.2
-          p: 0.5
-      - RandomResizedCrop:
-          size: [1024, 1024]
-          scale: [0.5, 1.0]
-          ratio: [1.0, 1.0]
-          p: 0.5
+        params:
+            T_max: 500
 
 validation:
     csv_file: /home/veitchmichaelisj/code/DeepForest_jvm/data/kcl/london_test.csv
@@ -57,21 +32,3 @@ validation:
     val_accuracy_interval: 5
     # 5px at 0.2m GSD = 1m physical matching distance (same as 10px at NEON 0.1m GSD)
     distance_threshold: 5.0
-
-keypoint:
-  density_sigma_start: 5.0
-  density_sigma_end: 5.0
-  density_sigma_schedule_epochs: ~
-  losses: [count, count_cls, ot, density_l1]
-  enforce_count: false
-  count_prediction_mode: "absolute"
-  norm_cood: false
-  log_count_loss: false
-  mae_weight: 1.0
-  ot_weight: 0.1
-  density_l1_weight: 0.01
-  count_cls_weight: 0.025
-  # radius=2 in density-map space = 8px in image space (density map is 4x downsampled).
-  # Sweep over london_008 test set showed F1 peaks at radius=1-2; radius=7 over-suppresses
-  # dense canopy (London GSD=0.2m trees are closer together than NEON).
-  score_integration_radius: 2

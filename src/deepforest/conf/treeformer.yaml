@@ -9,8 +9,13 @@ architecture: treeformer
 label_dict:
     Tree: 0
 num_classes: 1
-batch_size: 4
+batch_size: 32
+workers: 8
+accelerator: auto
+precision: 16-mixed
+matmul_precision: high
 log_root: ./logs/treeformer
+ema_decay: 0.99
 model:
     name: ~
 
@@ -18,7 +23,8 @@ train:
     csv_file: /Users/josh/data/Neon_benchmark/train.csv
     root_dir: /Users/josh/data/Neon_benchmark/images
     optimizer: adamw
-    lr: 1e-5
+    lr: 2e-4
+    weight_decay: 1e-5
     epochs: 60
     scheduler:
         type: cosine
@@ -26,41 +32,51 @@ train:
             T_max: 100
             eta_min: 1e-7
     augmentations:
-        - HorizontalFlip:
-            p: 0.5
-        - VerticalFlip:
-            p: 0.5
-        - Rotate:
-            degrees: 180
-            p: 0.5
-        - RandomBrightnessContrast:
-            brightness: 0.2
-            contrast: 0.2
-            p: 0.5
+      - HorizontalFlip:
+          p: 0.5
+      - VerticalFlip:
+          p: 0.5
+      - Rotate:
+          degrees: 180
+          p: 0.5
+      - RandomBrightnessContrast:
+          brightness: 0.2
+          contrast: 0.2
+          p: 0.5
+      - HueSaturationValue:
+          hue: 0.05
+          saturation: 0.2
+          p: 0.5
+      - RandomResizedCrop:
+          size: [512, 512]
+          scale: [0.5, 1.0]
+          ratio: [1.0, 1.0]
+          p: 0.5
 
 # Peak must be >= 30% of max density to count as a predicted tree.
-score_thresh: 0.3
+score_thresh: 0.15
 
 validation:
     csv_file: /Users/josh/data/Neon_benchmark/test.csv
     root_dir: /Users/josh/data/Neon_benchmark/images
     val_accuracy_interval: 1
+    distance_threshold: 10
 
 keypoint:
-    density_sigma_start: 7.8
-    density_sigma_end: 1.6
+    density_sigma_start: 3
+    density_sigma_end: 3
     mae_weight: 0.025
     count_cls_weight: 0.025
     ot_weight: 0.4
     density_l1_weight: 0.01
     sinkhorn_reg: 1.0
     num_of_iter_in_ot: 100
-    score_integration_radius: 5
+    score_integration_radius: 2
     density_sigma_schedule_epochs: 30
-    losses: ~
-    norm_cood: true
+    losses: [count, count_cls, ot, density_l1]
+    norm_cood: false
     enforce_count: true
-    count_prediction_mode: "absolute"
+    count_prediction_mode: "density"
     log_count_loss: false
     use_uncertainty_head: false
     uncertainty_delta: 0.2
