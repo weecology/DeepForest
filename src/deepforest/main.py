@@ -753,7 +753,14 @@ class deepforest(pl.LightningModule):
         total_loss = loss_dict["loss"] if "loss" in loss_dict else sum(loss_dict.values())
 
         if not torch.isfinite(total_loss):
-            return None
+            # Return zero loss to skip weight update while keeping DDP in sync.
+            import warnings
+
+            warnings.warn(
+                f"Non-finite loss detected: {total_loss.item()}. Skipping batch.",
+                stacklevel=2,
+            )
+            return torch.zeros_like(total_loss)
 
         # Log loss
         for key, value in loss_dict.items():

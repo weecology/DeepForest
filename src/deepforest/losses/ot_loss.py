@@ -64,7 +64,8 @@ def sinkhorn_knopp(
         u = torch.ones(na, dtype=a.dtype, device=device) / na
         v = torch.ones(nb, dtype=b.dtype, device=device) / nb
 
-    K = torch.exp(C / -reg)
+    # Clamp exponent to float32 safe range before exp to prevent underflow.
+    K = torch.exp(torch.clamp(C / -reg, min=-80.0))
 
     it = 1
     err = 1.0
