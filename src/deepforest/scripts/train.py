@@ -1,6 +1,7 @@
 import datetime
 import glob
 import os
+import signal
 import traceback
 import warnings
 from pathlib import Path
@@ -13,6 +14,7 @@ from pytorch_lightning.callbacks import (
     TQDMProgressBar,
 )
 from pytorch_lightning.loggers import CSVLogger, TensorBoardLogger
+from pytorch_lightning.plugins.environments import SLURMEnvironment
 
 from deepforest.callbacks import ImagesCallback
 from deepforest.main import deepforest
@@ -161,6 +163,9 @@ def train(
         gradient_clip_val=0.5,
         accelerator=config.accelerator,
         strategy=strategy,
+        plugins=SLURMEnvironment(requeue_signal=signal.SIGHUP)
+        if os.environ.get("SLURM_JOB_ID")
+        else None,
     )
 
     # Add experiment ID to hyperparameters if available
