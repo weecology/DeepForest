@@ -92,6 +92,7 @@ def sinkhorn_knopp(
         log_dict["v"] = v
         log_dict["alpha"] = reg * torch.log(u + M_EPS)
         log_dict["beta"] = reg * torch.log(v + M_EPS)
+        log_dict["its"] = it
 
     P = u.unsqueeze(1) * K * v.unsqueeze(0)
     return (P, log_dict) if log else P
@@ -134,10 +135,11 @@ class OT_Loss(Module):
             x_cood = x_cood / output_w * 2 - 1
             y_cood = y_cood / output_h * 2 - 1
 
-        loss = torch.zeros([1]).to(self.device)
+        loss_terms = []
         ot_obj_values = torch.zeros([1]).to(self.device)
         wd = 0  # Wasserstein distance
         n_active = 0  # Total number of points over all images
+        total_its = 0  # Accumulated Sinkhorn iterations
 
         for idx, im_points in enumerate(points):
             if len(im_points) > 0:
@@ -177,8 +179,9 @@ class OT_Loss(Module):
                 wd += torch.sum(dis * P).item()
 
                 log = cast(dict[str, torch.Tensor], log)
+                total_its += log["its"]
                 beta = log["beta"]  # size is the same as source_prob: [#cood * #cood]
-                ot_obj_values += torch.sum(
+                ot_obj_values = ot_obj_values + torch.sum(
                     normed_density[idx] * beta.view([1, output_h, output_w])
                 )
                 # compute the gradient of OT loss to predicted density (unnormed_density).
@@ -194,15 +197,16 @@ class OT_Loss(Module):
                 im_grad = im_grad_1 - im_grad_2
                 im_grad = im_grad.detach().view([1, output_h, output_w])
                 # Define loss = <im_grad, predicted density>. The gradient of loss w.r.t prediced density is im_grad.
-                loss += torch.sum(unnormed_density[idx] * im_grad)
+                loss_terms.append(torch.sum(unnormed_density[idx] * im_grad))
 
         if n_active > 0:
-            loss = loss / n_active
+            loss = torch.stack(loss_terms).sum() / n_active
             ot_obj_values = ot_obj_values / n_active
         else:
             # All images in this batch have zero points. Keep loss connected
             # to unnormed_density so DDP gradient buckets fire on every rank;
             # the 0.0 multiplier means no actual gradient flows.
-            loss = loss + 0.0 * unnormed_density.sum()
+            loss = 0.0 * unnormed_density.sum()
 
-        return loss, wd, ot_obj_values
+        avg_its = total_its / n_active if n_active > 0 else 0
+        return loss, wd, ot_obj_values, avg_its

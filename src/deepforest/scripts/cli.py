@@ -68,6 +68,12 @@ def main():
         help="After training, export the best checkpoint as a HuggingFace model to <log_dir>/hf_model.",
     )
     train_parser.add_argument(
+        "--slurm-auto-requeue",
+        action="store_true",
+        dest="slurm_auto_requeue",
+        help="When running under SLURM, requeue the job on timeout (SIGUSR1). Has no effect outside SLURM.",
+    )
+    train_parser.add_argument(
         "--verbose",
         action="store_true",
         help="Enable INFO-level logging from deepforest modules.",
@@ -169,6 +175,7 @@ def main():
             experiment_name=args.experiment_name,
             tags=args.tags,
             export_hf=args.export_hf,
+            slurm_auto_requeue=args.slurm_auto_requeue,
         )
 
         sys.exit(0 if res else 1)

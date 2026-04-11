@@ -1,7 +1,6 @@
 import datetime
 import glob
 import os
-import signal
 import traceback
 import warnings
 from pathlib import Path
@@ -31,6 +30,7 @@ def train(
     experiment_name: str | None = None,
     tags: list[str] | None = None,
     export_hf: bool = False,
+    slurm_auto_requeue: bool = False,
 ) -> bool:
     """Train a DeepForest model with configurable logging and experiment
     tracking.
@@ -163,7 +163,7 @@ def train(
         gradient_clip_val=0.5,
         accelerator=config.accelerator,
         strategy=strategy,
-        plugins=SLURMEnvironment(requeue_signal=signal.SIGHUP)
+        plugins=[SLURMEnvironment(auto_requeue=slurm_auto_requeue)]
         if os.environ.get("SLURM_JOB_ID")
         else None,
     )

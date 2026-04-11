@@ -519,7 +519,7 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
 
         # ---- Optimal transport loss ----------------------------------------
         if "ot" in active:
-            ot_raw, ot_wd_val, _ = self._get_ot_loss()(
+            ot_raw, ot_wd_val, _, ot_avg_its = self._get_ot_loss()(
                 normed_density, density_map, scaled_points
             )
             ot_loss = ot_raw * self.ot_weight
@@ -527,9 +527,13 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
             ot_wd = torch.tensor(
                 ot_wd_val, device=density_map.device, dtype=torch.float32
             )
+            sinkhorn_its = torch.tensor(
+                ot_avg_its, device=density_map.device, dtype=torch.float32
+            )
         else:
             ot_loss = zero
             ot_wd = zero
+            sinkhorn_its = zero
 
         # ---- Density L1 loss (pixel-wise L1 between normalized density maps) ----
         if "density_l1" in active:
@@ -598,6 +602,7 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
             "count_loss": count_loss,
             "ot_loss": ot_loss,
             "ot_wd": ot_wd,
+            "sinkhorn_its": sinkhorn_its,
             "density_l1_loss": density_l1_loss,
             "count_cls_loss": count_cls_loss,
         }
