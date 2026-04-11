@@ -155,7 +155,7 @@ def run():
     # Set up Comet logger (optional, will skip if not configured)
     comet_logger = None
     try:
-        comet_logger = CometLogger()
+        comet_logger = CometLogger(project="bird-detector")
         comet_logger.experiment.add_tag("bird-detection")
 
         # Log training and test set sizes
@@ -221,7 +221,7 @@ def run():
     print("=" * 80)
 
     # Update validation config for zero-shot dataset
-    m.config.validation.csv_file = "/blue/ewhite/b.weinstein/bird_detector_retrain/zero_shot/avian_images_annotated/test_splits/test_split_patch_600.csv"
+    m.config.validation.csv_file = "/blue/ewhite/b.weinstein/bird_detector_retrain/zero_shot/avian_images_annotated/test_splits//patch_600/test_split_patch_600.csv"
     m.config.validation.root_dir = "/blue/ewhite/b.weinstein/bird_detector_retrain/zero_shot/avian_images_annotated/test_splits/patch_600"
     m.config.validation.iou_threshold = 0.4
 
