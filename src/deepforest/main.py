@@ -257,8 +257,7 @@ class deepforest(pl.LightningModule):
         self.trainer = pl.Trainer(**trainer_args)
 
     def on_fit_start(self):
-        if (self.config.train.csv_file is None
-                and self.existing_train_dataloader is None):
+        if self.config.train.csv_file is None and self.existing_train_dataloader is None:
             raise AttributeError(
                 "Cannot train without a train annotations file "
                 "or existing_train_dataloader. Please set "
