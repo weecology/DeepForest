@@ -16,8 +16,9 @@ printenv | grep -i slurm | sort
 export NCCL_IB_DISABLE=1
 export NCCL_NVLS_ENABLE=0
 export NCCL_DEBUG=INFO
+export TORCH_NCCL_ASYNC_ERROR_HANDLING=1
 
 CONFIG_NAME=treeformer_pretrain
 export COMET_PROJECT="treeformer-deepforest"
 
-srun uv run deepforest --config-name="${CONFIG_NAME}" train --comet --verbose --export-hf --tag treeformer --tag pretrain --strategy ddp_find_unused_parameters_true "$@"
+srun --kill-on-bad-exit=1 uv run deepforest --config-name="${CONFIG_NAME}" train --comet --verbose --export-hf --tag treeformer --tag pretrain --strategy ddp_find_unused_parameters_true --slurm-auto-requeue "$@"

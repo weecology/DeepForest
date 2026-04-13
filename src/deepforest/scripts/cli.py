@@ -74,6 +74,13 @@ def main():
         help="When running under SLURM, requeue the job on timeout (SIGUSR1). Has no effect outside SLURM.",
     )
     train_parser.add_argument(
+        "--ddp-timeout",
+        type=int,
+        default=1800,
+        dest="ddp_timeout",
+        help="Seconds before DDP collective ops time out when a rank is unresponsive (default: 1800).",
+    )
+    train_parser.add_argument(
         "--verbose",
         action="store_true",
         help="Enable INFO-level logging from deepforest modules.",
@@ -176,6 +183,7 @@ def main():
             tags=args.tags,
             export_hf=args.export_hf,
             slurm_auto_requeue=args.slurm_auto_requeue,
+            ddp_timeout=args.ddp_timeout,
         )
 
         sys.exit(0 if res else 1)

@@ -3,6 +3,7 @@ import glob
 import os
 import traceback
 import warnings
+from datetime import timedelta
 from pathlib import Path
 
 import torch
@@ -14,6 +15,7 @@ from pytorch_lightning.callbacks import (
 )
 from pytorch_lightning.loggers import CSVLogger, TensorBoardLogger
 from pytorch_lightning.plugins.environments import SLURMEnvironment
+from pytorch_lightning.strategies import DDPStrategy
 
 from deepforest.callbacks import ImagesCallback
 from deepforest.main import deepforest
@@ -31,6 +33,7 @@ def train(
     tags: list[str] | None = None,
     export_hf: bool = False,
     slurm_auto_requeue: bool = False,
+    ddp_timeout: int = 1800,
 ) -> bool:
     """Train a DeepForest model with configurable logging and experiment
     tracking.
@@ -156,6 +159,17 @@ def train(
         # Using equals causes a lot of strife with Hydra, so use colon instead.
         checkpoint_callback.CHECKPOINT_EQUALS_CHAR = ":"
         callbacks.append(checkpoint_callback)
+
+    # Timeout DDP processes that may hang so that upstream
+    # managers like SLURM can kill the running job. Without this,
+    # if one process crashes (e.g. due to OOM), the whole job will
+    # often hang indefinitely.
+    if isinstance(strategy, str) and "ddp" in strategy:
+        find_unused = strategy == "ddp_find_unused_parameters_true"
+        strategy = DDPStrategy(
+            find_unused_parameters=find_unused,
+            timeout=timedelta(seconds=ddp_timeout),
+        )
 
     m.create_trainer(
         logger=loggers,

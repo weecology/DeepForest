@@ -12,7 +12,9 @@
 
 printenv | grep -i slurm | sort
 
+export TORCH_NCCL_ASYNC_ERROR_HANDLING=1
+
 CONFIG_NAME=treeformer_finetune
 export COMET_PROJECT="treeformer-deepforest"
 
-srun uv run deepforest --config-name="${CONFIG_NAME}" train --comet --verbose --tag treeformer --tag finetune "$@"
+srun --kill-on-bad-exit=1 uv run deepforest --config-name="${CONFIG_NAME}" train --comet --verbose --tag treeformer --tag finetune "$@"
