@@ -21,13 +21,48 @@ from deepforest.callbacks import ImagesCallback
 from deepforest.main import deepforest
 
 
+def _find_last_checkpoint(log_root: Path, experiment_name: str) -> str:
+    """Find the most recent last.ckpt under log_root/experiment_name/."""
+    pattern = log_root / experiment_name / "*" / "checkpoints" / "last.ckpt"
+    candidates = sorted(glob.glob(str(pattern)))
+    if not candidates:
+        raise FileNotFoundError(f"No last.ckpt found matching {pattern}")
+    return candidates[-1]
+
+
+def _resolve_comet_key(
+    experiment_name: str,
+    workspace: str | None = None,
+    project: str | None = None,
+) -> str | None:
+    """Look up a Comet experiment key by name.
+
+    Returns the key if exactly one match is found, None if no match, or
+    raises ValueError if multiple experiments share the same name.
+    """
+    from comet_ml.api import API as CometAPI
+
+    workspace = workspace or os.environ.get("COMET_WORKSPACE")
+    project = project or os.environ.get("COMET_PROJECT", "DeepForest")
+    experiments = CometAPI().get_experiments(workspace, project)
+    matches = [e for e in experiments if e.name == experiment_name]
+    if len(matches) == 1:
+        return matches[0].id
+    if len(matches) > 1:
+        raise ValueError(
+            f"Multiple Comet experiments named '{experiment_name}' in "
+            f"{workspace}/{project}. Rename the experiment or delete duplicates."
+        )
+    return None
+
+
 def train(
     config: DictConfig,
     checkpoint: bool = True,
     comet: bool = False,
     tensorboard: bool = False,
     trace: bool = False,
-    resume: str | None = None,
+    resume: str | bool | None = None,
     strategy: str = "auto",
     experiment_name: str | None = None,
     tags: list[str] | None = None,
@@ -53,8 +88,9 @@ def train(
             to CSV logging. Defaults to False.
         trace (bool, optional): Whether to enable PyTorch memory profiling for debugging.
             Only works when CUDA is available. Defaults to False.
-        resume (str | None, optional): Path to checkpoint to resume training from.
-            Defaults to None.
+        resume (str | bool | None, optional): Path to checkpoint to resume training from,
+            True to auto-find last.ckpt under log_root/experiment_name/, or None for
+            a fresh run. Defaults to None.
         experiment_name (str | None, optional): Custom experiment name for loggers.
             Overrides Comet's auto-generated name if set. Defaults to None.
         tags (list[str] | None, optional): Tags to apply to the Comet experiment.
@@ -70,6 +106,11 @@ def train(
     """
 
     # matmul_precision is now set via config in create_trainer()
+
+    if resume is True:
+        if experiment_name is None:
+            raise ValueError("--resume without a path requires --experiment-name")
+        resume = _find_last_checkpoint(Path(config.log_root), experiment_name)
 
     if trace:
         if not torch.cuda.is_available():
@@ -93,18 +134,22 @@ def train(
         try:
             from pytorch_lightning.loggers import CometLogger
 
+            resume_comet_key = None
+            if resume is not None and experiment_name is not None:
+                resume_comet_key = _resolve_comet_key(experiment_name)
+
             comet_logger = CometLogger(
                 api_key=os.environ.get("COMET_API_KEY"),
                 workspace=os.environ.get("COMET_WORKSPACE"),
                 project=os.environ.get("COMET_PROJECT", default="DeepForest"),
                 name=experiment_name,
                 offline_directory=config.log_root,
+                experiment_key=resume_comet_key,
             )
 
-            if experiment_name is None:
-                experiment_name = comet_logger.experiment.get_name()
-            # Store experiment ID (key) for later re-logging to comet
+            # Always fetch experiment name and key from API
             experiment_id = comet_logger.experiment.get_key()
+            experiment_name = comet_logger.experiment.get_name()
             version = ""
             if tags:
                 comet_logger.experiment.add_tags(tags)

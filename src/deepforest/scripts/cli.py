@@ -48,7 +48,11 @@ def main():
     )
     train_parser.add_argument(
         "--resume",
-        help="Path to checkpoint to resume training from",
+        nargs="?",
+        const=True,
+        default=None,
+        help="Resume training. Optionally pass a checkpoint path; "
+        "otherwise finds last.ckpt from lightning_logs/<experiment-name>/.",
     )
     train_parser.add_argument(
         "--experiment-name",
