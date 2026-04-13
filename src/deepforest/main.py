@@ -760,7 +760,7 @@ class deepforest(pl.LightningModule):
                 f"Non-finite loss detected: {total_loss.item()}. Skipping batch.",
                 stacklevel=2,
             )
-            return torch.zeros_like(total_loss)
+            return 0.0 * sum(p.sum() for p in self.model.parameters())
 
         # Log loss
         for key, value in loss_dict.items():
