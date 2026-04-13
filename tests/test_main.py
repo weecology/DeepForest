@@ -1256,6 +1256,7 @@ def test_existing_dataloader_end_to_end(tmp_path_factory):
 
     assert m.config.train.csv_file is None
     assert m.config.validation.csv_file is None
+    assert m.label_dict["Tree"] == 0
 
     train_loader = m.load_dataset(
         csv_file=get_data("example.csv"),
@@ -1273,7 +1274,12 @@ def test_existing_dataloader_end_to_end(tmp_path_factory):
     m.existing_train_dataloader = train_loader
     m.existing_val_dataloader = val_loader
 
-    m.create_trainer(fast_dev_run=True)
+    m.create_trainer(
+        limit_train_batches=1,
+        limit_val_batches=1,
+        max_epochs=1,
+    )
     assert m.trainer.limit_val_batches == 1.0
 
     m.trainer.fit(m)
+    m.trainer.validate(m)
