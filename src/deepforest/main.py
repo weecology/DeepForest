@@ -91,7 +91,7 @@ class deepforest(pl.LightningModule):
 
     def setup_metrics(self):
         # Guard against initialization before a validation csv_file is set
-        if not self.config.validation.csv_file:
+        if not self.config.validation.csv_file and self.existing_val_dataloader is None:
             return
 
         # Box Metrics
@@ -211,7 +211,12 @@ class deepforest(pl.LightningModule):
             logger = CSVLogger(save_dir=self.config.log_root, name="")
 
         # If val data is passed, monitor learning rate and setup classification metrics
-        if self.config.validation.csv_file is not None:
+        has_val = (
+            self.config.validation.csv_file is not None
+            or self.existing_val_dataloader is not None
+        )
+
+        if has_val:
             if logger is not None:
                 lr_monitor = LearningRateMonitor(logging_interval="epoch")
                 callbacks.append(lr_monitor)
@@ -252,10 +257,12 @@ class deepforest(pl.LightningModule):
         self.trainer = pl.Trainer(**trainer_args)
 
     def on_fit_start(self):
-        if self.config.train.csv_file is None:
+        if self.config.train.csv_file is None and self.existing_train_dataloader is None:
             raise AttributeError(
-                "Cannot train with a train annotations file, "
-                "please set 'config['train']['csv_file'] before "
+                "Cannot train without a train annotations file "
+                "or existing_train_dataloader. Please set "
+                "'config.train.csv_file' or pass "
+                "existing_train_dataloader before "
                 "calling deepforest.create_trainer()'"
             )
 
