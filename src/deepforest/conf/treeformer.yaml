@@ -63,8 +63,7 @@ validation:
     distance_threshold: 10
 
 keypoint:
-    density_sigma_start: 3
-    density_sigma_end: 3
+    density_sigma: 3.0
     mae_weight: 0.025
     count_cls_weight: 0.025
     ot_weight: 0.4
@@ -72,7 +71,6 @@ keypoint:
     sinkhorn_reg: 1.0
     num_of_iter_in_ot: 100
     score_integration_radius: 2
-    density_sigma_schedule_epochs: 30
     losses: [count, count_cls, ot, density_l1]
     norm_cood: false
     enforce_count: true

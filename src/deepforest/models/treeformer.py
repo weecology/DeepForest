@@ -42,9 +42,6 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         num_of_iter_in_ot: int = 100,
         sinkhorn_reg: float = 1.0,
         density_sigma: float = 5.0,
-        density_sigma_start: float | None = None,
-        density_sigma_end: float | None = None,
-        density_sigma_schedule_epochs: int | None = None,
         mae_weight: float = 1.0,
         ot_weight: float = 0.1,
         density_l1_weight: float = 0.01,
@@ -106,18 +103,7 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         self.downsample_ratio = 4
 
         self.sinkhorn_reg = sinkhorn_reg
-
-        # Sigma annealing
-        # If start/end provided, use start as initial sigma; else use the single density_sigma.
-        self.density_sigma_start = (
-            density_sigma_start if density_sigma_start is not None else density_sigma
-        )
-        self.density_sigma_end = (
-            density_sigma_end if density_sigma_end is not None else density_sigma
-        )
-        self.density_sigma = self.density_sigma_start
-        self.density_sigma_schedule_epochs = density_sigma_schedule_epochs
-
+        self.density_sigma = density_sigma
         self.mae_weight = mae_weight
         self.ot_weight = ot_weight
         self.density_l1_weight = density_l1_weight
@@ -167,8 +153,7 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         self.density_l1 = nn.L1Loss(reduction="none")
         self.cls_l1 = nn.L1Loss()
 
-        # OT_Loss creates device-bound tensors; initialised lazily on first
-        # forward call once the model's device is known.
+        # OT_Loss is set up once the model device is known
         self._ot_loss: OT_Loss | None = None
 
         self.kwargs = kwargs
@@ -182,9 +167,7 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
             "label_dict": self.label_dict,
             "num_of_iter_in_ot": self.ot_iter,
             "sinkhorn_reg": self.sinkhorn_reg,
-            "density_sigma_start": self.density_sigma_start,
-            "density_sigma_end": self.density_sigma_end,
-            "density_sigma_schedule_epochs": self.density_sigma_schedule_epochs,
+            "density_sigma": self.density_sigma,
             "mae_weight": self.mae_weight,
             "ot_weight": self.ot_weight,
             "density_l1_weight": self.density_l1_weight,
@@ -199,22 +182,6 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
             "uncertainty_mse_weight": self.uncertainty_mse_weight,
             **self.kwargs,
         }
-
-    def set_epoch(self, epoch: int, total_epochs: int) -> None:
-        """Update per-epoch schedules: density_sigma annealing and enforce_count delay.
-
-        Args:
-            epoch: Current zero-based epoch index.
-            total_epochs: Total number of training epochs. Overridden by
-                ``self.density_sigma_schedule_epochs`` if set.
-        """
-        schedule_epochs = self.density_sigma_schedule_epochs or total_epochs
-        clipped = min(epoch, schedule_epochs - 1)
-        t = np.pi * clipped / max(schedule_epochs - 1, 1)
-        self.density_sigma = float(
-            self.density_sigma_end
-            + 0.5 * (self.density_sigma_start - self.density_sigma_end) * (1 + np.cos(t))
-        )
 
     @property
     def device(self) -> torch.device:
@@ -733,9 +700,7 @@ class Model(BaseModel):
                 label_dict=label_dict,
                 num_of_iter_in_ot=cfg.num_of_iter_in_ot,
                 sinkhorn_reg=cfg.sinkhorn_reg,
-                density_sigma_start=cfg.density_sigma_start,
-                density_sigma_end=cfg.density_sigma_end,
-                density_sigma_schedule_epochs=cfg.density_sigma_schedule_epochs,
+                density_sigma=cfg.density_sigma,
                 mae_weight=cfg.mae_weight,
                 ot_weight=cfg.ot_weight,
                 density_l1_weight=cfg.density_l1_weight,

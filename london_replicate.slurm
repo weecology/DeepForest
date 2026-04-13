@@ -12,6 +12,7 @@
 
 printenv | grep -i slurm | sort
 
+export TORCH_NCCL_ASYNC_ERROR_HANDLING=1
 export COMET_PROJECT="treeformer-kcl"
 
-srun uv run deepforest --config-name=london train --comet --tag treeformer-replicate "$@"
+srun --kill-on-bad-exit=1 uv run deepforest --config-name=london train --comet --tag treeformer-replicate "$@"
