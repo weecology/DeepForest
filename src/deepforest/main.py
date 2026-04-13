@@ -91,7 +91,7 @@ class deepforest(pl.LightningModule):
 
     def setup_metrics(self):
         # Guard against initialization before a validation csv_file is set
-        if not self.config.validation.csv_file:
+        if not self.config.validation.csv_file and self.existing_val_dataloader is None:
             return
 
         # Box Metrics

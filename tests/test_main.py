@@ -1244,57 +1244,36 @@ def test_huggingface_model_loads_correct_label_dict():
     actual = set(m.label_dict.keys())
     assert actual == expected, f"Expected {expected}, got {actual}"
 
-def test_on_fit_start_with_existing_train_dataloader():
-    """Test that on_fit_start does not raise AttributeError
-    when existing_train_dataloader is set and csv_file is None.
-    Regression test for #1369."""
-    from unittest.mock import MagicMock
-
+def test_existing_dataloader_end_to_end(tmp_path_factory):
+    """Regression test for #1369 — verify training and validation
+    complete one full pass when existing_train_dataloader and
+    existing_val_dataloader are provided instead of csv_file."""
     m = main.deepforest()
+    m.config.batch_size = 2
+    m.config.workers = 0
+    m.config.log_root = str(tmp_path_factory.mktemp("logs"))
+    m.load_model("weecology/deepforest-tree")
 
-    # csv_file is None by default — this is correct
-    # when using existing_train_dataloader
     assert m.config.train.csv_file is None
-    assert m.existing_train_dataloader is None
-
-    # Set existing dataloader
-    m.existing_train_dataloader = MagicMock()
-
-    # Should NOT raise AttributeError
-    try:
-        m.on_fit_start()
-    except AttributeError as e:
-        pytest.fail(
-            f"on_fit_start raised AttributeError "
-            f"even though existing_train_dataloader "
-            f"is set: {e}"
-        )
-
-
-def test_create_trainer_enables_validation_with_existing_val_dataloader():
-    """Test that create_trainer enables validation when
-    existing_val_dataloader is set and csv_file is None.
-    Regression test for #1369."""
-    from unittest.mock import MagicMock
-
-    m = main.deepforest()
-
-    # csv_file is None by default — this is correct
-    # when using existing_val_dataloader
     assert m.config.validation.csv_file is None
-    assert m.existing_val_dataloader is None
 
-    # Set existing val dataloader
-    m.existing_val_dataloader = MagicMock()
-
-    m.create_trainer()
-
-    # Validation should be ENABLED
-    assert m.trainer.limit_val_batches == 1.0, (
-        f"Expected limit_val_batches=1.0, "
-        f"got {m.trainer.limit_val_batches}"
+    train_loader = m.load_dataset(
+        csv_file=get_data("example.csv"),
+        root_dir=os.path.dirname(get_data("example.csv")),
+        batch_size=2,
+        shuffle=False,
     )
-    assert m.trainer.num_sanity_val_steps == 2, (
-        f"Expected num_sanity_val_steps=2, "
-        f"got {m.trainer.num_sanity_val_steps}"
+    val_loader = m.load_dataset(
+        csv_file=get_data("example.csv"),
+        root_dir=os.path.dirname(get_data("example.csv")),
+        batch_size=2,
+        shuffle=False,
     )
+
+    m.existing_train_dataloader = train_loader
+    m.existing_val_dataloader = val_loader
+
+    m.create_trainer(fast_dev_run=True)
+    assert m.trainer.limit_val_batches == 1.0
+
+    m.trainer.fit(m)
