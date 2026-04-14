@@ -23,8 +23,8 @@ from deepforest.main import deepforest
 
 def _find_last_checkpoint(log_root: Path, experiment_name: str) -> str:
     """Find the most recent last.ckpt under log_root/experiment_name/."""
-    pattern = log_root / experiment_name / "*" / "checkpoints" / "last.ckpt"
-    candidates = sorted(glob.glob(str(pattern)))
+    pattern = log_root / experiment_name / "**" / "last.ckpt"
+    candidates = sorted(glob.glob(str(pattern), recursive=True))
     if not candidates:
         raise FileNotFoundError(f"No last.ckpt found matching {pattern}")
     return candidates[-1]
