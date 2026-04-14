@@ -1,8 +1,8 @@
 """Decoder modules for the TreeFormer density-map prediction head.
 
-Contains the multi-scale Regression head and its helper blocks,
-extracted from the legacy pvt_cls.py so that only the live code remains
-in this module.
+Contains the multi-scale Regression head and its helper blocks. This
+code is a reimplementation of the code found in the TreeFormer
+repository, but updated to follow more modern PyTorch practices.
 """
 
 import numpy as np

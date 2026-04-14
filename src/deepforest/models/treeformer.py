@@ -1,4 +1,17 @@
-"""TreeFormer with PvT-V2 backbone."""
+"""TreeFormer with PvT-V2 backbone.
+
+This class replicates the architecture in the TreeFormer paper (10.1109/TGRS.2023.3295802), which is
+an extension of DM-Count(arXiv:2009.13077). Here we only replicate the supervised branch.
+The architecture consists of a PvT-V2 backbone, with a multi-scale regression
+head that produces a density map at 1/4 input resolution and auxiliary outputs for counting.
+
+The archicture is modified to support a PvT-V2 backbone from HuggingFace transformers with
+a slightly cleaner version of the Regression head. There are several other modifications which
+we found necessary compared to the original architecture: the model outputs density predictions
+rather than absolute counts, which allows for transfer to varying image sizes at test-time. The
+outputs from the density head also are converted to points via peak detection and during training
+one can track both the number of peaks and the density map sum MAE.
+"""
 
 import warnings
 
@@ -49,16 +62,14 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         losses: list | None = None,
         norm_cood: bool = False,
         enforce_count: bool = True,
-        log_count_loss: bool = False,
-        use_uncertainty_head: bool = False,
-        uncertainty_delta: float = 0.2,
-        uncertainty_mse_weight: float = 1.0,
         count_prediction_mode: str = "absolute",
         **kwargs,
     ):
         """Initialize TreeFormerModel."""
         super().__init__()
         self.backbone_name = backbone
+
+        # Processor handles ImageNet normalization
         self.processor = AutoImageProcessor.from_pretrained(
             backbone,
             use_fast=True,
@@ -81,10 +92,7 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
             gradient_checkpointing_kwargs={"use_reentrant": False}
         )
 
-        # Make grads contiguous before DDP aggregation to avoid a
-        # "Grad strides do not match bucket view strides" warning.
-        # Also suppress the AccumulateGrad stream warning that
-        # arises from gradient-checkpointing + DDP.
+        # Suppress some noisy warnings that show in DDP.
         torch.autograd.graph.set_warn_on_accumulate_grad_stream_mismatch(False)
         for module in self.backbone.modules():
             if (
@@ -123,15 +131,6 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         self.count_cls_weight = count_cls_weight
         self.enforce_count = enforce_count
         self.norm_cood = norm_cood
-        self.log_count_loss = log_count_loss
-        if count_prediction_mode not in {"absolute", "density"}:
-            raise ValueError(
-                "count_prediction_mode must be one of {'absolute', 'density'}"
-            )
-        self.count_prediction_mode = count_prediction_mode
-        self.uncertainty_delta = uncertainty_delta
-        self.uncertainty_mse_weight = uncertainty_mse_weight
-        self.use_uncertainty_head = use_uncertainty_head
 
         if losses is None:
             losses = ["count", "ot", "density_l1", "count_cls"]
@@ -145,22 +144,6 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
                 stacklevel=2,
             )
         self.active_losses = set(self.losses)
-
-        if use_uncertainty_head:
-            self.uncertainty_head = nn.Sequential(
-                nn.Conv2d(128, 64, 3, padding=1),
-                nn.ReLU(inplace=True),
-                nn.Conv2d(64, 1, 1),
-            )
-            # Init final conv to near-zero so uncertainty
-            # is approx 0 at the start,
-            # matching Gominski et al's initialisation
-            # (softplus(-5) ≈ 0.007 pixels).
-            final_uncertainty_layer = self.uncertainty_head[-1]
-            assert isinstance(final_uncertainty_layer, nn.Conv2d)
-            assert final_uncertainty_layer.bias is not None
-            nn.init.zeros_(final_uncertainty_layer.weight)
-            nn.init.constant_(final_uncertainty_layer.bias, -5.0)
 
         # Losses that don't require a device are set up eagerly.
         self.density_l1 = nn.L1Loss(reduction="none")
@@ -188,11 +171,6 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
             "losses": self.losses,
             "norm_cood": self.norm_cood,
             "enforce_count": self.enforce_count,
-            "log_count_loss": self.log_count_loss,
-            "count_prediction_mode": self.count_prediction_mode,
-            "use_uncertainty_head": self.use_uncertainty_head,
-            "uncertainty_delta": self.uncertainty_delta,
-            "uncertainty_mse_weight": self.uncertainty_mse_weight,
             **self.kwargs,
         }
 
@@ -201,8 +179,8 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         return next(self.parameters()).device
 
     def _get_ot_loss(self) -> OT_Loss:
-        """Return OT_Loss, creating it on first call with the current
-        device."""
+        """Return optimal transport loss, creating it on first call with the
+        current device."""
         if self._ot_loss is None:
             self._ot_loss = OT_Loss(
                 self.norm_cood,
@@ -246,7 +224,11 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         return score_map, normed
 
     def _count_areas(self, image_shapes: list[tuple[int, int]]) -> torch.Tensor:
-        """Return per-image areas in input-pixel space."""
+        """Return per-image areas for a batch, in input-pixel space.
+
+        Used to convert between density and absolute count for the CLS
+        branch.
+        """
         return torch.tensor(
             [image_h * image_w for image_h, image_w in image_shapes],
             dtype=torch.float32,
@@ -297,14 +279,11 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
     ) -> torch.Tensor:
         """Convert CLS-head outputs into absolute counts.
 
-        In ``absolute`` mode, the head predicts counts directly. In ``density``
-        mode, the head predicts count density and is converted to absolute count
-        using each image's true area.
+        The head predicts count density and is converted to absolute
+        count using each image's true area.
         """
-        absolute_count = cls_output.reshape(len(image_shapes))
-        if self.count_prediction_mode == "density":
-            absolute_count = absolute_count * self._count_areas(image_shapes)
-        return absolute_count
+
+        return cls_output.reshape(len(image_shapes)) * self._count_areas(image_shapes)
 
     def _scale_points_to_output(
         self,
@@ -328,8 +307,9 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
                 scaled_points.append(p.to(dtype=torch.float32) * scale)
         return scaled_points
 
-    def _coerce_points(self, targets: list) -> list[torch.Tensor]:
-        """Normalize training targets to a list of point tensors."""
+    # TODO Is this correct, and even needed? Points are already tensors.
+    def _cast_points(self, targets: list) -> list[torch.Tensor]:
+        """Cast training targets to a list of point tensors."""
         points = []
         for target in targets:
             if isinstance(target, dict):
@@ -359,7 +339,7 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         cls = [feats[i].mean(dim=[2, 3]) for i in range(1, 4)]
         return feats, cls
 
-    def gen_discrete_map(
+    def gen_discrete_density_map(
         self, im_height: int, im_width: int, points: np.ndarray
     ) -> np.ndarray:
         """Generate a discrete density map for a single image.
@@ -385,13 +365,7 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         assert discrete_map.sum() == num_gt
         return discrete_map
 
-    def _make_gt_density(
-        self,
-        points: list,
-        out_h: int,
-        out_w: int,
-        uncertainty: torch.Tensor | None = None,
-    ) -> torch.Tensor:
+    def _make_gt_density(self, points: list, out_h: int, out_w: int) -> torch.Tensor:
         """Build a batched Gaussian density map (B, 1, out_h, out_w) from point
         lists.
 
@@ -399,36 +373,15 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         applied with sigma rescaled from full-image pixels into output-
         map pixels, then count-normalized so each map sums to the number
         of ground-truth points.
-
-        When ``uncertainty`` (B, 1, out_h, out_w) is provided, each object's
-        Gaussian is drawn with ``sigma + uncertainty[b, 0, y, x]``, following
-        the spatial-uncertainty modulation in Gominsky et al.
         """
-        # sigma is applied directly in output-map space (matching the reference
-        # which uses sigma=5.0 on the 64x64 output map, not image-space pixels).
         sigma = self.density_sigma
         maps = []
-        for b_idx, p in enumerate(points):
+        for _idx, p in enumerate(points):
             p_np = p.cpu().numpy()
-            discrete = self.gen_discrete_map(out_h, out_w, p_np)
+            discrete = self.gen_discrete_density_map(out_h, out_w, p_np)
             if discrete.sum() > 0:
-                if uncertainty is not None:
-                    unc_np = uncertainty[b_idx, 0].detach().cpu().numpy()
-                    smoothed = np.zeros((out_h, out_w), dtype=np.float32)
-                    p_int = p_np.round().astype(int)
-                    p_int[:, 0] = np.clip(p_int[:, 0], 0, out_w - 1)
-                    p_int[:, 1] = np.clip(p_int[:, 1], 0, out_h - 1)
-                    for pt in p_int:
-                        local_sigma = sigma + float(unc_np[pt[1], pt[0]])
-                        delta = np.zeros((out_h, out_w), dtype=np.float32)
-                        delta[pt[1], pt[0]] = 1.0
-                        smoothed += gaussian_filter(delta, sigma=max(local_sigma, 0.5))
-                    smoothed *= discrete.sum() / (smoothed.sum() + 1e-6)
-                else:
-                    smoothed = gaussian_filter(discrete, sigma=sigma)
-                    smoothed = smoothed * (
-                        discrete.sum() / smoothed.sum()
-                    )  # count-normalize
+                smoothed = gaussian_filter(discrete, sigma=sigma)
+                smoothed = smoothed * (discrete.sum() / smoothed.sum())  # count-normalize
             else:
                 smoothed = discrete
             maps.append(smoothed)
@@ -442,9 +395,25 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         targets: list,
         image_shapes: list[tuple[int, int]],
         gt_discrete: torch.Tensor | None = None,
-        uncertainty: torch.Tensor | None = None,
     ) -> dict:
-        """Compute supervised losses.
+        """Compute supervised losses. Individual losses can be disabled via the
+        ``losses`` constructor argument, but the default is to compute all.
+
+        The loss function for treeformer/DM-Count follows two pathways. Some losses
+        aim to train the spatial structure of the density map (optimal transport and L1).
+        Others train the total count for the image (MAE count loss on the density map sum,
+        and optionally an auxiliary CLS count head). We actually train to predict the
+        count density (count / area) which allows for more sensible prediction on images
+        with different areas so counts are scaled by the input image shape (in pixels).
+
+        The L1 loss here is referred to as total variation (TV) loss in the DM-Count paper,
+        but it's really just pixel-wise L1 between the predicted and GT density maps and
+        the implementation here follows the original codebase.
+
+        OT loss is computed using the optimal transport implementation in losses/ot_loss.py, which
+        is a PyTorch implementation of the Sinkhorn algorithm. The OT loss encourages the predicted
+        density map to have its mass distributed similarly to the GT points, without enforcing
+        exact pixel-wise matches. The effect is to "tighten" predictions around GT points.
 
         Args:
             density_maps:   [y0, y1, y2] multi-scale outputs from Regression head
@@ -460,7 +429,7 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         """
         density_map = density_maps[0]  # primary output, (B, 1, H', W')
         B, _, H, W = density_map.shape
-        points = self._coerce_points(targets)
+        points = self._cast_points(targets)
         output_shapes = self._output_shapes(image_shapes)
         areas = self._count_areas(image_shapes)
 
@@ -481,21 +450,9 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         # (divide by area) to avoid area-amplified gradients on the CLS head.
         if "count" in active:
             pred_sum = density_map.view(B, -1).sum(1)
-            if self.count_prediction_mode == "density" and not self.log_count_loss:
-                pred_count = pred_sum / areas
-                gt_count = point_counts / areas
-            else:
-                pred_count = pred_sum
-                gt_count = point_counts
-            if self.log_count_loss:
-                count_loss = (
-                    self.cls_l1(
-                        torch.log1p(pred_count.clamp(min=0)), torch.log1p(gt_count)
-                    )
-                    * self.mae_weight
-                )
-            else:
-                count_loss = self.cls_l1(pred_count, gt_count) * self.mae_weight
+            pred_count = pred_sum
+            gt_count = point_counts
+            count_loss = self.cls_l1(pred_count, gt_count) * self.mae_weight
         else:
             count_loss = zero
 
@@ -543,42 +500,11 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
             if self.count_prediction_mode == "density":
                 # Raw CLS predicts count density; GT must match.
                 gt_counts = gt_counts / areas.unsqueeze(0)
-            if self.log_count_loss:
-                count_cls_loss = (
-                    self.cls_l1(
-                        torch.log1p(cls_preds.clamp(min=0)), torch.log1p(gt_counts)
-                    )
-                    * self.count_cls_weight
-                )
-            else:
-                count_cls_loss = self.cls_l1(cls_preds, gt_counts) * self.count_cls_weight
+            count_cls_loss = self.cls_l1(cls_preds, gt_counts) * self.count_cls_weight
         else:
             count_cls_loss = zero
 
-        # ---- Uncertainty MSE + regularisation (Gominsky et al., arXiv 2508.21437) ----------
-        if uncertainty is not None and "uncertainty_mse" in active:
-            gt_uncertainty = self._make_gt_density(
-                scaled_points, H, W, uncertainty=uncertainty
-            )
-            uncertainty_mse_loss = (
-                F.mse_loss(density_map, gt_uncertainty) * self.uncertainty_mse_weight
-            )
-        else:
-            uncertainty_mse_loss = zero
-
-        if uncertainty is not None and "uncertainty_reg" in active:
-            uncertainty_reg_loss = uncertainty.pow(2).mean() * self.uncertainty_delta
-        else:
-            uncertainty_reg_loss = zero
-
-        total = (
-            count_loss
-            + ot_loss
-            + density_l1_loss
-            + count_cls_loss
-            + uncertainty_mse_loss
-            + uncertainty_reg_loss
-        )
+        total = count_loss + ot_loss + density_l1_loss + count_cls_loss
         result = {
             "loss": total,
             "count_loss": count_loss,
@@ -588,9 +514,7 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
             "density_l1_loss": density_l1_loss,
             "count_cls_loss": count_cls_loss,
         }
-        if uncertainty is not None:
-            result["uncertainty_mse_loss"] = uncertainty_mse_loss
-            result["uncertainty_reg_loss"] = uncertainty_reg_loss
+
         return result
 
     def forward(
@@ -647,11 +571,7 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
                 out_L[0] * output_mask,
                 primary_counts,
             )
-            uncertainty = (
-                F.softplus(self.uncertainty_head(label_feats[0])) * output_mask
-                if self.use_uncertainty_head
-                else None
-            )
+
             return self.compute_loss(
                 [density_map] + out_L[1:],
                 label_normed,
@@ -659,7 +579,6 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
                 targets,
                 image_shapes=shapes,
                 gt_discrete=gt_discrete,
-                uncertainty=uncertainty,
             )
 
         # Eval: crop each output back to its original spatial extent.
@@ -679,7 +598,6 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
 class Model(BaseModel):
     """DeepForest model wrapper for TreeFormer.
 
-    Follows the same pattern as retinanet.Model and DeformableDetr.Model.
     Selected via ``config.architecture = "treeformer"``.
     """
 
@@ -723,11 +641,6 @@ class Model(BaseModel):
                 losses=list(cfg.losses) if cfg.losses is not None else None,
                 norm_cood=cfg.norm_cood,
                 enforce_count=cfg.enforce_count,
-                log_count_loss=cfg.log_count_loss,
-                count_prediction_mode=cfg.count_prediction_mode,
-                use_uncertainty_head=cfg.use_uncertainty_head,
-                uncertainty_delta=cfg.uncertainty_delta,
-                uncertainty_mse_weight=cfg.uncertainty_mse_weight,
                 **hf_args,
             )
 

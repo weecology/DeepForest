@@ -2,7 +2,8 @@
 
 Based on ot.bregman.sinkhorn from the Python Optimal Transport library
 (https://pythonot.github.io), rewritten in Pytorch and taken from the
-TreeFormer repository:
+TreeFormer repository. Some small changes have been made to the original
+code for stability and logging.
 
 Reference: M. Cuturi, "Sinkhorn Distances: Lightspeed Computation of Optimal
 Transport", NeurIPS 2013.
@@ -129,7 +130,8 @@ class OT_Loss(Module):
             torch.arange(output_h, dtype=torch.float32, device=self.device) + 0.5
         ).unsqueeze(0)
 
-        # Optionally normalize coordinates to [-1, 1]
+        # Optionally normalize coordinates to [-1, 1]. We generally
+        # recommend this.
         if self.norm_coord:
             x_cood = x_cood / output_w * 2 - 1
             y_cood = y_cood / output_h * 2 - 1
