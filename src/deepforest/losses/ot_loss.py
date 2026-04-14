@@ -180,7 +180,9 @@ class OT_Loss(Module):
 
                 log = cast(dict[str, torch.Tensor], log)
                 total_its += log["its"]
-                beta = log["beta"]  # size is the same as source_prob: [#cood * #cood]
+                # Clamp beta (dual variable = reg * log(v + eps)) to prevent
+                # Sinkhorn divergence from producing inf/nan in the OT loss.
+                beta = log["beta"].clamp(min=-1e4, max=1e4)  # [#cood * #cood]
                 ot_obj_values = ot_obj_values + torch.sum(
                     normed_density[idx] * beta.view([1, output_h, output_w])
                 )

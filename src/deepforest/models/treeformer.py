@@ -476,7 +476,9 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
                 gt_count = point_counts
             if self.log_count_loss:
                 count_loss = (
-                    self.cls_l1(torch.log1p(pred_count), torch.log1p(gt_count))
+                    self.cls_l1(
+                        torch.log1p(pred_count.clamp(min=0)), torch.log1p(gt_count)
+                    )
                     * self.mae_weight
                 )
             else:
