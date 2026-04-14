@@ -30,29 +30,11 @@ def _find_last_checkpoint(log_root: Path, experiment_name: str) -> str:
     return candidates[-1]
 
 
-def _resolve_comet_key(
-    experiment_name: str,
-    workspace: str | None = None,
-    project: str | None = None,
-) -> str | None:
-    """Look up a Comet experiment key by name.
-
-    Returns the key if exactly one match is found, None if no match, or
-    raises ValueError if multiple experiments share the same name.
-    """
-    from comet_ml.api import API as CometAPI
-
-    workspace = workspace or os.environ.get("COMET_WORKSPACE")
-    project = project or os.environ.get("COMET_PROJECT", "DeepForest")
-    experiments = CometAPI().get_experiments(workspace, project)
-    matches = [e for e in experiments if e.name == experiment_name]
-    if len(matches) == 1:
-        return matches[0].id
-    if len(matches) > 1:
-        raise ValueError(
-            f"Multiple Comet experiments named '{experiment_name}' in "
-            f"{workspace}/{project}. Rename the experiment or delete duplicates."
-        )
+def _load_comet_key(log_root: Path, experiment_name: str) -> str | None:
+    """Return a previously saved Comet experiment key, or None."""
+    key_file = log_root / experiment_name / "comet_key.txt"
+    if key_file.exists():
+        return key_file.read_text().strip()
     return None
 
 
@@ -136,7 +118,13 @@ def train(
 
             resume_comet_key = None
             if resume is not None and experiment_name is not None:
-                resume_comet_key = _resolve_comet_key(experiment_name)
+                resume_comet_key = _load_comet_key(log_root, experiment_name)
+                if resume_comet_key is None:
+                    warnings.warn(
+                        f"Could not find Comet experiment key for '{experiment_name}'. "
+                        "A new experiment will be created.",
+                        stacklevel=2,
+                    )
 
             comet_logger = CometLogger(
                 api_key=os.environ.get("COMET_API_KEY"),
@@ -150,7 +138,10 @@ def train(
             # Always fetch experiment name and key from API
             experiment_id = comet_logger.experiment.get_key()
             experiment_name = comet_logger.experiment.get_name()
-            version = ""
+            # Save key so future resumes don't need an API search
+            key_file = log_root / experiment_name / "comet_key.txt"
+            key_file.parent.mkdir(parents=True, exist_ok=True)
+            key_file.write_text(experiment_id)
             if tags:
                 comet_logger.experiment.add_tags(tags)
             loggers.append(comet_logger)
