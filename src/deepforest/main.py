@@ -112,7 +112,6 @@ class deepforest(pl.LightningModule):
             self.mae_metric = torchmetrics.MeanAbsoluteError()
             self.rmse_metric = torchmetrics.MeanSquaredError(squared=False)
             self.r2_metric = torchmetrics.R2Score()
-            self.spatial_corr_metric = torchmetrics.PearsonCorrCoef()
             self.cardinality_metric = torchmetrics.MeanAbsoluteError()
             self.precision_recall_metric = RecallPrecision(
                 task="point",
@@ -826,43 +825,17 @@ class deepforest(pl.LightningModule):
                 for name, s in zip(image_names, pred_counts.tolist(), strict=False):
                     self.density_sum_by_image[name] = s
 
-                # Pearson correlation between normalized density maps — pure spatial
-                # alignment independent of count magnitude.
-                dm_list = (
-                    density_map
-                    if isinstance(density_map, list)
-                    else [density_map[i : i + 1] for i in range(density_map.shape[0])]
-                )
-                for i, dm_i in enumerate(dm_list):
-                    _, _, H_i, W_i = dm_i.shape
-                    image_h_i = images[i].shape[-2]
-                    image_w_i = images[i].shape[-1]
-                    image_shapes_i = [(image_h_i, image_w_i)]
-                    output_shapes_i = [(H_i, W_i)]
-                    scaled_pts_i = self.model._scale_points_to_output(
-                        [targets[i]["points"]],
-                        image_shapes=image_shapes_i,
-                        output_shapes=output_shapes_i,
-                    )
-                    gt_i = self.model._make_gt_density(scaled_pts_i, H_i, W_i).squeeze()
-                    pred_i = dm_i.squeeze()
-                    # PearsonCorrCoef returns NaN when either input has
-                    # near-zero variance (empty GT, single peak, or flat
-                    # prediction early in training). Guard on both.
-                    if gt_i.sum() > 0:
-                        gt_norm = gt_i / gt_i.sum()
-                        pred_norm = pred_i / (pred_i.sum() + 1e-6)
-                        gt_flat = gt_norm.flatten()
-                        pred_flat = pred_norm.flatten()
-                        if gt_flat.var() > 1e-8 and pred_flat.var() > 1e-8:
-                            self.spatial_corr_metric.update(pred_flat, gt_flat)
-
                 preds_pts = utilities.density_to_points(
                     density_map,
                     score_thresh=self.config.score_thresh,
                     score_integration_radius=self.config.keypoint.score_integration_radius,
                 )
                 # Scale predicted points from density-map space back to image space.
+                dm_list = (
+                    density_map
+                    if isinstance(density_map, list)
+                    else [density_map[i : i + 1] for i in range(density_map.shape[0])]
+                )
                 for i, pred in enumerate(preds_pts):
                     if len(pred["points"]) > 0:
                         h_img, w_img = images[i].shape[-2:]
@@ -880,16 +853,12 @@ class deepforest(pl.LightningModule):
                 )
                 self.cardinality_metric.update(peak_counts, true_counts)
 
+                # TODO: make this model responsibility
                 # Collect density map samples for callback visualization.
                 # Build gt density per-image because images may have different
                 # spatial sizes.
                 n_needed = 4 - len(self.density_samples)
                 if n_needed > 0:
-                    dm_list = (
-                        density_map
-                        if isinstance(density_map, list)
-                        else [density_map[i : i + 1] for i in range(density_map.shape[0])]
-                    )
                     for i in range(min(len(dm_list), n_needed)):
                         dm_i = dm_list[i]  # (1, 1, H_i, W_i)
                         _, _, H_i, W_i = dm_i.shape

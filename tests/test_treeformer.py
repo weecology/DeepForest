@@ -580,7 +580,9 @@ def test_ot_loss_all_empty_points_has_grad():
     normed = unnormed / (unnormed.sum(dim=(2, 3), keepdim=True) + 1e-8)
     empty_points = [torch.zeros(0, 2), torch.zeros(0, 2)]
 
-    loss, wd, ot_obj, avg_its = loss_fn(normed, unnormed, empty_points)
+    loss, wd, ot_obj, avg_its, K_min, beta_abs_max, sinkhorn_err = loss_fn(
+        normed, unnormed, empty_points
+    )
 
     assert loss.requires_grad, (
         "loss must require grad when all point lists are empty"
@@ -688,7 +690,9 @@ def test_ot_loss_converges_within_budget_with_norm_coord():
     points = [torch.rand(n_gt, 2) * torch.tensor([float(output_w), float(output_h)])]
 
     loss_fn = OT_Loss(norm_coord=True, device=device, num_of_iter_in_ot=maxIter, reg=1.0)
-    ot_loss, _, _, avg_its = loss_fn(normed, unnormed, points)
+    ot_loss, _, _, avg_its, K_min, beta_abs_max, sinkhorn_err = loss_fn(
+        normed, unnormed, points
+    )
 
     # Should converge well before the cap.
     assert avg_its < maxIter, (
@@ -736,7 +740,7 @@ def test_ot_loss_converges_within_budget_with_run019_params():
     points = [torch.rand(n_gt, 2) * torch.tensor([float(output_w), float(output_h)])]
 
     loss_fn = OT_Loss(norm_coord=False, device=device, num_of_iter_in_ot=maxIter, reg=1.0)
-    _, _, _, avg_its = loss_fn(normed, unnormed, points)
+    _, _, _, avg_its, _, _, _ = loss_fn(normed, unnormed, points)
 
     assert avg_its < maxIter, (
         f"Sinkhorn should converge within {maxIter} iterations, got {avg_its:.1f} "

@@ -93,6 +93,10 @@ def sinkhorn_knopp(
         log_dict["alpha"] = reg * torch.log(u + M_EPS)
         log_dict["beta"] = reg * torch.log(v + M_EPS)
         log_dict["its"] = it
+        log_dict["K_min"] = K.min().item()
+        # Final marginal error (recompute if not already stored from last eval).
+        b_hat = torch.mv(K.t(), u) * v
+        log_dict["sinkhorn_err"] = (b - b_hat).pow(2).sum().item()
 
     P = u.unsqueeze(1) * K * v.unsqueeze(0)
     return (P, log_dict) if log else P
@@ -141,6 +145,9 @@ class OT_Loss(Module):
         wd = 0  # Wasserstein distance
         n_active = 0  # Total number of points over all images
         total_its = 0  # Accumulated Sinkhorn iterations
+        total_K_min = 0.0  # Accumulated K_min for diagnostics
+        total_beta_abs_max = 0.0  # Accumulated max |beta| for divergence canary
+        total_sinkhorn_err = 0.0  # Accumulated final marginal error
 
         for idx, im_points in enumerate(points):
             if len(im_points) > 0:
@@ -181,8 +188,11 @@ class OT_Loss(Module):
 
                 log = cast(dict[str, torch.Tensor], log)
                 total_its += log["its"]
+                total_K_min += log["K_min"]
+                total_sinkhorn_err += log["sinkhorn_err"]
                 # beta (dual variable = reg * log(v + eps))
                 beta = log["beta"]  # [#cood * #cood]
+                total_beta_abs_max = max(total_beta_abs_max, beta.abs().max().item())
                 ot_obj_values = ot_obj_values + torch.sum(
                     normed_density[idx] * beta.view([1, output_h, output_w])
                 )
@@ -211,4 +221,15 @@ class OT_Loss(Module):
             loss = 0.0 * unnormed_density.sum()
 
         avg_its = total_its / n_active if n_active > 0 else 0
-        return loss, wd, ot_obj_values, avg_its
+        avg_K_min = total_K_min / n_active if n_active > 0 else 0.0
+        avg_beta_abs_max = total_beta_abs_max / n_active if n_active > 0 else 0.0
+        avg_sinkhorn_err = total_sinkhorn_err / n_active if n_active > 0 else 0.0
+        return (
+            loss,
+            wd,
+            ot_obj_values,
+            avg_its,
+            avg_K_min,
+            avg_beta_abs_max,
+            avg_sinkhorn_err,
+        )

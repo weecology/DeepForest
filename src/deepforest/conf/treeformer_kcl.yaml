@@ -3,7 +3,7 @@
 # Supervised-only baseline similar to the original TreeFormer paper:
 #   epochs=500, batch=16, lr=1e-4, weight_decay=1e-5, Adam (we use AdamW)
 #   loss weights: count=1.0, OT=0.1, TV/density_l1=0.01
-#   norm_cood=false
+#   norm_cood=false (we now use norm_cood=true as the default)
 # We train at 512x512 crop and evaluate on the full val image in one go.
 #
 # Compare to TreeFormer-S (supervised baseline) in Table 1:
@@ -32,4 +32,4 @@ validation:
     distance_threshold: 5.0
 
 keypoint:
-    norm_cood: false
+    norm_cood: true
