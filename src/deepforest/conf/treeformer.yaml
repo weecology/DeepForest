@@ -72,7 +72,7 @@ keypoint:
     num_of_iter_in_ot: 100
     score_integration_radius: 2
     losses: [count, count_cls, ot, density_l1]
-    norm_cood: false
+    norm_cood: true
     enforce_count: true
     count_prediction_mode: "density"
     log_count_loss: false

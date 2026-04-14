@@ -81,6 +81,19 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
             gradient_checkpointing_kwargs={"use_reentrant": False}
         )
 
+        # Make grads contiguous before DDP aggregation to avoid a
+        # "Grad strides do not match bucket view strides" warning.
+        # Also suppress the AccumulateGrad stream warning that
+        # arises from gradient-checkpointing + DDP.
+        torch.autograd.graph.set_warn_on_accumulate_grad_stream_mismatch(False)
+        for module in self.backbone.modules():
+            if (
+                isinstance(module, nn.Conv2d)
+                and module.groups > 1
+                and module.groups == module.in_channels
+            ):
+                module.weight.register_hook(lambda grad: grad.contiguous())
+
         variant = backbone.split("/")[-1]
         src = self.HIDDEN_SIZES.get(variant, None)
         if src is None:

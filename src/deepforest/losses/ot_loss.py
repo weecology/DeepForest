@@ -64,8 +64,7 @@ def sinkhorn_knopp(
         u = torch.ones(na, dtype=a.dtype, device=device) / na
         v = torch.ones(nb, dtype=b.dtype, device=device) / nb
 
-    # Clamp exponent to float32 safe range before exp to prevent underflow.
-    K = torch.exp(torch.clamp(C / -reg, min=-80.0))
+    K = torch.exp(C / -reg)
 
     it = 1
     err = 1.0
@@ -180,9 +179,8 @@ class OT_Loss(Module):
 
                 log = cast(dict[str, torch.Tensor], log)
                 total_its += log["its"]
-                # Clamp beta (dual variable = reg * log(v + eps)) to prevent
-                # Sinkhorn divergence from producing inf/nan in the OT loss.
-                beta = log["beta"].clamp(min=-1e4, max=1e4)  # [#cood * #cood]
+                # beta (dual variable = reg * log(v + eps))
+                beta = log["beta"]  # [#cood * #cood]
                 ot_obj_values = ot_obj_values + torch.sum(
                     normed_density[idx] * beta.view([1, output_h, output_w])
                 )
