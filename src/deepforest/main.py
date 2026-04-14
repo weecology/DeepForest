@@ -885,9 +885,33 @@ class deepforest(pl.LightningModule):
         return results
 
     def configure_optimizers(self):
-        optimizer = optim.SGD(
-            self.model.parameters(), lr=self.config.train.lr, momentum=0.9
-        )
+        opt_cfg = self.config.train.optimizer
+        lr = self.config.train.lr
+        if opt_cfg.type == "Adam":
+            optimizer = optim.Adam(
+                self.model.parameters(),
+                lr=lr,
+                betas=tuple(opt_cfg.betas),
+                weight_decay=opt_cfg.weight_decay,
+            )
+        elif opt_cfg.type == "AdamW":
+            optimizer = optim.AdamW(
+                self.model.parameters(),
+                lr=lr,
+                betas=tuple(opt_cfg.betas),
+                weight_decay=opt_cfg.weight_decay,
+            )
+        elif opt_cfg.type == "SGD":
+            optimizer = optim.SGD(
+                self.model.parameters(),
+                lr=lr,
+                momentum=opt_cfg.momentum,
+                weight_decay=opt_cfg.weight_decay,
+            )
+        else:
+            raise ValueError(
+                f"Unknown optimizer type '{opt_cfg.type}'. Choose from: SGD, Adam, AdamW."
+            )
 
         scheduler_config = self.config.train.scheduler
         scheduler_type = scheduler_config.type
@@ -897,7 +921,12 @@ class deepforest(pl.LightningModule):
         def lr_lambda(epoch):
             return eval(params.lr_lambda)
 
-        if scheduler_type == "cosine":
+        if scheduler_type is None or scheduler_type == "constantLR":
+            scheduler = torch.optim.lr_scheduler.ConstantLR(
+                optimizer, factor=1.0, total_iters=0
+            )
+
+        elif scheduler_type == "cosine":
             scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
                 optimizer, T_max=params.T_max, eta_min=params.eta_min
             )
@@ -925,7 +954,7 @@ class deepforest(pl.LightningModule):
                 optimizer, gamma=params.gamma
             )
 
-        else:
+        elif scheduler_type in ("ReduceLROnPlateau", "reduceLROnPlateau"):
             scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
                 optimizer,
                 mode=params["mode"],
@@ -936,6 +965,13 @@ class deepforest(pl.LightningModule):
                 cooldown=params["cooldown"],
                 min_lr=params["min_lr"],
                 eps=params["eps"],
+            )
+
+        else:
+            raise ValueError(
+                f"Unknown scheduler type '{scheduler_type}'. Choose from: "
+                "constantLR, cosine, lambdaLR, multiplicativeLR, stepLR, multistepLR, "
+                "exponentialLR, ReduceLROnPlateau."
             )
 
         # Monitor learning rate if val data is used
