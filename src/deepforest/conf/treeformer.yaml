@@ -8,9 +8,10 @@ architecture: treeformer
 
 label_dict:
     Tree: 0
+
 num_classes: 1
 batch_size: 32
-workers: 8
+workers: 0
 accelerator: auto
 precision: 16-mixed
 matmul_precision: high
@@ -53,7 +54,6 @@ train:
           ratio: [1.0, 1.0]
           p: 0.5
 
-# Peak must be >= 30% of max density to count as a predicted tree.
 score_thresh: 0.15
 
 validation:
@@ -74,8 +74,4 @@ keypoint:
     losses: [count, count_cls, ot, density_l1]
     norm_cood: true
     enforce_count: true
-    count_prediction_mode: "density"
     log_count_loss: false
-    use_uncertainty_head: false
-    uncertainty_delta: 0.2
-    uncertainty_mse_weight: 1.0

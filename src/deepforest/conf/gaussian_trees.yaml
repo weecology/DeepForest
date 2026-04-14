@@ -1,9 +1,0 @@
-defaults:
-  - treeformer
-  - _self_
-
-keypoint:
-  use_uncertainty_head: true
-  uncertainty_delta: 0.2
-  uncertainty_mse_weight: 1.0
-  losses: [count, ot, count_cls, uncertainty_mse, uncertainty_reg]

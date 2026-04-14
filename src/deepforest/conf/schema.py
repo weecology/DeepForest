@@ -156,13 +156,9 @@ class KeypointConfig:
     num_of_iter_in_ot: int = 100
     score_integration_radius: int = 5
     losses: list[str] | None = None
-    norm_cood: bool = False
+    norm_cood: bool = True
     enforce_count: bool = True
     log_count_loss: bool = False
-    count_prediction_mode: str = "absolute"
-    use_uncertainty_head: bool = False
-    uncertainty_delta: float = 0.2
-    uncertainty_mse_weight: float = 1.0
 
 
 @dataclass

@@ -1,6 +1,10 @@
 defaults:
-  - treeformer_hpg
   - _self_
+
+# This config has been tested with B200 GPUs. Set cluster CPU RAM to around 32 GB per CPU.
+batch_size: 32
+workers: 8
+accelerator: auto
 
 train:
     csv_file: /blue/ewhite/veitchmichaelisj/deeplidar/output/folds/all_annotations_train_fold_0.csv

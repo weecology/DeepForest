@@ -1,10 +1,10 @@
 # London dataset training config for TreeFormer replication.
 #
-# Supervised-only baseline matching the original TreeFormer paper:
+# Supervised-only baseline similar to the original TreeFormer paper:
 #   epochs=500, batch=16, lr=1e-4, weight_decay=1e-5, Adam (we use AdamW)
 #   loss weights: count=1.0, OT=0.1, TV/density_l1=0.01
-#   norm_cood=false, full 1024x1024 images (no crop)
-#   GSD=0.2m (2x coarser than NEON 0.1m)
+#   norm_cood=false
+# We train at 512x512 crop and evaluate on the full val image in one go.
 #
 # Compare to TreeFormer-S (supervised baseline) in Table 1:
 #   MAE=18.52, MSE=24.32, R2=0.72
@@ -27,8 +27,9 @@ train:
 validation:
     csv_file: /home/veitchmichaelisj/code/DeepForest_jvm/data/kcl/london_test.csv
     root_dir: /home/veitchmichaelisj/code/DeepForest_jvm/data/kcl/test_data/images
-    # Validation on full 1024x1024 images is slow; run infrequently.
-    # Final evaluation should use scratch/treeformer/test.py (crop-and-stitch) for paper numbers.
     val_accuracy_interval: 5
-    # 5px at 0.2m GSD = 1m physical matching distance (same as 10px at NEON 0.1m GSD)
+    # 5px at 0.2m GSD = 1m physical matching distance
     distance_threshold: 5.0
+
+keypoint:
+    norm_cood: false
