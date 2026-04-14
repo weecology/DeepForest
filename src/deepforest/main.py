@@ -756,11 +756,20 @@ class deepforest(pl.LightningModule):
             # Return zero loss to skip weight update while keeping DDP in sync.
             import warnings
 
+            non_finite = {
+                k: v.item()
+                for k, v in loss_dict.items()
+                if torch.is_tensor(v) and not torch.isfinite(v)
+            }
             warnings.warn(
-                f"Non-finite loss detected: {total_loss.item()}. Skipping batch.",
+                f"Non-finite loss detected: {total_loss.item()}. "
+                f"Non-finite components: {non_finite}. Skipping batch.",
                 stacklevel=2,
             )
-            return 0.0 * sum(p.sum() for p in self.model.parameters())
+            trainable = [p for p in self.model.parameters() if p.requires_grad]
+            if trainable:
+                return 0.0 * sum(p.sum() for p in trainable)
+            return None
 
         # Log loss
         for key, value in loss_dict.items():
