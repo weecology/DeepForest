@@ -324,6 +324,7 @@ class deepforest(pl.LightningModule):
         transforms=None,
         augmentations=None,
         preload_images=False,
+        same_size_images=False,
         batch_size=1,
     ):
         """Create a dataset for inference or training. Csv file format is .csv
@@ -339,6 +340,7 @@ class deepforest(pl.LightningModule):
             batch_size: batch size
             preload_images: if True, preload the images into memory
             augmentations: augmentation configuration (str, list, or dict)
+            same_size_images: if True, skip per-image validation by assuming all images share the same dimensions
         Returns:
             ds: a pytorch dataset
         """
@@ -351,6 +353,7 @@ class deepforest(pl.LightningModule):
                 label_dict=self.label_dict,
                 augmentations=augmentations,
                 preload_images=preload_images,
+                same_size_images=same_size_images,
             )
         elif self.model.task == "keypoint":
             ds = training.KeypointDataset(
@@ -360,6 +363,7 @@ class deepforest(pl.LightningModule):
                 label_dict=self.label_dict,
                 augmentations=augmentations,
                 preload_images=preload_images,
+                same_size_images=same_size_images,
             )
         else:
             raise ValueError(
@@ -395,6 +399,7 @@ class deepforest(pl.LightningModule):
             root_dir=self.config.train.root_dir,
             augmentations=self.config.train.augmentations,
             preload_images=self.config.train.preload_images,
+            same_size_images=self.config.train.same_size_images,
             shuffle=True,
             transforms=self.transforms,
             batch_size=self.config.batch_size,
@@ -422,6 +427,7 @@ class deepforest(pl.LightningModule):
                 augmentations=self.config.validation.augmentations,
                 shuffle=False,
                 preload_images=self.config.validation.preload_images,
+                same_size_images=self.config.validation.same_size_images,
                 batch_size=self.config.batch_size,
             )
 

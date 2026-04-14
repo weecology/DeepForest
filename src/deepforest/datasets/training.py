@@ -31,6 +31,7 @@ class TrainingDataset(Dataset):
         augmentations=None,
         label_dict=None,
         preload_images=False,
+        same_size_images=False,
     ):
         """
         Args:
@@ -40,6 +41,8 @@ class TrainingDataset(Dataset):
             label_dict (dict[str, int]): Mapping from string labels in the CSV to integer class IDs (e.g., {"Tree": 0}).
             augmentations (str | list | dict, optional): Augmentation configuration.
             preload_images (bool): If True, preload all images into memory. Defaults to False.
+            same_size_images (bool): If True, skip per-image validation by assuming all images share
+                the same dimensions as the first image. Defaults to False.
         """
         self.annotations = utilities.read_file(csv_file, root_dir=root_dir)
         self.root_dir = root_dir
@@ -62,6 +65,7 @@ class TrainingDataset(Dataset):
 
         self.image_names = self.annotations.image_path.unique()
         self.preload_images = preload_images
+        self.same_size_images = same_size_images
 
         self._validate_labels()
         self._validate_coordinates()
@@ -139,17 +143,28 @@ class BoxDataset(TrainingDataset):
             ValueError: If any bounding box coordinate occurs outside the image
         """
         errors = []
-        for image_path, group in self.annotations.groupby("image_path"):
-            img_path = os.path.join(self.root_dir, image_path)
+
+        if self.same_size_images:
+            first_path = os.path.join(self.root_dir, self.image_names[0])
             try:
-                with Image.open(img_path) as img:
-                    width, height = img.size
+                with Image.open(first_path) as img:
+                    shared_size = img.size
             except Exception as e:
-                errors.append(f"Failed to open image {img_path}: {e}")
-                continue
+                raise ValueError(f"Failed to open image {first_path}: {e}") from e
+
+        for image_path, group in self.annotations.groupby("image_path"):
+            if self.same_size_images:
+                width, height = shared_size
+            else:
+                img_path = os.path.join(self.root_dir, image_path)
+                try:
+                    with Image.open(img_path) as img:
+                        width, height = img.size
+                except Exception as e:
+                    errors.append(f"Failed to open image {img_path}: {e}")
+                    continue
 
             for _idx, row in group.iterrows():
-                # Extract bounding box
                 geom = row["geometry"]
                 xmin, ymin, xmax, ymax = geom.bounds
 
@@ -159,7 +174,6 @@ class BoxDataset(TrainingDataset):
                 if xmin == 0 and ymin == 0 and xmax == 0 and ymax == 0:
                     continue
 
-                # Check if box is valid
                 oob_issues = []
                 if not geom.equals(shapely.envelope(geom)):
                     oob_issues.append(f"geom ({geom}) is not a valid bounding box")
@@ -299,6 +313,7 @@ class KeypointDataset(TrainingDataset):
         augmentations=None,
         label_dict=None,
         preload_images=False,
+        same_size_images=False,
         density_sigma=4.0,
         output="centroid",
     ):
@@ -321,6 +336,8 @@ class KeypointDataset(TrainingDataset):
             label_dict (dict[str, int]): Mapping from string labels in the CSV to integer class IDs (e.g., {"Tree": 0}).
             augmentations (str | list | dict, optional): Augmentation configuration.
             preload_images (bool): If True, preload all images into memory. Defaults to False.
+            same_size_images (bool): If True, skip per-image validation by assuming all images share
+                the same dimensions as the first image. Defaults to False.
             density_sigma (float): Standard deviation of the Gaussian kernel for density map generation. Defaults to 4.0.
             output (str): Output format, either "centroid" for point coordinates or "density" for Gaussian density maps. Defaults to "centroid".
         """
@@ -331,6 +348,7 @@ class KeypointDataset(TrainingDataset):
             augmentations=augmentations,
             label_dict=label_dict,
             preload_images=preload_images,
+            same_size_images=same_size_images,
         )
 
         self.density_sigma = density_sigma
@@ -348,38 +366,48 @@ class KeypointDataset(TrainingDataset):
             ValueError: If any point occurs outside the image
         """
         errors = []
-        for _idx, row in self.annotations.iterrows():
-            img_path = os.path.join(self.root_dir, row["image_path"])
+
+        if self.same_size_images:
+            first_path = os.path.join(self.root_dir, self.image_names[0])
             try:
-                with Image.open(img_path) as img:
-                    width, height = img.size
+                with Image.open(first_path) as img:
+                    shared_size = img.size
             except Exception as e:
-                errors.append(f"Failed to open image {img_path}: {e}")
-                continue
+                raise ValueError(f"Failed to open image {first_path}: {e}") from e
 
-            # Extract point coordinates (use centroid so boxes/polygons also work)
-            centroid = row["geometry"].centroid
-            x, y = centroid.x, centroid.y
+        for image_path, group in self.annotations.groupby("image_path"):
+            if self.same_size_images:
+                width, height = shared_size
+            else:
+                img_path = os.path.join(self.root_dir, image_path)
+                try:
+                    with Image.open(img_path) as img:
+                        width, height = img.size
+                except Exception as e:
+                    errors.append(f"Failed to open image {img_path}: {e}")
+                    continue
 
-            # All coordinates equal to zero is how we code empty frames.
-            if x == 0 and y == 0:
-                continue
+            for _idx, row in group.iterrows():
+                centroid = row["geometry"].centroid
+                x, y = centroid.x, centroid.y
 
-            # Check if point is valid
-            oob_issues = []
-            if x < 0:
-                oob_issues.append(f"x ({x}) < 0")
-            if x > width:
-                oob_issues.append(f"x ({x}) > image width ({width})")
-            if y < 0:
-                oob_issues.append(f"y ({y}) < 0")
-            if y > height:
-                oob_issues.append(f"y ({y}) > image height ({height})")
+                if x == 0 and y == 0:
+                    continue
 
-            if oob_issues:
-                errors.append(
-                    f"Point, ({x}, {y}) exceeds image dimensions, ({width}, {height}). Issues: {', '.join(oob_issues)}."
-                )
+                oob_issues = []
+                if x < 0:
+                    oob_issues.append(f"x ({x}) < 0")
+                if x > width:
+                    oob_issues.append(f"x ({x}) > image width ({width})")
+                if y < 0:
+                    oob_issues.append(f"y ({y}) < 0")
+                if y > height:
+                    oob_issues.append(f"y ({y}) > image height ({height})")
+
+                if oob_issues:
+                    errors.append(
+                        f"Point, ({x}, {y}) exceeds image dimensions, ({width}, {height}). Issues: {', '.join(oob_issues)}."
+                    )
 
         if errors:
             raise ValueError("\n".join(errors))

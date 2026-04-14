@@ -83,12 +83,15 @@ train:
     fast_dev_run: False
     # preload images to GPU memory for fast training. This depends on GPU size and number of images.
     preload_images: False
+    # Skip per-image dimension validation when all images share the same size.
+    same_size_images: False
 
 
 validation:
     csv_file:
     root_dir:
     preload_images: False
+    same_size_images: False
     size:
 
     # For retinanet you may prefer val_classification, but the default val_loss
