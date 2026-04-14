@@ -62,7 +62,6 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         losses: list | None = None,
         norm_cood: bool = False,
         enforce_count: bool = True,
-        count_prediction_mode: str = "absolute",
         **kwargs,
     ):
         """Initialize TreeFormerModel."""
@@ -277,13 +276,8 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         cls_output: torch.Tensor,
         image_shapes: list[tuple[int, int]],
     ) -> torch.Tensor:
-        """Convert CLS-head outputs into absolute counts.
-
-        The head predicts count density and is converted to absolute
-        count using each image's true area.
-        """
-
-        return cls_output.reshape(len(image_shapes)) * self._count_areas(image_shapes)
+        """Return CLS-head outputs as absolute counts."""
+        return cls_output.reshape(len(image_shapes))
 
     def _scale_points_to_output(
         self,
@@ -497,9 +491,8 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
                 [c.reshape(B) for c in cls_outputs]
             )  # raw CLS outputs, (3, B)
             gt_counts = point_counts.unsqueeze(0).expand(3, -1)  # (3, B)
-            if self.count_prediction_mode == "density":
-                # Raw CLS predicts count density; GT must match.
-                gt_counts = gt_counts / areas.unsqueeze(0)
+            # Raw CLS predicts count density; GT must match.
+            gt_counts = gt_counts / areas.unsqueeze(0)
             count_cls_loss = self.cls_l1(cls_preds, gt_counts) * self.count_cls_weight
         else:
             count_cls_loss = zero
