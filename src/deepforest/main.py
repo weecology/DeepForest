@@ -877,6 +877,7 @@ class deepforest(pl.LightningModule):
                                 "image": images[i].detach().cpu(),
                                 "pred_density": dm_i[0, 0].detach().cpu(),
                                 "gt_density": gt_density_i[0, 0].detach().cpu(),
+                                "gt_points": targets[i]["points"].detach().cpu(),
                                 "image_name": image_names[i],
                             }
                         )

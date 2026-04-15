@@ -239,6 +239,7 @@ class ImagesCallback(Callback):
                 .clip(0, 255)
                 .astype(np.uint8)
             )
+            gt_points = sample.get("gt_points")
 
             vmax = max(pred.max(), gt.max(), 1e-6)
 
@@ -250,6 +251,18 @@ class ImagesCallback(Callback):
             cax = fig.add_subplot(gs[3])
 
             ax0.imshow(img)
+            if gt_points is not None and len(gt_points) > 0:
+                ax0.scatter(
+                    gt_points[:, 0].numpy(),
+                    gt_points[:, 1].numpy(),
+                    s=10,
+                    c="lime",
+                    linewidths=0.5,
+                    edgecolors="black",
+                )
+            ax0.set_title(
+                f"RGB  (gt_count={len(gt_points) if gt_points is not None else 0})"
+            )
             ax0.axis("off")
 
             ax1.imshow(gt, cmap="hot", vmin=0, vmax=vmax)
