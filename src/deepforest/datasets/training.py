@@ -296,7 +296,7 @@ class BoxDataset(TrainingDataset):
         targets = self.annotations_for_path(self.image_names[idx])
 
         # If image has no annotations, add a dummy
-        if np.sum(targets["boxes"]) == 0:
+        if len(targets["boxes"]) == 0:
             boxes = np.zeros((0, 4), dtype=np.float32)
             labels = np.zeros(0, dtype=np.int64)
             targets = {"boxes": boxes, "labels": labels}
@@ -584,7 +584,7 @@ class KeypointDataset(TrainingDataset):
         targets = self.annotations_for_path(self.image_names[idx])
 
         # Dummy annotations for empty image
-        if np.sum(targets["points"]) == 0:
+        if len(targets["points"]) == 0:
             targets = {
                 "points": np.zeros((0, 2), dtype=np.float32),
                 "labels": np.zeros(0, dtype=np.int64),
