@@ -273,6 +273,19 @@ def test_treeformer_density_mode_masks_padded_regions_when_enforcing_count():
     assert density_map[0, :, :, 4:].abs().sum().item() == 0.0
 
 
+def test_treeformer_cls_bias_initializes_positive():
+    """The CLS head should retain its small positive density prior."""
+    model = TreeFormerModel(
+        backbone=_BACKBONE,
+        pretrained=False,
+    )
+
+    torch.testing.assert_close(
+        model.regression.cls_lin4.bias.detach(),
+        torch.full_like(model.regression.cls_lin4.bias, 1e-4),
+    )
+
+
 # ---------------------------------------------------------------------------
 # Training mode — various batch sizes
 # ---------------------------------------------------------------------------
@@ -493,8 +506,8 @@ def _make_density_model_negative_cls(losses):
     """Create a density-mode model with the CLS head biased strongly negative.
 
     Forces raw_cls < 0 by setting cls_lin4 bias to a large negative value,
-    which causes clamp(min=0) in _normalize_density to zero out density_map
-    and block all count-loss gradients to the CLS head.
+    which causes clamp(min=1e-4) in _normalize_density to pin density_map to
+    its floor value and block count-loss gradients to the CLS head.
     """
     m = TreeFormerModel(
         backbone=_BACKBONE,
@@ -514,11 +527,10 @@ def _make_density_model_negative_cls(losses):
 def test_density_mode_negative_cls_count_loss_gradient_blocked():
     """RED: count loss gives zero gradient to cls_lin4 when raw_cls < 0.
 
-    With enforce_count=True and count_prediction_mode='density', density_map =
-    normed * clamp(raw_cls * area, 0).  When raw_cls < 0 the clamp zeros
-    density_map, so pred_sum = 0 and the gradient from count_loss through
-    the clamp is zero.  Without count_cls in the losses there is no other
-    unblocked gradient path to cls_lin4.
+    With enforce_count=True, density_map = normed * clamp(raw_cls * area,
+    1e-4). When raw_cls < 0 the clamp pins density_map to the floor, so the
+    gradient from count_loss through the clamp is zero. Without count_cls in
+    the losses there is no other unblocked gradient path to cls_lin4.
     """
     torch.manual_seed(0)
     images = [torch.rand(3, 64, 64)]

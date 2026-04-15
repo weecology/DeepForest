@@ -218,6 +218,9 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         score_sum = score_map.view(B, -1).sum(1).view(B, 1, 1, 1)
         normed = score_map / (score_sum + 1e-4)
         if self.enforce_count:
+            # Keep the count path sign-sensitive. A small positive CLS-head bias
+            # seeds the model on the correct side of zero, while the floor avoids
+            # a zero-mass density map if the raw count briefly crosses zero.
             count = cls_count.view(B, 1, 1, 1).clamp(min=1e-4)
             return normed * count, normed
         return score_map, normed
@@ -276,8 +279,15 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         cls_output: torch.Tensor,
         image_shapes: list[tuple[int, int]],
     ) -> torch.Tensor:
-        """Return CLS-head outputs as absolute counts."""
-        return cls_output.reshape(len(image_shapes))
+        """Return CLS-head outputs as absolute counts.
+
+        The CLS head is trained to predict count density (count / area),
+        so we multiply by each image's pixel area to recover the
+        absolute count. This makes the head transfer across variable
+        image sizes.
+        """
+        count_density = cls_output.reshape(len(image_shapes))
+        return count_density * self._count_areas(image_shapes)
 
     def _scale_points_to_output(
         self,
@@ -437,16 +447,19 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
 
         active = self.active_losses
         zero = density_map.new_zeros(1)
+        pred_sum = density_map.view(B, -1).sum(1)
+
+        # Absolute-count diagnostics stay unweighted so calibration is visible
+        # directly in the logs.
+        count_mae = self.cls_l1(pred_sum, point_counts)
+        cls_preds = torch.stack([c.reshape(B) for c in cls_outputs])  # (3, B)
+        gt_counts = point_counts.unsqueeze(0).expand(3, -1)  # (3, B)
+        cls_pred_counts = cls_preds * areas.unsqueeze(0)
+        count_cls_mae = self.cls_l1(cls_pred_counts, gt_counts)
 
         # ---- MAE count loss -----------------------------------------------
-        # In density mode with enforce_count, density_map.sum() equals
-        # raw_cls * area (absolute count). We must compare in density space
-        # (divide by area) to avoid area-amplified gradients on the CLS head.
         if "count" in active:
-            pred_sum = density_map.view(B, -1).sum(1)
-            pred_count = pred_sum
-            gt_count = point_counts
-            count_loss = self.cls_l1(pred_count, gt_count) * self.mae_weight
+            count_loss = count_mae * self.mae_weight
         else:
             count_loss = zero
 
@@ -505,10 +518,6 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         # multiplying by area and then dividing it back out, which would
         # amplify gradients by ~area^2 before Adam can adapt.
         if "count_cls" in active:
-            cls_preds = torch.stack(
-                [c.reshape(B) for c in cls_outputs]
-            )  # raw CLS outputs, (3, B)
-            gt_counts = point_counts.unsqueeze(0).expand(3, -1)  # (3, B)
             # Raw CLS predicts count density; GT must match.
             gt_counts = gt_counts / areas.unsqueeze(0)
             count_cls_loss = self.cls_l1(cls_preds, gt_counts) * self.count_cls_weight
@@ -518,7 +527,9 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         total = count_loss + ot_loss + density_l1_loss + count_cls_loss
         result = {
             "loss": total,
+            "count_mae": count_mae,
             "count_loss": count_loss,
+            "count_cls_mae": count_cls_mae,
             "ot_loss": ot_loss,
             "ot_wd": ot_wd,
             "sinkhorn_its": sinkhorn_its,
