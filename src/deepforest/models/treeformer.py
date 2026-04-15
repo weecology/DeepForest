@@ -343,10 +343,10 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         cls = [feats[i].mean(dim=[2, 3]) for i in range(1, 4)]
         return feats, cls
 
-    def gen_discrete_density_map(
+    def rasterize_points(
         self, im_height: int, im_width: int, points: np.ndarray
     ) -> np.ndarray:
-        """Generate a discrete density map for a single image.
+        """Rasterize point annotations into an impulse map.
 
         Args:
             im_height: output map height
@@ -355,20 +355,19 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
                        output-map space
 
         Returns:
-            (im_height, im_width) float32 array with 1.0 at each keypoint location
+            (im_height, im_width) float32 array with per-pixel point counts
         """
         discrete_map = np.zeros([im_height, im_width], dtype=np.float32)
-        num_gt = len(points)
-        if num_gt == 0:
-            return discrete_map
+        points_np = np.asarray(points, dtype=np.float32).reshape(-1, 2)
 
-        points_np = np.array(points).round().astype(int)
+        points_np = np.rint(points_np).astype(int)
         p_h = np.clip(points_np[:, 1], 0, im_height - 1)
         p_w = np.clip(points_np[:, 0], 0, im_width - 1)
         np.add.at(discrete_map, (p_h, p_w), 1)
-        assert discrete_map.sum() == num_gt
+
         return discrete_map
 
+    # TODO: Refactor this as points_to_density and use for dataset as well.
     def _make_gt_density(self, points: list, out_h: int, out_w: int) -> torch.Tensor:
         """Build a batched Gaussian density map (B, 1, out_h, out_w) from point
         lists.
@@ -377,12 +376,16 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         applied with sigma rescaled from full-image pixels into output-
         map pixels, then count-normalized so each map sums to the number
         of ground-truth points.
+
+        This differs from the original TreeFormer training pipeline,
+        which supervises the TV/L1 term with a downsampled discrete
+        point map rather than a Gaussian-smoothed density target.
         """
         sigma = self.density_sigma
         maps = []
         for _idx, p in enumerate(points):
             p_np = p.cpu().numpy()
-            discrete = self.gen_discrete_density_map(out_h, out_w, p_np)
+            discrete = self.rasterize_points(out_h, out_w, p_np)
             if discrete.sum() > 0:
                 smoothed = gaussian_filter(discrete, sigma=sigma)
                 smoothed = smoothed * (discrete.sum() / smoothed.sum())  # count-normalize
@@ -398,7 +401,7 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         cls_outputs: list,
         targets: list,
         image_shapes: list[tuple[int, int]],
-        gt_discrete: torch.Tensor | None = None,
+        gt_density: torch.Tensor | None = None,
     ) -> dict:
         """Compute supervised losses. Individual losses can be disabled via the
         ``losses`` constructor argument, but the default is to compute all.
@@ -411,8 +414,9 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         with different areas so counts are scaled by the input image shape (in pixels).
 
         The L1 loss here is referred to as total variation (TV) loss in the DM-Count paper,
-        but it's really just pixel-wise L1 between the predicted and GT density maps and
-        the implementation here follows the original codebase.
+        but it's really just pixel-wise L1 between the predicted and GT density maps.
+        Unlike the original TreeFormer training code, this adaptation uses a Gaussian-
+        smoothed GT density target here instead of a downsampled discrete point map.
 
         OT loss is computed using the optimal transport implementation in losses/ot_loss.py, which
         is a PyTorch implementation of the Sinkhorn algorithm. The OT loss encourages the predicted
@@ -425,8 +429,8 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
             cls_outputs:    [yc0, yc1, yc2] count scalars from CLS-token pathway
             targets:        list of B target dicts or point tensors in image space
             image_shapes:   original (height, width) for each image in the batch
-            gt_discrete:    optional pre-computed (B, 1, H', W') discrete map;
-                            computed from points if None
+            gt_density:     optional pre-computed (B, 1, H', W') Gaussian density
+                            map; computed from points if None
 
         Returns:
             dict with 'loss' (total scalar) plus individual named terms
@@ -442,8 +446,8 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         )
         scaled_points = self._scale_points_to_output(points, image_shapes, output_shapes)
 
-        if gt_discrete is None:
-            gt_discrete = self._make_gt_density(scaled_points, H, W)
+        if gt_density is None:
+            gt_density = self._make_gt_density(scaled_points, H, W)
 
         active = self.active_losses
         zero = density_map.new_zeros(1)
@@ -501,9 +505,9 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
 
         # ---- Density L1 loss (pixel-wise L1 between normalized density maps) ----
         if "density_l1" in active:
-            gt_discrete_normed = gt_discrete / (point_counts.view(B, 1, 1, 1) + 1e-4)
+            gt_density_normed = gt_density / (point_counts.view(B, 1, 1, 1) + 1e-4)
             density_l1_loss = (
-                self.density_l1(normed_density, gt_discrete_normed)
+                self.density_l1(normed_density, gt_density_normed)
                 .sum(dim=[1, 2, 3])
                 .mul(point_counts)
                 .mean()
@@ -546,6 +550,7 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         self,
         inputs: torch.Tensor | list[torch.Tensor],
         targets: list | None = None,
+        gt_density: torch.Tensor | None = None,
         gt_discrete: torch.Tensor | None = None,
     ):
         """Forward pass.
@@ -554,7 +559,15 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         Eval mode:  returns (density_map, normed_density).
 
         inputs: (B, C, H, W) tensor or list of (C, H, W) tensors (variable sizes).
+        gt_density: optional precomputed Gaussian density target used for the
+            density L1 loss during training.
+        gt_discrete: deprecated alias for ``gt_density``.
         """
+        if gt_density is not None and gt_discrete is not None:
+            raise ValueError("Pass only one of gt_density or gt_discrete")
+        if gt_density is None:
+            gt_density = gt_discrete
+
         # Batch-pad variable-size images; record original sizes for output crop.
         if isinstance(inputs, list):
             shapes = [(img.shape[-2], img.shape[-1]) for img in inputs]
@@ -603,7 +616,7 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
                 out_cls_l,
                 targets,
                 image_shapes=shapes,
-                gt_discrete=gt_discrete,
+                gt_density=gt_density,
             )
 
         # Eval: crop each output back to its original spatial extent.
