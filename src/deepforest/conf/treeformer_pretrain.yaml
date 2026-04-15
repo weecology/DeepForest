@@ -1,4 +1,5 @@
 defaults:
+  - treeformer
   - _self_
 
 # This config has been tested with B200 GPUs. Set cluster CPU RAM to around 32 GB per CPU.

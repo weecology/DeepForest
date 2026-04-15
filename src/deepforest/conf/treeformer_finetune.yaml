@@ -1,5 +1,5 @@
 defaults:
-  - treeformer_hpg
+  - treeformer
   - _self_
 
 train:
