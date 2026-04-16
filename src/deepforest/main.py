@@ -932,11 +932,6 @@ class deepforest(pl.LightningModule):
             metrics["val_mae"] = self.mae_metric.compute()
             metrics["val_rmse"] = self.rmse_metric.compute()
             metrics["val_r2"] = self.r2_metric.compute()
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore", UserWarning)
-                _corr = self.spatial_corr_metric.compute()
-            if not torch.isnan(_corr):
-                metrics["val_spatial_corr"] = _corr
             metrics.update(self.precision_recall_metric.compute())
             p = float(metrics.get("point_precision") or 0.0)
             r = float(metrics.get("point_recall") or 0.0)
@@ -979,7 +974,6 @@ class deepforest(pl.LightningModule):
             self.mae_metric.reset()
             self.rmse_metric.reset()
             self.r2_metric.reset()
-            self.spatial_corr_metric.reset()
             self.cardinality_metric.reset()
         else:
             self.iou_metric.reset()
