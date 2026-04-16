@@ -46,6 +46,16 @@ class SchedulerConfig:
 
 
 @dataclass
+class OptimizerConfig:
+    """Configuration for the optimizer used during training."""
+
+    type: str = "SGD"
+    weight_decay: float = 0.0
+    momentum: float = 0.9
+    betas: list[float] = field(default_factory=lambda: [0.9, 0.999])
+
+
+@dataclass
 class TrainConfig:
     """Main training configuration. The CSV file and root directory are
     required to specify the location of the training dataset.
@@ -64,6 +74,7 @@ class TrainConfig:
     csv_file: str | None = None
     root_dir: str | None = None
     lr: float = 0.001
+    optimizer: OptimizerConfig = field(default_factory=OptimizerConfig)
     scheduler: SchedulerConfig = field(default_factory=SchedulerConfig)
     epochs: int = 1
     fast_dev_run: bool = False

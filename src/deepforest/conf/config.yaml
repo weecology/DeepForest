@@ -46,6 +46,11 @@ train:
 
     # Optimizer initial learning rate
     lr: 0.001
+    optimizer:
+        type: SGD
+        weight_decay: 0.0
+        momentum: 0.9
+        betas: [0.9, 0.999]
 
     # Data augmentations for training
     # Augmentations must be a list of augmentation names, or a list
