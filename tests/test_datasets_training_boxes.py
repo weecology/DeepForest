@@ -260,6 +260,32 @@ def test_BoxDataset_validate_coordinates(tmp_path, raster_path):
             BoxDataset(csv_file=csv_path, root_dir=root_dir)
 
 
+def test_BoxDataset_validate_coordinates_disabled(tmp_path, raster_path):
+    """Setting validate_coordinates=False should skip coordinate checks."""
+    root_dir = os.path.dirname(raster_path)
+
+    csv_path = str(tmp_path / "oob.csv")
+    df = pd.DataFrame(
+        {
+            "image_path": ["OSBS_029.tif"],
+            "xmin": [-5],
+            "ymin": [0],
+            "xmax": [10],
+            "ymax": [10],
+            "label": ["Tree"],
+        }
+    )
+    df.to_csv(csv_path, index=False)
+
+    # Should raise with default (validate_coordinates=True)
+    with pytest.raises(ValueError, match="exceeds image dimensions"):
+        BoxDataset(csv_file=csv_path, root_dir=root_dir)
+
+    # Should NOT raise with validate_coordinates=False
+    ds = BoxDataset(csv_file=csv_path, root_dir=root_dir, validate_coordinates=False)
+    assert len(ds) == 1
+
+
 def test_BoxDataset_validate_non_rectangular_polygon(tmp_path, raster_path):
     # Create a non-rectangular polygon (triangle)
     non_rect_polygon = geometry.Polygon([(10, 10), (50, 10), (30, 40)])
