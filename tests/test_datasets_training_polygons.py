@@ -145,3 +145,42 @@ def test_polygon_negative_coordinates(tmp_path, polygon_root_dir):
             root_dir=polygon_root_dir,
             label_dict={"tree": 0},
         )
+
+
+def test_polygon_dataset_validate_coordinates_disabled(tmp_path, polygon_root_dir):
+    """Setting validate_coordinates=False should skip coordinate checks."""
+    image_name = "5b90f92da0d7280005fab355_4310.tif"
+    data = {
+        "images": [{"id": 1, "file_name": image_name, "width": 2048, "height": 2048}],
+        "annotations": [
+            {
+                "id": 1,
+                "image_id": 1,
+                "category_id": 1,
+                "segmentation": [[2049, 10, 2500, 10, 2048.1, 50, 200, 50]],
+                "bbox": [200, 10, 50, 40],
+                "area": 2000,
+                "iscrowd": 0,
+            }
+        ],
+        "categories": [{"id": 1, "name": "tree"}],
+    }
+
+    json_path = tmp_path / "oob.json"
+    with open(json_path, "w") as f:
+        json.dump(data, f)
+
+    with pytest.raises(ValueError):
+        PolygonDataset(
+            annotation_file=str(json_path),
+            root_dir=polygon_root_dir,
+            label_dict={"tree": 0},
+        )
+
+    ds = PolygonDataset(
+        annotation_file=str(json_path),
+        root_dir=polygon_root_dir,
+        label_dict={"tree": 0},
+        validate_coordinates=False,
+    )
+    assert len(ds) == 1

@@ -167,6 +167,37 @@ def test_point_dataset_validate_coordinates_negative(tmp_path, point_root_dir):
         )
 
 
+def test_point_dataset_validate_coordinates_disabled(tmp_path, point_root_dir):
+    """Setting validate_coordinates=False should skip coordinate checks."""
+    image_name = "2019_BLAN_3_751000_4330000_image_crop.jpg"
+
+    csv_path = str(tmp_path / "oob.csv")
+    df = pd.DataFrame(
+        {
+            "image_path": [image_name],
+            "x": [2000],
+            "y": [500],
+            "label": ["Tree"],
+        }
+    )
+    df.to_csv(csv_path, index=False)
+
+    # Should raise with default (validate_coordinates=True)
+    with pytest.raises(ValueError, match="exceeds image dimensions"):
+        PointDataset(
+            csv_file=csv_path, root_dir=point_root_dir, label_dict={"Tree": 0}
+        )
+
+    # Should NOT raise with validate_coordinates=False
+    ds = PointDataset(
+        csv_file=csv_path,
+        root_dir=point_root_dir,
+        label_dict={"Tree": 0},
+        validate_coordinates=False,
+    )
+    assert len(ds) == 1
+
+
 def test_point_dataset_empty_annotations(tmp_path, point_root_dir):
     """Empty annotations (0,0) should produce empty targets."""
     image_name = "2019_BLAN_3_751000_4330000_image_crop.jpg"

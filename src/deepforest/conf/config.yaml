@@ -89,12 +89,15 @@ train:
     fast_dev_run: False
     # preload images to GPU memory for fast training. This depends on GPU size and number of images.
     preload_images: False
+    # Validate that annotation coordinates fall within image bounds before training.
+    validate_coordinates: True
 
 
 validation:
     csv_file:
     root_dir:
     preload_images: False
+    validate_coordinates: True
     size:
 
     # For retinanet you may prefer val_classification, but the default val_loss
