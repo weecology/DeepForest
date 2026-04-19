@@ -13,7 +13,7 @@ num_classes: 1
 batch_size: 32
 workers: 0
 accelerator: auto
-precision: 16-mixed
+precision: bf16-mixed
 matmul_precision: high
 log_root: ./logs/treeformer
 ema_decay: 0.99
