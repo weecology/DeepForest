@@ -133,6 +133,8 @@ def train(
                 name=experiment_name,
                 offline_directory=config.log_root,
                 experiment_key=resume_comet_key,
+                log_git_metadata=True,
+                log_git_patch=True,
             )
 
             # Always fetch experiment name and key from API

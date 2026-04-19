@@ -1,13 +1,10 @@
 # London dataset training config for TreeFormer replication.
 #
-# Supervised-only baseline similar to the original TreeFormer paper:
-#   epochs=500, batch=16, lr=1e-4, weight_decay=1e-5, Adam (we use AdamW)
-#   loss weights: count=1.0, OT=0.1, TV/density_l1=0.01
-#   norm_cood=false (we now use norm_cood=true as the default)
-# We train at 512x512 crop and evaluate on the full val image in one go.
-#
-# Compare to TreeFormer-S (supervised baseline) in Table 1:
-#   MAE=18.52, MSE=24.32, R2=0.72
+# Key differences from treeformer.yaml defaults:
+#   - RandomCrop(512, p=1.0) instead of RandomResizedCrop(512, [0.5-1.0], p=0.5)
+#   - eta_min=1e-6 (vs 1e-7)
+#   - count_cls_weight=0.025
+#   - lr, scheduler, weight_decay
 defaults:
   - treeformer
   - _self_
@@ -18,18 +15,47 @@ workers: 8
 train:
     csv_file: /home/veitchmichaelisj/code/DeepForest_jvm/data/kcl/london_train.csv
     root_dir: /home/veitchmichaelisj/code/DeepForest_jvm/data/kcl/train_data/images
-
+    lr: 2e-4
+    optimizer: adamw
+    weight_decay: 1e-5
     epochs: 500
     scheduler:
+        type: cosine
         params:
             T_max: 500
+            eta_min: 1e-6
+    augmentations:
+      - HorizontalFlip:
+          p: 0.5
+      - VerticalFlip:
+          p: 0.5
+      - Rotate:
+          degrees: 180
+          p: 0.5
+      - RandomBrightnessContrast:
+          brightness: 0.2
+          contrast: 0.2
+          p: 0.5
+      - HueSaturationValue:
+          hue: 0.05
+          saturation: 0.2
+          p: 0.5
+      - RandomCrop:
+          size: [512, 512]
+          p: 1.0
+
+score_thresh: 0.15
 
 validation:
     csv_file: /home/veitchmichaelisj/code/DeepForest_jvm/data/kcl/london_test.csv
     root_dir: /home/veitchmichaelisj/code/DeepForest_jvm/data/kcl/test_data/images
     val_accuracy_interval: 5
-    # 5px at 0.2m GSD = 1m physical matching distance
-    distance_threshold: 5.0
+    distance_threshold: 10.0
 
 keypoint:
     norm_cood: true
+    mae_weight: 1.0
+    ot_weight: 0.1
+    count_cls_weight: 0.025
+    density_l1_weight: 0.01
+    score_integration_radius: 2
