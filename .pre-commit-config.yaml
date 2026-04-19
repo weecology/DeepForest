@@ -12,15 +12,18 @@ repos:
         files: citation_count.json
 
   # Notebooks: run Ruff via nbQA inside .ipynb
+  # language_version pin avoids ast.Str removal issue on Python 3.14
   - repo: https://github.com/nbQA-dev/nbQA
     rev: 1.9.0
     hooks:
       - id: nbqa-ruff-format
         additional_dependencies: [ruff]
+        language_version: python3.12
         files: ^docs/user_guide/examples/.*\.ipynb$
       - id: nbqa-ruff
         args: ["--fix"]
         additional_dependencies: [ruff]
+        language_version: python3.12
         files: ^docs/user_guide/examples/.*\.ipynb$
 
   # Docstrings: auto-format
