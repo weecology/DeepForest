@@ -462,8 +462,16 @@ class TreeFormerModel(nn.Module, PyTorchModelHubMixin):
         count_cls_mae = self.cls_l1(cls_pred_counts, gt_counts)
 
         # ---- MAE count loss -----------------------------------------------
+        # Compare in density space (divide by area) to avoid area-amplified
+        # gradients on the CLS head when enforce_count is active.  With
+        # enforce_count, density_map.sum() ≈ raw_cls * area, so the chain-rule
+        # gradient includes an extra factor of area (~1M for 1024x1024 images).
+        # Dividing both sides by area cancels this factor, keeping the gradient
+        # magnitude comparable to count_cls_loss.
         if "count" in active:
-            count_loss = count_mae * self.mae_weight
+            count_loss = (
+                self.cls_l1(pred_sum / areas, point_counts / areas) * self.mae_weight
+            )
         else:
             count_loss = zero
 
