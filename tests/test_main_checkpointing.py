@@ -7,6 +7,7 @@ import shutil
 import torch
 
 from deepforest import get_data, main, utilities
+from deepforest.scripts.export import export
 
 
 @pytest.fixture
@@ -373,3 +374,39 @@ def test_reload_multi_class(config, tmp_path):
     assert math.isclose(after[0]["val_loss"], before[0]["val_loss"], rel_tol=5e-2, abs_tol=5e-2)
 
     os.remove(checkpoint_path)
+
+
+@pytest.mark.parametrize("architecture", ["retinanet"])
+def test_export_roundtrip(config, tmp_path):
+    """Export a checkpoint to HF format and verify predictions are identical."""
+    img_path = get_data("OSBS_029.png")
+
+    # Load pretrained model, fit briefly to attach to trainer, then predict
+    config["model"]["name"] = "weecology/deepforest-tree"
+    config["train"]["fast_dev_run"] = True
+    m = main.deepforest(config=config)
+    m.create_trainer()
+    m.trainer.fit(m)
+    m.eval()
+    preds_before = m.predict_image(path=img_path)
+    assert not preds_before.empty
+
+    # Save a Lightning checkpoint
+    ckpt_path = str(tmp_path / "model.ckpt")
+    m.save_model(ckpt_path)
+    del m
+
+    # Export to HF via the CLI export function
+    hf_dir = str(tmp_path / "hf_model")
+    export(ckpt_path, hf_dir)
+
+    # Reload from HF export and predict
+    m2 = main.deepforest(config={"model": {"name": hf_dir}})
+    m2.eval()
+    preds_after = m2.predict_image(path=img_path)
+
+    assert len(preds_before) == len(preds_after)
+    for col in ["xmin", "ymin", "xmax", "ymax", "score"]:
+        diff = abs(preds_before[col].values - preds_after[col].values).max()
+        assert diff < 1e-4, f"{col} max diff {diff}"
+    assert list(preds_before["label"]) == list(preds_after["label"])

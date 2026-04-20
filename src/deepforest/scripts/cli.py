@@ -7,6 +7,7 @@ from omegaconf import OmegaConf
 
 from deepforest.conf.schema import Config as StructuredConfig
 from deepforest.scripts.evaluate import evaluate
+from deepforest.scripts.export import export
 from deepforest.scripts.predict import predict
 from deepforest.scripts.train import train
 
@@ -145,6 +146,14 @@ def main():
     # Show config subcommand
     subparsers.add_parser("config", help="Show the current config")
 
+    # Export subcommand
+    export_parser = subparsers.add_parser(
+        "export",
+        help="Convert a Lightning checkpoint to HuggingFace model format.",
+    )
+    export_parser.add_argument("checkpoint", help="Path to Lightning .ckpt file")
+    export_parser.add_argument("output", help="Output directory for HF model")
+
     # Config options for Hydra
     parser.add_argument("--config-dir", help="Path to custom configuration directory")
     parser.add_argument(
@@ -152,6 +161,11 @@ def main():
     )
 
     args, overrides = parser.parse_known_args()
+
+    # Export doesn't need Hydra config
+    if args.command == "export":
+        export(args.checkpoint, args.output)
+        return
 
     if getattr(args, "verbose", False):
         logging.basicConfig(level=logging.INFO, force=True)
