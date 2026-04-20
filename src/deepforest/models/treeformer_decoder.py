@@ -171,9 +171,6 @@ class Regression(nn.Module):
         self.cls_lin4 = nn.Linear(128, num_classes, bias=True)
 
         self.init_param()
-        # Start the count-density head with a small positive prior
-        # (~100 trees per 1024x1024 image). count_cls loss refines from here.
-        nn.init.constant_(self.cls_lin4.bias, 1e-4)
 
     def forward(self, x, cls):
         x0, x1, x2, x3 = x[0], x[1], x[2], x[3]
