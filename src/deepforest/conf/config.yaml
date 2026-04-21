@@ -11,7 +11,8 @@ batch_size: 1
 architecture: 'retinanet'
 nms_thresh: 0.05
 score_thresh: 0.1
-
+detections_per_img: 300
+topk_candidates: 1000
 # Set model name to None to initialize from scratch
 model:
     name: 'weecology/deepforest-tree'
