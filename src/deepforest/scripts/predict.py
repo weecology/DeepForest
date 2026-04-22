@@ -2,6 +2,7 @@ import os
 
 from omegaconf import DictConfig
 
+from deepforest import utilities
 from deepforest.main import deepforest
 from deepforest.visualize import plot_results
 
@@ -26,7 +27,9 @@ def predict(
         output_path (Optional[str]): Path to save the prediction results.
         plot (Optional[bool]): Whether to plot the results.
         root_dir (Optional[str]): Root directory containing images when input_path is a CSV file.
-        mode (Optional[str]): Prediction mode: 'single' for single image, 'tile' for tiled image prediction, 'csv' for batch prediction from CSV file. Defaults to 'single'.
+        mode (Optional[str]): Prediction mode: 'single' for single image, 'tile'
+            for tiled image prediction, 'csv' for batch prediction from CSV file.
+            Defaults to 'single'.
 
     Returns:
         None
@@ -72,7 +75,11 @@ def predict(
     if output_path is not None:
         if os.path.dirname(output_path):
             os.makedirs(os.path.dirname(output_path), exist_ok=True)
-        res.to_csv(output_path, index=False)
+        if output_path.endswith(".shp") or output_path.endswith(".gpkg"):
+            geo = utilities.image_to_geo_coordinates(res)
+            geo.to_file(output_path)
+        else:
+            res.to_csv(output_path, index=False)
 
     if plot:
         plot_results(res)
