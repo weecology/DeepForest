@@ -324,6 +324,7 @@ class deepforest(pl.LightningModule):
         transforms=None,
         augmentations=None,
         preload_images=False,
+        validate_coordinates=True,
         batch_size=1,
     ):
         """Create a dataset for inference or training. Csv file format is .csv
@@ -338,6 +339,7 @@ class deepforest(pl.LightningModule):
             transforms: Albumentations transforms
             batch_size: batch size
             preload_images: if True, preload the images into memory
+            validate_coordinates: if True, check annotation coordinates fall within image bounds
             augmentations: augmentation configuration (str, list, or dict)
         Returns:
             ds: a pytorch dataset
@@ -351,6 +353,7 @@ class deepforest(pl.LightningModule):
                 label_dict=self.label_dict,
                 augmentations=augmentations,
                 preload_images=preload_images,
+                validate_coordinates=validate_coordinates,
             )
         elif self.model.task == "keypoint":
             ds = training.KeypointDataset(
@@ -360,6 +363,7 @@ class deepforest(pl.LightningModule):
                 label_dict=self.label_dict,
                 augmentations=augmentations,
                 preload_images=preload_images,
+                validate_coordinates=validate_coordinates,
             )
         else:
             raise ValueError(
@@ -395,6 +399,7 @@ class deepforest(pl.LightningModule):
             root_dir=self.config.train.root_dir,
             augmentations=self.config.train.augmentations,
             preload_images=self.config.train.preload_images,
+            validate_coordinates=self.config.train.validate_coordinates,
             shuffle=True,
             transforms=self.transforms,
             batch_size=self.config.batch_size,
@@ -422,6 +427,7 @@ class deepforest(pl.LightningModule):
                 augmentations=self.config.validation.augmentations,
                 shuffle=False,
                 preload_images=self.config.validation.preload_images,
+                validate_coordinates=self.config.validation.validate_coordinates,
                 batch_size=self.config.batch_size,
             )
 
