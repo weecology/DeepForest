@@ -152,7 +152,7 @@ def across_class_nms(predicted_boxes, iou_threshold=0.15):
     if predicted_boxes.shape[0] <= 1:
         return predicted_boxes
 
-    # move prediciton to tensor
+    # move prediction to tensor
     boxes = torch.tensor(
         predicted_boxes[["xmin", "ymin", "xmax", "ymax"]].values, dtype=torch.float32
     )
