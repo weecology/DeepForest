@@ -127,6 +127,57 @@ def test_read_file_in_memory_dataframe():
     assert result.root_dir == os.path.dirname(get_data("OSBS_029.tif"))
 
 
+
+def test_read_file_dataframe_with_geometry_returns_geodataframe():
+    """Test that read_file returns GeoDataFrame when DataFrame has geometry column."""
+    # Test Case 1: DataFrame with WKT string geometry
+    df_wkt = pd.DataFrame({
+        'image_path': ['OSBS_029.png', 'OSBS_029.png'],
+        'xmin': [0, 20],
+        'ymin': [0, 20],
+        'xmax': [10, 30],
+        'ymax': [10, 30],
+        'label': ['Tree', 'Tree'],
+        'geometry': [
+            'POLYGON ((0 0, 0 10, 10 10, 10 0, 0 0))',
+            'POLYGON ((20 20, 20 30, 30 30, 30 20, 20 20))'
+        ]
+    })
+
+    result_wkt = utilities.read_file(
+        input=df_wkt,
+        root_dir=os.path.dirname(get_data('OSBS_029.tif'))
+    )
+
+    assert isinstance(result_wkt, gpd.GeoDataFrame)
+    assert 'geometry' in result_wkt.columns
+    assert isinstance(result_wkt.geometry, gpd.GeoSeries)
+    assert all(result_wkt.geometry.geom_type == 'Polygon')
+    assert len(result_wkt) == 2
+
+    # Test Case 2: DataFrame with shapely geometry objects
+    df_shapely = pd.DataFrame({
+        'image_path': ['OSBS_029.png', 'OSBS_029.png'],
+        'xmin': [0, 20],
+        'ymin': [0, 20],
+        'xmax': [10, 30],
+        'ymax': [10, 30],
+        'label': ['Tree', 'Tree'],
+        'geometry': [geometry.box(0, 0, 10, 10), geometry.box(20, 20, 30, 30)]
+    })
+
+    result_shapely = utilities.read_file(
+        input=df_shapely,
+        root_dir=os.path.dirname(get_data('OSBS_029.tif'))
+    )
+
+    assert isinstance(result_shapely, gpd.GeoDataFrame)
+    assert 'geometry' in result_wkt.columns
+    assert isinstance(result_wkt.geometry, gpd.GeoSeries)
+    assert all(result_shapely.geometry.geom_type == 'Polygon')
+    assert len(result_shapely) == 2
+
+
 def test_convert_point_to_bbox():
     sample_geometry = [geometry.Point(10, 20), geometry.Point(20, 40)]
     labels = ["Tree", "Tree"]
