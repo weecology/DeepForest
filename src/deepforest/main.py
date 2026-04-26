@@ -2,6 +2,7 @@
 import importlib
 import os
 import warnings
+from numbers import Number
 
 import numpy as np
 import pandas as pd
@@ -14,7 +15,7 @@ from pytorch_lightning.loggers import CSVLogger
 from torch import optim
 from torchmetrics.detection import IntersectionOverUnion, MeanAveragePrecision
 
-from deepforest import predict, utilities
+from deepforest import distributed, predict, utilities
 from deepforest.datasets import prediction, training
 from deepforest.metrics import RecallPrecision
 
@@ -103,8 +104,8 @@ class deepforest(pl.LightningModule):
             self.mAP_metric = MeanAveragePrecision(backend="faster_coco_eval")
 
         self.precision_recall_metric = RecallPrecision(
-            iou_threshold=self.config.validation.iou_threshold,
             label_dict=self.label_dict,
+            iou_threshold=self.config.validation.iou_threshold,
         )
 
     def load_model(self, model_name=None, revision=None):
@@ -243,6 +244,11 @@ class deepforest(pl.LightningModule):
             "enable_checkpointing": enable_checkpointing,
             "devices": self.config.devices,
             "accelerator": self.config.accelerator,
+            "num_nodes": self.config.num_nodes,
+            "strategy": self.config.strategy,
+            "precision": self.config.precision,
+            "sync_batchnorm": self.config.sync_batchnorm,
+            "use_distributed_sampler": self.config.use_distributed_sampler,
             "fast_dev_run": self.config.train.fast_dev_run,
             "callbacks": callbacks,
             "limit_val_batches": limit_val_batches,
@@ -255,6 +261,33 @@ class deepforest(pl.LightningModule):
         trainer_args.update(kwargs)
 
         self.trainer = pl.Trainer(**trainer_args)
+
+    def _format_prediction_frame(self, prediction_result, metadata):
+        """Format a raw model prediction with dataset metadata."""
+        formatted_result = utilities.format_geometry(prediction_result)
+        if formatted_result is None:
+            return pd.DataFrame()
+
+        window_bounds = metadata.get("window_bounds")
+        if window_bounds is not None:
+            formatted_result["window_xmin"] = window_bounds[0]
+            formatted_result["window_ymin"] = window_bounds[1]
+
+        formatted_result["image_path"] = metadata.get("image_path")
+
+        return formatted_result.reset_index(drop=True)
+
+    def _gather_prediction_frames(self, frames):
+        """Gather prediction frames across ranks."""
+        if not frames:
+            return distributed.gather_dataframe(pd.DataFrame())
+
+        local_frames = [frame for frame in frames if not frame.empty]
+        if not local_frames:
+            return distributed.gather_dataframe(frames[0].iloc[0:0].copy())
+
+        local_results = pd.concat(local_frames, ignore_index=True)
+        return distributed.gather_dataframe(local_results)
 
     def on_fit_start(self):
         if self.config.train.csv_file is None and self.existing_train_dataloader is None:
@@ -440,12 +473,24 @@ class deepforest(pl.LightningModule):
             batch_size = self.config.batch_size
         else:
             batch_size = batch_size
+        sampler = None
+        if (
+            self.config.use_distributed_sampler
+            and distributed.is_distributed()
+            and len(ds) < distributed.get_world_size()
+        ):
+            rank = distributed.get_rank()
+            local_indices = [rank] if rank < len(ds) else []
+            sampler = distributed.FixedOrderSampler(local_indices)
+
         loader = torch.utils.data.DataLoader(
             ds,
             batch_size=batch_size,
             shuffle=False,
+            sampler=sampler,
             num_workers=self.config.workers,
             collate_fn=ds.collate_fn,
+            pin_memory=self.config.predict.pin_memory,
         )
         return loader
 
@@ -527,7 +572,9 @@ class deepforest(pl.LightningModule):
             df: pandas dataframe with bounding boxes, label and scores for each image in the csv file
         """
 
-        ds = prediction.FromCSVFile(csv_file=csv_file, root_dir=root_dir)
+        ds = prediction.FromCSVFile(
+            csv_file=csv_file, root_dir=root_dir, return_metadata=True
+        )
         dataloader = self.predict_dataloader(ds, batch_size=self.config.batch_size)
         results = predict._dataloader_wrapper_(
             model=self,
@@ -603,6 +650,7 @@ class deepforest(pl.LightningModule):
                         image=image,
                         patch_overlap=patch_overlap,
                         patch_size=patch_size,
+                        return_metadata=True,
                     )
                 else:
                     # Check for workers config when using out of memory dataset
@@ -616,47 +664,39 @@ class deepforest(pl.LightningModule):
                         path=image_path,
                         patch_overlap=patch_overlap,
                         patch_size=patch_size,
+                        return_metadata=True,
                     )
 
                 dataloader = self.predict_dataloader(ds)
                 batched_results = self.trainer.predict(self, dataloader)
 
-                # Flatten list from batched prediction
-                # Track global window index across batches
-                global_window_idx = 0
-                for _idx, batch in enumerate(batched_results):
-                    for _window_idx, window_result in enumerate(batch):
-                        formatted_result = ds.postprocess(
-                            window_result, global_window_idx
-                        )
-                        image_results.append(formatted_result)
-                        global_window_idx += 1
+                image_results.append(
+                    predict._flatten_prediction_batches_(batched_results)
+                )
 
             if not image_results:
                 results = pd.DataFrame()
             else:
-                results = pd.concat(image_results)
+                results = self._gather_prediction_frames(image_results)
 
         elif dataloader_strategy == "batch":
             self.original_batch_structure.clear()
             ds = prediction.MultiImage(
-                paths=paths, patch_overlap=patch_overlap, patch_size=patch_size
+                paths=paths,
+                patch_overlap=patch_overlap,
+                patch_size=patch_size,
+                return_metadata=True,
             )
 
             dataloader = self.predict_dataloader(ds)
             batched_results = self.trainer.predict(self, dataloader)
 
-            # Flatten list from batched prediction
-            for idx, batch in enumerate(batched_results):
-                formatted_result = ds.postprocess(
-                    batch, idx, self.original_batch_structure
-                )
-                image_results.append(formatted_result)
+            image_results.append(predict._flatten_prediction_batches_(batched_results))
 
             if not image_results:
                 results = pd.DataFrame()
             else:
-                results = pd.concat(image_results)
+                results = self._gather_prediction_frames(image_results)
 
         else:
             raise ValueError(f"Invalid dataloader_strategy: {dataloader_strategy}")
@@ -727,11 +767,21 @@ class deepforest(pl.LightningModule):
         # Log loss
         for key, value in loss_dict.items():
             self.log(
-                f"train_{key}", value.detach(), on_epoch=True, batch_size=len(images)
+                f"train_{key}",
+                value.detach(),
+                on_epoch=True,
+                batch_size=len(images),
+                sync_dist=distributed.should_sync(self.trainer),
             )
 
         # Log sum of losses
-        self.log("train_loss", losses.detach(), on_epoch=True, batch_size=len(images))
+        self.log(
+            "train_loss",
+            losses.detach(),
+            on_epoch=True,
+            batch_size=len(images),
+            sync_dist=distributed.should_sync(self.trainer),
+        )
 
         return losses
 
@@ -750,9 +800,21 @@ class deepforest(pl.LightningModule):
 
         # Log losses
         for key, value in loss_dict.items():
-            self.log(f"val_{key}", value.detach(), on_epoch=True, batch_size=len(images))
+            self.log(
+                f"val_{key}",
+                value.detach(),
+                on_epoch=True,
+                batch_size=len(images),
+                sync_dist=distributed.should_sync(self.trainer),
+            )
 
-        self.log("val_loss", losses.detach(), on_epoch=True, batch_size=len(images))
+        self.log(
+            "val_loss",
+            losses.detach(),
+            on_epoch=True,
+            batch_size=len(images),
+            sync_dist=distributed.should_sync(self.trainer),
+        )
 
         # In eval model, return predictions to calculate prediction metrics
         self.model.eval()
@@ -807,16 +869,38 @@ class deepforest(pl.LightningModule):
 
         return metrics
 
+    def _prepare_metrics_for_sync(self, metrics: dict) -> dict:
+        """Move scalar metrics onto the module device for NCCL reduction."""
+        synced_metrics = {}
+
+        for key, value in metrics.items():
+            if isinstance(value, torch.Tensor):
+                synced_metrics[key] = value.to(self.device)
+            elif isinstance(value, Number):
+                synced_metrics[key] = torch.tensor(value, device=self.device)
+            else:
+                synced_metrics[key] = value
+
+        return synced_metrics
+
     def on_validation_epoch_end(self):
         """Compute metrics and predictions at the end of the validation
         epoch."""
         if self.trainer.sanity_checking:  # optional skip
             return
 
+        gathered_predictions = self._gather_prediction_frames(self.predictions)
+        self.predictions = (
+            [gathered_predictions] if not gathered_predictions.empty else []
+        )
+
         # Log epoch metrics
         if (self.current_epoch + 1) % self.config.validation.val_accuracy_interval == 0:
             metrics = self._compute_epoch_metrics()
-            self.log_dict(metrics)
+            should_sync = distributed.should_sync(self.trainer)
+            if should_sync:
+                metrics = self._prepare_metrics_for_sync(metrics)
+            self.log_dict(metrics, sync_dist=should_sync)
 
         # Manual reset. Lightning does not do this automatically
         # unless we log the metric objects directly
@@ -837,16 +921,25 @@ class deepforest(pl.LightningModule):
         """
         if isinstance(batch, dict):
             images = batch["images"]
-            batch_indices = batch["batch_indices"]
-            self.original_batch_structure.append(batch_indices)
+            metadata = batch.get("metadata")
+            batch_indices = batch.get("batch_indices")
+            if batch_indices is not None:
+                self.original_batch_structure.append(batch_indices)
         else:
-            batch_indices = None
             images = batch
+            metadata = None
 
         self.model.eval()
         with torch.no_grad():
             preds = self.model.forward(images)
-        return preds
+
+        if metadata is None:
+            return preds
+
+        return [
+            self._format_prediction_frame(prediction_result, sample_metadata)
+            for prediction_result, sample_metadata in zip(preds, metadata, strict=True)
+        ]
 
     def predict_batch(self, images, preprocess_fn=None):
         """Predict a batch of images with the deepforest model.
@@ -1022,7 +1115,7 @@ class deepforest(pl.LightningModule):
         self.config.validation.val_accuracy_interval = 1
 
         self.create_trainer()
-        self.trainer.validate(self)
+        validation_results = self.trainer.validate(self)
 
         # Gather predictions from all ranks in multi-GPU settings
         if self.trainer.world_size > 1:
@@ -1043,7 +1136,11 @@ class deepforest(pl.LightningModule):
             self.predictions = pd.DataFrame()
 
         results = {}
-        results.update(self.trainer.logged_metrics)
+        if isinstance(validation_results, list):
+            if validation_results and isinstance(validation_results[0], dict):
+                results.update(validation_results[0])
+        elif isinstance(validation_results, dict):
+            results.update(validation_results)
         results["predictions"] = self.predictions
         results["results"] = self.precision_recall_metric.get_results()
 

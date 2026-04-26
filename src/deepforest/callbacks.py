@@ -17,7 +17,7 @@ import torch
 from PIL import Image
 from pytorch_lightning import Callback
 
-from deepforest import utilities, visualize
+from deepforest import distributed, utilities, visualize
 from deepforest.datasets.training import BoxDataset
 
 
@@ -55,7 +55,7 @@ class ImagesCallback(Callback):
         """Log sample images from training and validation datasets at training
         start."""
 
-        if trainer.fast_dev_run:
+        if trainer.fast_dev_run or not distributed.is_global_zero(trainer):
             return
 
         self.trainer = trainer
@@ -74,7 +74,11 @@ class ImagesCallback(Callback):
 
     def on_validation_end(self, trainer, pl_module):
         """Run callback at validation end."""
-        if trainer.sanity_checking or trainer.fast_dev_run:
+        if (
+            trainer.sanity_checking
+            or trainer.fast_dev_run
+            or not distributed.is_global_zero(trainer)
+        ):
             return
 
         if (trainer.current_epoch + 1) % self.every_n_epochs == 0:

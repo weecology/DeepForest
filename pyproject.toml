@@ -151,7 +151,8 @@ filterwarnings = [
 ]
 markers = [
     "slow: marks tests that are slow to run",
-    "integration: marks integration tests"
+    "integration: marks integration tests",
+    "cluster: marks tests intended for Slurm cluster runs only"
 ]
 
 [tool.coverage.run]

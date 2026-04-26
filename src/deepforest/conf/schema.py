@@ -145,6 +145,11 @@ class Config:
     workers: int = 0
     devices: int | str = "auto"
     accelerator: str = "auto"
+    num_nodes: int = 1
+    strategy: str = "auto"
+    precision: str = "32-true"
+    sync_batchnorm: bool = False
+    use_distributed_sampler: bool = True
     batch_size: int = 1
     precision: str | None = None
     matmul_precision: str = "highest"

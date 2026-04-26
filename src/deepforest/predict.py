@@ -6,7 +6,7 @@ import pandas as pd
 import torch
 from torchvision.ops import nms
 
-from deepforest import utilities
+from deepforest import distributed, utilities
 from deepforest.datasets import cropmodel
 from deepforest.utilities import read_file
 
@@ -184,6 +184,25 @@ def across_class_nms(predicted_boxes, iou_threshold=0.15):
     return new_df
 
 
+def _flatten_prediction_batches_(batched_results):
+    """Flatten prediction batches returned by Lightning predict()."""
+    flattened = []
+    for batch in batched_results:
+        if isinstance(batch, pd.DataFrame):
+            if not batch.empty:
+                flattened.append(batch)
+            continue
+
+        for item in batch:
+            if isinstance(item, pd.DataFrame) and not item.empty:
+                flattened.append(item)
+
+    if not flattened:
+        return pd.DataFrame()
+
+    return pd.concat(flattened, ignore_index=True)
+
+
 def _dataloader_wrapper_(model, trainer, dataloader, root_dir, crop_model):
     """
 
@@ -198,31 +217,19 @@ def _dataloader_wrapper_(model, trainer, dataloader, root_dir, crop_model):
         results: pandas dataframe with bounding boxes, label and scores for each image in the csv file
     """
     batched_results = trainer.predict(model, dataloader)
-
-    # Flatten list from batched prediction
-    prediction_list = []
-    global_image_idx = 0
-    for _idx, batch in enumerate(batched_results):
-        for _image_idx, image_result in enumerate(batch):
-            formatted_result = dataloader.dataset.postprocess(
-                image_result, global_image_idx
-            )
-            global_image_idx += 1
-            prediction_list.append(formatted_result)
-
-    # Postprocess predictions, return empty dataframe if no predictions
-    if not prediction_list:
-        return pd.DataFrame()
-
-    results = pd.concat(prediction_list)
+    results = distributed.gather_dataframe(_flatten_prediction_batches_(batched_results))
 
     if results.empty:
-        return results
+        return pd.DataFrame()
 
     # Apply across class NMS for each image
     processed_results = []
     for image_path in results.image_path.unique():
         image_results = results[results.image_path == image_path].copy()
+        if image_results.label.nunique() > 1:
+            image_results = across_class_nms(
+                image_results, iou_threshold=model.config.nms_thresh
+            )
 
         if crop_model:
             # Flag to check if only one model is passed
@@ -239,6 +246,11 @@ def _dataloader_wrapper_(model, trainer, dataloader, root_dir, crop_model):
                 )
 
             processed_results.append(crop_model_results)
+        else:
+            processed_results.append(image_results)
+
+    if processed_results:
+        results = pd.concat(processed_results, ignore_index=True)
 
     results = read_file(results, root_dir)
 

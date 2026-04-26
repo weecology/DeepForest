@@ -169,6 +169,41 @@ def test_tensorboard_logger(m, tmp_path):
         print("TensorBoard is not installed. Skipping test_tensorboard_logger.")
 
 
+def test_create_trainer_uses_runtime_config(monkeypatch):
+    captured_kwargs = {}
+
+    class FakeTrainer:
+        def __init__(self, **kwargs):
+            captured_kwargs.update(kwargs)
+
+    monkeypatch.setattr(main.pl, "Trainer", FakeTrainer)
+
+    m = main.deepforest(
+        config_args={
+            "model": {"name": None},
+            "num_classes": 1,
+            "label_dict": {"Tree": 0},
+        }
+    )
+
+    m.config.devices = 2
+    m.config.accelerator = "gpu"
+    m.config.num_nodes = 3
+    m.config.strategy = "ddp"
+    m.config.precision = "16-mixed"
+    m.config.sync_batchnorm = True
+    m.config.use_distributed_sampler = True
+
+    m.create_trainer()
+
+    assert captured_kwargs["devices"] == 2
+    assert captured_kwargs["accelerator"] == "gpu"
+    assert captured_kwargs["num_nodes"] == 3
+    assert captured_kwargs["strategy"] == "ddp"
+    assert captured_kwargs["precision"] == "16-mixed"
+    assert captured_kwargs["sync_batchnorm"] is True
+    assert captured_kwargs["use_distributed_sampler"] is True
+
 
 def test_load_model(m):
     imgpath = get_data("OSBS_029.png")
@@ -1205,6 +1240,38 @@ def test_recall_not_lowered_by_unprocessed_images():
         f"box_recall={results['box_recall']:.2f}, expected 1.0"
     )
 
+def test_predict_dataloader_small_dataset_rank_zero(monkeypatch, m):
+    ds = prediction.FromCSVFile(
+        csv_file=get_data("OSBS_029.csv"),
+        root_dir=os.path.dirname(get_data("OSBS_029.csv")),
+        return_metadata=True,
+    )
+
+    monkeypatch.setattr(main.distributed, "is_distributed", lambda: True)
+    monkeypatch.setattr(main.distributed, "get_world_size", lambda: 2)
+    monkeypatch.setattr(main.distributed, "get_rank", lambda: 0)
+
+    loader = m.predict_dataloader(ds, batch_size=1)
+
+    assert len(loader.sampler) == 1
+    assert list(iter(loader.sampler)) == [0]
+
+
+def test_predict_dataloader_small_dataset_extra_rank(monkeypatch, m):
+    ds = prediction.FromCSVFile(
+        csv_file=get_data("OSBS_029.csv"),
+        root_dir=os.path.dirname(get_data("OSBS_029.csv")),
+        return_metadata=True,
+    )
+
+    monkeypatch.setattr(main.distributed, "is_distributed", lambda: True)
+    monkeypatch.setattr(main.distributed, "get_world_size", lambda: 2)
+    monkeypatch.setattr(main.distributed, "get_rank", lambda: 1)
+
+    loader = m.predict_dataloader(ds, batch_size=1)
+
+    assert len(loader.sampler) == 0
+    assert list(iter(loader.sampler)) == []
 def test_custom_log_root(m, tmpdir):
     """Test that setting a custom log_root creates logs in the expected location"""
     custom_log_dir = tmpdir.join("custom_logs")

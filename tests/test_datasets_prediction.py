@@ -59,3 +59,32 @@ def test_FromCSVFile():
     ds = FromCSVFile(csv_file=get_data("example.csv"),
                      root_dir=os.path.dirname(get_data("example.csv")))
     assert len(ds) == 1
+
+
+def test_SingleImage_metadata_batch():
+    path = get_data("OSBS_029.png")
+    ds = SingleImage(path=path, patch_size=300, patch_overlap=0, return_metadata=True)
+
+    sample = ds[0]
+    assert sample["image"].shape == (3, 300, 300)
+    assert sample["metadata"]["image_path"] == os.path.basename(path)
+    assert sample["metadata"]["window_bounds"] == ds.get_crop_bounds(0)
+
+    batch = ds.collate_fn([ds[0], ds[1]])
+    assert len(batch["images"]) == 2
+    assert len(batch["metadata"]) == 2
+
+
+def test_MultiImage_metadata_batch():
+    path = get_data("OSBS_029.png")
+    ds = MultiImage(
+        paths=[path, path],
+        patch_size=300,
+        patch_overlap=0,
+        return_metadata=True,
+    )
+
+    batch = ds.collate_fn([ds[0]])
+    assert len(batch["images"]) == 4
+    assert len(batch["metadata"]) == 4
+    assert all(item["image_path"] == os.path.basename(path) for item in batch["metadata"])

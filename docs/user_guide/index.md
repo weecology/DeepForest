@@ -18,6 +18,7 @@ The User Guide covers the core DeepForest package usage and functionalities.
 05_model_architecture
 06_multi_species
 07_scaling
+distributed
 08_visualizations
 09_configuration_file
 10_better
