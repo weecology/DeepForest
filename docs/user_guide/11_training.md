@@ -75,6 +75,58 @@ m = main.deepforest(config_args{"num_classes": 3,
 
 which will create an initialized RetinaNet model with 3 classes, ready for training. You must always specify your class count and label map.
 
+## What is trained during fine-tuning
+
+DeepForest uses a RetinaNet with a ResNet-50 backbone. The backbone has 5 layer groups (`conv1` and `layer1` through `layer4`). By default, `conv1` and `layer1` are frozen — the remaining layers, FPN, and detection heads are all trained.
+
+During fine-tuning the following components are updated:
+
+- `layer2`, `layer3`, `layer4` of the ResNet-50 backbone
+- Feature Pyramid Network (FPN)
+- Regression head
+- Classification head
+
+### Multi-class transfer learning
+
+To adapt a pretrained model to new classes, copy the backbone and regression head weights into your new model:
+
+```python
+from deepforest import main
+
+m = main.deepforest(
+    num_classes=2,
+    label_dict={"Alive": 0, "Dead": 1}
+)
+
+pretrained = main.deepforest()
+pretrained.load_model(
+    "weecology/deepforest-tree"
+)
+
+m.model.backbone.load_state_dict(
+    pretrained.model.backbone.state_dict()
+)
+m.model.head.regression_head.load_state_dict(
+    pretrained.model.head.regression_head.state_dict()
+)
+```
+
+Nothing is frozen here — all layers will be trained. This takes longer but allows the model to adapt to your domain and new classes.
+
+### Manual layer freezing
+
+To freeze specific layers:
+
+```python
+# Freeze the backbone
+m.model.backbone.requires_grad_(False)
+
+# You may also want to freeze the FPN
+m.model.fpn.requires_grad_(False)
+```
+
+Freezing layers speeds up training and can help when data is limited, at the cost of reduced adaptability to your target domain.
+
 ## Custom datasets with other classes
 
 If you need to re-train a "tree" detection model to work in your specific survey area or ecosystem, you don't need to do anything. Models themselves have no understanding of the label "tree", they output predictions corresponding to numerical class IDs (starting at 0). By default, the `label_dict` in the config is populated when the model is pulled from the hub (or a local checkpoint), which is `{ Tree: 0 }`.
