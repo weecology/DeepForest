@@ -26,6 +26,7 @@ The User Guide covers the core DeepForest package usage and functionalities.
 13_annotation
 17_airborne
 examples/simple_load_and_predict
+examples/marine_mammal_detector
 examples/Australia
 examples/nest_detection
 examples/Bird_FineTuning
