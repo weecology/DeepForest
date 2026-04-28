@@ -1,0 +1,49 @@
+# Marine mammal detector preset for BOEM/USGS style data.
+#
+# Usage:
+#   deepforest train --config-name marine_mammal_detector \
+#     train.csv_file=/path/to/train.csv \
+#     train.root_dir=/path/to/images \
+#     validation.csv_file=/path/to/test.csv \
+#     validation.root_dir=/path/to/images
+
+model:
+  name: weecology/deepforest-bird
+
+batch_size: 12
+workers: 5
+precision: 16-mixed
+score_thresh: 0.2
+
+label_dict:
+  Object: 0
+
+train:
+  epochs: 30
+  lr: 0.001
+  scheduler:
+    type: ReduceLROnPlateau
+    params:
+      mode: min
+      factor: 0.1
+      patience: 3
+      threshold: 0.0001
+      threshold_mode: rel
+      cooldown: 0
+      min_lr: 0
+      eps: 0.0
+  augmentations:
+    - HorizontalFlip: {p: 0.5}
+    - VerticalFlip: {p: 0.2}
+    - RandomBrightnessContrast:
+        brightness: 0.2
+        contrast: 0.2
+        p: 0.4
+    - HueSaturationValue:
+        hue: 0.08
+        saturation: 0.08
+        p: 0.3
+
+validation:
+  iou_threshold: 0.4
+  val_accuracy_interval: 1
