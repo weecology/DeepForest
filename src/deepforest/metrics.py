@@ -20,15 +20,19 @@ class RecallPrecision(Metric):
         self,
         task="box",
         iou_threshold: float = 0.4,
+        distance_threshold: float = 10.0,
         label_dict: dict | None = None,
         **kwargs,
     ) -> None:
-        """This metric performs DeepForest's box recall and precision
-        evaluation.
+        """This metric performs DeepForest's recall and precision evaluation.
 
         Args:
-            task (str, optional): The type of task to evaluate. Defaults to "box".
-            iou_threshold (float, optional): IOU threshold for evaluation. Defaults to 0.4.
+            task (str, optional): The type of task to evaluate. One of
+                ``"box"``, ``"polygon"``, or ``"point"``. Defaults to ``"box"``.
+            iou_threshold (float, optional): IoU threshold for box/polygon matching.
+                Defaults to 0.4.
+            distance_threshold (float, optional): Pixel distance threshold for
+                point matching. Defaults to 10.0.
             label_dict (dict | None): Mapping of class name to numeric ID. When
                 provided and more than one class is present, per-class recall and
                 precision are included in the ``compute()`` output.
@@ -36,12 +40,20 @@ class RecallPrecision(Metric):
         super().__init__(**kwargs)
 
         self.iou_threshold = iou_threshold
+        self.distance_threshold = distance_threshold
         self.task = task
         self.label_dict = label_dict or {}
         self.numeric_to_label_dict = {v: k for k, v in self.label_dict.items()}
 
-        if task != "box":
-            raise NotImplementedError("Only 'box' task is currently supported.")
+        if task not in ("box", "point"):
+            raise ValueError(f"Unsupported task: {task}. Use 'box' or 'point'.")
+
+        if self.task == "box":
+            self.pred_key = "boxes"
+            self.geom_type = "box"
+        elif self.task == "point":
+            self.pred_key = "points"
+            self.geom_type = "point"
 
         self.add_state("precision", default=torch.tensor(0.0), dist_reduce_fx="sum")
         self.add_state("recall", default=torch.tensor(0.0), dist_reduce_fx="sum")
@@ -85,12 +97,11 @@ class RecallPrecision(Metric):
     ) -> None:
         """Update metric state for a single image."""
         self.num_images += 1
-
-        n_pred = len(pred["boxes"])
-        n_target = len(target["boxes"])
+        n_pred = len(pred[self.pred_key])
+        n_target = len(target[self.pred_key])
 
         # Early exit for prediction/target base cases.
-        is_empty_frame = n_target == 0 or torch.all(target["boxes"] == 0)
+        is_empty_frame = n_target == 0 or torch.all(target[self.pred_key] == 0)
         if is_empty_frame:
             self.num_empty_frames += 1
             if n_pred == 0:
@@ -107,14 +118,16 @@ class RecallPrecision(Metric):
         self.num_images_with_predictions += 1
 
         # Note: format_geometry handles detach + CPU. IoU == 0 represents not matched.
-        ground_df = utilities.format_geometry(target, scores=False)
-        pred_df = utilities.format_geometry(pred, scores=True)
+        ground_df = utilities.format_geometry(
+            target, scores=False, geom_type=self.geom_type
+        )
+        pred_df = utilities.format_geometry(pred, scores=True, geom_type=self.geom_type)
         ground_df["image_path"] = image_path
         pred_df["image_path"] = image_path
         result = match_predictions(
             predictions=pred_df,
             ground_df=ground_df,
-            task=self.task,
+            task=self.geom_type,
         )
         result["image_path"] = image_path
 
@@ -151,13 +164,12 @@ class RecallPrecision(Metric):
     def compute(self) -> dict:
         """Computes the recall/precision metrics.
 
-        DataFrames (match results and class recall) are stored as instance
-        attributes ``_all_results`` and ``_class_recall`` for callers that
-        need them. Only loggable scalar/tensor values are returned.
-        Per-class recall and precision are included when more than one class
-        is present in ``label_dict``.
+        DataFrames (match results and class recall) are stored as
+        instance attributes ``_all_results`` and ``_class_recall`` for
+        callers that need them. Only loggable scalar/tensor values are
+        returned. Per-class recall and precision are included when more
+        than one class is present in ``label_dict``.
         """
-
         # Map numeric label IDs to strings
         if self.results:
             self._all_results = pd.concat(self.results, ignore_index=True)
@@ -170,9 +182,11 @@ class RecallPrecision(Metric):
                         if pd.notna(x)
                         else x
                     )
-            self._class_recall = compute_class_recall(
-                self._all_results[self._all_results["match"]]
-            )
+            # TODO Check why this fails for point predictions
+            if self.task == "box" and len(self.label_dict) > 1:
+                self._class_recall = compute_class_recall(
+                    self._all_results[self._all_results["match"]]
+                )
         else:
             self._all_results = pd.DataFrame()
             self._class_recall = None

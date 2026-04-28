@@ -3,7 +3,10 @@ import os
 
 import numpy as np
 import pandas as pd
+import shapely
 import torch
+from scipy.spatial import cKDTree
+from shapely import affinity
 from torchvision.ops import nms
 
 from deepforest import utilities
@@ -15,7 +18,8 @@ def _predict_image_(
     model,
     image: np.ndarray | None = None,
     path: str | None = None,
-    nms_thresh: float = 0.15,
+    iou_threshold: float = 0.15,
+    nms_distance_thresh: float = 5.0,
 ):
     """Predict a single image with a deepforest model.
 
@@ -23,26 +27,30 @@ def _predict_image_(
         model: a deepforest.main.model object
         image: a tensor of shape (channels, height, width)
         path: optional path to read image from disk instead of passing image arg
-        nms_thresh: Non-max suppression threshold, see config.nms_thresh
+        iou_threshold: IoU threshold for box non-max suppression
+        nms_distance_thresh: Distance threshold in pixels for point NMS, see config.point.nms_distance_thresh
     Returns:
         df: A pandas dataframe of predictions (Default)
         img: The input with predictions overlaid (Optional)
     """
-
     image = torch.tensor(image).permute(2, 0, 1)
     image = image / 255
 
     with torch.no_grad():
         prediction = model(image.unsqueeze(0))
 
+    prediction = prediction[0]
+    geom_type = utilities.determine_geometry_type(prediction)
+    df = utilities.format_geometry(prediction, geom_type=geom_type)
+
     # return None for no predictions
-    if len(prediction[0]["boxes"]) == 0:
+    if df is None:
         return None
 
-    df = utilities.format_boxes(prediction[0])
-
-    if df.label.nunique() > 1:
-        df = across_class_nms(df, iou_threshold=nms_thresh)
+    if geom_type == "box" and df.label.nunique() > 1:
+        df = across_class_nms(df, iou_threshold=iou_threshold)
+    elif geom_type == "point":
+        df = reduce_points(df, nms_thresh=nms_distance_thresh)
 
     # Add image path if provided
     if path is not None:
@@ -51,103 +59,134 @@ def _predict_image_(
     return df
 
 
-def transform_coordinates(boxes):
-    """Transform box coordinates from window space to original image space.
+def translate_predictions(predictions: pd.DataFrame) -> pd.DataFrame:
+    """Shift window-relative predictions into image coordinates using geometry.
 
     Args:
-        boxes: DataFrame of predictions with xmin, ymin, xmax, ymax, window_xmin, window_ymin columns
+        predictions: DataFrame with geometry and window_xmin/window_ymin offset columns.
 
     Returns:
-        DataFrame with transformed coordinates
+        DataFrame with geometry (and coordinate columns) shifted by the window origin.
     """
-    boxes = boxes.copy()
-    boxes["xmin"] += boxes["window_xmin"]
-    boxes["xmax"] += boxes["window_xmin"]
-    boxes["ymin"] += boxes["window_ymin"]
-    boxes["ymax"] += boxes["window_ymin"]
+    predictions = predictions.copy()
+    is_box = {"xmin", "ymin", "xmax", "ymax"}.issubset(predictions.columns)
 
-    # Cast to int
-    boxes["xmin"] = boxes["xmin"].astype(int)
-    boxes["ymin"] = boxes["ymin"].astype(int)
-    boxes["xmax"] = boxes["xmax"].astype(int)
-    boxes["ymax"] = boxes["ymax"].astype(int)
+    predictions["geometry"] = [
+        affinity.translate(geom, xoff=dx, yoff=dy)
+        for geom, dx, dy in zip(
+            predictions.geometry,
+            predictions.window_xmin,
+            predictions.window_ymin,
+            strict=True,
+        )
+    ]
 
-    return boxes
+    if is_box:
+        bounds = shapely.bounds(np.array(predictions["geometry"]))
+        predictions[["xmin", "ymin", "xmax", "ymax"]] = bounds.astype(int)
+    else:
+        coords = shapely.get_coordinates(np.array(predictions["geometry"]))
+        predictions["x"] = coords[:, 0]
+        predictions["y"] = coords[:, 1]
+
+    return predictions.drop(columns=["window_xmin", "window_ymin"]).reset_index(drop=True)
 
 
-def apply_nms(boxes, scores, labels, iou_threshold):
-    """Apply non-maximum suppression to boxes.
+def reduce_boxes(predictions: pd.DataFrame, iou_threshold: float) -> pd.DataFrame:
+    """Reduce overlapping box predictions with torchvision NMS.
 
     Args:
-        boxes: tensor of shape (N, 4) containing box coordinates
-        scores: tensor of shape (N,) containing confidence scores
-        labels: array of shape (N,) containing labels
-        iou_threshold: IoU threshold for NMS
+        predictions: DataFrame of image-space box predictions.
+        iou_threshold: IoU threshold for NMS.
 
     Returns:
-        DataFrame with filtered boxes
+        DataFrame containing the filtered box predictions in the public box schema.
     """
-    bbox_left_idx = nms(boxes=boxes, scores=scores, iou_threshold=iou_threshold)
-    bbox_left_idx = bbox_left_idx.numpy()
+    box_output_columns = ["xmin", "ymin", "xmax", "ymax", "label", "score"]
+    if predictions.shape[0] <= 1:
+        return predictions[box_output_columns].reset_index(drop=True).copy()
 
-    new_boxes = boxes[bbox_left_idx].type(torch.int)
-    new_labels = labels[bbox_left_idx]
-    new_scores = scores[bbox_left_idx]
-
-    # Recreate box dataframe
-    image_detections = np.concatenate(
-        [
-            new_boxes,
-            np.expand_dims(new_labels, axis=1),
-            np.expand_dims(new_scores, axis=1),
-        ],
-        axis=1,
+    print(
+        f"{predictions.shape[0]} predictions in overlapping windows, applying non-max suppression"
     )
 
-    return pd.DataFrame(
-        image_detections, columns=["xmin", "ymin", "xmax", "ymax", "label", "score"]
+    boxes = torch.tensor(
+        predictions[["xmin", "ymin", "xmax", "ymax"]].values, dtype=torch.float32
     )
+    scores = torch.tensor(predictions.score.values, dtype=torch.float32)
+    keep_idx = nms(boxes=boxes, scores=scores, iou_threshold=iou_threshold).numpy()
+
+    filtered_predictions = predictions.iloc[keep_idx].reset_index(drop=True)
+    print(f"{filtered_predictions.shape[0]} predictions kept after non-max suppression")
+    return filtered_predictions[box_output_columns].reset_index(drop=True).copy()
 
 
-def mosiac(predictions, iou_threshold=0.1):
+def reduce_points(predictions: pd.DataFrame, nms_thresh: float) -> pd.DataFrame:
+    """Reduce nearby point predictions with distance-based suppression.
+
+    Args:
+        predictions: DataFrame of image-space point predictions.
+        nms_thresh: Distance threshold in pixels used to suppress duplicates.
+
+    Returns:
+        Filtered point predictions with all non-coordinate columns preserved.
+    """
+    predictions = predictions.reset_index(drop=True)
+    if nms_thresh <= 0 or len(predictions) <= 1:
+        return predictions
+
+    coords = predictions[["x", "y"]].values
+    scores = predictions["score"].values
+    tree = cKDTree(coords)
+    order = np.argsort(scores)[::-1]
+    kept = np.ones(len(coords), dtype=bool)
+
+    for idx in order:
+        if not kept[idx]:
+            continue
+
+        for neighbor_idx in tree.query_ball_point(coords[idx], r=nms_thresh):
+            if neighbor_idx != idx:
+                kept[neighbor_idx] = False
+
+    return predictions.iloc[np.flatnonzero(kept)].reset_index(drop=True)
+
+
+def mosaic(
+    predictions: pd.DataFrame,
+    iou_threshold: float = 0.1,
+    nms_distance_thresh: float = 5.0,
+) -> pd.DataFrame:
     """Mosaic predictions from overlapping windows.
 
     Args:
         predictions: A pandas dataframe containing predictions from overlapping windows from a single image.
-        iou_threshold: The IoU threshold for non-max suppression.
+        iou_threshold: The IoU threshold for non-max suppression (box predictions).
+        nms_distance_thresh: Distance in pixels below which two points are duplicates (point predictions).
 
     Returns:
         A pandas dataframe of predictions.
     """
-    predicted_boxes = transform_coordinates(predictions)
+    if predictions.empty:
+        return predictions.copy()
 
-    # Skip NMS if there's is one or less prediction
-    if predicted_boxes.shape[0] <= 1:
-        return predicted_boxes
+    is_box_predictions = {"xmin", "ymin", "xmax", "ymax"}.issubset(predictions.columns)
+    is_point_predictions = {"x", "y"}.issubset(predictions.columns)
+    translated_predictions = translate_predictions(predictions)
 
-    print(
-        f"{predicted_boxes.shape[0]} predictions in overlapping windows, applying non-max suppression"
-    )
+    if is_box_predictions:
+        return reduce_boxes(translated_predictions, iou_threshold=iou_threshold)
 
-    # Convert to tensors
-    boxes = torch.tensor(
-        predicted_boxes[["xmin", "ymin", "xmax", "ymax"]].values, dtype=torch.float32
-    )
-    scores = torch.tensor(predicted_boxes.score.values, dtype=torch.float32)
-    labels = predicted_boxes.label.values
+    if is_point_predictions:
+        return reduce_points(translated_predictions, nms_thresh=nms_distance_thresh)
 
-    # Apply NMS
-    filtered_boxes = apply_nms(boxes, scores, labels, iou_threshold)
-    print(f"{filtered_boxes.shape[0]} predictions kept after non-max suppression")
-
-    return filtered_boxes
+    raise ValueError("Predictions must include either box or point coordinates.")
 
 
 def across_class_nms(predicted_boxes, iou_threshold=0.15):
     """Perform non-max suppression for a dataframe of results (see
     visualize.format_boxes) to remove boxes that overlap by iou_thresholdold of
     IoU."""
-
     # Skip NMS if there's is one or less prediction
     if predicted_boxes.shape[0] <= 1:
         return predicted_boxes

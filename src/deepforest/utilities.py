@@ -7,9 +7,11 @@ import numpy as np
 import pandas as pd
 import rasterio
 import shapely
+import torch
 import xmltodict
 from omegaconf import DictConfig, OmegaConf
 from PIL import Image
+from skimage.feature import peak_local_max
 from tqdm import tqdm
 
 from deepforest import _ROOT
@@ -39,7 +41,6 @@ def load_config(
     Returns:
         config (DictConfig): composed configuration
     """
-
     if not config_name.endswith(".yaml"):
         config_name += ".yaml"
 
@@ -357,6 +358,12 @@ def determine_geometry_type(df):
             geometry_type = "polygon"
         elif "points" in df.keys():
             geometry_type = "point"
+        else:
+            raise ValueError(
+                f"Could not determine geometry type from dict keys {list(df.keys())}"
+            )
+    else:
+        raise ValueError(f"Could not determine geometry type from type {type(df)}")
 
     return geometry_type
 
@@ -370,20 +377,16 @@ def format_geometry(predictions, scores=True, geom_type=None):
         df: a pandas dataframe
         None if the dataframe is empty
     """
-
     # Detect geometry type
     if geom_type is None:
         geom_type = determine_geometry_type(predictions)
 
     if geom_type == "box":
         df = format_boxes(predictions, scores=scores)
-        if df is None:
-            return None
-
     elif geom_type == "polygon":
         raise ValueError("Polygon predictions are not yet supported for formatting")
     elif geom_type == "point":
-        raise ValueError("Point predictions are not yet supported for formatting")
+        df = format_points(predictions, scores=scores)
 
     return df
 
@@ -413,6 +416,34 @@ def format_boxes(prediction, scores=True):
     df["geometry"] = df.apply(
         lambda x: shapely.geometry.box(x.xmin, x.ymin, x.xmax, x.ymax), axis=1
     )
+    return df
+
+
+def format_points(prediction: dict, scores: bool = True) -> pd.DataFrame | None:
+    """Convert a single density_to_points dict to a DataFrame.
+
+    Args:
+        prediction: dict with ``"points"`` (N, 2), ``"scores"`` (N,),
+            and ``"labels"`` (N,) tensors.
+        scores: Whether to include the score column.
+
+    Returns:
+        DataFrame with columns ``x``, ``y``, ``label`` (and ``score`` if
+        requested), or ``None`` when there are no detections.
+    """
+    if len(prediction["points"]) == 0:
+        return None
+
+    df = pd.DataFrame(
+        prediction["points"].cpu().detach().numpy(),
+        columns=["x", "y"],
+    )
+    df["label"] = prediction["labels"].cpu().detach().numpy()
+
+    if scores:
+        df["score"] = prediction["scores"].cpu().detach().numpy()
+
+    df["geometry"] = df.apply(lambda x: shapely.geometry.Point(x.x, x.y), axis=1)
     return df
 
 
@@ -747,7 +778,6 @@ def geo_to_image_coordinates(gdf, image_bounds, image_resolution):
     Returns:
         gdf: a geopandas dataframe with the transformed to image origin. CRS is removed
     """
-
     if len(image_bounds) != 4:
         raise ValueError("image_bounds must be a tuple of (left, bottom, right, top)")
 
@@ -766,7 +796,6 @@ def geo_to_image_coordinates(gdf, image_bounds, image_resolution):
 
 def round_with_floats(x):
     """Check if string x is float or int, return int, rounded if needed."""
-
     try:
         result = int(x)
     except BaseException:
@@ -905,3 +934,65 @@ def image_to_geo_coordinates(gdf, root_dir=None, flip_y_axis=False):
 def collate_fn(batch):
     batch = list(filter(lambda x: x is not None, batch))
     return tuple(zip(*batch, strict=False))
+
+
+def density_to_points(
+    density_map,
+    score_thresh: float = 0.1,
+    score_integration_radius: int = 5,
+) -> list[dict]:
+    """Extract peak point predictions from a batch of density maps.
+
+    Normalises the density map to [0, 1] per image then finds local maxima
+    using ``skimage.feature.peak_local_max`` with a relative threshold.
+
+    Args:
+        density_map: ``(B, C, H, W)`` density-map tensor or a list of
+            per-image ``(1, C, H_i, W_i)`` tensors.
+        score_thresh: Relative peak threshold in [0, 1].  Peaks below
+            ``score_thresh * max(density_map)`` are discarded.
+        score_integration_radius: ``min_distance`` for ``peak_local_max`` —
+            suppresses duplicate detections within this many density-map pixels.
+
+    Returns:
+        List of dicts with ``"points"`` (N, 2) in density-map pixel coords
+        (x, y order), ``"scores"`` (N,), and ``"labels"`` (N,) per image.
+    """
+    if isinstance(density_map, list):
+        results = []
+        for dm in density_map:
+            results.extend(density_to_points(dm, score_thresh, score_integration_radius))
+        return results
+
+    # Normalise to [0, 1] per image so threshold_rel is scale-invariant.
+    density_norm = density_map / density_map.amax(dim=(2, 3), keepdim=True).clamp(
+        min=1e-6
+    )
+
+    results = []
+    for b in range(density_map.shape[0]):
+        density_np = density_norm[b, 0].detach().cpu().float().numpy()
+
+        coords = peak_local_max(
+            density_np,
+            min_distance=score_integration_radius,
+            threshold_rel=score_thresh,
+        )  # (N, 2) in (row, col) = (y, x)
+
+        if len(coords) > 0:
+            yx = torch.from_numpy(coords).float()
+            xy = yx[:, [1, 0]]
+            scores = density_norm[b, 0][coords[:, 0], coords[:, 1]].detach()
+        else:
+            xy = torch.zeros((0, 2))
+            scores = torch.zeros(0, device=density_map.device)
+
+        n = xy.shape[0]
+        results.append(
+            {
+                "points": xy.to(density_map.device),
+                "scores": scores,
+                "labels": torch.zeros(n, dtype=torch.long, device=density_map.device),
+            }
+        )
+    return results

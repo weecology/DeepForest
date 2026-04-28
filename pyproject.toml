@@ -51,6 +51,7 @@ dependencies = [
     "pyyaml>=5.1.0",
     "rasterio",
     "safetensors<0.6.0",
+    "scikit-image>=0.25.2",
     "setuptools",
     "shapely>2.0.0",
     "slidingwindow",
