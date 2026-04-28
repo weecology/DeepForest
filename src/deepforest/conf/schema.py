@@ -57,8 +57,10 @@ class OptimizerConfig:
 
 @dataclass
 class TrainConfig:
-    """Main training configuration. The CSV file and root directory are
-    required to specify the location of the training dataset.
+    """Main training configuration.
+
+    The CSV file and root directory are required to specify the location
+    of the training dataset.
 
     The default learning rate may need to be changed for certain
     architectures, such as transformers-based models which sometimes
@@ -84,8 +86,10 @@ class TrainConfig:
 
 @dataclass
 class ValidationConfig:
-    """Main validation configuration. As with training data, it's required that
-    you set a CSV file and root directory.
+    """Main validation configuration.
+
+    As with training data, it's required that you set a CSV file and
+    root directory.
 
     Validation during training is important to identify if the model has
     converged or is overfitting.
@@ -127,9 +131,10 @@ class CropModelConfig:
 
 @dataclass
 class Config:
-    """General DeepForest configuration. Some parameters here are shared
-    between dataloaders, for example the batch size, accelerator and number of
-    workers.
+    """General DeepForest configuration.
+
+    Some parameters here are shared between dataloaders, for example the
+    batch size, accelerator and number of workers.
 
     Here we also set the architecture, which can be one of "retinanet"
     or "DeformableDetr" currently. If you modify the number of classes
@@ -159,7 +164,7 @@ class Config:
     topk_candidates: int = 1000
     model: ModelConfig = field(default_factory=ModelConfig)
 
-    log_root: str = "./"
+    log_root: str = "./lightning_logs"
 
     # Preprocessing
     path_to_raster: str | None = None
