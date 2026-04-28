@@ -73,7 +73,7 @@ Yes! Object detection models use non-annotated areas of an image as negative dat
 
 1. **Select Important Images**: Duplicate backgrounds or objects contribute little to model generalization. Focus on gathering a wide variety of object appearances.
 2. **Avoid Over-splitting Labels**: Often, using a superclass for detection followed by a separate model for classification is more effective. See the [`CropModel`](03_cropmodels.md) for an example.
-3. **Balance Accuracy and Practicality**: Depending on the goal (e.g., object counting or detection), keypoints can sometimes be used instead of precise boxes to simplify the process.
+3. **Balance Accuracy and Practicality**: Depending on the goal (e.g., object counting or detection), point/keypoint annotations can sometimes be used instead of precise boxes to simplify the process.
 
 ## Quick Video on Annotating Images
 

@@ -19,6 +19,9 @@ CROP_MODELS = [
     "weecology/cropmodel-deadtrees",
 ]
 
+POINT_MODELS = [
+    "weecology/deepforest-tree-point",
+]
 
 @pytest.mark.parametrize("repo_id", CROP_MODELS)
 def test_load_crop_models(repo_id):
@@ -33,6 +36,14 @@ def test_load_crop_models(repo_id):
 @pytest.mark.parametrize("repo_id", BOX_MODELS)
 def test_load_box_models(repo_id):
         df = main.deepforest()
+        df.load_model(model_name=repo_id)
+        assert df.model is not None
+        # detection models should have label_dict on the underlying model
+        assert getattr(df.model, "label_dict", None) is not None
+
+@pytest.mark.parametrize("repo_id", POINT_MODELS)
+def test_load_point_models(repo_id):
+        df = main.deepforest(config="point")
         df.load_model(model_name=repo_id)
         assert df.model is not None
         # detection models should have label_dict on the underlying model

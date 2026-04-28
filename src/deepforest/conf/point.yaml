@@ -1,0 +1,22 @@
+architecture: treeformer
+
+model:
+  name: 'weecology/deepforest-tree-point'
+  revision: 'main'
+
+# This model was trained on 10 cm/px data and has been tested
+# at resolutions around 5-20 cm/px. If your data is significantly
+# different, for example < 5 cm/px drone data, we suggest first
+# downsampling your orthomosaics.
+patch_size: 512
+patch_overlap: 0.1
+
+# Setting a threshold below 0.3 is likely to include a lot of
+# noisy/low-confidence predictions.
+score_thresh: 0.3
+
+point:
+  backbone: 'pvt_v2_b3'
+  score_integration_radius: 5
+  nms_distance_thresh: 5.0
+  distance_threshold: 10.0

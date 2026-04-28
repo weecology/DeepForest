@@ -1,4 +1,4 @@
-"""Tests for KeypointDataset."""
+"""Tests for PointDataset."""
 
 import os
 
@@ -8,16 +8,16 @@ import pytest
 import torch
 
 from deepforest import get_data
-from deepforest.datasets.training import KeypointDataset
+from deepforest.datasets.training import PointDataset
 
 
 @pytest.fixture()
-def keypoint_csv():
+def point_csv():
     return get_data("2019_BLAN_3_751000_4330000_image_crop_keypoints.csv")
 
 
 @pytest.fixture()
-def keypoint_root_dir():
+def point_root_dir():
     return os.path.dirname(
         get_data("2019_BLAN_3_751000_4330000_image_crop_keypoints.csv")
     )
@@ -34,12 +34,12 @@ def box_root_dir():
     return os.path.dirname(get_data("OSBS_029.png"))
 
 
-def test_keypoint_dataset_centroid(keypoint_csv, keypoint_root_dir):
+def test_point_dataset_centroid(point_csv, point_root_dir):
     """Basic construction, iteration, and output format."""
-    ds = KeypointDataset(
-        csv_file=keypoint_csv, root_dir=keypoint_root_dir, label_dict={"Tree": 0}, output="centroid"
+    ds = PointDataset(
+        csv_file=point_csv, root_dir=point_root_dir, label_dict={"Tree": 0}, output="centroid"
     )
-    raw = pd.read_csv(keypoint_csv)
+    raw = pd.read_csv(point_csv)
 
     assert len(ds) == len(raw.image_path.unique())
 
@@ -59,11 +59,11 @@ def test_keypoint_dataset_centroid(keypoint_csv, keypoint_root_dir):
         assert targets["labels"].shape == (raw.shape[0],)
         assert targets["labels"].dtype == torch.int64
 
-def test_keypoint_dataset_density(keypoint_csv, keypoint_root_dir):
+def test_point_dataset_density(point_csv, point_root_dir):
     """Density output mode should return a class-first tensor."""
-    ds = KeypointDataset(
-        csv_file=keypoint_csv,
-        root_dir=keypoint_root_dir,
+    ds = PointDataset(
+        csv_file=point_csv,
+        root_dir=point_root_dir,
         label_dict={"Tree": 0},
         output="density",
     )
@@ -80,9 +80,9 @@ def test_keypoint_dataset_density(keypoint_csv, keypoint_root_dir):
     assert targets["labels"].max() > 0
 
 
-def test_keypoint_dataset_from_boxes(box_csv, box_root_dir):
+def test_point_dataset_from_boxes(box_csv, box_root_dir):
     """When given bounding box geometry, annotations_for_path should extract centroids."""
-    ds = KeypointDataset(
+    ds = PointDataset(
         csv_file=box_csv, root_dir=box_root_dir, label_dict={"Tree": 0}
     )
     raw = pd.read_csv(box_csv)
@@ -102,14 +102,14 @@ def test_keypoint_dataset_from_boxes(box_csv, box_root_dir):
         )
 
 
-def test_keypoint_dataset_hflip(keypoint_csv, keypoint_root_dir):
+def test_point_dataset_hflip(point_csv, point_root_dir):
     """Test that augmentation works by performing a horizontal flip augmentation,
     checking it correctly flips x coordinates and leaves y unchanged."""
-    ds_orig = KeypointDataset(
-        csv_file=keypoint_csv, root_dir=keypoint_root_dir,
+    ds_orig = PointDataset(
+        csv_file=point_csv, root_dir=point_root_dir,
     )
-    ds_flip = KeypointDataset(
-        csv_file=keypoint_csv, root_dir=keypoint_root_dir,
+    ds_flip = PointDataset(
+        csv_file=point_csv, root_dir=point_root_dir,
         augmentations=[{"HorizontalFlip": {"p": 1.0}}],
     )
 
@@ -125,7 +125,7 @@ def test_keypoint_dataset_hflip(keypoint_csv, keypoint_root_dir):
     )
 
 
-def test_keypoint_dataset_validate_coordinates_oob(tmp_path, keypoint_root_dir):
+def test_point_dataset_validate_coordinates_oob(tmp_path, point_root_dir):
     """Out-of-bounds points should raise ValueError."""
     image_name = "2019_BLAN_3_751000_4330000_image_crop.jpg"
 
@@ -141,12 +141,12 @@ def test_keypoint_dataset_validate_coordinates_oob(tmp_path, keypoint_root_dir):
     df.to_csv(csv_path, index=False)
 
     with pytest.raises(ValueError, match="exceeds image dimensions"):
-        KeypointDataset(
-            csv_file=csv_path, root_dir=keypoint_root_dir, label_dict={"Tree": 0}
+        PointDataset(
+            csv_file=csv_path, root_dir=point_root_dir, label_dict={"Tree": 0}
         )
 
 
-def test_keypoint_dataset_validate_coordinates_negative(tmp_path, keypoint_root_dir):
+def test_point_dataset_validate_coordinates_negative(tmp_path, point_root_dir):
     """Negative coordinates should raise ValueError."""
     image_name = "2019_BLAN_3_751000_4330000_image_crop.jpg"
 
@@ -162,12 +162,12 @@ def test_keypoint_dataset_validate_coordinates_negative(tmp_path, keypoint_root_
     df.to_csv(csv_path, index=False)
 
     with pytest.raises(ValueError, match="exceeds image dimensions"):
-        KeypointDataset(
-            csv_file=csv_path, root_dir=keypoint_root_dir, label_dict={"Tree": 0}
+        PointDataset(
+            csv_file=csv_path, root_dir=point_root_dir, label_dict={"Tree": 0}
         )
 
 
-def test_keypoint_dataset_empty_annotations(tmp_path, keypoint_root_dir):
+def test_point_dataset_empty_annotations(tmp_path, point_root_dir):
     """Empty annotations (0,0) should produce empty targets."""
     image_name = "2019_BLAN_3_751000_4330000_image_crop.jpg"
 
@@ -182,19 +182,19 @@ def test_keypoint_dataset_empty_annotations(tmp_path, keypoint_root_dir):
     )
     df.to_csv(csv_path, index=False)
 
-    ds = KeypointDataset(
-        csv_file=csv_path, root_dir=keypoint_root_dir, label_dict={"Tree": 0}
+    ds = PointDataset(
+        csv_file=csv_path, root_dir=point_root_dir, label_dict={"Tree": 0}
     )
     image, targets, path = ds[0]
     assert targets["points"].shape == (0, 2)
     assert targets["labels"].shape == (0,)
 
 
-def test_keypoint_dataset_filter_points():
+def test_point_dataset_filter_points():
     """filter_points should remove out-of-bounds points."""
     ds_csv = get_data("2019_BLAN_3_751000_4330000_image_crop_keypoints.csv")
     root_dir = os.path.dirname(ds_csv)
-    ds = KeypointDataset(csv_file=ds_csv, root_dir=root_dir, label_dict={"Tree": 0})
+    ds = PointDataset(csv_file=ds_csv, root_dir=root_dir, label_dict={"Tree": 0})
 
     points = torch.tensor([[10.0, 20.0], [-5.0, 30.0], [50.0, 60.0], [200.0, 300.0]])
     labels = torch.tensor([0, 0, 0, 0])
@@ -209,11 +209,11 @@ def test_keypoint_dataset_filter_points():
     )
 
 
-def test_keypoint_dataset_density_map(keypoint_csv, keypoint_root_dir):
+def test_point_dataset_density_map(point_csv, point_root_dir):
     """Density map should place class-specific peaks at point locations."""
-    ds = KeypointDataset(
-        csv_file=keypoint_csv,
-        root_dir=keypoint_root_dir,
+    ds = PointDataset(
+        csv_file=point_csv,
+        root_dir=point_root_dir,
         label_dict={"Tree": 0, "Shrub": 1},
         density_sigma=2,
         output="density",
@@ -229,11 +229,11 @@ def test_keypoint_dataset_density_map(keypoint_csv, keypoint_root_dir):
     assert torch.argmax(density[1]).item() == (15 * 100 + 70)
 
 
-def test_keypoint_dataset_density_ignores_oob_points(keypoint_csv, keypoint_root_dir):
+def test_point_dataset_density_ignores_oob_points(point_csv, point_root_dir):
     """Out-of-bounds points should not contribute to density map."""
-    ds = KeypointDataset(
-        csv_file=keypoint_csv,
-        root_dir=keypoint_root_dir,
+    ds = PointDataset(
+        csv_file=point_csv,
+        root_dir=point_root_dir,
         label_dict={"Tree": 0},
         density_sigma=2,
         output="density",
@@ -254,11 +254,11 @@ def test_keypoint_dataset_density_ignores_oob_points(keypoint_csv, keypoint_root
     assert abs(peak_y - 16.0) <= 1
 
 
-def test_gaussian_density_count_normalization(keypoint_csv, keypoint_root_dir):
+def test_gaussian_density_count_normalization(point_csv, point_root_dir):
     """Each class channel of the density map should sum to the number of points in that class."""
-    ds = KeypointDataset(
-        csv_file=keypoint_csv,
-        root_dir=keypoint_root_dir,
+    ds = PointDataset(
+        csv_file=point_csv,
+        root_dir=point_root_dir,
         label_dict={"Tree": 0, "Shrub": 1},
         output="density",
     )
