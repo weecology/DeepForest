@@ -33,6 +33,9 @@ def predict(
     """
     m = deepforest(config=config)
 
+    # Suppress logging
+    m.create_trainer(logger=False)
+
     if input_path is None:
         if config.validation.csv_file is None:
             raise ValueError(
