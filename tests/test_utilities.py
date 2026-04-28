@@ -574,12 +574,18 @@ def test_read_coco_json(tmp_path):
             {
                 "image_id": 1,
                 "segmentation": [[0, 0, 0, 10, 10, 10, 10, 0]],  # Simple square
-                "category_id": 0
+                "category_id": 0,
+                "bbox": [0,0,10,10],
+                "area": 100,
+                "iscrowd": 0
             },
             {
                 "image_id": 2,
                 "segmentation": [[5, 5, 5, 15, 15, 15, 15, 5]],  # Another square
-                "category_id": 1
+                "category_id": 1,
+                "bbox": [5,5,10,10],
+                "area": 100,
+                "iscrowd": 0
             }
         ]
     }
@@ -594,14 +600,26 @@ def test_read_coco_json(tmp_path):
 
     # Assert the dataframe has the expected structure
     assert df.shape[0] == 2  # Two annotations
-    assert "image_path" in df.columns
-    assert "geometry" in df.columns
-    assert "label" in df.columns
-    assert hasattr(df, "root_dir")
+
+    expected_cols = {
+        "image_id", "image_path", "iscrowd", "geometry",
+        "xmin", "ymin", "xmax", "ymax", "area", "label"
+    }
+    assert expected_cols.issubset(df.columns)
 
     # Check the image paths are correct
     assert "OSBS_029.png" in df.image_path.values
     assert "OSBS_029.tif" in df.image_path.values
+
+    # Check labels
+    assert set(df["label"]) == {"Tree", "Bird"}
+
+    # Check bbox correctness
+    row = df[df["image_id"] == 1].iloc[0]
+    assert row["xmin"] == 0
+    assert row["ymin"] == 0
+    assert row["xmax"] == 10
+    assert row["ymax"] == 10
 
     # Verify the geometries are valid polygons
     for geom in df.geometry:
