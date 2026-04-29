@@ -286,8 +286,8 @@ class BoxDataset(TrainingDataset):
         return image, targets, self.image_names[idx]
 
 
-class KeypointDataset(TrainingDataset):
-    """Dataset for keypoint detection tasks."""
+class PointDataset(TrainingDataset):
+    """Dataset for point detection tasks."""
 
     _data_keys = [DataKey.IMAGE, DataKey.KEYPOINTS]
 

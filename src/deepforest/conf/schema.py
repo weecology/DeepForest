@@ -41,7 +41,7 @@ class SchedulerConfig:
     """Set the type of scheduler, by default DeepForest uses a stepped learning
     function reducing at "milestones" during training."""
 
-    type: str | None = "StepLR"
+    type: str | None = "stepLR"
     params: SchedulerParamsConfig = field(default_factory=SchedulerParamsConfig)
 
 
@@ -130,6 +130,16 @@ class CropModelConfig:
 
 
 @dataclass
+class PointConfig:
+    """Configuration for point models."""
+
+    backbone: str = "pvt_v2_b3"
+    score_integration_radius: int = 5
+    nms_distance_thresh: float = 5.0
+    distance_threshold: float = 10.0
+
+
+@dataclass
 class Config:
     """General DeepForest configuration.
 
@@ -178,3 +188,4 @@ class Config:
     validation: ValidationConfig = field(default_factory=ValidationConfig)
     predict: PredictConfig = field(default_factory=PredictConfig)
     cropmodel: CropModelConfig = field(default_factory=CropModelConfig)
+    point: PointConfig = field(default_factory=PointConfig)

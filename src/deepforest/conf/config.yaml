@@ -142,3 +142,8 @@ cropmodel:
     normalize:
     # Number of pixels to expand bbox crop windows for better prediction context.
     expand: 0
+
+point:
+  score_integration_radius: 5
+  nms_distance_thresh: 5.0
+  distance_threshold: 10

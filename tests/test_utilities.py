@@ -11,8 +11,7 @@ import shapely
 import torch
 from shapely import geometry
 
-from deepforest import get_data
-from deepforest import utilities
+from deepforest import get_data, utilities
 
 
 @pytest.fixture()
@@ -726,9 +725,15 @@ def test_format_geometry_point():
         "scores": torch.tensor([0.9, 0.8])
     }
 
-    # Format geometry should raise ValueError since point predictions are not supported
-    with pytest.raises(ValueError, match="Point predictions are not yet supported for formatting"):
-        utilities.format_geometry(prediction, geom_type="point")
+    result = utilities.format_geometry(prediction, geom_type="point")
+
+    assert isinstance(result, pd.DataFrame)
+    assert list(result.columns) == ["x", "y", "label", "score", "geometry"]
+    assert len(result) == 2
+    assert result.iloc[0]["x"] == 10
+    assert result.iloc[0]["y"] == 20
+    assert result.iloc[0]["score"] == pytest.approx(0.9)
+    assert isinstance(result.iloc[0]["geometry"], geometry.Point)
 
 
 def test_format_geometry_polygon():
