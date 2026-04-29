@@ -54,7 +54,6 @@ class ImagesCallback(Callback):
     def on_train_start(self, trainer, pl_module):
         """Log sample images from training and validation datasets at training
         start."""
-
         if trainer.fast_dev_run:
             return
 
@@ -83,7 +82,6 @@ class ImagesCallback(Callback):
 
     def _log_dataset_sample(self, dataset: BoxDataset, split: str):
         """Log random samples from a DeepForest BoxDataset."""
-
         if self.dataset_samples == 0:
             return
 

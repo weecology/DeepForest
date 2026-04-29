@@ -32,7 +32,6 @@ def _load_image(
     Returns:
         image: Numpy array
     """
-
     if image is not None:
         if isinstance(image, str):
             if root_dir is not None:

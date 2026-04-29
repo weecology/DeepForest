@@ -151,13 +151,12 @@ class RecallPrecision(Metric):
     def compute(self) -> dict:
         """Computes the recall/precision metrics.
 
-        DataFrames (match results and class recall) are stored as instance
-        attributes ``_all_results`` and ``_class_recall`` for callers that
-        need them. Only loggable scalar/tensor values are returned.
-        Per-class recall and precision are included when more than one class
-        is present in ``label_dict``.
+        DataFrames (match results and class recall) are stored as
+        instance attributes ``_all_results`` and ``_class_recall`` for
+        callers that need them. Only loggable scalar/tensor values are
+        returned. Per-class recall and precision are included when more
+        than one class is present in ``label_dict``.
         """
-
         # Map numeric label IDs to strings
         if self.results:
             self._all_results = pd.concat(self.results, ignore_index=True)

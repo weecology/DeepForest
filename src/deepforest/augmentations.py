@@ -22,8 +22,9 @@ from torch import Tensor
 
 
 class RandomPadTo(GeometricAugmentationBase2D):
-    r"""Pad the given sample by a random amount. This function is copied from
-    kornia, but allows p to be changed.
+    r"""Pad the given sample by a random amount.
+
+    This function is copied from kornia, but allows p to be changed.
 
     Args:
         pad_range: Range of padding to apply as (min, max) in pixels.
@@ -274,7 +275,6 @@ def _parse_augmentations(
     Returns:
         Dict mapping augmentation names to their parameters
     """
-
     # Convert OmegaConf to primitives
     if isinstance(augmentations, (DictConfig, ListConfig)):
         augmentations = OmegaConf.to_container(augmentations, resolve=True)
@@ -319,7 +319,6 @@ def _create_augmentation(
     Returns:
         Kornia AugmentationSequential or None if name not recognized
     """
-
     if name not in get_available_augmentations():
         raise ValueError(
             f"Unknown augmentation '{name}'. Available augmentations: {get_available_augmentations()}"

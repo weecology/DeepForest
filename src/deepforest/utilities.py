@@ -39,7 +39,6 @@ def load_config(
     Returns:
         config (DictConfig): composed configuration
     """
-
     if not config_name.endswith(".yaml"):
         config_name += ".yaml"
 
@@ -370,7 +369,6 @@ def format_geometry(predictions, scores=True, geom_type=None):
         df: a pandas dataframe
         None if the dataframe is empty
     """
-
     # Detect geometry type
     if geom_type is None:
         geom_type = determine_geometry_type(predictions)
@@ -747,7 +745,6 @@ def geo_to_image_coordinates(gdf, image_bounds, image_resolution):
     Returns:
         gdf: a geopandas dataframe with the transformed to image origin. CRS is removed
     """
-
     if len(image_bounds) != 4:
         raise ValueError("image_bounds must be a tuple of (left, bottom, right, top)")
 
@@ -766,7 +763,6 @@ def geo_to_image_coordinates(gdf, image_bounds, image_resolution):
 
 def round_with_floats(x):
     """Check if string x is float or int, return int, rounded if needed."""
-
     try:
         result = int(x)
     except BaseException:

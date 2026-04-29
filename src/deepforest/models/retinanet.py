@@ -130,7 +130,6 @@ class RetinaNetHub(RetinaNet, PyTorchModelHubMixin):
         The function signature is required by PyTorch but most of the
         arguments are undocumented and we don't use them.
         """
-
         if prefix:
             return
 
@@ -190,7 +189,6 @@ class Model(BaseModel):
         Returns:
             model: a pytorch nn module
         """
-
         # Avoid serializing non plain data
         label_dict = dict(self.config.label_dict) if self.config.label_dict else None
 

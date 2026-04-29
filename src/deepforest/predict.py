@@ -28,7 +28,6 @@ def _predict_image_(
         df: A pandas dataframe of predictions (Default)
         img: The input with predictions overlaid (Optional)
     """
-
     image = torch.tensor(image).permute(2, 0, 1)
     image = image / 255
 
@@ -147,7 +146,6 @@ def across_class_nms(predicted_boxes, iou_threshold=0.15):
     """Perform non-max suppression for a dataframe of results (see
     visualize.format_boxes) to remove boxes that overlap by iou_thresholdold of
     IoU."""
-
     # Skip NMS if there's is one or less prediction
     if predicted_boxes.shape[0] <= 1:
         return predicted_boxes
