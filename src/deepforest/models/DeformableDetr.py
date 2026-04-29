@@ -144,8 +144,9 @@ class DeformableDetrWrapper(nn.Module):
         return filtered
 
     def forward(self, images, targets=None, prepare_targets=True):
-        """DeformableDetrForObjectDetection forward pass. If targets are
-        provided the function returns a loss dictionary, otherwise it returns
+        """DeformableDetrForObjectDetection forward pass.
+
+        If targets are provided the function returns a loss dictionary, otherwise it returns
         processed predictions. For details, see the transformers documentation
         for "post_process_object_detection".
 
@@ -217,7 +218,6 @@ class Model(BaseModel):
         downloaded checkpoint. The default weights will load a model
         trained on MS-COCO that should fine-tune well on other tasks.
         """
-
         # Take class mapping from config if the user plans to pretrain,
         # otherwise it should be defined by the hub model.
         if pretrained is None:

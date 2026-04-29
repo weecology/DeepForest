@@ -45,7 +45,6 @@ def compute_windows(numpy_image, patch_size, patch_overlap):
     Returns:
         windows (list): a sliding windows object
     """
-
     if patch_overlap > 1:
         raise ValueError(f"Patch overlap {patch_overlap} must be between 0 - 1")
 
@@ -180,7 +179,6 @@ def split_raster(
     Returns:
         DataFrame with annotations for training, or list of patch filenames
     """
-
     # Load raster as image
     if numpy_image is None and path_to_raster is None:
         raise OSError(

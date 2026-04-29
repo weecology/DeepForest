@@ -16,8 +16,9 @@ from deepforest.utilities import format_geometry, read_file
 
 # Base prediction class
 class PredictionDataset(Dataset):
-    """Base class for prediction datasets. Defines the common interface and
-    accepts either a single image or path, or lists of images/paths, along with
+    """Base class for prediction datasets.
+
+    Defines the common interface and accepts either a single image or path, or lists of images/paths, along with
     patch_size and patch_overlap. Images can optionally be resized to a given
     size.
 
@@ -92,7 +93,6 @@ class PredictionDataset(Dataset):
 
     def collate_fn(self, batch):
         """Collate the batch into a list."""
-
         return batch
 
     def get_crop_bounds(self, idx):

@@ -90,9 +90,10 @@ class TrainingDataset(Dataset):
 
     @abstractmethod
     def _validate_coordinates(self) -> None:
-        """Validate geometries in the annotation data. Must be overidden by
-        child classes to implement task-specific checks (e.g., boxes vs
-        points).
+        """Validate geometries in the annotation data.
+
+        Must be overidden by child classes to implement task-specific
+        checks (e.g., boxes vs points).
 
         Should raise ValueError with details if any invalid geometries
         are found.

@@ -10,7 +10,6 @@ from deepforest.utilities import __pandas_to_geodataframe__
 
 def _empty_result_dataframe_(group, image_path, task="box"):
     """Create an empty result dataframe for images with no predictions."""
-
     result_dict = {
         "truth_id": group.index.values,
         "prediction_id": pd.Series([None] * len(group), dtype="object"),
@@ -142,7 +141,6 @@ def __evaluate_wrapper__(
     Returns:
         results: a dictionary of results with keys, results, box_recall, box_precision, class_recall
     """
-
     # Convert labels to consistent types prior to eval
     # Use shallow copy to avoid duplicating large data arrays
     predictions = predictions.copy(deep=False)
@@ -179,8 +177,9 @@ def evaluate_boxes(
     ground_df: pd.DataFrame | gpd.GeoDataFrame,
     iou_threshold: float = 0.4,
 ) -> dict:
-    """Evaluate bounding box predictions against ground truth. Calls
-    evaluate_geometry.
+    """Evaluate bounding box predictions against ground truth.
+
+    Calls evaluate_geometry.
 
     Args:
         predictions: a pandas dataframe with geometry columns. The labels in ground truth and predictions must match. If one is numeric, the other must be numeric.
@@ -221,7 +220,6 @@ def evaluate_geometry(
         box_precision: proportion of predictions that are true positive, regardless of class
         class_recall: a pandas dataframe of class level recall and precision with class sizes
     """
-
     if geometry_type not in ["box", "polygon", "point"]:
         raise ValueError(
             f"Unknown geometry type {geometry_type}. Must be one of 'box', 'polygon' or 'point'."

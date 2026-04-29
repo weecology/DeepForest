@@ -38,7 +38,6 @@ class BaseModel:
 
         Must be implemented by subclasses to return a PyTorch nn.Module.
         """
-
         raise ValueError(
             "The create_model class method needs to be implemented. "
             "Take in args and return a pytorch nn module."
@@ -339,7 +338,6 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
         Returns:
             None
         """
-
         # Create a directory for each label
         for label in labels:
             os.makedirs(os.path.join(savedir, label), exist_ok=True)
@@ -582,7 +580,6 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
         Returns:
             CropModel: The loaded and eval-mode model instance.
         """
-
         model = cls.from_pretrained(
             repo_id,
             revision=revision,
