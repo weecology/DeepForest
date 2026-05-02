@@ -117,6 +117,12 @@ class deepforest(pl.LightningModule):
                 task=self.model.task,
             )
 
+        # Segmentation metrics
+        if self.model.task == "polygon":
+            self.mAP_metric = MeanAveragePrecision(
+                iou_type="segm", backend="faster_coco_eval"
+            )
+
     def load_model(self, model_name=None, revision=None):
         """Loads a model that has already been pretrained for a specific task,
         like tree crown detection.
@@ -370,9 +376,18 @@ class deepforest(pl.LightningModule):
                 augmentations=augmentations,
                 preload_images=preload_images,
             )
+        elif self.model.task == "polygon":
+            ds = training.PolygonDataset(
+                csv_file=csv_file,
+                root_dir=root_dir,
+                transforms=transforms,
+                label_dict=self.label_dict,
+                augmentations=augmentations,
+                preload_images=preload_images,
+            )
         else:
             raise ValueError(
-                f"Invalid task type: {self.model.task}, expected 'box' or 'point'"
+                f"Invalid task type: {self.model.task}, expected 'box', 'point' or 'polygon'"
             )
 
         if len(ds) == 0:
@@ -781,7 +796,8 @@ class deepforest(pl.LightningModule):
             preds = self.model.forward(images, targets)
 
         # Compute precision, recall and empty frame metrics.
-        self.precision_recall_metric.update(preds, targets, image_names)
+        if self.model.task == "box" or self.model.task == "point":
+            self.precision_recall_metric.update(preds, targets, image_names)
 
         if self.model.task == "box":
             # Filter out empty frames for IoU/mAP metrics. pred + target
@@ -807,6 +823,26 @@ class deepforest(pl.LightningModule):
                 device=device,
             )
             self.mae_metric.update(pred_counts, true_counts)
+        elif self.model.task == "polygon":
+            non_empty_pred = []
+            non_empty_target = []
+            for pred, target in zip(preds, targets, strict=True):
+                if "masks" in pred:
+                    masks = pred["masks"].squeeze(1)
+
+                    if masks.dtype.is_floating_point:
+                        masks = masks > 0.5
+
+                    pred["masks"] = masks.to(torch.uint8)
+
+                if "masks" in target:
+                    target["masks"] = target["masks"].to(torch.uint8)
+
+                if len(target["labels"] > 0):
+                    non_empty_pred.append(pred)
+                    non_empty_target.append(target)
+
+            self.mAP_metric.update(non_empty_pred, non_empty_target)
 
         # Log the predictions if you want to use them for evaluation logs
         for i, result in enumerate(preds):
@@ -839,12 +875,11 @@ class deepforest(pl.LightningModule):
                     key: value for key, value in output.items() if not key == "classes"
                 }
                 metrics.update(output)
+            metrics.update(self.precision_recall_metric.compute())
 
         elif self.model.task == "point":
             metrics["val_mae"] = self.mae_metric.compute()
-
-        # Recall/precision for all tasks
-        metrics.update(self.precision_recall_metric.compute())
+            metrics.update(self.precision_recall_metric.compute())
 
         return metrics
 
@@ -861,12 +896,15 @@ class deepforest(pl.LightningModule):
 
         # Manual reset. Lightning does not do this automatically
         # unless we log the metric objects directly
-        self.precision_recall_metric.reset()
         if self.model.task == "box":
             self.iou_metric.reset()
             self.mAP_metric.reset()
+            self.precision_recall_metric.reset()
         elif self.model.task == "point":
             self.mae_metric.reset()
+            self.precision_recall_metric.reset()
+        elif self.model.task == "polygon":
+            self.mAP_metric.reset()
 
     def predict_step(self, batch, batch_idx):
         """Predict a batch of images with the deepforest model.
@@ -1091,6 +1129,7 @@ class deepforest(pl.LightningModule):
         results = {}
         results.update(self.trainer.logged_metrics)
         results["predictions"] = self.predictions
-        results["results"] = self.precision_recall_metric.get_results()
+        if self.model.task == "box" or self.model.task == "point":
+            results["results"] = self.precision_recall_metric.get_results()
 
         return results
