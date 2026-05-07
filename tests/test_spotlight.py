@@ -8,6 +8,7 @@ from unittest.mock import patch
 from deepforest import get_data
 from deepforest.main import deepforest
 from deepforest.visualize import view_with_spotlight
+import deepforest.visualize.spotlight_adapter as spotlight_adapter
 from deepforest.visualize.spotlight_adapter import prepare_spotlight_package
 
 REAL_IMAGE_PATH = get_data("OSBS_029.tif")
@@ -173,46 +174,76 @@ def test_spotlight_integration_basic():
     assert annotation["score"] == 0.95
 
 
-def test_dataframe_accessor_viewer_launch_smoke():
-    """Smoke test: verify that spotlight.show() is called with correct data format when launch=True on accessor.
-
-    This tests the full launch path end-to-end by mocking the browser launch.
-    """
+def test_dataframe_accessor_launch_forwards_to_spotlight_launcher():
+    """Test that the accessor forwards launch requests to the launcher helper."""
     df = pd.DataFrame({
         "image_path": [REAL_IMAGE_PATH],
         "xmin": [10], "ymin": [10], "xmax": [50], "ymax": [50],
         "label": ["Tree"], "score": [0.95]
     })
 
-    with patch("renumics.spotlight.show") as mock_show:
+    with patch.object(
+        spotlight_adapter, "_launch_spotlight_from_manifest"
+    ) as mock_launch:
         result = df.spotlight(format="objects", launch=True, port=9999, host="127.0.0.1")
 
-        mock_show.assert_called_once()
+    mock_launch.assert_called_once()
 
-        call_args = mock_show.call_args
-        spotlight_df = call_args[0][0]
+    call_args = mock_launch.call_args
+    assert isinstance(call_args[0][0], dict)
+    assert call_args[1]["port"] == 9999
+    assert call_args[1]["host"] == "127.0.0.1"
+    assert result["images"][0]["annotations"][0]["label"] == "Tree"
 
-        assert isinstance(spotlight_df, pd.DataFrame)
-        assert "file_name" in spotlight_df.columns
-        assert "bbox_xmin" in spotlight_df.columns
-        assert "bbox_ymin" in spotlight_df.columns
-        assert "bbox_xmax" in spotlight_df.columns
-        assert "bbox_ymax" in spotlight_df.columns
-        assert "label" in spotlight_df.columns
-        assert "score" in spotlight_df.columns
 
-        assert len(spotlight_df) == 1
-        assert spotlight_df["label"].iloc[0] == "Tree"
-        assert spotlight_df["score"].iloc[0] == 0.95
-        assert spotlight_df["bbox_xmin"].iloc[0] == 10.0
-        assert spotlight_df["bbox_ymin"].iloc[0] == 10.0
-        assert spotlight_df["bbox_xmax"].iloc[0] == 50.0
-        assert spotlight_df["bbox_ymax"].iloc[0] == 50.0
+def test_launch_spotlight_from_manifest_formats_dataframe():
+    """Test that the internal launcher converts Spotlight manifests correctly."""
+    pytest.importorskip("renumics.spotlight")
 
-        assert call_args[1]["port"] == 9999
-        assert call_args[1]["host"] == "127.0.0.1"
+    manifest = {
+        "version": "1.0",
+        "bbox_format": "pixels",
+        "images": [
+            {
+                "file_name": REAL_IMAGE_PATH,
+                "annotations": [
+                    {
+                        "bbox": [10.0, 10.0, 50.0, 50.0],
+                        "label": "Tree",
+                        "score": 0.95,
+                    }
+                ],
+            }
+        ],
+    }
 
-        assert "version" in result
+    with patch("renumics.spotlight.show") as mock_show:
+        spotlight_adapter._launch_spotlight_from_manifest(
+            manifest, port=9999, host="127.0.0.1"
+        )
+
+    mock_show.assert_called_once()
+
+    call_args = mock_show.call_args
+    spotlight_df = call_args[0][0]
+
+    assert isinstance(spotlight_df, pd.DataFrame)
+    assert list(spotlight_df.columns) == [
+        "file_name",
+        "bbox_xmin",
+        "bbox_ymin",
+        "bbox_xmax",
+        "bbox_ymax",
+        "bbox_width",
+        "bbox_height",
+        "label",
+        "score",
+    ]
+    assert len(spotlight_df) == 1
+    assert spotlight_df["label"].iloc[0] == "Tree"
+    assert spotlight_df["score"].iloc[0] == 0.95
+    assert call_args[1]["port"] == 9999
+    assert call_args[1]["host"] == "127.0.0.1"
 
 # Gallery/Packaging Tests
 def test_prepare_spotlight_package_valid_gallery(tmp_path):
