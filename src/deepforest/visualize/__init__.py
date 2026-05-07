@@ -16,17 +16,16 @@ Example usage::
 To view results interactively with Spotlight, use the spotlight visualization functions.
 """
 
-# Import from the gallery and spotlight modules
-# Import from the legacy visualize.py file to maintain backward compatibility
-# Need to import from the parent module, not this package
 import importlib.util
 import sys
 from pathlib import Path
 
-# Gallery functionality removed - not needed for core Spotlight implementation
-from .spotlight_adapter import SpotlightAccessor, view_with_spotlight
+from .spotlight_adapter import (
+    SpotlightAccessor,
+    prepare_spotlight_package,
+    view_with_spotlight,
+)
 
-# Get the path to the legacy visualize.py file
 legacy_visualize_path = Path(__file__).parent.parent / "visualize.py"
 
 # Import the legacy module
@@ -34,7 +33,7 @@ spec = importlib.util.spec_from_file_location("legacy_visualize", legacy_visuali
 legacy_visualize = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(legacy_visualize)
 
-# Import the functions we need from the legacy module
+# Import the functions
 plot_results = legacy_visualize.plot_results
 plot_annotations = legacy_visualize.plot_annotations
 convert_to_sv_format = legacy_visualize.convert_to_sv_format
@@ -48,5 +47,6 @@ __all__ = [
     "plot_results",
     "SpotlightAccessor",
     "view_with_spotlight",
+    "prepare_spotlight_package",
     "_load_image",
 ]

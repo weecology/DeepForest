@@ -2,6 +2,7 @@ import argparse
 import sys
 from pathlib import Path
 
+import pandas as pd
 from hydra import compose, initialize, initialize_config_dir
 from omegaconf import OmegaConf
 from PIL import Image
@@ -255,13 +256,6 @@ def main():
     elif args.command == "gallery":
         # Gallery subcommands
         if args.gallery_cmd == "export":
-            try:
-                import pandas as pd
-            except Exception as exc:
-                raise RuntimeError(
-                    "pandas is required for gallery export. Please install it in your environment."
-                ) from exc
-
             # If demo requested, create a tiny demo dataset and image
             if args.demo:
                 demo_input_dir = Path(args.out) / "demo_input"
@@ -320,7 +314,7 @@ def main():
             if args.start_server:
                 print("Local server functionality removed - open index.html manually")
         elif args.gallery_cmd == "spotlight":
-            from deepforest.visualize.spotlight_export import (
+            from deepforest.visualize.spotlight_adapter import (
                 prepare_spotlight_package,
             )
 

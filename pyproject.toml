@@ -99,6 +99,9 @@ docs = [
     "sphinx-markdown-tables",
     "sphinx_rtd_theme",
 ]
+spotlight = [
+    "renumics-spotlight>=1.7.1",
+]
 
 [project.scripts]
 deepforest = "deepforest.scripts.cli:main"
