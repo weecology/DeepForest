@@ -21,8 +21,8 @@ IOU_THRESH = 0.0
 
 
 @pytest.mark.parametrize("model_name", MODEL_NAMES)
-def test_white_image_no_predictions(model_name):
-    model = deepforest()
+def test_white_image_no_predictions(model_name, tmp_path):
+    model = deepforest(config_args={"log_root": str(tmp_path)})
     model.load_model(model_name=model_name)
     model.config.score_thresh = SCORE_THRESH
     if hasattr(model, "model") and hasattr(model.model, "score_thresh"):

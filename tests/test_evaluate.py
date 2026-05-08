@@ -96,7 +96,8 @@ def test_evaluate_empty(m, tmp_path):
     # Evaluate with an empty model which should return no predictions.
     m = main.deepforest(config_args={"model": {"name": None},
                                      "label_dict": {"Tree": 0},
-                                     "num_classes": 1})
+                                     "num_classes": 1,
+                                     "log_root": str(tmp_path)})
     csv_file = get_data("OSBS_029.csv")
     results = m.evaluate(csv_file, root_dir=os.path.dirname(csv_file))
 
