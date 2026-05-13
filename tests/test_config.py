@@ -116,3 +116,40 @@ def test_load_checkpoint_with_dictconfig(m, tmp_path):
     loaded.save_model(checkpoint_path)
     fixed = main.deepforest.load_from_checkpoint(checkpoint_path)
     assert fixed.config == m.config
+
+
+@pytest.mark.parametrize("optimizer_type,optimizer_class", [
+    ("Adam", "Adam"),
+    ("AdamW", "AdamW"),
+    ("SGD", "SGD"),
+])
+def test_configure_optimizer_types(optimizer_type, optimizer_class, tmp_path):
+    annotations_file = get_data("testfile_deepforest.csv")
+    root_dir = os.path.dirname(annotations_file)
+
+    m = main.deepforest(config_args={
+        "train": {
+            "csv_file": annotations_file,
+            "root_dir": root_dir,
+            "fast_dev_run": True,
+            "optimizer": {"type": optimizer_type},
+        },
+        "log_root": str(tmp_path),
+    })
+    result = m.configure_optimizers()
+    optimizer = result if not isinstance(result, dict) else result["optimizer"]
+    assert type(optimizer).__name__ == optimizer_class
+
+
+def test_configure_optimizers_unknown_optimizer():
+    m = main.deepforest()
+    m.config.train.optimizer.type = "unknown_optimizer"
+    with pytest.raises(ValueError, match="Unknown optimizer type"):
+        m.configure_optimizers()
+
+
+def test_configure_optimizers_unknown_scheduler():
+    m = main.deepforest()
+    m.config.train.scheduler.type = "unknown_scheduler"
+    with pytest.raises(ValueError, match="Unknown scheduler type"):
+        m.configure_optimizers()

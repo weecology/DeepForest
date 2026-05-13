@@ -32,7 +32,6 @@ def _load_image(
     Returns:
         image: Numpy array
     """
-
     if image is not None:
         if isinstance(image, str):
             if root_dir is not None:
@@ -147,6 +146,10 @@ def convert_to_sv_format(
     Returns:
         sv.Detections | sv.KeyPoints: Object type depends on geometry.
     """
+    # Handle empty DataFrame gracefully (fixes #1346)
+    if df.empty:
+        return sv.Detections.empty()
+
     geom_type = determine_geometry_type(df)
 
     if geom_type == "box":

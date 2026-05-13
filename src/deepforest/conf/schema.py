@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from typing import Any
 
 from omegaconf import DictConfig, OmegaConf
 
@@ -40,14 +41,26 @@ class SchedulerConfig:
     """Set the type of scheduler, by default DeepForest uses a stepped learning
     function reducing at "milestones" during training."""
 
-    type: str | None = "StepLR"
+    type: str | None = "stepLR"
     params: SchedulerParamsConfig = field(default_factory=SchedulerParamsConfig)
 
 
 @dataclass
+class OptimizerConfig:
+    """Configuration for the optimizer used during training."""
+
+    type: str = "SGD"
+    weight_decay: float = 0.0
+    momentum: float = 0.9
+    betas: list[float] = field(default_factory=lambda: [0.9, 0.999])
+
+
+@dataclass
 class TrainConfig:
-    """Main training configuration. The CSV file and root directory are
-    required to specify the location of the training dataset.
+    """Main training configuration.
+
+    The CSV file and root directory are required to specify the location
+    of the training dataset.
 
     The default learning rate may need to be changed for certain
     architectures, such as transformers-based models which sometimes
@@ -63,6 +76,7 @@ class TrainConfig:
     csv_file: str | None = None
     root_dir: str | None = None
     lr: float = 0.001
+    optimizer: OptimizerConfig = field(default_factory=OptimizerConfig)
     scheduler: SchedulerConfig = field(default_factory=SchedulerConfig)
     epochs: int = 1
     fast_dev_run: bool = False
@@ -72,8 +86,10 @@ class TrainConfig:
 
 @dataclass
 class ValidationConfig:
-    """Main validation configuration. As with training data, it's required that
-    you set a CSV file and root directory.
+    """Main validation configuration.
+
+    As with training data, it's required that you set a CSV file and
+    root directory.
 
     Validation during training is important to identify if the model has
     converged or is overfitting.
@@ -101,12 +117,15 @@ class CropModelConfig:
     This section controls the standalone crop classification module.
     """
 
+    architecture: str = "resnet50"
     batch_size: int = 4
     num_workers: int = 0
     lr: float = 0.0001
     scheduler: SchedulerConfig = field(default_factory=SchedulerConfig)
     balance_classes: bool = False
     resize: list[int] = field(default_factory=lambda: [224, 224])
+    resize_interpolation: str = "bilinear"
+    normalize: Any = None
     expand: int = 0
     use_metadata: bool = False
     metadata_dim: int = 32
@@ -114,10 +133,21 @@ class CropModelConfig:
 
 
 @dataclass
+class PointConfig:
+    """Configuration for point models."""
+
+    backbone: str = "pvt_v2_b3"
+    score_integration_radius: int = 5
+    nms_distance_thresh: float = 5.0
+    distance_threshold: float = 10.0
+
+
+@dataclass
 class Config:
-    """General DeepForest configuration. Some parameters here are shared
-    between dataloaders, for example the batch size, accelerator and number of
-    workers.
+    """General DeepForest configuration.
+
+    Some parameters here are shared between dataloaders, for example the
+    batch size, accelerator and number of workers.
 
     Here we also set the architecture, which can be one of "retinanet"
     or "DeformableDetr" currently. If you modify the number of classes
@@ -134,6 +164,8 @@ class Config:
     devices: int | str = "auto"
     accelerator: str = "auto"
     batch_size: int = 1
+    precision: str | None = None
+    matmul_precision: str = "highest"
 
     architecture: str = "retinanet"
     num_classes: int | None = None
@@ -141,9 +173,11 @@ class Config:
 
     nms_thresh: float = 0.05
     score_thresh: float = 0.1
+    detections_per_img: int = 300
+    topk_candidates: int = 1000
     model: ModelConfig = field(default_factory=ModelConfig)
 
-    log_root: str = "./"
+    log_root: str = "./lightning_logs"
 
     # Preprocessing
     path_to_raster: str | None = None
@@ -157,3 +191,4 @@ class Config:
     validation: ValidationConfig = field(default_factory=ValidationConfig)
     predict: PredictConfig = field(default_factory=PredictConfig)
     cropmodel: CropModelConfig = field(default_factory=CropModelConfig)
+    point: PointConfig = field(default_factory=PointConfig)

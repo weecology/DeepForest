@@ -12,6 +12,8 @@ from deepforest.model import BaseModel
 class RetinaNetHub(RetinaNet, PyTorchModelHubMixin):
     """RetinaNet extension that allows the use of the HF Hub API."""
 
+    task: str = "box"
+
     def __init__(
         self,
         backbone_weights: str | None = None,
@@ -128,7 +130,6 @@ class RetinaNetHub(RetinaNet, PyTorchModelHubMixin):
         The function signature is required by PyTorch but most of the
         arguments are undocumented and we don't use them.
         """
-
         if prefix:
             return
 
@@ -188,7 +189,6 @@ class Model(BaseModel):
         Returns:
             model: a pytorch nn module
         """
-
         # Avoid serializing non plain data
         label_dict = dict(self.config.label_dict) if self.config.label_dict else None
 
@@ -199,6 +199,8 @@ class Model(BaseModel):
                 nms_thresh=self.config.nms_thresh,
                 score_thresh=self.config.score_thresh,
                 label_dict=label_dict,
+                detections_per_img=self.config.detections_per_img,
+                topk_candidates=self.config.topk_candidates,
             )
         else:
             # Pre 2.0 compatibility, the score_threshold used to be stored under retinanet.score_thresh
@@ -214,6 +216,8 @@ class Model(BaseModel):
                 label_dict=label_dict,
                 nms_thresh=self.config.nms_thresh,
                 score_thresh=self.config.score_thresh,
+                detections_per_img=self.config.detections_per_img,
+                topk_candidates=self.config.topk_candidates,
                 **hf_args,
             )
 

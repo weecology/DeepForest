@@ -58,7 +58,6 @@ def train(
         to the model's hyperparameters as 'experiment_id' for later re-logging to
         the same experiment.
     """
-
     if trace:
         if not torch.cuda.is_available():
             warnings.warn("Cuda is not available, skipping trace.", stacklevel=2)

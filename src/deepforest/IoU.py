@@ -91,7 +91,6 @@ def match_polygons(ground_truth: "gpd.GeoDataFrame", submission: "gpd.GeoDataFra
     Returns:
         iou_df: dataframe of IoU scores
     """
-
     plot_names = submission["image_path"].unique()
     if len(plot_names) > 1:
         raise ValueError(f"More than one image passed to function: {plot_names[0]}")

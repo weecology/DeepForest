@@ -8,17 +8,19 @@ import numpy as np
 import pandas as pd
 import pytorch_lightning as pl
 import torch
+import torchmetrics
 from omegaconf import DictConfig, OmegaConf
 from PIL import Image
 from pytorch_lightning.callbacks import LearningRateMonitor
 from pytorch_lightning.loggers import CSVLogger
 from torch import optim
-from torchmetrics.classification import BinaryAccuracy
 from torchmetrics.detection import IntersectionOverUnion, MeanAveragePrecision
 
 from deepforest import predict, utilities
 from deepforest.datasets import prediction, training
 from deepforest.metrics import RecallPrecision
+
+Image.MAX_IMAGE_PIXELS = None
 
 
 class deepforest(pl.LightningModule):
@@ -91,22 +93,36 @@ class deepforest(pl.LightningModule):
 
     def setup_metrics(self):
         # Guard against initialization before a validation csv_file is set
-        if not self.config.validation.csv_file:
+        if not self.config.validation.csv_file and self.existing_val_dataloader is None:
             return
 
-        # Metrics
-        self.iou_metric = IntersectionOverUnion(
-            class_metrics=True, iou_threshold=self.config.validation.iou_threshold
-        )
-        self.mAP_metric = MeanAveragePrecision(backend="faster_coco_eval")
+        # Box Metrics
+        if self.model.task == "box":
+            self.iou_metric = IntersectionOverUnion(
+                class_metrics=True, iou_threshold=self.config.validation.iou_threshold
+            )
 
-        # Empty frame accuracy
-        self.empty_frame_accuracy = BinaryAccuracy()
+            self.mAP_metric = MeanAveragePrecision(backend="faster_coco_eval")
 
-        self.precision_recall_metric = RecallPrecision(
-            csv_file=self.config.validation.csv_file,
-            label_dict=self.label_dict,
-        )
+            self.precision_recall_metric = RecallPrecision(
+                iou_threshold=self.config.validation.iou_threshold,
+                label_dict=self.label_dict,
+                task=self.model.task,
+            )
+        # Point Metrics
+        elif self.model.task == "point":
+            self.mae_metric = torchmetrics.MeanAbsoluteError()
+            self.precision_recall_metric = RecallPrecision(
+                distance_threshold=self.config.point.distance_threshold,
+                label_dict=self.label_dict,
+                task=self.model.task,
+            )
+
+        # Segmentation metrics
+        if self.model.task == "polygon":
+            self.mAP_metric = MeanAveragePrecision(
+                iou_type="segm", backend="faster_coco_eval"
+            )
 
     def load_model(self, model_name=None, revision=None):
         """Loads a model that has already been pretrained for a specific task,
@@ -117,7 +133,7 @@ class deepforest(pl.LightningModule):
         is in the form: 'organization/repository'. For a list of models distributed
         by the DeepForest team (and the associated model names) see the
         documentation:
-        https://deepforest.readthedocs.io/en/latest/installation_and_setup/prebuilt.html
+        https://deepforest.readthedocs.io/en/stable/user_guide/02_prebuilt.html
 
         Args:
             model_name (str): A repository ID for huggingface in the form of organization/repository
@@ -126,7 +142,6 @@ class deepforest(pl.LightningModule):
         Returns:
             None
         """
-
         if model_name is None:
             model_name = self.config.model.name
 
@@ -174,8 +189,9 @@ class deepforest(pl.LightningModule):
         self.numeric_to_label_dict = {v: k for k, v in label_dict.items()}
 
     def create_model(self, initialize_model=False):
-        """Initialize a deepforest architecture. This can be done in two ways.
-        Passed as the model argument to deepforest __init__(), or as a named
+        """Initialize a deepforest architecture.
+
+        This can be done in two ways. Passed as the model argument to deepforest __init__(), or as a named
         architecture in config.architecture, which corresponds to a file in
         models/, as is a subclass of model.Model(). The config args in the
         .yaml are specified.
@@ -200,7 +216,6 @@ class deepforest(pl.LightningModule):
             callbacks: Optional list of callbacks
             **kwargs: Additional trainer arguments
         """
-
         # Setup metrics which may have changed if the config was modified
         self.setup_metrics()
 
@@ -212,7 +227,12 @@ class deepforest(pl.LightningModule):
             logger = CSVLogger(save_dir=self.config.log_root, name="")
 
         # If val data is passed, monitor learning rate and setup classification metrics
-        if self.config.validation.csv_file is not None:
+        has_val = (
+            self.config.validation.csv_file is not None
+            or self.existing_val_dataloader is not None
+        )
+
+        if has_val:
             if logger is not None:
                 lr_monitor = LearningRateMonitor(logging_interval="epoch")
                 callbacks.append(lr_monitor)
@@ -230,6 +250,9 @@ class deepforest(pl.LightningModule):
         else:
             enable_checkpointing = False
 
+        if torch.cuda.is_available():
+            torch.set_float32_matmul_precision(self.config.matmul_precision)
+
         trainer_args = {
             "logger": logger,
             "max_epochs": self.config.train.epochs,
@@ -242,16 +265,20 @@ class deepforest(pl.LightningModule):
             "num_sanity_val_steps": num_sanity_val_steps,
             "default_root_dir": self.config.log_root,
         }
+        if self.config.precision is not None:
+            trainer_args["precision"] = self.config.precision
         # Update with kwargs to allow them to override config
         trainer_args.update(kwargs)
 
         self.trainer = pl.Trainer(**trainer_args)
 
     def on_fit_start(self):
-        if self.config.train.csv_file is None:
+        if self.config.train.csv_file is None and self.existing_train_dataloader is None:
             raise AttributeError(
-                "Cannot train with a train annotations file, "
-                "please set 'config['train']['csv_file'] before "
+                "Cannot train without a train annotations file "
+                "or existing_train_dataloader. Please set "
+                "'config.train.csv_file' or pass "
+                "existing_train_dataloader before "
                 "calling deepforest.create_trainer()'"
             )
 
@@ -315,8 +342,9 @@ class deepforest(pl.LightningModule):
         preload_images=False,
         batch_size=1,
     ):
-        """Create a dataset for inference or training. Csv file format is .csv
-        file with the columns "image_path", "xmin","ymin","xmax","ymax" for the
+        """Create a dataset for inference or training.
+
+        Csv file format is .csv file with the columns "image_path", "xmin","ymin","xmax","ymax" for the
         image name and bounding box position. Image_path is the relative
         filename, not absolute path, which is in the root_dir directory. One
         bounding box per line.
@@ -331,15 +359,38 @@ class deepforest(pl.LightningModule):
         Returns:
             ds: a pytorch dataset
         """
+        if self.model.task == "box":
+            ds = training.BoxDataset(
+                csv_file=csv_file,
+                root_dir=root_dir,
+                transforms=transforms,
+                label_dict=self.label_dict,
+                augmentations=augmentations,
+                preload_images=preload_images,
+            )
+        elif self.model.task == "point":
+            ds = training.PointDataset(
+                csv_file=csv_file,
+                root_dir=root_dir,
+                transforms=transforms,
+                label_dict=self.label_dict,
+                augmentations=augmentations,
+                preload_images=preload_images,
+            )
+        elif self.model.task == "polygon":
+            ds = training.PolygonDataset(
+                csv_file=csv_file,
+                root_dir=root_dir,
+                transforms=transforms,
+                label_dict=self.label_dict,
+                augmentations=augmentations,
+                preload_images=preload_images,
+            )
+        else:
+            raise ValueError(
+                f"Invalid task type: {self.model.task}, expected 'box', 'point' or 'polygon'"
+            )
 
-        ds = training.BoxDataset(
-            csv_file=csv_file,
-            root_dir=root_dir,
-            transforms=transforms,
-            label_dict=self.label_dict,
-            augmentations=augmentations,
-            preload_images=preload_images,
-        )
         if len(ds) == 0:
             raise ValueError(
                 f"Dataset from {csv_file} is empty. Check CSV for valid entries and columns."
@@ -458,7 +509,11 @@ class deepforest(pl.LightningModule):
             image = image.astype("float32")
 
         result = predict._predict_image_(
-            model=self.model, image=image, path=path, nms_thresh=self.config.nms_thresh
+            model=self.model,
+            image=image,
+            path=path,
+            iou_threshold=self.config.nms_thresh,
+            nms_distance_thresh=self.config.point.nms_distance_thresh,
         )
 
         # If there were no predictions, return None
@@ -500,7 +555,6 @@ class deepforest(pl.LightningModule):
         Returns:
             df: pandas dataframe with bounding boxes, label and scores for each image in the csv file
         """
-
         ds = prediction.FromCSVFile(csv_file=csv_file, root_dir=root_dir)
         dataloader = self.predict_dataloader(ds, batch_size=self.config.batch_size)
         results = predict._dataloader_wrapper_(
@@ -603,12 +657,11 @@ class deepforest(pl.LightningModule):
                 # Flatten list from batched prediction
                 # Track global window index across batches
                 global_window_idx = 0
-                for _idx, batch in enumerate(batched_results):
-                    for _window_idx, window_result in enumerate(batch):
-                        formatted_result = ds.postprocess(
-                            window_result, global_window_idx
+                for batch in batched_results:
+                    for window_result in batch:
+                        image_results.append(
+                            ds.postprocess(window_result, global_window_idx)
                         )
-                        image_results.append(formatted_result)
                         global_window_idx += 1
 
             if not image_results:
@@ -647,17 +700,27 @@ class deepforest(pl.LightningModule):
         # Perform mosaic for each image_path, or all if image_path is None
         mosaic_results = []
         if results["image_path"].isnull().all():
-            mosaic_results.append(predict.mosiac(results, iou_threshold=iou_threshold))
+            mosaic_results.append(
+                predict.mosaic(
+                    results,
+                    iou_threshold=iou_threshold,
+                    nms_distance_thresh=self.config.point.nms_distance_thresh,
+                )
+            )
         else:
             for image_path in results["image_path"].unique():
                 image_results = results[results["image_path"] == image_path]
-                image_mosaic = predict.mosiac(image_results, iou_threshold=iou_threshold)
+                image_mosaic = predict.mosaic(
+                    image_results,
+                    iou_threshold=iou_threshold,
+                    nms_distance_thresh=self.config.point.nms_distance_thresh,
+                )
                 image_mosaic["image_path"] = image_path
                 mosaic_results.append(image_mosaic)
 
         mosaic_results = pd.concat(mosaic_results)
         mosaic_results["label"] = mosaic_results.label.apply(
-            lambda x: self.numeric_to_label_dict[x]
+            lambda x: self.numeric_to_label_dict.get(x, x)
         )
 
         if paths[0] is not None:
@@ -763,33 +826,54 @@ class deepforest(pl.LightningModule):
         with torch.no_grad():
             preds = self.model.forward(images, targets)
 
-        if len(targets) > 0:
-            # Remove empty targets and corresponding predictions
-            filtered_preds = []
-            filtered_targets = []
+        # Compute precision, recall and empty frame metrics.
+        if self.model.task == "box" or self.model.task == "point":
+            self.precision_recall_metric.update(preds, targets, image_names)
 
-            for i, target in enumerate(targets):
-                # Empty frame accuracy
-                is_empty_frame = target["boxes"].numel() == 0 or torch.all(
-                    target["boxes"] == 0
-                )
-                if is_empty_frame:
-                    # 0 indicates empty frame or predication
-                    device = target["boxes"].device
-                    self.empty_frame_accuracy.update(
-                        torch.tensor([min(len(preds[i]["boxes"]), 1)], device=device),
-                        torch.tensor([0.0], device=device),
-                    )
-                else:
-                    # Non-empty frames go to all metrics
-                    filtered_preds.append(preds[i])
-                    filtered_targets.append(target)
+        if self.model.task == "box":
+            # Filter out empty frames for IoU/mAP metrics. pred + target
+            non_empty_pred = []
+            non_empty_target = []
+            for pred, target in zip(preds, targets, strict=True):
+                if not (target["boxes"].numel() == 0 or torch.all(target["boxes"] == 0)):
+                    non_empty_pred.append(pred)
+                    non_empty_target.append(target)
 
-            # IoU and mAP metrics need preds/targets to exist
-            self.iou_metric.update(filtered_preds, filtered_targets)
-            self.mAP_metric.update(filtered_preds, filtered_targets)
-            # Precision recall metric can handle empty frames internally
-            self.precision_recall_metric.update(preds, image_names)
+            self.iou_metric.update(non_empty_pred, non_empty_target)
+            self.mAP_metric.update(non_empty_pred, non_empty_target)
+        elif self.model.task == "point":
+            device = targets[0]["points"].device if targets else torch.device("cpu")
+            pred_counts = torch.tensor(
+                [float(len(p["points"])) for p in preds],
+                dtype=torch.float32,
+                device=device,
+            )
+            true_counts = torch.tensor(
+                [float(len(t["points"])) for t in targets],
+                dtype=torch.float32,
+                device=device,
+            )
+            self.mae_metric.update(pred_counts, true_counts)
+        elif self.model.task == "polygon":
+            non_empty_pred = []
+            non_empty_target = []
+            for pred, target in zip(preds, targets, strict=True):
+                if "masks" in pred:
+                    masks = pred["masks"].squeeze(1)
+
+                    if masks.dtype.is_floating_point:
+                        masks = masks > 0.5
+
+                    pred["masks"] = masks.to(torch.uint8)
+
+                if "masks" in target:
+                    target["masks"] = target["masks"].to(torch.uint8)
+
+                if len(target["labels"] > 0):
+                    non_empty_pred.append(pred)
+                    non_empty_target.append(target)
+
+            self.mAP_metric.update(non_empty_pred, non_empty_target)
 
         # Log the predictions if you want to use them for evaluation logs
         for i, result in enumerate(preds):
@@ -810,22 +894,23 @@ class deepforest(pl.LightningModule):
         """
         metrics = {}
 
-        # IoU and mAP
-        if len(self.iou_metric.groundtruth_labels) > 0:
-            metrics.update(self.iou_metric.compute())
-            # Lightning bug: claims this is a warning but it's not. See issue #16218 in Lightning-AI/pytorch-lightning
-            output = self.mAP_metric.compute()
+        if self.model.task == "box":
+            # IoU and mAP
+            if len(self.iou_metric.groundtruth_labels) > 0:
+                metrics.update(self.iou_metric.compute())
+                # Lightning bug: claims this is a warning but it's not. See issue #16218 in Lightning-AI/pytorch-lightning
+                output = self.mAP_metric.compute()
 
-            # Remove classes from output dict
-            output = {key: value for key, value in output.items() if not key == "classes"}
-            metrics.update(output)
+                # Remove classes from output dict
+                output = {
+                    key: value for key, value in output.items() if not key == "classes"
+                }
+                metrics.update(output)
+            metrics.update(self.precision_recall_metric.compute())
 
-        # Box recall/precision
-        metrics.update(self.precision_recall_metric.compute())
-
-        # Empty frame accuracy
-        if self.empty_frame_accuracy.update_called:
-            metrics["empty_frame_accuracy"] = self.empty_frame_accuracy.compute()
+        elif self.model.task == "point":
+            metrics["val_mae"] = self.mae_metric.compute()
+            metrics.update(self.precision_recall_metric.compute())
 
         return metrics
 
@@ -842,14 +927,20 @@ class deepforest(pl.LightningModule):
 
         # Manual reset. Lightning does not do this automatically
         # unless we log the metric objects directly
-        self.precision_recall_metric.reset()
-        self.iou_metric.reset()
-        self.mAP_metric.reset()
-        self.empty_frame_accuracy.reset()
+        if self.model.task == "box":
+            self.iou_metric.reset()
+            self.mAP_metric.reset()
+            self.precision_recall_metric.reset()
+        elif self.model.task == "point":
+            self.mae_metric.reset()
+            self.precision_recall_metric.reset()
+        elif self.model.task == "polygon":
+            self.mAP_metric.reset()
 
     def predict_step(self, batch, batch_idx):
-        """Predict a batch of images with the deepforest model. If batch is a
-        list, concatenate the images, predict and then split the results,
+        """Predict a batch of images with the deepforest model.
+
+        If batch is a list, concatenate the images, predict and then split the results,
         useful for main.predict_tile.
 
         Args:
@@ -869,6 +960,7 @@ class deepforest(pl.LightningModule):
         self.model.eval()
         with torch.no_grad():
             preds = self.model.forward(images)
+
         return preds
 
     def predict_batch(self, images, preprocess_fn=None):
@@ -908,9 +1000,33 @@ class deepforest(pl.LightningModule):
         return results
 
     def configure_optimizers(self):
-        optimizer = optim.SGD(
-            self.model.parameters(), lr=self.config.train.lr, momentum=0.9
-        )
+        opt_cfg = self.config.train.optimizer
+        lr = self.config.train.lr
+        if opt_cfg.type == "Adam":
+            optimizer = optim.Adam(
+                self.model.parameters(),
+                lr=lr,
+                betas=tuple(opt_cfg.betas),
+                weight_decay=opt_cfg.weight_decay,
+            )
+        elif opt_cfg.type == "AdamW":
+            optimizer = optim.AdamW(
+                self.model.parameters(),
+                lr=lr,
+                betas=tuple(opt_cfg.betas),
+                weight_decay=opt_cfg.weight_decay,
+            )
+        elif opt_cfg.type == "SGD":
+            optimizer = optim.SGD(
+                self.model.parameters(),
+                lr=lr,
+                momentum=opt_cfg.momentum,
+                weight_decay=opt_cfg.weight_decay,
+            )
+        else:
+            raise ValueError(
+                f"Unknown optimizer type '{opt_cfg.type}'. Choose from: SGD, Adam, AdamW."
+            )
 
         scheduler_config = self.config.train.scheduler
         scheduler_type = scheduler_config.type
@@ -920,7 +1036,12 @@ class deepforest(pl.LightningModule):
         def lr_lambda(epoch):
             return eval(params.lr_lambda)
 
-        if scheduler_type == "cosine":
+        if scheduler_type is None or scheduler_type == "constantLR":
+            scheduler = torch.optim.lr_scheduler.ConstantLR(
+                optimizer, factor=1.0, total_iters=0
+            )
+
+        elif scheduler_type == "cosine":
             scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
                 optimizer, T_max=params.T_max, eta_min=params.eta_min
             )
@@ -948,7 +1069,7 @@ class deepforest(pl.LightningModule):
                 optimizer, gamma=params.gamma
             )
 
-        else:
+        elif scheduler_type in ("ReduceLROnPlateau", "reduceLROnPlateau"):
             scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
                 optimizer,
                 mode=params["mode"],
@@ -959,6 +1080,13 @@ class deepforest(pl.LightningModule):
                 cooldown=params["cooldown"],
                 min_lr=params["min_lr"],
                 eps=params["eps"],
+            )
+
+        else:
+            raise ValueError(
+                f"Unknown scheduler type '{scheduler_type}'. Choose from: "
+                "constantLR, cosine, lambdaLR, multiplicativeLR, stepLR, multistepLR, "
+                "exponentialLR, ReduceLROnPlateau."
             )
 
         # Monitor learning rate if val data is used
@@ -1011,7 +1139,28 @@ class deepforest(pl.LightningModule):
         self.create_trainer()
         self.trainer.validate(self)
 
-        # Read back the full results stashed by RecallPrecision.compute()
-        results = self.precision_recall_metric.results
+        # Gather predictions from all ranks in multi-GPU settings
+        if self.trainer.world_size > 1:
+            all_predictions = [None] * self.trainer.world_size
+            torch.distributed.all_gather_object(all_predictions, self.predictions)
+            self.predictions = [pred for preds in all_predictions for pred in preds]
+
+        # Concat prediction dataframes and convert numeric labels to strings
+        if len(self.predictions) > 0:
+            self.predictions = pd.concat(self.predictions, ignore_index=True)
+            if "label" in self.predictions.columns:
+                self.predictions["label"] = self.predictions["label"].map(
+                    lambda x: self.numeric_to_label_dict.get(int(x), x)
+                    if pd.notna(x)
+                    else x
+                )
+        else:
+            self.predictions = pd.DataFrame()
+
+        results = {}
+        results.update(self.trainer.logged_metrics)
+        results["predictions"] = self.predictions
+        if self.model.task == "box" or self.model.task == "point":
+            results["results"] = self.precision_recall_metric.get_results()
 
         return results

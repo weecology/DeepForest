@@ -2,6 +2,7 @@
 import json
 import math
 import os
+from collections.abc import Mapping
 
 import numpy as np
 import rasterio
@@ -12,6 +13,7 @@ from huggingface_hub import PyTorchModelHubMixin, hf_hub_download
 from omegaconf import OmegaConf
 from PIL import Image
 from pytorch_lightning import LightningModule, Trainer
+from safetensors.torch import load_file
 from torchvision import models, transforms
 
 from deepforest import utilities
@@ -37,7 +39,6 @@ class BaseModel:
 
         Must be implemented by subclasses to return a PyTorch nn.Module.
         """
-
         raise ValueError(
             "The create_model class method needs to be implemented. "
             "Take in args and return a pytorch nn module."
@@ -66,8 +67,66 @@ class BaseModel:
         assert model_keys == ["boxes", "labels", "scores"]
 
 
+_CROP_BACKBONES: dict[str, tuple] = {
+    "resnet18": (models.resnet18, models.ResNet18_Weights.DEFAULT),
+    "resnet50": (models.resnet50, models.ResNet50_Weights.DEFAULT),
+}
+
+
+def create_crop_backbone(
+    architecture: str = "resnet50",
+    num_classes: int = 2,
+    pretrained: bool = True,
+) -> torch.nn.Module:
+    """Create a classification backbone for :class:`CropModel`.
+
+    Args:
+        architecture: One of the keys in ``_CROP_BACKBONES``
+            (currently ``"resnet18"`` or ``"resnet50"``).
+        num_classes: Number of output classes for the final layer.
+        pretrained: Whether to load ImageNet-pretrained weights.
+
+    Returns:
+        torch.nn.Module: Model with the final FC layer adjusted to
+        ``num_classes``.
+
+    Raises:
+        ValueError: If ``architecture`` is not recognized.
+    """
+    if architecture not in _CROP_BACKBONES:
+        raise ValueError(
+            f"Unknown CropModel architecture '{architecture}'. "
+            f"Choose from {sorted(_CROP_BACKBONES)}."
+        )
+    factory, default_weights = _CROP_BACKBONES[architecture]
+    m = factory(weights=default_weights if pretrained else None)
+    num_ftrs = m.fc.in_features
+    m.fc = torch.nn.Linear(num_ftrs, num_classes)
+    return m
+
+
+def create_crop_feature_backbone(
+    architecture: str = "resnet50",
+    pretrained: bool = True,
+) -> tuple[torch.nn.Module, int]:
+    """Create a crop backbone that returns feature vectors."""
+    if architecture not in _CROP_BACKBONES:
+        raise ValueError(
+            f"Unknown CropModel architecture '{architecture}'. "
+            f"Choose from {sorted(_CROP_BACKBONES)}."
+        )
+    factory, default_weights = _CROP_BACKBONES[architecture]
+    m = factory(weights=default_weights if pretrained else None)
+    feature_dim = m.fc.in_features
+    m.fc = torch.nn.Identity()
+    return m, feature_dim
+
+
 def simple_resnet_50(num_classes: int = 2) -> torch.nn.Module:
     """Create a simple ResNet-50 model for classification.
+
+    .. deprecated::
+        Use :func:`create_crop_backbone` instead.
 
     Args:
         num_classes: Number of output classes for the final layer
@@ -75,11 +134,7 @@ def simple_resnet_50(num_classes: int = 2) -> torch.nn.Module:
     Returns:
         torch.nn.Module: ResNet-50 model with modified final layer
     """
-    m = models.resnet50(weights=models.ResNet50_Weights.DEFAULT)
-    num_ftrs = m.fc.in_features
-    m.fc = torch.nn.Linear(num_ftrs, num_classes)
-
-    return m
+    return create_crop_backbone("resnet50", num_classes=num_classes)
 
 
 def resnet50_backbone():
@@ -89,10 +144,7 @@ def resnet50_backbone():
         tuple: (backbone, feature_dim) where backbone is the model and
             feature_dim is the output dimension (2048).
     """
-    m = models.resnet50(weights=models.ResNet50_Weights.DEFAULT)
-    feature_dim = m.fc.in_features
-    m.fc = torch.nn.Identity()
-    return m, feature_dim
+    return create_crop_feature_backbone("resnet50")
 
 
 class SpatialTemporalEncoder(torch.nn.Module):
@@ -206,8 +258,18 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
         num_classes = len(self.label_dict)
         self.create_model(num_classes)
 
-    def create_model(self, num_classes):
-        """Create a model with the given number of classes."""
+    def create_model(self, num_classes: int, architecture: str | None = None):
+        """Create classification backbone and metrics for ``num_classes``.
+
+        Args:
+            num_classes: Number of output classes.
+            architecture: Backbone name (e.g. ``"resnet18"``, ``"resnet50"``).
+                Falls back to ``self.config["cropmodel"]["architecture"]``
+                then ``"resnet50"``.
+        """
+        if architecture is None:
+            architecture = self.config["cropmodel"].get("architecture", "resnet50")
+
         self.accuracy = torchmetrics.Accuracy(
             average="none", num_classes=num_classes, task="multiclass"
         )
@@ -235,7 +297,9 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
             metadata_dim = self.config["cropmodel"].get("metadata_dim", 32)
             metadata_dropout = self.config["cropmodel"].get("metadata_dropout", 0.5)
 
-            backbone, feature_dim = resnet50_backbone()
+            backbone, feature_dim = create_crop_feature_backbone(
+                architecture=architecture,
+            )
             self.backbone = backbone
             self.metadata_encoder = SpatialTemporalEncoder(
                 embed_dim=metadata_dim, dropout=metadata_dropout
@@ -246,7 +310,10 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
             self.backbone = None
             self.metadata_encoder = None
             self.classifier = None
-            self.model = simple_resnet_50(num_classes=num_classes)
+            self.model = create_crop_backbone(
+                architecture=architecture,
+                num_classes=num_classes,
+            )
 
     def create_trainer(self, **kwargs):
         """Create a pytorch lightning trainer object."""
@@ -304,11 +371,18 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
         """
         data_transforms = []
         data_transforms.append(transforms.ToTensor())
-        data_transforms.append(self.normalize())
+        norm = self.normalize()
+        if norm is not None:
+            data_transforms.append(norm)
 
-        # Get resize dimensions from config, default to [224, 224] if not specified
         resize_dims = self.config["cropmodel"].get("resize", [224, 224])
-        data_transforms.append(transforms.Resize(resize_dims))
+        interp_name = self.config["cropmodel"].get("resize_interpolation", "bilinear")
+        interp = (
+            transforms.InterpolationMode.NEAREST
+            if interp_name == "nearest"
+            else transforms.InterpolationMode.BILINEAR
+        )
+        data_transforms.append(transforms.Resize(resize_dims, interpolation=interp))
 
         # Apply augmentations if specified
         if augmentations is not None:
@@ -377,7 +451,6 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
         Returns:
             None
         """
-
         # Create a directory for each label
         for label in labels:
             os.makedirs(os.path.join(savedir, label), exist_ok=True)
@@ -404,7 +477,44 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
                 Image.fromarray(img).save(img_path)
 
     def normalize(self):
-        return transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        """Build the normalization transform from config.
+
+        Returns:
+            transforms.Normalize or None: The normalization transform,
+                or None if normalization is disabled.
+
+        Raises:
+            ValueError: If ``mean`` or ``std`` is missing from the
+                normalize mapping.
+        """
+        norm_cfg = self.config["cropmodel"].get("normalize", None)
+
+        if norm_cfg is None:
+            return transforms.Normalize(
+                mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+            )
+
+        if norm_cfg is False:
+            return None
+
+        if not isinstance(norm_cfg, Mapping):
+            raise ValueError(
+                f"'normalize' must be null, false, or a mapping with 'mean' and 'std', "
+                f"got {type(norm_cfg).__name__}."
+            )
+
+        has_mean = "mean" in norm_cfg
+        has_std = "std" in norm_cfg
+        if not (has_mean and has_std):
+            missing = [k for k, v in [("mean", has_mean), ("std", has_std)] if not v]
+            raise ValueError(
+                "Both 'mean' and 'std' must be provided for custom normalization, "
+                f"missing: {missing}."
+            )
+
+        return transforms.Normalize(
+            mean=list(norm_cfg["mean"]), std=list(norm_cfg["std"])
+        )
 
     def forward(self, x, metadata=None):
         if self.backbone is not None:
@@ -604,7 +714,6 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
         Returns:
             CropModel: The loaded and eval-mode model instance.
         """
-
         model = cls.from_pretrained(
             repo_id,
             revision=revision,
@@ -622,6 +731,7 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
         """
         config = OmegaConf.to_container(self.config, resolve=True, enum_to_str=True)
         config["cropmodel"]["label_dict"] = self.label_dict
+        config["cropmodel"].setdefault("architecture", "resnet50")
         super().push_to_hub(repo_id, **kwargs, config=config)
 
     def push_to_hub(self, repo_id, commit_message="Add model", **kwargs):
@@ -630,23 +740,46 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
         )
 
     @classmethod
-    def from_pretrained(cls, repo_id: str, **kwargs):
+    def from_pretrained(cls, repo_id: str, revision: str | None = None):
         """Load a model from the Hugging Face Hub.
+
+        Reads config.json to determine architecture and labels, creates
+        the model, then loads weights.
 
         Args:
             repo_id: Hugging Face repo id, e.g. "username/my-cropmodel".
-            **kwargs: Additional arguments to pass to the from_pretrained method.
+            revision: Optional git revision, branch, or tag. Defaults to
+                the repo default branch.
         """
-        model = super().from_pretrained(repo_id, **kwargs)
-
-        # Restore labels from config.json
-        cfg_path = hf_hub_download(repo_id, "config.json")
+        # Download config to determine architecture and labels before loading weights
+        cfg_path = hf_hub_download(repo_id, "config.json", revision=revision)
         with open(cfg_path) as f:
             cfg = json.load(f)
-            model.label_dict = {
-                k: int(v) for k, v in cfg["cropmodel"]["label_dict"].items()
-            }
-            model.numeric_to_label_dict = {v: k for k, v in model.label_dict.items()}
-        model.num_classes = len(model.label_dict)
-        model.eval()
-        return model
+
+        label_dict = {k: int(v) for k, v in cfg["cropmodel"]["label_dict"].items()}
+        num_classes = len(label_dict)
+        architecture = cfg["cropmodel"].get("architecture", "resnet50")
+
+        # Create instance with correct architecture before loading weights
+        instance = cls.__new__(cls)
+        LightningModule.__init__(instance)
+
+        instance.config = cfg
+        if cfg["cropmodel"].get("balance_classes", False):
+            instance._sampler_type = "weighted_random"
+        else:
+            instance._sampler_type = "random"
+
+        instance.create_model(num_classes, architecture=architecture)
+
+        # Load weights
+        model_path = hf_hub_download(repo_id, "model.safetensors", revision=revision)
+        state_dict = load_file(model_path)
+        instance.load_state_dict(state_dict, strict=True)
+
+        instance.label_dict = label_dict
+        instance.numeric_to_label_dict = {v: k for k, v in label_dict.items()}
+        instance.num_classes = num_classes
+        instance.eval()
+
+        return instance

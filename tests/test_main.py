@@ -10,11 +10,13 @@ import torch
 import tempfile
 import copy
 import importlib.util
+import math
 
 from deepforest import main, get_data, model
 from deepforest.utilities import read_file, format_geometry
 from deepforest.datasets import prediction
 from deepforest.visualize import plot_results
+from deepforest.metrics import RecallPrecision
 
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import Callback
@@ -554,16 +556,26 @@ def test_predict_tile_from_array(m, path):
 
 def test_evaluate(m):
     csv_file = get_data("OSBS_029.csv")
+    df = pd.read_csv(csv_file)
     results = m.evaluate(csv_file)
 
+    # Metrics are sane
     assert np.round(results["box_precision"], 2) > 0.5
     assert np.round(results["box_recall"], 2) > 0.5
+
+    # Class names are correct
     assert len(results["results"].predicted_label.dropna().unique()) == 1
     assert results["results"].predicted_label.dropna().unique()[0] == "Tree"
     assert results["predictions"].shape[0] > 0
     assert results["predictions"].label.dropna().unique()[0] == "Tree"
 
-    df = pd.read_csv(csv_file)
+    # Image path matches the CSV
+    assert "image_path" in results["results"].columns
+    assert results["results"]["image_path"].notna().all()
+    expected_images = df["image_path"].unique()
+    assert all(im in expected_images for im in results["results"]["image_path"].unique())
+
+    # Check we have match results for every ground truth box
     assert results["results"].shape[0] == df.shape[0]
 
 
@@ -983,7 +995,7 @@ def test_epoch_evaluation_end(m, tmp_path):
     m.config.validation.root_dir = str(tmp_path)
     # Recreate metrics after changing validation csv_file
     m.setup_metrics()
-    m.precision_recall_metric.update(preds, ["test"])
+    m.precision_recall_metric.update(preds, targets)
 
     with mock.patch.object(m, 'log_dict') as mock_log:
         m.on_validation_epoch_end()
@@ -1157,10 +1169,47 @@ def test_predict_file_mixed_sizes(m, tmp_path):
     preds = m.predict_file(csv_file=csv_path, root_dir=str(tmp_path))
 
     assert preds.ymax.max() > 200  # The larger image should have predictions outside the 200px limit
+
+def test_recall_not_lowered_by_unprocessed_images():
+    """This test checks that recall is only computed for images that were
+    passed to the metric and ignores unprocessed images in the ground truth
+    dataframe."""
+
+    label_dict = {'Tree': 0}
+    metric = RecallPrecision(label_dict=label_dict)
+
+    # Simulate limit_val_batches: only 2 images processed
+    # Using different boxes for each image to catch matching bugs
+    preds = [
+        {'boxes': torch.tensor([[10, 10, 50, 50]], dtype=torch.float32),
+        'labels': torch.tensor([0]), 'scores': torch.tensor([0.9])},
+        {'boxes': torch.tensor([[60, 60, 100, 100]], dtype=torch.float32),
+        'labels': torch.tensor([0]), 'scores': torch.tensor([0.85])}
+    ]
+
+    targets = [
+        {'boxes': torch.tensor([[10, 10, 50, 50]], dtype=torch.float32),
+        'labels': torch.tensor([0])},
+        {'boxes': torch.tensor([[60, 60, 100, 100]], dtype=torch.float32),
+        'labels': torch.tensor([0])}
+    ]
+
+    metric.update(preds, targets, ['img1.jpg', 'img2.jpg'])
+    results = metric.compute()
+
+    # Verify only 2 images were processed (not affected by any external ground truth)
+    assert metric.num_images == 2
+
+    # With perfect matches, recall should be 1.0 (2/2 images matched)
+    assert math.isclose(results['box_recall'], 1.0, rel_tol=1e-5), (
+        f"box_recall={results['box_recall']:.2f}, expected 1.0"
+    )
+
 def test_custom_log_root(m, tmpdir):
     """Test that setting a custom log_root creates logs in the expected location"""
     custom_log_dir = tmpdir.join("custom_logs")
     m.config.log_root = str(custom_log_dir)
+
     m.config.train.fast_dev_run = False
 
     m.create_trainer(limit_train_batches=1, limit_val_batches=1, max_epochs=1)
@@ -1172,6 +1221,7 @@ def test_custom_log_root(m, tmpdir):
 
     version_dir = version_dirs[0]
     assert version_dir.join("hparams.yaml").exists(), "hparams.yaml not found"
+
 
 def test_huggingface_model_loads_correct_label_dict():
     """Regression test for #1286:
@@ -1194,3 +1244,65 @@ def test_huggingface_model_loads_correct_label_dict():
 
     actual = set(m.label_dict.keys())
     assert actual == expected, f"Expected {expected}, got {actual}"
+
+
+def test_existing_dataloader_end_to_end(tmp_path_factory):
+    """Regression test for #1369 — verify training and validation
+    complete one full pass when existing_train_dataloader and
+    existing_val_dataloader are provided instead of csv_file."""
+    m = main.deepforest()
+    m.config.batch_size = 2
+    m.config.workers = 0
+    m.config.log_root = str(tmp_path_factory.mktemp("logs"))
+    m.load_model("weecology/deepforest-tree")
+
+    assert m.config.train.csv_file is None
+    assert m.config.validation.csv_file is None
+    assert m.label_dict["Tree"] == 0
+
+    train_loader = m.load_dataset(
+        csv_file=get_data("example.csv"),
+        root_dir=os.path.dirname(get_data("example.csv")),
+        batch_size=2,
+        shuffle=False,
+    )
+    val_loader = m.load_dataset(
+        csv_file=get_data("example.csv"),
+        root_dir=os.path.dirname(get_data("example.csv")),
+        batch_size=2,
+        shuffle=False,
+    )
+
+    m.existing_train_dataloader = train_loader
+    m.existing_val_dataloader = val_loader
+
+    m.create_trainer(
+        limit_train_batches=1,
+        limit_val_batches=1,
+        max_epochs=1,
+    )
+    assert m.trainer.limit_val_batches == 1.0
+
+    m.trainer.fit(m)
+    m.trainer.validate(m)
+
+def test_detections_per_img_and_topk_candidates_config():
+    """Test that detections_per_img and topk_candidates can be configured
+    and are passed through to the underlying model."""
+    m = main.deepforest()
+
+    # Check default values
+    assert m.config.detections_per_img == 300
+    assert m.config.topk_candidates == 1000
+
+    # Test custom values
+    m.config.detections_per_img = 500
+    m.config.topk_candidates = 2000
+
+    assert m.config.detections_per_img == 500
+    assert m.config.topk_candidates == 2000
+
+    # Verify values are passed to actual model
+    m.create_model()
+    assert m.model.detections_per_img == 500
+    assert m.model.topk_candidates == 2000

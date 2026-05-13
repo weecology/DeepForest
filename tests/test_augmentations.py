@@ -295,10 +295,9 @@ def test_filter_boxes():
         [0., 0., 0., 10.],         # Too small
     ])
     labels = torch.tensor([0, 1, 2, 3, 4, 5])
-    image_shape = (3, 200, 200)
 
     dataset = BoxDataset.__new__(BoxDataset)
-    filtered_boxes, filtered_labels = dataset.filter_boxes(boxes, labels, image_shape)
+    filtered_boxes, filtered_labels = dataset.filter_boxes(boxes, labels, width=200, height=200, min_size=1)
 
     assert filtered_boxes.shape[0] == 3
     assert torch.equal(filtered_labels, torch.tensor([2, 3, 4]))
@@ -346,6 +345,42 @@ def test_geometric_augmentation_filters_boxes():
 
         # Labels should match box count
         assert len(labels) == len(boxes), f"Label count mismatch: {len(labels)} labels, {len(boxes)} boxes"
+
+
+def test_reordering_produces_correct_output():
+    """Specifying pad-before-flips and flips-before-pad both yield flipped coords and padded size.
+
+    Padding in kornia is in the positive direction and preserves coordinates. However, if padding
+    is applied first, the original label coordinates are transformed (they do not have padding applied).
+    This test checks the logic in the augmentation class to check that the transform pipeline is
+    correctly ordered to pad last and that the resulting transformed labels are as expected given
+    the flips.
+    """
+    image = torch.zeros(1, 3, 100, 100)
+    box = torch.tensor([[[10., 5., 40., 30.]]])  # x1,y1,x2,y2
+
+    augs_wrong_order = [
+        {"RandomPadTo": {"pad_range": (50, 50), "p": 1.0}},
+        {"HorizontalFlip": {"p": 1.0}},
+        {"VerticalFlip": {"p": 1.0}},
+    ]
+    augs_correct_order = [
+        {"HorizontalFlip": {"p": 1.0}},
+        {"VerticalFlip": {"p": 1.0}},
+        {"RandomPadTo": {"pad_range": (50, 50), "p": 1.0}},
+    ]
+
+    img_wrong, box_wrong = get_transform(augmentations=augs_wrong_order)(image.clone(), box.clone())
+    img_correct, box_correct = get_transform(augmentations=augs_correct_order)(image.clone(), box.clone())
+
+    # Both pipelines must produce the same padded canvas size
+    assert img_wrong.shape == torch.Size([1, 3, 150, 150])
+    assert img_correct.shape == torch.Size([1, 3, 150, 150])
+
+    # Flipped box: HFlip on W=100 -> x: 99-40=59, 99-10=89; VFlip on H=100 -> y: 99-30=69, 99-5=94
+    expected_box = torch.tensor([[[59., 69., 89., 94.]]])
+    assert torch.allclose(box_wrong, expected_box, atol=1.0)
+    assert torch.allclose(box_correct, expected_box, atol=1.0)
 
 
 if __name__ == "__main__":

@@ -22,8 +22,9 @@ from torch import Tensor
 
 
 class RandomPadTo(GeometricAugmentationBase2D):
-    r"""Pad the given sample by a random amount. This function is copied from
-    kornia, but allows p to be changed.
+    r"""Pad the given sample by a random amount.
+
+    This function is copied from kornia, but allows p to be changed.
 
     Args:
         pad_range: Range of padding to apply as (min, max) in pixels.
@@ -206,8 +207,9 @@ def get_available_augmentations() -> list[str]:
 
 def get_transform(
     augmentations: str | list[str] | dict[str, Any] | None = None,
+    data_keys: list[DataKey] | None = None,
 ) -> K.AugmentationSequential:
-    """Create Kornia transform for bounding boxes.
+    """Create Kornia transform pipeline.
 
     Args:
         augmentations: Augmentation configuration:
@@ -215,6 +217,8 @@ def get_transform(
             - list: List of augmentation names
             - dict: Dict with names as keys and params as values
             - None: No augmentations
+        data_keys: Kornia DataKey list describing the inputs.
+            Defaults to [DataKey.IMAGE, DataKey.BBOX_XYXY].
 
     Returns:
         Kornia AugmentationSequential
@@ -235,6 +239,9 @@ def get_transform(
         ...                              "VerticalFlip"
         ...                          })
     """
+    if data_keys is None:
+        data_keys = [DataKey.IMAGE, DataKey.BBOX_XYXY]
+
     transforms_list = []
 
     if augmentations is not None:
@@ -244,10 +251,16 @@ def get_transform(
             aug_transform = _create_augmentation(aug_name, aug_params)
             transforms_list.append(aug_transform)
 
+    # Enforce ordering to avoid issues with padding and cropping
+    _crop_types = (K.RandomCrop, K.RandomResizedCrop)
+    _pad_types = (K.PadTo, RandomPadTo)
+    standard = [t for t in transforms_list if not isinstance(t, _crop_types + _pad_types)]
+    crops = [t for t in transforms_list if isinstance(t, _crop_types)]
+    pads = [t for t in transforms_list if isinstance(t, _pad_types)]
+    transforms_list = standard + crops + pads
+
     # Create a sequential container for all transforms
-    return K.AugmentationSequential(
-        *transforms_list, data_keys=[DataKey.IMAGE, DataKey.BBOX_XYXY]
-    )
+    return K.AugmentationSequential(*transforms_list, data_keys=data_keys)
 
 
 def _parse_augmentations(
@@ -270,7 +283,6 @@ def _parse_augmentations(
     Returns:
         Dict mapping augmentation names to their parameters
     """
-
     # Convert OmegaConf to primitives
     if isinstance(augmentations, (DictConfig, ListConfig)):
         augmentations = OmegaConf.to_container(augmentations, resolve=True)
@@ -315,7 +327,6 @@ def _create_augmentation(
     Returns:
         Kornia AugmentationSequential or None if name not recognized
     """
-
     if name not in get_available_augmentations():
         raise ValueError(
             f"Unknown augmentation '{name}'. Available augmentations: {get_available_augmentations()}"

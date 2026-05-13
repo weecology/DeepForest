@@ -11,11 +11,19 @@ batch_size: 1
 architecture: 'retinanet'
 nms_thresh: 0.05
 score_thresh: 0.1
-
+detections_per_img: 300
+topk_candidates: 1000
 # Set model name to None to initialize from scratch
 model:
     name: 'weecology/deepforest-tree'
     revision: 'main'
+
+# Trainer precision. Override to 16-mixed for faster training, 32-true for full precision.
+precision:
+
+# On CUDA, setting the matmul precision can provide speed up without affecting model performance
+# Start with 'high' for initial tests.
+matmul_precision: highest
 
 # Specify a label_dict to override model settings.
 # By default, this will be populated from the model
@@ -39,6 +47,11 @@ train:
 
     # Optimizer initial learning rate
     lr: 0.001
+    optimizer:
+        type: SGD
+        weight_decay: 0.0
+        momentum: 0.9
+        betas: [0.9, 0.999]
 
     # Data augmentations for training
     # Augmentations must be a list of augmentation names, or a list
@@ -77,6 +90,7 @@ train:
     # preload images to GPU memory for fast training. This depends on GPU size and number of images.
     preload_images: False
 
+
 validation:
     csv_file:
     root_dir:
@@ -99,6 +113,7 @@ predict:
     pin_memory: False
 
 cropmodel:
+    architecture: resnet50
     batch_size: 4
     num_workers: 0
     lr: 0.0001
@@ -117,6 +132,14 @@ cropmodel:
     resize:
         - 224
         - 224
+    # Interpolation mode for resizing crops: 'nearest' or 'bilinear'.
+    resize_interpolation: bilinear
+    # Image normalization. Defaults to ImageNet stats when null.
+    # Set to false to disable, or provide custom mean/std:
+    #   normalize:
+    #       mean: [0.5, 0.5, 0.5]
+    #       std: [0.5, 0.5, 0.5]
+    normalize:
     # Number of pixels to expand bbox crop windows for better prediction context.
     expand: 0
     # Spatial-temporal metadata fusion (optional).
@@ -124,3 +147,8 @@ cropmodel:
     use_metadata: False
     metadata_dim: 32
     metadata_dropout: 0.5
+
+point:
+  score_integration_radius: 5
+  nms_distance_thresh: 5.0
+  distance_threshold: 10

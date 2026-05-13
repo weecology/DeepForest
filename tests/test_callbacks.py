@@ -151,6 +151,17 @@ def test_log_images_no_dataset(m, tmp_path):
     assert not (tmp_path / "train_sample").exists()
     assert not (tmp_path / "validation_sample").exists()
 
+def test_log_images_random(m, tmp_path):
+    """Test random image selection"""
+    im_callback = callbacks.ImagesCallback(
+        save_dir=tmp_path, every_n_epochs=1, prediction_samples=1, select_random=True
+    )
+
+    m.create_trainer(callbacks=[im_callback], fast_dev_run=False)
+    m.trainer.fit(m)
+
+    assert (tmp_path / "predictions").exists()
+
 def test_log_image_empty_annotations(m, tmp_path):
     """Test that images with no annotations are logged without error"""
     im_callback = callbacks.ImagesCallback(save_dir=tmp_path, every_n_epochs=1, prediction_samples=1)
