@@ -35,6 +35,10 @@ def _predict_image_(
     """
     image = torch.tensor(image).permute(2, 0, 1)
     image = image / 255
+    try:
+        image = image.to(next(model.parameters()).device)
+    except StopIteration:
+        pass
 
     with torch.no_grad():
         prediction = model(image.unsqueeze(0))

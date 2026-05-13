@@ -411,6 +411,19 @@ def test_predict_image_fromfile(m):
     assert not prediction.empty
 
 
+@pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA not available")
+def test_predict_image_on_cuda(m):
+    """Regression: model on CUDA must not raise a device mismatch in predict_image."""
+    m.model.to("cuda")
+    try:
+        prediction = m.predict_image(
+            path=get_data(path="2019_YELL_2_528000_4978000_image_crop2.png")
+        )
+    finally:
+        m.model.to("cpu")
+    assert isinstance(prediction, pd.DataFrame)
+
+
 def test_predict_image_fromarray(m):
     image_path = get_data(path="2019_YELL_2_528000_4978000_image_crop2.png")
 
