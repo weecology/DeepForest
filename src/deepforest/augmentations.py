@@ -251,6 +251,14 @@ def get_transform(
             aug_transform = _create_augmentation(aug_name, aug_params)
             transforms_list.append(aug_transform)
 
+    # Enforce ordering to avoid issues with padding and cropping
+    _crop_types = (K.RandomCrop, K.RandomResizedCrop)
+    _pad_types = (K.PadTo, RandomPadTo)
+    standard = [t for t in transforms_list if not isinstance(t, _crop_types + _pad_types)]
+    crops = [t for t in transforms_list if isinstance(t, _crop_types)]
+    pads = [t for t in transforms_list if isinstance(t, _pad_types)]
+    transforms_list = standard + crops + pads
+
     # Create a sequential container for all transforms
     return K.AugmentationSequential(*transforms_list, data_keys=data_keys)
 

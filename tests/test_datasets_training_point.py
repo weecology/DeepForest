@@ -200,7 +200,7 @@ def test_point_dataset_filter_points():
     labels = torch.tensor([0, 0, 0, 0])
     image_shape = (3, 100, 100)  # H=100, W=100
 
-    filtered_points, filtered_labels = ds.filter_points(points, labels, image_shape)
+    filtered_points, filtered_labels = ds.filter_points(points, labels, width=100, height=100)
 
     assert filtered_points.shape[0] == 2  # only (10,20) and (50,60) are in bounds
     assert filtered_labels.shape[0] == 2
