@@ -122,6 +122,39 @@ cropmodel:
     metadata_dropout: 0.5
 ```
 
+### Visualizing Metadata Priors
+
+After training a metadata-enabled CropModel, it can be useful to inspect the
+spatial-temporal branch by itself. The
+{download}`metadata prior visualization script <examples/visualize_metadata_priors.py>`
+loads a checkpoint, evaluates a lat/lon grid for one or more dates, and writes:
+
+- A CSV with metadata-only logits, probabilities, and relative scores
+- PNG maps for selected species and dates
+- GeoTIFF rasters for GIS workflows
+
+For example:
+
+```bash
+uv run python docs/user_guide/examples/visualize_metadata_priors.py \
+  --checkpoint path/to/metadata_cropmodel.ckpt \
+  --species "Morus bassanus" \
+  --dates 2024-04-15 \
+  --bounds -98 18 -55 48 \
+  --cell-degrees 1.0 \
+  --output-dir outputs/metadata_prior_maps
+```
+
+The map below shows a relative metadata prior for Northern Gannet
+(`Morus bassanus`) on April 15, 2024. It reflects the learned metadata branch,
+not image evidence. Basemap tiles are optional; install `contextily` to include
+them or pass `--no-basemap` to plot only the score raster.
+
+```{image} ../_static/metadata_prior_example.png
+:alt: Metadata prior map for Morus bassanus over the western Atlantic
+:width: 650px
+```
+
 ## Considerations
 
 - **Efficiency**: Using a CropModel will be slower, as for each detection, the sensor data needs to be cropped and passed to the detector. This is less efficient than using a combined classification/detection system like multi-class detection models. While modern GPUs mitigate this to some extent, it is still something to be mindful of.
