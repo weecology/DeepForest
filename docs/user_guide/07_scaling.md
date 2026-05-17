@@ -29,9 +29,7 @@ A few notes that can trip up those less used to multi-gpu training. These are fo
 
 2. Each device gets its own portion of the dataset. This means that they do not interact during forward passes.
 
-3. Make sure to use srun when combining with SLURM! This is an easy one to miss and will cause training to hang without error. Documented here
-
-https://lightning.ai/docs/pytorch/latest/clouds/cluster_advanced.html#troubleshooting.
+3. On SLURM, launch with **`srun`**. Match `#SBATCH --ntasks-per-node` to `devices` and `#SBATCH --nodes` to `num_nodes`. See the [multi-GPU and multi-node guide](distributed.md) and [Lightning SLURM troubleshooting](https://lightning.ai/docs/pytorch/latest/clouds/cluster_advanced.html#troubleshooting).
 
 
 ## Prediction

@@ -1,28 +1,28 @@
 # Multi-GPU and Multi-Node Runs
 
-DeepForest uses PyTorch Lightning distributed execution. For most multi-GPU and multi-node runs, the same four settings matter:
+DeepForest uses PyTorch Lightning distributed execution. For most multi-GPU and multi-node runs, these settings matter:
 
 - `accelerator=gpu`
 - `devices=<gpus_per_node>`
 - `num_nodes=<nnodes>`
 - `strategy=ddp`
 
-If you are launching with Slurm on a cluster, see the [cluster developer guide](../development/cluster.md) for ready-to-run examples.
+On Slurm clusters, launch with **`srun`** inside your job allocation. Match `#SBATCH --ntasks-per-node` to `devices` and `#SBATCH --nodes` to `num_nodes`. See the [cluster developer guide](../development/cluster.md).
+
+Single-GPU jobs can keep the default `strategy=auto`.
 
 ## Train
 
 ```bash
-torchrun \
-  --nnodes=<nnodes> \
-  --nproc_per_node=<gpus_per_node> \
-  --node_rank=<node_rank> \
-  --master_addr=<master_addr> \
-  --master_port=29500 \
-  -m deepforest.scripts.cli train \
+#SBATCH --nodes=<nnodes>
+#SBATCH --ntasks-per-node=<gpus_per_node>
+#SBATCH --gres=gpu:<gpus_per_node>
+
+srun uv run deepforest train \
+  --strategy ddp \
   accelerator=gpu \
   devices=<gpus_per_node> \
   num_nodes=<nnodes> \
-  strategy=ddp \
   train.csv_file=/path/to/train.csv \
   train.root_dir=/path/to/train_images \
   validation.csv_file=/path/to/val.csv \
@@ -32,41 +32,29 @@ torchrun \
 ## Evaluate
 
 ```bash
-torchrun \
-  --nnodes=<nnodes> \
-  --nproc_per_node=<gpus_per_node> \
-  --node_rank=<node_rank> \
-  --master_addr=<master_addr> \
-  --master_port=29500 \
-  -m deepforest.scripts.cli evaluate \
+srun uv run deepforest evaluate \
   /path/to/ground_truth.csv \
   --root-dir /path/to/images \
   --save-predictions eval_preds.csv \
   -o eval_metrics.csv \
+  --strategy ddp \
   accelerator=gpu \
   devices=<gpus_per_node> \
-  num_nodes=<nnodes> \
-  strategy=ddp
+  num_nodes=<nnodes>
 ```
 
 ## Predict From CSV
 
 ```bash
-torchrun \
-  --nnodes=<nnodes> \
-  --nproc_per_node=<gpus_per_node> \
-  --node_rank=<node_rank> \
-  --master_addr=<master_addr> \
-  --master_port=29500 \
-  -m deepforest.scripts.cli predict \
+srun uv run deepforest predict \
   /path/to/images.csv \
   --mode csv \
   --root-dir /path/to/images \
   -o predictions.csv \
+  --strategy ddp \
   accelerator=gpu \
   devices=<gpus_per_node> \
-  num_nodes=<nnodes> \
-  strategy=ddp
+  num_nodes=<nnodes>
 ```
 
 ## Predict A Large Tile
@@ -93,4 +81,4 @@ results = m.predict_tile(
 )
 ```
 
-Launch that script with the same `torchrun` pattern shown above. For a complete Slurm example, refer to the [cluster developer guide](../development/cluster.md).
+Launch that script with the same `srun` Slurm pattern and trainer settings. For a complete cluster example, see the [cluster developer guide](../development/cluster.md).

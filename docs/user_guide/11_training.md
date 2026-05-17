@@ -526,38 +526,28 @@ Usually creating this object does not cost too much computational time.
 
 #### Training across multiple nodes on a HPC system
 
-We have heard that this error can appear when trying to deep copy the pytorch lightning module. The trainer object is not pickleable.
-For example, on multi-gpu environments when trying to scale the deepforest model the entire module is copied leading to this error.
-Setting the trainer object to None and directly using the pytorch object is a reasonable workaround.
+On Slurm clusters, submit jobs with `srun` and set `devices`, `num_nodes`, and `strategy=ddp` to match your `#SBATCH` allocation. See [Scaling](07_scaling.md) and [distributed runs](distributed.md).
 
-Replace
+If you see **Weakly referenced objects** when scaling across GPUs, the trainer object may not pickle cleanly when the module is copied. A workaround is to construct a `Trainer` directly:
 
 ```python
 m = main.deepforest()
-m.create_trainer()
-m.trainer.fit(m)
-```
-
-with
-
-```python
 m.trainer = None
 from pytorch_lightning import Trainer
 
-    trainer = Trainer(
-        accelerator="gpu",
-        strategy="ddp",
-        devices=model.config.devices,
-        enable_checkpointing=False,
-        max_epochs=model.config.train.epochs,
-        logger=comet_logger
-    )
+trainer = Trainer(
+    accelerator="gpu",
+    strategy="ddp",
+    devices=m.config.devices,
+    num_nodes=m.config.num_nodes,
+    enable_checkpointing=False,
+    max_epochs=m.config.train.epochs,
+    logger=comet_logger,
+)
 trainer.fit(m)
 ```
 
-The added benefits of this is more control over the trainer object.
-The downside is that it doesn't align with the .config pattern where a user now has to look into the config to create the trainer.
-We are open to changing this to be the default pattern in the future and welcome input from users.
+We are open to making this the default pattern and welcome input from users.
 
 #### Visualization during training
 
@@ -597,6 +587,8 @@ We provide a basic script to trigger a training run via CLI. This script is inst
 ```{note}
 If you are using `uv` to manage your Python environment, remember to prefix these commands with `uv run`, for example: `uv run deepforest predict`.
 ```
+
+On a Slurm cluster, wrap the command in `srun` inside your batch script (see [Scaling](07_scaling.md) and [distributed runs](distributed.md)).
 
 ```bash
 deepforest train batch_size=8 train.csv_file=your_labels.csv train.root_dir=some/path

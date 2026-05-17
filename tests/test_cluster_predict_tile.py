@@ -27,38 +27,26 @@ def _build_predict_tile_command(output_path: Path) -> list[str]:
     patch_overlap = os.environ.get("DEEPFOREST_HPC_TILE_PATCH_OVERLAP", "0")
     iou_threshold = os.environ.get("DEEPFOREST_HPC_TILE_IOU_THRESHOLD", "0.15")
     dataloader_strategy = os.environ.get("DEEPFOREST_HPC_TILE_DATALOADER_STRATEGY", "window")
-    master_port = os.environ.get("DEEPFOREST_HPC_MASTER_PORT", "29500")
-
-    bash_script = f"""
-set -euo pipefail
-cd {shlex.quote(str(repo_root))}
-MASTER_ADDR=$(scontrol show hostnames "$SLURM_JOB_NODELIST" | head -n 1)
-uv run torchrun \\
-  --nnodes={shlex.quote(str(nnodes))} \\
-  --nproc_per_node={shlex.quote(str(gpus_per_node))} \\
-  --node_rank=$SLURM_NODEID \\
-  --master_addr="$MASTER_ADDR" \\
-  --master_port={shlex.quote(str(master_port))} \\
-  tests/cluster_predict_tile_driver.py \\
-  --input-path {shlex.quote(tile_path)} \\
-  --output-path {shlex.quote(str(output_path))} \\
-  --model-name {shlex.quote(str(model_name))} \\
-  --patch-size {shlex.quote(str(patch_size))} \\
-  --patch-overlap {shlex.quote(str(patch_overlap))} \\
-  --iou-threshold {shlex.quote(str(iou_threshold))} \\
-  --dataloader-strategy {shlex.quote(str(dataloader_strategy))} \\
-  --devices {shlex.quote(str(gpus_per_node))} \\
-  --num-nodes {shlex.quote(str(nnodes))}
-""".strip()
 
     return [
         "srun",
         f"--nodes={nnodes}",
-        f"--ntasks={nnodes}",
-        "--ntasks-per-node=1",
+        f"--ntasks-per-node={gpus_per_node}",
         "bash",
         "-lc",
-        bash_script,
+        (
+            f"set -euo pipefail && cd {shlex.quote(str(repo_root))} && "
+            f"uv run python tests/cluster_predict_tile_driver.py "
+            f"--input-path {shlex.quote(tile_path)} "
+            f"--output-path {shlex.quote(str(output_path))} "
+            f"--model-name {shlex.quote(str(model_name))} "
+            f"--patch-size {shlex.quote(str(patch_size))} "
+            f"--patch-overlap {shlex.quote(str(patch_overlap))} "
+            f"--iou-threshold {shlex.quote(str(iou_threshold))} "
+            f"--dataloader-strategy {shlex.quote(str(dataloader_strategy))} "
+            f"--devices {shlex.quote(str(gpus_per_node))} "
+            f"--num-nodes {shlex.quote(str(nnodes))}"
+        ),
     ]
 
 

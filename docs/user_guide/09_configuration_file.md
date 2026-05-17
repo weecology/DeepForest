@@ -151,17 +151,30 @@ The number of cpus/gpus to use during model training. Deepforest has been tested
 
 ### accelerator
 
-Most commonly, `cpu`, `gpu` or `tpu` as well as other [options](https://pytorch-lightning.readthedocs.io/en/1.4.0/advanced/multi_gpu.html) listed:
+Most commonly, `cpu`, `gpu` or `tpu` as well as other [options](https://lightning.ai/docs/pytorch/stable/accelerators/gpu.html).
 
-If `gpu`, it can be helpful to specify the data parallelization strategy. This can be done using the `strategy` arg in `main.create_trainer()`
+### num_nodes
+
+Number of machines for distributed training. Default is `1`. Set this to your Slurm node count for multi-node jobs. See [Scaling](07_scaling.md) and [distributed runs](distributed.md).
+
+### strategy
+
+Distributed training strategy passed to the Lightning `Trainer`. Default is `auto` (appropriate for single-GPU runs). Use `ddp` for multi-GPU or multi-node training.
+
+Set in the config file, as Hydra overrides (`strategy=ddp`), or via `create_trainer(strategy="ddp")`. CLI and `create_trainer` kwargs override the config file.
 
 ```python
-from deepforest import model as m
+from deepforest import main
 
-m.create_trainer(logger=comet_logger, strategy="ddp")
+m = main.deepforest()
+m.config.accelerator = "gpu"
+m.config.devices = 4
+m.config.num_nodes = 2
+m.config.strategy = "ddp"
+m.create_trainer(logger=comet_logger)
 ```
 
-This is passed to the pytorch-lightning trainer, documented in the link above for multi-gpu training.
+On Slurm clusters, launch with `srun` so Lightning can read the job environment. Details are in [distributed runs](distributed.md).
 
 ### batch_size
 

@@ -20,37 +20,21 @@ def _build_predict_command(output_path: Path) -> list[str]:
     root_dir = _required_env("DEEPFOREST_HPC_ROOT_DIR")
     nnodes = os.environ.get("DEEPFOREST_HPC_NNODES", os.environ.get("SLURM_NNODES", "1"))
     gpus_per_node = os.environ.get("DEEPFOREST_HPC_GPUS_PER_NODE", "1")
-    master_port = os.environ.get("DEEPFOREST_HPC_MASTER_PORT", "29500")
-
-    bash_script = f"""
-set -euo pipefail
-cd {shlex.quote(str(repo_root))}
-MASTER_ADDR=$(scontrol show hostnames "$SLURM_JOB_NODELIST" | head -n 1)
-uv run torchrun \\
-  --nnodes={shlex.quote(str(nnodes))} \\
-  --nproc_per_node={shlex.quote(str(gpus_per_node))} \\
-  --node_rank=$SLURM_NODEID \\
-  --master_addr="$MASTER_ADDR" \\
-  --master_port={shlex.quote(str(master_port))} \\
-  -m deepforest.scripts.cli predict \\
-  {shlex.quote(input_csv)} \\
-  --mode csv \\
-  --root-dir {shlex.quote(root_dir)} \\
-  -o {shlex.quote(str(output_path))} \\
-  accelerator=gpu \\
-  devices={shlex.quote(str(gpus_per_node))} \\
-  strategy=ddp \\
-  num_nodes={shlex.quote(str(nnodes))}
-""".strip()
 
     return [
         "srun",
         f"--nodes={nnodes}",
-        f"--ntasks={nnodes}",
-        "--ntasks-per-node=1",
+        f"--ntasks-per-node={gpus_per_node}",
         "bash",
         "-lc",
-        bash_script,
+        (
+            f"set -euo pipefail && cd {shlex.quote(str(repo_root))} && "
+            f"uv run deepforest predict {shlex.quote(input_csv)} "
+            f"--mode csv --root-dir {shlex.quote(root_dir)} "
+            f"-o {shlex.quote(str(output_path))} "
+            f"--strategy ddp accelerator=gpu devices={shlex.quote(str(gpus_per_node))} "
+            f"num_nodes={shlex.quote(str(nnodes))}"
+        ),
     ]
 
 
