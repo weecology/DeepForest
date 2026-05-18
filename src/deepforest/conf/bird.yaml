@@ -1,0 +1,68 @@
+# Config file for DeepForest pytorch module
+defaults:
+  - config
+  - _self_
+
+# Dataloader settings (--batch_size 32 --workers 8; train.sh --cpus-per-task=10).
+# Scale: increase batch_size if GPU memory allows; increase workers only with more Slurm CPUs
+# (train.sh --cpus-per-task); keep workers roughly cpus-per-task minus 1–2.
+workers: 8
+batch_size: 32
+
+# Model Architecture
+architecture: 'retinanet'
+score_thresh: 0.1
+
+# Set model name to None to initialize from scratch
+model:
+    name: 'weecology/deepforest-bird'
+    revision: 'refs/pr/5'
+
+# Trainer precision. Override to 16-mixed for faster training, 32-true for full precision.
+precision: 16-mixed
+
+# On CUDA, setting the matmul precision can provide speed up without affecting model performance
+# Start with 'high' for initial tests.
+matmul_precision: highest
+
+# By default, this will be populated from the model
+# checkpoint that is selected in model.name/revision.
+# e.g. { "Tree": 0 }
+label_dict:
+    Bird: 0
+
+num_classes: 1
+
+log_root: ./lightning_logs
+
+train:
+    epochs: 95
+
+    csv_file: /blue/ewhite/everglades/cluster_deepforest/datasets/fine_tune_2025/train.csv
+    root_dir: /blue/ewhite/everglades/cluster_deepforest/datasets/fine_tune_2025/root
+    #validate_labels: true
+
+    lr: 0.001
+    optimizer:
+        type: SGD
+    scheduler:
+        type: cosine
+        params:
+            T_max: 95
+            eta_min: 0.00005
+
+    # Data augmentations for training
+    augmentations:
+        - HorizontalFlip: {p: 0.5}
+        - VerticalFlip: {p: 0.5}
+        - Rotate: {degrees: 15, p: 0.5}
+        - RandomResizedCrop: {size: [800, 800], scale: [0.3, 1.0], p: 0.5}
+
+validation:
+    csv_file: /blue/ewhite/everglades/cluster_deepforest/datasets/fine_tune_2025/val.csv
+    root_dir: /blue/ewhite/everglades/cluster_deepforest/datasets/fine_tune_2025/root
+
+    # For retinanet you may prefer val_classification, but the default val_loss
+    # should work with all models
+    lr_plateau_target: val_loss
+    val_accuracy_interval: 1

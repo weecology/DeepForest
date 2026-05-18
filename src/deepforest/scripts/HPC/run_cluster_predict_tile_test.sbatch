@@ -3,7 +3,7 @@
 #SBATCH --output=%x-%j.out
 #SBATCH --error=%x-%j.err
 #SBATCH --nodes=2
-#SBATCH --ntasks-per-node=1
+#SBATCH --ntasks-per-node=2
 #SBATCH --gpus-per-node=2
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=80G
@@ -11,7 +11,9 @@
 
 set -euo pipefail
 
-REPO_ROOT="/blue/ewhite/everglades/cluster_deepforest/DeepForest"
+cd "${SLURM_SUBMIT_DIR:?SLURM_SUBMIT_DIR not set}"
+REPO_ROOT="$(pwd)"
+
 DEFAULT_TILE_DIR="/blue/ewhite/everglades/projected_mosaics/2023/6thBridge"
 CONDA_MODULE="${CONDA_MODULE:-conda}"
 CONDA_ENV_NAME="${CONDA_ENV_NAME:-predict}"
@@ -28,7 +30,6 @@ export DEEPFOREST_HPC_TILE_IOU_THRESHOLD="${DEEPFOREST_HPC_TILE_IOU_THRESHOLD:-0
 export DEEPFOREST_HPC_TILE_DATALOADER_STRATEGY="${DEEPFOREST_HPC_TILE_DATALOADER_STRATEGY:-window}"
 
 mkdir -p "$DEEPFOREST_HPC_OUTPUT_DIR"
-cd "$REPO_ROOT"
 
 ml "$CONDA_MODULE"
 eval "$(conda shell.bash hook)"

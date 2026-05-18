@@ -21,7 +21,7 @@ docs/_build/
 env/
 logs/*
 .venv/
-lightning_logs/*
+lightning_logs*
 public/
 tests/__pycache__
 tests/data/*

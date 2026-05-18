@@ -3,7 +3,7 @@
 #SBATCH --output=%x-%j.out
 #SBATCH --error=%x-%j.err
 #SBATCH --nodes=2
-#SBATCH --ntasks-per-node=1
+#SBATCH --ntasks-per-node=2
 #SBATCH --gpus-per-node=2
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=80G
@@ -11,7 +11,9 @@
 
 set -euo pipefail
 
-REPO_ROOT="/blue/ewhite/everglades/cluster_deepforest/DeepForest"
+cd "${SLURM_SUBMIT_DIR:?SLURM_SUBMIT_DIR not set}"
+REPO_ROOT="$(pwd)"
+
 DEFAULT_BIRD_ROOT="/blue/ewhite/b.weinstein/bird_detector_retrain/zero_shot/avian_images_annotated/test_splits/patch_600"
 DEFAULT_BIRD_CSV="$DEFAULT_BIRD_ROOT/test_split_patch_600.csv"
 CONDA_MODULE="${CONDA_MODULE:-conda}"
@@ -26,7 +28,6 @@ export DEEPFOREST_HPC_GPUS_PER_NODE="${DEEPFOREST_HPC_GPUS_PER_NODE:-2}"
 export DEEPFOREST_HPC_OUTPUT_DIR="${DEEPFOREST_HPC_OUTPUT_DIR:-$REPO_ROOT/cluster_test_outputs}"
 
 mkdir -p "$DEEPFOREST_HPC_OUTPUT_DIR"
-cd "$REPO_ROOT"
 
 ml "$CONDA_MODULE"
 eval "$(conda shell.bash hook)"
