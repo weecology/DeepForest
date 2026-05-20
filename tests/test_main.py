@@ -559,11 +559,11 @@ def test_evaluate(m):
     df = pd.read_csv(csv_file)
     results = m.evaluate(csv_file)
 
-    # Metrics are sane
-    assert np.round(results["box_precision"], 2) > 0.5
-    assert np.round(results["box_recall"], 2) > 0.5
+    # Check that precision and recall don't regress below reasonable baselines
+    assert results["box_precision"] > 0.7
+    assert results["box_recall"] > 0.5
 
-    # Class names are correct
+    # Structure and Label checks
     assert len(results["results"].predicted_label.dropna().unique()) == 1
     assert results["results"].predicted_label.dropna().unique()[0] == "Tree"
     assert results["predictions"].shape[0] > 0
@@ -577,7 +577,6 @@ def test_evaluate(m):
 
     # Check we have match results for every ground truth box
     assert results["results"].shape[0] == df.shape[0]
-
 
 def test_train_callbacks(m):
     csv_file = get_data("example.csv")
