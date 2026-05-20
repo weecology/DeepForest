@@ -654,6 +654,7 @@ class deepforest(pl.LightningModule):
         iou_threshold=0.15,
         dataloader_strategy="single",
         crop_model=None,
+        project=False,
     ):
         """For images too large to input into the model, predict_tile cuts the
         image into overlapping windows, predicts trees on each window and
@@ -670,9 +671,10 @@ class deepforest(pl.LightningModule):
                 - "batch" loads the entire image into GPU memory and creates views of an image as batch, requires in the entire tile to fit into GPU memory. CPU parallelization is possible for loading images.
                 - "window" loads only the desired window of the image from the raster dataset. Most memory efficient option, but cannot parallelize across windows.
             crop_model: a deepforest.model.CropModel object to predict on crops
+            project (bool): If True, return a geopandas.GeoDataFrame with geometry column projected to the image CRS. Requires a single georeferenced path; not supported with an in-memory image or multiple paths.
 
         Returns:
-            pd.DataFrame or tuple: Predictions dataframe or (predictions, crops) tuple
+            pd.DataFrame, geopandas.GeoDataFrame, or tuple: Predictions dataframe with or without geometry, or (predictions, crops) tuple.
         """
         self.model.eval()
         self.model.nms_thresh = self.config.nms_thresh
@@ -815,6 +817,16 @@ class deepforest(pl.LightningModule):
 
         formatted_results = utilities.__pandas_to_geodataframe__(cropmodel_results)
         formatted_results.root_dir = root_dir
+
+        if project:
+            if paths[0] is None:
+                raise ValueError(
+                    "project=True requires a file path, not an in-memory image array."
+                )
+
+            formatted_results = utilities.image_to_geo_coordinates(
+                formatted_results, root_dir=root_dir
+            )
 
         return formatted_results
 

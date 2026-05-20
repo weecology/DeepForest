@@ -904,6 +904,12 @@ def image_to_geo_coordinates(gdf, root_dir=None, flip_y_axis=False):
         crs = dataset.crs
         transform = dataset.transform
 
+    if crs is None:
+        raise ValueError(
+            f"Cannot convert to geographic coordinates: '{rgb_path}' has no CRS. "
+            f"Use a georeferenced raster (e.g., a GeoTIFF)."
+        )
+
     geom_type = determine_geometry_type(transformed_gdf)
     projected_geometry = []
     if geom_type == "box":
