@@ -32,6 +32,7 @@ class TrainingDataset(Dataset):
         augmentations=None,
         label_dict=None,
         preload_images=False,
+        validate_coordinates=True,
     ):
         """
         Args:
@@ -41,6 +42,8 @@ class TrainingDataset(Dataset):
             label_dict (dict[str, int]): Mapping from string labels in the CSV to integer class IDs (e.g., {"Tree": 0}).
             augmentations (str | list | dict, optional): Augmentation configuration.
             preload_images (bool): If True, preload all images into memory. Defaults to False.
+            validate_coordinates (bool): If True, check that all annotation coordinates fall
+                within image bounds before training. Defaults to True.
         """
         self.annotations = utilities.read_file(csv_file, root_dir=root_dir)
         self.root_dir = root_dir
@@ -65,7 +68,8 @@ class TrainingDataset(Dataset):
         self.preload_images = preload_images
 
         self._validate_labels()
-        self._validate_coordinates()
+        if validate_coordinates:
+            self._validate_coordinates()
 
         # Pin data to memory if desired
         if self.preload_images:
@@ -308,6 +312,7 @@ class PointDataset(TrainingDataset):
         augmentations=None,
         label_dict=None,
         preload_images=False,
+        validate_coordinates=True,
         density_sigma=4.0,
         output="centroid",
     ):
@@ -330,6 +335,8 @@ class PointDataset(TrainingDataset):
             label_dict (dict[str, int]): Mapping from string labels in the CSV to integer class IDs (e.g., {"Tree": 0}).
             augmentations (str | list | dict, optional): Augmentation configuration.
             preload_images (bool): If True, preload all images into memory. Defaults to False.
+            validate_coordinates (bool): If True, check that all annotation coordinates fall
+                within image bounds. Defaults to True.
             density_sigma (float): Standard deviation of the Gaussian kernel for density map generation. Defaults to 4.0.
             output (str): Output format, either "centroid" for point coordinates or "density" for Gaussian density maps. Defaults to "centroid".
         """
@@ -340,6 +347,7 @@ class PointDataset(TrainingDataset):
             augmentations=augmentations,
             label_dict=label_dict,
             preload_images=preload_images,
+            validate_coordinates=validate_coordinates,
         )
 
         self.density_sigma = density_sigma
@@ -584,6 +592,7 @@ class PolygonDataset(TrainingDataset):
         augmentations=None,
         label_dict=None,
         preload_images=None,
+        validate_coordinates=True,
     ):
         super().__init__(
             csv_file=annotation_file,
@@ -592,6 +601,7 @@ class PolygonDataset(TrainingDataset):
             augmentations=augmentations,
             label_dict=label_dict,
             preload_images=preload_images,
+            validate_coordinates=validate_coordinates,
         )
 
     def _validate_coordinates(self) -> None:
