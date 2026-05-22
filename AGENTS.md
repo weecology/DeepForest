@@ -45,6 +45,12 @@ OSBS_029.tif,166,253,225,304,Tree
 - Use the configuration system to specify user-facing parameters instead of hardcoding/magic numbers in code
 - Make sure the schema is up to date with the config files
 
+## Git and PR workflow
+
+- For DeepForest agent-driven work, push branches to the `bw4sz/DeepForest` fork first
+- Only push the branch to `weecology/DeepForest` when explicitly requested and ready for upstream review
+- Treat fork-first pushes as the default isolation workflow for Cursor-generated ideas and experiments
+
 ## Coding standards
 
 - Simple and maintainable
