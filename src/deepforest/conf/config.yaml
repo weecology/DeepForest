@@ -83,6 +83,10 @@ train:
             min_lr: 0
             eps: 0.00000001
 
+    # Fraction of each training batch with annotated images (remainder are hard negatives).
+    # null keeps uniform shuffle over all images in the CSV.
+    positive_batch_fraction:
+
     # How many epochs to run for
     epochs: 1
     # Useful debugging flag in pytorch lightning, set to True to get a single batch of training to test settings.

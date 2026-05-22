@@ -13,7 +13,7 @@ import torch
 import torchvision
 from kornia.constants import DataKey
 from PIL import Image
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, Sampler
 from torchvision.datasets import ImageFolder
 
 from deepforest import utilities
@@ -70,6 +70,9 @@ class TrainingDataset(Dataset):
         self._validate_labels()
         if validate_coordinates:
             self._validate_coordinates()
+        self.positive_indices, self.negative_indices = (
+            self._build_annotation_index_pools()
+        )
 
         # Pin data to memory if desired
         if self.preload_images:
@@ -104,6 +107,25 @@ class TrainingDataset(Dataset):
         are found.
         """
 
+    def _image_is_empty(self, image_path: str) -> bool:
+        """True when all annotation rows for the image use the empty-frame
+        sentinel."""
+        rows = self.annotations[self.annotations.image_path == image_path]
+        coords = rows[["xmin", "ymin", "xmax", "ymax"]].values
+        return np.sum(coords) == 0
+
+    def _build_annotation_index_pools(self) -> tuple[list[int], list[int]]:
+        """Split dataset indices into annotated (positive) and empty (negative)
+        images."""
+        positive_indices = []
+        negative_indices = []
+        for idx, image_path in enumerate(self.image_names):
+            if self._image_is_empty(image_path):
+                negative_indices.append(idx)
+            else:
+                positive_indices.append(idx)
+        return positive_indices, negative_indices
+
     def __len__(self) -> int:
         """Dataset length is the number of unique images."""
         return len(self.image_names)
@@ -133,6 +155,69 @@ class TrainingDataset(Dataset):
     def __getitem__(self, index) -> tuple:
         """Return a single item from the dataset."""
         pass
+
+
+class BalancedDetectionBatchSampler(Sampler[list[int]]):
+    """Batch sampler that fixes the fraction of annotated vs hard-negative
+    images.
+
+    One epoch covers each positive index once (in shuffled order).
+    Negatives are drawn at random with replacement from the negative
+    pool each batch.
+    """
+
+    def __init__(
+        self,
+        positive_indices: list[int],
+        negative_indices: list[int],
+        batch_size: int,
+        positive_batch_fraction: float,
+        generator: torch.Generator | None = None,
+    ):
+        if not 0 < positive_batch_fraction <= 1:
+            raise ValueError(
+                "positive_batch_fraction must be in (0, 1], "
+                f"got {positive_batch_fraction}"
+            )
+        if not positive_indices:
+            raise ValueError("positive_indices must not be empty")
+        if not negative_indices:
+            raise ValueError("negative_indices must not be empty")
+
+        self.positive_indices = positive_indices
+        self.negative_indices = negative_indices
+        self.batch_size = batch_size
+        self.positive_batch_fraction = positive_batch_fraction
+        self.generator = generator
+
+        self.n_positive = min(
+            batch_size, max(1, round(batch_size * positive_batch_fraction))
+        )
+        self.n_negative = batch_size - self.n_positive
+
+    def __len__(self) -> int:
+        return math.ceil(len(self.positive_indices) / self.n_positive)
+
+    def __iter__(self):
+        perm = torch.randperm(
+            len(self.positive_indices), generator=self.generator
+        ).tolist()
+        pos_pool = [self.positive_indices[i] for i in perm]
+        pos_i = 0
+
+        for _ in range(len(self)):
+            batch = []
+            for _ in range(self.n_positive):
+                batch.append(pos_pool[pos_i % len(pos_pool)])
+                pos_i += 1
+
+            neg_draws = torch.randint(
+                len(self.negative_indices),
+                (self.n_negative,),
+                generator=self.generator,
+            )
+            batch.extend(self.negative_indices[i] for i in neg_draws.tolist())
+            yield batch
 
 
 class BoxDataset(TrainingDataset):

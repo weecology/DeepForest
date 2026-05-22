@@ -341,6 +341,7 @@ class deepforest(pl.LightningModule):
         preload_images=False,
         validate_coordinates=True,
         batch_size=1,
+        positive_batch_fraction=None,
     ):
         """Create a dataset for inference or training.
 
@@ -357,6 +358,9 @@ class deepforest(pl.LightningModule):
             preload_images: if True, preload the images into memory
             validate_coordinates: if True, check annotation coordinates fall within image bounds
             augmentations: augmentation configuration (str, list, or dict)
+            positive_batch_fraction: If set with shuffle=True, each batch contains
+                this fraction of annotated images and the rest hard negatives.
+                None uses uniform shuffle over all images.
         Returns:
             ds: a pytorch dataset
         """
@@ -400,13 +404,44 @@ class deepforest(pl.LightningModule):
                 f"Dataset from {csv_file} is empty. Check CSV for valid entries and columns."
             )
 
-        data_loader = torch.utils.data.DataLoader(
-            ds,
-            batch_size=batch_size,
-            shuffle=shuffle,
-            collate_fn=ds.collate_fn,
-            num_workers=self.config.workers,
-        )
+        use_balanced_sampler = False
+        if positive_batch_fraction is not None:
+            if not 0 < positive_batch_fraction <= 1:
+                raise ValueError(
+                    "positive_batch_fraction must be in (0, 1], "
+                    f"got {positive_batch_fraction}"
+                )
+            if shuffle and ds.positive_indices and ds.negative_indices:
+                use_balanced_sampler = True
+            else:
+                warnings.warn(
+                    "positive_batch_fraction is set but balanced sampling was not "
+                    "applied (requires shuffle=True and both annotated and empty "
+                    "images in the CSV). Using uniform shuffle.",
+                    stacklevel=2,
+                )
+
+        if use_balanced_sampler:
+            batch_sampler = training.BalancedDetectionBatchSampler(
+                positive_indices=ds.positive_indices,
+                negative_indices=ds.negative_indices,
+                batch_size=batch_size,
+                positive_batch_fraction=positive_batch_fraction,
+            )
+            data_loader = torch.utils.data.DataLoader(
+                ds,
+                batch_sampler=batch_sampler,
+                collate_fn=ds.collate_fn,
+                num_workers=self.config.workers,
+            )
+        else:
+            data_loader = torch.utils.data.DataLoader(
+                ds,
+                batch_size=batch_size,
+                shuffle=shuffle,
+                collate_fn=ds.collate_fn,
+                num_workers=self.config.workers,
+            )
 
         return data_loader
 
@@ -428,6 +463,7 @@ class deepforest(pl.LightningModule):
             shuffle=True,
             transforms=self.transforms,
             batch_size=self.config.batch_size,
+            positive_batch_fraction=self.config.train.positive_batch_fraction,
         )
 
         return loader
