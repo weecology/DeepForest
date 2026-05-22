@@ -243,14 +243,6 @@ myimage.png, 0,0,0,0,"Tree"
 
 Excessive use of negative samples may have a negative impact on model performance, but when used sparingly, they can increase precision.
 
-When hard negatives greatly outnumber annotated images, uniform shuffling can put mostly empty frames in every batch and destabilize training. Set `train.positive_batch_fraction` (for example `0.75`) to fix how many images in each batch contain real annotations; the remainder are drawn at random from the negative pool. One training epoch then covers each annotated image once, while negatives are subsampled rather than fully repeated every epoch.
-
-```python
-m.config.train.positive_batch_fraction = 0.75
-```
-
-Or from the command line: `train.positive_batch_fraction=0.75`. Leave unset (`null`) to keep the default uniform shuffle.
-
 ### Model checkpoints
 
 Model checkpoints are the output of training. They represent the learned weights that can be distributed and used by anyone with DeepForest installed to perform prediction or fine-tuning. There are two main types of checkpoint that we work with:
