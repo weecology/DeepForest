@@ -80,6 +80,7 @@ class TrainConfig:
     fast_dev_run: bool = False
     preload_images: bool = False
     augmentations: list[str] | None = field(default_factory=lambda: ["HorizontalFlip"])
+    positive_batch_fraction: float | None = None
 
 
 @dataclass
