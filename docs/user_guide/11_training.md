@@ -405,9 +405,11 @@ DeepForest supports the following augmentations optimized for object detection, 
 
 - **[HorizontalFlip](https://kornia.readthedocs.io/en/latest/augmentation.module.html#kornia.augmentation.RandomHorizontalFlip)**: Randomly flip images horizontally
 - **[VerticalFlip](https://kornia.readthedocs.io/en/latest/augmentation.module.html#kornia.augmentation.RandomVerticalFlip)**: Randomly flip images vertically
-- **[Resize](https://kornia.readthedocs.io/en/latest/augmentation.module.html#kornia.augmentation.LongestMaxSize)**: Resize images while maintaining aspect ratio
+- **[Resize](https://kornia.readthedocs.io/en/latest/augmentation.module.html#kornia.augmentation.LongestMaxSize)**: Resize images while maintaining aspect ratio (longest edge)
+- **[FixedResize](https://kornia.readthedocs.io/en/latest/augmentation.module.html#kornia.augmentation.Resize)**: Resize image and boxes/keypoints to a fixed ``(height, width)``
 - **[RandomCrop](https://kornia.readthedocs.io/en/latest/augmentation.module.html#kornia.augmentation.RandomCrop)**: Extract random crops from images
 - **[RandomResizedCrop](https://kornia.readthedocs.io/en/latest/augmentation.module.html#kornia.augmentation.RandomResizedCrop)**: Crop image at random location and resize while preserving bounding boxes
+- **RandomSizedBBoxSafeCrop**: Crop a random window that contains every bounding box, with configurable context around detections, then resize to a fixed size (similar to [Albumentations RandomSizedBBoxSafeCrop](https://albumentations.ai/explore/transform/RandomSizedBBoxSafeCrop/docs/))
 - **[PadIfNeeded](https://kornia.readthedocs.io/en/latest/augmentation.module.html#kornia.augmentation.PadTo)**: Pad images to minimum size
 - **RandomPadTo**: add random padding to the image
 - **[Rotate](https://kornia.readthedocs.io/en/latest/augmentation.module.html#kornia.augmentation.RandomRotation)**: Rotate images by small angles
@@ -422,6 +424,44 @@ DeepForest supports the following augmentations optimized for object detection, 
 Other `kornia` transforms are also supported in principle, but the above should cover most use-cases for aerial object detection.
 
 ![transform examples](../../www/transform_visualizations.jpg)
+
+#### Bbox-safe crops for multi-scale training
+
+`RandomResizedCrop` may cut objects at tile boundaries. For training patches where every annotated tree or animal must remain visible, use `RandomSizedBBoxSafeCrop`. It samples a crop that fully contains all boxes, optionally adds random padding around the union of detections via `context_scale_range`, and resizes to a target `size`.
+
+```yaml
+train:
+  augmentations:
+    - RandomSizedBBoxSafeCrop:
+        size: [400, 400]
+        context_scale_range: [1.0, 2.0]  # 1x–2x the box union width/height
+        erosion_rate: 0.0
+        p: 0.5
+```
+
+```python
+config_args = {
+    "train": {
+        "augmentations": [
+            {
+                "RandomSizedBBoxSafeCrop": {
+                    "size": (400, 400),
+                    "context_scale_range": (1.0, 2.0),
+                    "erosion_rate": 0.0,
+                    "p": 0.5,
+                }
+            },
+            "HorizontalFlip",
+        ]
+    }
+}
+```
+
+- `size`: output height and width after crop and resize
+- `context_scale_range`: min/max multiplier on the union of all boxes to set crop extent around detections
+- `erosion_rate`: minimum crop size as a fraction of the original image (as in Albumentations)
+
+![RandomSizedBBoxSafeCrop examples](../../www/bbox_safe_crop_example.jpg)
 
 #### Zoom Augmentations for Multi-Resolution Training
 

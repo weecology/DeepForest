@@ -17,7 +17,7 @@ from torch.utils.data import Dataset
 from torchvision.datasets import ImageFolder
 
 from deepforest import utilities
-from deepforest.augmentations import get_transform
+from deepforest.augmentations import apply_augmentations, get_transform
 
 
 class TrainingDataset(Dataset):
@@ -77,6 +77,13 @@ class TrainingDataset(Dataset):
             self.image_dict = {}
             for idx, _ in enumerate(self.image_names):
                 self.image_dict[idx] = self.load_image(idx)
+
+    def _apply_augmentations(
+        self, image_tensor: torch.Tensor, *annotations: torch.Tensor
+    ):
+        return apply_augmentations(
+            self.transform, image_tensor, *annotations, data_keys=self._data_keys
+        )
 
     def _validate_labels(self) -> None:
         """Validate that all labels in annotations exist in label_dict.
@@ -270,7 +277,9 @@ class BoxDataset(TrainingDataset):
         # Apply augmentations
         image_tensor = torch.from_numpy(image).permute(2, 0, 1).unsqueeze(0).float()
         boxes_tensor = torch.from_numpy(targets["boxes"]).unsqueeze(0).float()
-        augmented_image, augmented_boxes = self.transform(image_tensor, boxes_tensor)
+        augmented_image, augmented_boxes = self._apply_augmentations(
+            image_tensor, boxes_tensor
+        )
 
         # Convert boxes to tensor
         image = augmented_image.squeeze(0)
@@ -547,7 +556,9 @@ class PointDataset(TrainingDataset):
         # Apply augmentations
         image_tensor = torch.from_numpy(image).permute(2, 0, 1).unsqueeze(0).float()
         points_tensor = torch.from_numpy(targets["points"]).unsqueeze(0).float()
-        augmented_image, augmented_points = self.transform(image_tensor, points_tensor)
+        augmented_image, augmented_points = self._apply_augmentations(
+            image_tensor, points_tensor
+        )
 
         # Convert to tensor
         image = augmented_image.squeeze(0)
@@ -772,7 +783,7 @@ class PolygonDataset(TrainingDataset):
         else:
             masks = torch.zeros((0, height, width), dtype=torch.uint8).unsqueeze(0)
 
-        augmented_image, augmented_boxes, augmented_masks = self.transform(
+        augmented_image, augmented_boxes, augmented_masks = self._apply_augmentations(
             image_tensor, boxes_tensor, masks
         )
 
