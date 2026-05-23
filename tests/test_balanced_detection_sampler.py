@@ -131,6 +131,16 @@ def test_balanced_sampler_epoch_length(tmp_path):
     assert len(loader) == expected_len
 
 
+def test_balanced_sampler_is_batch_sampler():
+    sampler = BalancedDetectionBatchSampler(
+        positive_indices=[0, 1],
+        negative_indices=[2, 3, 4],
+        batch_size=4,
+        positive_batch_fraction=0.75,
+    )
+    assert isinstance(sampler, torch.utils.data.BatchSampler)
+
+
 def test_balanced_sampler_requires_both_pools():
     with pytest.raises(ValueError, match="positive_indices must not be empty"):
         BalancedDetectionBatchSampler(

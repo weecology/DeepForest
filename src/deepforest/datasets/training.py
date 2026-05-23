@@ -13,7 +13,7 @@ import torch
 import torchvision
 from kornia.constants import DataKey
 from PIL import Image
-from torch.utils.data import Dataset, Sampler
+from torch.utils.data import BatchSampler, Dataset, SequentialSampler
 from torchvision.datasets import ImageFolder
 
 from deepforest import utilities
@@ -157,7 +157,7 @@ class TrainingDataset(Dataset):
         pass
 
 
-class BalancedDetectionBatchSampler(Sampler[list[int]]):
+class BalancedDetectionBatchSampler(BatchSampler):
     """Batch sampler that fixes the fraction of annotated vs hard-negative
     images.
 
@@ -184,9 +184,15 @@ class BalancedDetectionBatchSampler(Sampler[list[int]]):
         if not negative_indices:
             raise ValueError("negative_indices must not be empty")
 
+        # Parent init sets batch_size; sampler is unused because __iter__ is overridden.
+        super().__init__(
+            SequentialSampler(range(len(positive_indices))),
+            batch_size=batch_size,
+            drop_last=False,
+        )
+
         self.positive_indices = positive_indices
         self.negative_indices = negative_indices
-        self.batch_size = batch_size
         self.positive_batch_fraction = positive_batch_fraction
         self.generator = generator
 
