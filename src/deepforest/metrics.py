@@ -63,6 +63,11 @@ class RecallPrecision(Metric):
         )
         self.add_state("num_empty_frames", default=torch.tensor(0), dist_reduce_fx="sum")
         self.add_state(
+            "num_images_with_ground_truth",
+            default=torch.tensor(0),
+            dist_reduce_fx="sum",
+        )
+        self.add_state(
             "correct_empty_predictions", default=torch.tensor(0), dist_reduce_fx="sum"
         )
 
@@ -110,6 +115,8 @@ class RecallPrecision(Metric):
                 # Predictions in an empty frame are all FP: precision = 0
                 self.num_images_with_predictions += 1
             return
+
+        self.num_images_with_ground_truth += 1
 
         if n_pred == 0:
             # No predictions but ground truth exists: recall=0, precision undefined
@@ -198,7 +205,11 @@ class RecallPrecision(Metric):
                 if self.num_images_with_predictions > 0
                 else torch.tensor(float("nan"))
             ),
-            f"{self.task}_recall": self.recall.float() / self.num_images.float(),
+            f"{self.task}_recall": (
+                self.recall.float() / self.num_images_with_ground_truth.float()
+                if self.num_images_with_ground_truth > 0
+                else torch.tensor(float("nan"))
+            ),
         }
 
         # Only log class metrics if multi-class targets
