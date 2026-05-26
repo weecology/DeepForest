@@ -7,6 +7,8 @@ import shutil
 import pandas as pd
 import pytest
 import torch
+from inspect import signature
+
 from torch.utils.data import DataLoader
 
 from deepforest import get_data
@@ -139,6 +141,29 @@ def test_balanced_sampler_is_batch_sampler():
         positive_batch_fraction=0.75,
     )
     assert isinstance(sampler, torch.utils.data.BatchSampler)
+
+
+def test_balanced_sampler_exposes_lightning_arguments():
+    """Lightning reinstantiates batch samplers by replacing ``sampler`` and ``drop_last``."""
+    params = signature(BalancedDetectionBatchSampler.__init__).parameters
+    assert "sampler" in params
+    assert "drop_last" in params
+
+
+def test_balanced_sampler_uses_injected_positive_sampler():
+    """Custom ``sampler`` controls which positive images appear this epoch."""
+    positive_indices = [10, 11, 12, 13]
+    sampler = BalancedDetectionBatchSampler(
+        positive_indices=positive_indices,
+        negative_indices=[20, 21, 22],
+        batch_size=4,
+        positive_batch_fraction=0.5,
+        sampler=[0, 2],
+    )
+    batches = list(sampler)
+    assert len(batches) == 1
+    assert 10 in batches[0]
+    assert 12 in batches[0]
 
 
 def test_balanced_sampler_requires_both_pools():
