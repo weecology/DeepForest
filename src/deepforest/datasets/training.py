@@ -113,24 +113,20 @@ class TrainingDataset(Dataset):
         are found.
         """
 
-    def _image_is_empty(self, image_path: str) -> bool:
-        """True when all annotation rows for the image use the empty-frame
-        sentinel."""
-        rows = self.annotations[self.annotations.image_path == image_path]
-        coords = rows[["xmin", "ymin", "xmax", "ymax"]].values
-        return np.sum(coords) == 0
-
     def _build_annotation_index_pools(self) -> tuple[list[int], list[int]]:
         """Split dataset indices into annotated (positive) and empty (negative)
         images."""
-        positive_indices = []
-        negative_indices = []
-        for idx, image_path in enumerate(self.image_names):
-            if self._image_is_empty(image_path):
-                negative_indices.append(idx)
-            else:
-                positive_indices.append(idx)
-        return positive_indices, negative_indices
+        totals = (
+            self.annotations.groupby("image_path", sort=False)[
+                ["xmin", "ymin", "xmax", "ymax"]
+            ]
+            .sum(numeric_only=True)
+            .sum(axis=1)
+        )
+        aligned = totals.loc[list(self.image_names)].to_numpy() == 0
+        positives = np.flatnonzero(~aligned).tolist()
+        negatives = np.flatnonzero(aligned).tolist()
+        return positives, negatives
 
     def __len__(self) -> int:
         """Dataset length is the number of unique images."""
