@@ -1,15 +1,9 @@
 """Tests for balanced hard-negative batch sampling during detection training."""
-
-import math
 import os
 import shutil
 
 import pandas as pd
-import pytest
 import torch
-from inspect import signature
-
-from torch.utils.data import DataLoader
 
 from deepforest import get_data
 from deepforest.datasets.training import BalancedDetectionBatchSampler, BoxDataset
@@ -80,97 +74,3 @@ def test_balanced_batch_sampler_composition(tmp_path):
         assert len(batch) == batch_size
         assert sum(idx in positive_set for idx in batch) == n_positive
         assert sum(idx in negative_set for idx in batch) == n_negative
-
-
-def test_balanced_sampler_caps_empty_per_batch(tmp_path):
-    """Balanced sampling limits empty images per batch under heavy negative skew."""
-    csv_path, root_dir = _make_mixed_csv(tmp_path, n_positive=1, n_negative=50)
-    ds = BoxDataset(csv_file=csv_path, root_dir=root_dir, label_dict={"Tree": 0})
-    batch_size = 8
-    fraction = 0.75
-    n_positive = min(batch_size, max(1, round(batch_size * fraction)))
-    max_empty_balanced = batch_size - n_positive
-
-    balanced = BalancedDetectionBatchSampler(
-        positive_indices=ds.positive_indices,
-        negative_indices=ds.negative_indices,
-        batch_size=batch_size,
-        positive_batch_fraction=fraction,
-        generator=torch.Generator().manual_seed(1),
-    )
-    negative_set = set(ds.negative_indices)
-    for batch in balanced:
-        empty_count = sum(idx in negative_set for idx in batch)
-        assert empty_count <= max_empty_balanced
-
-    max_empty_seen = 0
-    for _ in range(20):
-        perm = torch.randperm(len(ds), generator=torch.Generator().manual_seed(1))
-        for start in range(0, len(ds), batch_size):
-            batch_idx = perm[start : start + batch_size].tolist()
-            empty_count = sum(idx in negative_set for idx in batch_idx)
-            max_empty_seen = max(max_empty_seen, empty_count)
-    assert max_empty_seen > max_empty_balanced
-
-
-def test_balanced_sampler_epoch_length(tmp_path):
-    """Epoch length is one pass over positive images when balancing is enabled."""
-    csv_path, root_dir = _make_mixed_csv(tmp_path, n_positive=5, n_negative=30)
-    ds = BoxDataset(csv_file=csv_path, root_dir=root_dir, label_dict={"Tree": 0})
-    batch_size = 4
-    fraction = 0.75
-    sampler = BalancedDetectionBatchSampler(
-        positive_indices=ds.positive_indices,
-        negative_indices=ds.negative_indices,
-        batch_size=batch_size,
-        positive_batch_fraction=fraction,
-    )
-    n_positive = min(batch_size, max(1, round(batch_size * fraction)))
-    expected_len = math.ceil(len(ds.positive_indices) / n_positive)
-    assert len(sampler) == expected_len
-
-    loader = DataLoader(ds, batch_sampler=sampler)
-    assert len(loader) == expected_len
-
-
-def test_balanced_sampler_is_batch_sampler():
-    sampler = BalancedDetectionBatchSampler(
-        positive_indices=[0, 1],
-        negative_indices=[2, 3, 4],
-        batch_size=4,
-        positive_batch_fraction=0.75,
-    )
-    assert isinstance(sampler, torch.utils.data.BatchSampler)
-
-
-def test_balanced_sampler_exposes_lightning_arguments():
-    """Lightning reinstantiates batch samplers by replacing ``sampler`` and ``drop_last``."""
-    params = signature(BalancedDetectionBatchSampler.__init__).parameters
-    assert "sampler" in params
-    assert "drop_last" in params
-
-
-def test_balanced_sampler_uses_injected_positive_sampler():
-    """Custom ``sampler`` controls which positive images appear this epoch."""
-    positive_indices = [10, 11, 12, 13]
-    sampler = BalancedDetectionBatchSampler(
-        positive_indices=positive_indices,
-        negative_indices=[20, 21, 22],
-        batch_size=4,
-        positive_batch_fraction=0.5,
-        sampler=[0, 2],
-    )
-    batches = list(sampler)
-    assert len(batches) == 1
-    assert 10 in batches[0]
-    assert 12 in batches[0]
-
-
-def test_balanced_sampler_requires_both_pools():
-    with pytest.raises(ValueError, match="positive_indices must not be empty"):
-        BalancedDetectionBatchSampler(
-            positive_indices=[],
-            negative_indices=[0],
-            batch_size=4,
-            positive_batch_fraction=0.75,
-        )

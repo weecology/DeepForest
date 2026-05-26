@@ -249,8 +249,6 @@ When hard negatives greatly outnumber annotated images, uniform shuffling can pu
 m.config.train.positive_batch_fraction = 0.75
 ```
 
-Or from the command line: `train.positive_batch_fraction=0.75`. Leave unset (`null`) to keep the default uniform shuffle.
-
 ### Model checkpoints
 
 Model checkpoints are the output of training. They represent the learned weights that can be distributed and used by anyone with DeepForest installed to perform prediction or fine-tuning. There are two main types of checkpoint that we work with:

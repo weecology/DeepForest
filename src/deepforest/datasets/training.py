@@ -17,8 +17,8 @@ from PIL import Image
 from torch.utils.data import (
     BatchSampler,
     Dataset,
-    RandomSampler,
     Sampler,
+    SequentialSampler,
 )
 from torchvision.datasets import ImageFolder
 
@@ -163,13 +163,22 @@ class BalancedDetectionBatchSampler(BatchSampler):
     """Batch sampler that fixes the fraction of annotated vs hard-negative
     images.
 
-    One epoch covers each positive index once (via ``sampler``, shuffled by
-    default). Negatives are drawn at random with replacement from the
-    negative pool each batch.
+    One epoch covers each positive dataset index once per rank, shuffled with
+    ``torch.randperm`` over ``positive_indices``. Negatives are drawn at random
+    with replacement each batch.
 
-    ``sampler`` and ``drop_last`` are exposed for PyTorch Lightning, which
-    reinstantiates the batch sampler with a distributed sampler when training
-    on multiple devices.
+    PyTorch Lightning reinstantiates batch samplers with a ``sampler`` sized to
+    ``len(dataset)`` (e.g. ``DistributedSampler``). That index range does not
+    match ``positive_indices`` positions, so ``self.sampler`` is **not** used when
+    building batches; only ``positive_indices`` and ``negative_indices`` are.
+    The ``sampler`` and ``drop_last`` arguments remain on ``__init__`` so
+    Lightning can inject values without type errors.
+
+    .. note::
+
+        Distributed sharding of the positive pool is not applied. Multi-GPU runs
+        typically need ``Trainer(use_distributed_sampler=False)`` or equivalent
+        unless you accept duplicate positive coverage per rank.
     """
 
     def __init__(
@@ -193,10 +202,7 @@ class BalancedDetectionBatchSampler(BatchSampler):
             raise ValueError("negative_indices must not be empty")
 
         if sampler is None:
-            sampler = RandomSampler(
-                range(len(positive_indices)),
-                generator=generator,
-            )
+            sampler = SequentialSampler(range(len(positive_indices)))
 
         super().__init__(sampler, batch_size=batch_size, drop_last=drop_last)
 
@@ -211,19 +217,21 @@ class BalancedDetectionBatchSampler(BatchSampler):
         self.n_negative = batch_size - self.n_positive
 
     def __len__(self) -> int:
-        sampler_len = len(self.sampler)
+        n_items = len(self.positive_indices)
         if self.drop_last:
-            return sampler_len // self.n_positive
-        return math.ceil(sampler_len / self.n_positive)
+            return n_items // self.n_positive
+        return math.ceil(n_items / self.n_positive)
 
     def __iter__(self):
-        pos_pool = [self.positive_indices[i] for i in self.sampler]
+        n_pos = len(self.positive_indices)
+        perm = torch.randperm(n_pos, generator=self.generator).tolist()
+        pos_pool = [self.positive_indices[j] for j in perm]
         pos_i = 0
 
         for _ in range(len(self)):
             batch = []
             for _ in range(self.n_positive):
-                batch.append(pos_pool[pos_i % len(pos_pool)])
+                batch.append(pos_pool[pos_i % n_pos])
                 pos_i += 1
 
             neg_draws = torch.randint(
