@@ -122,6 +122,38 @@ The image shows that the speed of the predict_tile function is related to the st
 The _predict_tile_ function is sensitive to _patch_size_, especially when using the prebuilt model on new data.
 We encourage users to experiment with various patch sizes. For 0.1m data, 400-800px per window is appropriate, but it will depend on the density of tree plots. For coarser resolution tiles, >800px patch sizes have been effective.
 
+## Convert points or boxes to polygons with SAM3
+
+DeepForest predictions from `predict_image` or `predict_tile` can be post-processed into polygons with SAM3. This is useful when you have point/box labels for training but want polygon outputs for downstream analysis. SAM3 supports optional text prompts and visual prompts in one call; see the [SAM3 paper](https://arxiv.org/abs/2511.16719) and [model card](https://huggingface.co/facebook/sam3) for details.
+
+```python
+from deepforest import main, get_data
+
+model = main.deepforest()
+model.load_model(model_name="weecology/deepforest-tree", revision="main")
+
+# Step 1: run DeepForest detection (boxes or points)
+tile_path = get_data("OSBS_029.tif")
+box_results = model.predict_tile(tile_path, patch_size=300, patch_overlap=0.25)
+
+# Step 2: convert prompts to polygons with SAM3
+polygon_results = model.predict_polygons(
+    results=box_results,
+    path=tile_path,
+    prompt_mode="auto",
+    text_prompt="individual tree crown",  # optional
+    hf_token="<your_hf_token>",           # or set HF_TOKEN env var
+)
+```
+
+You can also run the same workflow from the CLI:
+
+```bash
+deepforest sam3-polygons /path/to/image.tif --mode tile -o sam3_polygons.csv --hf-token $HF_TOKEN
+```
+
+![](../../www/example_predictions_small.png)
+
 ## Predict a directory of using a csv file using model.predict_file
 
 For a list of images with annotations in a csv file, the `predict_file` function will return a dataframe with the predicted bounding boxes for each image as a single dataframe. This is useful for making predictions on a large number of images that have ground truth annotations.

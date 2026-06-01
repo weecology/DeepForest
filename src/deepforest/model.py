@@ -4,6 +4,7 @@ import os
 from collections.abc import Mapping
 
 import numpy as np
+import pandas as pd
 import rasterio
 import torch
 import torch.nn.functional as F
@@ -12,7 +13,10 @@ from huggingface_hub import PyTorchModelHubMixin, hf_hub_download
 from omegaconf import OmegaConf
 from PIL import Image
 from pytorch_lightning import LightningModule, Trainer
+from rasterio.features import shapes
 from safetensors.torch import load_file
+from shapely.geometry import shape
+from shapely.ops import unary_union
 from torchvision import models, transforms
 
 from deepforest import utilities
@@ -649,3 +653,280 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
         instance.eval()
 
         return instance
+
+
+class Sam3PolygonModel:
+    """SAM3 wrapper for polygon post-processing of DeepForest predictions."""
+
+    def __init__(self, model, processor, device, model_name):
+        self.model = model
+        self.processor = processor
+        self.device = device
+        self.model_name = model_name
+
+    @classmethod
+    def load_model(
+        cls,
+        model_name: str = "facebook/sam3",
+        hf_token: str | None = None,
+        device: str = "auto",
+    ):
+        """Load SAM3 model and processor from Hugging Face."""
+        try:
+            from transformers import Sam3Model, Sam3Processor
+        except ImportError as exc:
+            raise ValueError(
+                "Transformers with SAM3 is required. Install transformers and try again."
+            ) from exc
+
+        if device == "auto":
+            if torch.cuda.is_available():
+                resolved_device = torch.device("cuda")
+            elif torch.backends.mps.is_available():
+                resolved_device = torch.device("mps")
+            else:
+                resolved_device = torch.device("cpu")
+        else:
+            resolved_device = torch.device(device)
+
+        token = hf_token or os.getenv("HF_TOKEN")
+        try:
+            model = Sam3Model.from_pretrained(model_name, token=token).to(resolved_device)
+            processor = Sam3Processor.from_pretrained(model_name, token=token)
+        except Exception as exc:
+            raise ValueError(
+                "Unable to load SAM3 from Hugging Face. Set HF_TOKEN (or pass hf_token) and accept model terms: "
+                "https://huggingface.co/facebook/sam3"
+            ) from exc
+
+        return cls(
+            model=model,
+            processor=processor,
+            device=resolved_device,
+            model_name=model_name,
+        )
+
+    @staticmethod
+    def _mask_to_polygon(mask: np.ndarray):
+        mask_uint8 = mask.astype(np.uint8)
+        if mask_uint8.max() == 0:
+            return None
+
+        polygons = [
+            shape(geom)
+            for geom, value in shapes(mask_uint8, mask=mask_uint8)
+            if value == 1
+        ]
+        if not polygons:
+            return None
+
+        merged = unary_union(polygons)
+        if merged.is_empty:
+            return None
+
+        return merged
+
+    @staticmethod
+    def _normalize_input(results):
+        if results is None:
+            raise ValueError("results cannot be None")
+        if len(results) == 0:
+            return utilities.__pandas_to_geodataframe__(results.copy())
+        return results.copy()
+
+    @staticmethod
+    def _resolve_prompt_mode(results: pd.DataFrame, prompt_mode: str) -> str:
+        if prompt_mode not in {"auto", "box", "point"}:
+            raise ValueError("prompt_mode must be one of: auto, box, point")
+
+        inferred_mode = utilities.determine_geometry_type(results)
+        if inferred_mode not in {"box", "point"}:
+            raise ValueError(
+                f"SAM3 polygon prompts require box or point input, got geometry type '{inferred_mode}'"
+            )
+
+        if prompt_mode == "auto":
+            return inferred_mode
+        if prompt_mode != inferred_mode:
+            raise ValueError(
+                f"prompt_mode='{prompt_mode}' does not match results geometry '{inferred_mode}'"
+            )
+        return prompt_mode
+
+    @staticmethod
+    def _point_boxes(group: pd.DataFrame, point_box_size: float) -> list[list[float]]:
+        if "x" in group.columns and "y" in group.columns:
+            x = group["x"].astype(float).to_numpy()
+            y = group["y"].astype(float).to_numpy()
+        elif "geometry" in group.columns:
+            x = group.geometry.x.astype(float).to_numpy()
+            y = group.geometry.y.astype(float).to_numpy()
+        else:
+            raise ValueError("Point prompts require x/y columns or point geometry.")
+
+        half = point_box_size / 2
+        return [[xi - half, yi - half, xi + half, yi + half] for xi, yi in zip(x, y, strict=True)]
+
+    def _predict_single_image(
+        self,
+        image: Image.Image,
+        group: pd.DataFrame,
+        prompt_mode: str,
+        text_prompt: str | None,
+        score_threshold: float,
+        mask_threshold: float,
+        point_box_size: float,
+    ) -> pd.DataFrame:
+        if prompt_mode == "box":
+            required = {"xmin", "ymin", "xmax", "ymax"}
+            missing = required.difference(group.columns)
+            if missing:
+                raise ValueError(f"Missing box columns for SAM3 prompts: {sorted(missing)}")
+            boxes = group[["xmin", "ymin", "xmax", "ymax"]].astype(float).values.tolist()
+        else:
+            boxes = self._point_boxes(group=group, point_box_size=point_box_size)
+
+        if len(boxes) == 0:
+            return group.iloc[0:0].copy()
+
+        processor_kwargs = {
+            "images": image,
+            "input_boxes": [boxes],
+            "input_boxes_labels": [[1] * len(boxes)],
+            "return_tensors": "pt",
+        }
+        if text_prompt is not None:
+            processor_kwargs["text"] = text_prompt
+
+        inputs = self.processor(**processor_kwargs).to(self.device)
+        with torch.no_grad():
+            outputs = self.model(**inputs)
+
+        target_sizes = inputs.get("original_sizes")
+        if target_sizes is None:
+            target_sizes = [[image.height, image.width]]
+        else:
+            target_sizes = target_sizes.tolist()
+
+        post = self.processor.post_process_instance_segmentation(
+            outputs,
+            threshold=score_threshold,
+            mask_threshold=mask_threshold,
+            target_sizes=target_sizes,
+        )[0]
+
+        masks = post.get("masks")
+        if masks is None or len(masks) == 0:
+            return group.iloc[0:0].copy()
+
+        raw_scores = post.get("scores")
+        if raw_scores is None:
+            raw_scores = [None] * len(masks)
+
+        rows = []
+        for idx, (mask, sam_score) in enumerate(zip(masks, raw_scores, strict=False)):
+            if idx >= len(group):
+                break
+            polygon = self._mask_to_polygon(np.asarray(mask))
+            if polygon is None:
+                continue
+            row = group.iloc[idx].to_dict()
+            row["geometry"] = polygon
+            if sam_score is not None:
+                row["score"] = float(sam_score)
+            rows.append(row)
+
+        if not rows:
+            return group.iloc[0:0].copy()
+
+        return pd.DataFrame(rows)
+
+    def predict_polygons(
+        self,
+        results,
+        image: np.ndarray | None = None,
+        path: str | None = None,
+        root_dir: str | None = None,
+        text_prompt: str | None = None,
+        prompt_mode: str = "auto",
+        score_threshold: float = 0.5,
+        mask_threshold: float = 0.5,
+        point_box_size: float = 12.0,
+    ):
+        """Convert DeepForest box/point predictions into polygon predictions."""
+        results = self._normalize_input(results)
+        if len(results) == 0:
+            return utilities.__pandas_to_geodataframe__(results)
+
+        resolved_prompt_mode = self._resolve_prompt_mode(results, prompt_mode=prompt_mode)
+
+        if path is not None:
+            image_obj = Image.open(path).convert("RGB")
+            image_name = os.path.basename(path)
+            if "image_path" in results.columns:
+                selected = results[results.image_path == image_name]
+                if len(selected) == 0:
+                    selected = results
+            else:
+                selected = results
+            polygon_df = self._predict_single_image(
+                image=image_obj,
+                group=selected,
+                prompt_mode=resolved_prompt_mode,
+                text_prompt=text_prompt,
+                score_threshold=score_threshold,
+                mask_threshold=mask_threshold,
+                point_box_size=point_box_size,
+            )
+            gdf = utilities.__pandas_to_geodataframe__(polygon_df)
+            gdf.root_dir = os.path.dirname(path)
+            return gdf
+
+        if image is not None:
+            image_obj = Image.fromarray(image.astype(np.uint8)).convert("RGB")
+            polygon_df = self._predict_single_image(
+                image=image_obj,
+                group=results,
+                prompt_mode=resolved_prompt_mode,
+                text_prompt=text_prompt,
+                score_threshold=score_threshold,
+                mask_threshold=mask_threshold,
+                point_box_size=point_box_size,
+            )
+            gdf = utilities.__pandas_to_geodataframe__(polygon_df)
+            gdf.root_dir = None
+            return gdf
+
+        if "image_path" not in results.columns:
+            raise ValueError("results must include image_path when image/path are not provided")
+
+        inferred_root = root_dir or getattr(results, "root_dir", None)
+        if inferred_root is None:
+            raise ValueError(
+                "No image root found. Pass root_dir or provide results with results.root_dir."
+            )
+
+        output_groups = []
+        for image_path, group in results.groupby("image_path"):
+            full_path = os.path.join(inferred_root, image_path)
+            image_obj = Image.open(full_path).convert("RGB")
+            output_groups.append(
+                self._predict_single_image(
+                    image=image_obj,
+                    group=group,
+                    prompt_mode=resolved_prompt_mode,
+                    text_prompt=text_prompt,
+                    score_threshold=score_threshold,
+                    mask_threshold=mask_threshold,
+                    point_box_size=point_box_size,
+                )
+            )
+
+        if output_groups:
+            polygon_df = pd.concat(output_groups, ignore_index=True)
+        else:
+            polygon_df = results.iloc[0:0].copy()
+
+        gdf = utilities.__pandas_to_geodataframe__(polygon_df)
+        gdf.root_dir = inferred_root
+        return gdf

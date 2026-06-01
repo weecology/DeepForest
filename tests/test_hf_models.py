@@ -1,6 +1,8 @@
+import os
+
 import pytest
 from deepforest import main
-from deepforest.model import CropModel
+from deepforest.model import CropModel, Sam3PolygonModel
 
 
 BOX_MODELS = [
@@ -48,3 +50,13 @@ def test_load_point_models(repo_id):
         assert df.model is not None
         # detection models should have label_dict on the underlying model
         assert getattr(df.model, "label_dict", None) is not None
+
+
+@pytest.mark.skipif(
+    os.environ.get("HF_TOKEN") is None,
+    reason="HF_TOKEN is required to load facebook/sam3",
+)
+def test_load_sam3_model():
+    sam = Sam3PolygonModel.load_model(hf_token=os.environ["HF_TOKEN"])
+    assert sam.model is not None
+    assert sam.processor is not None
