@@ -78,8 +78,10 @@ def test_eval_single(point_model):
     assert 0.3 <= metrics["point_recall"] <= 1.0, f"Expected point_recall to be in [0.3, 1.0], got {metrics['point_recall']:.2f}"
 
 def test_treeformer_forward_pass_train():
-    """Training forward pass returns a loss dict with a scalar, differentiable loss."""
-    model = TreeFormerModel(backbone="pvt_v2_b0", num_classes=1)
+    """Training forward pass returns the full loss dict; the loss is a scalar,
+    differentiable, and gradients reach the backbone and regression head."""
+    # norm_cood=True gives non-degenerate (global) OT, matching the NEON config.
+    model = TreeFormerModel(backbone="pvt_v2_b0", num_classes=1, norm_cood=True)
     model.train()
 
     images = torch.rand(2, 3, 128, 128)
@@ -91,9 +93,29 @@ def test_treeformer_forward_pass_train():
     output = model(images, targets)
 
     assert isinstance(output, dict)
-    assert "loss" in output
-    assert output["loss"].ndim == 0
-    assert output["loss"].requires_grad
+    for key in ("loss", "count_loss", "ot_loss", "density_l1_loss", "count_cls_loss"):
+        assert key in output, f"missing loss term: {key}"
+
+    loss = output["loss"]
+    assert loss.ndim == 0
+    assert loss.requires_grad
+    assert torch.isfinite(loss)
+
+    # With norm_cood=True the OT term is non-degenerate: finite Wasserstein
+    # distance and Sinkhorn converges within the iteration budget.
+    assert torch.isfinite(output["ot_wd"])
+    assert output["sinkhorn_its"] < model.ot_iter
+
+    loss.backward()
+    backbone_grads = regression_grads = 0
+    for name, param in model.named_parameters():
+        if param.grad is None:
+            continue
+        assert torch.isfinite(param.grad).all(), f"non-finite grad in {name}"
+        backbone_grads += name.startswith("backbone")
+        regression_grads += name.startswith("regression")
+    assert backbone_grads > 0, "no gradient reached the backbone"
+    assert regression_grads > 0, "no gradient reached the regression head"
 
 
 def test_treeformer_forward_pass_val():
@@ -117,3 +139,28 @@ def test_treeformer_forward_pass_val():
         assert pred["points"].shape == (n, 2)
         assert pred["scores"].shape == (n,)
         assert pred["labels"].shape == (n,)
+
+
+def test_treeformer_loss_terms_toggle():
+    """active_losses gating: disabled terms are zero, count_cls is omitted, and
+    the total equals the single active term."""
+    model = TreeFormerModel(
+        backbone="pvt_v2_b0", num_classes=1, losses=["count"], enforce_count=False
+    )
+    model.train()
+
+    images = torch.rand(2, 3, 96, 96)
+    targets = [
+        {"points": torch.rand(4, 2) * 96, "labels": torch.zeros(4, dtype=torch.int64)},
+        {"points": torch.rand(2, 2) * 96, "labels": torch.zeros(2, dtype=torch.int64)},
+    ]
+
+    output = model(images, targets)
+
+    assert output["ot_loss"].item() == 0.0
+    assert output["density_l1_loss"].item() == 0.0
+    assert "count_cls_loss" not in output
+    assert torch.allclose(output["loss"], output["count_loss"])
+    assert output["loss"].requires_grad
+    assert torch.isfinite(output["loss"])
+    output["loss"].backward()

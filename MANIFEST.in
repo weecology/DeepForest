@@ -1,5 +1,7 @@
 
 include src/deepforest/conf/config.yaml
+include src/deepforest/conf/point.yaml
+include src/deepforest/conf/point_pretrain.yaml
 include src/deepforest/data/testfile_deepforest.csv
 include src/deepforest/data/testfile_multi.csv
 include src/deepforest/data/classes.csv
