@@ -17,7 +17,7 @@ from safetensors.torch import load_file
 from torchvision import models, transforms
 
 from deepforest import utilities
-from deepforest.datasets.training import create_aligned_image_folders
+from deepforest.datasets.training import MetadataImageFolder, create_aligned_image_folders
 
 
 class BaseModel:
@@ -343,8 +343,6 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
         if metadata_csv is not None and self.config["cropmodel"].get(
             "use_metadata", False
         ):
-            from deepforest.datasets.training import MetadataImageFolder
-
             self.train_ds = MetadataImageFolder(self.train_ds, metadata_csv)
             self.val_ds = MetadataImageFolder(self.val_ds, metadata_csv)
 

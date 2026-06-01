@@ -884,9 +884,8 @@ def create_aligned_image_folders(
 class MetadataImageFolder(Dataset):
     """Wrapper that adds spatial-temporal metadata to an ImageFolder dataset.
 
-    Expects a CSV sidecar file with columns: filename, lat, lon, date.
+    Expects a CSV file with columns: filename, lat, lon, date.
     The date column should be an ISO format string (e.g., "2024-06-15")
-    and will be converted to day_of_year internally.
 
     Args:
         image_folder: A FixedClassImageFolder (or ImageFolder) dataset.

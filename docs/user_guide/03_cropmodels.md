@@ -2,37 +2,97 @@
 
 ## Classifying Objects After Object Detection
 
-One of the most requested features since the early days of DeepForest was the ability to apply a follow-up model to predicted bounding boxes. For example, if you use the 'tree' or 'bird' backbone, you might want to classify each detection with your own model without retraining the upstream detector.
+DeepForest provides a cascaded approach to object classification. The `CropModel` is a simple classification model that can be applied to each detected object from a deepforest detection model.
+For example, a user might use one of the prebuilt detection models, such as the bird detector, but wish to classify each detection to a finer set of labels.
 
-Beginning in version 1.4.0, the `CropModel` class can be used in conjunction with `predict_tile` and `predict_image` methods. The general workflow involves first applying the object detection model, extracting the prediction locations into images (which can optionally be saved to disk), and then applying a second model on each cropped image.
+## Using existing models
 
-New columns `cropmodel_label` and `cropmodel_score` will appear alongside the object detection model's label and score.
+```python
+from deepforest import main
+from deepforest.model import CropModel
 
-## Benefits
+detector = main.deepforest()
+detector.load_model("weecology/deepforest-tree")
 
-Why would you want to apply a model directly to each crop? Why not train a multi-class object detection model?
+genus_model = CropModel.load_model("weecology/cropmodel-tree-genus")
+crop_results = detector.predict_tile(path=path, crop_model=crop_model)
+```
 
-While that approach is certainly valid, there are a few key benefits to using CropModels, especially in common use cases:
+A `CropModel` is a PyTorch Lightning object.
 
-- **Flexible Labeling**: Object detection models require that all objects of a particular class be annotated within an image, which can be impossible for detailed category labels. For example, you might have bounding boxes for all 'trees' in an image, but only have species or health labels for a small portion of them based on ground surveys. Training a multi-class object detection model would mean training on only a portion of your available data.
-- **Simpler and Extendable**: CropModels decouple detection and classification workflows, allowing separate handling of challenges like class imbalance and incomplete labels, without reducing the quality of the detections. Two-stage object detection models can be finicky with similar classes and often require expertise in managing learning rates.
-- **New Data and Multi-sensor Learning**: In many applications, the data needed for detection and classification may differ. The CropModel concept provides an extendable piece that allows for advanced pipelines.
+```python
+import torch
+from deepforest.model import CropModel
+
+# Test forward pass
+x = torch.rand(4, 3, 224, 224)
+output = crop_model.forward(x)
+assert output.shape == (4, 2)
+```
+
+### Training
+
+```python
+# Load data and write crops to disk
+
+df = read_file('path/to/annotations')
+
+# Initialize model
+crop_model = CropModel(num_classes=2)
+
+boxes = df[['xmin', 'ymin', 'xmax', 'ymax']].values.tolist()
+labels=df.label.values
+
+crop_model.write_crops(boxes,labels,images,savedir)
+
+# Create trainer
+crop_model.create_trainer(
+    max_epochs=10,
+    accelerator="gpu",
+    devices=1
+)
+
+# Load data
+crop_model.load_from_disk(
+    train_dir="path/to/train",
+    val_dir="path/to/val"
+)
+
+# Train
+crop_model.trainer.fit(crop_model)
+
+# Validate
+crop_model.trainer.validate(crop_model)
+
+# Save checkpoint
+crop_model.trainer.save_checkpoint("model.ckpt")
+```
+
+### Evaluation
+
+The model provides several evaluation metrics:
+
+```python
+# Get validation metrics
+metrics = crop_model.trainer.validate(crop_model)
+
+# Get confusion matrix
+labels, predictions = crop_model.val_dataset_confusion()
+```
 
 (spatial-temporal-metadata)=
 ## Spatial-Temporal Metadata
 
-In biodiversity monitoring, species distributions vary by location and season. A bird common in Florida may be rare in Alaska, and migratory species shift seasonally. The CropModel supports an optional spatial-temporal metadata embedding that provides location and date context alongside image features to improve classification.
-
-The metadata signal is intentionally "gentle" — it contributes only ~1.5% of the feature vector (32 dimensions vs. 2048 image features). This means the model still classifies primarily from visual appearance but can use location/season as a soft prior. When metadata is not provided at inference time, the model gracefully degrades to image-only classification.
+In biodiversity monitoring, species distributions vary by location and season. The CropModel supports an optional spatial-temporal metadata embedding that provides location and date context alongside image features to improve classification. The metadata signal is by default "gentle" — it contributes only a small portion of the feature vector. This means the model still classifies primarily from visual appearance but can use location/season as a soft prior. When metadata is not provided at inference time, the model gracefully reverts to image-only classification.
 
 ### How It Works
 
 When `use_metadata=True`, the CropModel:
 
-1. Encodes `(lat, lon, day_of_year)` using sinusoidal features (smooth, periodic representation)
-2. Projects the 6 sinusoidal features through a small MLP to a 32-dim embedding
-3. Concatenates this with the 2048-dim ResNet image features
-4. Classifies from the combined 2080-dim vector
+1. Encodes `(lat, lon, day_of_year)`
+2. Projects features through a small metadata embedding layer
+3. Concatenates this with the image features
+4. Classifies the image using the combined features.
 
 ### Inference with Metadata
 
@@ -62,7 +122,7 @@ All detected crops in the tile share the same metadata. If `metadata` is omitted
 
 ### Training with Metadata
 
-Training requires a CSV sidecar file that maps each crop image filename to its spatial-temporal metadata:
+Training requires a CSV file that maps each crop image filename to its spatial-temporal metadata:
 
 ```text
 filename,lat,lon,date
@@ -71,20 +131,9 @@ bird_002.png,35.2,-120.4,2024-06-15
 mammal_001.png,40.1,-105.3,2024-07-20
 ```
 
-- `filename` matches the image basename inside the ImageFolder class directories
-- `date` is an ISO format string, converted to day-of-year internally
+- `filename` matches the image basename
+- `date` is an ISO format string
 - One CSV covers both train and val sets (filenames are unique)
-
-The existing ImageFolder directory structure is unchanged:
-
-```
-train/
-  Bird/
-    bird_001.png
-    bird_002.png
-  Mammal/
-    mammal_001.png
-```
 
 Pass the CSV when loading data:
 
@@ -147,129 +196,20 @@ uv run python docs/user_guide/examples/visualize_metadata_priors.py \
 
 The map below shows a relative metadata prior for Northern Gannet
 (`Morus bassanus`) on April 15, 2024. It reflects the learned metadata branch,
-not image evidence. Basemap tiles are optional; install `contextily` to include
-them or pass `--no-basemap` to plot only the score raster.
+not image evidence.
 
 ```{image} ../_static/metadata_prior_example.png
 :alt: Metadata prior map for Morus bassanus over the western Atlantic
 :width: 650px
 ```
 
-## Considerations
+## Advanced Usage
 
-- **Efficiency**: Using a CropModel will be slower, as for each detection, the sensor data needs to be cropped and passed to the detector. This is less efficient than using a combined classification/detection system like multi-class detection models. While modern GPUs mitigate this to some extent, it is still something to be mindful of.
-- **Lack of Spatial Awareness**: The model knows only about the pixels inside the crop and cannot use features outside the bounding box. This lack of spatial awareness can be a major limitation. It is possible, but untested, that multi-class detection models might perform better in such tasks. A box attention mechanism, like in [this paper](https://arxiv.org/abs/2111.13087), could be a better approach. See the {ref}`spatial-temporal-metadata` section for an optional way to incorporate location and season information.
-
-## Single Crop Model
-
-Consider a test file with tree boxes and an 'Alive/Dead' label that comes with all DeepForest installations:
-
-```python
-
-import pandas as pd
-from deepforest import model
-from deepforest import main as m
-from deepforest.utilities import get_data
-
-df = pd.read_csv(get_data("testfile_multi.csv"))
-crop_model = model.CropModel(num_classes=2)
-# Or set up the crop model or load weights model.CropModel.load_from_checkpoint(<path>)
-
-m.create_trainer()
-result = m.predict_tile(path=path, crop_model=crop_model)
-```
-
-```python
-result.head()
-# Output:
-#    xmin   ymin   xmax  ...    image_path cropmodel_label  cropmodel_score
-# 0  273.0  230.0  313.0  ...  SOAP_061.png               1         0.519510
-# 1   47.0   82.0   81.0  ...  SOAP_061.png               1         0.506423
-# 2    0.0   72.0   34.0  ...  SOAP_061.png               1         0.505258
-# 3  341.0   40.0  374.0  ...  SOAP_061.png               1         0.517231
-# 4    0.0  183.0   26.0  ...  SOAP_061.png               1         0.513122
-```
-
-## Multiple Crop Models
-
-You can also pass multiple crop models to `predict_tile`. Each model's predictions and confidence scores will be stored in separate columns.
-
-```python
-crop_model1 = model.CropModel(num_classes=2)
-crop_model2 = model.CropModel(num_classes=3)
-result = m.predict_tile(path=path, crop_model=[crop_model1, crop_model2])
-```
-
-```python
-result.head()
-# Output:
-#     xmin   ymin   xmax   ymax label     score    image_path  cropmodel_label_0  cropmodel_score_0  cropmodel_label_1  cropmodel_score_1
-# 0  273.0  230.0  313.0  275.0  Tree  0.882591  SOAP_061.png                   0           0.650223                  1           0.383726
-# 1   47.0   82.0   81.0  120.0  Tree  0.740889  SOAP_061.png                   0           0.621586                  1           0.376401
-# 2    0.0   72.0   34.0  116.0  Tree  0.735777  SOAP_061.png                   0           0.614928                  1           0.394649
-# 3  341.0   40.0  374.0   77.0  Tree  0.668367  SOAP_061.png                   0           0.598883                  1           0.386490
-# 4    0.0  183.0   26.0  235.0  Tree  0.664668  SOAP_061.png                   0           0.538162                  1           0.439823
-```
-
-A `CropModel` is a PyTorch Lightning object and can also be used like any other model.
-
-```python
-
-import torch
-from deepforest.model import CropModel
-
-# Test forward pass
-x = torch.rand(4, 3, 224, 224)
-output = crop_model.forward(x)
-assert output.shape == (4, 2)
-```
-
-## Writing Crops to Disk
-
-We can either classify crops in memory or save them to disk.
-
-```python
-
-import os
-
-boxes = df[['xmin', 'ymin', 'xmax', 'ymax']].values.tolist()
-image_path = os.path.join(os.path.dirname(get_data("SOAP_061.png")), df["image_path"].iloc[0])
-crop_model.write_crops(boxes=boxes, labels=df.label.values, image_path=image_path, savedir=tmpdir)
-```
-
-This saves each crop in labeled folders (`Alive/Dead`).
-
-## Training
-
-You can train a new model using PyTorch Lightning:
-
-```python
-
-from deepforest.model import CropModel
-
-crop_model.create_trainer(fast_dev_run=True)
-# Get the data stored from the write_crops step above.
-crop_model.load_from_disk(train_dir=tmpdir, val_dir=tmpdir)
-crop_model.trainer.fit(crop_model)
-crop_model.trainer.validate(crop_model)
-```
-
-### Sampler
+## Balance classes during training
 
 Many classification tasks have imbalanced data, meaning that one class appears many more times than others. This leads to the model often choosing this class, regardless of visual appearance. To reduce this effect, a weighted_sampler randomly chooses images to show in training weighted by their inverse frequency. This means that rarer crops are shown more often to offset the common classes. This leads to better performance for rare classes, but can reduce performance on common classes by a small amount. To active the sampler, set the config: cropmodel -> sampler -> 'weighted_random'.
 
-# Customizing
-
-The `CropModel` makes very few assumptions about the architecture and simply provides a container to make predictions at each detection. To specify a custom CropModel, use the `model` argument.
-
-```python
-from deepforest.model import CropModel
-from torchvision.models import resnet101
-backbone = resnet101(weights='DEFAULT')
-crop_model = CropModel(num_classes=2, model=backbone)
-```
-
-## Configuring Image Resize
+## Image Resize
 
 The CropModel can be configured to resize input images to different dimensions. By default, images are resized to 224x224 pixels, but this can be customized through the config:
 
@@ -292,8 +232,6 @@ cropmodel:
         - 300
     resize_interpolation: nearest  # or 'bilinear' (default)
 ```
-
-The `resize_interpolation` option controls how crops are scaled to the target size. The default is `bilinear`. Use `nearest` when training on small crops where bilinear smoothing would blur important details. This is particularly useful when using custom models that expect different input sizes or when working with high-resolution imagery where preserving more detail is important.
 
 ## Custom Transforms
 
@@ -346,7 +284,20 @@ class CustomCropModel(CropModel):
 model = CustomCropModel()
 ```
 
-## Making Predictions Outside of predict_tile
+### Reloading a Dataset
+
+```python
+from deepforest.model import CropModel
+
+crop_model = CropModel.load_from_checkpoint("/path/to/ckpt")
+crop_model.load_from_disk(
+    train_dir="/dir/train/",
+    val_dir="/dir/val/"
+)
+crop_model.create_trainer()
+```
+
+## Making predictions outside of predict_tile
 
 While `predict_tile` provides a convenient way to run predictions on detected objects, you can also use the CropModel directly for classification tasks. This is useful when you have pre-cropped images or want to run classification independently.
 
@@ -360,13 +311,6 @@ import numpy as np
 
 # Load a trained model from checkpoint
 cropmodel = CropModel.load_from_checkpoint("path/to/checkpoint.ckpt")
-
-# The model will automatically load:
-# - The model architecture and weights
-# - The label dictionary mapping class names to indices
-# - The number of classes
-# - Any hyperparameters saved during training
-```
 
 ### Making Predictions on a Dataset
 
@@ -398,156 +342,15 @@ label, score = cropmodel.postprocess_predictions(crop_results)
 label_names = [cropmodel.numeric_to_label_dict[x] for x in label]
 ```
 
-### Reloading a Dataset from Disk for Validation
+## Multiple Crop Models
+
+You can also pass multiple crop models to `predict_tile`. Each model's predictions and confidence scores will be stored in separate columns.
 
 ```python
-from deepforest.model import CropModel
-
-crop_model = CropModel.load_from_checkpoint("/blue/ewhite/b.weinstein/BOEM/UBFAI Images with Detection Data/classification/checkpoints/d7e956055e23433a8892a8928a357385.ckpt")
-crop_model.load_from_disk(
-    train_dir="/blue/ewhite/b.weinstein/BOEM/UBFAI Images with Detection Data/classification/crops/train/d7e956055e23433a8892a8928a357385",
-    val_dir="/blue/ewhite/b.weinstein/BOEM/UBFAI Images with Detection Data/classification/crops/val/d7e956055e23433a8892a8928a357385"
-)
-crop_model.create_trainer()
-true_label, predicted_label = crop_model.val_dataset_confusion()
+crop_model1 = model.CropModel(num_classes=2)
+crop_model2 = model.CropModel(num_classes=3)
+result = m.predict_tile(path=path, crop_model=[crop_model1, crop_model2])
 ```
-
-### Making Predictions on Single Images
-
-You can also make predictions on individual images or batches:
-
-```python
-import torch
-from PIL import Image
-
-# Load and preprocess a single image
-image = Image.open("path/to/image.jpg")
-transform = cropmodel.get_transform(augmentations=None)
-tensor = transform(image).unsqueeze(0)  # Add batch dimension
-
-# Make prediction
-with torch.no_grad():
-    output = cropmodel(tensor)
-    # Convert to numpy for postprocessing
-    output = output.cpu().numpy()
-    # Use the same postprocessing method
-    label, score = cropmodel.postprocess_predictions([output])
-    class_name = cropmodel.numeric_to_label_dict[label[0]]
-    confidence = score[0]
-```
-
-## Model Architecture and Training
-
-The CropModel uses a ResNet-50 backbone by default, but can be customized with any PyTorch model. The model includes:
-
-- A classification head with the specified number of classes
-- Standard image preprocessing (resize to 224x224, normalization)
-- Data augmentation during training (random horizontal flips)
-- Accuracy and precision metrics for evaluation
-
-### Training
-
-```python
-# Initialize model
-crop_model = CropModel(num_classes=2)
-
-# Create trainer
-crop_model.create_trainer(
-    max_epochs=10,
-    accelerator="gpu",
-    devices=1
-)
-
-# Load data
-crop_model.load_from_disk(
-    train_dir="path/to/train",
-    val_dir="path/to/val"
-)
-
-# Train
-crop_model.trainer.fit(crop_model)
-
-# Validate
-crop_model.trainer.validate(crop_model)
-
-# Save checkpoint
-crop_model.trainer.save_checkpoint("model.ckpt")
-```
-
-### Evaluation
-
-The model provides several evaluation metrics:
-
-```python
-# Get validation metrics
-metrics = crop_model.trainer.validate(crop_model)
-
-# Get confusion matrix
-images, labels, predictions = crop_model.val_dataset_confusion(return_images=True)
-```
-
-### Confusion Matrix Visualization
-
-You can visualize the confusion matrix in several ways:
-
-```python
-import matplotlib.pyplot as plt
-from torchmetrics.classification import MulticlassConfusionMatrix
-import seaborn as sns
-
-# Method 1: Using torchmetrics
-metric = MulticlassConfusionMatrix(num_classes=crop_model.num_classes)
-metric.update(preds=predictions, target=labels)
-fig, ax = metric.plot()
-plt.title("Confusion Matrix")
-plt.show()
-
-# Method 2: Using seaborn with val_dataset_confusion
-images, labels, predictions = crop_model.val_dataset_confusion(return_images=True)
-confusion_matrix = np.zeros((crop_model.num_classes, crop_model.num_classes))
-for true, pred in zip(labels, predictions):
-    confusion_matrix[true][pred] += 1
-
-# Plot with seaborn
-plt.figure(figsize=(10, 8))
-sns.heatmap(confusion_matrix,
-            annot=True,
-            fmt='g',
-            xticklabels=list(crop_model.label_dict.keys()),
-            yticklabels=list(crop_model.label_dict.keys()))
-plt.title("Confusion Matrix")
-plt.xlabel("Predicted")
-plt.ylabel("True")
-plt.show()
-
-# Get per-class metrics
-from torchmetrics.classification import MulticlassPrecision, MulticlassRecall, MulticlassF1Score
-
-precision = MulticlassPrecision(num_classes=crop_model.num_classes)
-recall = MulticlassRecall(num_classes=crop_model.num_classes)
-f1 = MulticlassF1Score(num_classes=crop_model.num_classes)
-
-precision_score = precision(torch.tensor(predictions), torch.tensor(labels))
-recall_score = recall(torch.tensor(predictions), torch.tensor(labels))
-f1_score = f1(torch.tensor(predictions), torch.tensor(labels))
-
-print(f"Precision: {precision_score:.3f}")
-print(f"Recall: {recall_score:.3f}")
-print(f"F1 Score: {f1_score:.3f}")
-```
-
-This will give you a comprehensive view of your model's performance, including:
-- A visual confusion matrix showing true vs predicted classes
-- Per-class precision, recall, and F1 scores
-- The ability to identify which classes are most commonly confused with each other
-
-The confusion matrix is particularly useful for:
-- Identifying class imbalance issues
-- Finding classes that are frequently confused
-- Understanding the model's strengths and weaknesses
-- Guiding decisions about data collection and model improvement
-
-## Advanced Usage
 
 ### Custom Model Architecture
 
@@ -580,6 +383,20 @@ class CustomCropModel(CropModel):
 
         return loss
 ```
+
+## Benefits
+
+Why would you want to apply a model directly to each crop? Why not train a multi-class object detection model?
+While that approach is certainly valid, there are a few key benefits to using CropModels, especially in common use cases:
+
+- **Flexible Labeling**: Object detection models require that all objects of a particular class be annotated within an image, which can be impossible for detailed category labels. For example, you might have bounding boxes for all 'trees' in an image, but only have species or health labels for a small portion of them based on ground surveys. Training a multi-class object detection model would mean training on only a portion of your available data.
+- **Simpler and Extendable**: CropModels decouple detection and classification workflows, allowing separate handling of challenges like class imbalance and incomplete labels, without reducing the quality of the detections. Two-stage object detection models can be finicky with similar classes and often require expertise in managing learning rates.
+- **New Data and Multi-sensor Learning**: In many applications, the data needed for detection and classification may differ. The CropModel concept provides an extendable piece that allows for advanced pipelines.
+
+## Considerations
+
+- **Efficiency**: Using a CropModel will be slower, as for each detection, the sensor data needs to be cropped and passed to the detector. This is less efficient than using a combined classification/detection system like multi-class detection models. While modern GPUs mitigate this to some extent, it is still something to be mindful of.
+- **Lack of Spatial Awareness**: The model knows only about the pixels inside the crop and cannot use features outside the bounding box. This lack of spatial awareness can be a major limitation. It is possible, but untested, that multi-class detection models might perform better in such tasks. A box attention mechanism, like in [this paper](https://arxiv.org/abs/2111.13087), could be a better approach. See the {ref}`spatial-temporal-metadata` section for an optional way to incorporate location and season information.
 
 ## Pre-2.0 compatability
 
