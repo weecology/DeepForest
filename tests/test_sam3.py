@@ -117,6 +117,66 @@ def test_load_sam3_model_with_mock(fake_sam3):
     assert sam.processor is not None
 
 
+@pytest.mark.skipif(
+    not (torch.cuda.is_available() or torch.backends.mps.is_available()),
+    reason="Requires CUDA or MPS",
+)
+def test_mask_to_polygon_accepts_device_tensor():
+    device = torch.device("cuda" if torch.cuda.is_available() else "mps")
+    mask = torch.zeros((32, 32), device=device)
+    mask[5:20, 5:20] = 1
+    polygon = Sam3PolygonModel._mask_to_polygon(mask)
+    assert polygon is not None
+    assert not polygon.is_empty
+
+
+def test_mask_to_polygon_accepts_batched_cuda_tensor():
+    if not torch.cuda.is_available():
+        pytest.skip("CUDA required for batched device tensor test")
+    masks = torch.zeros((2, 1, 32, 32), device="cuda")
+    masks[0, 0, 5:20, 5:20] = 1
+    masks[1, 0, 8:18, 8:18] = 1
+    polygons = [Sam3PolygonModel._mask_to_polygon(mask) for mask in Sam3PolygonModel._iter_masks(masks)]
+    assert all(poly is not None and not poly.is_empty for poly in polygons)
+
+
+def test_predict_polygons_with_device_masks(fake_sam3, monkeypatch):
+    if not (torch.cuda.is_available() or torch.backends.mps.is_available()):
+        pytest.skip("Requires CUDA or MPS")
+    device = torch.device("cuda" if torch.cuda.is_available() else "mps")
+
+    original_post = _FakeSam3Processor.post_process_instance_segmentation
+
+    def post_with_device_masks(self, outputs, threshold=0.5, mask_threshold=0.5, target_sizes=None):
+        result = original_post(self, outputs, threshold, mask_threshold, target_sizes)
+        device_masks = [torch.as_tensor(mask, device=device) for mask in result[0]["masks"]]
+        result[0]["masks"] = torch.stack(device_masks)
+        result[0]["scores"] = torch.tensor(result[0]["scores"], device=device)
+        return result
+
+    monkeypatch.setattr(
+        _FakeSam3Processor,
+        "post_process_instance_segmentation",
+        post_with_device_masks,
+    )
+
+    model = deepforest()
+    model.load_model(model_name="weecology/deepforest-tree")
+    image_path = get_data("OSBS_029.png")
+    results = model.predict_image(path=image_path)
+
+    polygons = model.predict_polygons(
+        results=results,
+        path=image_path,
+        model_name="facebook/sam3",
+        hf_token="fake-token",
+        prompt_mode="box",
+    )
+
+    assert len(polygons) > 0
+    assert utilities.determine_geometry_type(polygons) == "polygon"
+
+
 def test_predict_polygons_from_predict_image(fake_sam3):
     model = deepforest()
     model.load_model(model_name="weecology/deepforest-tree")

@@ -11,6 +11,7 @@ Imagery is of a relatively high resolution and is generally not satellite data.
 - To set up and run tests, use `uv sync --all-extras --dev`. You can reference the CI workflow in .github
 - Use the `deepforest` command line interface with Hydra overrides for simple tests
 - When you've finished, run `uv run pre-commit` with appropriate arguments to run formatting and linters on your work.
+- Run GPU-affected tests locally when CUDA or MPS is available.
 
 ## Folder Structure
 

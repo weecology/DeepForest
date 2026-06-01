@@ -707,8 +707,55 @@ class Sam3PolygonModel:
         )
 
     @staticmethod
-    def _mask_to_polygon(mask: np.ndarray):
-        mask_uint8 = mask.astype(np.uint8)
+    def _to_numpy(value) -> np.ndarray:
+        """Move torch tensors to CPU before NumPy conversion."""
+        if isinstance(value, torch.Tensor):
+            value = value.detach()
+            if value.device.type != "cpu":
+                value = value.cpu()
+            value = value.numpy()
+        else:
+            value = np.asarray(value)
+
+        value = np.squeeze(value)
+        if value.ndim > 2:
+            raise ValueError(f"Expected a 2D mask, got shape {value.shape}")
+        return value
+
+    @staticmethod
+    def _to_float(value) -> float:
+        if isinstance(value, torch.Tensor):
+            return float(value.detach().cpu().item())
+        return float(value)
+
+    @staticmethod
+    def _iter_masks(masks):
+        if isinstance(masks, torch.Tensor):
+            if masks.ndim == 4 and masks.shape[1] == 1:
+                masks = masks.squeeze(1)
+            if masks.ndim == 3:
+                for index in range(masks.shape[0]):
+                    yield masks[index]
+                return
+        if isinstance(masks, np.ndarray) and masks.ndim == 3:
+            for index in range(masks.shape[0]):
+                yield masks[index]
+            return
+        yield from masks
+
+    @staticmethod
+    def _score_at(raw_scores, index: int) -> float | None:
+        if raw_scores is None:
+            return None
+        if isinstance(raw_scores, torch.Tensor):
+            if raw_scores.ndim == 0:
+                return Sam3PolygonModel._to_float(raw_scores)
+            return Sam3PolygonModel._to_float(raw_scores[index])
+        return Sam3PolygonModel._to_float(raw_scores[index])
+
+    @staticmethod
+    def _mask_to_polygon(mask):
+        mask_uint8 = Sam3PolygonModel._to_numpy(mask).astype(np.uint8)
         if mask_uint8.max() == 0:
             return None
 
@@ -765,7 +812,10 @@ class Sam3PolygonModel:
             raise ValueError("Point prompts require x/y columns or point geometry.")
 
         half = point_box_size / 2
-        return [[xi - half, yi - half, xi + half, yi + half] for xi, yi in zip(x, y, strict=True)]
+        return [
+            [xi - half, yi - half, xi + half, yi + half]
+            for xi, yi in zip(x, y, strict=True)
+        ]
 
     def _predict_single_image(
         self,
@@ -781,7 +831,9 @@ class Sam3PolygonModel:
             required = {"xmin", "ymin", "xmax", "ymax"}
             missing = required.difference(group.columns)
             if missing:
-                raise ValueError(f"Missing box columns for SAM3 prompts: {sorted(missing)}")
+                raise ValueError(
+                    f"Missing box columns for SAM3 prompts: {sorted(missing)}"
+                )
             boxes = group[["xmin", "ymin", "xmax", "ymax"]].astype(float).values.tolist()
         else:
             boxes = self._point_boxes(group=group, point_box_size=point_box_size)
@@ -816,24 +868,28 @@ class Sam3PolygonModel:
         )[0]
 
         masks = post.get("masks")
-        if masks is None or len(masks) == 0:
+        if masks is None:
+            return group.iloc[0:0].copy()
+        if isinstance(masks, torch.Tensor):
+            if masks.numel() == 0:
+                return group.iloc[0:0].copy()
+        elif len(masks) == 0:
             return group.iloc[0:0].copy()
 
         raw_scores = post.get("scores")
-        if raw_scores is None:
-            raw_scores = [None] * len(masks)
 
         rows = []
-        for idx, (mask, sam_score) in enumerate(zip(masks, raw_scores, strict=False)):
+        for idx, mask in enumerate(self._iter_masks(masks)):
             if idx >= len(group):
                 break
-            polygon = self._mask_to_polygon(np.asarray(mask))
+            polygon = self._mask_to_polygon(mask)
             if polygon is None:
                 continue
             row = group.iloc[idx].to_dict()
             row["geometry"] = polygon
+            sam_score = self._score_at(raw_scores, idx)
             if sam_score is not None:
-                row["score"] = float(sam_score)
+                row["score"] = sam_score
             rows.append(row)
 
         if not rows:
@@ -853,7 +909,8 @@ class Sam3PolygonModel:
         mask_threshold: float = 0.5,
         point_box_size: float = 12.0,
     ):
-        """Convert DeepForest box/point predictions into polygon predictions."""
+        """Convert DeepForest box/point predictions into polygon
+        predictions."""
         results = self._normalize_input(results)
         if len(results) == 0:
             return utilities.__pandas_to_geodataframe__(results)
@@ -898,7 +955,9 @@ class Sam3PolygonModel:
             return gdf
 
         if "image_path" not in results.columns:
-            raise ValueError("results must include image_path when image/path are not provided")
+            raise ValueError(
+                "results must include image_path when image/path are not provided"
+            )
 
         inferred_root = root_dir or getattr(results, "root_dir", None)
         if inferred_root is None:
