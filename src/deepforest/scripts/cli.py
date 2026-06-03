@@ -42,8 +42,8 @@ def main():
     )
     train_parser.add_argument(
         "--strategy",
-        help="Training strategy to use (e.g., 'ddp', 'auto')",
-        default="auto",
+        help="Optional training strategy override (e.g., 'ddp'). Defaults to config value.",
+        default=None,
     )
     train_parser.add_argument(
         "--resume",

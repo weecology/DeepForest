@@ -1,0 +1,20 @@
+# Quick cluster smoke-test config (bundled OSBS sample data).
+# Paths are set by src/deepforest/scripts/HPC/run_cluster_train.sh (TRAIN_MODE=smoke).
+defaults:
+  - config
+  - _self_
+
+workers: 0
+batch_size: 2
+log_root: ./lightning_logs_smoke
+
+train:
+  epochs: 1
+  fast_dev_run: false
+  csv_file:
+  root_dir:
+
+validation:
+  csv_file:
+  root_dir:
+  val_accuracy_interval: 1

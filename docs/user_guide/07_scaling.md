@@ -1,5 +1,7 @@
 # Scaling DeepForest using PyTorch Lightning
 
+For concise launch recipes, see the [multi-GPU and multi-node guide](distributed.md). If you are using a Slurm-managed cluster, see the [cluster developer guide](../development/cluster.md).
+
 ## Increase batch size
 
 It is more efficient to run a larger batch size on a single GPU. This is because the overhead of loading data and moving data between the CPU and GPU is relatively large. By running a larger batch size, we can reduce the overhead of these operations.
@@ -27,9 +29,7 @@ A few notes that can trip up those less used to multi-gpu training. These are fo
 
 2. Each device gets its own portion of the dataset. This means that they do not interact during forward passes.
 
-3. Make sure to use srun when combining with SLURM! This is an easy one to miss and will cause training to hang without error. Documented here
-
-https://lightning.ai/docs/pytorch/latest/clouds/cluster_advanced.html#troubleshooting.
+3. On SLURM, launch with **`srun`**. Match `#SBATCH --ntasks-per-node` to `devices` and `#SBATCH --nodes` to `num_nodes`. See the [multi-GPU and multi-node guide](distributed.md) and [Lightning SLURM troubleshooting](https://lightning.ai/docs/pytorch/latest/clouds/cluster_advanced.html#troubleshooting).
 
 
 ## Prediction

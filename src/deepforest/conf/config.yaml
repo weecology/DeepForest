@@ -5,6 +5,11 @@
 workers: 0
 devices: auto
 accelerator: auto
+num_nodes: 1
+strategy: auto
+precision: 32-true
+sync_batchnorm: False
+use_distributed_sampler: True
 batch_size: 1
 
 # Model Architecture
@@ -17,9 +22,6 @@ topk_candidates: 1000
 model:
     name: 'weecology/deepforest-tree'
     revision: 'main'
-
-# Trainer precision. Override to 16-mixed for faster training, 32-true for full precision.
-precision:
 
 # On CUDA, setting the matmul precision can provide speed up without affecting model performance
 # Start with 'high' for initial tests.

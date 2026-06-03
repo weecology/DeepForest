@@ -2,7 +2,7 @@ import os
 
 from omegaconf import DictConfig
 
-from deepforest import utilities
+from deepforest import distributed, utilities
 from deepforest.main import deepforest
 from deepforest.visualize import plot_results
 
@@ -75,7 +75,7 @@ def predict(
     else:
         raise ValueError(f"Invalid prediction mode: {mode}. Pick one of single/tile/csv.")
 
-    if output_path is not None:
+    if output_path is not None and distributed.is_global_zero(m.trainer):
         if os.path.dirname(output_path):
             os.makedirs(os.path.dirname(output_path), exist_ok=True)
         if output_path.endswith(".shp") or output_path.endswith(".gpkg"):
@@ -84,5 +84,5 @@ def predict(
         else:
             res.to_csv(output_path, index=False)
 
-    if plot:
+    if plot and distributed.is_global_zero(m.trainer):
         plot_results(res)
