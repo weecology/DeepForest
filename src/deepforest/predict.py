@@ -305,6 +305,7 @@ def _predict_crop_model_(
     augmentations=None,
     model_index=0,
     is_single_model=False,
+    metadata=None,
 ):
     """Predicts crop model on a raster file.
 
@@ -352,6 +353,7 @@ def _predict_crop_model_(
         resize_interpolation=resize_interpolation,
         normalize=normalize,
         expand=expand,
+        metadata=metadata,
     )
 
     # Create dataloader
@@ -387,7 +389,7 @@ def _predict_crop_model_(
 
 
 def _crop_models_wrapper_(
-    crop_models, trainer, results, transform=None, augmentations=None
+    crop_models, trainer, results, transform=None, augmentations=None, metadata=None
 ):
     if crop_models is not None and not isinstance(crop_models, list):
         crop_models = [crop_models]
@@ -410,6 +412,7 @@ def _crop_models_wrapper_(
                     transform=transform,
                     augmentations=augmentations,
                     is_single_model=is_single_model,
+                    metadata=metadata,
                 )
                 crop_results.append(crop_result)
 
