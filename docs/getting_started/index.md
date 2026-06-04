@@ -90,4 +90,5 @@ install
 overview
 intro_tutorials/index
 comparison
+spotlight
 ```
