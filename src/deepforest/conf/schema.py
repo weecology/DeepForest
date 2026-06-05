@@ -133,12 +133,33 @@ class CropModelConfig:
 
 @dataclass
 class PointConfig:
-    """Configuration for point models."""
+    """Configuration for point models.
+
+    The loss fields configure training for density/point models such as
+    TreeFormer; defaults mirror the ``TreeFormerModel`` constructor.
+    ``losses`` selects the active terms (``None`` enables all of
+    ``count``, ``ot``, ``density_l1``, ``count_cls``). ``norm_cood``
+    normalises OT coordinates to [-1, 1] (global transport) and affects
+    only the OT loss, not inference; ``enforce_count`` rescales the
+    density map to a predicted count and does affect inference.
+    """
 
     backbone: str = "pvt_v2_b3"
     score_integration_radius: int = 5
     nms_distance_thresh: float = 5.0
     distance_threshold: float = 10.0
+
+    # Training loss hyperparameters (used by TreeFormer / density models).
+    density_sigma: float = 5.0
+    mae_weight: float = 1.0
+    ot_weight: float = 0.1
+    density_l1_weight: float = 0.01
+    count_cls_weight: float = 1.0
+    sinkhorn_reg: float = 1.0
+    num_of_iter_in_ot: int = 100
+    losses: list[str] | None = None
+    norm_cood: bool = False
+    enforce_count: bool = True
 
 
 @dataclass
