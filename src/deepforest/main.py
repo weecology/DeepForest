@@ -525,12 +525,15 @@ class deepforest(pl.LightningModule):
         )
         return loader
 
-    def predict_image(self, image: np.ndarray | None = None, path: str | None = None):
+    def predict_image(
+        self, image: np.ndarray | None = None, path: str | None = None, crop_model=None
+    ):
         """Predict a single image with a deepforest model.
 
         Args:
             image: a float32 numpy array of a RGB with channels last format
             path: optional path to read image from disk instead of passing image arg
+            crop_model: optional CropModel (or list) to classify detected crops; requires path
 
         Returns:
             result: A pandas dataframe of predictions (Default)
@@ -540,6 +543,10 @@ class deepforest(pl.LightningModule):
 
         if path:
             image = np.array(Image.open(path).convert("RGB")).astype("float32")
+        elif image is None:
+            raise ValueError(
+                "Either image or path must be provided for single image prediction"
+            )
 
         # sanity checks on input images
         if not isinstance(image, np.ndarray):
@@ -559,19 +566,33 @@ class deepforest(pl.LightningModule):
             )
             image = image.astype("float32")
 
-        result = predict._predict_image_(
-            model=self.model,
-            image=image,
+        ds = prediction.SingleImage(
             path=path,
-            iou_threshold=self.config.nms_thresh,
-            nms_distance_thresh=self.config.point.nms_distance_thresh,
+            image=image,
+            patch_overlap=self.config.patch_overlap,
+            patch_size=max(image.shape[0], image.shape[1]),
+            return_metadata=True,
+        )
+        dataloader = self.predict_dataloader(ds, batch_size=self.config.batch_size)
+
+        results = predict._dataloader_wrapper_(
+            model=self,
+            trainer=self.trainer,
+            dataloader=dataloader,
+            crop_model=crop_model,
+            root_dir=os.path.dirname(path) if path else None,
         )
 
         # If there were no predictions, return None
-        if result is None:
+        if results.empty:
             return None
-        else:
-            result["label"] = result.label.apply(lambda x: self.numeric_to_label_dict[x])
+
+        # Drop column offsets for single image
+        results = results.drop(columns=["window_xmin", "window_ymin"], errors="ignore")
+
+        results["label"] = results.label.apply(
+            lambda x: self.numeric_to_label_dict.get(x, x)
+        )
 
         if path is None:
             warnings.warn(
@@ -580,11 +601,11 @@ class deepforest(pl.LightningModule):
                 "please assign results.root_dir = <directory name>",
                 stacklevel=2,
             )
+            results = results.drop(columns=["image_path"], errors="ignore")
         else:
-            root_dir = os.path.dirname(path)
-            result = utilities.read_file(result, root_dir=root_dir)
+            results = utilities.read_file(results, root_dir=os.path.dirname(path))
 
-        return result
+        return results
 
     def predict_file(
         self,
@@ -612,11 +633,14 @@ class deepforest(pl.LightningModule):
         dataloader = self.predict_dataloader(ds, batch_size=self.config.batch_size)
         results = predict._dataloader_wrapper_(
             model=self,
-            crop_model=crop_model,
             trainer=self.trainer,
             dataloader=dataloader,
+            crop_model=crop_model,
             root_dir=root_dir,
         )
+
+        if not results.empty:
+            results = utilities.read_file(results, root_dir)
 
         results.root_dir = root_dir
 
