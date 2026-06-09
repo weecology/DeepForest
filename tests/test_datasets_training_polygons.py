@@ -22,12 +22,12 @@ def polygon_root_dir():
 
 def test_polygon_dataset_basic(polygon_annotation_file, polygon_root_dir):
     ds = PolygonDataset(
-        annotation_file=polygon_annotation_file,
+        csv_file=polygon_annotation_file,
         root_dir=polygon_root_dir,
         label_dict={"tree": 0},
     )
 
-    image, targets = ds[0]
+    image, targets, image_name = ds[0]
 
     # Image checks
     assert torch.is_tensor(image)
@@ -35,22 +35,23 @@ def test_polygon_dataset_basic(polygon_annotation_file, polygon_root_dir):
     assert image.min() >= 0
     assert image.max() <= 1
 
-    # Targets checks
-    assert "boxes" in targets
-    assert "labels" in targets
-    assert "masks" in targets
-    assert "image_id" in targets
-    assert "iscrowd" in targets
-    assert "area" in targets
-
+    # Targets parallel the box workflow with an added masks entry
+    assert set(targets.keys()) == {"boxes", "labels", "masks"}
     assert targets["boxes"].shape[-1] == 4
     assert targets["labels"].dtype == torch.int64
     assert targets["masks"].dtype == torch.uint8
 
+    # One mask per instance, matching the augmented image size
+    assert targets["masks"].shape[0] == targets["boxes"].shape[0]
+    assert targets["masks"].shape[-2:] == image.shape[-2:]
+
+    # Labels are zero-indexed like the box and point workflows
+    assert targets["labels"].min() >= 0
+
 
 def test_generate_mask_polygon(polygon_annotation_file, polygon_root_dir):
     ds = PolygonDataset(
-        annotation_file=polygon_annotation_file,
+        csv_file=polygon_annotation_file,
         root_dir=polygon_root_dir,
         label_dict={"tree": 0},
     )
@@ -60,7 +61,7 @@ def test_generate_mask_polygon(polygon_annotation_file, polygon_root_dir):
 
     with Image.open(image_path) as img:
         width, height = img.size
-    mask = ds.generate_mask(row, width=width, height=height)
+    mask = ds.generate_mask(row["geometry"], width=width, height=height)
 
     assert mask.shape == (height, width)
     assert mask.dtype == np.uint8
@@ -69,22 +70,31 @@ def test_generate_mask_polygon(polygon_annotation_file, polygon_root_dir):
 
 def test_annotations_for_path_tensor(polygon_annotation_file, polygon_root_dir):
     ds = PolygonDataset(
-        annotation_file=polygon_annotation_file,
+        csv_file=polygon_annotation_file,
         root_dir=polygon_root_dir,
         label_dict={"tree": 0},
     )
 
     image_name = ds.image_names[0]
-    image_path = os.path.join(polygon_root_dir, image_name)
-
-    targets = ds.annotations_for_path(image_name, image_path, return_tensor=True)
+    targets = ds.annotations_for_path(image_name, return_tensor=True)
 
     assert torch.is_tensor(targets["boxes"])
     assert torch.is_tensor(targets["labels"])
-    assert torch.is_tensor(targets["masks"])
-
     assert targets["boxes"].shape[-1] == 4
-    assert targets["masks"].ndim == 3
+
+
+def test_polygon_dataset_collate(polygon_annotation_file, polygon_root_dir):
+    """Polygon batches collate like the box and point workflows."""
+    ds = PolygonDataset(
+        csv_file=polygon_annotation_file,
+        root_dir=polygon_root_dir,
+        label_dict={"tree": 0},
+    )
+    batch = [ds[0], ds[1]]
+    images, targets, image_names = ds.collate_fn(batch)
+
+    assert len(images) == len(targets) == len(image_names) == 2
+    assert all("masks" in t for t in targets)
 
 
 def test_polygon_oob_coordinates(tmp_path, polygon_root_dir):
@@ -111,7 +121,7 @@ def test_polygon_oob_coordinates(tmp_path, polygon_root_dir):
 
     with pytest.raises(ValueError):
         PolygonDataset(
-            annotation_file=str(json_path),
+            csv_file=str(json_path),
             root_dir=polygon_root_dir,
             label_dict={"tree": 0},
         )
@@ -141,7 +151,7 @@ def test_polygon_negative_coordinates(tmp_path, polygon_root_dir):
 
     with pytest.raises(ValueError):
         PolygonDataset(
-            annotation_file=str(json_path),
+            csv_file=str(json_path),
             root_dir=polygon_root_dir,
             label_dict={"tree": 0},
         )
@@ -172,13 +182,13 @@ def test_polygon_dataset_validate_coordinates_disabled(tmp_path, polygon_root_di
 
     with pytest.raises(ValueError):
         PolygonDataset(
-            annotation_file=str(json_path),
+            csv_file=str(json_path),
             root_dir=polygon_root_dir,
             label_dict={"tree": 0},
         )
 
     ds = PolygonDataset(
-        annotation_file=str(json_path),
+        csv_file=str(json_path),
         root_dir=polygon_root_dir,
         label_dict={"tree": 0},
         validate_coordinates=False,

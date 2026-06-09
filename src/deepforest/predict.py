@@ -70,6 +70,7 @@ def translate_predictions(predictions: pd.DataFrame) -> pd.DataFrame:
     """
     predictions = predictions.copy()
     is_box = {"xmin", "ymin", "xmax", "ymax"}.issubset(predictions.columns)
+    is_point = {"x", "y"}.issubset(predictions.columns)
 
     predictions["geometry"] = [
         affinity.translate(geom, xoff=dx, yoff=dy)
@@ -84,10 +85,12 @@ def translate_predictions(predictions: pd.DataFrame) -> pd.DataFrame:
     if is_box:
         bounds = shapely.bounds(np.array(predictions["geometry"]))
         predictions[["xmin", "ymin", "xmax", "ymax"]] = bounds.astype(int)
-    else:
+    elif is_point:
         coords = shapely.get_coordinates(np.array(predictions["geometry"]))
         predictions["x"] = coords[:, 0]
         predictions["y"] = coords[:, 1]
+    # Polygons carry all positional information in the translated geometry,
+    # so no coordinate columns need updating.
 
     return predictions.drop(columns=["window_xmin", "window_ymin"]).reset_index(drop=True)
 
@@ -152,6 +155,39 @@ def reduce_points(predictions: pd.DataFrame, nms_thresh: float) -> pd.DataFrame:
     return predictions.iloc[np.flatnonzero(kept)].reset_index(drop=True)
 
 
+def reduce_polygons(predictions: pd.DataFrame, iou_threshold: float) -> pd.DataFrame:
+    """Reduce overlapping polygon predictions with NMS on polygon bounds.
+
+    Non-max suppression is computed on the axis-aligned bounding box of each
+    polygon (its envelope), which parallels :func:`reduce_boxes` and avoids the
+    cost of all-pairs polygon IoU.
+
+    Args:
+        predictions: DataFrame of image-space polygon predictions with a
+            ``geometry`` column.
+        iou_threshold: IoU threshold for NMS.
+
+    Returns:
+        DataFrame containing the filtered polygon predictions.
+    """
+    polygon_output_columns = ["geometry", "label", "score"]
+    if predictions.shape[0] <= 1:
+        return predictions[polygon_output_columns].reset_index(drop=True).copy()
+
+    print(
+        f"{predictions.shape[0]} predictions in overlapping windows, applying non-max suppression"
+    )
+
+    bounds = shapely.bounds(np.array(predictions.geometry))
+    boxes = torch.tensor(bounds, dtype=torch.float32)
+    scores = torch.tensor(predictions.score.values, dtype=torch.float32)
+    keep_idx = nms(boxes=boxes, scores=scores, iou_threshold=iou_threshold).numpy()
+
+    filtered_predictions = predictions.iloc[keep_idx].reset_index(drop=True)
+    print(f"{filtered_predictions.shape[0]} predictions kept after non-max suppression")
+    return filtered_predictions[polygon_output_columns].reset_index(drop=True).copy()
+
+
 def mosaic(
     predictions: pd.DataFrame,
     iou_threshold: float = 0.1,
@@ -180,7 +216,12 @@ def mosaic(
     if is_point_predictions:
         return reduce_points(translated_predictions, nms_thresh=nms_distance_thresh)
 
-    raise ValueError("Predictions must include either box or point coordinates.")
+    if "geometry" in predictions.columns:
+        return reduce_polygons(translated_predictions, iou_threshold=iou_threshold)
+
+    raise ValueError(
+        "Predictions must include box, point or polygon (geometry) coordinates."
+    )
 
 
 def across_class_nms(predicted_boxes, iou_threshold=0.15):
