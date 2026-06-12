@@ -806,18 +806,38 @@ def test_format_geometry_point():
 
 
 def test_format_geometry_polygon():
-    """Test formatting polygon predictions"""
-    # Create a mock prediction with polygon coordinates
+    """Test formatting instance-segmentation (mask) predictions into polygons."""
+    # Two square instance masks in a 100x100 frame
+    masks = torch.zeros((2, 1, 100, 100), dtype=torch.float32)
+    masks[0, 0, 20:40, 10:30] = 1.0
+    masks[1, 0, 60:80, 50:70] = 1.0
+
     prediction = {
-        "polygon": torch.tensor([[[10, 20], [30, 20], [30, 40], [10, 40], [10, 20]],
-                               [[50, 60], [70, 60], [70, 80], [50, 80], [50, 60]]]),
+        "masks": masks,
+        "boxes": torch.tensor([[10, 20, 30, 40], [50, 60, 70, 80]], dtype=torch.float32),
         "labels": torch.tensor([0, 0]),
-        "scores": torch.tensor([0.9, 0.8])
+        "scores": torch.tensor([0.9, 0.8]),
     }
 
-    # Format geometry should raise ValueError since polygon predictions are not supported
-    with pytest.raises(ValueError, match="Polygon predictions are not yet supported for formatting"):
-        utilities.format_geometry(prediction, geom_type="polygon")
+    result = utilities.format_geometry(prediction, geom_type="polygon")
+
+    assert len(result) == 2
+    assert "geometry" in result.columns
+    assert "score" in result.columns
+    for geom in result.geometry:
+        assert isinstance(geom, shapely.geometry.Polygon)
+        assert geom.area > 0
+
+
+def test_determine_geometry_type_masks():
+    """A prediction dict with masks is detected as a polygon."""
+    prediction = {
+        "masks": torch.zeros((1, 1, 10, 10)),
+        "boxes": torch.tensor([[0, 0, 5, 5]], dtype=torch.float32),
+        "labels": torch.tensor([0]),
+        "scores": torch.tensor([0.9]),
+    }
+    assert utilities.determine_geometry_type(prediction) == "polygon"
 
 
 def test_read_file_column_names():

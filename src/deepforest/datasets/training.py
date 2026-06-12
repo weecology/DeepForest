@@ -582,37 +582,26 @@ class PointDataset(TrainingDataset):
 
 
 class PolygonDataset(TrainingDataset):
+    """Dataset for instance segmentation with polygon masks.
+
+    Parallels :class:`BoxDataset` but additionally rasterizes each
+    polygon geometry into a binary instance mask. Targets contain
+    ``boxes`` (the polygon bounds), ``labels`` and ``masks`` for use
+    with Mask R-CNN. Labels are zero-indexed to match the box and point
+    workflows.
+    """
+
     _data_keys = [DataKey.IMAGE, DataKey.BBOX_XYXY, DataKey.MASK]
 
-    def __init__(
-        self,
-        annotation_file,
-        root_dir,
-        transforms=None,
-        augmentations=None,
-        label_dict=None,
-        preload_images=None,
-        validate_coordinates=True,
-    ):
-        super().__init__(
-            csv_file=annotation_file,
-            root_dir=root_dir,
-            transforms=transforms,
-            augmentations=augmentations,
-            label_dict=label_dict,
-            preload_images=preload_images,
-            validate_coordinates=validate_coordinates,
-        )
-
     def _validate_coordinates(self) -> None:
-        """Validate that all points occur within the image.
+        """Validate that all polygons are valid and within the image.
 
         Raises:
-            ValueError: If any point occurs outside the image
+            ValueError: If any polygon is invalid or exceeds image bounds.
         """
         errors = []
-        for _, row in self.annotations.iterrows():
-            img_path = os.path.join(self.root_dir, row["image_path"])
+        for image_path, group in self.annotations.groupby("image_path"):
+            img_path = os.path.join(self.root_dir, image_path)
             try:
                 with Image.open(img_path) as img:
                     width, height = img.size
@@ -620,201 +609,194 @@ class PolygonDataset(TrainingDataset):
                 errors.append(f"Failed to open image {img_path}: {e}")
                 continue
 
-            self._validate_segmentation_coordinates(row, errors, img_path, width, height)
-            self._validate_box_coordinates(row, errors, img_path, width, height)
+            for _idx, row in group.iterrows():
+                geom = row["geometry"]
+                if geom is None or geom.is_empty:
+                    errors.append(f"Empty polygon geometry for image {img_path}")
+                    continue
+
+                if geom.area == 0:
+                    errors.append(f"Polygon has zero area for image {img_path}")
+                if not geom.is_valid:
+                    errors.append(f"Invalid polygon (self-intersecting) for {img_path}")
+
+                xmin, ymin, xmax, ymax = geom.bounds
+                oob_issues = []
+                if xmin < 0:
+                    oob_issues.append(f"xmin ({xmin}) < 0")
+                if xmax > width:
+                    oob_issues.append(f"xmax ({xmax}) > image width ({width})")
+                if ymin < 0:
+                    oob_issues.append(f"ymin ({ymin}) < 0")
+                if ymax > height:
+                    oob_issues.append(f"ymax ({ymax}) > image height ({height})")
+
+                if oob_issues:
+                    errors.append(
+                        f"Polygon, ({xmin}, {ymin}, {xmax}, {ymax}) exceeds image "
+                        f"dimensions, ({width}, {height}) for {img_path}. "
+                        f"Issues: {', '.join(oob_issues)}."
+                    )
 
         if errors:
             raise ValueError("\n".join(errors))
 
-    def _validate_segmentation_coordinates(self, row, errors, img_path, width, height):
-        coords = []
-        oob_issues = []
-        geom = row["geometry"]
+    def generate_mask(self, geom, width, height) -> np.typing.NDArray[np.uint8]:
+        """Rasterize a Shapely polygon into a binary instance mask.
 
-        if geom.area == 0:
-            errors.append(f"Polygon has zero area for image {img_path}")
+        Args:
+            geom: A Shapely Polygon/MultiPolygon (or its WKT string).
+            width: Mask width in pixels.
+            height: Mask height in pixels.
 
-        if not geom.is_valid:
-            errors.append("Invalid polygon (self-intersecting)")
-
-        if geom.geom_type == "Polygon":
-            coords.extend(list(geom.exterior.coords))
-        elif geom.geom_type == "MultiPolygon":
-            for poly in geom.geoms:
-                coords.extend(list(poly.exterior.coords))
-
-        if len(set(coords)) < 3:
-            errors.append("Polygon has fewer than 3 unique points")
-
-        for x, y in coords:
-            if x < 0:
-                oob_issues.append(f"x ({x}) < 0")
-            if x > width:
-                oob_issues.append(f"x ({x}) > image width ({width})")
-            if y < 0:
-                oob_issues.append(f"y ({y}) < 0")
-            if y > height:
-                oob_issues.append(f"y ({y}) > image height ({height})")
-
-            if oob_issues:
-                errors.append(
-                    f"Point, ({x}, {y}) exceeds image dimensions, ({width}, {height}) for {img_path}. Issues: {', '.join(oob_issues)}."
-                )
-
-    def _validate_box_coordinates(self, row, errors, img_path, width, height):
-        xmin, ymin, xmax, ymax = row["xmin"], row["ymin"], row["xmax"], row["ymax"]
-        oob_issues = []
-        if xmin < 0:
-            oob_issues.append(f"xmin ({xmin}) < 0")
-        if xmax > width:
-            oob_issues.append(f"xmax ({xmax}) > image width ({width})")
-        if ymin < 0:
-            oob_issues.append(f"ymin ({ymin}) < 0")
-        if ymax > height:
-            oob_issues.append(f"ymax ({ymax}) > image height ({height})")
-        if oob_issues:
-            errors.append(
-                f"Box, ({xmin}, {ymin}, {xmax}, {ymax}) exceeds image dimensions, ({width}, {height}) for {img_path}. Issues: {', '.join(oob_issues)}."
-            )
-
-    def generate_mask(self, image_annotation, width, height):
+        Returns:
+            A ``(height, width)`` uint8 array with the polygon interior set.
+        """
         mask = np.zeros((height, width), dtype=np.uint8)
-        geom = image_annotation["geometry"]
 
         if isinstance(geom, str):
             geom = shapely.wkt.loads(geom)
 
-        # -------------------------
-        # POLYGON
-        # -------------------------
         if geom.geom_type == "Polygon":
             coords = np.array(geom.exterior.coords, dtype=np.int32)
-            cv2.fillPoly(mask, [coords], color=255)
-
-        # -------------------------
-        # MULTIPOLYGON
-        # -------------------------
+            cv2.fillPoly(mask, [coords], color=1)
         elif geom.geom_type == "MultiPolygon":
             for poly in geom.geoms:
                 if not poly.is_empty:
                     coords = np.array(poly.exterior.coords, dtype=np.int32)
-                    cv2.fillPoly(mask, [coords], color=255)
+                    cv2.fillPoly(mask, [coords], color=1)
+
         return mask
 
-    def annotations_for_path(self, image_name, image_path, return_tensor=False):
-        try:
-            print("opening image")
-            with Image.open(image_path) as img:
-                width, height = img.size
-        except Exception as e:
-            print(f"Failed to open image {image_path}: {e}")
-            return
-        image_annotations = self.annotations[self.annotations.image_path == image_name]
-        targets = {}
-        boxes = []
-        labels = []
-        masks = []
-        iscrowd = []
-        area = []
+    def annotations_for_path(self, image_path, return_tensor=False) -> dict:
+        """Construct target dictionary for a given image path.
 
-        for _, ann in image_annotations.iterrows():
-            boxes.append([ann["xmin"], ann["ymin"], ann["xmax"], ann["ymax"]])
-            labels.append(self.label_dict[ann["label"]])
-            mask = self.generate_mask(ann, width, height)
-            masks.append(mask)
-            iscrowd.append(ann["iscrowd"])
-            area.append(ann["area"])
+        Args:
+            image_path (str): Path to image, expected to be in dataframe
+            return_tensor (bool): If true, convert fields from numpy to tensor
+
+        Returns:
+            target dictionary with boxes, labels and geometry entries
+        """
+        image_annotations = self.annotations[self.annotations.image_path == image_path]
+        targets = {}
+
+        # Polygon bounds give the enclosing box used by Mask R-CNN.
+        targets["boxes"] = np.array(
+            [
+                x.bounds if hasattr(x, "bounds") else shapely.wkt.loads(x).bounds
+                for x in image_annotations.geometry
+            ]
+        ).astype("float32")
+
+        targets["labels"] = image_annotations.label.apply(
+            lambda x: self.label_dict[x]
+        ).values.astype(np.int64)
+
+        # Keep geometry so __getitem__ can rasterize masks at image size.
+        targets["geometry"] = image_annotations.geometry.values
 
         if return_tensor:
-            boxes = torch.as_tensor(boxes, dtype=torch.float32)
-            labels = torch.as_tensor(labels, dtype=torch.int64)
-            if len(masks) > 0:
-                masks = np.stack(masks)
-                masks = (masks > 0).astype(np.uint8)
-                masks = torch.as_tensor(masks, dtype=torch.uint8)
-            else:
-                masks = torch.zeros((0, height, width), dtype=torch.uint8)
-            iscrowd = torch.as_tensor(iscrowd, dtype=torch.bool)
-            area = torch.as_tensor(area)
-
-        image_id = image_annotations.iloc[0]["image_id"]
-
-        targets = {
-            "image_id": image_id,
-            "boxes": boxes,
-            "labels": labels,
-            "masks": masks,
-            "iscrowd": iscrowd,
-            "area": area,
-        }
+            targets["boxes"] = torch.from_numpy(targets["boxes"])
+            targets["labels"] = torch.from_numpy(targets["labels"])
 
         return targets
 
-    def __getitem__(self, index):
-        image_id = self.image_names[index]
-        image_path = os.path.join(self.root_dir, image_id)
-        image = Image.open(image_path).convert("RGB")
-        width, height = image.size
-
-        targets = self.annotations_for_path(self.image_names[index], image_path)
-
-        # Apply augmentations
-        np_image = np.array(image)
-        image_tensor = (
-            torch.from_numpy(np_image).permute(2, 0, 1).unsqueeze(0).float() / 255.0
-        )
-        boxes_tensor = torch.as_tensor(targets["boxes"], dtype=torch.float32).unsqueeze(0)
-        masks = targets["masks"]
-        if len(masks) > 0:
-            masks = np.stack(masks)
-            masks = (masks > 0).astype(np.uint8)
-            masks = torch.as_tensor(masks, dtype=torch.uint8).unsqueeze(0)
+    def __getitem__(self, idx) -> tuple:
+        # Read image if not in memory
+        if self.preload_images:
+            image = self.image_dict[idx]
         else:
-            masks = torch.zeros((0, height, width), dtype=torch.uint8).unsqueeze(0)
+            image = self.load_image(idx)
 
+        height, width = image.shape[:2]
+        targets = self.annotations_for_path(self.image_names[idx])
+
+        boxes = targets["boxes"]
+        labels = targets["labels"]
+        geometries = targets["geometry"]
+
+        # If image has no annotations, add a dummy empty frame
+        if boxes.size == 0 or np.sum(boxes) == 0:
+            boxes = np.zeros((0, 4), dtype=np.float32)
+            labels = np.zeros(0, dtype=np.int64)
+            geometries = []
+
+        # Rasterize each polygon into a binary instance mask
+        if len(geometries) > 0:
+            masks = np.stack(
+                [self.generate_mask(geom, width, height) for geom in geometries]
+            ).astype(np.uint8)
+        else:
+            masks = np.zeros((0, height, width), dtype=np.uint8)
+
+        # Apply augmentations jointly to image, boxes and masks
+        image_tensor = torch.from_numpy(image).permute(2, 0, 1).unsqueeze(0).float()
+        boxes_tensor = torch.from_numpy(boxes).unsqueeze(0).float()
+        masks_tensor = torch.from_numpy(masks).unsqueeze(0).float()
         augmented_image, augmented_boxes, augmented_masks = self.transform(
-            image_tensor, boxes_tensor, masks
+            image_tensor, boxes_tensor, masks_tensor
         )
 
-        # Convert to tensor
-        image = augmented_image.squeeze()
-        boxes = augmented_boxes.squeeze()
-        masks = augmented_masks.squeeze()
-        labels = torch.as_tensor(targets["labels"], dtype=torch.int64)
-        iscrowd = torch.as_tensor(targets["iscrowd"], dtype=torch.bool)
-        area = torch.as_tensor(targets["area"])
-        image_id = targets["image_id"]
+        image = augmented_image.squeeze(0)
+        boxes = augmented_boxes.squeeze(0)
+        masks = augmented_masks.squeeze(0)
+        labels = torch.from_numpy(labels.astype(np.int64))
 
-        # Filter out-of-bounds boxes and sync with transformed
-        # segmentation masks
-        filter_w = min(image_tensor.shape[3], image.shape[2])
-        filter_h = min(image_tensor.shape[2], image.shape[1])
-        if boxes.dim() == 2 and boxes.shape[0] > 0:
-            boxes[:, 0] = torch.clamp(boxes[:, 0], min=0, max=filter_w)
-            boxes[:, 1] = torch.clamp(boxes[:, 1], min=0, max=filter_h)
-            boxes[:, 2] = torch.clamp(boxes[:, 2], min=0, max=filter_w)
-            boxes[:, 3] = torch.clamp(boxes[:, 3], min=0, max=filter_h)
-            box_w = boxes[:, 2] - boxes[:, 0]
-            box_h = boxes[:, 3] - boxes[:, 1]
-            valid = (box_w >= 1) & (box_h >= 1)
+        boxes, labels, masks = self.filter_masks(
+            boxes,
+            labels,
+            masks,
+            width=min(image_tensor.shape[3], image.shape[2]),
+            height=min(image_tensor.shape[2], image.shape[1]),
+        )
 
-            boxes = boxes[valid]
-            labels = labels[valid]
-            if masks.dim() == 3:
-                masks = masks[valid]
-            iscrowd = iscrowd[valid]
-            area = area[valid]
+        # Edge case if all labels were augmented away, keep the image
+        if len(boxes) == 0:
+            boxes = torch.zeros((0, 4), dtype=torch.float32)
+            labels = torch.zeros(0, dtype=torch.int64)
+            masks = torch.zeros((0, image.shape[1], image.shape[2]), dtype=torch.uint8)
 
         targets = {
-            "image_id": image_id,
             "boxes": boxes,
             "labels": labels,
-            "masks": masks,
-            "iscrowd": iscrowd,
-            "area": area,
+            "masks": masks.to(torch.uint8),
         }
 
-        return image, targets
+        return image, targets, self.image_names[idx]
+
+    def filter_masks(self, boxes, labels, masks, width, height, min_size=1) -> tuple:
+        """Clamp boxes to image bounds and filter boxes, labels and masks
+        together by minimum box dimension.
+
+        Args:
+            boxes (torch.Tensor): Bounding boxes of shape (N, 4) in xyxy format.
+            labels (torch.Tensor): Labels of shape (N,).
+            masks (torch.Tensor): Instance masks of shape (N, H, W).
+            width (int): Image width in pixels.
+            height (int): Image height in pixels.
+            min_size (int): Minimum box width/height in pixels. Defaults to 1.
+
+        Returns:
+            tuple: (filtered_boxes, filtered_labels, filtered_masks)
+        """
+        if boxes.dim() != 2 or boxes.shape[0] == 0:
+            return boxes, labels, masks
+
+        boxes[:, 0] = torch.clamp(boxes[:, 0], min=0, max=width)
+        boxes[:, 1] = torch.clamp(boxes[:, 1], min=0, max=height)
+        boxes[:, 2] = torch.clamp(boxes[:, 2], min=0, max=width)
+        boxes[:, 3] = torch.clamp(boxes[:, 3], min=0, max=height)
+
+        box_w = boxes[:, 2] - boxes[:, 0]
+        box_h = boxes[:, 3] - boxes[:, 1]
+        valid = (box_w >= min_size) & (box_h >= min_size)
+
+        masks = masks > 0.5
+        if masks.dim() == 3:
+            masks = masks[valid]
+
+        return boxes[valid], labels[valid], masks
 
 
 # ---------- ImageFolder alignment utilities ----------

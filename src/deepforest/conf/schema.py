@@ -148,12 +148,14 @@ class Config:
     Some parameters here are shared between dataloaders, for example the
     batch size, accelerator and number of workers.
 
-    Here we also set the architecture, which can be one of "retinanet"
-    or "DeformableDetr" currently. If you modify the number of classes
-    or label dict from what is loaded from the hub, it's assumed that
-    you intend to fine-tune or otherwise train the model. In this case,
-    the model will be adapted to fit your configuration by, for example,
-    adjusting the number of classification heads.
+    Here we also set the architecture, which can be one of "retinanet",
+    "DeformableDetr" (box), "treeformer" (point), or "maskrcnn"
+    (polygon) currently. The model's task (box, point or polygon)
+    follows from the chosen architecture. If you modify the number of
+    classes or label dict from what is loaded from the hub, it's assumed
+    that you intend to fine-tune or otherwise train the model. In this
+    case, the model will be adapted to fit your configuration by, for
+    example, adjusting the number of classification heads.
 
     For most users the default setting of 1-class, "tree" should be
     sufficient.

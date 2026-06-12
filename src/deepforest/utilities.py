@@ -2,6 +2,7 @@ import json
 import os
 import warnings
 
+import cv2
 import geopandas as gpd
 import numpy as np
 import pandas as pd
@@ -355,7 +356,11 @@ def determine_geometry_type(df):
             raise ValueError(f"Could not determine geometry type from columns {columns}")
 
     elif isinstance(df, dict):
-        if "boxes" in df.keys():
+        # Mask R-CNN predictions contain both "masks" and "boxes"; the masks
+        # take precedence and mark the result as a polygon (instance mask).
+        if "masks" in df.keys():
+            geometry_type = "polygon"
+        elif "boxes" in df.keys():
             geometry_type = "box"
         elif "polygon" in df.keys():
             geometry_type = "polygon"
@@ -387,7 +392,7 @@ def format_geometry(predictions, scores=True, geom_type=None):
     if geom_type == "box":
         df = format_boxes(predictions, scores=scores)
     elif geom_type == "polygon":
-        raise ValueError("Polygon predictions are not yet supported for formatting")
+        df = format_polygons(predictions, scores=scores)
     elif geom_type == "point":
         df = format_points(predictions, scores=scores)
 
@@ -419,6 +424,79 @@ def format_boxes(prediction, scores=True):
     df["geometry"] = df.apply(
         lambda x: shapely.geometry.box(x.xmin, x.ymin, x.xmax, x.ymax), axis=1
     )
+    return df
+
+
+def mask_to_polygon(mask: np.ndarray) -> shapely.geometry.Polygon:
+    """Convert a single binary instance mask to a Shapely polygon.
+
+    The largest external contour is used. Masks that do not contain a
+    valid contour (fewer than three vertices) return an empty polygon,
+    which downstream IoU code treats as a non-match.
+
+    Args:
+        mask: 2D array where non-zero pixels mark the instance.
+
+    Returns:
+        A Shapely Polygon of the instance boundary, or an empty Polygon.
+    """
+    mask = (mask > 0).astype(np.uint8)
+    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    if not contours:
+        return shapely.geometry.Polygon()
+
+    largest = max(contours, key=cv2.contourArea)
+    coords = largest.reshape(-1, 2)
+    if coords.shape[0] < 3:
+        return shapely.geometry.Polygon()
+
+    polygon = shapely.geometry.Polygon(coords)
+    if not polygon.is_valid:
+        polygon = polygon.buffer(0)
+
+    return polygon
+
+
+def format_polygons(prediction: dict, scores: bool = True) -> pd.DataFrame | None:
+    """Format an instance-segmentation prediction into a dataframe.
+
+    Converts each predicted mask into a Shapely polygon. Works for both
+    model predictions (float masks of shape ``(N, 1, H, W)`` with scores)
+    and training targets (uint8 masks of shape ``(N, H, W)`` without scores).
+
+    Args:
+        prediction: dict with ``"masks"`` and ``"labels"`` (and ``"scores"``
+            when ``scores`` is True).
+        scores: Whether the prediction includes a score per instance.
+
+    Returns:
+        DataFrame with ``label``, optional ``score``, and ``geometry``
+        columns, or ``None`` when there are no instances.
+    """
+    masks = prediction["masks"]
+    if len(masks) == 0:
+        return None
+
+    masks = masks.cpu().detach().numpy()
+    # Collapse the channel dimension of (N, 1, H, W) mask logits.
+    if masks.ndim == 4:
+        masks = masks[:, 0]
+
+    # Mask R-CNN emits soft masks in [0, 1]; binarize at 0.5. Target masks
+    # are already binary, so this is a no-op for them.
+    if np.issubdtype(masks.dtype, np.floating):
+        masks = masks > 0.5
+
+    geometries = [mask_to_polygon(mask) for mask in masks]
+
+    df = pd.DataFrame()
+    df["label"] = prediction["labels"].cpu().detach().numpy()
+
+    if scores:
+        df["score"] = prediction["scores"].cpu().detach().numpy()
+
+    df["geometry"] = geometries
     return df
 
 
