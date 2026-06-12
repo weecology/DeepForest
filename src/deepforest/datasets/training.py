@@ -584,10 +584,11 @@ class PointDataset(TrainingDataset):
 class PolygonDataset(TrainingDataset):
     """Dataset for instance segmentation with polygon masks.
 
-    Parallels :class:`BoxDataset` but additionally rasterizes each polygon
-    geometry into a binary instance mask. Targets contain ``boxes``
-    (the polygon bounds), ``labels`` and ``masks`` for use with Mask R-CNN.
-    Labels are zero-indexed to match the box and point workflows.
+    Parallels :class:`BoxDataset` but additionally rasterizes each
+    polygon geometry into a binary instance mask. Targets contain
+    ``boxes`` (the polygon bounds), ``labels`` and ``masks`` for use
+    with Mask R-CNN. Labels are zero-indexed to match the box and point
+    workflows.
     """
 
     _data_keys = [DataKey.IMAGE, DataKey.BBOX_XYXY, DataKey.MASK]

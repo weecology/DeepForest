@@ -15,12 +15,12 @@ class MaskRCNN(_TorchvisionMaskRCNN, PyTorchModelHubMixin):
     """Mask R-CNN extension that allows the use of the HF Hub API.
 
     DeepForest labels are zero-indexed foreground classes (e.g.
-    ``{"Tree": 0}``). torchvision detection models reserve class ``0`` for
-    background, so this wrapper builds the underlying model with
+    ``{"Tree": 0}``). torchvision detection models reserve class ``0``
+    for background, so this wrapper builds the underlying model with
     ``num_classes + 1`` outputs and transparently shifts labels by one:
-    targets are shifted up before training and predictions are shifted back
-    down. Callers therefore always see zero-indexed labels, matching the box
-    and point workflows.
+    targets are shifted up before training and predictions are shifted
+    back down. Callers therefore always see zero-indexed labels,
+    matching the box and point workflows.
     """
 
     task: str = "polygon"
