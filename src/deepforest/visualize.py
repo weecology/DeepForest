@@ -478,8 +478,22 @@ def _plot_image_with_geometry(df, image, sv_color, thickness=1, radius=3):
             detections=detections,
         )
     elif geom_type == "point":
-        point_annotator = sv.VertexAnnotator(color=sv_color, radius=radius)
+        # VertexAnnotator can't take a palette, so we use circle annotations instead.
+        # Convert points to "boxes" for visualization
+        xy = detections.xy.reshape(-1, 2)
+        xyxy = np.stack(
+            [xy[:, 0] - radius, xy[:, 1] - radius, xy[:, 0] + radius, xy[:, 1] + radius],
+            axis=1,
+        )
+        point_detections = sv.Detections(
+            xyxy=xyxy,
+            class_id=detections.class_id,
+            confidence=detections.confidence.reshape(-1)
+            if detections.confidence is not None
+            else None,
+        )
+        point_annotator = sv.CircleAnnotator(color=sv_color, thickness=thickness)
         annotated_frame = point_annotator.annotate(
-            scene=image.copy(), key_points=detections
+            scene=image.copy(), detections=point_detections
         )
     return annotated_frame

@@ -60,13 +60,19 @@ def gdf_box():
     return gdf
 
 
-def test_predict_image_and_plot(m, tmp_path):
+def test_predict_boxes_and_plot(m, tmp_path):
     sample_image_path = get_data("OSBS_029.png")
     results = m.predict_image(path=sample_image_path)
     visualize.plot_results(results, savedir=tmp_path)
 
     assert os.path.exists(os.path.join(tmp_path, "OSBS_029.png"))
 
+def test_predict_points_and_plot(m_point, tmp_path):
+    sample_image_path = get_data("OSBS_029.png")
+    results = m_point.predict_image(path=sample_image_path)
+    visualize.plot_results(results, savedir=tmp_path)
+
+    assert os.path.exists(os.path.join(tmp_path, "OSBS_029.png"))
 
 def test_predict_tile_and_plot(m, tmp_path):
     sample_image_path = get_data("OSBS_029.png")

@@ -805,8 +805,25 @@ class deepforest(pl.LightningModule):
         images, targets, image_names = batch
         loss_dict = self.model.forward(images, targets)
 
-        # sum of regression and classification loss
-        losses = sum(loss_dict.values())
+        # Models that compute a combined total (e.g. TreeFormer) return it under
+        # "loss" alongside diagnostics. We return both so that we can log via Lightning
+        # but we don't wantt to backprop.
+        losses = loss_dict["loss"] if "loss" in loss_dict else sum(loss_dict.values())
+
+        # Guard against non-finite losses
+        if not torch.isfinite(losses):
+            non_finite = {
+                k: v.item()
+                for k, v in loss_dict.items()
+                if torch.is_tensor(v) and not torch.isfinite(v)
+            }
+            warnings.warn(
+                f"Non-finite loss {losses.item()}; non-finite components: "
+                f"{non_finite}. Skipping batch.",
+                stacklevel=2,
+            )
+            trainable = [p for p in self.model.parameters() if p.requires_grad]
+            return 0.0 * sum(p.sum() for p in trainable) if trainable else None
 
         # Log loss
         for key, value in loss_dict.items():
@@ -839,8 +856,8 @@ class deepforest(pl.LightningModule):
         with torch.no_grad():
             loss_dict = self.model.forward(images, targets)
 
-        # sum of regression and classification loss
-        losses = sum(loss_dict.values())
+        # Similar to train_step, only backprop through loss terms.
+        losses = loss_dict["loss"] if "loss" in loss_dict else sum(loss_dict.values())
 
         # Log losses
         for key, value in loss_dict.items():

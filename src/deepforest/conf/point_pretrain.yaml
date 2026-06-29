@@ -1,0 +1,63 @@
+# NEON pretraining config for point model.
+
+defaults:
+  - config
+  - _self_
+
+architecture: treeformer
+
+# Train from ImageNet PvT weights, not the released point checkpoint.
+model:
+  name: null
+  revision: main
+
+num_classes: 1
+label_dict:
+  Tree: 0
+
+batch_size: 32
+workers: 8
+accelerator: auto
+precision: bf16-mixed
+matmul_precision: high
+score_thresh: 0.15
+patch_size: 512
+
+# Replace the CSV paths here with the training dataset e.g. full NEON pretrain (all_annotations_train_fold_0.csv)
+train:
+  csv_file: MISSING
+  root_dir: MISSING
+  lr: 2e-4
+  optimizer:
+    type: AdamW
+    weight_decay: 1e-5
+  epochs: 40
+  scheduler:
+    type: cosine
+    params:
+      T_max: 40
+      eta_min: 1e-6
+  augmentations:
+    - HorizontalFlip: {p: 0.5}
+    - VerticalFlip: {p: 0.5}
+    - Rotate: {degrees: 180, p: 0.5}
+
+validation:
+  csv_file: MISSING
+  root_dir: MISSING
+  val_accuracy_interval: 1
+
+point:
+  backbone: OpenGVLab/pvt_v2_b3
+  score_integration_radius: 2
+  distance_threshold: 10.0
+  density_sigma: 3.0
+  mae_weight: 0.025
+  ot_weight: 0.1
+  density_l1_weight: 0.05
+  count_cls_weight: 0.1
+  sinkhorn_reg: 1.0
+  num_of_iter_in_ot: 100
+  losses: [count, ot, density_l1]
+  norm_cood: true
+  enforce_count: false
