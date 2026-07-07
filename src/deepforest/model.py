@@ -522,7 +522,7 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
             else:
                 meta_dim = self.classifier.in_features - image_features.shape[1]
                 meta_features = torch.zeros(
-                    x.shape[0], meta_dim, device=x.device, dtype=x.dtype
+                    x.shape[0], meta_dim, device=self.device, dtype=x.dtype
                 )
             combined = torch.cat([image_features, meta_features], dim=1)
             return self.classifier(combined)
