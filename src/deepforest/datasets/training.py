@@ -116,12 +116,24 @@ class TrainingDataset(Dataset):
     def _build_annotation_index_pools(self) -> tuple[list[int], list[int]]:
         """Split dataset indices into annotated (positive) and empty (negative)
         images."""
+        if "geometry" in self.annotations.columns:
+            row_totals = np.array(
+                [
+                    geom.bounds if hasattr(geom, "bounds") else shapely.wkt.loads(geom).bounds
+                    for geom in self.annotations.geometry
+                ]
+            ).sum(axis=1)
+        else:
+            row_totals = (
+                self.annotations[["xmin", "ymin", "xmax", "ymax"]]
+                .sum(axis=1)
+                .to_numpy()
+            )
+
         totals = (
-            self.annotations.groupby("image_path", sort=False)[
-                ["xmin", "ymin", "xmax", "ymax"]
-            ]
-            .sum(numeric_only=True)
-            .sum(axis=1)
+            self.annotations.assign(_row_totals=row_totals)
+            .groupby("image_path", sort=False)["_row_totals"]
+            .sum()
         )
         aligned = totals.loc[list(self.image_names)].to_numpy() == 0
         positives = np.flatnonzero(~aligned).tolist()
