@@ -119,15 +119,15 @@ class TrainingDataset(Dataset):
         if "geometry" in self.annotations.columns:
             row_totals = np.array(
                 [
-                    geom.bounds if hasattr(geom, "bounds") else shapely.wkt.loads(geom).bounds
+                    geom.bounds
+                    if hasattr(geom, "bounds")
+                    else shapely.wkt.loads(geom).bounds
                     for geom in self.annotations.geometry
                 ]
             ).sum(axis=1)
         else:
             row_totals = (
-                self.annotations[["xmin", "ymin", "xmax", "ymax"]]
-                .sum(axis=1)
-                .to_numpy()
+                self.annotations[["xmin", "ymin", "xmax", "ymax"]].sum(axis=1).to_numpy()
             )
 
         totals = (
