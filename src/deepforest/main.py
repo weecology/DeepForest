@@ -606,12 +606,13 @@ class deepforest(pl.LightningModule):
 
         return results
 
-    def predict_file(
-        self,
-        csv_file,
-        root_dir,
-        crop_model=None,
-    ):
+               def predict_file(
+               self,
+               input_file,
+               root_dir,
+               crop_model=None,
+               csv_file=None,
+           ):
         """Create a dataset and predict entire annotation file CSV file format
         is .csv file with the columns "image_path", "xmin","ymin","xmax","ymax"
         for the image name and bounding box position. Image_path is the
@@ -626,9 +627,18 @@ class deepforest(pl.LightningModule):
         Returns:
             df: pandas dataframe with bounding boxes, label and scores for each image in the csv file
         """
-        ds = prediction.FromCSVFile(
-            csv_file=csv_file, root_dir=root_dir, return_metadata=True
-        )
+                   if csv_file is not None:
+               warnings.warn(
+                   "The 'csv_file' argument is deprecated and will be removed in a future version. "
+                   "Please use 'input_file' instead, which accepts both file paths and pandas DataFrames.",
+                   DeprecationWarning,
+                   stacklevel=2,
+               )
+               input_file = csv_file
+   
+           ds = prediction.FromCSVFile(
+               csv_file=input_file, root_dir=root_dir, return_metadata=True
+           )
         dataloader = self.predict_dataloader(ds, batch_size=self.config.batch_size)
         results = predict._dataloader_wrapper_(
             model=self,

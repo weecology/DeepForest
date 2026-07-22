@@ -172,10 +172,10 @@ class SingleImage(PredictionDataset):
 
 
 class FromCSVFile(PredictionDataset):
-    """Take in a csv file with image paths and preprocess and batch
-    together."""
+           """Take in a csv file path or a pandas DataFrame with image paths and preprocess and batch
+       together."""
 
-    def __init__(self, csv_file: str, root_dir: str, return_metadata=False):
+           def __init__(self, csv_file: str | pd.DataFrame, root_dir: str, return_metadata=False):
         self.csv_file = csv_file
         self.root_dir = root_dir
         super().__init__(return_metadata=return_metadata)
