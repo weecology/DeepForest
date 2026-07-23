@@ -69,6 +69,7 @@ class TrainingDataset(Dataset):
 
         self._validate_labels()
         if validate_coordinates:
+            print(f"Validating coordinates for {len(self.image_names)} images")
             self._validate_coordinates()
 
         # Pin data to memory if desired
