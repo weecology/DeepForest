@@ -1,6 +1,7 @@
 # entry point for deepforest model
 import importlib
 import os
+import tempfile
 import warnings
 from numbers import Number
 
@@ -16,7 +17,7 @@ from pytorch_lightning.loggers import CSVLogger
 from torch import optim
 from torchmetrics.detection import IntersectionOverUnion, MeanAveragePrecision
 
-from deepforest import distributed, predict, utilities
+from deepforest import distributed, predict, utilities, visualize
 from deepforest.datasets import prediction, training
 from deepforest.metrics import RecallPrecision
 
@@ -311,6 +312,71 @@ class deepforest(pl.LightningModule):
                 "'config.train.csv_file' or pass "
                 "existing_train_dataloader before "
                 "calling deepforest.create_trainer()'"
+            )
+
+    def _log_sample_image(self, image_path: str, tag: str = "train_sample") -> None:
+        """Log a single sample image to connected PyTorch Lightning loggers."""
+        if not hasattr(self, "trainer") or self.trainer is None:
+            return
+
+        loggers = getattr(self.trainer, "loggers", [])
+        if not loggers and hasattr(self.trainer, "logger") and self.trainer.logger:
+            loggers = [self.trainer.logger]
+
+        for lg in loggers:
+            if hasattr(lg, "experiment") and lg.experiment is not None:
+                if hasattr(lg.experiment, "add_image"):
+                    img = np.array(Image.open(image_path).convert("RGB"))
+                    lg.experiment.add_image(
+                        tag=f"{tag}/{os.path.basename(image_path)}",
+                        img_tensor=img,
+                        global_step=self.trainer.global_step,
+                        dataformats="HWC",
+                    )
+                elif hasattr(lg.experiment, "log_image"):
+                    lg.experiment.log_image(
+                        image_path,
+                        name=os.path.basename(image_path),
+                        metadata={"context": tag},
+                    )
+
+    def on_train_start(self) -> None:
+        """Log sample annotated training images before training starts."""
+        if not self.config.train.csv_file or not os.path.exists(self.config.train.csv_file):
+            return
+
+        try:
+            annotations = utilities.read_file(
+                self.config.train.csv_file,
+                root_dir=self.config.train.root_dir,
+            )
+            if annotations.empty or "image_path" not in annotations.columns:
+                return
+
+            unique_images = annotations.image_path.unique()
+            n = min(5, len(unique_images))
+            sampled_images = np.random.choice(unique_images, size=n, replace=False)
+
+            with tempfile.TemporaryDirectory() as tmpdir:
+                for img_name in sampled_images:
+                    img_annots = annotations[annotations.image_path == img_name]
+                    fig = visualize.plot_annotations(
+                        annotations=img_annots,
+                        savedir=tmpdir,
+                        root_dir=self.config.train.root_dir,
+                        show=False,
+                    )
+                    import matplotlib.pyplot as plt
+                    plt.close(fig)
+
+                    stem = os.path.splitext(os.path.basename(img_name))[0]
+                    saved_path = os.path.join(tmpdir, f"{stem}.png")
+                    if os.path.exists(saved_path):
+                        self._log_sample_image(saved_path, tag="train_sample")
+        except Exception as e:
+            warnings.warn(
+                f"Failed to log sample training images on train start: {e}",
+                stacklevel=2,
             )
 
     def on_save_checkpoint(self, checkpoint):

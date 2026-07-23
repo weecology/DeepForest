@@ -227,6 +227,16 @@ def test_train_empty_train_csv(m, tmp_path):
     m.create_trainer(fast_dev_run=True)
     m.trainer.fit(m)
 
+
+def test_on_train_start_logs_sample_images(m):
+    """Test that on_train_start executes without error and logs sample training images."""
+    csv_file = get_data("example.csv")
+    root_dir = os.path.dirname(csv_file)
+    m.config.train.csv_file = csv_file
+    m.config.train.root_dir = root_dir
+    m.create_trainer(fast_dev_run=True)
+    m.on_train_start()
+
 def test_train_with_empty_validation_csv(m, tmp_path):
     empty_csv = pd.DataFrame({
         "image_path": ["OSBS_029.png", "OSBS_029.tif"],
