@@ -1279,6 +1279,33 @@ def test_predict_file_mixed_sizes(m, tmp_path):
 
     assert preds.ymax.max() > 200  # The larger image should have predictions outside the 200px limit
 
+
+def test_predict_file_dataframe_input(m):
+    """Test predicting using a pandas DataFrame as input_file."""
+    csv_path = get_data("OSBS_029.csv")
+    root_dir = os.path.dirname(csv_path)
+    df = pd.read_csv(csv_path)
+
+    results = m.predict_file(input_file=df, root_dir=root_dir)
+    assert not results.empty
+    expected_cols = ["xmin", "ymin", "xmax", "ymax", "label", "score", "image_path"]
+    for col in expected_cols:
+        assert col in results.columns
+
+
+def test_predict_file_deprecated_csv_file(m):
+    """Test backwards compatibility for csv_file kwarg with DeprecationWarning."""
+    csv_path = get_data("OSBS_029.csv")
+    root_dir = os.path.dirname(csv_path)
+
+    with pytest.warns(DeprecationWarning):
+        results_deprecated = m.predict_file(csv_file=csv_path, root_dir=root_dir)
+
+    results_new = m.predict_file(input_file=csv_path, root_dir=root_dir)
+    assert not results_deprecated.empty
+    pd.testing.assert_frame_equal(results_deprecated, results_new)
+
+
 def test_recall_not_lowered_by_unprocessed_images():
     """This test checks that recall is only computed for images that were
     passed to the metric and ignores unprocessed images in the ground truth
