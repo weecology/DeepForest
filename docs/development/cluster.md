@@ -17,7 +17,7 @@ Use the same launch pattern for `train`, `evaluate`, and `predict`:
 - `devices=<gpus_per_node>` is the number of GPUs on each node
 - `num_nodes=<nnodes>` is the total number of nodes
 - `strategy=ddp` enables distributed data parallel execution (use `auto` for single-GPU jobs)
-- `workers=0` is required for large-tile prediction with `dataloader_strategy="window"`
+- `workers=0` is used for large-tile prediction with `dataloader_strategy="window"` (DeepForest sets this automatically, warning if a higher value was configured)
 
 ## Environment
 
