@@ -267,6 +267,7 @@ def test_BoxDataset_validate_coordinates_prints(capsys):
     BoxDataset(csv_file=csv_path, root_dir=root_dir, validate_coordinates=True)
     captured = capsys.readouterr()
     assert "Validating coordinates" in captured.out
+    assert "validate_coordinates=False" in captured.out
 
 
 def test_BoxDataset_validate_coordinates_disabled(tmp_path, raster_path):
