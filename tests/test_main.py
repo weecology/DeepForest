@@ -526,6 +526,26 @@ def test_predict_tile(m, path, dataloader_strategy):
     plot_results(prediction, show=False)
 
 
+def test_predict_tile_window_auto_workers(m):
+    """Test that predict_tile with window strategy automatically overrides workers > 0 with a warning."""
+    m.create_model()
+    m.config.workers = 2
+    m.create_trainer()
+    m.load_model("weecology/deepforest-tree")
+    image_path = get_data("test_tiled.tif")
+
+    with pytest.warns(UserWarning, match="workers > 0 is not supported for TiledRaster"):
+        prediction = m.predict_tile(
+            path=image_path,
+            patch_size=300,
+            dataloader_strategy="window",
+            patch_overlap=0,
+        )
+
+    assert isinstance(prediction, pd.DataFrame)
+    assert not prediction.empty
+
+
 @pytest.fixture()
 def batch_with_empty_image():
     """A prediction batch with one real image and one empty (all-black) image."""

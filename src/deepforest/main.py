@@ -513,12 +513,21 @@ class deepforest(pl.LightningModule):
             local_indices = [rank] if rank < len(ds) else []
             sampler = distributed.FixedOrderSampler(local_indices)
 
+        num_workers = self.config.workers
+        if isinstance(ds, prediction.TiledRaster) and num_workers > 0:
+            warnings.warn(
+                "workers > 0 is not supported for TiledRaster (out-of-memory datasets). "
+                "Setting num_workers=0 for this prediction dataloader.",
+                stacklevel=2,
+            )
+            num_workers = 0
+
         loader = torch.utils.data.DataLoader(
             ds,
             batch_size=batch_size,
             shuffle=False,
             sampler=sampler,
-            num_workers=self.config.workers,
+            num_workers=num_workers,
             collate_fn=ds.collate_fn,
             pin_memory=self.config.predict.pin_memory,
         )
@@ -710,13 +719,6 @@ class deepforest(pl.LightningModule):
                         return_metadata=True,
                     )
                 else:
-                    # Check for workers config when using out of memory dataset
-                    if self.config.workers > 0:
-                        raise ValueError(
-                            "workers must be 0 when using out-of-memory dataset "
-                            "(dataloader_strategy='window'). Set config['workers']=0 and recreate "
-                            "trainer self.create_trainer()."
-                        )
                     ds = prediction.TiledRaster(
                         path=image_path,
                         patch_overlap=patch_overlap,
