@@ -342,7 +342,9 @@ class deepforest(pl.LightningModule):
 
     def on_train_start(self) -> None:
         """Log sample annotated training images before training starts."""
-        if not self.config.train.csv_file or not os.path.exists(self.config.train.csv_file):
+        if not self.config.train.csv_file or not os.path.exists(
+            self.config.train.csv_file
+        ):
             return
 
         try:
@@ -367,6 +369,7 @@ class deepforest(pl.LightningModule):
                         show=False,
                     )
                     import matplotlib.pyplot as plt
+
                     plt.close(fig)
 
                     stem = os.path.splitext(os.path.basename(img_name))[0]
