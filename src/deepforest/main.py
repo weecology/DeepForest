@@ -150,9 +150,19 @@ class deepforest(pl.LightningModule):
         model_class = importlib.import_module(
             f"deepforest.models.{self.config.architecture}"
         )
-        self.model = model_class.Model(config=self.config).create_model(
-            pretrained=model_name, revision=revision
-        )
+        try:
+            self.model = model_class.Model(config=self.config).create_model(
+                pretrained=model_name, revision=revision
+            )
+        except Exception as e:
+            error_str = str(e)
+            if "401" in error_str or "Unauthorized" in error_str:
+                raise ValueError(
+                    f"Hugging Face authentication error (HTTP 401) when loading model '{model_name}'. "
+                    "Please check your credentials, set the HF_TOKEN environment variable, "
+                    f"or run `huggingface-cli login`. Original error: {e}"
+                ) from e
+            raise
 
         self.config.num_classes = self.model.num_classes
         self.set_labels(self.model.label_dict)

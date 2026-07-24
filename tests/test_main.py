@@ -212,6 +212,15 @@ def test_load_model(m):
     assert not boxes.empty
 
 
+def test_load_model_hf_auth_error(m):
+    """Test that load_model catches 401 HTTP errors and raises a clear ValueError."""
+    from unittest.mock import patch
+
+    with patch("deepforest.models.retinanet.Model.create_model", side_effect=Exception("401 Client Error: Unauthorized for url")):
+        with pytest.raises(ValueError, match="Hugging Face authentication error"):
+            m.load_model("nonexistent/private-model")
+
+
 def test_train_empty_train_csv(m, tmp_path):
     empty_csv = pd.DataFrame({
         "image_path": ["OSBS_029.png", "OSBS_029.tif"],

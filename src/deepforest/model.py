@@ -618,7 +618,18 @@ class CropModel(LightningModule, PyTorchModelHubMixin):
                 the repo default branch.
         """
         # Download config to determine architecture and labels before loading weights
-        cfg_path = hf_hub_download(repo_id, "config.json", revision=revision)
+        try:
+            cfg_path = hf_hub_download(repo_id, "config.json", revision=revision)
+        except Exception as e:
+            error_str = str(e)
+            if "401" in error_str or "Unauthorized" in error_str:
+                raise ValueError(
+                    f"Hugging Face authentication error (HTTP 401) when loading crop model '{repo_id}'. "
+                    "Please check your credentials, set the HF_TOKEN environment variable, "
+                    f"or run `huggingface-cli login`. Original error: {e}"
+                ) from e
+            raise
+
         with open(cfg_path) as f:
             cfg = json.load(f)
 
