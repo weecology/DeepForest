@@ -245,26 +245,34 @@ Excessive use of negative samples may have a negative impact on model performanc
 
 ### Model checkpoints
 
-Model checkpoints are the output of training. They represent the learned weights that can be distributed and used by anyone with DeepForest installed to perform prediction or fine-tuning. There are two main types of checkpoint that we work with:
+Model checkpoints are the output of training. They represent the learned weights that can be distributed and used by anyone with DeepForest installed to perform prediction or fine-tuning.
 
-1. Lightning checkpoints: these contain a full snapshot of the training state of the model and can be used to resume or continue training. These are accesseed via the `save_checkpoint` and `load_from_checkpoint` functions on a `main.deepforest` object. You can also pass `config` and `config_args` to `load_from_checkpoint` to modify the training conditions (such as training for more epochs). This is a single `.ckpt` file.
-2. Hugging Face Hub checkpoints: these are the preferred way to distribute your model once you're happy, and this is what is set in the config as the model name. These checkpoints contain minimial information required to load a model - the weights and a config file that tells the code how to construct the architecture (such as number of classes or other options). You call `save_pretrained` and `load_pretrained` on the model object (e.g. `main.deepforest.model`). This is a folder with a `.safetensors` weight file, and a JSON config.
+#### Checkpoint Types Comparison
 
-Pytorch lightning allows you to [save a model](https://pytorch-lighting.readthedocs.io/en/stable/common/trainer.html#checkpoint-callback) at the end of each epoch. By default this behavior is turned off since it slows down training and quickly fills up storage. To restore model checkpointing:
+| Feature | Lightning Checkpoint (`.ckpt`) | Hugging Face Hub Checkpoint (`folder / repo`) |
+| --- | --- | --- |
+| **Format** | Single `.ckpt` file | Directory with `.safetensors` + `config.json` |
+| **Primary Purpose** | Save complete training state, resume training | Export final weights, share on Hugging Face Hub |
+| **Save Method** | `m.trainer.save_checkpoint("path/to/model.ckpt")` | `m.model.save_pretrained("path", push_to_hub=True)` |
+| **Load Method** | `main.deepforest.load_from_checkpoint("path/to/model.ckpt")` | `m.load_model("path_or_repo_id")` |
+
+Pytorch lightning allows you to [save a model](https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#checkpoint-callback) at the end of each epoch. By default this behavior is turned off since it slows down training and quickly fills up storage. To restore model checkpointing:
 
 ```python
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.loggers import TensorBoardLogger
 
-callback = ModelCheckpoint(dirpath='temp/dir',
-                                 monitor='box_recall',
-                                 mode="max",
-                                 save_top_k=3,
-                                 filename="box_recall-{epoch:02d}-{box_recall:.2f}")
-model.create_trainer(logger=TensorBoardLogger(save_dir='logdir/'),
-                                  callbacks=[callback])
+callback = ModelCheckpoint(
+    dirpath='temp/dir',
+    monitor='box_recall',
+    mode="max",
+    save_top_k=3,
+    filename="box_recall-{epoch:02d}-{box_recall:.2f}"
+)
+model.create_trainer(logger=TensorBoardLogger(save_dir='logdir/'), callbacks=[callback])
 model.trainer.fit(model)
 ```
+
 ### Saving and loading models
 
 To save a model ready to push to HuggingFace Hub, you can use `save_pretrained` with any of the options documented [here](https://huggingface.co/docs/transformers/v5.0.0rc2/en/main_classes/model#transformers.PreTrainedModel.save_pretrained). This is the preferred way to "export" your models for later use.
@@ -279,7 +287,7 @@ m.load_model("weecology/deepforest-tree")
 m.model.save_pretrained("local_path/to/your/checkpoint", push_to_hub=True, repo_id="your_repo")
 ```
 
-Then you can reload this model later
+Then you can reload this model later:
 
 ```python
 m = main.deepforest()
@@ -290,44 +298,45 @@ m.load_model("local_path/to/your/checkpoint") # or pass "username/your_repo"
 m = main.deepforest(config_args={'model': {'name': "username/your_repo"}})
 ```
 
-Other settings like the score threshold, etc are taken from the config file or `config_args` as usual.
+Other settings like the score threshold, etc. are taken from the config file or `config_args` as usual.
 
-If you want to load a checkpoint that was saved during training (or if you manually called `save_checkpoint`), then just call `load_from_checkpoint`. Note that `config.model.name` must point to a _HuggingFace format checkpoint_, it cannot point to a Lightning checkpoint.
+If you want to load a checkpoint that was saved during training (or if you manually called `save_checkpoint`), call `load_from_checkpoint`. Note that `config.model.name` must point to a *Hugging Face format checkpoint*; it cannot point to a Lightning checkpoint file directly.
 
 ```python
+import os
 import tempfile
 import pandas as pd
-from deepforest import main
+from deepforest import main, get_data
 
-tmpdir = tempfile.TemporaryDirectory()
+with tempfile.TemporaryDirectory() as tmpdir:
+    # Create a deepforest model and load pre-trained weights
+    m = main.deepforest()
+    m.load_model("weecology/deepforest-tree")
 
-# Create a deepforest model and load the latest release
-m = main.deepforest()
-m.load_model("weecology/deepforest-tree")
+    # Fit model and predict on a sample image
+    img_path = get_data("OSBS_029.png")
+    m.create_trainer(fast_dev_run=True)
+    m.trainer.fit(m)
+    pred_after_train = m.predict_image(path=img_path)
 
-#save the prediction dataframe after training and compare with prediction after reload checkpoint
-img_path = get_data("OSBS_029.png")
-model.create_trainer()
-model.trainer.fit(model)
-pred_after_train = model.predict_image(path = img_path)
+    # Save a checkpoint via the trainer
+    checkpoint_path = os.path.join(tmpdir, "checkpoint.ckpt")
+    m.trainer.save_checkpoint(checkpoint_path)
 
-#Save a checkpoint via the trainer
-model.trainer.save_checkpoint("{}/checkpoint.pl".format(tmpdir))
+    # Reload the checkpoint into a new model instance
+    after = main.deepforest.load_from_checkpoint(checkpoint_path)
+    pred_after_reload = after.predict_image(path=img_path)
 
-#reload the checkpoint to model object
-after = main.deepforest.load_from_checkpoint("{}/checkpoint.pl".format(tmpdir))
-pred_after_reload = after.predict_image(path = img_path)
-
-assert not pred_after_train.empty
-assert not pred_after_reload.empty
-pd.testing.assert_frame_equal(pred_after_train,pred_after_reload)
+    assert not pred_after_train.empty
+    assert not pred_after_reload.empty
+    pd.testing.assert_frame_equal(pred_after_train, pred_after_reload)
 ```
 
 ---
 
-Note that when reloading models via `load_from_checkpoint`, you should carefully inspect the model parameters, such as the score_thresh and nms_thresh. These parameters are updated during model creation and the config file is not read when loading from checkpoint!
+Note that when reloading models via `load_from_checkpoint`, you should carefully inspect the model parameters, such as the `score_thresh` and `nms_thresh`. These parameters are updated during model creation and the config file is not read when loading from checkpoint!
 
-It is best to be direct to specify after loading checkpoint. If you want to save hyperparameters, edit the deepforest_config.yml directly. This will allow the hyperparameters to be reloaded on deepforest.save_model().
+It is best to be direct to specify after loading checkpoint. If you want to save hyperparameters, edit the `deepforest_config.yml` directly. This will allow the hyperparameters to be reloaded on `deepforest.save_model()`.
 
 ---
 
