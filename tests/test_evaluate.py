@@ -45,6 +45,32 @@ def test_evaluate_image(m):
     assert result["class_recall"]["precision"].iloc[0] > 0.5
 
 
+def test_release_model_regression(m):
+    """Assert the release model produces stable eval scores on the sample data.
+
+    Unlike the loose bounds in the other evaluation tests, this pins the scores
+    of weecology/deepforest-tree on OSBS_029 so that any drift in the model
+    outputs over time is detected. The small tolerance catches genuine changes
+    (a single box moves box_recall by ~1/61 > 0.01) while tolerating float noise
+    across platforms. Update these values intentionally when the release model
+    changes. See https://github.com/weecology/DeepForest/issues/1233
+    """
+    csv_file = get_data("OSBS_029.csv")
+    predictions = m.predict_file(csv_file=csv_file, root_dir=os.path.dirname(csv_file))
+    ground_truth = read_file(csv_file)
+    predictions.label = 0  # Model outputs numeric class IDs
+    result = evaluate.__evaluate_wrapper__(
+        predictions=predictions,
+        ground_df=ground_truth,
+        numeric_to_label_dict={0: "Tree"},
+        iou_threshold=0.4,
+        geometry_type="box",
+    )
+
+    assert result["box_precision"] == pytest.approx(0.80, abs=0.01)
+    assert result["box_recall"] == pytest.approx(0.72, abs=0.01)
+
+
 def test_evaluate_boxes(m):
     csv_file = get_data("OSBS_029.csv")
     predictions = m.predict_file(csv_file=csv_file, root_dir=os.path.dirname(csv_file))
