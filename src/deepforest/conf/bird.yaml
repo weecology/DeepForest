@@ -7,6 +7,8 @@ defaults:
 # Scale: increase batch_size if GPU memory allows; increase workers only with more Slurm CPUs
 # (train.sh --cpus-per-task); keep workers roughly cpus-per-task minus 1–2.
 workers: 8
+train_batch_size: 32
+predict_batch_size: 32
 batch_size: 32
 
 # Model Architecture

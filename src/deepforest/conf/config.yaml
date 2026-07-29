@@ -10,6 +10,8 @@ strategy: auto
 precision: 32-true
 sync_batchnorm: False
 use_distributed_sampler: True
+train_batch_size: 2
+predict_batch_size: 8
 batch_size: 1
 
 # Model Architecture
