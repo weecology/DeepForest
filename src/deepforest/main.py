@@ -572,7 +572,9 @@ class deepforest(pl.LightningModule):
             patch_size=max(image.shape[0], image.shape[1]),
             return_metadata=True,
         )
-        dataloader = self.predict_dataloader(ds, batch_size=self.config.predict_batch_size)
+        dataloader = self.predict_dataloader(
+            ds, batch_size=self.config.predict_batch_size
+        )
 
         results = predict._dataloader_wrapper_(
             model=self,
@@ -629,7 +631,9 @@ class deepforest(pl.LightningModule):
         ds = prediction.FromCSVFile(
             csv_file=csv_file, root_dir=root_dir, return_metadata=True
         )
-        dataloader = self.predict_dataloader(ds, batch_size=self.config.predict_batch_size)
+        dataloader = self.predict_dataloader(
+            ds, batch_size=self.config.predict_batch_size
+        )
         results = predict._dataloader_wrapper_(
             model=self,
             trainer=self.trainer,
@@ -1263,9 +1267,9 @@ class deepforest(pl.LightningModule):
             self.predictions = pd.concat(self.predictions, ignore_index=True)
             if "label" in self.predictions.columns:
                 self.predictions["label"] = self.predictions["label"].map(
-                    lambda x: self.numeric_to_label_dict.get(int(x), x)
-                    if pd.notna(x)
-                    else x
+                    lambda x: (
+                        self.numeric_to_label_dict.get(int(x), x) if pd.notna(x) else x
+                    )
                 )
         else:
             self.predictions = pd.DataFrame()
