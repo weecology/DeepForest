@@ -1,22 +1,24 @@
 """Test the new augmentations module."""
+
 import io
 import os
 
-import torch
 import kornia.augmentation as K
 import pytest
+import torch
 
-from deepforest import main, get_data
-from deepforest.augmentations import _create_augmentation
-from deepforest.augmentations import _parse_augmentations
-from deepforest.augmentations import get_available_augmentations
-from deepforest.augmentations import get_transform
-from deepforest.augmentations import _SUPPORTED_TRANSFORMS
+from deepforest import get_data, main
+from deepforest.augmentations import (
+    _create_augmentation,
+    _parse_augmentations,
+    get_transform,
+)
 from deepforest.datasets.training import BoxDataset
 
 """
 Integration tests
 """
+
 
 def test_override_transforms():
     """Test that augmentations can be overridden when calling load_dataset."""
@@ -41,9 +43,11 @@ def test_load_dataset_without_augmentations():
     image, target, path = next(iter(train_ds))
     assert len(train_ds.dataset.transform) == 0
 
+
 """
 Augmentation parsing tests:
 """
+
 
 def test_parse_augmentations_string():
     result = _parse_augmentations("HorizontalFlip")
@@ -63,7 +67,10 @@ def test_parse_augmentations_string_list():
 
 def test_parse_augmentations_list_of_dict():
     # List of dicts format (for YAML support)
-    list_of_dicts = [{"HorizontalFlip": {"p": 0.5}}, {"Rotate": {"degrees": 30, "p": 0.75}}]
+    list_of_dicts = [
+        {"HorizontalFlip": {"p": 0.5}},
+        {"Rotate": {"degrees": 30, "p": 0.75}},
+    ]
     result = _parse_augmentations(list_of_dicts)
     expected = {"HorizontalFlip": {"p": 0.5}, "Rotate": {"degrees": 30, "p": 0.75}}
     assert result == expected
@@ -125,9 +132,11 @@ def test_parse_augmentations_omegaconf():
     expected2 = {"HorizontalFlip": {"p": 0.7}, "Blur": {"blur_limit": 3}}
     assert result2 == expected2
 
+
 """
 Higher level get_transform tests:
 """
+
 
 def test_get_transform_default():
     """Test default behavior returns empty AugmentationSequential."""
@@ -155,10 +164,7 @@ def test_get_transform_multiple_augmentations():
 
 def test_get_transform_with_parameters():
     """Test with overidden parameters."""
-    augmentations = {
-        "HorizontalFlip": {"p": 0.8},
-        "VerticalFlip": {"p": 0.3}
-    }
+    augmentations = {"HorizontalFlip": {"p": 0.8}, "VerticalFlip": {"p": 0.3}}
     transform = get_transform(augmentations=augmentations)
     assert transform[0].p == 0.8
     assert transform[1].p == 0.3
@@ -202,7 +208,12 @@ def test_blur_augmentations_with_parameters():
 
 def test_mixed_blur_and_other_augmentations():
     """Test combining blur augmentations with other augmentations using mixed format."""
-    mixed_augmentations = ["HorizontalFlip", {"GaussianBlur": {"kernel_size": (3, 3)}}, "VerticalFlip", {"MotionBlur": {"kernel_size": 5}}]
+    mixed_augmentations = [
+        "HorizontalFlip",
+        {"GaussianBlur": {"kernel_size": (3, 3)}},
+        "VerticalFlip",
+        {"MotionBlur": {"kernel_size": 5}},
+    ]
 
     transform = get_transform(augmentations=mixed_augmentations)
     assert isinstance(transform, K.AugmentationSequential)
@@ -221,7 +232,9 @@ def test_unknown_augmentation_error():
 
 def test_unsupported_augmentations_raise_error():
     """Test that completely unknown augmentations raise ValueError."""
-    with pytest.raises(ValueError, match="Unknown augmentation 'RandomSizedBBoxSafeCrop'"):
+    with pytest.raises(
+        ValueError, match="Unknown augmentation 'RandomSizedBBoxSafeCrop'"
+    ):
         get_transform(augmentations="RandomSizedBBoxSafeCrop")
 
 
@@ -231,7 +244,7 @@ def test_no_op_augmentation_pipeline():
         transform = get_transform(augmentations=augs)
 
         image = torch.randn(1, 3, 100, 100)
-        bboxes = torch.tensor([[[10., 10., 50., 50.], [20., 20., 60., 60.]]])
+        bboxes = torch.tensor([[[10.0, 10.0, 50.0, 50.0], [20.0, 20.0, 60.0, 60.0]]])
 
         output = transform(image, bboxes)
 
@@ -245,7 +258,7 @@ def test_box_augmentation():
     transform = get_transform(augmentations={"HorizontalFlip": {"p": 1.0}})
 
     image = torch.randn(1, 3, 100, 100)
-    bboxes = torch.tensor([[[10., 10., 50., 50.]]])
+    bboxes = torch.tensor([[[10.0, 10.0, 50.0, 50.0]]])
 
     output_image, output_bboxes = transform(image, bboxes)
 
@@ -254,15 +267,12 @@ def test_box_augmentation():
     assert not torch.equal(output_bboxes, bboxes)
 
 
-
-
-
 def test_zoom_blur():
     """Test ZoomBlur augmentation works correctly."""
     transform = get_transform(augmentations={"ZoomBlur": {"p": 1.0}})
 
     image = torch.randn(1, 3, 100, 100)
-    bboxes = torch.tensor([[[10., 10., 50., 50.]]])
+    bboxes = torch.tensor([[[10.0, 10.0, 50.0, 50.0]]])
 
     output_image, output_bboxes = transform(image, bboxes)
 
@@ -273,10 +283,12 @@ def test_zoom_blur():
 
 def test_random_pad_to():
     """Test RandomPadTo augmentation adds random padding."""
-    transform = get_transform(augmentations={"RandomPadTo": {"pad_range": (5, 5), "p": 1.0}})
+    transform = get_transform(
+        augmentations={"RandomPadTo": {"pad_range": (5, 5), "p": 1.0}}
+    )
 
     image = torch.randn(1, 3, 100, 100)
-    bboxes = torch.tensor([[[10., 10., 50., 50.]]])
+    bboxes = torch.tensor([[[10.0, 10.0, 50.0, 50.0]]])
 
     output_image, output_bboxes = transform(image, bboxes)
 
@@ -286,18 +298,22 @@ def test_random_pad_to():
 
 def test_filter_boxes():
     """Test box filtering after augmentation."""
-    boxes = torch.tensor([
-        [-50., -50., 0., 0.],       # Out of bounds, becomes zero area
-        [250., 250., 290., 290.],   # Out of bounds
-        [50., 50., 150., 150.],     # Valid
-        [-20., 80., 50., 150.],     # Partial, valid after clamp
-        [150., 80., 220., 150.],    # Partial, valid after clamp
-        [0., 0., 0., 10.],         # Too small
-    ])
+    boxes = torch.tensor(
+        [
+            [-50.0, -50.0, 0.0, 0.0],  # Out of bounds, becomes zero area
+            [250.0, 250.0, 290.0, 290.0],  # Out of bounds
+            [50.0, 50.0, 150.0, 150.0],  # Valid
+            [-20.0, 80.0, 50.0, 150.0],  # Partial, valid after clamp
+            [150.0, 80.0, 220.0, 150.0],  # Partial, valid after clamp
+            [0.0, 0.0, 0.0, 10.0],  # Too small
+        ]
+    )
     labels = torch.tensor([0, 1, 2, 3, 4, 5])
 
     dataset = BoxDataset.__new__(BoxDataset)
-    filtered_boxes, filtered_labels = dataset.filter_boxes(boxes, labels, width=200, height=200, min_size=1)
+    filtered_boxes, filtered_labels = dataset.filter_boxes(
+        boxes, labels, width=200, height=200, min_size=1
+    )
 
     assert filtered_boxes.shape[0] == 3
     assert torch.equal(filtered_labels, torch.tensor([2, 3, 4]))
@@ -308,7 +324,6 @@ def test_filter_boxes():
 def test_geometric_augmentation_filters_boxes():
     """Test that geometric augmentations filter out-of-bounds boxes in dataset."""
 
-
     m = main.deepforest()
     csv_file = get_data("example.csv")
     root_dir = os.path.dirname(csv_file)
@@ -317,7 +332,7 @@ def test_geometric_augmentation_filters_boxes():
     train_loader = m.load_dataset(
         csv_file,
         root_dir=root_dir,
-        augmentations={"RandomCrop": {"size": (200, 200), "p": 1.0}}
+        augmentations={"RandomCrop": {"size": (200, 200), "p": 1.0}},
     )
     dataset = train_loader.dataset
 
@@ -344,7 +359,9 @@ def test_geometric_augmentation_filters_boxes():
         assert torch.all(heights >= 1), f"Box height too small: {heights}"
 
         # Labels should match box count
-        assert len(labels) == len(boxes), f"Label count mismatch: {len(labels)} labels, {len(boxes)} boxes"
+        assert len(labels) == len(boxes), (
+            f"Label count mismatch: {len(labels)} labels, {len(boxes)} boxes"
+        )
 
 
 def test_reordering_produces_correct_output():
@@ -357,7 +374,7 @@ def test_reordering_produces_correct_output():
     the flips.
     """
     image = torch.zeros(1, 3, 100, 100)
-    box = torch.tensor([[[10., 5., 40., 30.]]])  # x1,y1,x2,y2
+    box = torch.tensor([[[10.0, 5.0, 40.0, 30.0]]])  # x1,y1,x2,y2
 
     augs_wrong_order = [
         {"RandomPadTo": {"pad_range": (50, 50), "p": 1.0}},
@@ -370,17 +387,52 @@ def test_reordering_produces_correct_output():
         {"RandomPadTo": {"pad_range": (50, 50), "p": 1.0}},
     ]
 
-    img_wrong, box_wrong = get_transform(augmentations=augs_wrong_order)(image.clone(), box.clone())
-    img_correct, box_correct = get_transform(augmentations=augs_correct_order)(image.clone(), box.clone())
+    img_wrong, box_wrong = get_transform(augmentations=augs_wrong_order)(
+        image.clone(), box.clone()
+    )
+    img_correct, box_correct = get_transform(augmentations=augs_correct_order)(
+        image.clone(), box.clone()
+    )
 
     # Both pipelines must produce the same padded canvas size
     assert img_wrong.shape == torch.Size([1, 3, 150, 150])
     assert img_correct.shape == torch.Size([1, 3, 150, 150])
 
     # Flipped box: HFlip on W=100 -> x: 99-40=59, 99-10=89; VFlip on H=100 -> y: 99-30=69, 99-5=94
-    expected_box = torch.tensor([[[59., 69., 89., 94.]]])
+    expected_box = torch.tensor([[[59.0, 69.0, 89.0, 94.0]]])
     assert torch.allclose(box_wrong, expected_box, atol=1.0)
     assert torch.allclose(box_correct, expected_box, atol=1.0)
+
+
+def test_pad_if_needed_augmentation():
+    """Test PadIfNeeded pads smaller images but does not crop larger images."""
+    from deepforest.augmentations import PadIfNeeded
+
+    pad = PadIfNeeded(size=(800, 800))
+
+    # Smaller image: should be padded to (800, 800)
+    small_img = torch.zeros(1, 3, 300, 400)
+    out_small = pad(small_img)
+    assert out_small.shape == (1, 3, 800, 800)
+
+    # Larger image: should remain untouched (1000, 1200), not cropped
+    large_img = torch.zeros(1, 3, 1000, 1200)
+    out_large = pad(large_img)
+    assert out_large.shape == (1, 3, 1000, 1200)
+
+    # Equal image: should remain untouched (800, 800)
+    equal_img = torch.zeros(1, 3, 800, 800)
+    out_equal = pad(equal_img)
+    assert out_equal.shape == (1, 3, 800, 800)
+
+    # Test via get_transform pipeline
+    box_small = torch.tensor([[[10.0, 10.0, 50.0, 50.0]]])
+    box_large = torch.tensor([[[10.0, 10.0, 50.0, 50.0]]])
+    transform = get_transform(augmentations=["PadIfNeeded"])
+    tf_small, _ = transform(small_img, box_small)
+    tf_large, _ = transform(large_img, box_large)
+    assert tf_small.shape == (1, 3, 800, 800)
+    assert tf_large.shape == (1, 3, 1000, 1200)
 
 
 if __name__ == "__main__":
