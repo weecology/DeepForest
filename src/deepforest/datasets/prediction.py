@@ -184,7 +184,9 @@ class FromCSVFile(PredictionDataset):
         super().__init__(return_metadata=return_metadata)
 
     def prepare_items(self):
-        self.annotations = read_file(self.csv_file)
+        # root_dir has to be forwarded: read_file can infer it from a csv path,
+        # but not from a DataFrame.
+        self.annotations = read_file(self.csv_file, root_dir=self.root_dir)
         if self.root_dir is None:
             self.root_dir = self.annotations.root_dir
         self.image_names = self.annotations.image_path.unique()

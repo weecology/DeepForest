@@ -14,7 +14,7 @@ from deepforest import main
 
 
 def run(m, csv_file, root_dir):
-    predictions = m.predict_file(csv_file=csv_file, root_dir=root_dir)
+    predictions = m.predict_file(input_file=csv_file, root_dir=root_dir)
 
 
 if __name__ == "__main__":

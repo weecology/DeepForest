@@ -130,7 +130,7 @@ For a list of images with annotations in a csv file, the `predict_file` function
 
 csv_file = get_data("OSBS_029.csv")
 original_file = pd.read_csv(csv_file)
-df = m.predict_file(csv_file, root_dir=os.path.dirname(csv_file))
+df = m.predict_file(input_file=csv_file, root_dir=os.path.dirname(csv_file))
 ```
 
 ```

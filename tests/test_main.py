@@ -465,7 +465,7 @@ def test_predict_image_fromarray(m):
 def test_predict_big_file(m, big_file):
     m.config.train.fast_dev_run = False
     m.create_trainer()
-    df = m.predict_file(csv_file=big_file,
+    df = m.predict_file(input_file=big_file,
                         root_dir=os.path.dirname(big_file))
     assert set(df.columns) == {
         'label', 'score', 'image_path', 'geometry', "xmin", "ymin", "xmax", "ymax"
@@ -473,7 +473,7 @@ def test_predict_big_file(m, big_file):
 
 def test_predict_small_file(m):
     csv_file = get_data("OSBS_029.csv")
-    df = m.predict_file(csv_file, root_dir=os.path.dirname(csv_file))
+    df = m.predict_file(input_file=csv_file, root_dir=os.path.dirname(csv_file))
     assert set(df.columns) == {
         'label', 'score', 'image_path', 'geometry', "xmin", "ymin", "xmax", "ymax"
     }
@@ -1275,7 +1275,7 @@ def test_predict_file_mixed_sizes(m, tmp_path):
     df.to_csv(csv_path, index=False)
 
     m.config.validation.size = 200
-    preds = m.predict_file(csv_file=csv_path, root_dir=str(tmp_path))
+    preds = m.predict_file(input_file=csv_path, root_dir=str(tmp_path))
 
     assert preds.ymax.max() > 200  # The larger image should have predictions outside the 200px limit
 

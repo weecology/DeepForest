@@ -11,7 +11,7 @@ from deepforest import get_data
 
 def test_compute_IoU(m):
     csv_file = get_data("OSBS_029.csv")
-    predictions = m.predict_file(csv_file=csv_file, root_dir=os.path.dirname(csv_file))
+    predictions = m.predict_file(input_file=csv_file, root_dir=os.path.dirname(csv_file))
     ground_truth = pd.read_csv(csv_file)
 
     predictions['geometry'] = predictions.apply(lambda x: shapely.geometry.box(x.xmin, x.ymin, x.xmax, x.ymax), axis=1)

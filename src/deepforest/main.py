@@ -621,7 +621,7 @@ class deepforest(pl.LightningModule):
 
         Args:
             input_file: path to csv file or a pandas DataFrame
-            root_dir: directory of images. If none, uses "image_dir" in config
+            root_dir: directory of images. If none, it is taken from the directory of input_file, which therefore has to be a path rather than a DataFrame.
             crop_model: a deepforest.model.CropModel object to predict on crops
             csv_file: (deprecated) path to csv file
         Returns:
