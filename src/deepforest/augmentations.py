@@ -21,6 +21,21 @@ from omegaconf.listconfig import ListConfig
 from torch import Tensor
 
 
+def _crop_to_size(input: Tensor, size: tuple[int, int] | None) -> Tensor:
+    """Crop back to the pre-padding size.
+
+    Shared by the padding augmentations below, which only extend the
+    image right and down, so the inverse is a top-left crop.
+
+    Args:
+        input: Padded tensor to crop.
+        size: Target (height, width) to crop back to.
+    """
+    if size is None:
+        raise RuntimeError("`size` has to be a tuple. Got None.")
+    return input[..., : size[0], : size[1]]
+
+
 class RandomPadTo(GeometricAugmentationBase2D):
     r"""Pad the given sample by a random amount.
 
@@ -83,9 +98,7 @@ class RandomPadTo(GeometricAugmentationBase2D):
         transform: Tensor | None = None,
         size: tuple[int, int] | None = None,
     ) -> Tensor:
-        if size is None:
-            raise RuntimeError("`size` has to be a tuple. Got None.")
-        return input[..., : size[0], : size[1]]
+        return _crop_to_size(input, size)
 
 
 class PadIfNeeded(GeometricAugmentationBase2D):
@@ -152,9 +165,7 @@ class PadIfNeeded(GeometricAugmentationBase2D):
         transform: Tensor | None = None,
         size: tuple[int, int] | None = None,
     ) -> Tensor:
-        if size is None:
-            raise RuntimeError("`size` has to be a tuple. Got None.")
-        return input[..., : size[0], : size[1]]
+        return _crop_to_size(input, size)
 
 
 class ZoomBlur(IntensityAugmentationBase2D):
