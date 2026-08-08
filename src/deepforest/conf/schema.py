@@ -129,6 +129,9 @@ class CropModelConfig:
     resize_interpolation: str = "bilinear"
     normalize: Any = None
     expand: int = 0
+    use_metadata: bool = False
+    metadata_dim: int = 32
+    metadata_dropout: float = 0.5
 
 
 @dataclass
