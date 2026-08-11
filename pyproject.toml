@@ -41,7 +41,7 @@ dependencies = [
     "hydra-core",
     "kornia>=0.8.2",
     "matplotlib",
-    "numpy",
+    "numpy>=2.0.0",
     "omegaconf",
     "opencv-python-headless>=4.5.4",
     "pandas",
