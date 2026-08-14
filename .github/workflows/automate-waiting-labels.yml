@@ -12,6 +12,9 @@ permissions:
 jobs:
   remove-label:
     runs-on: ubuntu-latest
+    # Ignore bot comments so the stale bot's warning does not clear the label
+    # it is counting down against.
+    if: github.event.comment.user.type != 'Bot'
     steps:
     - name: Remove label
       uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
