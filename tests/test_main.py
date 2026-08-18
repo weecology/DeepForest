@@ -24,6 +24,7 @@ from pytorch_lightning.loggers import TensorBoardLogger
 from torch.utils.data import DataLoader
 
 import geopandas as gpd
+import rasterio as rio
 from PIL import Image
 import shapely
 
@@ -524,6 +525,51 @@ def test_predict_tile(m, path, dataloader_strategy):
     assert prediction.ymin.max() > 350
 
     plot_results(prediction, show=False)
+
+
+def test_predict_tile_projected(m, path):
+    """project=True should return predictions projected into the raster's CRS."""
+    m.create_model()
+    m.config.train.fast_dev_run = False
+    m.create_trainer()
+    m.load_model("weecology/deepforest-tree")
+
+    prediction = m.predict_tile(path=path, patch_size=300, patch_overlap=0, project=True)
+
+    assert isinstance(prediction, gpd.GeoDataFrame)
+    assert prediction.crs is not None
+
+    with rio.open(path) as src:
+        assert prediction.crs == src.crs
+        raster_bounds = shapely.geometry.box(*src.bounds)
+
+    # Projected geometries should land within the raster's real-world bounds,
+    # not the 0-400 pixel range of the source image.
+    assert prediction.geometry.intersects(raster_bounds).all()
+
+
+def test_predict_tile_projected_requires_path(m):
+    """project=True on an in-memory image array has no CRS to project into."""
+    m.create_model()
+    m.config.train.fast_dev_run = False
+    m.create_trainer()
+    m.load_model("weecology/deepforest-tree")
+
+    image = np.array(Image.open(get_data("OSBS_029.png")))
+    with pytest.raises(ValueError, match="project=True requires a file path"):
+        m.predict_tile(image=image, patch_size=300, patch_overlap=0, project=True)
+
+
+def test_predict_tile_projected_requires_georeferenced_raster(m):
+    """project=True on a raster without a CRS should fail informatively."""
+    m.create_model()
+    m.config.train.fast_dev_run = False
+    m.create_trainer()
+    m.load_model("weecology/deepforest-tree")
+
+    unprojected_path = get_data("OSBS_029.png")
+    with pytest.raises(ValueError, match="no CRS"):
+        m.predict_tile(path=unprojected_path, patch_size=300, patch_overlap=0, project=True)
 
 
 @pytest.fixture()
