@@ -1,0 +1,37 @@
+name: Close stale issues and PRs
+
+on:
+  schedule:
+    - cron: "26 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  issues: write # allow labeling, commenting on and closing issues
+  pull-requests: write # allow labeling, commenting on and closing PRs
+
+jobs:
+  stale:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/stale@4391f3da665fdf50b6810c1a66712fb9ba21aa93
+        with:
+          only-labels: "Awaiting author contribution"
+          days-before-stale: 30
+          days-before-close: 14
+          stale-issue-message: >
+            This issue has been marked stale because it has been labeled
+            "Awaiting author contribution" with no activity for 30 days.
+            It will be closed in 14 days if no further activity occurs.
+            Comment on the issue to keep it open.
+          stale-pr-message: >
+            This pull request has been marked stale because it has been labeled
+            "Awaiting author contribution" with no activity for 30 days.
+            It will be closed in 14 days if no further activity occurs.
+            Comment on the pull request to keep it open.
+          close-issue-message: >
+            This issue was closed because it has been stalled with no activity.
+            Please reopen it if you would like to continue working on it.
+          close-pr-message: >
+            This pull request was closed because it has been stalled with no
+            activity. Please reopen it if you would like to continue working
+            on it.
