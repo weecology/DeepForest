@@ -24,6 +24,7 @@ def translate_predictions(predictions: pd.DataFrame) -> pd.DataFrame:
     """
     predictions = predictions.copy()
     is_box = {"xmin", "ymin", "xmax", "ymax"}.issubset(predictions.columns)
+    is_point = {"x", "y"}.issubset(predictions.columns)
 
     predictions["geometry"] = [
         affinity.translate(geom, xoff=dx, yoff=dy)
@@ -38,12 +39,35 @@ def translate_predictions(predictions: pd.DataFrame) -> pd.DataFrame:
     if is_box:
         bounds = shapely.bounds(np.array(predictions["geometry"]))
         predictions[["xmin", "ymin", "xmax", "ymax"]] = bounds.astype(int)
-    else:
+    elif is_point:
         coords = shapely.get_coordinates(np.array(predictions["geometry"]))
         predictions["x"] = coords[:, 0]
         predictions["y"] = coords[:, 1]
+    # Polygons carry all positional information in the translated geometry,
+    # so no coordinate columns need updating.
 
     return predictions.drop(columns=["window_xmin", "window_ymin"]).reset_index(drop=True)
+
+
+def _run_nms(
+    predictions: pd.DataFrame,
+    boxes: "torch.Tensor",
+    output_columns: list[str],
+    iou_threshold: float,
+) -> pd.DataFrame:
+    """Run torchvision NMS and return the surviving rows with selected
+    columns."""
+    if predictions.shape[0] <= 1:
+        return predictions[output_columns].reset_index(drop=True).copy()
+
+    print(
+        f"{predictions.shape[0]} predictions in overlapping windows, applying non-max suppression"
+    )
+    scores = torch.tensor(predictions.score.values, dtype=torch.float32)
+    keep_idx = nms(boxes=boxes, scores=scores, iou_threshold=iou_threshold).numpy()
+    filtered = predictions.iloc[keep_idx].reset_index(drop=True)
+    print(f"{filtered.shape[0]} predictions kept after non-max suppression")
+    return filtered[output_columns].reset_index(drop=True).copy()
 
 
 def reduce_boxes(predictions: pd.DataFrame, iou_threshold: float) -> pd.DataFrame:
@@ -56,23 +80,11 @@ def reduce_boxes(predictions: pd.DataFrame, iou_threshold: float) -> pd.DataFram
     Returns:
         DataFrame containing the filtered box predictions in the public box schema.
     """
-    box_output_columns = ["xmin", "ymin", "xmax", "ymax", "label", "score"]
-    if predictions.shape[0] <= 1:
-        return predictions[box_output_columns].reset_index(drop=True).copy()
-
-    print(
-        f"{predictions.shape[0]} predictions in overlapping windows, applying non-max suppression"
-    )
-
+    output_columns = ["xmin", "ymin", "xmax", "ymax", "label", "score"]
     boxes = torch.tensor(
         predictions[["xmin", "ymin", "xmax", "ymax"]].values, dtype=torch.float32
     )
-    scores = torch.tensor(predictions.score.values, dtype=torch.float32)
-    keep_idx = nms(boxes=boxes, scores=scores, iou_threshold=iou_threshold).numpy()
-
-    filtered_predictions = predictions.iloc[keep_idx].reset_index(drop=True)
-    print(f"{filtered_predictions.shape[0]} predictions kept after non-max suppression")
-    return filtered_predictions[box_output_columns].reset_index(drop=True).copy()
+    return _run_nms(predictions, boxes, output_columns, iou_threshold)
 
 
 def reduce_points(predictions: pd.DataFrame, nms_thresh: float) -> pd.DataFrame:
@@ -106,6 +118,28 @@ def reduce_points(predictions: pd.DataFrame, nms_thresh: float) -> pd.DataFrame:
     return predictions.iloc[np.flatnonzero(kept)].reset_index(drop=True)
 
 
+def reduce_polygons(predictions: pd.DataFrame, iou_threshold: float) -> pd.DataFrame:
+    """Reduce overlapping polygon predictions with NMS on polygon bounds.
+
+    Non-max suppression is computed on the axis-aligned bounding box of each
+    polygon (its envelope), which parallels :func:`reduce_boxes` and avoids the
+    cost of all-pairs polygon IoU.
+
+    Args:
+        predictions: DataFrame of image-space polygon predictions with a
+            ``geometry`` column.
+        iou_threshold: IoU threshold for NMS.
+
+    Returns:
+        DataFrame containing the filtered polygon predictions.
+    """
+    output_columns = ["geometry", "label", "score"]
+    boxes = torch.tensor(
+        shapely.bounds(np.array(predictions.geometry)), dtype=torch.float32
+    )
+    return _run_nms(predictions, boxes, output_columns, iou_threshold)
+
+
 def mosaic(
     predictions: pd.DataFrame,
     iou_threshold: float = 0.1,
@@ -126,6 +160,14 @@ def mosaic(
 
     is_box_predictions = {"xmin", "ymin", "xmax", "ymax"}.issubset(predictions.columns)
     is_point_predictions = {"x", "y"}.issubset(predictions.columns)
+    is_polygon_predictions = "geometry" in predictions.columns
+
+    # Validate before translating, which needs a geometry column to work with.
+    if not (is_box_predictions or is_point_predictions or is_polygon_predictions):
+        raise ValueError(
+            "Predictions must include box, point or polygon (geometry) coordinates."
+        )
+
     translated_predictions = translate_predictions(predictions)
 
     if is_box_predictions:
@@ -134,47 +176,7 @@ def mosaic(
     if is_point_predictions:
         return reduce_points(translated_predictions, nms_thresh=nms_distance_thresh)
 
-    raise ValueError("Predictions must include either box or point coordinates.")
-
-
-def across_class_nms(predicted_boxes, iou_threshold=0.15):
-    """Perform non-max suppression for a dataframe of results (see
-    visualize.format_boxes) to remove boxes that overlap by iou_thresholdold of
-    IoU."""
-    # Skip NMS if there's is one or less prediction
-    if predicted_boxes.shape[0] <= 1:
-        return predicted_boxes
-
-    # move prediciton to tensor
-    boxes = torch.tensor(
-        predicted_boxes[["xmin", "ymin", "xmax", "ymax"]].values, dtype=torch.float32
-    )
-    scores = torch.tensor(predicted_boxes.score.values, dtype=torch.float32)
-    labels = predicted_boxes.label.values
-
-    bbox_left_idx = nms(boxes=boxes, scores=scores, iou_threshold=iou_threshold)
-    bbox_left_idx = bbox_left_idx.numpy()
-    new_boxes, new_labels, new_scores = (
-        boxes[bbox_left_idx].type(torch.int),
-        labels[bbox_left_idx],
-        scores[bbox_left_idx],
-    )
-
-    # Recreate box dataframe
-    image_detections = np.concatenate(
-        [
-            new_boxes,
-            np.expand_dims(new_labels, axis=1),
-            np.expand_dims(new_scores, axis=1),
-        ],
-        axis=1,
-    )
-
-    new_df = pd.DataFrame(
-        image_detections, columns=["xmin", "ymin", "xmax", "ymax", "label", "score"]
-    )
-
-    return new_df
+    return reduce_polygons(translated_predictions, iou_threshold=iou_threshold)
 
 
 def _flatten_prediction_batches_(batched_results):
@@ -196,29 +198,27 @@ def _flatten_prediction_batches_(batched_results):
     return pd.concat(flattened, ignore_index=True)
 
 
-def _apply_nms(image_results, config, task="box"):
+def reduce_overlapping(image_results, config, task="box"):
     """Applies non-max suppression: across-class NMS for multi-class boxes,
-    distance-based suppression for points.
+    distance-based suppression for points, envelope NMS for polygons.
 
     Args:
         image_results: predictions for one image.
         config: model configuration providing the NMS thresholds.
-        task: model task, "box" or "point".
+        task: model task, "box", "point" or "polygon".
 
     Returns:
         Reduced predictions for the image.
     """
     if task == "box":
         if image_results.label.nunique() > 1:
-            image_results = across_class_nms(
-                image_results, iou_threshold=config.nms_thresh
-            )
+            image_results = reduce_boxes(image_results, iou_threshold=config.nms_thresh)
     elif task == "point":
         image_results = reduce_points(
             image_results, nms_thresh=config.point.nms_distance_thresh
         )
     elif task == "polygon":
-        pass
+        image_results = reduce_polygons(image_results, iou_threshold=config.nms_thresh)
 
     return image_results
 
@@ -248,7 +248,9 @@ def _dataloader_wrapper_(model, trainer, dataloader, crop_model=None, root_dir=N
     # dropna=False keeps a null image_path when image_path is not available.
     processed_results = []
     for _, group in results.groupby("image_path", dropna=False):
-        processed_results.append(_apply_nms(group, model.config, task=model.model.task))
+        processed_results.append(
+            reduce_overlapping(group, model.config, task=model.model.task)
+        )
 
     results = pd.concat(processed_results, ignore_index=True)
 

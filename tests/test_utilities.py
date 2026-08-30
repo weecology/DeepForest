@@ -806,18 +806,201 @@ def test_format_geometry_point():
 
 
 def test_format_geometry_polygon():
-    """Test formatting polygon predictions"""
-    # Create a mock prediction with polygon coordinates
+    """Test formatting instance-segmentation (mask) predictions into polygons."""
+    # Two square instance masks in a 100x100 frame
+    masks = torch.zeros((2, 1, 100, 100), dtype=torch.float32)
+    masks[0, 0, 20:40, 10:30] = 1.0
+    masks[1, 0, 60:80, 50:70] = 1.0
+
     prediction = {
-        "polygon": torch.tensor([[[10, 20], [30, 20], [30, 40], [10, 40], [10, 20]],
-                               [[50, 60], [70, 60], [70, 80], [50, 80], [50, 60]]]),
+        "masks": masks,
+        "boxes": torch.tensor([[10, 20, 30, 40], [50, 60, 70, 80]], dtype=torch.float32),
         "labels": torch.tensor([0, 0]),
-        "scores": torch.tensor([0.9, 0.8])
+        "scores": torch.tensor([0.9, 0.8]),
     }
 
-    # Format geometry should raise ValueError since polygon predictions are not supported
-    with pytest.raises(ValueError, match="Polygon predictions are not yet supported for formatting"):
-        utilities.format_geometry(prediction, geom_type="polygon")
+    result = utilities.format_geometry(prediction, geom_type="polygon")
+
+    assert len(result) == 2
+    assert "geometry" in result.columns
+    assert "score" in result.columns
+    for geom in result.geometry:
+        assert isinstance(geom, shapely.geometry.Polygon)
+        assert geom.area > 0
+
+
+def test_determine_geometry_type_masks():
+    """A prediction dict with masks is detected as a polygon."""
+    prediction = {
+        "masks": torch.zeros((1, 1, 10, 10)),
+        "boxes": torch.tensor([[0, 0, 5, 5]], dtype=torch.float32),
+        "labels": torch.tensor([0]),
+        "scores": torch.tensor([0.9]),
+    }
+    assert utilities.determine_geometry_type(prediction) == "polygon"
+
+
+def test_determine_geometry_type_multipolygon():
+    """A MultiPolygon frame is a polygon, not a box."""
+    multi = geometry.MultiPolygon([geometry.box(0, 0, 10, 10),
+                                   geometry.box(20, 20, 30, 30)])
+    df = gpd.GeoDataFrame(geometry=[multi])
+
+    assert utilities.determine_geometry_type(df) == "polygon"
+
+
+def test_determine_geometry_type_unsupported_geometry():
+    """Geometries that are not points or polygons are rejected."""
+    df = gpd.GeoDataFrame(geometry=[geometry.LineString([(0, 0), (10, 10)])])
+
+    with pytest.raises(ValueError, match="Unsupported geometry type"):
+        utilities.determine_geometry_type(df)
+
+
+def test_mask_to_polygon_traces_rectangle():
+    """A rectangular mask converted to a polygon should give the ~same coords."""
+    xmin, xmax, ymin, ymax = 10, 30, 20, 40
+    mask = np.zeros((100, 100), dtype=np.uint8)
+    mask[ymin:ymax, xmin:xmax] = 1
+
+    polygon = utilities.mask_to_polygon(mask)
+
+    assert polygon.is_valid
+    # Contours trace pixel centres, so the far edge lands one pixel inside.
+    assert polygon.bounds == (xmin, ymin, xmax - 1, ymax - 1)
+
+
+@pytest.mark.parametrize("mask", [
+    np.zeros((10, 10), dtype=np.uint8),  # no contour at all
+    np.pad(np.ones((1, 2), dtype=np.uint8), ((0, 9), (0, 8))),  # 2-pixel line
+])
+def test_mask_to_polygon_degenerate(mask):
+    """Masks without a traceable contour return an empty polygon."""
+    assert utilities.mask_to_polygon(mask).is_empty
+
+
+def test_mask_to_polygon_repairs_self_intersection():
+    """A self-intersecting contour is replaced by its convex hull."""
+    # Bowtie shape, which is not a valid polygon.
+    mask = np.zeros((40, 40), dtype=np.uint8)
+    mask[5:18, 5:18] = 1
+    mask[18:31, 18:31] = 1
+
+    result = utilities.mask_to_polygon(mask)
+
+    # A single valid polygon comes out
+    assert result.geom_type == "Polygon"
+    assert result.is_valid
+    # The hull should cover more than the area of the two regions
+    assert result.area > mask.sum()
+
+
+def test_format_polygons_targets_without_scores():
+    """Training targets are (N, H, W) uint8 masks and carry no scores."""
+    masks = torch.zeros((2, 100, 100), dtype=torch.uint8)
+    masks[0, 20:40, 10:30] = 1
+    masks[1, 60:80, 50:70] = 1
+    target = {"masks": masks, "labels": torch.tensor([0, 1])}
+
+    df = utilities.format_polygons(target, scores=False)
+
+    assert len(df) == 2
+    assert "score" not in df.columns
+    assert list(df.label) == [0, 1]
+    assert all(geom.area > 0 for geom in df.geometry)
+
+
+def test_format_polygons_uses_supplied_polygons():
+    """Check we use suppleid polygons without raising a conversion error if there's no mask."""
+    polygons = [geometry.box(0, 0, 10, 10), geometry.box(20, 20, 30, 30)]
+    prediction = {
+        "polygons": polygons,
+        "labels": torch.tensor([0, 0]),
+        "scores": torch.tensor([0.9, 0.8]),
+    }
+
+    df = utilities.format_polygons(prediction)
+
+    assert len(df) == 2
+    assert all(a.equals(b) for a, b in zip(df.geometry, polygons, strict=True))
+
+
+@pytest.mark.parametrize("key, empty", [
+    ("masks", torch.zeros((0, 100, 100), dtype=torch.uint8)),
+    ("polygons", []),
+])
+def test_format_polygons_no_instances(key, empty):
+    """A prediction with no instances returns None."""
+    prediction = {
+        key: empty,
+        "labels": torch.tensor([], dtype=torch.int64),
+        "scores": torch.tensor([]),
+    }
+
+    assert utilities.format_polygons(prediction) is None
+
+
+def test_read_coco_rle_segmentation(tmp_path):
+    """COCO annotations with RLE segmentation are decoded to polygons."""
+    import pycocotools.mask as mask_util
+
+    size = 100
+    xmin, xmax, ymin, ymax = 20, 50, 10, 40
+    width, height = xmax - xmin, ymax - ymin
+
+    mask = np.zeros((size, size), dtype=np.uint8)
+    mask[ymin:ymax, xmin:xmax] = 1
+    compressed = mask_util.encode(np.asfortranarray(mask))
+    # pycocotools returns bytes for 'counts'; JSON needs a string.
+    compressed["counts"] = compressed["counts"].decode("utf-8")
+
+    coco_data = {
+        "images": [{"id": 1, "file_name": "OSBS_029.png"}],
+        "categories": [{"id": 0, "name": "Tree"}],
+        "annotations": [
+            {
+                "image_id": 1,
+                "segmentation": compressed,
+                "category_id": 0,
+                "bbox": [xmin, ymin, width, height],
+                "area": width * height,
+                "iscrowd": 0
+            },
+            {
+                # Uncompressed RLE, 'counts' as a list, decoded via frPyObjects
+                "image_id": 1,
+                "segmentation": {"counts": [0, size * size], "size": [size, size]},
+                "category_id": 0,
+                "bbox": [0, 0, size, size],
+                "area": size * size,
+                "iscrowd": 0
+            },
+            {
+                # An all-zero RLE has no contour and should be dropped
+                "image_id": 1,
+                "segmentation": {"counts": [size * size], "size": [size, size]},
+                "category_id": 0,
+                "bbox": [0, 0, 0, 0],
+                "area": 0,
+                "iscrowd": 0
+            }
+        ]
+    }
+
+    json_path = tmp_path / "annotations_rle.json"
+    with open(json_path, "w") as f:
+        json.dump(coco_data, f)
+
+    df = utilities.read_coco(str(json_path))
+
+    # The all-zero annotation is dropped, leaving the two decodable masks.
+    assert df.shape[0] == 2
+    traced = shapely.from_wkt(df.geometry.iloc[0])
+    assert traced.is_valid
+    # The traced contour sits inside the annotation bbox.
+    traced_xmin, traced_ymin, traced_xmax, traced_ymax = traced.bounds
+    assert traced_xmin >= xmin and traced_ymin >= ymin
+    assert traced_xmax <= xmax and traced_ymax <= ymax
 
 
 def test_read_file_column_names():

@@ -159,7 +159,9 @@ def convert_to_sv_format(
         ).values
         boxes = np.stack(boxes)
 
-        label_mapping = {label: idx for idx, label in enumerate(df["label"].unique())}
+        label_mapping = {
+            label: idx for idx, label in enumerate(sorted(df["label"].unique()))
+        }
 
         # Extract labels as a numpy array
         labels = df["label"].map(label_mapping).values.astype(int)
@@ -187,7 +189,9 @@ def convert_to_sv_format(
         ).values
         boxes = np.stack(boxes)
 
-        label_mapping = {label: idx for idx, label in enumerate(df["label"].unique())}
+        label_mapping = {
+            label: idx for idx, label in enumerate(sorted(df["label"].unique()))
+        }
 
         # Extract labels as a numpy array
         labels = df["label"].map(label_mapping).values.astype(int)
@@ -214,9 +218,26 @@ def convert_to_sv_format(
             with Image.open(full_path) as img:
                 width, height = img.size
 
-        polygons = df.geometry.apply(lambda x: np.array(x.exterior.coords)).values
-        # as integers
+        def _exterior_coords(geom):
+            if geom.geom_type == "MultiPolygon":
+                geom = max(geom.geoms, key=lambda g: g.area)
+            if geom.is_empty:
+                return np.empty((0, 2))
+            return np.array(geom.exterior.coords)
+
+        polygons = df.geometry.apply(_exterior_coords).values
         polygons = [np.array(p).round().astype(np.int32) for p in polygons]
+        # Filter out any polygons with fewer than 3 points to avoid errors
+        # in sv.Detections (which uses cv2.fillPoly).
+        valid = [len(p) >= 3 for p in polygons]
+        polygons = [p for p, ok in zip(polygons, valid, strict=True) if ok]
+        boxes = boxes[valid]
+        labels = labels[valid]
+        scores = scores[valid]
+
+        if len(polygons) == 0:
+            return image
+
         masks = [sv.polygon_to_mask(p, (width, height)) for p in polygons]
         masks = np.stack(masks)
 
@@ -233,7 +254,9 @@ def convert_to_sv_format(
         points = np.stack(points)
         points = np.expand_dims(points, axis=1)
 
-        label_mapping = {label: idx for idx, label in enumerate(df["label"].unique())}
+        label_mapping = {
+            label: idx for idx, label in enumerate(sorted(df["label"].unique()))
+        }
 
         # Extract labels as a numpy array
         labels = df["label"].map(label_mapping).values.astype(int)

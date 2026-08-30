@@ -45,8 +45,10 @@ class RecallPrecision(Metric):
         self.label_dict = label_dict or {}
         self.numeric_to_label_dict = {v: k for k, v in self.label_dict.items()}
 
-        if task not in ("box", "point"):
-            raise ValueError(f"Unsupported task: {task}. Use 'box' or 'point'.")
+        if task not in ("box", "point", "polygon"):
+            raise ValueError(
+                f"Unsupported task: {task}. Use 'box', 'point' or 'polygon'."
+            )
 
         if self.task == "box":
             self.pred_key = "boxes"
@@ -54,6 +56,10 @@ class RecallPrecision(Metric):
         elif self.task == "point":
             self.pred_key = "points"
             self.geom_type = "point"
+        elif self.task == "polygon":
+            # Use boxes to count instances and detect empty frames
+            self.pred_key = "boxes"
+            self.geom_type = "polygon"
 
         self.add_state("precision", default=torch.tensor(0.0), dist_reduce_fx="sum")
         self.add_state("recall", default=torch.tensor(0.0), dist_reduce_fx="sum")
@@ -85,8 +91,10 @@ class RecallPrecision(Metric):
         """Update the metric with a batch of predictions and targets.
 
         Args:
-            preds: List of prediction dicts (keys: ``boxes``, ``labels``, ``scores``).
-            targets: List of target dicts (keys: ``boxes``, ``labels``).
+            preds: List of prediction dicts (keys: ``boxes``, ``labels``,
+                ``scores``; plus ``masks`` for the ``polygon`` task).
+            targets: List of target dicts (keys: ``boxes``, ``labels``; plus
+                ``masks`` for the ``polygon`` task).
             image_names: Optional list of image path strings, one per image.
         """
         if image_names is None:
@@ -190,7 +198,7 @@ class RecallPrecision(Metric):
                         else x
                     )
             # TODO Check why this fails for point predictions
-            if self.task == "box" and len(self.label_dict) > 1:
+            if self.task in ("box", "polygon") and len(self.label_dict) > 1:
                 self._class_recall = compute_class_recall(
                     self._all_results[self._all_results["match"]]
                 )

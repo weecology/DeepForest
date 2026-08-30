@@ -239,3 +239,65 @@ def test_convert_to_sv_format_empty_dataframe():
 
     assert isinstance(result, sv.Detections)
     assert len(result) == 0
+
+
+@pytest.fixture
+def gdf_multipolygon():
+    # A MultiPolygon alongside a plain polygon
+    data = {
+        'geometry': [geometry.MultiPolygon([geometry.box(30, 30, 40, 40),
+                                            geometry.box(50, 50, 55, 55)]),
+                     geometry.Polygon([(10, 10), (20, 10), (15, 25)])],
+        'label': ['Tree', 'Tree'],
+        'image_path': [get_data("OSBS_029.tif"), get_data("OSBS_029.tif")],
+        'score': [0.9, 0.8]
+    }
+    gdf = gpd.GeoDataFrame(data)
+    gdf.root_dir = os.path.dirname(get_data("OSBS_029.tif"))
+    return gdf
+
+
+def test_convert_to_sv_format_multipolygon(gdf_multipolygon):
+    """MultiPolygons are represented by their largest part."""
+    result = visualize.convert_to_sv_format(gdf_multipolygon)
+
+    assert len(result) == 2
+    assert result.mask.shape[0] == 2
+
+
+def test_convert_to_sv_format_drops_empty_polygons():
+    """Empty geometries are dropped and don't cause errors."""
+    data = {
+        'geometry': [geometry.Polygon([(10, 10), (20, 10), (15, 25)]),
+                     geometry.Polygon()],
+        'label': ['Tree', 'Tree'],
+        'image_path': [get_data("OSBS_029.tif"), get_data("OSBS_029.tif")],
+        'score': [0.9, 0.8]
+    }
+    gdf = gpd.GeoDataFrame(data)
+    gdf.root_dir = os.path.dirname(get_data("OSBS_029.tif"))
+
+    result = visualize.convert_to_sv_format(gdf)
+
+    assert len(result) == 1
+    assert result.confidence[0] == 0.9
+
+
+def test_convert_to_sv_format_label_mapping_is_sorted():
+    """Class ids follow sorted label order, not row order."""
+    data = {
+        'geometry': [geometry.box(0, 0, 10, 10),
+                     geometry.box(20, 20, 30, 30),
+                     geometry.box(40, 40, 50, 50)],
+        'label': ['Tree', 'Bird', 'Tree'],
+        'image_path': [get_data("OSBS_029.tif")] * 3,
+        'score': [0.9, 0.8, 0.7]
+    }
+    gdf = gpd.GeoDataFrame(data)
+    gdf.root_dir = os.path.dirname(get_data("OSBS_029.tif"))
+
+    result = visualize.convert_to_sv_format(gdf)
+
+    # Bird sorts before Tree regardless of which appears first in the frame.
+    assert list(result.class_id) == [1, 0, 1]
+    assert list(result.data["class_name"]) == ['Tree', 'Bird', 'Tree']

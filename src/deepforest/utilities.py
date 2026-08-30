@@ -2,9 +2,11 @@ import json
 import os
 import warnings
 
+import cv2
 import geopandas as gpd
 import numpy as np
 import pandas as pd
+import pycocotools.mask as mask_util
 import rasterio
 import shapely
 import torch
@@ -332,14 +334,19 @@ def determine_geometry_type(df):
         columns = df.columns
         if "geometry" in columns:
             df = gpd.GeoDataFrame(geometry=df["geometry"])
+            # Indexing [0] means an empty DataFrame raises an IndexError here.
             geometry_type = df.geometry.type.unique()[0]
-            if geometry_type == "Polygon":
-                if (df.geometry.area == df.envelope.area).all():
+            if geometry_type in ("Polygon", "MultiPolygon"):
+                # Polygons that exactly fill their envelope are really boxes.
+                if (
+                    geometry_type == "Polygon"
+                    and (df.geometry.area == df.envelope.area).all()
+                ):
                     return "box"
-                else:
-                    return "polygon"
-            else:
+                return "polygon"
+            if geometry_type == "Point":
                 return "point"
+            raise ValueError(f"Unsupported geometry type in DataFrame: {geometry_type}")
         elif (
             "xmin" in columns
             and "ymin" in columns
@@ -355,15 +362,17 @@ def determine_geometry_type(df):
             raise ValueError(f"Could not determine geometry type from columns {columns}")
 
     elif isinstance(df, dict):
-        if "boxes" in df.keys():
-            geometry_type = "box"
-        elif "polygon" in df.keys():
+        # masks/polygons take precedence: instance-segmentation predictions
+        # carry a mask alongside "boxes".
+        if {"masks", "polygons", "polygon"} & df.keys():
             geometry_type = "polygon"
+        elif "boxes" in df.keys():
+            geometry_type = "box"
         elif "points" in df.keys():
             geometry_type = "point"
         else:
             raise ValueError(
-                f"Could not determine geometry type from dict keys {list(df.keys())}"
+                f"Could not determine geometry type from keys {list(df.keys())}"
             )
     else:
         raise ValueError(f"Could not determine geometry type from type {type(df)}")
@@ -387,7 +396,7 @@ def format_geometry(predictions, scores=True, geom_type=None):
     if geom_type == "box":
         df = format_boxes(predictions, scores=scores)
     elif geom_type == "polygon":
-        raise ValueError("Polygon predictions are not yet supported for formatting")
+        df = format_polygons(predictions, scores=scores)
     elif geom_type == "point":
         df = format_points(predictions, scores=scores)
 
@@ -408,17 +417,102 @@ def format_boxes(prediction, scores=True):
         return None
 
     df = pd.DataFrame(
-        prediction["boxes"].cpu().detach().numpy(),
+        prediction["boxes"].float().cpu().detach().numpy(),
         columns=["xmin", "ymin", "xmax", "ymax"],
     )
     df["label"] = prediction["labels"].cpu().detach().numpy()
 
     if scores:
-        df["score"] = prediction["scores"].cpu().detach().numpy()
+        # Cast to fp32 — numpy has no bf16 dtype.
+        df["score"] = prediction["scores"].float().cpu().detach().numpy()
 
     df["geometry"] = df.apply(
         lambda x: shapely.geometry.box(x.xmin, x.ymin, x.xmax, x.ymax), axis=1
     )
+    return df
+
+
+def mask_to_polygon(mask: np.ndarray) -> shapely.geometry.Polygon:
+    """Convert a single binary instance mask to a Shapely polygon.
+
+    The largest external contour is used. Masks that do not contain a
+    valid contour (fewer than three vertices) return an empty polygon.
+    Self intersecting polygons are replaced by their convex hull.
+
+    Args:
+        mask: 2D array where non-zero pixels mark the instance.
+
+    Returns:
+        A Shapely Polygon of the instance boundary, or an empty Polygon.
+    """
+    mask = (mask > 0).astype(np.uint8)
+    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    if not contours:
+        return shapely.geometry.Polygon()
+
+    largest = max(contours, key=cv2.contourArea)
+    coords = largest.reshape(-1, 2)
+    if coords.shape[0] < 3:
+        return shapely.geometry.Polygon()
+
+    polygon = shapely.geometry.Polygon(coords)
+    if not polygon.is_valid:
+        polygon = polygon.convex_hull
+        # Edge cases like collinear points may map to a line
+        if polygon.geom_type != "Polygon":
+            return shapely.geometry.Polygon()
+
+    return polygon
+
+
+def format_polygons(prediction: dict, scores: bool = True) -> pd.DataFrame | None:
+    """Format an instance-segmentation prediction into a dataframe.
+
+    Converts each predicted mask into a Shapely polygon. Works for both
+    model predictions (float masks of shape ``(N, 1, H, W)`` with scores)
+    and training targets (uint8 masks of shape ``(N, H, W)`` without scores).
+
+    Args:
+        prediction: dict with ``"masks"`` and ``"labels"`` (and ``"scores"``
+            when ``scores`` is True).
+        scores: Whether the prediction includes a score per instance.
+
+    Returns:
+        DataFrame with ``label``, optional ``score``, and ``geometry``
+        columns, or ``None`` when there are no instances.
+    """
+    # A prediction may already provide vectorised polygons, otherwise
+    # convert each instance mask to a polygon.
+    if "polygons" in prediction:
+        geometries = list(prediction["polygons"])
+        if len(geometries) == 0:
+            return None
+    else:
+        masks = prediction["masks"]
+        if len(masks) == 0:
+            return None
+
+        # Binarise before converting to numpy. Mixed-precision models can
+        # return bf16/fp16 mask logits, which numpy cannot represent.
+        if masks.is_floating_point():
+            masks = masks > 0.5
+
+        masks = masks.cpu().detach().numpy()
+        # Collapse the channel dimension of (N, 1, H, W) mask logits.
+        if masks.ndim == 4:
+            masks = masks[:, 0]
+
+        geometries = [mask_to_polygon(mask) for mask in masks]
+
+    df = pd.DataFrame()
+    df["label"] = prediction["labels"].cpu().detach().numpy()
+
+    if scores:
+        # Cast to fp32 to avoid bf16 issues with numpy
+        df["score"] = prediction["scores"].float().cpu().detach().numpy()
+
+    df["geometry"] = geometries
     return df
 
 
@@ -484,27 +578,38 @@ def read_coco(json_file):
         segmentation = ann.get("segmentation")
 
         if not isinstance(segmentation, list):
-            continue
+            # RLE segmentation — decode via pycocotools then trace contour
+            rle = segmentation
+            # Compressed RLE has a string 'counts', uncompressed has a list.
+            if isinstance(rle.get("counts"), list):
+                rle = mask_util.frPyObjects(rle, rle["size"][0], rle["size"][1])
+            mask = mask_util.decode(rle).astype(np.uint8)
+            merged_poly = mask_to_polygon(mask)
+        else:
+            poly_list = []
 
-        poly_list = []
+            for seg in segmentation:
+                coords = list(zip(seg[::2], seg[1::2], strict=True))
 
-        for seg in segmentation:
-            coords = list(zip(seg[::2], seg[1::2], strict=True))
+                if len(coords) < 3:
+                    continue
 
-            if len(coords) < 3:
+                poly = shapely.geometry.Polygon(coords)
+
+                if poly.is_valid and not poly.is_empty:
+                    poly_list.append(poly)
+
+            if not poly_list:
                 continue
 
-            poly = shapely.geometry.Polygon(coords)
+            merged_poly = (
+                poly_list[0]
+                if len(poly_list) == 1
+                else shapely.ops.unary_union(poly_list)
+            )
 
-            if poly.is_valid and not poly.is_empty:
-                poly_list.append(poly)
-
-        if not poly_list:
+        if merged_poly.is_empty:
             continue
-
-        merged_poly = (
-            poly_list[0] if len(poly_list) == 1 else shapely.ops.unary_union(poly_list)
-        )
 
         # Extract bbox
         xmin, ymin, w, h = ann["bbox"]
