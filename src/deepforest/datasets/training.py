@@ -3,6 +3,7 @@
 import math
 import os
 from abc import abstractmethod
+from collections.abc import Iterable
 from typing import Any
 
 import cv2
@@ -13,7 +14,12 @@ import torch
 import torchvision
 from kornia.constants import DataKey
 from PIL import Image
-from torch.utils.data import Dataset
+from torch.utils.data import (
+    BatchSampler,
+    Dataset,
+    Sampler,
+    SequentialSampler,
+)
 from torchvision.datasets import ImageFolder
 
 from deepforest import utilities
@@ -70,6 +76,9 @@ class TrainingDataset(Dataset):
         self._validate_labels()
         if validate_coordinates:
             self._validate_coordinates()
+        self.positive_indices, self.negative_indices = (
+            self._build_annotation_index_pools()
+        )
 
         # Pin data to memory if desired
         if self.preload_images:
@@ -104,6 +113,33 @@ class TrainingDataset(Dataset):
         are found.
         """
 
+    def _build_annotation_index_pools(self) -> tuple[list[int], list[int]]:
+        """Split dataset indices into annotated (positive) and empty (negative)
+        images."""
+        if "geometry" in self.annotations.columns:
+            row_totals = np.array(
+                [
+                    geom.bounds
+                    if hasattr(geom, "bounds")
+                    else shapely.wkt.loads(geom).bounds
+                    for geom in self.annotations.geometry
+                ]
+            ).sum(axis=1)
+        else:
+            row_totals = (
+                self.annotations[["xmin", "ymin", "xmax", "ymax"]].sum(axis=1).to_numpy()
+            )
+
+        totals = (
+            self.annotations.assign(_row_totals=row_totals)
+            .groupby("image_path", sort=False)["_row_totals"]
+            .sum()
+        )
+        aligned = totals.loc[list(self.image_names)].to_numpy() == 0
+        positives = np.flatnonzero(~aligned).tolist()
+        negatives = np.flatnonzero(aligned).tolist()
+        return positives, negatives
+
     def __len__(self) -> int:
         """Dataset length is the number of unique images."""
         return len(self.image_names)
@@ -133,6 +169,90 @@ class TrainingDataset(Dataset):
     def __getitem__(self, index) -> tuple:
         """Return a single item from the dataset."""
         pass
+
+
+class BalancedDetectionBatchSampler(BatchSampler):
+    """Batch sampler that fixes the fraction of annotated vs hard-negative
+    images.
+
+    One epoch covers each positive dataset index once per rank, shuffled with
+    ``torch.randperm`` over ``positive_indices``. Negatives are drawn at random
+    with replacement each batch.
+
+    PyTorch Lightning reinstantiates batch samplers with a ``sampler`` sized to
+    ``len(dataset)`` (e.g. ``DistributedSampler``). That index range does not
+    match ``positive_indices`` positions, so ``self.sampler`` is **not** used when
+    building batches; only ``positive_indices`` and ``negative_indices`` are.
+    The ``sampler`` and ``drop_last`` arguments remain on ``__init__`` so
+    Lightning can inject values without type errors.
+
+    .. note::
+
+        Distributed sharding of the positive pool is not applied. Multi-GPU runs
+        typically need ``Trainer(use_distributed_sampler=False)`` or equivalent
+        unless you accept duplicate positive coverage per rank.
+    """
+
+    def __init__(
+        self,
+        positive_indices: list[int],
+        negative_indices: list[int],
+        batch_size: int,
+        positive_batch_fraction: float,
+        sampler: Sampler[int] | Iterable[int] | None = None,
+        drop_last: bool = False,
+        generator: torch.Generator | None = None,
+    ):
+        if not 0 < positive_batch_fraction <= 1:
+            raise ValueError(
+                "positive_batch_fraction must be in (0, 1], "
+                f"got {positive_batch_fraction}"
+            )
+        if not positive_indices:
+            raise ValueError("positive_indices must not be empty")
+        if not negative_indices:
+            raise ValueError("negative_indices must not be empty")
+
+        if sampler is None:
+            sampler = SequentialSampler(range(len(positive_indices)))
+
+        super().__init__(sampler, batch_size=batch_size, drop_last=drop_last)
+
+        self.positive_indices = positive_indices
+        self.negative_indices = negative_indices
+        self.positive_batch_fraction = positive_batch_fraction
+        self.generator = generator
+
+        self.n_positive = min(
+            batch_size, max(1, round(batch_size * positive_batch_fraction))
+        )
+        self.n_negative = batch_size - self.n_positive
+
+    def __len__(self) -> int:
+        n_items = len(self.positive_indices)
+        if self.drop_last:
+            return n_items // self.n_positive
+        return math.ceil(n_items / self.n_positive)
+
+    def __iter__(self):
+        n_pos = len(self.positive_indices)
+        perm = torch.randperm(n_pos, generator=self.generator).tolist()
+        pos_pool = [self.positive_indices[j] for j in perm]
+        pos_i = 0
+
+        for _ in range(len(self)):
+            batch = []
+            for _ in range(self.n_positive):
+                batch.append(pos_pool[pos_i % n_pos])
+                pos_i += 1
+
+            neg_draws = torch.randint(
+                len(self.negative_indices),
+                (self.n_negative,),
+                generator=self.generator,
+            )
+            batch.extend(self.negative_indices[i] for i in neg_draws.tolist())
+            yield batch
 
 
 class BoxDataset(TrainingDataset):
