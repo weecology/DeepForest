@@ -466,7 +466,7 @@ def test_predict_image_fromarray(m):
 def test_predict_big_file(m, big_file):
     m.config.train.fast_dev_run = False
     m.create_trainer()
-    df = m.predict_file(csv_file=big_file,
+    df = m.predict_file(input_file=big_file,
                         root_dir=os.path.dirname(big_file))
     assert set(df.columns) == {
         'label', 'score', 'image_path', 'geometry', "xmin", "ymin", "xmax", "ymax"
@@ -474,7 +474,7 @@ def test_predict_big_file(m, big_file):
 
 def test_predict_small_file(m):
     csv_file = get_data("OSBS_029.csv")
-    df = m.predict_file(csv_file, root_dir=os.path.dirname(csv_file))
+    df = m.predict_file(input_file=csv_file, root_dir=os.path.dirname(csv_file))
     assert set(df.columns) == {
         'label', 'score', 'image_path', 'geometry', "xmin", "ymin", "xmax", "ymax"
     }
@@ -1321,9 +1321,36 @@ def test_predict_file_mixed_sizes(m, tmp_path):
     df.to_csv(csv_path, index=False)
 
     m.config.validation.size = 200
-    preds = m.predict_file(csv_file=csv_path, root_dir=str(tmp_path))
+    preds = m.predict_file(input_file=csv_path, root_dir=str(tmp_path))
 
     assert preds.ymax.max() > 200  # The larger image should have predictions outside the 200px limit
+
+
+def test_predict_file_dataframe_input(m):
+    """Test predicting using a pandas DataFrame as input_file."""
+    csv_path = get_data("OSBS_029.csv")
+    root_dir = os.path.dirname(csv_path)
+    df = pd.read_csv(csv_path)
+
+    results = m.predict_file(input_file=df, root_dir=root_dir)
+    assert not results.empty
+    expected_cols = ["xmin", "ymin", "xmax", "ymax", "label", "score", "image_path"]
+    for col in expected_cols:
+        assert col in results.columns
+
+
+def test_predict_file_deprecated_csv_file(m):
+    """Test backwards compatibility for csv_file kwarg with DeprecationWarning."""
+    csv_path = get_data("OSBS_029.csv")
+    root_dir = os.path.dirname(csv_path)
+
+    with pytest.warns(DeprecationWarning):
+        results_deprecated = m.predict_file(csv_file=csv_path, root_dir=root_dir)
+
+    results_new = m.predict_file(input_file=csv_path, root_dir=root_dir)
+    assert not results_deprecated.empty
+    pd.testing.assert_frame_equal(results_deprecated, results_new)
+
 
 def test_recall_not_lowered_by_unprocessed_images():
     """This test checks that recall is only computed for images that were

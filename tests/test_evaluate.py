@@ -21,7 +21,7 @@ from shapely.geometry import Point, box
 
 def test_evaluate_image(m):
     csv_file = get_data("OSBS_029.csv")
-    predictions = m.predict_file(csv_file=csv_file, root_dir=os.path.dirname(csv_file))
+    predictions = m.predict_file(input_file=csv_file, root_dir=os.path.dirname(csv_file))
     ground_truth = read_file(csv_file)
     predictions.label = 0  # Model outputs numeric class IDs
     # Use wrapper to handle label conversion (ground_truth has "Tree", predictions have 0)
@@ -47,7 +47,7 @@ def test_evaluate_image(m):
 
 def test_evaluate_boxes(m):
     csv_file = get_data("OSBS_029.csv")
-    predictions = m.predict_file(csv_file=csv_file, root_dir=os.path.dirname(csv_file))
+    predictions = m.predict_file(input_file=csv_file, root_dir=os.path.dirname(csv_file))
     predictions.label = "Tree"
     ground_truth = read_file(csv_file)
     predictions = predictions.loc[range(10)]
@@ -313,7 +313,7 @@ def test_validate_predictions_match_predict_file(m):
             columns=["image_path", "xmin", "ymin", "xmax", "ymax", "label"])
 
     # Predict through inference path
-    infer_preds = m.predict_file(csv_file=csv_file, root_dir=root_dir)
+    infer_preds = m.predict_file(input_file=csv_file, root_dir=root_dir)
 
     assert infer_preds.empty == val_preds.empty
     assert infer_preds.shape == val_preds.shape
@@ -377,7 +377,7 @@ def test_validate_predictions_match_predict_file_mixed_sizes(m, tmp_path):
 
     # Predict through inference path
     # Don't pass size to avoid resizing - coordinates should be in original image space
-    infer_preds = m.predict_file(csv_file=csv_path, root_dir=str(tmp_path))
+    infer_preds = m.predict_file(input_file=csv_path, root_dir=str(tmp_path))
 
     assert infer_preds.empty == val_preds.empty
     assert infer_preds.shape == val_preds.shape

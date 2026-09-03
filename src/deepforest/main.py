@@ -608,9 +608,10 @@ class deepforest(pl.LightningModule):
 
     def predict_file(
         self,
-        csv_file,
-        root_dir,
+        input_file=None,
+        root_dir=None,
         crop_model=None,
+        csv_file=None,
     ):
         """Create a dataset and predict entire annotation file CSV file format
         is .csv file with the columns "image_path", "xmin","ymin","xmax","ymax"
@@ -619,15 +620,27 @@ class deepforest(pl.LightningModule):
         directory. One bounding box per line.
 
         Args:
-            csv_file: path to csv file
-            root_dir: directory of images. If none, uses "image_dir" in config
+            input_file: path to csv file or a pandas DataFrame
+            root_dir: directory of images. If none, it is taken from the directory of input_file, which therefore has to be a path rather than a DataFrame.
             crop_model: a deepforest.model.CropModel object to predict on crops
-            size: the size of the image to resize to. Optional, if not provided, the image is not resized.
+            csv_file: (deprecated) path to csv file
         Returns:
             df: pandas dataframe with bounding boxes, label and scores for each image in the csv file
         """
+        if csv_file is not None:
+            warnings.warn(
+                "The 'csv_file' argument is deprecated and will be removed in a future version. "
+                "Please use 'input_file' instead, which accepts both file paths and pandas DataFrames.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            input_file = csv_file
+
+        if input_file is None:
+            raise ValueError("Either 'input_file' or 'csv_file' must be provided.")
+
         ds = prediction.FromCSVFile(
-            csv_file=csv_file, root_dir=root_dir, return_metadata=True
+            csv_file=input_file, root_dir=root_dir, return_metadata=True
         )
         dataloader = self.predict_dataloader(ds, batch_size=self.config.batch_size)
         results = predict._dataloader_wrapper_(

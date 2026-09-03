@@ -58,7 +58,7 @@ def predict(
 
     if mode == "csv":
         # CSV batch prediction
-        res = m.predict_file(csv_file=input_path, root_dir=root_dir)
+        res = m.predict_file(input_file=input_path, root_dir=root_dir)
     elif mode == "tile":
         # Tiled image prediction
         res = m.predict_tile(

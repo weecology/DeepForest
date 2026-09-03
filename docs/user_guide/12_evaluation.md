@@ -198,7 +198,7 @@ m = main.deepforest()
 m.load_model(model_name="weecology/deepforest-tree", revision="main")
 
 csv_file = get_data("OSBS_029.csv")
-predictions = m.predict_file(csv_file=csv_file, root_dir=os.path.dirname(csv_file))
+predictions = m.predict_file(input_file=csv_file, root_dir=os.path.dirname(csv_file))
 predictions.head()
     xmin   ymin   xmax   ymax label     score    image_path
 0  330.0  342.0  373.0  391.0  Tree  0.802979  OSBS_029.tif

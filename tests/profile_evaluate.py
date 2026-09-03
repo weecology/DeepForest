@@ -12,7 +12,7 @@ from deepforest import main
 
 def run(m):
     csv_file = get_data("OSBS_029.csv")
-    predictions = m.predict_file(csv_file=csv_file, root_dir=os.path.dirname(csv_file))
+    predictions = m.predict_file(input_file=csv_file, root_dir=os.path.dirname(csv_file))
     predictions.label = "Tree"
     ground_truth = pd.read_csv(csv_file)
     results = evaluate.evaluate(predictions=predictions,
