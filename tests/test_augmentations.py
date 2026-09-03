@@ -383,5 +383,58 @@ def test_reordering_produces_correct_output():
     assert torch.allclose(box_correct, expected_box, atol=1.0)
 
 
+def test_pad_if_needed_augmentation():
+    """Test PadIfNeeded pads smaller images but does not crop larger images."""
+    from deepforest.augmentations import PadIfNeeded
+
+    pad = PadIfNeeded(size=(800, 800))
+
+    # Smaller image: should be padded to (800, 800)
+    small_img = torch.zeros(1, 3, 300, 400)
+    out_small = pad(small_img)
+    assert out_small.shape == (1, 3, 800, 800)
+
+    # Larger image: should remain untouched (1000, 1200), not cropped
+    large_img = torch.zeros(1, 3, 1000, 1200)
+    out_large = pad(large_img)
+    assert out_large.shape == (1, 3, 1000, 1200)
+
+    # Equal image: should remain untouched (800, 800)
+    equal_img = torch.zeros(1, 3, 800, 800)
+    out_equal = pad(equal_img)
+    assert out_equal.shape == (1, 3, 800, 800)
+
+    # Test via get_transform pipeline
+    box_small = torch.tensor([[[10., 10., 50., 50.]]])
+    box_large = torch.tensor([[[10., 10., 50., 50.]]])
+    transform = get_transform(augmentations=["PadIfNeeded"])
+    tf_small, _ = transform(small_img, box_small)
+    tf_large, _ = transform(large_img, box_large)
+    assert tf_small.shape == (1, 3, 800, 800)
+    assert tf_large.shape == (1, 3, 1000, 1200)
+
+
+@pytest.mark.xfail(
+    raises=RuntimeError,
+    strict=True,
+    reason="PadIfNeeded changes the image size, so at p<1.0 kornia cannot write "
+           "the padded subset back into the unpadded batch. Use p=1.0 for now.",
+)
+def test_pad_if_needed_partial_batch():
+    """Test PadIfNeeded on a batch when p<1.0 applies it to a subset only."""
+    from deepforest.augmentations import PadIfNeeded
+
+    # p<1.0 means kornia selects a random subset of the batch to pad, so the
+    # padded and untouched elements have to end up the same size to stack.
+    torch.manual_seed(0)
+    pad = PadIfNeeded(size=(800, 800), p=0.5)
+    batch = torch.zeros(8, 3, 300, 400)
+
+    output = pad(batch)
+
+    assert output.shape[0] == batch.shape[0]
+    assert output.shape[-2:] == (800, 800)
+
+
 if __name__ == "__main__":
     pytest.main([__file__])

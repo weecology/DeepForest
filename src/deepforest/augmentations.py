@@ -21,6 +21,21 @@ from omegaconf.listconfig import ListConfig
 from torch import Tensor
 
 
+def _crop_to_size(input: Tensor, size: tuple[int, int] | None) -> Tensor:
+    """Crop back to the pre-padding size.
+
+    Shared by the padding augmentations below, which only extend the
+    image right and down, so the inverse is a top-left crop.
+
+    Args:
+        input: Padded tensor to crop.
+        size: Target (height, width) to crop back to.
+    """
+    if size is None:
+        raise RuntimeError("`size` has to be a tuple. Got None.")
+    return input[..., : size[0], : size[1]]
+
+
 class RandomPadTo(GeometricAugmentationBase2D):
     r"""Pad the given sample by a random amount.
 
@@ -83,9 +98,74 @@ class RandomPadTo(GeometricAugmentationBase2D):
         transform: Tensor | None = None,
         size: tuple[int, int] | None = None,
     ) -> Tensor:
-        if size is None:
-            raise RuntimeError("`size` has to be a tuple. Got None.")
-        return input[..., : size[0], : size[1]]
+        return _crop_to_size(input, size)
+
+
+class PadIfNeeded(GeometricAugmentationBase2D):
+    """Pad the input tensor to a target size if it is smaller than that size.
+
+    If the input tensor is larger than or equal to the target size in a dimension,
+    no padding or cropping is applied along that dimension.
+
+    Args:
+        size: Target size as (height, width) or a single int for (size, size).
+        pad_mode: Padding mode ('constant', 'reflect', 'replicate', 'circular').
+        pad_value: Fill value for constant padding.
+        p: Probability of applying the transform.
+        same_on_batch: Apply same transformation to all batch elements.
+        keepdim: Maintain shape.
+    """
+
+    def __init__(
+        self,
+        size: tuple[int, int] | int = (800, 800),
+        pad_mode: str = "constant",
+        pad_value: float = 0,
+        p: float = 1.0,
+        same_on_batch: bool = False,
+        keepdim: bool = False,
+    ) -> None:
+        super().__init__(p=p, same_on_batch=same_on_batch, p_batch=1.0, keepdim=keepdim)
+        if isinstance(size, int):
+            size = (size, size)
+        self.target_size = size
+        self.flags = {"pad_mode": pad_mode, "pad_value": pad_value}
+
+    def compute_transformation(
+        self, input: Tensor, params: dict[str, Tensor], flags: dict[str, Any]
+    ) -> Tensor:
+        return self.identity_matrix(input)
+
+    def apply_transform(
+        self,
+        input: Tensor,
+        params: dict[str, Tensor],
+        flags: dict[str, Any],
+        transform: Tensor | None = None,
+    ) -> Tensor:
+        _, _, h, w = input.shape
+        target_h, target_w = self.target_size
+        pad_h = max(0, target_h - h)
+        pad_w = max(0, target_w - w)
+
+        if pad_h == 0 and pad_w == 0:
+            return input
+
+        return F.pad(
+            input,
+            [0, pad_w, 0, pad_h],
+            mode=flags["pad_mode"],
+            value=flags["pad_value"],
+        )
+
+    def inverse_transform(
+        self,
+        input: Tensor,
+        flags: dict[str, Any],
+        transform: Tensor | None = None,
+        size: tuple[int, int] | None = None,
+    ) -> Tensor:
+        return _crop_to_size(input, size)
 
 
 class ZoomBlur(IntensityAugmentationBase2D):
@@ -166,7 +246,7 @@ _SUPPORTED_TRANSFORMS = {
         RandomPadTo,
         {"pad_range": (0, 10), "pad_mode": "constant", "pad_value": 0, "p": 0.5},
     ),
-    "PadIfNeeded": (K.PadTo, {"size": (800, 800)}),
+    "PadIfNeeded": (PadIfNeeded, {"size": (800, 800)}),
     "Rotate": (K.RandomRotation, {"degrees": 15, "p": 0.5}),
     "RandomBrightnessContrast": (
         K.ColorJiggle,
