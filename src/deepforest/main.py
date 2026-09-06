@@ -985,17 +985,20 @@ class deepforest(pl.LightningModule):
         metrics = {}
 
         if self.model.task == "box":
-            # IoU and mAP
-            if len(self.iou_metric.groundtruth_labels) > 0:
+            # IoU and mAP - call compute unconditionally so all DDP ranks participate in collective sync
+            try:
                 metrics.update(self.iou_metric.compute())
-                # Lightning bug: claims this is a warning but it's not. See issue #16218 in Lightning-AI/pytorch-lightning
-                output = self.mAP_metric.compute()
+            except ValueError as e:
+                if "No samples to concatenate" in str(e):
+                    pass
+                else:
+                    raise
 
-                # Remove classes from output dict
-                output = {
-                    key: value for key, value in output.items() if not key == "classes"
-                }
-                metrics.update(output)
+            output = self.mAP_metric.compute()
+
+            # Remove classes from output dict
+            output = {key: value for key, value in output.items() if not key == "classes"}
+            metrics.update(output)
             metrics.update(self.precision_recall_metric.compute())
 
         elif self.model.task == "point":

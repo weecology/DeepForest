@@ -1493,3 +1493,52 @@ def test_detections_per_img_and_topk_candidates_config():
     m.create_model()
     assert m.model.detections_per_img == 500
     assert m.model.topk_candidates == 2000
+
+
+def test_compute_epoch_metrics_empty_rank_calls_compute(m, monkeypatch):
+    """Test that a rank with no local groundtruth labels still calls compute()
+    and correctly incorporates synced distributed metrics (fixing #1407)."""
+    m.config.validation.csv_file = get_data("example.csv")
+    m.setup_metrics()
+
+    # Ensure local state has 0 groundtruth labels (simulating an empty rank shard)
+    assert len(m.iou_metric.groundtruth_labels) == 0
+
+    # Simulate torchmetrics returning gathered/synced metrics across DDP ranks
+    mock_iou_results = {"iou": torch.tensor(0.82), "iou/cl_0": torch.tensor(0.82)}
+    monkeypatch.setattr(m.iou_metric, "compute", lambda: mock_iou_results)
+
+    mock_map_results = {"map": torch.tensor(0.75), "classes": torch.tensor([0])}
+    monkeypatch.setattr(m.mAP_metric, "compute", lambda: mock_map_results)
+
+    metrics = m._compute_epoch_metrics()
+    assert "iou" in metrics
+    assert torch.isclose(metrics["iou"], torch.tensor(0.82))
+    assert "map" in metrics
+    assert torch.isclose(metrics["map"], torch.tensor(0.75))
+    assert "classes" not in metrics
+
+
+def test_compute_epoch_metrics_empty_state(m):
+    """Test that _compute_epoch_metrics succeeds even when no validation samples
+    were updated anywhere across the cluster."""
+    m.config.validation.csv_file = get_data("example.csv")
+    m.setup_metrics()
+    metrics = m._compute_epoch_metrics()
+    assert isinstance(metrics, dict)
+    assert "box_precision" in metrics
+    assert "box_recall" in metrics
+
+
+def test_compute_epoch_metrics_unexpected_value_error_raised(m, monkeypatch):
+    """Test that unexpected ValueErrors from iou_metric.compute() are not swallowed."""
+    m.config.validation.csv_file = get_data("example.csv")
+    m.setup_metrics()
+
+    def mock_raise():
+        raise ValueError("Unexpected internal calculation error")
+
+    monkeypatch.setattr(m.iou_metric, "compute", mock_raise)
+
+    with pytest.raises(ValueError, match="Unexpected internal calculation error"):
+        m._compute_epoch_metrics()
