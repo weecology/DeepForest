@@ -34,6 +34,13 @@ The model was initially described in [Ecological Applications](https://esajourna
  Using over 250,000 annotations from 13 projects from around the world, we develop a general bird detection model that achieves over 65% recall and 50% precision on novel aerial data without any local training despite differences in species, habitat, and imaging methodology. Fine-tuning this model with only 1000 local annotations increases these values to an average of 84% recall and 69% precision by building on the general features learned from other data sources.
  >
 
+The bird detection model has been updated and retrained from the original `weecology/deepforest-bird` model. The updated model was fine-tuned starting from the tree detection model (`weecology/deepforest-tree`) and trained on data from both Weinstein et al. 2022 as well as new additional bird detection data from multiple sources including https://lila.science/. The result is a dataset with over a million bird detections from around the world. Training details and metrics can be viewed on the [Comet dashboard](https://www.comet.com/bw4sz/bird-detector/6181df1ab7ac40f291b863a2a9b86024?&prevPath=%2Fbw4sz%2Fbird-detector%2Fview%2Fnew%2Fexperiments).
+
+### Example Predictions
+
+The following examples show predictions from the updated bird detection model:
+
+![Bird Prediction Example 1](../figures/bird_prediction_example_1.png)
 
  ### Citation
 > Weinstein, B.G., Garner, L., Saccomanno, V.R., Steinkraus, A., Ortega, A., Brush, K., Yenni, G., McKellar, A.E., Converse, R., Lippitt, C.D., Wegmann, A., Holmes, N.D., Edney, A.J., Hart, T., Jessopp, M.J., Clarke, R.H., Marchowski, D., Senyondo, H., Dotson, R., White, E.P., Frederick, P. and Ernest, S.K.M. (2022), A general deep learning model for bird detection in high resolution airborne imagery. Ecological Applications. Accepted Author Manuscript e2694. https://doi-org.lp.hscl.ufl.edu/10.1002/eap.2694
@@ -121,29 +128,6 @@ Table S1 Confusion matrix for the Alive/Dead model in Weinstein et al. 2023
 
 
 Citation: Weinstein, Ben G., et al. "Capturing long‐tailed individual tree diversity using an airborne imaging and a multi‐temporal hierarchical model." Remote Sensing in Ecology and Conservation 9.5 (2023): 656-670.
-
-### NEON Tree Species and Genus Classification
-
-Two ResNet-18 crop classifiers trained on RGB crown images from the National Ecological Observatory Network (NEON). The training data includes deduplicated hand-annotated tree crowns from 29 NEON sites across the US.
-
-- **Species model**: 148 species classes, trained on ~16k deduplicated crown crops. HuggingFace repo: `weecology/cropmodel-tree-species`
-- **Genus model**: 54 genus classes, same training data aggregated to genus level. HuggingFace repo: `weecology/cropmodel-tree-genus`
-
-Both models use a torchvision ResNet-18 backbone pretrained on ImageNet and fine-tuned on NEON RGB data. Input images are resized to 224x224 using nearest-neighbor interpolation (`resize_interpolation: nearest` in the model config) and normalized with standard ImageNet statistics. The interpolation mode is loaded automatically from the HuggingFace config — no user action required.
-
-```python
-from deepforest.model import CropModel
-
-# Load the species classifier
-species_model = CropModel.load_model("weecology/cropmodel-tree-species")
-
-# Load the genus classifier
-genus_model = CropModel.load_model("weecology/cropmodel-tree-genus")
-```
-
-Use these as a second stage after tree crown detection: detect crowns with a DeepForest model, then classify each crop.
-
-For more details on the training data and code, see [NeonTreeClassification](https://github.com/GatorSense/NeonTreeClassification).
 
 ## Want more pretrained models?
 
