@@ -1569,3 +1569,37 @@ def test_predict_batch_preserves_length_with_empty_predictions():
         "geometry",
     ]
     assert len(results[1]) == 1
+
+
+def test_predict_batch_custom_model_without_task():
+    """Test that predict_batch handles custom models lacking a task attribute."""
+    m = main.deepforest()
+
+    class CustomDetector(torch.nn.Module):
+
+        def forward(self, images):
+            return [
+                {
+                    "boxes": torch.tensor([[10.0, 10.0, 20.0, 20.0]]),
+                    "labels": torch.tensor([0]),
+                    "scores": torch.tensor([0.95]),
+                }
+            ]
+
+    m.model = CustomDetector()
+    m.config.skip_empty = False
+
+    images = torch.rand((1, 3, 50, 50))
+    results = m.predict_batch(images)
+
+    assert len(results) == 1
+    assert not results[0].empty
+    assert list(results[0].columns) == [
+        "xmin",
+        "ymin",
+        "xmax",
+        "ymax",
+        "label",
+        "score",
+        "geometry",
+    ]

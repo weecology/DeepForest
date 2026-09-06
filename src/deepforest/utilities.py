@@ -347,7 +347,9 @@ def determine_geometry_type(df):
                     return "polygon"
                 if geometry_type == "Point":
                     return "point"
-                raise ValueError(f"Unsupported geometry type in DataFrame: {geometry_type}")
+                raise ValueError(
+                    f"Unsupported geometry type in DataFrame: {geometry_type}"
+                )
             # Empty geometry series or all NaN: infer from other columns if available
             if (
                 "xmin" in columns
