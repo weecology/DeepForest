@@ -1059,3 +1059,116 @@ def test_drop_empty_images_tolerates_tiny_variation():
     filtered_images, _ = utilities.drop_empty_images([near_uniform])
 
     assert len(filtered_images) == 0
+
+
+def test_format_prediction_box():
+    prediction = {
+        "boxes": torch.tensor([[10, 20, 30, 40]]),
+        "labels": torch.tensor([0]),
+        "scores": torch.tensor([0.95]),
+    }
+    result = utilities.format_prediction(prediction)
+    assert isinstance(result, pd.DataFrame)
+    assert len(result) == 1
+    assert list(result.columns) == [
+        "xmin",
+        "ymin",
+        "xmax",
+        "ymax",
+        "label",
+        "score",
+        "geometry",
+    ]
+
+
+def test_format_prediction_box_empty():
+    prediction = {
+        "boxes": torch.zeros((0, 4)),
+        "labels": torch.zeros(0, dtype=torch.int64),
+        "scores": torch.zeros(0),
+    }
+    result = utilities.format_prediction(prediction, scores=True)
+    assert isinstance(result, pd.DataFrame)
+    assert result.empty
+    assert list(result.columns) == [
+        "xmin",
+        "ymin",
+        "xmax",
+        "ymax",
+        "label",
+        "score",
+        "geometry",
+    ]
+
+    # Without score column
+    result_no_score = utilities.format_prediction(prediction, scores=False)
+    assert list(result_no_score.columns) == [
+        "xmin",
+        "ymin",
+        "xmax",
+        "ymax",
+        "label",
+        "geometry",
+    ]
+
+
+def test_format_prediction_point():
+    prediction = {
+        "points": torch.tensor([[15, 25]]),
+        "labels": torch.tensor([0]),
+        "scores": torch.tensor([0.88]),
+    }
+    result = utilities.format_prediction(prediction, geom_type="point")
+    assert isinstance(result, pd.DataFrame)
+    assert len(result) == 1
+    assert list(result.columns) == ["x", "y", "label", "score", "geometry"]
+
+
+def test_format_prediction_point_empty():
+    prediction = {
+        "points": torch.zeros((0, 2)),
+        "labels": torch.zeros(0, dtype=torch.int64),
+        "scores": torch.zeros(0),
+    }
+    result = utilities.format_prediction(prediction, geom_type="point")
+    assert isinstance(result, pd.DataFrame)
+    assert result.empty
+    assert list(result.columns) == ["x", "y", "label", "score", "geometry"]
+
+
+def test_format_prediction_polygon():
+    masks = torch.zeros((1, 1, 50, 50), dtype=torch.float32)
+    masks[0, 0, 10:30, 10:30] = 1.0
+    prediction = {
+        "masks": masks,
+        "labels": torch.tensor([0]),
+        "scores": torch.tensor([0.9]),
+    }
+    result = utilities.format_prediction(prediction, geom_type="polygon")
+    assert isinstance(result, pd.DataFrame)
+    assert len(result) == 1
+    assert list(result.columns) == ["label", "score", "geometry"]
+
+
+def test_format_prediction_polygon_empty():
+    prediction = {
+        "masks": torch.zeros((0, 1, 50, 50), dtype=torch.float32),
+        "labels": torch.zeros(0, dtype=torch.int64),
+        "scores": torch.zeros(0),
+    }
+    result = utilities.format_prediction(prediction, geom_type="polygon")
+    assert isinstance(result, pd.DataFrame)
+    assert result.empty
+    assert list(result.columns) == ["label", "score", "geometry"]
+
+
+def test_determine_geometry_type_empty_geodataframe():
+    empty_gdf = gpd.GeoDataFrame(columns=["geometry"])
+    geom_type = utilities.determine_geometry_type(empty_gdf)
+    assert geom_type == "box"
+
+    empty_point_gdf = gpd.GeoDataFrame(columns=["geometry", "x", "y"])
+    assert utilities.determine_geometry_type(empty_point_gdf) == "point"
+
+    empty_poly_gdf = gpd.GeoDataFrame(columns=["geometry", "polygon"])
+    assert utilities.determine_geometry_type(empty_poly_gdf) == "polygon"

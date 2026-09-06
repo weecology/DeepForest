@@ -1493,3 +1493,79 @@ def test_detections_per_img_and_topk_candidates_config():
     m.create_model()
     assert m.model.detections_per_img == 500
     assert m.model.topk_candidates == 2000
+
+
+def test_predict_batch_point_model():
+    """Test that predict_batch executes without KeyError: 'boxes' on point models."""
+    m = main.deepforest()
+
+    class MockPointDetector(torch.nn.Module):
+
+        def __init__(self):
+            super().__init__()
+            self.task = "point"
+
+        def forward(self, images):
+            return [
+                {
+                    "points": torch.tensor([[10.0, 20.0]]),
+                    "labels": torch.tensor([0]),
+                    "scores": torch.tensor([0.9]),
+                }
+            ]
+
+    m.model = MockPointDetector()
+    m.config.skip_empty = False
+
+    # Input batch of 1 image
+    images = torch.rand((1, 3, 50, 50))
+    results = m.predict_batch(images)
+
+    assert len(results) == 1
+    assert isinstance(results[0], pd.DataFrame)
+    assert len(results[0]) == 1
+    assert list(results[0].columns) == ["x", "y", "label", "score", "geometry"]
+
+
+def test_predict_batch_preserves_length_with_empty_predictions():
+    """Test that predict_batch preserves 1 DataFrame per input image even when predictions are empty."""
+    m = main.deepforest()
+
+    class MockBoxDetector(torch.nn.Module):
+
+        def __init__(self):
+            super().__init__()
+            self.task = "box"
+
+        def forward(self, images):
+            return [
+                {
+                    "boxes": torch.zeros((0, 4)),
+                    "labels": torch.zeros(0, dtype=torch.int64),
+                    "scores": torch.zeros(0),
+                },
+                {
+                    "boxes": torch.tensor([[10.0, 10.0, 20.0, 20.0]]),
+                    "labels": torch.tensor([0]),
+                    "scores": torch.tensor([0.95]),
+                },
+            ]
+
+    m.model = MockBoxDetector()
+    m.config.skip_empty = False
+
+    images = torch.rand((2, 3, 50, 50))
+    results = m.predict_batch(images)
+
+    assert len(results) == 2
+    assert results[0].empty
+    assert list(results[0].columns) == [
+        "xmin",
+        "ymin",
+        "xmax",
+        "ymax",
+        "label",
+        "score",
+        "geometry",
+    ]
+    assert len(results[1]) == 1

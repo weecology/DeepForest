@@ -334,19 +334,34 @@ def determine_geometry_type(df):
         columns = df.columns
         if "geometry" in columns:
             df = gpd.GeoDataFrame(geometry=df["geometry"])
-            # Indexing [0] means an empty DataFrame raises an IndexError here.
-            geometry_type = df.geometry.type.unique()[0]
-            if geometry_type in ("Polygon", "MultiPolygon"):
-                # Polygons that exactly fill their envelope are really boxes.
-                if (
-                    geometry_type == "Polygon"
-                    and (df.geometry.area == df.envelope.area).all()
-                ):
-                    return "box"
+            unique_types = df.geometry.dropna().type.unique()
+            if len(unique_types) > 0:
+                geometry_type = unique_types[0]
+                if geometry_type in ("Polygon", "MultiPolygon"):
+                    # Polygons that exactly fill their envelope are really boxes.
+                    if (
+                        geometry_type == "Polygon"
+                        and (df.geometry.area == df.envelope.area).all()
+                    ):
+                        return "box"
+                    return "polygon"
+                if geometry_type == "Point":
+                    return "point"
+                raise ValueError(f"Unsupported geometry type in DataFrame: {geometry_type}")
+            # Empty geometry series or all NaN: infer from other columns if available
+            if (
+                "xmin" in columns
+                and "ymin" in columns
+                and "xmax" in columns
+                and "ymax" in columns
+            ):
+                return "box"
+            elif "polygon" in columns:
                 return "polygon"
-            if geometry_type == "Point":
+            elif "x" in columns and "y" in columns:
                 return "point"
-            raise ValueError(f"Unsupported geometry type in DataFrame: {geometry_type}")
+            # Default for empty GeoDataFrame with only geometry column
+            return "box"
         elif (
             "xmin" in columns
             and "ymin" in columns
@@ -378,6 +393,55 @@ def determine_geometry_type(df):
         raise ValueError(f"Could not determine geometry type from type {type(df)}")
 
     return geometry_type
+
+
+def format_prediction(
+    prediction: dict, scores: bool = True, geom_type: str | None = None
+) -> pd.DataFrame:
+    """Format a single model prediction dictionary into a pandas DataFrame.
+
+    If the prediction has no detections, returns an empty DataFrame with
+    the appropriate columns for the geometry type. For non-empty predictions,
+    delegates to format_geometry.
+
+    Args:
+        prediction (dict): Dictionary with keys for boxes, points, or masks/polygons,
+            along with labels and optional scores.
+        scores (bool): Whether to include the 'score' column. Defaults to True.
+        geom_type (str, optional): One of 'box', 'point', or 'polygon'. If None,
+            inferred automatically from prediction keys.
+
+    Returns:
+        pd.DataFrame: Formatted DataFrame with detections, or an empty DataFrame
+            with the proper schema if no detections exist.
+    """
+    if geom_type is None:
+        geom_type = determine_geometry_type(prediction)
+
+    formatted = format_geometry(prediction, scores=scores, geom_type=geom_type)
+    if formatted is not None:
+        return formatted
+
+    # Return empty DataFrame with correct column schema for geometry type
+    if geom_type == "box":
+        cols = ["xmin", "ymin", "xmax", "ymax", "label"]
+        if scores:
+            cols.append("score")
+        cols.append("geometry")
+    elif geom_type == "point":
+        cols = ["x", "y", "label"]
+        if scores:
+            cols.append("score")
+        cols.append("geometry")
+    elif geom_type == "polygon":
+        cols = ["label"]
+        if scores:
+            cols.append("score")
+        cols.append("geometry")
+    else:
+        raise ValueError(f"Unsupported geometry type: {geom_type}")
+
+    return pd.DataFrame(columns=cols)
 
 
 def format_geometry(predictions, scores=True, geom_type=None):

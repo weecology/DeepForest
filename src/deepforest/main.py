@@ -1114,13 +1114,10 @@ class deepforest(pl.LightningModule):
             predictions = self.predict_step(images, 0)
 
         # convert predictions to dataframes
-        results = []
-        for pred in predictions:
-            if len(pred["boxes"]) == 0:
-                continue
-            geom_type = utilities.determine_geometry_type(pred)
-            result = utilities.format_geometry(pred, geom_type=geom_type)
-            results.append(result)
+        results = [
+            utilities.format_prediction(pred, scores=True, geom_type=self.model.task)
+            for pred in predictions
+        ]
 
         return results
 
