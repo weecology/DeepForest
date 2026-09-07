@@ -3,7 +3,7 @@ import os
 import numpy as np
 from PIL import Image
 
-from deepforest import get_data, main
+from deepforest import get_data, main, utilities
 from deepforest.datasets import prediction
 
 
@@ -260,3 +260,138 @@ def test_legacy_batch_size_in_config_dict():
     assert m.train_dataloader().batch_size == 5
     assert m.val_dataloader().batch_size == 5
     assert m.predict_dataloader(ds).batch_size == 5
+
+
+def test_legacy_yaml_by_path(tmp_path):
+    """Verify loading a legacy YAML config with batch_size propagates to both train and predict."""
+    config_path = tmp_path / "legacy_config.yaml"
+    config_path.write_text("batch_size: 5\n")
+
+    csv_file = get_data("example.csv")
+    root_dir = os.path.dirname(csv_file)
+    path = get_data("OSBS_029.png")
+    tile = np.array(Image.open(path))
+    ds = prediction.SingleImage(image=tile, path=path, patch_overlap=0.1, patch_size=100)
+
+    m = main.deepforest(config=str(config_path))
+    m.config.train.csv_file = csv_file
+    m.config.train.root_dir = root_dir
+    m.config.validation.csv_file = csv_file
+    m.config.validation.root_dir = root_dir
+
+    assert m.config.train_batch_size == 5
+    assert m.config.predict_batch_size == 5
+    assert m.config.batch_size == 5
+    assert m.train_dataloader().batch_size == 5
+    assert m.val_dataloader().batch_size == 5
+    assert m.predict_dataloader(ds).batch_size == 5
+
+
+def test_legacy_yaml_with_explicit_train_override(tmp_path):
+    """Verify legacy YAML batch_size + explicit train_batch_size override."""
+    config_path = tmp_path / "legacy_config.yaml"
+    config_path.write_text("batch_size: 5\n")
+
+    csv_file = get_data("example.csv")
+    root_dir = os.path.dirname(csv_file)
+    path = get_data("OSBS_029.png")
+    tile = np.array(Image.open(path))
+    ds = prediction.SingleImage(image=tile, path=path, patch_overlap=0.1, patch_size=100)
+
+    m = main.deepforest(config=str(config_path), config_args={"train_batch_size": 10})
+    m.config.train.csv_file = csv_file
+    m.config.train.root_dir = root_dir
+    m.config.validation.csv_file = csv_file
+    m.config.validation.root_dir = root_dir
+
+    assert m.config.train_batch_size == 10
+    assert m.config.predict_batch_size == 5
+    assert m.train_dataloader().batch_size == 10
+    assert m.val_dataloader().batch_size == 5
+    assert m.predict_dataloader(ds).batch_size == 5
+
+
+def test_legacy_yaml_with_explicit_predict_override(tmp_path):
+    """Verify legacy YAML batch_size + explicit predict_batch_size override."""
+    config_path = tmp_path / "legacy_config.yaml"
+    config_path.write_text("batch_size: 5\n")
+
+    csv_file = get_data("example.csv")
+    root_dir = os.path.dirname(csv_file)
+    path = get_data("OSBS_029.png")
+    tile = np.array(Image.open(path))
+    ds = prediction.SingleImage(image=tile, path=path, patch_overlap=0.1, patch_size=100)
+
+    m = main.deepforest(config=str(config_path), config_args={"predict_batch_size": 12})
+    m.config.train.csv_file = csv_file
+    m.config.train.root_dir = root_dir
+    m.config.validation.csv_file = csv_file
+    m.config.validation.root_dir = root_dir
+
+    assert m.config.train_batch_size == 5
+    assert m.config.predict_batch_size == 12
+    assert m.train_dataloader().batch_size == 5
+    assert m.val_dataloader().batch_size == 12
+    assert m.predict_dataloader(ds).batch_size == 12
+
+
+def test_legacy_yaml_with_both_explicit_overrides(tmp_path):
+    """Verify legacy YAML batch_size + explicit train and predict overrides."""
+    config_path = tmp_path / "legacy_config.yaml"
+    config_path.write_text("batch_size: 5\n")
+
+    csv_file = get_data("example.csv")
+    root_dir = os.path.dirname(csv_file)
+    path = get_data("OSBS_029.png")
+    tile = np.array(Image.open(path))
+    ds = prediction.SingleImage(image=tile, path=path, patch_overlap=0.1, patch_size=100)
+
+    m = main.deepforest(
+        config=str(config_path),
+        config_args={"train_batch_size": 4, "predict_batch_size": 16},
+    )
+    m.config.train.csv_file = csv_file
+    m.config.train.root_dir = root_dir
+    m.config.validation.csv_file = csv_file
+    m.config.validation.root_dir = root_dir
+
+    assert m.config.train_batch_size == 4
+    assert m.config.predict_batch_size == 16
+    assert m.train_dataloader().batch_size == 4
+    assert m.val_dataloader().batch_size == 16
+    assert m.predict_dataloader(ds).batch_size == 16
+
+
+def test_legacy_yaml_batch_size_one(tmp_path):
+    """Verify legacy YAML batch_size=1 translates to both settings."""
+    config_path = tmp_path / "legacy_config.yaml"
+    config_path.write_text("batch_size: 1\n")
+
+    csv_file = get_data("example.csv")
+    root_dir = os.path.dirname(csv_file)
+    path = get_data("OSBS_029.png")
+    tile = np.array(Image.open(path))
+    ds = prediction.SingleImage(image=tile, path=path, patch_overlap=0.1, patch_size=100)
+
+    m = main.deepforest(config=str(config_path))
+    m.config.train.csv_file = csv_file
+    m.config.train.root_dir = root_dir
+    m.config.validation.csv_file = csv_file
+    m.config.validation.root_dir = root_dir
+
+    assert m.config.train_batch_size == 1
+    assert m.config.predict_batch_size == 1
+    assert m.train_dataloader().batch_size == 1
+    assert m.val_dataloader().batch_size == 1
+    assert m.predict_dataloader(ds).batch_size == 1
+
+
+def test_load_config_direct_legacy_yaml(tmp_path):
+    """Verify utilities.load_config directly translates legacy batch_size in YAML."""
+    config_path = tmp_path / "legacy_config.yaml"
+    config_path.write_text("batch_size: 7\n")
+
+    cfg = utilities.load_config(str(config_path))
+    assert cfg.train_batch_size == 7
+    assert cfg.predict_batch_size == 7
+    assert cfg.batch_size == 7

@@ -88,6 +88,22 @@ def load_config(
     if override_label_dict:
         config.label_dict = override_label_dict
 
+    # Backwards compatibility: propagate legacy batch_size to train_batch_size
+    # and predict_batch_size when mode-specific settings are not explicitly provided.
+    if "batch_size" in yaml_cfg and yaml_cfg["batch_size"] is not None:
+        legacy_val = yaml_cfg["batch_size"]
+        if "train_batch_size" not in yaml_cfg and "train_batch_size" not in overrides:
+            config.train_batch_size = legacy_val
+        if "predict_batch_size" not in yaml_cfg and "predict_batch_size" not in overrides:
+            config.predict_batch_size = legacy_val
+
+    if "batch_size" in overrides and overrides["batch_size"] is not None:
+        legacy_val = overrides["batch_size"]
+        if "train_batch_size" not in overrides:
+            config.train_batch_size = legacy_val
+        if "predict_batch_size" not in overrides:
+            config.predict_batch_size = legacy_val
+
     return config
 
 

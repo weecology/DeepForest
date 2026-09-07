@@ -57,8 +57,12 @@ class deepforest(pl.LightningModule):
             has_predict_override = "predict_batch_size" in config_args
         elif isinstance(config, (dict, DictConfig)) and "batch_size" in config:
             legacy_batch_size = config["batch_size"]
-            has_train_override = "train_batch_size" in config
-            has_predict_override = "predict_batch_size" in config
+            has_train_override = "train_batch_size" in config or bool(
+                config_args and "train_batch_size" in config_args
+            )
+            has_predict_override = "predict_batch_size" in config or bool(
+                config_args and "predict_batch_size" in config_args
+            )
 
         if config is None:
             config = utilities.load_config(overrides=config_args)

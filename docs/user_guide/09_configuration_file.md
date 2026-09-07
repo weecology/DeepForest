@@ -180,7 +180,7 @@ On Slurm clusters, launch with `srun` so Lightning can read the job environment.
 
 ### train_batch_size
 
-Number of images per batch during training. Default is 2. GPU memory limits this usually between 5-10.
+Number of images per batch during training. Default is 2. GPU memory typically limits this to between 5 and 10.
 
 ### predict_batch_size
 

@@ -191,7 +191,6 @@ class Config:
     train_batch_size: int = 2
     predict_batch_size: int = 8
     batch_size: int = 1
-    precision: str | None = None
     matmul_precision: str = "highest"
 
     architecture: str = "retinanet"
