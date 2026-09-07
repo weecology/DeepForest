@@ -449,16 +449,25 @@ def test_predict_image_fromfile(m):
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA not available")
 def test_predict_image_on_cuda(m):
-    """Regression test for #1390: model on CUDA must not raise a device mismatch in predict_image."""
-    m.model.to("cuda")
+    """Regression test for #1390: predict_image executes on GPU without device mismatch."""
+    orig_accelerator = m.config.accelerator
+    orig_devices = m.config.devices
+    m.config.accelerator = "gpu"
+    m.config.devices = 1
+    m.create_trainer()
+    m.to("cuda")
     try:
         prediction = m.predict_image(
             path=get_data(path="2019_YELL_2_528000_4978000_image_crop2.png")
         )
+        assert isinstance(prediction, pd.DataFrame)
+        assert not prediction.empty
+        assert next(m.parameters()).device.type == "cuda"
     finally:
-        m.model.to("cpu")
-    assert isinstance(prediction, pd.DataFrame)
-    assert not prediction.empty
+        m.to("cpu")
+        m.config.accelerator = orig_accelerator
+        m.config.devices = orig_devices
+        m.create_trainer()
 
 
 def test_predict_image_device_alignment(m, monkeypatch):
