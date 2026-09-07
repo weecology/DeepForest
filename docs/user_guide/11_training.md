@@ -500,7 +500,7 @@ This will load all data into GPU memory once, at the beginning of the run. This 
 Similarly, increasing the batch size can speed up training. Like both of the options above, we have seen examples where performance (and accuracy) improves and decreases depending on batch size. Track experiment results carefully when altering batch size, since it directly [effects the speed of learning](https://www.baeldung.com/cs/learning-rate-batch-size).
 
 ```
-m.config.batch_size = 10
+m.config.train_batch_size = 10
 ```
 
 Remember to call m.create_trainer() after updating the config dictionary.
@@ -591,10 +591,10 @@ If you are using `uv` to manage your Python environment, remember to prefix thes
 On a Slurm cluster, wrap the command in `srun` inside your batch script (see [Scaling](07_scaling.md) and [distributed runs](distributed.md)).
 
 ```bash
-deepforest train batch_size=8 train.csv_file=your_labels.csv train.root_dir=some/path
+deepforest train train_batch_size=8 train.csv_file=your_labels.csv train.root_dir=some/path
 ```
 
-Under the hood, this sets up a DeepForest model, creates a trainer and runs `fit`. You can have a look at the script in `src/deepforest/scripts/train.py` to see exactly what's being run. However for most users, configuring the dataset paths (`train.csv_file` and `train.root_dir`) and perhaps modifying `batch_size` should be sufficient to start with. By setting up your own configuration or passing arguments via command line, you can train models without ever writing a python script.
+Under the hood, this sets up a DeepForest model, creates a trainer and runs `fit`. You can have a look at the script in `src/deepforest/scripts/train.py` to see exactly what's being run. However for most users, configuring the dataset paths (`train.csv_file` and `train.root_dir`) and perhaps modifying `train_batch_size` should be sufficient to start with. By setting up your own configuration or passing arguments via command line, you can train models without ever writing a python script.
 
 The tool includes a number of convenience features that we commonly need: logging, checkpointing, debug predictions and the option to monitor via Tensorboard (local) or Comet ML (cloud). You can resume training by passing the flag `--resume` with the path to a checkpoint created during training. Logs are saved to your `config.log_root`, which you can set to wherever is convenient. Experiments will then be saved in separate subfolders, versioned by timestamp if necessary.
 

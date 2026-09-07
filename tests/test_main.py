@@ -481,7 +481,7 @@ def test_predict_small_file(m):
 
 @pytest.mark.parametrize("batch_size", [1, 2])
 def test_predict_dataloader(m, batch_size, path):
-    m.config.batch_size = batch_size
+    m.config.predict_batch_size = batch_size
     tile = np.array(Image.open(path))
     ds = prediction.SingleImage(image=tile, path=path, patch_overlap=0.1, patch_size=100)
     dl = m.predict_dataloader(ds)

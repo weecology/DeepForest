@@ -188,6 +188,8 @@ class Config:
     precision: str = "32-true"
     sync_batchnorm: bool = False
     use_distributed_sampler: bool = True
+    train_batch_size: int = 2
+    predict_batch_size: int = 8
     batch_size: int = 1
     precision: str | None = None
     matmul_precision: str = "highest"

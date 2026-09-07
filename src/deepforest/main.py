@@ -66,6 +66,14 @@ class deepforest(pl.LightningModule):
 
         self.config = config
 
+        # Backwards compatibility: if legacy batch_size was explicitly supplied in config_args,
+        # propagate it to train_batch_size and predict_batch_size unless they were also specified.
+        if config_args and "batch_size" in config_args:
+            if "train_batch_size" not in config_args:
+                self.config.train_batch_size = config_args["batch_size"]
+            if "predict_batch_size" not in config_args:
+                self.config.predict_batch_size = config_args["batch_size"]
+
         # release version id to flag if release is being used
         self.__release_version__ = None
 
@@ -451,6 +459,11 @@ class deepforest(pl.LightningModule):
         if self.existing_train_dataloader:
             return self.existing_train_dataloader
 
+        batch_size = self.config.train_batch_size
+        if hasattr(self.config, "batch_size") and self.config.batch_size is not None:
+            if self.config.batch_size != 1 and self.config.train_batch_size == 2:
+                batch_size = self.config.batch_size
+
         loader = self.load_dataset(
             csv_file=self.config.train.csv_file,
             root_dir=self.config.train.root_dir,
@@ -459,7 +472,7 @@ class deepforest(pl.LightningModule):
             validate_coordinates=self.config.train.validate_coordinates,
             shuffle=True,
             transforms=self.transforms,
-            batch_size=self.config.batch_size,
+            batch_size=batch_size,
         )
 
         return loader
@@ -477,6 +490,11 @@ class deepforest(pl.LightningModule):
         if self.existing_val_dataloader:
             return self.existing_val_dataloader
 
+        batch_size = self.config.predict_batch_size
+        if hasattr(self.config, "batch_size") and self.config.batch_size is not None:
+            if self.config.batch_size != 1 and self.config.predict_batch_size == 8:
+                batch_size = self.config.batch_size
+
         if self.config.validation.csv_file is not None:
             loader = self.load_dataset(
                 csv_file=self.config.validation.csv_file,
@@ -485,7 +503,7 @@ class deepforest(pl.LightningModule):
                 shuffle=False,
                 preload_images=self.config.validation.preload_images,
                 validate_coordinates=self.config.validation.validate_coordinates,
-                batch_size=self.config.batch_size,
+                batch_size=batch_size,
             )
 
         return loader
@@ -500,7 +518,10 @@ class deepforest(pl.LightningModule):
             torch.utils.data.DataLoader: A dataloader object that can be used for prediction.
         """
         if batch_size is None:
-            batch_size = self.config.batch_size
+            batch_size = self.config.predict_batch_size
+            if hasattr(self.config, "batch_size") and self.config.batch_size is not None:
+                if self.config.batch_size != 1 and self.config.predict_batch_size == 8:
+                    batch_size = self.config.batch_size
         else:
             batch_size = batch_size
         sampler = None
@@ -572,7 +593,7 @@ class deepforest(pl.LightningModule):
             patch_size=max(image.shape[0], image.shape[1]),
             return_metadata=True,
         )
-        dataloader = self.predict_dataloader(ds, batch_size=self.config.batch_size)
+        dataloader = self.predict_dataloader(ds)
 
         results = predict._dataloader_wrapper_(
             model=self,
@@ -629,7 +650,7 @@ class deepforest(pl.LightningModule):
         ds = prediction.FromCSVFile(
             csv_file=csv_file, root_dir=root_dir, return_metadata=True
         )
-        dataloader = self.predict_dataloader(ds, batch_size=self.config.batch_size)
+        dataloader = self.predict_dataloader(ds)
         results = predict._dataloader_wrapper_(
             model=self,
             trainer=self.trainer,
@@ -1275,9 +1296,9 @@ class deepforest(pl.LightningModule):
             self.predictions = pd.concat(self.predictions, ignore_index=True)
             if "label" in self.predictions.columns:
                 self.predictions["label"] = self.predictions["label"].map(
-                    lambda x: self.numeric_to_label_dict.get(int(x), x)
-                    if pd.notna(x)
-                    else x
+                    lambda x: (
+                        self.numeric_to_label_dict.get(int(x), x) if pd.notna(x) else x
+                    )
                 )
         else:
             self.predictions = pd.DataFrame()

@@ -14,6 +14,8 @@ Please note that if you would like for deepforest to save the config file on rel
 workers: 0
 devices: auto
 accelerator: auto
+train_batch_size: 2
+predict_batch_size: 8
 batch_size: 1
 
 # Model Architecture
@@ -176,9 +178,17 @@ m.create_trainer(logger=comet_logger)
 
 On Slurm clusters, launch with `srun` so Lightning can read the job environment. Details are in [distributed runs](distributed.md).
 
+### train_batch_size
+
+Number of images per batch during training. Default is 2. GPU memory limits this usually between 5-10.
+
+### predict_batch_size
+
+Number of images per batch during prediction and validation. Default is 8.
+
 ### batch_size
 
-Number of images per batch during training. GPU memory limits this usually between 5-10
+Legacy batch size setting (default is 1). Maintained for backwards compatibility. If set or passed in `config_args`, it serves as a fallback for both `train_batch_size` and `predict_batch_size`.
 
 ### nms_thresh
 
