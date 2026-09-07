@@ -155,21 +155,108 @@ def test_legacy_batch_size_config_args():
     assert m.predict_dataloader(ds).batch_size == 5
 
 
-def test_legacy_batch_size_direct_assignment():
-    """Verify directly mutating m.config.batch_size falls back in dataloaders."""
+def test_legacy_batch_size_train_override():
+    """Verify legacy batch_size + explicit train_batch_size uses train override."""
     csv_file = get_data("example.csv")
     root_dir = os.path.dirname(csv_file)
     path = get_data("OSBS_029.png")
     tile = np.array(Image.open(path))
     ds = prediction.SingleImage(image=tile, path=path, patch_overlap=0.1, patch_size=100)
 
-    m = main.deepforest()
+    m = main.deepforest(config_args={"batch_size": 4, "train_batch_size": 6})
     m.config.train.csv_file = csv_file
     m.config.train.root_dir = root_dir
     m.config.validation.csv_file = csv_file
     m.config.validation.root_dir = root_dir
 
-    m.config.batch_size = 6
+    assert m.config.train_batch_size == 6
+    assert m.config.predict_batch_size == 4
     assert m.train_dataloader().batch_size == 6
-    assert m.val_dataloader().batch_size == 6
-    assert m.predict_dataloader(ds).batch_size == 6
+    assert m.val_dataloader().batch_size == 4
+    assert m.predict_dataloader(ds).batch_size == 4
+
+
+def test_legacy_batch_size_predict_override():
+    """Verify legacy batch_size + explicit predict_batch_size uses predict override."""
+    csv_file = get_data("example.csv")
+    root_dir = os.path.dirname(csv_file)
+    path = get_data("OSBS_029.png")
+    tile = np.array(Image.open(path))
+    ds = prediction.SingleImage(image=tile, path=path, patch_overlap=0.1, patch_size=100)
+
+    m = main.deepforest(config_args={"batch_size": 4, "predict_batch_size": 16})
+    m.config.train.csv_file = csv_file
+    m.config.train.root_dir = root_dir
+    m.config.validation.csv_file = csv_file
+    m.config.validation.root_dir = root_dir
+
+    assert m.config.train_batch_size == 4
+    assert m.config.predict_batch_size == 16
+    assert m.train_dataloader().batch_size == 4
+    assert m.val_dataloader().batch_size == 16
+    assert m.predict_dataloader(ds).batch_size == 16
+
+
+def test_legacy_batch_size_all_three_supplied():
+    """Verify when all three are supplied, explicit settings take precedence."""
+    csv_file = get_data("example.csv")
+    root_dir = os.path.dirname(csv_file)
+    path = get_data("OSBS_029.png")
+    tile = np.array(Image.open(path))
+    ds = prediction.SingleImage(image=tile, path=path, patch_overlap=0.1, patch_size=100)
+
+    m = main.deepforest(
+        config_args={"batch_size": 4, "train_batch_size": 6, "predict_batch_size": 16}
+    )
+    m.config.train.csv_file = csv_file
+    m.config.train.root_dir = root_dir
+    m.config.validation.csv_file = csv_file
+    m.config.validation.root_dir = root_dir
+
+    assert m.config.train_batch_size == 6
+    assert m.config.predict_batch_size == 16
+    assert m.train_dataloader().batch_size == 6
+    assert m.val_dataloader().batch_size == 16
+    assert m.predict_dataloader(ds).batch_size == 16
+
+
+def test_legacy_batch_size_one_compatibility():
+    """Verify passing legacy batch_size=1 in config_args works deterministically."""
+    csv_file = get_data("example.csv")
+    root_dir = os.path.dirname(csv_file)
+    path = get_data("OSBS_029.png")
+    tile = np.array(Image.open(path))
+    ds = prediction.SingleImage(image=tile, path=path, patch_overlap=0.1, patch_size=100)
+
+    m = main.deepforest(config_args={"batch_size": 1})
+    m.config.train.csv_file = csv_file
+    m.config.train.root_dir = root_dir
+    m.config.validation.csv_file = csv_file
+    m.config.validation.root_dir = root_dir
+
+    assert m.config.train_batch_size == 1
+    assert m.config.predict_batch_size == 1
+    assert m.train_dataloader().batch_size == 1
+    assert m.val_dataloader().batch_size == 1
+    assert m.predict_dataloader(ds).batch_size == 1
+
+
+def test_legacy_batch_size_in_config_dict():
+    """Verify passing legacy batch_size in a custom config dictionary translates properly."""
+    csv_file = get_data("example.csv")
+    root_dir = os.path.dirname(csv_file)
+    path = get_data("OSBS_029.png")
+    tile = np.array(Image.open(path))
+    ds = prediction.SingleImage(image=tile, path=path, patch_overlap=0.1, patch_size=100)
+
+    m = main.deepforest(config={"batch_size": 5})
+    m.config.train.csv_file = csv_file
+    m.config.train.root_dir = root_dir
+    m.config.validation.csv_file = csv_file
+    m.config.validation.root_dir = root_dir
+
+    assert m.config.train_batch_size == 5
+    assert m.config.predict_batch_size == 5
+    assert m.train_dataloader().batch_size == 5
+    assert m.val_dataloader().batch_size == 5
+    assert m.predict_dataloader(ds).batch_size == 5

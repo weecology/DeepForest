@@ -362,7 +362,7 @@ def test_validate_predictions_match_predict_file_mixed_sizes(m, tmp_path):
     m.config.validation.csv_file = csv_path
     m.config.validation.root_dir = str(tmp_path)
     # Don't set validation.size to avoid resizing - use batch_size=1 to handle mixed sizes
-    m.config.batch_size = 1
+    m.config.predict_batch_size = 1
 
     # Run validation to populate m.predictions
     m.create_trainer()

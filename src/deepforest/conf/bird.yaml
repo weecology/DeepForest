@@ -9,7 +9,6 @@ defaults:
 workers: 8
 train_batch_size: 32
 predict_batch_size: 32
-batch_size: 32
 
 # Model Architecture
 architecture: 'retinanet'

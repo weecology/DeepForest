@@ -46,6 +46,20 @@ class deepforest(pl.LightningModule):
     ):
         super().__init__()
 
+        # Check if legacy batch_size was explicitly supplied in config_args or config
+        legacy_batch_size = None
+        has_train_override = False
+        has_predict_override = False
+
+        if config_args and "batch_size" in config_args:
+            legacy_batch_size = config_args["batch_size"]
+            has_train_override = "train_batch_size" in config_args
+            has_predict_override = "predict_batch_size" in config_args
+        elif isinstance(config, (dict, DictConfig)) and "batch_size" in config:
+            legacy_batch_size = config["batch_size"]
+            has_train_override = "train_batch_size" in config
+            has_predict_override = "predict_batch_size" in config
+
         if config is None:
             config = utilities.load_config(overrides=config_args)
         # Default/string config name
@@ -66,13 +80,13 @@ class deepforest(pl.LightningModule):
 
         self.config = config
 
-        # Backwards compatibility: if legacy batch_size was explicitly supplied in config_args,
+        # Backwards compatibility: if legacy batch_size was explicitly supplied in config_args or config,
         # propagate it to train_batch_size and predict_batch_size unless they were also specified.
-        if config_args and "batch_size" in config_args:
-            if "train_batch_size" not in config_args:
-                self.config.train_batch_size = config_args["batch_size"]
-            if "predict_batch_size" not in config_args:
-                self.config.predict_batch_size = config_args["batch_size"]
+        if legacy_batch_size is not None:
+            if not has_train_override:
+                self.config.train_batch_size = legacy_batch_size
+            if not has_predict_override:
+                self.config.predict_batch_size = legacy_batch_size
 
         # release version id to flag if release is being used
         self.__release_version__ = None
@@ -459,11 +473,6 @@ class deepforest(pl.LightningModule):
         if self.existing_train_dataloader:
             return self.existing_train_dataloader
 
-        batch_size = self.config.train_batch_size
-        if hasattr(self.config, "batch_size") and self.config.batch_size is not None:
-            if self.config.batch_size != 1 and self.config.train_batch_size == 2:
-                batch_size = self.config.batch_size
-
         loader = self.load_dataset(
             csv_file=self.config.train.csv_file,
             root_dir=self.config.train.root_dir,
@@ -472,7 +481,7 @@ class deepforest(pl.LightningModule):
             validate_coordinates=self.config.train.validate_coordinates,
             shuffle=True,
             transforms=self.transforms,
-            batch_size=batch_size,
+            batch_size=self.config.train_batch_size,
         )
 
         return loader
@@ -490,11 +499,6 @@ class deepforest(pl.LightningModule):
         if self.existing_val_dataloader:
             return self.existing_val_dataloader
 
-        batch_size = self.config.predict_batch_size
-        if hasattr(self.config, "batch_size") and self.config.batch_size is not None:
-            if self.config.batch_size != 1 and self.config.predict_batch_size == 8:
-                batch_size = self.config.batch_size
-
         if self.config.validation.csv_file is not None:
             loader = self.load_dataset(
                 csv_file=self.config.validation.csv_file,
@@ -503,7 +507,7 @@ class deepforest(pl.LightningModule):
                 shuffle=False,
                 preload_images=self.config.validation.preload_images,
                 validate_coordinates=self.config.validation.validate_coordinates,
-                batch_size=batch_size,
+                batch_size=self.config.predict_batch_size,
             )
 
         return loader
@@ -519,9 +523,6 @@ class deepforest(pl.LightningModule):
         """
         if batch_size is None:
             batch_size = self.config.predict_batch_size
-            if hasattr(self.config, "batch_size") and self.config.batch_size is not None:
-                if self.config.batch_size != 1 and self.config.predict_batch_size == 8:
-                    batch_size = self.config.batch_size
         else:
             batch_size = batch_size
         sampler = None
@@ -1296,9 +1297,9 @@ class deepforest(pl.LightningModule):
             self.predictions = pd.concat(self.predictions, ignore_index=True)
             if "label" in self.predictions.columns:
                 self.predictions["label"] = self.predictions["label"].map(
-                    lambda x: (
-                        self.numeric_to_label_dict.get(int(x), x) if pd.notna(x) else x
-                    )
+                    lambda x: self.numeric_to_label_dict.get(int(x), x)
+                    if pd.notna(x)
+                    else x
                 )
         else:
             self.predictions = pd.DataFrame()
