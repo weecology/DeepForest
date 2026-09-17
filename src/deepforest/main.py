@@ -985,19 +985,52 @@ class deepforest(pl.LightningModule):
         metrics = {}
 
         if self.model.task == "box":
-            # IoU and mAP
-            if len(self.iou_metric.groundtruth_labels) > 0:
-                metrics.update(self.iou_metric.compute())
-                # Lightning bug: claims this is a warning but it's not. See issue #16218 in Lightning-AI/pytorch-lightning
-                output = self.mAP_metric.compute()
+            has_local = len(self.iou_metric.groundtruth_labels) > 0
+            n_with_data = distributed.sum_across_ranks(int(has_local), device=self.device)
+            world_size = distributed.get_world_size()
 
-                # Remove classes from output dict
+            if n_with_data == world_size:
+                metrics.update(self.iou_metric.compute())
+                # https://github.com/Lightning-AI/torchmetrics/issues/626
+                output = self.mAP_metric.compute()
                 output = {
                     key: value for key, value in output.items() if not key == "classes"
                 }
                 metrics.update(output)
-            metrics.update(self.precision_recall_metric.compute())
+            elif n_with_data > 0:
+                payload = None
+                if has_local:
+                    iou_to_sync = self.iou_metric._to_sync
+                    map_to_sync = self.mAP_metric._to_sync
+                    self.iou_metric._to_sync = False
+                    self.mAP_metric._to_sync = False
+                    try:
+                        payload = (
+                            self.iou_metric.compute(),
+                            self.mAP_metric.compute(),
+                        )
+                    finally:
+                        self.iou_metric._to_sync = iou_to_sync
+                        self.mAP_metric._to_sync = map_to_sync
 
+                gathered = distributed.gather_object(payload)
+                valid = [item for item in gathered if item is not None]
+                if valid:
+                    metrics.update(
+                        distributed.mean_metric_dicts([item[0] for item in valid])
+                    )
+                    map_output = distributed.mean_metric_dicts(
+                        [item[1] for item in valid]
+                    )
+                    metrics.update(
+                        {
+                            key: value
+                            for key, value in map_output.items()
+                            if not key == "classes"
+                        }
+                    )
+
+            metrics.update(self.precision_recall_metric.compute())
         elif self.model.task == "point":
             metrics["val_mae"] = self.mae_metric.compute()
             metrics.update(self.precision_recall_metric.compute())
