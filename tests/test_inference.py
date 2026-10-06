@@ -17,8 +17,11 @@ def run_inference(config):
     {"architecture": "retinanet",
      "model": {"name": "weecology/deepforest-tree"}},
 
-    {"architecture": "DeformableDetr",
+    {"architecture": "automodel",
      "model": {"name": "joshvm/milliontrees-detr"}},
+
+    {"architecture": "automodel",
+     "model": {"name": "ConservationDrones/DroneMegaDetector"}},
 ])
 def test_model_inference(overrides):
     config = utilities.load_config(overrides=overrides)
