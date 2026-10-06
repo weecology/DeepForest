@@ -247,10 +247,11 @@ def _dataloader_wrapper_(model, trainer, dataloader, crop_model=None, root_dir=N
 
     # dropna=False keeps a null image_path when image_path is not available.
     processed_results = []
-    for _, group in results.groupby("image_path", dropna=False):
-        processed_results.append(
-            reduce_overlapping(group, model.config, task=model.model.task)
-        )
+    for image_path, group in results.groupby("image_path", dropna=False):
+        # Add image_path back to NMS'd outputs
+        reduced = reduce_overlapping(group, model.config, task=model.model.task)
+        reduced["image_path"] = image_path
+        processed_results.append(reduced)
 
     results = pd.concat(processed_results, ignore_index=True)
 

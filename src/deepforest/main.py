@@ -123,6 +123,16 @@ class deepforest(pl.LightningModule):
                 iou_type="segm", backend="faster_coco_eval"
             )
 
+    def _import_architecture(self):
+        """Import the module in deepforest.models named by
+        config.architecture."""
+        # Override for specific detectors that we support via transformers, the fallback
+        # is still automodel if passed explicitly.
+        if self.config.architecture.lower() in ["deformabledetr", "rfdetr"]:
+            self.config.architecture = "automodel"
+
+        return importlib.import_module(f"deepforest.models.{self.config.architecture}")
+
     def load_model(self, model_name=None, revision=None):
         """Loads a model that has already been pretrained for a specific task,
         like tree crown detection.
@@ -147,9 +157,7 @@ class deepforest(pl.LightningModule):
         if revision is None:
             revision = self.config.model.revision
 
-        model_class = importlib.import_module(
-            f"deepforest.models.{self.config.architecture}"
-        )
+        model_class = self._import_architecture()
         self.model = model_class.Model(config=self.config).create_model(
             pretrained=model_name, revision=revision
         )
@@ -199,9 +207,7 @@ class deepforest(pl.LightningModule):
             None
         """
         if self.config.model.name is None or initialize_model:
-            model_class = importlib.import_module(
-                f"deepforest.models.{self.config.architecture}"
-            )
+            model_class = self._import_architecture()
             self.model = model_class.Model(config=self.config).create_model()
             self.set_labels(self.config.label_dict)
         else:
