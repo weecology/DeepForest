@@ -1493,3 +1493,14 @@ def test_detections_per_img_and_topk_candidates_config():
     m.create_model()
     assert m.model.detections_per_img == 500
     assert m.model.topk_candidates == 2000
+
+def test_validation_interval_greater_than_epochs(m):
+    # Set interval higher than max_epochs to disable evaluation
+    m.config["validation"]["val_accuracy_interval"] = 3
+    m.config["train"]["epochs"] = 2
+    m.create_trainer()
+    m.trainer.fit(m)
+
+    assert "box_precision" not in m.trainer.logged_metrics
+    assert "box_recall" not in m.trainer.logged_metrics
+    assert "empty_frame_accuracy" not in m.trainer.logged_metrics
