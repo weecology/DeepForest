@@ -139,14 +139,17 @@ shp = utilities.read_file(input="/path/to/boxes_shapefile.shp")
 shp.head()
 ```
 
-If your shapefile does not include an `image_path` column, you must provide the raster path via `img_path`:
+If your shapefile does not include an `image_path` column, you must provide the raster path via `image_path` (requires `root_dir`).
+All annotations are then assumed to relate to that single image, and a warning is raised to make this explicit.
+This is not appropriate for multi-image files:
 
 ```python
 from deepforest import utilities
 
 shp = utilities.read_file(
     input="/path/to/boxes_shapefile.shp",
-    image_path="/path/to/OSBS_029.tif"
+    image_path="OSBS_029.tif",
+    root_dir="/path/to/images/"
 )
 ```
 
@@ -157,7 +160,8 @@ from deepforest import utilities
 
 shp = utilities.read_file(
     input="/path/to/boxes_shapefile.shp",
-    image_path="/path/to/OSBS_029.tif",
+    image_path="OSBS_029.tif",
+    root_dir="/path/to/images/",
     label="Tree"
 )
 ```
