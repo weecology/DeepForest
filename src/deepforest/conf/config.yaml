@@ -10,7 +10,15 @@ strategy: auto
 precision: 32-true
 sync_batchnorm: False
 use_distributed_sampler: True
+# Deprecated, use train_batch_size / predict_batch_size instead.
+# Still honored as a fallback when the specific fields are null.
 batch_size: 1
+# Per-stage batch sizes. Null means: fall back to batch_size, and if that
+# is still the default (1), use 2 for training and 8 for prediction/validation.
+# Forward-only passes use less GPU memory than training, so prediction can
+# afford a larger batch.
+train_batch_size:
+predict_batch_size:
 
 # Model Architecture
 architecture: 'retinanet'

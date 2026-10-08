@@ -488,6 +488,47 @@ def test_predict_dataloader(m, batch_size, path):
     batch = next(iter(dl))
     assert len(batch) == batch_size
 
+def test_batch_size_resolution_defaults_and_legacy_fallback(m):
+    """train/predict batch sizes resolve with legacy fallback (issue #889)."""
+    m.config.batch_size = 1
+    m.config.train_batch_size = None
+    m.config.predict_batch_size = None
+    assert m.train_batch_size == 2
+    assert m.predict_batch_size == 8
+
+    # Legacy batch_size is still honored when the specific fields are unset
+    m.config.batch_size = 4
+    assert m.train_batch_size == 4
+    assert m.predict_batch_size == 4
+
+    # Explicit per-stage sizes win over the legacy setting
+    m.config.train_batch_size = 2
+    m.config.predict_batch_size = 3
+    assert m.train_batch_size == 2
+    assert m.predict_batch_size == 3
+
+def test_dataloaders_use_separate_batch_sizes(m):
+    """Train/val dataloaders are built with their own batch sizes (issue #889)."""
+    m.config.batch_size = 1
+    m.config.train_batch_size = 2
+    m.config.predict_batch_size = 3
+
+    assert m.train_dataloader().batch_size == 2
+    # Validation is a forward-only pass, so it uses the predict batch size
+    assert m.val_dataloader().batch_size == 3
+
+@pytest.mark.parametrize("predict_batch_size", [1, 3])
+def test_predict_dataloader_uses_predict_batch_size(m, predict_batch_size, path):
+    """predict_dataloader yields predict_batch_size batches (issue #889)."""
+    m.config.batch_size = 1
+    m.config.predict_batch_size = predict_batch_size
+    tile = np.array(Image.open(path))
+    ds = prediction.SingleImage(image=tile, path=path, patch_overlap=0.1, patch_size=100)
+    dl = m.predict_dataloader(ds)
+    assert dl.batch_size == predict_batch_size
+    batch = next(iter(dl))
+    assert len(batch) == predict_batch_size
+
 def test_predict_tile_empty(m_without_release, path):
     m = m_without_release
     predictions = m.predict_tile(path=path, patch_size=300, patch_overlap=0)
