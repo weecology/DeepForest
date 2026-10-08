@@ -14,7 +14,10 @@ Please note that if you would like for deepforest to save the config file on rel
 workers: 0
 devices: auto
 accelerator: auto
+# Deprecated, use train_batch_size / predict_batch_size instead.
 batch_size: 1
+train_batch_size:
+predict_batch_size:
 
 # Model Architecture
 architecture: 'retinanet'
@@ -178,7 +181,26 @@ On Slurm clusters, launch with `srun` so Lightning can read the job environment.
 
 ### batch_size
 
-Number of images per batch during training. GPU memory limits this usually between 5-10
+Deprecated. Use `train_batch_size` and `predict_batch_size` instead.
+Still honored as a fallback when the specific fields are not set.
+
+### train_batch_size
+
+Number of images per batch during training. Updating weights takes more GPU
+memory per sample than forward-only passes, so this defaults to 2.
+
+```python
+m.config.train_batch_size = 4
+```
+
+### predict_batch_size
+
+Number of images per batch during prediction and validation (no weights are
+updated, so a larger batch fits in memory). Defaults to 8.
+
+```python
+m.config.predict_batch_size = 16
+```
 
 ### nms_thresh
 
