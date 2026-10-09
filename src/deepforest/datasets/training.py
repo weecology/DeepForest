@@ -17,7 +17,7 @@ from torch.utils.data import Dataset
 from torchvision.datasets import ImageFolder
 
 from deepforest import utilities
-from deepforest.augmentations import get_transform
+from deepforest.augmentations import bbox_augmentation_context, get_transform
 
 
 class TrainingDataset(Dataset):
@@ -270,7 +270,8 @@ class BoxDataset(TrainingDataset):
         # Apply augmentations
         image_tensor = torch.from_numpy(image).permute(2, 0, 1).unsqueeze(0).float()
         boxes_tensor = torch.from_numpy(targets["boxes"]).unsqueeze(0).float()
-        augmented_image, augmented_boxes = self.transform(image_tensor, boxes_tensor)
+        with bbox_augmentation_context(boxes_tensor):
+            augmented_image, augmented_boxes = self.transform(image_tensor, boxes_tensor)
 
         # Convert boxes to tensor
         image = augmented_image.squeeze(0)
@@ -772,9 +773,10 @@ class PolygonDataset(TrainingDataset):
         else:
             masks = torch.zeros((0, height, width), dtype=torch.uint8).unsqueeze(0)
 
-        augmented_image, augmented_boxes, augmented_masks = self.transform(
-            image_tensor, boxes_tensor, masks
-        )
+        with bbox_augmentation_context(boxes_tensor):
+            augmented_image, augmented_boxes, augmented_masks = self.transform(
+                image_tensor, boxes_tensor, masks
+            )
 
         # Convert to tensor
         image = augmented_image.squeeze()
