@@ -1178,6 +1178,35 @@ def test_epoch_evaluation_end_empty(m):
     with mock.patch.object(m, 'log_dict') as _:
         m.on_validation_epoch_end()
 
+
+def test_empty_rank_still_computes_iou_map(m):
+    """Empty-only ranks must not skip DDP metric collectives (#1407)."""
+    m.iou_metric.reset()
+    m.mAP_metric.reset()
+    m.precision_recall_metric.reset()
+
+    box = torch.tensor([[0.0, 0.0, 10.0, 10.0]])
+    label = torch.tensor([0], dtype=torch.int64)
+    pred = {"boxes": box, "scores": torch.tensor([0.9]), "labels": label}
+    target = {"boxes": box, "labels": label}
+
+    with (
+        mock.patch.object(m.iou_metric, "compute", wraps=m.iou_metric.compute) as iou_compute,
+        mock.patch.object(m.mAP_metric, "compute", wraps=m.mAP_metric.compute) as map_compute,
+    ):
+        m._compute_epoch_metrics()
+        iou_compute.assert_not_called()
+        map_compute.assert_not_called()
+
+        m.iou_metric.update([pred], [target])
+        m.mAP_metric.update([pred], [target])
+        metrics = m._compute_epoch_metrics()
+
+    iou_compute.assert_called_once()
+    map_compute.assert_called_once()
+    assert "iou" in metrics
+
+
 def test_empty_frame_accuracy_all_empty_with_predictions(m, tmp_path):
     """Test empty frame accuracy when all frames are empty but model predicts objects.
     The accuracy should be 0 since model incorrectly predicts objects in empty frames."""
