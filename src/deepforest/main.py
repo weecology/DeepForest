@@ -22,6 +22,19 @@ from deepforest.metrics import RecallPrecision
 
 Image.MAX_IMAGE_PIXELS = None
 
+TRAIN_BATCH_SIZE_DEFAULT = 2
+PREDICT_BATCH_SIZE_DEFAULT = 8
+
+
+def _validate_batch_size_value(name: str, value) -> int:
+    """Validate a resolved batch size is a positive int (reject
+    bool/float/str)."""
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise ValueError(f"{name} must be a positive integer, got {value!r}")
+    if value <= 0:
+        raise ValueError(f"{name} must be a positive integer, got {value}")
+    return value
+
 
 class deepforest(pl.LightningModule):
     """DeepForest model for tree crown detection in RGB images.
@@ -90,19 +103,59 @@ class deepforest(pl.LightningModule):
             {"config": OmegaConf.to_container(self.config, resolve=True)}
         )
 
+    def _resolve_batch_size(self, field: str, default: int) -> int:
+        """Single choke point for train/predict batch-size resolution.
+
+        Order: explicit per-stage value -> legacy ``batch_size`` (deprecated)
+        -> hardcoded default. Validates type/positivity and warns on
+        deprecated fallback or unusually large values.
+        """
+        specific = self.config.get(field)
+        if specific is not None:
+            size = specific
+            name = field
+        else:
+            legacy = self.config.get("batch_size")
+            if legacy is not None:
+                warnings.warn(
+                    "config 'batch_size' is deprecated; set "
+                    "'train_batch_size'/'predict_batch_size' explicitly.",
+                    DeprecationWarning,
+                    stacklevel=3,
+                )
+                size = legacy
+                name = field
+            else:
+                size = default
+                name = field
+        _validate_batch_size_value(name, size)
+        if size > 64:
+            warnings.warn(
+                f"{name}={size} is unusually large and may OOM; "
+                "consider <=64 for train, <=128 for predict.",
+                UserWarning,
+                stacklevel=3,
+            )
+        return size
+
     @property
     def train_batch_size(self) -> int:
         """Batch size for the training dataloader (issue #889).
 
-        Training updates weights and needs more GPU memory per sample than
-        forward-only passes. Resolution order: explicit ``train_batch_size``,
-        then legacy ``batch_size`` if customized, else default 2.
+        Training updates weights and needs more GPU memory per sample
+        than forward-only passes. Resolution order: explicit
+        ``train_batch_size``, then legacy ``batch_size`` if set, else
+        default 2.
         """
-        if self.config.get("train_batch_size"):
-            return self.config.train_batch_size
-        if self.config.batch_size != 1:
-            return self.config.batch_size
-        return 2
+        return self._resolve_batch_size("train_batch_size", TRAIN_BATCH_SIZE_DEFAULT)
+
+    @train_batch_size.setter
+    def train_batch_size(self, value: int | None):
+        if value is None:
+            self.config.train_batch_size = None
+            return
+        _validate_batch_size_value("train_batch_size", value)
+        self.config.train_batch_size = value
 
     @property
     def predict_batch_size(self) -> int:
@@ -110,13 +163,17 @@ class deepforest(pl.LightningModule):
 
         No gradients are stored, so a larger batch fits in memory.
         Resolution order: explicit ``predict_batch_size``, then legacy
-        ``batch_size`` if customized, else default 8.
+        ``batch_size`` if set, else default 8.
         """
-        if self.config.get("predict_batch_size"):
-            return self.config.predict_batch_size
-        if self.config.batch_size != 1:
-            return self.config.batch_size
-        return 8
+        return self._resolve_batch_size("predict_batch_size", PREDICT_BATCH_SIZE_DEFAULT)
+
+    @predict_batch_size.setter
+    def predict_batch_size(self, value: int | None):
+        if value is None:
+            self.config.predict_batch_size = None
+            return
+        _validate_batch_size_value("predict_batch_size", value)
+        self.config.predict_batch_size = value
 
     def setup_metrics(self):
         # Guard against initialization before a validation csv_file is set
@@ -400,7 +457,7 @@ class deepforest(pl.LightningModule):
         augmentations=None,
         preload_images=False,
         validate_coordinates=True,
-        batch_size=1,
+        batch_size=None,
     ):
         """Create a dataset for inference or training.
 
@@ -413,13 +470,17 @@ class deepforest(pl.LightningModule):
             csv_file: path to csv file
             root_dir: directory of images. If none, uses "image_dir" in config
             transforms: Albumentations transforms
-            batch_size: batch size
+            batch_size: batch size. If None, resolves to ``train_batch_size``.
             preload_images: if True, preload the images into memory
             validate_coordinates: if True, check annotation coordinates fall within image bounds
             augmentations: augmentation configuration (str, list, or dict)
         Returns:
             ds: a pytorch dataset
         """
+        if batch_size is None:
+            batch_size = self.train_batch_size
+        else:
+            _validate_batch_size_value("batch_size", batch_size)
         if self.model.task == "box":
             ds = training.BoxDataset(
                 csv_file=csv_file,
@@ -477,6 +538,16 @@ class deepforest(pl.LightningModule):
             loader
         """
         if self.existing_train_dataloader:
+            if (
+                self.config.get("train_batch_size") is not None
+                or self.config.get("batch_size") is not None
+            ):
+                warnings.warn(
+                    "train_batch_size/batch_size is ignored when "
+                    "existing_train_dataloader is set.",
+                    UserWarning,
+                    stacklevel=2,
+                )
             return self.existing_train_dataloader
 
         loader = self.load_dataset(
@@ -503,6 +574,16 @@ class deepforest(pl.LightningModule):
         loader = []
 
         if self.existing_val_dataloader:
+            if (
+                self.config.get("predict_batch_size") is not None
+                or self.config.get("batch_size") is not None
+            ):
+                warnings.warn(
+                    "predict_batch_size/batch_size is ignored for validation when "
+                    "existing_val_dataloader is set.",
+                    UserWarning,
+                    stacklevel=2,
+                )
             return self.existing_val_dataloader
 
         if self.config.validation.csv_file is not None:
@@ -523,6 +604,8 @@ class deepforest(pl.LightningModule):
 
         Args:
             ds (torchvision.datasets.Dataset): A torchvision dataset to be wrapped into a dataloader using config args.
+            batch_size: Optional per-call override. If None, uses
+                ``predict_batch_size``. Explicit values are validated.
 
         Returns:
             torch.utils.data.DataLoader: A dataloader object that can be used for prediction.
@@ -530,7 +613,7 @@ class deepforest(pl.LightningModule):
         if batch_size is None:
             batch_size = self.predict_batch_size
         else:
-            batch_size = batch_size
+            _validate_batch_size_value("batch_size", batch_size)
         sampler = None
         if (
             self.config.use_distributed_sampler
@@ -600,7 +683,7 @@ class deepforest(pl.LightningModule):
             patch_size=max(image.shape[0], image.shape[1]),
             return_metadata=True,
         )
-        dataloader = self.predict_dataloader(ds, batch_size=self.predict_batch_size)
+        dataloader = self.predict_dataloader(ds)
 
         results = predict._dataloader_wrapper_(
             model=self,
@@ -657,7 +740,7 @@ class deepforest(pl.LightningModule):
         ds = prediction.FromCSVFile(
             csv_file=csv_file, root_dir=root_dir, return_metadata=True
         )
-        dataloader = self.predict_dataloader(ds, batch_size=self.predict_batch_size)
+        dataloader = self.predict_dataloader(ds)
         results = predict._dataloader_wrapper_(
             model=self,
             trainer=self.trainer,
@@ -1303,9 +1386,9 @@ class deepforest(pl.LightningModule):
             self.predictions = pd.concat(self.predictions, ignore_index=True)
             if "label" in self.predictions.columns:
                 self.predictions["label"] = self.predictions["label"].map(
-                    lambda x: self.numeric_to_label_dict.get(int(x), x)
-                    if pd.notna(x)
-                    else x
+                    lambda x: (
+                        self.numeric_to_label_dict.get(int(x), x) if pd.notna(x) else x
+                    )
                 )
         else:
             self.predictions = pd.DataFrame()

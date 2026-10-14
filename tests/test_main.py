@@ -490,13 +490,17 @@ def test_predict_dataloader(m, batch_size, path):
 
 def test_batch_size_resolution_defaults_and_legacy_fallback(m):
     """train/predict batch sizes resolve with legacy fallback (issue #889)."""
-    m.config.batch_size = 1
+    m.config.batch_size = None
     m.config.train_batch_size = None
     m.config.predict_batch_size = None
     assert m.train_batch_size == 2
     assert m.predict_batch_size == 8
 
-    # Legacy batch_size is still honored when the specific fields are unset
+    # Legacy batch_size is still honored when the specific fields are unset (even batch_size=1)
+    m.config.batch_size = 1
+    assert m.train_batch_size == 1
+    assert m.predict_batch_size == 1
+
     m.config.batch_size = 4
     assert m.train_batch_size == 4
     assert m.predict_batch_size == 4
@@ -506,6 +510,18 @@ def test_batch_size_resolution_defaults_and_legacy_fallback(m):
     m.config.predict_batch_size = 3
     assert m.train_batch_size == 2
     assert m.predict_batch_size == 3
+
+    # Direct property assignment works
+    m.train_batch_size = 5
+    m.predict_batch_size = 10
+    assert m.train_batch_size == 5
+    assert m.predict_batch_size == 10
+
+    # Negative / zero values raise ValueError
+    with pytest.raises(ValueError):
+        m.train_batch_size = -1
+    with pytest.raises(ValueError):
+        m.predict_batch_size = 0
 
 def test_dataloaders_use_separate_batch_sizes(m):
     """Train/val dataloaders are built with their own batch sizes (issue #889)."""

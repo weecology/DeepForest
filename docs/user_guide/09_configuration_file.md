@@ -15,7 +15,7 @@ workers: 0
 devices: auto
 accelerator: auto
 # Deprecated, use train_batch_size / predict_batch_size instead.
-batch_size: 1
+batch_size:
 train_batch_size:
 predict_batch_size:
 
@@ -190,16 +190,19 @@ Number of images per batch during training. Updating weights takes more GPU
 memory per sample than forward-only passes, so this defaults to 2.
 
 ```python
-m.config.train_batch_size = 4
+m.train_batch_size = 4
 ```
 
 ### predict_batch_size
 
 Number of images per batch during prediction and validation (no weights are
 updated, so a larger batch fits in memory). Defaults to 8.
+Note: ``predict_tile(dataloader_strategy="batch")`` flattens all windows of
+each image into one forward pass, so the effective GPU batch is
+``predict_batch_size * windows_per_image`` — lower it if you OOM on large tiles.
 
 ```python
-m.config.predict_batch_size = 16
+m.predict_batch_size = 16
 ```
 
 ### nms_thresh
