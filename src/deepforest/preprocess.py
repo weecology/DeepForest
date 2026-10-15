@@ -165,8 +165,9 @@ def split_raster(
     """Split a large raster into smaller patches for processing.
 
     Args:
-        annotations_file: Path to annotations CSV or DataFrame with columns:
-            image_path, xmin, ymin, xmax, ymax, label
+        annotations_file: Path to annotations file or DataFrame with columns:
+            image_path, xmin, ymin, xmax, ymax, label. DataFrame geometries
+            must use raster pixel coordinates and have no CRS.
         path_to_raster: Path to raster file on disk
         numpy_image: Numpy array in (channels, height, width) order
         root_dir: Root directory for annotations file
@@ -296,12 +297,12 @@ def load_annotations(annotations_file, root_dir):
 
 def validate_annotations(annotations, numpy_image, path_to_raster):
     """Validate annotation coordinate systems and bounds."""
-    if hasattr(annotations, "crs"):
-        if annotations.crs is not None and annotations.crs.is_geographic:
-            raise ValueError(
-                "Annotations appear to be in geographic coordinates (latitude/longitude). "
-                "Please convert your annotations to the same projected coordinate system as your raster."
-            )
+    if getattr(annotations, "crs", None) is not None:
+        raise ValueError(
+            "Annotations must use raster pixel coordinates without a CRS. "
+            "Convert georeferenced annotations to pixel coordinates before "
+            "passing a GeoDataFrame to split_raster."
+        )
 
     if hasattr(annotations, "total_bounds"):
         raster_height, raster_width = numpy_image.shape[1], numpy_image.shape[2]

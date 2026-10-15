@@ -90,6 +90,22 @@ def test_split_raster(config, tmp_path, input_type, geodataframe):
     assert output_annotations.shape[1] == 7
     assert not output_annotations.empty
 
+
+@pytest.mark.parametrize("crs", ["EPSG:32617", "EPSG:4326"])
+def test_split_raster_rejects_georeferenced_annotations(tmp_path, geodataframe, crs):
+    """Pixel annotation geometry must not carry a geographic or projected CRS."""
+    annotations = geodataframe.set_crs(crs)
+
+    with pytest.raises(ValueError, match="pixel coordinates"):
+        preprocess.split_raster(
+            path_to_raster=get_data("OSBS_029.tif"),
+            annotations_file=annotations,
+            save_dir=tmp_path,
+            patch_size=300,
+            patch_overlap=0,
+        )
+
+
 def test_split_raster_from_pd_dataframe(tmp_path):
     """Split raster into crops with overlaps to maintain all annotations"""
     annotations_file = pd.read_csv(get_data("OSBS_029.csv"))
