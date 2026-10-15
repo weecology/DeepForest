@@ -1,5 +1,6 @@
 # test preprocessing
 import os
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -89,6 +90,19 @@ def test_split_raster(config, tmp_path, input_type, geodataframe):
     # Returns a 7 column pandas array
     assert output_annotations.shape[1] == 7
     assert not output_annotations.empty
+
+
+def test_split_raster_accepts_pathlib_annotations(tmp_path):
+    annotations = preprocess.split_raster(
+        annotations_file=Path(get_data("OSBS_029.csv")),
+        path_to_raster=get_data("OSBS_029.tif"),
+        patch_size=300,
+        patch_overlap=0,
+        save_dir=tmp_path,
+    )
+
+    assert not annotations.empty
+
 
 def test_split_raster_from_pd_dataframe(tmp_path):
     """Split raster into crops with overlaps to maintain all annotations"""

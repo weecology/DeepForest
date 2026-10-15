@@ -271,12 +271,15 @@ def load_annotations(annotations_file, root_dir):
     """Load and validate annotations file.
 
     Args:
-        annotations_file: Path to file, DataFrame, or GeoDataFrame
+        annotations_file: String or path-like file path, DataFrame, or GeoDataFrame
         root_dir: Root directory for relative paths
 
     Returns:
         GeoDataFrame with annotations
     """
+    if isinstance(annotations_file, os.PathLike):
+        annotations_file = os.fsdecode(annotations_file)
+
     if isinstance(annotations_file, str):
         return read_file(annotations_file, root_dir=root_dir)
     elif isinstance(annotations_file, gpd.GeoDataFrame):
