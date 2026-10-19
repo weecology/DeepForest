@@ -452,25 +452,37 @@ def test_predict_image_on_cuda(m):
     """Regression test for #1390: predict_image executes on GPU without device mismatch."""
     orig_accelerator = m.config.accelerator
     orig_devices = m.config.devices
-    m.config.accelerator = "gpu"
-    m.config.devices = 1
-    m.create_trainer()
-    m.to("cuda")
     try:
-        prediction = m.predict_image(
-            path=get_data(path="2019_YELL_2_528000_4978000_image_crop2.png")
-        )
-        assert isinstance(prediction, pd.DataFrame)
-        assert not prediction.empty
+        m.config.accelerator = "gpu"
+        m.config.devices = 1
+        m.create_trainer()
+        m.to("cuda")
+
+        # Test prediction from file path
+        path = get_data(path="2019_YELL_2_528000_4978000_image_crop2.png")
+        prediction_path = m.predict_image(path=path)
+        assert isinstance(prediction_path, pd.DataFrame)
+        assert not prediction_path.empty
         assert next(m.parameters()).device.type == "cuda"
         assert m.trainer.strategy.root_device.type == "cuda"
+
+        # Test prediction from in-memory numpy array (key reproduction vector for #1390)
+        img_arr = np.array(Image.open(path).convert("RGB")).astype("float32")
+        prediction_arr = m.predict_image(image=img_arr)
+        assert isinstance(prediction_arr, pd.DataFrame)
+        assert not prediction_arr.empty
     finally:
-        m.to("cpu")
-        m.config.accelerator = orig_accelerator
-        m.config.devices = orig_devices
-        m.create_trainer()
-        if torch.cuda.is_available():
-            torch.cuda.empty_cache()
+        try:
+            m.to("cpu")
+        finally:
+            m.config.accelerator = orig_accelerator
+            m.config.devices = orig_devices
+            m.create_trainer()
+            if torch.cuda.is_available():
+                import gc
+
+                gc.collect()
+                torch.cuda.empty_cache()
 
 
 def test_predict_image_device_alignment(m, monkeypatch):
@@ -482,9 +494,12 @@ def test_predict_image_device_alignment(m, monkeypatch):
         model_device = next(m.model.parameters()).device
         if isinstance(images, torch.Tensor):
             observed_devices.append((images.device, model_device))
-        elif isinstance(images, list):
+        elif isinstance(images, (list, tuple)):
             for img in images:
-                observed_devices.append((img.device, model_device))
+                if isinstance(img, torch.Tensor):
+                    observed_devices.append((img.device, model_device))
+        elif hasattr(images, "tensors") and isinstance(images.tensors, torch.Tensor):
+            observed_devices.append((images.tensors.device, model_device))
         return orig_forward(images, *args, **kwargs)
 
     monkeypatch.setattr(m.model, "forward", spy_forward)
@@ -497,23 +512,35 @@ def test_predict_image_device_alignment(m, monkeypatch):
     for input_device, model_device in observed_devices:
         assert input_device == model_device
 
+    # Also verify in-memory array input aligns device with model
+    observed_devices.clear()
+    img_arr = np.array(Image.open(path).convert("RGB")).astype("float32")
+    prediction_arr = m.predict_image(image=img_arr)
+    assert isinstance(prediction_arr, pd.DataFrame)
+    assert len(observed_devices) > 0
+    for input_device, model_device in observed_devices:
+        assert input_device == model_device
+
 
 def test_predict_image_routes_through_trainer(m, monkeypatch):
     """Regression test for #1390: predict_image must route through trainer.predict for device management."""
-    trainer_predict_called = False
+    captured_calls = []
     orig_predict = m.trainer.predict
 
     def mock_predict(*args, **kwargs):
-        nonlocal trainer_predict_called
-        trainer_predict_called = True
+        captured_calls.append((args, kwargs))
         return orig_predict(*args, **kwargs)
 
     monkeypatch.setattr(m.trainer, "predict", mock_predict)
     path = get_data(path="2019_YELL_2_528000_4978000_image_crop2.png")
-    prediction = m.predict_image(path=path)
+    results = m.predict_image(path=path)
 
-    assert trainer_predict_called
-    assert isinstance(prediction, pd.DataFrame)
+    assert len(captured_calls) == 1
+    call_args, _ = captured_calls[0]
+    assert call_args[0] is m
+    assert isinstance(call_args[1], DataLoader)
+    assert call_args[1].dataset.__class__.__name__ == "SingleImage"
+    assert isinstance(results, pd.DataFrame)
 
 
 def test_predict_image_fromarray(m):
