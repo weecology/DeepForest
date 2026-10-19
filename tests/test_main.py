@@ -463,11 +463,14 @@ def test_predict_image_on_cuda(m):
         assert isinstance(prediction, pd.DataFrame)
         assert not prediction.empty
         assert next(m.parameters()).device.type == "cuda"
+        assert m.trainer.strategy.root_device.type == "cuda"
     finally:
         m.to("cpu")
         m.config.accelerator = orig_accelerator
         m.config.devices = orig_devices
         m.create_trainer()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
 
 
 def test_predict_image_device_alignment(m, monkeypatch):
