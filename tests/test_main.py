@@ -447,6 +447,72 @@ def test_predict_image_fromfile(m):
     assert not prediction.empty
 
 
+@pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA not available")
+def test_predict_image_on_cuda(m):
+    """Regression test for #1390: predict_image executes on GPU without device mismatch."""
+    orig_accelerator = m.config.accelerator
+    orig_devices = m.config.devices
+    m.config.accelerator = "gpu"
+    m.config.devices = 1
+    m.create_trainer()
+    m.to("cuda")
+    try:
+        prediction = m.predict_image(
+            path=get_data(path="2019_YELL_2_528000_4978000_image_crop2.png")
+        )
+        assert isinstance(prediction, pd.DataFrame)
+        assert not prediction.empty
+        assert next(m.parameters()).device.type == "cuda"
+    finally:
+        m.to("cpu")
+        m.config.accelerator = orig_accelerator
+        m.config.devices = orig_devices
+        m.create_trainer()
+
+
+def test_predict_image_device_alignment(m, monkeypatch):
+    """Regression test for #1390: ensure input tensors match model device during predict_image."""
+    observed_devices = []
+    orig_forward = m.model.forward
+
+    def spy_forward(images, *args, **kwargs):
+        model_device = next(m.model.parameters()).device
+        if isinstance(images, torch.Tensor):
+            observed_devices.append((images.device, model_device))
+        elif isinstance(images, list):
+            for img in images:
+                observed_devices.append((img.device, model_device))
+        return orig_forward(images, *args, **kwargs)
+
+    monkeypatch.setattr(m.model, "forward", spy_forward)
+
+    path = get_data(path="2019_YELL_2_528000_4978000_image_crop2.png")
+    prediction = m.predict_image(path=path)
+
+    assert isinstance(prediction, pd.DataFrame)
+    assert len(observed_devices) > 0
+    for input_device, model_device in observed_devices:
+        assert input_device == model_device
+
+
+def test_predict_image_routes_through_trainer(m, monkeypatch):
+    """Regression test for #1390: predict_image must route through trainer.predict for device management."""
+    trainer_predict_called = False
+    orig_predict = m.trainer.predict
+
+    def mock_predict(*args, **kwargs):
+        nonlocal trainer_predict_called
+        trainer_predict_called = True
+        return orig_predict(*args, **kwargs)
+
+    monkeypatch.setattr(m.trainer, "predict", mock_predict)
+    path = get_data(path="2019_YELL_2_528000_4978000_image_crop2.png")
+    prediction = m.predict_image(path=path)
+
+    assert trainer_predict_called
+    assert isinstance(prediction, pd.DataFrame)
+
+
 def test_predict_image_fromarray(m):
     image_path = get_data(path="2019_YELL_2_528000_4978000_image_crop2.png")
 
