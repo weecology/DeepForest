@@ -488,16 +488,20 @@ def _plot_image_with_geometry(df, image, sv_color, thickness=1, radius=3):
     geom_type = determine_geometry_type(df)
     detections = convert_to_sv_format(df, image=image)
 
+    # supervision's annotators draw numpy scenes as OpenCV BGR, so flip our RGB
+    # image to BGR for drawing and back afterwards. Otherwise red and blue swap.
+    scene = _flip_channels(image)
+
     if geom_type == "box":
         bounding_box_annotator = sv.BoxAnnotator(color=sv_color, thickness=thickness)
         annotated_frame = bounding_box_annotator.annotate(
-            scene=image.copy(),
+            scene=scene,
             detections=detections,
         )
     elif geom_type == "polygon":
         polygon_annotator = sv.PolygonAnnotator(color=sv_color, thickness=thickness)
         annotated_frame = polygon_annotator.annotate(
-            scene=image.copy(),
+            scene=scene,
             detections=detections,
         )
     elif geom_type == "point":
@@ -517,6 +521,16 @@ def _plot_image_with_geometry(df, image, sv_color, thickness=1, radius=3):
         )
         point_annotator = sv.CircleAnnotator(color=sv_color, thickness=thickness)
         annotated_frame = point_annotator.annotate(
-            scene=image.copy(), detections=point_detections
+            scene=scene, detections=point_detections
         )
-    return annotated_frame
+    return _flip_channels(annotated_frame)
+
+
+def _flip_channels(image: np.typing.NDArray) -> np.typing.NDArray:
+    """Reverse the color channels of an HWC image (RGB to BGR, or back).
+
+    Returns a copy. Grayscale images come back as a plain copy.
+    """
+    if image.ndim == 3:
+        return image[:, :, ::-1].copy()
+    return image.copy()
