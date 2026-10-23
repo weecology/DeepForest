@@ -188,8 +188,13 @@ class Config:
     precision: str = "32-true"
     sync_batchnorm: bool = False
     use_distributed_sampler: bool = True
-    batch_size: int = 1
-    precision: str | None = None
+    # Deprecated: use train_batch_size / predict_batch_size instead.
+    # Still honored as a fallback when the specific fields are None.
+    batch_size: int | None = None
+    # If None, falls back to batch_size, else to the defaults below
+    # (2 for training, 8 for prediction/validation).
+    train_batch_size: int | None = None
+    predict_batch_size: int | None = None
     matmul_precision: str = "highest"
 
     architecture: str = "retinanet"
