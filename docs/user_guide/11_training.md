@@ -500,7 +500,7 @@ This will load all data into GPU memory once, at the beginning of the run. This 
 Similarly, increasing the batch size can speed up training. Like both of the options above, we have seen examples where performance (and accuracy) improves and decreases depending on batch size. Track experiment results carefully when altering batch size, since it directly [effects the speed of learning](https://www.baeldung.com/cs/learning-rate-batch-size).
 
 ```
-m.config.batch_size = 10
+m.train_batch_size = 10
 ```
 
 Remember to call m.create_trainer() after updating the config dictionary.

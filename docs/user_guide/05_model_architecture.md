@@ -82,7 +82,7 @@ from deepforest import main
 m = main.deepforest()
 existing_loader = m.load_dataset(csv_file=m.config.train.csv_file,
                                 root_dir=m.config.train.root_dir,
-                                batch_size=m.config.batch_size)
+                                batch_size=m.train_batch_size)
 
 # Can be passed directly to main.deepforest(existing_train_dataloader) or reassign to existing deepforest object
 m.existing_train_dataloader_loader
