@@ -64,7 +64,11 @@ def test_load_config_missing_field(m, tmp_path):
 
     # Load the checkpoint
     loaded = main.deepforest.load_from_checkpoint(checkpoint_path)
-    assert isinstance(loaded.config.batch_size, int)
+    # batch_size is deprecated and nullable now; the resolved per-stage sizes
+    # must still fall back to their defaults for a checkpoint that predates them.
+    assert loaded.config.batch_size is None
+    assert loaded.train_batch_size == 2
+    assert loaded.predict_batch_size == 8
 
 def test_config_additional_field(m, tmp_path):
     """Test that checkpoints with extra fields not in schema still load successfully,
