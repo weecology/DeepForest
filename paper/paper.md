@@ -12,9 +12,6 @@ authors:
     corresponding: true
     equal-contrib: false
     affiliation: "1"
-  - name: Ethan P. White
-    orcid: 0000-0001-6728-7745
-    affiliation: "1"
   - name: Henry Senyondo
     orcid: 0000-0001-7105-5808
     affiliation: "1"
@@ -51,13 +48,16 @@ authors:
   - name: Rhydham Singla
     orcid: 0009-0004-8929-7011
     affiliation: 10
+  - name: Ethan P. White
+    orcid: 0000-0001-6728-7745
+    affiliation: "1"
 affiliations:
   - name: University of Florida, United States
     index: 1
     ror: "02y3ad647"
   - name: Veermata Jijabai Technological Institute (VJTI), India
     index: 2
-  - name: Independent Researcher
+  - name: Independent Researcher, Egypt
     index: 3
   - name: Columbia University in the City of New York, United States
     index: 4
