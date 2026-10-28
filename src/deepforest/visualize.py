@@ -3,6 +3,7 @@ import os
 import random
 import warnings
 
+import cv2
 import matplotlib
 import numpy as np
 import pandas as pd
@@ -310,7 +311,7 @@ def __check_color__(
         if num_labels > 1:
             return sv.ColorPalette.from_matplotlib("viridis", num_labels)
         else:
-            return sv.Color(245, 135, 66)  # Default orange color
+            return sv.Color(66, 135, 245)  # Default blue color
     else:
         raise TypeError(
             "results_color must be either a list of RGB values "
@@ -348,7 +349,7 @@ def plot_annotations(
     """
     # Initialize default colors if None
     if color is None:
-        color = [245, 135, 66]
+        color = [66, 135, 245]
     # Convert colors, check for multi-class labels
     num_labels = len(annotations.label.unique())
     annotation_color = __check_color__(color, num_labels)
@@ -407,8 +408,8 @@ def plot_results(
         ground_truth: Optional DataFrame of ground-truth annotations.
         savedir: Optional path to save the figure; if None, plots interactively.
 
-        results_color: Single RGB list (e.g., [245, 135, 66]) or an sv.ColorPalette for per-label colors.
-        ground_truth_color: Single RGB list (e.g., [0, 165, 255]) or an sv.ColorPalette.
+        results_color: Single RGB list (e.g., [66, 135, 245]) or an sv.ColorPalette for per-label colors.
+        ground_truth_color: Single RGB list (e.g., [255, 165, 0]) or an sv.ColorPalette.
         thickness: Line thickness in pixels.
         basename: Optional base name for the saved figure; if None, derived from the image path.
         radius: Point marker radius in pixels.
@@ -421,9 +422,9 @@ def plot_results(
     """
     # Initialize default colors if None
     if results_color is None:
-        results_color = [245, 135, 66]
+        results_color = [66, 135, 245]
     if ground_truth_color is None:
-        ground_truth_color = [0, 165, 255]
+        ground_truth_color = [255, 165, 0]
     # Convert colors, check for multi-class labels
     num_labels = len(results.label.unique())
     results_color_sv = __check_color__(results_color, num_labels)
@@ -488,9 +489,9 @@ def _plot_image_with_geometry(df, image, sv_color, thickness=1, radius=3):
     geom_type = determine_geometry_type(df)
     detections = convert_to_sv_format(df, image=image)
 
-    # supervision's annotators draw numpy scenes as OpenCV BGR, so flip our RGB
+    # supervision's annotators draw numpy scenes as OpenCV BGR, so convert our RGB
     # image to BGR for drawing and back afterwards. Otherwise red and blue swap.
-    scene = _flip_channels(image)
+    scene = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
     if geom_type == "box":
         bounding_box_annotator = sv.BoxAnnotator(color=sv_color, thickness=thickness)
@@ -523,14 +524,4 @@ def _plot_image_with_geometry(df, image, sv_color, thickness=1, radius=3):
         annotated_frame = point_annotator.annotate(
             scene=scene, detections=point_detections
         )
-    return _flip_channels(annotated_frame)
-
-
-def _flip_channels(image: np.typing.NDArray) -> np.typing.NDArray:
-    """Reverse the color channels of an HWC image (RGB to BGR, or back).
-
-    Returns a copy. Grayscale images come back as a plain copy.
-    """
-    if image.ndim == 3:
-        return image[:, :, ::-1].copy()
-    return image.copy()
+    return cv2.cvtColor(annotated_frame, cv2.COLOR_BGR2RGB)
