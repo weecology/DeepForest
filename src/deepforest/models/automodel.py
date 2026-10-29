@@ -1,3 +1,4 @@
+import inspect
 import warnings
 from pathlib import Path
 
@@ -5,10 +6,11 @@ import torch
 from torch import nn
 from torchvision.ops import nms
 from transformers import (
-    DeformableDetrForObjectDetection,
-    DeformableDetrImageProcessor,
+    AutoImageProcessor,
+    AutoModelForObjectDetection,
     logging,
 )
+from transformers import __version__ as transformers_version
 
 from deepforest.model import BaseModel
 
@@ -16,14 +18,14 @@ from deepforest.model import BaseModel
 logging.set_verbosity_error()
 
 
-class DeformableDetrWrapper(nn.Module):
-    """This class wraps a transformers DeformableDetrForObjectDetection model
-    so that input pre- and post-processing happens transparently."""
+class AutomodelWrapper(nn.Module):
+    """This class wraps a transformers AutoModelForObjectDetection model so
+    that input pre- and post-processing happens transparently."""
 
     task: str = "box"
 
     def __init__(self, config, name, revision, use_nms=False, **hf_args):
-        """Initialize a DeformableDetrForObjectDetection model.
+        """Initialize a AutoModelForObjectDetection model.
 
         We assume that the provided name applies to both model and
         processor. By default this function creates a model with MS-COCO
@@ -54,14 +56,31 @@ class DeformableDetrWrapper(nn.Module):
                 }
                 model_kwargs["num_labels"] = len(self.config.label_dict)
 
-            self.net = DeformableDetrForObjectDetection.from_pretrained(
-                name,
-                revision=revision,
-                **model_kwargs,
-            )
-            self.processor = DeformableDetrImageProcessor.from_pretrained(
+            try:
+                self.net = AutoModelForObjectDetection.from_pretrained(
+                    name,
+                    revision=revision,
+                    **model_kwargs,
+                )
+            except ValueError as e:
+                raise ValueError(
+                    f"Could not load '{name}' as an object detection model with "
+                    f"transformers {transformers_version}. Some models like RF-DETR"
+                    " require more recent versions of transformers. Upgrade with "
+                    "`uv lock --upgrade-package transformers && uv sync`."
+                ) from e
+            self.processor = AutoImageProcessor.from_pretrained(
                 name, revision=revision, **hf_args
             )
+
+            # Some processors (e.g. Deformable DETR) keep only the top 100 boxes by
+            # default. Others (e.g. DETR, RT-DETR) keep all queries and have no top_k.
+            self.post_process_kwargs = {}
+            post_process_args = inspect.signature(
+                self.processor.post_process_object_detection
+            ).parameters
+            if "top_k" in post_process_args:
+                self.post_process_kwargs["top_k"] = self.config.detections_per_img
 
             # For consistency with other DeepForest components
             self.label_dict = self.net.config.label2id
@@ -144,7 +163,7 @@ class DeformableDetrWrapper(nn.Module):
         return filtered
 
     def forward(self, images, targets=None, prepare_targets=True):
-        """DeformableDetrForObjectDetection forward pass.
+        """AutomodelWrapper forward pass.
 
         If targets are provided the function returns a loss dictionary, otherwise it returns
         processed predictions. For details, see the transformers documentation
@@ -180,16 +199,19 @@ class DeformableDetrWrapper(nn.Module):
                 target_sizes=[i.shape[-2:] for i in images]
                 if isinstance(images, list)
                 else [images.shape[-2:]],
+                **self.post_process_kwargs,
             )
 
-            # DETR is specifically designed to be NMS-free, however we've seen cases
+            # DETR models are specifically designed to be NMS-free, however we've seen cases
             # where it still predicts duplicate boxes
             if self.use_nms:
                 results = self._apply_nms(results, iou_thresh=self.config.nms_thresh)
 
             return results
         else:
-            return preds.loss_dict
+            # Some models (e.g. DETR family) return unweighted terms in loss_dict,
+            # so use the model's weighted total for backprop.
+            return {"loss": preds.loss, **preds.loss_dict}
 
     def save_pretrained(self, save_directory, push_to_hub=False, **kwargs):
         """Save the model and processor to a directory or push to HF Hub."""
@@ -211,8 +233,9 @@ class Model(BaseModel):
         revision: str | None = "main",
         map_location: str | torch.device | None = None,
         **hf_args,
-    ) -> DeformableDetrWrapper:
-        """Create a Deformable DETR model from pretrained weights.
+    ) -> AutomodelWrapper:
+        """Create a transformers AutoModelForObjectDetection from pretrained
+        weights.
 
         The number of classes set via config and will override the
         downloaded checkpoint. The default weights will load a model
@@ -223,6 +246,6 @@ class Model(BaseModel):
         if pretrained is None:
             hf_args.setdefault("id2label", self.config.numeric_to_label_dict)
 
-        return DeformableDetrWrapper(
+        return AutomodelWrapper(
             self.config, name=pretrained, revision=revision, **hf_args
         ).to(map_location)

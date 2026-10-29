@@ -34,7 +34,7 @@ from .conftest import download_release
 from unittest.mock import Mock
 import unittest.mock as mock
 
-ALL_ARCHITECTURES = ["retinanet", "DeformableDetr"]
+ALL_ARCHITECTURES = ["retinanet", "automodel"]
 
 @pytest.fixture()
 def two_class_m(tmp_path_factory):
@@ -287,8 +287,8 @@ def test_validate(m):
     [
         ("retinanet", "cpu"),
         ("retinanet", "auto"),
-        ("DeformableDetr", "cpu"),
-        ("DeformableDetr", "auto"),
+        ("automodel", "cpu"),
+        ("automodel", "auto"),
     ],
 )
 def test_train_single(m_without_release, architecture, accelerator):
