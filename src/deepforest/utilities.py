@@ -239,30 +239,36 @@ def shapefile_to_annotations(
     return __shapefile_to_annotations__(shapefile)
 
 
-def __assign_image_path__(gdf, image_path: str) -> str:
+def __assign_image_path__(gdf, image_path: str | None) -> gpd.GeoDataFrame:
     if image_path is None:
         if "image_path" not in gdf.columns:
             raise ValueError(
-                "No image_path column found in GeoDataframe and image_path argument not specified, please specify the root_dir and image_path arguements: read_file(input=df, root_dir='path/to/images/', image_path='image.tif', ...)"
+                "No image_path column found in GeoDataframe and image_path argument not specified, please specify the root_dir and image_path arguments: read_file(input=df, root_dir='path/to/images/', image_path='image.tif', ...)"
             )
         else:
             # Image Path columns exists, leave it unchanged.
             pass
     else:
         if "image_path" in gdf.columns:
-            existing_image_path = gdf.image_path.unique()[0]
-            if len(existing_image_path) > 1:
+            unique_paths = gdf.image_path.unique()
+            if len(unique_paths) > 1:
                 warnings.warn(
-                    f"Multiple image_paths found in dataframe: {existing_image_path}, overriding and assigning {image_path} to all rows!",
+                    f"Multiple image_paths found in dataframe: {list(unique_paths)}, overriding and assigning '{image_path}' to all rows! "
+                    "This assumes all annotations relate to a single image and is not appropriate for multi-image files.",
                     stacklevel=2,
                 )
-            if existing_image_path != image_path:
+            elif unique_paths[0] != image_path:
                 warnings.warn(
-                    f"Image path {existing_image_path} found in dataframe, overriding and assigning {image_path} to all rows!",
+                    f"Image path '{unique_paths[0]}' found in dataframe, overriding and assigning '{image_path}' to all rows!",
                     stacklevel=2,
                 )
             gdf["image_path"] = image_path
         else:
+            warnings.warn(
+                f"No image_path column found, assigning '{image_path}' to all {len(gdf)} rows. "
+                "This assumes all annotations relate to a single image and is not appropriate for multi-image files.",
+                stacklevel=2,
+            )
             gdf["image_path"] = image_path
 
     return gdf

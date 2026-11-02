@@ -205,6 +205,86 @@ def test_read_file_shapefile_without_image_path(tmp_path):
     assert "label" in result.columns
     assert hasattr(result, "root_dir")
 
+
+def test_read_file_warns_when_assigning_image_path_to_all_rows():
+    """read_file should warn that image_path applies to every row (issue #997)."""
+    test_df = pd.DataFrame({
+        'xmin': [0, 10],
+        'ymin': [0, 10],
+        'xmax': [5, 15],
+        'ymax': [5, 15],
+        'label': ['Tree', 'Tree']
+    })
+    with pytest.warns(UserWarning, match="assigning.*to all 2 rows"):
+        result = utilities.read_file(
+            input=test_df,
+            image_path="OSBS_029.tif",
+            root_dir="some/dir",
+        )
+    assert (result.image_path == "OSBS_029.tif").all()
+
+
+def test_read_file_warns_when_overriding_single_image_path():
+    """Overriding one existing image_path should warn once."""
+    test_df = pd.DataFrame({
+        'xmin': [0, 10],
+        'ymin': [0, 10],
+        'xmax': [5, 15],
+        'ymax': [5, 15],
+        'label': ['Tree', 'Tree'],
+        'image_path': ['old.tif', 'old.tif'],
+    })
+    with pytest.warns(UserWarning, match="overriding and assigning"):
+        result = utilities.read_file(
+            input=test_df,
+            image_path="new.tif",
+            root_dir="some/dir",
+        )
+    assert (result.image_path == "new.tif").all()
+
+
+def test_read_file_warns_when_overriding_multiple_image_paths():
+    """Overriding several distinct image_paths should warn about multi-image input."""
+    test_df = pd.DataFrame({
+        'xmin': [0, 10],
+        'ymin': [0, 10],
+        'xmax': [5, 15],
+        'ymax': [5, 15],
+        'label': ['Tree', 'Tree'],
+        'image_path': ['a.tif', 'b.tif'],
+    })
+    with pytest.warns(UserWarning, match="Multiple image_paths"):
+        result = utilities.read_file(
+            input=test_df,
+            image_path="new.tif",
+            root_dir="some/dir",
+        )
+    assert (result.image_path == "new.tif").all()
+
+
+def test_read_file_no_warning_when_image_path_unchanged():
+    """Same image_path passed as in the data should not warn."""
+    import warnings
+
+    test_df = pd.DataFrame({
+        'xmin': [0, 10],
+        'ymin': [0, 10],
+        'xmax': [5, 15],
+        'ymax': [5, 15],
+        'label': ['Tree', 'Tree'],
+        'image_path': ['same.tif', 'same.tif'],
+    })
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        result = utilities.read_file(
+            input=test_df,
+            image_path="same.tif",
+            root_dir="some/dir",
+        )
+    assert (result.image_path == "same.tif").all()
+    assert not [w for w in caught if "overriding" in str(w.message).lower()
+                or "multiple image_paths" in str(w.message).lower()]
+
 def test_shapefile_to_annotations_invalid_epsg(tmp_path):
     sample_geometry = [geometry.Point(404211.9 + 10, 3285102 + 20), geometry.Point(404211.9 + 20, 3285102 + 20)]
     labels = ["Tree", "Tree"]
@@ -212,9 +292,13 @@ def test_shapefile_to_annotations_invalid_epsg(tmp_path):
     gdf = gpd.GeoDataFrame(df, geometry="geometry", crs="EPSG:4326")
     gdf.to_file(tmp_path / "annotations.shp")
     assert gdf.crs.to_string() == "EPSG:4326"
-    image_path = get_data("OSBS_029.tif")
-    with pytest.raises(ValueError):
-        _ = utilities.read_file(input=str(tmp_path / "annotations.shp"), image_path=image_path)
+    image_path = os.path.basename(get_data("OSBS_029.tif"))
+    with pytest.raises(ValueError, match="degrees"):
+        _ = utilities.read_file(
+            input=str(tmp_path / "annotations.shp"),
+            image_path=image_path,
+            root_dir=os.path.dirname(get_data("OSBS_029.tif")),
+        )
 
 def test_read_file_boxes_projected(tmp_path):
     sample_geometry = [geometry.Point(404211.9 + 10, 3285102 + 20), geometry.Point(404211.9 + 20, 3285102 + 20)]
