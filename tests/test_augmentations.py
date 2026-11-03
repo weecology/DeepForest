@@ -221,8 +221,24 @@ def test_unknown_augmentation_error():
 
 def test_unsupported_augmentations_raise_error():
     """Test that completely unknown augmentations raise ValueError."""
-    with pytest.raises(ValueError, match="Unknown augmentation 'RandomSizedBBoxSafeCrop'"):
-        get_transform(augmentations="RandomSizedBBoxSafeCrop")
+    with pytest.raises(ValueError, match="Unknown augmentation 'UnknownBBoxCrop'"):
+        get_transform(augmentations="UnknownBBoxCrop")
+
+
+def test_random_sized_bbox_safe_crop():
+    """RandomSizedBBoxSafeCrop keeps all boxes inside the resized output."""
+    from deepforest.augmentations import bbox_augmentation_context
+
+    transform = get_transform(
+        augmentations={"RandomSizedBBoxSafeCrop": {"size": (200, 200), "p": 1.0}}
+    )
+    image = torch.rand(1, 3, 400, 400)
+    boxes = torch.tensor([[[50.0, 60.0, 120.0, 140.0]]])
+    with bbox_augmentation_context(boxes):
+        out_image, out_boxes = transform(image, boxes)
+    assert out_image.shape[-2:] == (200, 200)
+    flat = out_boxes.reshape(-1, 4)
+    assert torch.all(flat[:, 0] >= 0) and torch.all(flat[:, 2] <= 200)
 
 
 def test_no_op_augmentation_pipeline():
