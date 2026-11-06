@@ -426,8 +426,11 @@ def format_boxes(prediction, scores=True):
         # Cast to fp32 — numpy has no bf16 dtype.
         df["score"] = prediction["scores"].float().cpu().detach().numpy()
 
-    df["geometry"] = df.apply(
-        lambda x: shapely.geometry.box(x.xmin, x.ymin, x.xmax, x.ymax), axis=1
+    df["geometry"] = shapely.box(
+        df["xmin"].to_numpy(),
+        df["ymin"].to_numpy(),
+        df["xmax"].to_numpy(),
+        df["ymax"].to_numpy(),
     )
     return df
 
@@ -540,7 +543,7 @@ def format_points(prediction: dict, scores: bool = True) -> pd.DataFrame | None:
     if scores:
         df["score"] = prediction["scores"].cpu().detach().numpy()
 
-    df["geometry"] = df.apply(lambda x: shapely.geometry.Point(x.x, x.y), axis=1)
+    df["geometry"] = shapely.points(df["x"].to_numpy(), df["y"].to_numpy())
     return df
 
 
@@ -646,17 +649,21 @@ def __pandas_to_geodataframe__(df: pd.DataFrame):
     else:
         geom_type = determine_geometry_type(df)
         if geom_type == "box":
-            df["geometry"] = df.apply(
-                lambda x: shapely.geometry.box(x.xmin, x.ymin, x.xmax, x.ymax), axis=1
+            df["geometry"] = shapely.box(
+                df["xmin"].to_numpy(),
+                df["ymin"].to_numpy(),
+                df["xmax"].to_numpy(),
+                df["ymax"].to_numpy(),
             )
         elif geom_type == "polygon":
             df["geometry"] = gpd.GeoSeries.from_wkt(df["polygon"])
         elif geom_type == "point":
             df["geometry"] = gpd.GeoSeries(
-                [
-                    shapely.geometry.Point(x, y)
-                    for x, y in zip(df.x.astype(float), df.y.astype(float), strict=False)
-                ]
+                shapely.points(
+                    df["x"].to_numpy(dtype=float),
+                    df["y"].to_numpy(dtype=float),
+                ),
+                index=df.index,
             )
     gdf = gpd.GeoDataFrame(df, geometry="geometry")
     gdf = DeepForest_DataFrame(gdf)
@@ -1033,11 +1040,9 @@ def image_to_geo_coordinates(gdf, root_dir=None, flip_y_axis=False):
             offset="center",
         )
 
-        for left, bottom, right, top in zip(
-            xmin_coords, ymin_coords, xmax_coords, ymax_coords, strict=False
-        ):
-            geom = shapely.geometry.box(left, bottom, right, top)
-            projected_geometry.append(geom)
+        projected_geometry = shapely.box(
+            xmin_coords, ymin_coords, xmax_coords, ymax_coords
+        )
 
     elif geom_type == "polygon":
         for geom in transformed_gdf.geometry:
@@ -1057,9 +1062,7 @@ def image_to_geo_coordinates(gdf, root_dir=None, flip_y_axis=False):
             cols=transformed_gdf.geometry.x,
             offset="center",
         )
-        for x, y in zip(x_coords, y_coords, strict=False):
-            geom = shapely.geometry.Point(x, y)
-            projected_geometry.append(geom)
+        projected_geometry = shapely.points(x_coords, y_coords)
 
     transformed_gdf.geometry = projected_geometry
 

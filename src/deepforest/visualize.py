@@ -6,6 +6,7 @@ import warnings
 import matplotlib
 import numpy as np
 import pandas as pd
+import shapely
 import supervision as sv
 from matplotlib import pyplot as plt
 from PIL import Image
@@ -154,10 +155,7 @@ def convert_to_sv_format(
 
     if geom_type == "box":
         # Extract bounding boxes as numpy array with shape (_, 4)
-        boxes = df.geometry.apply(
-            lambda x: (x.bounds[0], x.bounds[1], x.bounds[2], x.bounds[3])
-        ).values
-        boxes = np.stack(boxes)
+        boxes = shapely.bounds(df.geometry.to_numpy())
 
         label_mapping = {
             label: idx for idx, label in enumerate(sorted(df["label"].unique()))
@@ -168,7 +166,7 @@ def convert_to_sv_format(
 
         # Extract scores as a numpy array
         try:
-            scores = np.array(df["score"].tolist())
+            scores = df["score"].to_numpy()
         except KeyError:
             scores = np.ones(len(labels))
 
@@ -184,10 +182,7 @@ def convert_to_sv_format(
 
     elif geom_type == "polygon":
         # Extract bounding boxes as numpy array with shape (_, 4)
-        boxes = df.geometry.apply(
-            lambda x: (x.bounds[0], x.bounds[1], x.bounds[2], x.bounds[3])
-        ).values
-        boxes = np.stack(boxes)
+        boxes = shapely.bounds(df.geometry.to_numpy())
 
         label_mapping = {
             label: idx for idx, label in enumerate(sorted(df["label"].unique()))
@@ -198,7 +193,7 @@ def convert_to_sv_format(
 
         # Extract scores as a numpy array
         try:
-            scores = np.array(df["score"].tolist())
+            scores = df["score"].to_numpy()
         except KeyError:
             scores = np.ones(len(labels))
 
@@ -250,9 +245,8 @@ def convert_to_sv_format(
         )
 
     elif geom_type == "point":
-        points = df.geometry.apply(lambda x: (x.x, x.y)).values
-        points = np.stack(points)
-        points = np.expand_dims(points, axis=1)
+        coords = shapely.get_coordinates(df.geometry.to_numpy())
+        points = coords[:, np.newaxis, :]
 
         label_mapping = {
             label: idx for idx, label in enumerate(sorted(df["label"].unique()))
@@ -263,7 +257,7 @@ def convert_to_sv_format(
 
         # Extract scores as a numpy array
         try:
-            scores = np.array(df["score"].tolist())
+            scores = df["score"].to_numpy()
         except KeyError:
             scores = np.ones(len(labels))
 
