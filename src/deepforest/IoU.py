@@ -251,16 +251,13 @@ def match_points(
     if norm_key not in ("l1", "l2"):
         raise ValueError(f"Unknown norm type: {norm}")
 
-    if n_truth == 0 or n_pred == 0:
-        distances = np.full((n_truth, n_pred), np.inf, dtype=float)
+    truth_coords = shapely.get_coordinates(truth_geoms)
+    pred_coords = shapely.get_coordinates(pred_geoms)
+    diff = truth_coords[:, None, :] - pred_coords[None, :]
+    if norm_key == "l2":
+        distances = np.hypot(diff[..., 0], diff[..., 1])
     else:
-        truth_coords = shapely.get_coordinates(truth_geoms)
-        pred_coords = shapely.get_coordinates(pred_geoms)
-        diff = truth_coords[:, None, :] - pred_coords[None, :]
-        if norm_key == "l2":
-            distances = np.hypot(diff[..., 0], diff[..., 1])
-        else:
-            distances = np.abs(diff).sum(axis=-1)
+        distances = np.abs(diff).sum(axis=-1)
 
     # Linear sum assignment + match lookup
     row_ind, col_ind = linear_sum_assignment(distances, maximize=False)

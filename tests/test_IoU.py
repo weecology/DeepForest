@@ -62,5 +62,21 @@ def test_match_points():
     assert list(res_l1["prediction_id"]) == [1, 2]
     assert np.allclose(res_l1["distance"].to_numpy(), [7.0, 2.0])
 
+    res_empty = IoU.match_points(ground_truth.iloc[0:0], submission)
+    assert res_empty.empty
+
+    res_unmatched = IoU.match_points(
+        ground_truth, submission.iloc[:1].drop(columns=["score"])
+    )
+    unmatched_row = res_unmatched.loc[res_unmatched["truth_id"] == 20].iloc[0]
+    assert unmatched_row["distance"] == float("inf")
+    assert pd.isna(unmatched_row["prediction_id"])
+
+    multi_image_sub = submission.assign(
+        image_path=["OSBS_029.tif", "other.tif"]
+    )
+    with pytest.raises(ValueError, match="More than one image"):
+        IoU.match_points(ground_truth, multi_image_sub)
+
     with pytest.raises(ValueError, match="Unknown norm type"):
         IoU.match_points(ground_truth, submission, norm="invalid")
