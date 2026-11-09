@@ -218,29 +218,20 @@ def test_split_raster_rgb_no_warning(config, tmp_path, orders):
                 patch_size=config.patch_size,
                 patch_overlap=config.patch_overlap,
             )
-        elif orders == "channels_last":
+        else:
             img = np.zeros((400, 400, 3), dtype=np.uint8)
             img[:, :, 0] = 10
             img[:, :, 1] = 20
             img[:, :, 2] = 30
+            if orders == "channels_first":
+                img = np.moveaxis(img, 2, 0)
+
             crops = preprocess.split_raster(
                 numpy_image=img,
                 save_dir=tmp_path,
                 patch_size=config.patch_size,
                 patch_overlap=config.patch_overlap,
-                image_name="test_rgb_last.png",
-            )
-        elif orders == "channels_first":
-            img = np.zeros((3, 400, 400), dtype=np.uint8)
-            img[0, :, :] = 10
-            img[1, :, :] = 20
-            img[2, :, :] = 30
-            crops = preprocess.split_raster(
-                numpy_image=img,
-                save_dir=tmp_path,
-                patch_size=config.patch_size,
-                patch_overlap=config.patch_overlap,
-                image_name="test_rgb_first.png",
+                image_name=f"test_rgb_{orders}.png",
             )
 
     non_3_band_warnings = [
@@ -262,16 +253,12 @@ def test_split_raster_rgb_no_warning(config, tmp_path, orders):
 def test_split_raster_more_than_four_bands(config, tmp_path, order):
     """Ensure split_raster handles images with >4 bands by correctly selecting
     the first 3 channels rather than slicing rows."""
-    if order == "channels_last":
-        # (H, W, C) = (400, 400, 5)
-        img = np.zeros((400, 400, 5), dtype=np.uint8)
-        for c in range(5):
-            img[:, :, c] = (c + 1) * 20
-    else:
-        # (C, H, W) = (5, 400, 400)
-        img = np.zeros((5, 400, 400), dtype=np.uint8)
-        for c in range(5):
-            img[c, :, :] = (c + 1) * 20
+    img = np.zeros((400, 400, 5), dtype=np.uint8)
+    for c in range(5):
+        img[:, :, c] = (c + 1) * 20
+
+    if order == "channels_first":
+        img = np.moveaxis(img, 2, 0)
 
     with pytest.warns(
         UserWarning,
