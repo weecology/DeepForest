@@ -11,18 +11,6 @@ repos:
       - id: check-json
         files: citation_count.json
 
-  # Notebooks: run Ruff via nbQA inside .ipynb
-  - repo: https://github.com/nbQA-dev/nbQA
-    rev: 1.9.1
-    hooks:
-      - id: nbqa-ruff-format
-        additional_dependencies: [ruff]
-        files: ^docs/user_guide/examples/.*\.ipynb$
-      - id: nbqa-ruff
-        args: ["--fix"]
-        additional_dependencies: [ruff]
-        files: ^docs/user_guide/examples/.*\.ipynb$
-
   # Docstrings: auto-format
   - repo: local
     hooks:
@@ -46,14 +34,16 @@ repos:
         files: |
           (?x)^(
             src/deepforest.*\.py|
-            fetch_google_scholar\.py
+            fetch_google_scholar\.py|
+            docs/user_guide/examples/.*\.ipynb
           )$
       - id: ruff
         args: ["--fix"]
         files: |
           (?x)^(
             src/deepforest.*\.py|
-            fetch_google_scholar\.py
+            fetch_google_scholar\.py|
+            docs/user_guide/examples/.*\.ipynb
           )$
 ci:
     autofix_prs: false

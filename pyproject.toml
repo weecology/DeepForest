@@ -80,7 +80,6 @@ dev = [
     "bump-my-version",
     "comet_ml",
     "docformatter",
-    "nbqa",
     "pre-commit",
     "pytest",
     "pytest-cov",
