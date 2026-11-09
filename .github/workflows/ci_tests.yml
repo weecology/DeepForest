@@ -14,9 +14,9 @@ jobs:
       fail-fast: false
       matrix:
         python-version:
-          - "3.12"
+          - "3.14"
+          - "3.13"
           - "3.11"
-          - "3.10"
 
         os:
           - "ubuntu-latest"
@@ -63,7 +63,9 @@ jobs:
       - name: Run pytest with coverage
         run: uv run pytest -v --cov=src/deepforest --cov-report=xml --cov-report=term-missing -o tmp_path_retention=none tests/
 
+      # Upload once to avoid duplicate upload requests across the matrix.
       - name: Upload coverage to Codecov
+        if: matrix.python-version == '3.14'
         uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de
         with:
           file: ./coverage.xml
