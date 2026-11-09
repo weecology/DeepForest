@@ -55,15 +55,23 @@ jobs:
       - name: Install package
         run: uv sync --all-extras --dev
 
+      # Pre-commit and coverage can run on one matrix.
       - name: Run pre-commit (diff vs origin/main)
+        if: matrix.python-version == '3.12'
         run: |
           git fetch origin main --prune
           uv run pre-commit run --from-ref origin/main --to-ref HEAD
 
       - name: Run pytest with coverage
+        if: matrix.python-version == '3.12'
         run: uv run pytest -v --cov=src/deepforest --cov-report=xml --cov-report=term-missing -o tmp_path_retention=none tests/
 
+      - name: Run pytest
+        if: matrix.python-version != '3.12'
+        run: uv run pytest -v -o tmp_path_retention=none tests/
+
       - name: Upload coverage to Codecov
+        if: matrix.python-version == '3.12'
         uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de
         with:
           file: ./coverage.xml
