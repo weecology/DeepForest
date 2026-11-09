@@ -193,9 +193,11 @@ class RecallPrecision(Metric):
             for col in ["predicted_label", "true_label"]:
                 if col in self._all_results.columns:
                     self._all_results[col] = self._all_results[col].map(
-                        lambda x: self.numeric_to_label_dict.get(int(x), x)
-                        if pd.notna(x)
-                        else x
+                        lambda x: (
+                            self.numeric_to_label_dict.get(int(x), x)
+                            if pd.notna(x)
+                            else x
+                        )
                     )
             # TODO Check why this fails for point predictions
             if self.task in ("box", "polygon") and len(self.label_dict) > 1:
