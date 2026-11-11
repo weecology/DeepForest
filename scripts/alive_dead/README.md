@@ -41,8 +41,8 @@ python build_dte_crops.py --root $ROOT --source bench    # GPU
 
 # 2. Grouped splits (no group, and no identical image, in more than one split)
 python make_split.py --root $ROOT --manifest neon_hand.csv --name neon_hand_v1
-python make_split.py --root $ROOT --manifest dte_train.csv --name dte_train_v1 --n-folds 10
-python make_split.py --root $ROOT --manifest dte_bench.csv --name dte_bench_all --all-test
+python make_split.py --root $ROOT --manifest dte_train.csv --name dte_train_v2 --n-folds 10
+python make_split.py --root $ROOT --manifest dte_bench.csv --name dte_bench_v2 --all-test
 
 # 3. Pretrain on deadtrees.earth crowns, then fine-tune on the hand labels
 sbatch train.sbatch dte_train_v1 pretrain_dte --epochs 8 --num-workers 16
@@ -63,6 +63,20 @@ DeepForest (`weecology/deepforest-tree`, score >= 0.3) detects crowns on each
 Alive when it has no mortality pixel and at least 70% tree cover. Crowns in
 between, or touching ignored pixels, are skipped. Each crop is padded by 10 px
 (1 m).
+
+Crowns that are likely partial trees are then removed. The unfiltered manifest
+is kept as `dte_<source>_unfiltered.csv`, and `--refilter` re-applies the
+filters without running detection again.
+
+| Filter | Default | Removed from DTE train |
+|---|---|---|
+| crown smaller than `--min-side-m` (square root of box area) | 2 m | 15% |
+| box aspect ratio above `--max-aspect` | 2 | 8%, mostly crowns cut by the patch edge |
+| more than `--max-nested` of the box inside a larger crown box | 0.5 | 2% |
+| crown box touching the patch edge | on | only for manifests that record `crown_*` boxes |
+
+Size filtering doesn't fix the main remaining issue: the detector often splits a
+large crown into several 2–4 m boxes, and those fragments are kept.
 
 ## Known issues in the NEON hand labels
 

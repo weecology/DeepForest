@@ -8,6 +8,12 @@ is labelled from the mask pixels inside it:
 - Alive: no mortality pixel and tree-cover fraction >= ``--alive-tree-frac``
 - crowns in between, or touching ignored pixels, are skipped.
 
+Crowns that are likely partial trees are then removed (``filter_crowns``):
+boxes cut by the patch edge, crowns smaller than ``--min-side-m``, slivers with an
+aspect ratio above ``--max-aspect``, and boxes mostly inside a larger crown box.
+The unfiltered manifest is kept as ``dte_<source>_unfiltered.csv``; ``--refilter``
+re-applies the filters to it without running detection again.
+
 Two sources:
 - ``train``: the CC BY train/val WebDataset shards (model-assisted labels, weak),
   subsampled per orthophoto. Group = orthophoto id.
@@ -18,6 +24,7 @@ Writes crops to ``crops/dte_<source>/{Alive,Dead}/`` and ``manifests/dte_<source
 Usage:
     python build_dte_crops.py --root /blue/ewhite/b.weinstein/DeepForest/alive_dead --source bench
     python build_dte_crops.py --root ... --source train
+    python build_dte_crops.py --root ... --source train --refilter --min-side-m 2.5
 """
 
 import argparse
@@ -69,6 +76,10 @@ def label_crowns(
                     "ymin": y0,
                     "xmax": x1,
                     "ymax": y1,
+                    "crown_xmin": int(boxes[i, 0]),
+                    "crown_ymin": int(boxes[i, 1]),
+                    "crown_xmax": int(boxes[i, 2]),
+                    "crown_ymax": int(boxes[i, 3]),
                     "det_score": float(det[i, 4]),
                     "mort_frac": float(mort[i]),
                     "tree_frac": float(tree[i]),
@@ -116,14 +127,85 @@ def iter_bench(root: Path, args, rng):
         yield Path(row.tile_path).stem, rgb, mask, row._asdict()
 
 
+def nested(boxes: np.ndarray, frac: float) -> np.ndarray:
+    """True for boxes with more than ``frac`` of their area inside a larger box."""
+    area = (boxes[:, 2] - boxes[:, 0]) * (boxes[:, 3] - boxes[:, 1])
+    ix = np.minimum(boxes[:, None, 2], boxes[None, :, 2]) - np.maximum(
+        boxes[:, None, 0], boxes[None, :, 0]
+    )
+    iy = np.minimum(boxes[:, None, 3], boxes[None, :, 3]) - np.maximum(
+        boxes[:, None, 1], boxes[None, :, 1]
+    )
+    inter = ix.clip(0) * iy.clip(0)
+    np.fill_diagonal(inter, 0)
+    return ((inter / area[:, None] > frac) & (area[None, :] > area[:, None])).any(1)
+
+
+def flag_crowns(df: pd.DataFrame, args: argparse.Namespace) -> pd.DataFrame:
+    """Add ``flag_*`` columns for crowns that are likely partial trees.
+
+    Uses the detector's crown box (``crown_*`` columns). Older manifests only have
+    the padded crop box: the crown size is then the crop size minus the padding,
+    and the edge test is skipped, because a crown near the edge can't be told from
+    one cut by the edge. Nested boxes are tested against the other crowns kept
+    from the same patch.
+    """
+    if "crown_xmin" in df:
+        box = df[["crown_xmin", "crown_ymin", "crown_xmax", "crown_ymax"]].to_numpy(float)
+        w, h = box[:, 2] - box[:, 0], box[:, 3] - box[:, 1]
+        edge = (box[:, :2].min(1) <= 0) | (box[:, 2:].max(1) >= args.patch_px)
+    else:
+        print("no crown_* columns: skipping the edge test")
+        box = df[["xmin", "ymin", "xmax", "ymax"]].to_numpy(float)
+        w = (df.width - 2 * args.pad).clip(lower=1).to_numpy(float)
+        h = (df.height - 2 * args.pad).clip(lower=1).to_numpy(float)
+        edge = np.zeros(len(df), bool)
+    df = df.assign(
+        flag_edge=edge,
+        flag_small=np.sqrt(w * h) * df.gsd_m < args.min_side_m,
+        flag_aspect=np.maximum(w, h) / np.minimum(w, h).clip(1) > args.max_aspect,
+        flag_nested=False,
+    )
+    for _, g in df.groupby("patch"):
+        df.loc[g.index, "flag_nested"] = nested(
+            box[df.index.get_indexer(g.index)], args.max_nested
+        )
+    return df
+
+
+def filter_crowns(df: pd.DataFrame, args: argparse.Namespace) -> pd.DataFrame:
+    """Return the crowns with no ``flag_*`` set."""
+    df = flag_crowns(df, args)
+    flags = df.filter(like="flag_")
+    print("removed:", flags.groupby(df.label).sum().to_dict())
+    return df[~flags.any(axis=1)]
+
+
+def write_manifest(df: pd.DataFrame, args: argparse.Namespace, name: str) -> None:
+    """Write the unfiltered and filtered manifests."""
+    out = args.root / "manifests"
+    suffix = "_test" if args.limit else ""
+    df.to_csv(out / f"{name}_unfiltered{suffix}.csv", index=False)
+    kept = filter_crowns(df, args)
+    kept.to_csv(out / f"{name}{suffix}.csv", index=False)
+    print(kept.label.value_counts().to_dict(), "groups", kept.group.nunique())
+
+
 def main(args: argparse.Namespace) -> None:
+    name = f"dte_{args.source}"
+    if args.refilter:
+        unfiltered = args.root / "manifests" / f"{name}_unfiltered.csv"
+        if not unfiltered.exists():
+            (args.root / "manifests" / f"{name}.csv").rename(unfiltered)
+        write_manifest(pd.read_csv(unfiltered, low_memory=False), args, name)
+        return
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     detector = df_main.deepforest()
     detector.load_model("weecology/deepforest-tree")
     model = detector.model.to(device).eval()
     rng = np.random.default_rng(args.seed)
 
-    name = f"dte_{args.source}"
     for lab in ("Alive", "Dead"):
         (args.root / "crops" / name / lab).mkdir(parents=True, exist_ok=True)
     patches = (
@@ -162,9 +244,7 @@ def main(args: argparse.Namespace) -> None:
     )
     df["width"] = df.xmax - df.xmin
     df["height"] = df.ymax - df.ymin
-    suffix = "_test" if args.limit else ""
-    df.to_csv(args.root / "manifests" / f"{name}{suffix}.csv", index=False)
-    print(df.label.value_counts().to_dict(), "groups", df.group.nunique())
+    write_manifest(df, args, name)
 
 
 if __name__ == "__main__":
@@ -196,4 +276,22 @@ if __name__ == "__main__":
         "--limit", type=int, default=0, help="stop after N patches (testing)"
     )
     parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--patch-px", type=int, default=1024, help="patch size in px")
+    parser.add_argument(
+        "--min-side-m", type=float, default=2.0, help="smallest crown kept (m across)"
+    )
+    parser.add_argument(
+        "--max-aspect", type=float, default=2.0, help="largest box aspect ratio kept"
+    )
+    parser.add_argument(
+        "--max-nested",
+        type=float,
+        default=0.5,
+        help="drop boxes with more than this fraction inside a larger crown box",
+    )
+    parser.add_argument(
+        "--refilter",
+        action="store_true",
+        help="re-apply the crown filters to the existing manifest, no detection",
+    )
     main(parser.parse_args())

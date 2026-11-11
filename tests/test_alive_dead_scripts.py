@@ -94,3 +94,37 @@ def test_box_helpers():
     ]
     assert window_starts(1000, 400, 0.05) == [0, 380, 600]
     assert window_starts(300, 400, 0.05) == [0]
+
+
+def test_flag_crowns():
+    import argparse
+
+    from build_dte_crops import flag_crowns
+
+    args = argparse.Namespace(
+        pad=10, patch_px=1024, min_side_m=2.0, max_aspect=2.0, max_nested=0.5
+    )
+    crowns = pd.DataFrame(
+        {
+            "patch": "p",
+            "gsd_m": 0.1,
+            "label": "Dead",
+            # whole crown, small crown, edge crown, sliver, crown nested in the first
+            "crown_xmin": [100, 400, 0, 600, 110],
+            "crown_ymin": [100, 400, 500, 600, 110],
+            "crown_xmax": [140, 410, 30, 660, 135],
+            "crown_ymax": [140, 410, 530, 610, 135],
+        }
+    )
+    crowns[["xmin", "ymin"]] = crowns[["crown_xmin", "crown_ymin"]].to_numpy() - 10
+    crowns[["xmax", "ymax"]] = crowns[["crown_xmax", "crown_ymax"]].to_numpy() + 10
+    crowns["width"], crowns["height"] = (
+        crowns.xmax - crowns.xmin,
+        crowns.ymax - crowns.ymin,
+    )
+    flags = flag_crowns(crowns, args).filter(like="flag_")
+    assert not flags.iloc[0].any()
+    assert flags.flag_small.tolist() == [False, True, False, False, False]
+    assert flags.flag_edge.tolist() == [False, False, True, False, False]
+    assert flags.flag_aspect.tolist() == [False, False, False, True, False]
+    assert flags.flag_nested.tolist() == [False, False, False, False, True]
