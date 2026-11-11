@@ -13,12 +13,14 @@ import argparse
 import hashlib
 import os
 import time
+from datetime import timedelta
 
 import pandas as pd
 import torch
 from omegaconf import OmegaConf
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.loggers import CometLogger
+from pytorch_lightning.strategies import DDPStrategy
 
 from deepforest import callbacks, main
 
@@ -358,7 +360,8 @@ def run():
     m.create_trainer(
         logger=comet_logger,
         callbacks=[im_callback, ckpt_callback],
-        strategy="ddp",
+        # Short collective timeout so a dead rank fails the job fast instead of hanging for 30 min (default)
+        strategy=DDPStrategy(timeout=timedelta(minutes=15)),
         num_nodes=args.num_nodes,
         precision="16-mixed",  # Use mixed precision training for faster performance
         fast_dev_run=args.fast_dev_run,
