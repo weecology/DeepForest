@@ -45,13 +45,13 @@ python make_split.py --root $ROOT --manifest dte_train.csv --name dte_train_v2 -
 python make_split.py --root $ROOT --manifest dte_bench.csv --name dte_bench_v2 --all-test
 
 # 3. Pretrain on deadtrees.earth crowns, then fine-tune on the hand labels
-sbatch train.sbatch dte_train_v1 pretrain_dte --epochs 8 --num-workers 16
+sbatch train.sbatch dte_train_v2 pretrain_dte --epochs 8 --num-workers 16
 sbatch train.sbatch neon_hand_v1 finetune_dte \
-    --init-from $ROOT/runs/pretrain_dte/best.ckpt --extra-eval $ROOT/splits/dte_bench_all
+    --init-from $ROOT/runs/pretrain_dte/best.ckpt --extra-eval $ROOT/splits/dte_bench_v2
 
 # 4. Evaluate any checkpoint or Hugging Face model on a split
-python evaluate_cropmodel.py --split-dir $ROOT/splits/dte_bench_all --split test \
-    --model weecology/cropmodel-deadtrees --out $ROOT/runs/hf_current/eval_dte_bench_all
+python evaluate_cropmodel.py --split-dir $ROOT/splits/dte_bench_v2 --split test \
+    --model weecology/cropmodel-deadtrees --out $ROOT/runs/hf_current/eval_dte_bench_v2
 ```
 
 `make_split.py` needs scikit-learn (installed with `uv sync --all-extras --dev`).
