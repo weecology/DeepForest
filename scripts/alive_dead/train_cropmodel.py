@@ -68,6 +68,10 @@ def main(args: argparse.Namespace) -> None:
     trainer.fit(m)
     evaluate(args.split_dir, "val", checkpoint.best_model_path, args.out / "eval")
     evaluate(args.split_dir, "test", checkpoint.best_model_path, args.out / "eval")
+    for extra in args.extra_eval:
+        evaluate(
+            extra, "test", checkpoint.best_model_path, args.out / f"eval_{extra.name}"
+        )
 
 
 if __name__ == "__main__":
@@ -84,4 +88,11 @@ if __name__ == "__main__":
         "--init-from", default=None, help=".ckpt or HF repo id to start from"
     )
     parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument(
+        "--extra-eval",
+        type=Path,
+        nargs="*",
+        default=[],
+        help="other split dirs whose test crops are also evaluated (e.g. benchmarks)",
+    )
     main(parser.parse_args())

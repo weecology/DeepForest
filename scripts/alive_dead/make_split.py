@@ -43,10 +43,15 @@ def write_imagefolder(df: pd.DataFrame, root: Path, out: Path) -> None:
             os.symlink(root / row.crop_path, dest)
 
 
-def main(root: Path, manifest: str, name: str, n_folds: int, seed: int) -> None:
-    df = pd.read_csv(root / "manifests" / manifest)
+def main(
+    root: Path, manifests: list[str], name: str, n_folds: int, seed: int, all_test: bool
+) -> None:
+    df = pd.concat(
+        [pd.read_csv(root / "manifests" / m, low_memory=False) for m in manifests],
+        ignore_index=True,
+    )
     df["group"] = df.source + ":" + df.group.astype(str)
-    df["split"] = assign_splits(df, n_folds, seed)
+    df["split"] = "test" if all_test else assign_splits(df, n_folds, seed)
 
     leaks = df.groupby("group").split.nunique().gt(1).sum()
     assert leaks == 0, f"{leaks} groups appear in more than one split"
@@ -65,6 +70,9 @@ def main(root: Path, manifest: str, name: str, n_folds: int, seed: int) -> None:
     write_imagefolder(df, root, out)
 
     summary = df.groupby(["split", "label"]).size().unstack(fill_value=0)
+    for lab in ("Alive", "Dead"):
+        if lab not in summary:
+            summary[lab] = 0
     summary["groups"] = df.groupby("split").group.nunique()
     summary["sites"] = df.groupby("split").site.nunique()
     summary["dead_frac"] = (summary.Dead / (summary.Alive + summary.Dead)).round(3)
@@ -76,12 +84,15 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--root", type=Path, required=True)
     parser.add_argument(
-        "--manifest", required=True, help="CSV file name under manifests/"
+        "--manifest", required=True, nargs="+", help="CSV file name(s) under manifests/"
     )
     parser.add_argument(
         "--name", required=True, help="split name, written to splits/<name>"
     )
     parser.add_argument("--n-folds", type=int, default=7)
     parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument(
+        "--all-test", action="store_true", help="put every crop in test (benchmarks)"
+    )
     a = parser.parse_args()
-    main(a.root, a.manifest, a.name, a.n_folds, a.seed)
+    main(a.root, a.manifest, a.name, a.n_folds, a.seed, a.all_test)
