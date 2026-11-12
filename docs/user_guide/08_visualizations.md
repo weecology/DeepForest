@@ -38,8 +38,8 @@ plot_results(results)
 The colors and thickness of annotations can be updated.
 
 ```python
-# Orange boxes and thicker lines
-plot_results(results, results_color=[109,50,168], thickness=2)
+# Crimson boxes and thicker lines
+plot_results(results, results_color=[168,50,109], thickness=2)
 ```
 ![sample_image](../../www/Visualization2.png)
 

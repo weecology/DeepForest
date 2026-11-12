@@ -29,7 +29,7 @@ class ImagesCallback(Callback):
         n: Number of images to process
         every_n_epochs: Run interval in epochs
         select_random: Whether to select random images
-        color: Bounding box color as BGR tuple
+        color: Bounding box color as an RGB list
         thickness: Border line thickness in pixels
     """
 

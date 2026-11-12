@@ -143,6 +143,23 @@ def test_plot_results_polygon(gdf_poly, tmp_path):
     assert (tmp_path / "OSBS_029.png").exists()
 
 
+def test_plot_results_color_is_rgb(gdf_box, tmp_path):
+    # supervision treats numpy images as BGR, so a red box used to come out blue
+    visualize.plot_results(gdf_box, savedir=tmp_path, results_color=[255, 0, 0], show=False)
+
+    plotted = np.array(Image.open(tmp_path / "OSBS_029.png"))
+    assert (plotted == [255, 0, 0]).all(axis=-1).any()
+    assert not (plotted == [0, 0, 255]).all(axis=-1).any()
+
+
+def test_plot_annotations_color_is_rgb(gdf_box, tmp_path):
+    visualize.plot_annotations(gdf_box, savedir=tmp_path, color=[255, 0, 0], show=False)
+
+    plotted = np.array(Image.open(tmp_path / "OSBS_029.png"))
+    assert (plotted == [255, 0, 0]).all(axis=-1).any()
+    assert not (plotted == [0, 0, 255]).all(axis=-1).any()
+
+
 def test_plot_with_relative_paths(tmp_path):
     # Test that plot_results and plot_annotations work with relative paths and root_dir
     full_path = get_data("OSBS_029.png")
