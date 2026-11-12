@@ -165,6 +165,12 @@ def run():
         "it opens every image serially at startup, which takes hours on the full dataset.",
     )
     parser.add_argument(
+        "--ddp_timeout_minutes",
+        type=int,
+        default=15,
+        help="Collective timeout; a dead or desynchronised rank aborts the job after this long (default: 15)",
+    )
+    parser.add_argument(
         "--fast_dev_run",
         action="store_true",
         help="Run a fast development run with a single batch",
@@ -361,7 +367,7 @@ def run():
         logger=comet_logger,
         callbacks=[im_callback, ckpt_callback],
         # Short collective timeout so a dead rank fails the job fast instead of hanging for 30 min (default)
-        strategy=DDPStrategy(timeout=timedelta(minutes=15)),
+        strategy=DDPStrategy(timeout=timedelta(minutes=args.ddp_timeout_minutes)),
         num_nodes=args.num_nodes,
         precision="16-mixed",  # Use mixed precision training for faster performance
         fast_dev_run=args.fast_dev_run,
