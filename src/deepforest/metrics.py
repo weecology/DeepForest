@@ -2,9 +2,43 @@ import pandas as pd
 import torch
 from torch import Tensor
 from torchmetrics import Metric
+from torchmetrics.detection import IntersectionOverUnion, MeanAveragePrecision
 
 from deepforest import utilities
 from deepforest.evaluate import compute_class_recall, match_predictions
+
+
+class GatherObjectSyncMixin:
+    """Sync list states with one ``all_gather_object`` instead of one
+    collective per list element.
+
+    torchmetrics gathers every tensor in a list state separately, so
+    ranks holding a different number of list elements issue a different
+    number of collectives and deadlock. Validation drops empty frames
+    per rank before updating the IoU and mAP metrics, so the element
+    counts differ whenever ranks see different numbers of empty images.
+    """
+
+    def _sync_dist(self, dist_sync_fn=None, process_group=None) -> None:
+        local = {
+            attr: [t.detach().cpu() for t in getattr(self, attr)]
+            for attr in self._reductions
+        }
+        gathered = [None] * torch.distributed.get_world_size(group=process_group)
+        torch.distributed.all_gather_object(gathered, local, group=process_group)
+        for attr in local:
+            merged = [t.to(self.device) for rank in gathered for t in rank[attr]]
+            setattr(self, attr, merged)
+
+
+class DistributedIntersectionOverUnion(GatherObjectSyncMixin, IntersectionOverUnion):
+    """IntersectionOverUnion that is safe with uneven list states across
+    ranks."""
+
+
+class DistributedMeanAveragePrecision(GatherObjectSyncMixin, MeanAveragePrecision):
+    """MeanAveragePrecision that is safe with uneven list states across
+    ranks."""
 
 
 class RecallPrecision(Metric):

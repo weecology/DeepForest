@@ -14,11 +14,14 @@ from PIL import Image
 from pytorch_lightning.callbacks import LearningRateMonitor
 from pytorch_lightning.loggers import CSVLogger
 from torch import optim
-from torchmetrics.detection import IntersectionOverUnion, MeanAveragePrecision
 
 from deepforest import distributed, predict, utilities
 from deepforest.datasets import prediction, training
-from deepforest.metrics import RecallPrecision
+from deepforest.metrics import (
+    DistributedIntersectionOverUnion,
+    DistributedMeanAveragePrecision,
+    RecallPrecision,
+)
 
 Image.MAX_IMAGE_PIXELS = None
 
@@ -97,11 +100,11 @@ class deepforest(pl.LightningModule):
 
         # Box Metrics
         if self.model.task == "box":
-            self.iou_metric = IntersectionOverUnion(
+            self.iou_metric = DistributedIntersectionOverUnion(
                 class_metrics=True, iou_threshold=self.config.validation.iou_threshold
             )
 
-            self.mAP_metric = MeanAveragePrecision(backend="faster_coco_eval")
+            self.mAP_metric = DistributedMeanAveragePrecision(backend="faster_coco_eval")
 
             self.precision_recall_metric = RecallPrecision(
                 iou_threshold=self.config.validation.iou_threshold,
@@ -119,7 +122,7 @@ class deepforest(pl.LightningModule):
 
         # Segmentation metrics
         if self.model.task == "polygon":
-            self.mAP_metric = MeanAveragePrecision(
+            self.mAP_metric = DistributedMeanAveragePrecision(
                 iou_type="segm", backend="faster_coco_eval"
             )
 
