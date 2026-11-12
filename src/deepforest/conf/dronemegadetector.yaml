@@ -1,0 +1,29 @@
+defaults:
+  - config
+  - _self_
+
+architecture: rfdetr
+
+# RF-DETR model from ConservationDrones for generic
+# animal detection in aerial imagery.
+model:
+  name: 'ConservationDrones/DroneMegaDetector'
+  revision: 'main'
+
+# Matches the model's id2label. The model predicts
+# 3 classes, but has a fourth "unused" class which
+# is included here to avoid auto-resizing the model
+# on load.
+label_dict:
+  person: 0
+  animal: 1
+  vehicle: 2
+  unused: 3
+num_classes: 4
+
+# The image processor resizes inputs to 1280x1280.
+patch_size: 1280
+patch_overlap: 0.05
+
+# From the model card
+score_thresh: 0.3
