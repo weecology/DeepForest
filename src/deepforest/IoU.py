@@ -247,19 +247,17 @@ def match_points(
                 "geometry": pd.Series(dtype=object),
             }
         )
-    distances = np.full((n_truth, n_pred), np.inf, dtype=float)
-    for t_idx in range(n_truth):
-        for p_idx in range(n_pred):
-            if norm.lower() == "l2":
-                distances[t_idx, p_idx] = truth_geoms[t_idx].distance(pred_geoms[p_idx])
-            elif norm.lower() == "l1":
-                diff = shapely.geometry.Point(
-                    abs(truth_geoms[t_idx].x - pred_geoms[p_idx].x),
-                    abs(truth_geoms[t_idx].y - pred_geoms[p_idx].y),
-                )
-                distances[t_idx, p_idx] = diff.x + diff.y
-            else:
-                raise ValueError(f"Unknown norm type: {norm}")
+    norm_key = norm.lower()
+    if norm_key not in ("l1", "l2"):
+        raise ValueError(f"Unknown norm type: {norm}")
+
+    truth_coords = shapely.get_coordinates(truth_geoms)
+    pred_coords = shapely.get_coordinates(pred_geoms)
+    diff = truth_coords[:, None, :] - pred_coords[None, :]
+    if norm_key == "l2":
+        distances = np.hypot(diff[..., 0], diff[..., 1])
+    else:
+        distances = np.abs(diff).sum(axis=-1)
 
     # Linear sum assignment + match lookup
     row_ind, col_ind = linear_sum_assignment(distances, maximize=False)
