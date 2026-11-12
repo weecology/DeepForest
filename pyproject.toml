@@ -87,6 +87,7 @@ dev = [
     "pytest-profiling",
     "pytest-xdist",
     "ruff",
+    "scikit-learn>=1.9.1",
     "twine",
 ]
 
