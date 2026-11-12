@@ -5,7 +5,7 @@ import shutil
 import pandas as pd
 import torch
 
-from deepforest import get_data
+from deepforest import get_data, main
 from deepforest.datasets.training import BalancedDetectionBatchSampler, BoxDataset
 
 
@@ -74,3 +74,28 @@ def test_balanced_batch_sampler_composition(tmp_path):
         assert len(batch) == batch_size
         assert sum(idx in positive_set for idx in batch) == n_positive
         assert sum(idx in negative_set for idx in batch) == n_negative
+
+
+def test_balanced_sampler_from_main(tmp_path):
+    """Setting positive_batch_fraction in the config gives balanced train batches."""
+    csv_path, root_dir = _make_mixed_csv(tmp_path, n_positive=4, n_negative=20)
+    m = main.deepforest(
+        config_args={
+            "model": {"name": None},
+            "num_classes": 1,
+            "label_dict": {"Tree": 0},
+            "batch_size": 8,
+            "workers": 0,
+        }
+    )
+    m.config.train.csv_file = csv_path
+    m.config.train.root_dir = root_dir
+    m.config.train.positive_batch_fraction = 0.75
+
+    loader = m.train_dataloader()
+    assert isinstance(loader.batch_sampler, BalancedDetectionBatchSampler)
+
+    images, targets, _ = next(iter(loader))
+    assert len(images) == 8
+    # round(8 * 0.75) = 6 annotated images, the other 2 are empty frames
+    assert sum(len(t["boxes"]) > 0 for t in targets) == 6

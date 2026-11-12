@@ -76,6 +76,8 @@ class TrainingDataset(Dataset):
         self._validate_labels()
         if validate_coordinates:
             self._validate_coordinates()
+
+        #
         self.positive_indices, self.negative_indices = (
             self._build_annotation_index_pools()
         )
@@ -117,18 +119,18 @@ class TrainingDataset(Dataset):
         """Split dataset indices into annotated (positive) and empty (negative)
         images."""
         if "geometry" in self.annotations.columns:
-            row_totals = np.array(
-                [
-                    geom.bounds
-                    if hasattr(geom, "bounds")
-                    else shapely.wkt.loads(geom).bounds
-                    for geom in self.annotations.geometry
-                ]
-            ).sum(axis=1)
+            geoms = self.annotations["geometry"].to_numpy()
+            if len(geoms) and isinstance(geoms[0], str):
+                geoms = shapely.from_wkt(geoms)
+            row_totals = np.nan_to_num(shapely.bounds(geoms)).sum(axis=1)
         else:
             row_totals = (
                 self.annotations[["xmin", "ymin", "xmax", "ymax"]].sum(axis=1).to_numpy()
             )
+
+        # If no empty frames, just return the positives and empty list
+        if not (row_totals == 0).any():
+            return list(range(len(self.image_names))), []
 
         totals = (
             self.annotations.assign(_row_totals=row_totals)
@@ -175,22 +177,17 @@ class BalancedDetectionBatchSampler(BatchSampler):
     """Batch sampler that fixes the fraction of annotated vs hard-negative
     images.
 
-    One epoch covers each positive dataset index once per rank, shuffled with
-    ``torch.randperm`` over ``positive_indices``. Negatives are drawn at random
-    with replacement each batch.
+    One epoch covers each positive dataset index once per rank, shuffled
+    with ``torch.randperm`` over ``positive_indices``. Negatives are
+    drawn at random with replacement each batch.
 
-    PyTorch Lightning reinstantiates batch samplers with a ``sampler`` sized to
-    ``len(dataset)`` (e.g. ``DistributedSampler``). That index range does not
-    match ``positive_indices`` positions, so ``self.sampler`` is **not** used when
-    building batches; only ``positive_indices`` and ``negative_indices`` are.
-    The ``sampler`` and ``drop_last`` arguments remain on ``__init__`` so
-    Lightning can inject values without type errors.
-
-    .. note::
-
-        Distributed sharding of the positive pool is not applied. Multi-GPU runs
-        typically need ``Trainer(use_distributed_sampler=False)`` or equivalent
-        unless you accept duplicate positive coverage per rank.
+    PyTorch Lightning reinstantiates batch samplers with a ``sampler``
+    sized to ``len(dataset)`` (e.g. ``DistributedSampler``). That index
+    range does not match ``positive_indices`` positions, so
+    ``self.sampler`` is **not** used when building batches; only
+    ``positive_indices`` and ``negative_indices`` are. The ``sampler``
+    and ``drop_last`` arguments remain on ``__init__`` so Lightning can
+    inject values without type errors.
     """
 
     def __init__(

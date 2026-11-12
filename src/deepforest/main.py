@@ -359,7 +359,7 @@ class deepforest(pl.LightningModule):
             validate_coordinates: if True, check annotation coordinates fall within image bounds
             augmentations: augmentation configuration (str, list, or dict)
             positive_batch_fraction: If set with shuffle=True, each batch contains
-                this fraction of annotated images and the rest hard negatives.
+                this fraction of annotated images and the rest empty.
                 None uses uniform shuffle over all images.
         Returns:
             ds: a pytorch dataset
