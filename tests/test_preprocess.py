@@ -1,5 +1,6 @@
 # test preprocessing
 import os
+import warnings
 
 import numpy as np
 import pandas as pd
@@ -202,6 +203,82 @@ def test_split_raster_4_band_warns(config, tmp_path, orders, geodataframe):
                                 patch_size=config.patch_size,
                                 patch_overlap=config.patch_overlap,
                                 image_name="OSBS_029.tif")
+
+
+@pytest.mark.parametrize("orders", ["path", "channels_last", "channels_first"])
+def test_split_raster_rgb_no_warning(config, tmp_path, orders):
+    """Ensure split_raster does not warn for standard 3-band RGB inputs."""
+    with warnings.catch_warnings(record=True) as recorded_warnings:
+        warnings.simplefilter("always")
+
+        if orders == "path":
+            crops = preprocess.split_raster(
+                path_to_raster=get_data("OSBS_029.tif"),
+                save_dir=tmp_path,
+                patch_size=config.patch_size,
+                patch_overlap=config.patch_overlap,
+            )
+        else:
+            img = np.zeros((400, 400, 3), dtype=np.uint8)
+            img[:, :, 0] = 10
+            img[:, :, 1] = 20
+            img[:, :, 2] = 30
+            if orders == "channels_first":
+                img = np.moveaxis(img, 2, 0)
+
+            crops = preprocess.split_raster(
+                numpy_image=img,
+                save_dir=tmp_path,
+                patch_size=config.patch_size,
+                patch_overlap=config.patch_overlap,
+                image_name=f"test_rgb_{orders}.png",
+            )
+
+    non_3_band_warnings = [
+        w for w in recorded_warnings if "non-3 band" in str(w.message)
+    ]
+    assert len(non_3_band_warnings) == 0
+    assert len(crops) > 0
+
+    # Verify output crop format and channel preservation
+    crop_arr = np.array(Image.open(crops[0]))
+    assert crop_arr.shape == (config.patch_size, config.patch_size, 3)
+    if orders != "path":
+        assert np.all(crop_arr[:, :, 0] == 10)
+        assert np.all(crop_arr[:, :, 1] == 20)
+        assert np.all(crop_arr[:, :, 2] == 30)
+
+
+@pytest.mark.parametrize("order", ["channels_last", "channels_first"])
+def test_split_raster_more_than_four_bands(config, tmp_path, order):
+    """Ensure split_raster handles images with >4 bands by correctly selecting
+    the first 3 channels rather than slicing rows."""
+    img = np.zeros((400, 400, 5), dtype=np.uint8)
+    for c in range(5):
+        img[:, :, c] = (c + 1) * 20
+
+    if order == "channels_first":
+        img = np.moveaxis(img, 2, 0)
+
+    with pytest.warns(
+        UserWarning,
+        match="Input image had non-3 band shape of.*selecting first 3 bands",
+    ):
+        crops = preprocess.split_raster(
+            numpy_image=img,
+            save_dir=tmp_path,
+            patch_size=config.patch_size,
+            patch_overlap=config.patch_overlap,
+            image_name=f"test_5band_{order}.png",
+        )
+
+    assert len(crops) > 0
+    # Read saved crop to verify dimensions and that the first 3 channels were selected
+    crop_arr = np.array(Image.open(crops[0]))
+    assert crop_arr.shape == (config.patch_size, config.patch_size, 3)
+    assert np.all(crop_arr[:, :, 0] == 20)
+    assert np.all(crop_arr[:, :, 1] == 40)
+    assert np.all(crop_arr[:, :, 2] == 60)
 
 
 # Test split_raster with point annotations file
