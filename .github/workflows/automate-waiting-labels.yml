@@ -1,20 +1,36 @@
-name: Remove waiting labels after new comment
+name: Remove waiting labels
+
 on:
-  issue_comment:
-    types: [created]
+  issues:
+    types: [labeled]
+  pull_request:
+    types: [labeled]
   pull_request_review_comment:
     types: [created]
 
 permissions:
-  issues: write # allow removing label from issue
-  pull-requests: write # allow removing label from PR
+  issues: write
+  pull-requests: write
 
 jobs:
   remove-label:
     runs-on: ubuntu-latest
-    # Ignore bot comments so the stale bot's warning does not clear the label
-    # it is counting down against.
-    if: github.event.comment.user.type != 'Bot'
+    if: |
+      (
+        github.event_name == 'pull_request_review_comment' &&
+        github.event.comment.user.type != 'Bot' &&
+        github.event.pull_request.head.repo.full_name == github.repository
+      ) ||
+      (
+        github.event.label.name == 'Author responded' &&
+        (
+          github.event_name == 'issues' ||
+          (
+            github.event_name == 'pull_request' &&
+            github.event.pull_request.head.repo.full_name == github.repository
+          )
+        )
+      )
     steps:
     - name: Remove label
       uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd

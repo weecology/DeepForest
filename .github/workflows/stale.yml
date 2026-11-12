@@ -22,12 +22,12 @@ jobs:
             This issue has been marked stale because it has been labeled
             "Awaiting author contribution" with no activity for 30 days.
             It will be closed in 14 days if no further activity occurs.
-            Comment on the issue to keep it open.
+            A maintainer can keep it open by adding the "Author responded" label.
           stale-pr-message: >
             This pull request has been marked stale because it has been labeled
             "Awaiting author contribution" with no activity for 30 days.
             It will be closed in 14 days if no further activity occurs.
-            Comment on the pull request to keep it open.
+            A maintainer can keep it open by adding the "Author responded" label.
           close-issue-message: >
             This issue was closed because it has been stalled with no activity.
             Please reopen it if you would like to continue working on it.

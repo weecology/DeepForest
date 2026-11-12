@@ -58,6 +58,11 @@ repos:
             src/deepforest.*\.py|
             fetch_google_scholar\.py
           )$
+
+  - repo: https://github.com/zizmorcore/zizmor-pre-commit
+    rev: v1.32.0
+    hooks:
+      - id: zizmor
 ci:
     autofix_prs: false
     autoupdate_schedule: quarterly
