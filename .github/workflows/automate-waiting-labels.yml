@@ -1,6 +1,7 @@
 name: Remove waiting labels after new comment
 on:
-  issue_comment:
+  # Safe: no checkout, no untrusted expression expansion, label-only permissions.
+  issue_comment: # zizmor: ignore[dangerous-triggers]
     types: [created]
   pull_request_review_comment:
     types: [created]
@@ -14,7 +15,11 @@ jobs:
     runs-on: ubuntu-latest
     # Ignore bot comments so the stale bot's warning does not clear the label
     # it is counting down against.
-    if: github.event.comment.user.type != 'Bot'
+    # Fork PRs get a read-only token on review comment events, so skip them.
+    if: >-
+      github.event.comment.user.type != 'Bot' &&
+      (github.event_name != 'pull_request_review_comment' ||
+       github.event.pull_request.head.repo.full_name == github.repository)
     steps:
     - name: Remove label
       uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
