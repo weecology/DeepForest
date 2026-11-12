@@ -6,9 +6,13 @@ on:
   pull_request:
     branches: [main]
 
+permissions: {}
+
 jobs:
   ci:
     name: "CI setup"
+    permissions:
+      contents: read # check out the repository
 
     strategy:
       fail-fast: false
@@ -33,6 +37,7 @@ jobs:
         uses: "actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd"
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Install opencv dependencies
         run: |
