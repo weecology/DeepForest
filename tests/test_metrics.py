@@ -185,3 +185,54 @@ def test_polygon_multiclass_reports_per_class_metrics():
     assert math.isclose(results["Bird_Recall"], 1.0, rel_tol=1e-5)
     assert "Tree_Precision" in results
     assert "Bird_Precision" in results
+
+
+def _uneven_rank_worker(rank, world_size, port, queue):
+    import torch.distributed as dist
+
+    from deepforest.metrics import (
+        DistributedIntersectionOverUnion,
+        DistributedMeanAveragePrecision,
+    )
+
+    dist.init_process_group(
+        "gloo", init_method=f"tcp://127.0.0.1:{port}", rank=rank, world_size=world_size
+    )
+    box = torch.tensor([[10.0, 10.0, 50.0, 50.0]])
+    target = {"boxes": box, "labels": torch.tensor([0])}
+    pred = {"boxes": box, "scores": torch.tensor([0.9]), "labels": torch.tensor([0])}
+    iou = DistributedIntersectionOverUnion(class_metrics=True)
+    mAP = DistributedMeanAveragePrecision(backend="faster_coco_eval")
+    for _ in range(3 if rank == 0 else 1):  # uneven number of non-empty images
+        iou.update([pred], [target])
+        mAP.update([pred], [target])
+    out = (float(iou.compute()["iou"]), float(mAP.compute()["map_50"]))
+    local_count = len(iou.groundtruth_labels)
+    dist.destroy_process_group()
+    queue.put((rank, out, local_count))
+
+
+def test_detection_metrics_sync_with_uneven_ranks():
+    """Ranks holding different numbers of images must not deadlock when syncing."""
+    import socket
+
+    import torch.multiprocessing as mp
+
+    with socket.socket() as s:
+        s.bind(("127.0.0.1", 0))
+        port = s.getsockname()[1]
+    ctx = mp.get_context("spawn")
+    queue = ctx.Queue()
+    procs = [
+        ctx.Process(target=_uneven_rank_worker, args=(r, 2, port, queue))
+        for r in range(2)
+    ]
+    for p in procs:
+        p.start()
+    results = [queue.get(timeout=120) for _ in procs]
+    for p in procs:
+        p.join(timeout=30)
+        assert p.exitcode == 0
+    outputs = {r: out for r, out, _ in results}
+    assert outputs[0] == outputs[1]
+    assert outputs[0][1] == pytest.approx(1.0)
