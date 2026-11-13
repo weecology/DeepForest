@@ -277,8 +277,8 @@ def load_annotations(annotations_file, root_dir):
     Returns:
         GeoDataFrame with annotations
     """
-    if isinstance(annotations_file, str):
-        return read_file(annotations_file, root_dir=root_dir)
+    if isinstance(annotations_file, (str, os.PathLike)):
+        return read_file(os.fspath(annotations_file), root_dir=root_dir)
     elif isinstance(annotations_file, gpd.GeoDataFrame):
         return annotations_file
     elif isinstance(annotations_file, pd.DataFrame):
