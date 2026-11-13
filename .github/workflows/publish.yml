@@ -7,6 +7,10 @@ on:
 
 permissions: {}
 
+# pip can't read this from pyproject.toml; matches exclude-newer in [tool.uv]
+env:
+  PIP_UPLOADED_PRIOR_TO: P7D
+
 jobs:
   build:
     name: Build package
