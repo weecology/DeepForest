@@ -6,6 +6,7 @@ from collections.abc import Iterator
 from typing import Any
 
 import pandas as pd
+import torch
 import torch.distributed as dist
 from torch.utils.data import Sampler
 
@@ -13,6 +14,57 @@ from torch.utils.data import Sampler
 def is_distributed() -> bool:
     """Return True when torch.distributed is initialized."""
     return dist.is_available() and dist.is_initialized()
+
+
+def any_across_ranks(flag: bool, device: torch.device | None = None) -> bool:
+    """Return True if *flag* is true on any rank; *flag* when not
+    distributed."""
+    if not is_distributed():
+        return bool(flag)
+
+    value = torch.tensor(
+        [1 if flag else 0],
+        device=device if device is not None else torch.device("cpu"),
+        dtype=torch.int64,
+    )
+    dist.all_reduce(value, op=dist.ReduceOp.MAX)
+    return bool(value.item())
+
+
+def sum_across_ranks(value: int, device: torch.device | None = None) -> int:
+    """Sum an integer across ranks; return *value* when not distributed."""
+    if not is_distributed():
+        return int(value)
+
+    tensor = torch.tensor(
+        [int(value)],
+        device=device if device is not None else torch.device("cpu"),
+        dtype=torch.int64,
+    )
+    dist.all_reduce(tensor, op=dist.ReduceOp.SUM)
+    return int(tensor.item())
+
+
+def mean_metric_dicts(dicts: list[dict[str, Any]]) -> dict[str, Any]:
+    """Element-wise mean of metric dicts; skips non-tensor entries like
+    classes."""
+    if not dicts:
+        return {}
+    if len(dicts) == 1:
+        return dict(dicts[0])
+
+    merged: dict[str, Any] = {}
+    for key in dicts[0]:
+        if key == "classes":
+            continue
+        values = [metric_dict[key] for metric_dict in dicts if key in metric_dict]
+        if not values:
+            continue
+        if isinstance(values[0], torch.Tensor):
+            merged[key] = torch.stack([value.float() for value in values]).mean(dim=0)
+        else:
+            merged[key] = values[0]
+    return merged
 
 
 def is_global_zero(trainer: Any | None = None) -> bool:
