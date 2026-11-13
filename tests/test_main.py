@@ -1504,3 +1504,32 @@ def test_validation_interval_greater_than_epochs(m):
     assert "box_precision" not in m.trainer.logged_metrics
     assert "box_recall" not in m.trainer.logged_metrics
     assert "empty_frame_accuracy" not in m.trainer.logged_metrics
+
+
+def test_predict_file_with_crop_model(m, tmp_path):
+    """predict_file with a crop_model must not duplicate predictions across images."""
+    full = pd.read_csv(get_data("testfile_multi.csv"))
+    root_dir = os.path.dirname(get_data("SOAP_061.png"))
+
+    # keep two distinct images so the run stays small
+    keep = list(pd.unique(full.image_path))[:2]
+    subset = full[full.image_path.isin(keep)]
+    csv_file = os.path.join(tmp_path, "two_images.csv")
+    subset.to_csv(csv_file, index=False)
+
+    m.config.train.fast_dev_run = False
+    m.create_trainer()
+
+    baseline = m.predict_file(csv_file=csv_file, root_dir=root_dir)
+
+    crop_model = model.CropModel()
+    crop_model.create_model(num_classes=2)
+    crop_model.label_dict = {"Dead": 0, "Alive": 1}
+    crop_model.numeric_to_label_dict = {0: "Dead", 1: "Alive"}
+
+    result = m.predict_file(csv_file=csv_file, root_dir=root_dir, crop_model=crop_model)
+
+    # the crop model adds columns only, it must not duplicate rows
+    assert len(result) == len(baseline)
+    assert "cropmodel_label" in result.columns
+    assert "cropmodel_score" in result.columns

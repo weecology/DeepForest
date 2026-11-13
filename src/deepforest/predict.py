@@ -362,26 +362,29 @@ def _crop_models_wrapper_(
     if crop_models is not None and not isinstance(crop_models, list):
         crop_models = [crop_models]
 
-    # Run predictions
+    if not crop_models:
+        return results
+
+    # Flag to check if only one model is passed
+    is_single_model = len(crop_models) == 1
+
+    # Run predictions per image, merging each model's columns onto the same rows
     crop_results = []
-    if crop_models:
-        is_single_model = (
-            len(crop_models) == 1
-        )  # Flag to check if only one model is passed
+    for image_path in results.image_path.unique():
+        image_results = results[results.image_path == image_path]
+        path = os.path.join(results.root_dir, image_path)
         for i, crop_model in enumerate(crop_models):
-            for path in results.image_path.unique():
-                path = os.path.join(results.root_dir, path)
-                crop_result = _predict_crop_model_(
-                    crop_model=crop_model,
-                    results=results,
-                    path=path,
-                    trainer=trainer,
-                    model_index=i,
-                    transform=transform,
-                    augmentations=augmentations,
-                    is_single_model=is_single_model,
-                )
-                crop_results.append(crop_result)
+            image_results = _predict_crop_model_(
+                crop_model=crop_model,
+                results=image_results,
+                path=path,
+                trainer=trainer,
+                model_index=i,
+                transform=transform,
+                augmentations=augmentations,
+                is_single_model=is_single_model,
+            )
+        crop_results.append(image_results)
 
     # Concatenate results
     crop_results = pd.concat(crop_results)
