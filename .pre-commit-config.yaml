@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.4.0
+    rev: v6.0.0
     hooks:
       - id: trailing-whitespace
         exclude: '\.(svg|yml|csv|xml|cpg|prj)$'
@@ -28,7 +28,7 @@ repos:
           )$
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.14.2
+    rev: v0.17.3
     hooks:
       - id: ruff-format
         files: |
@@ -37,7 +37,7 @@ repos:
             fetch_google_scholar\.py|
             docs/user_guide/examples/.*\.ipynb
           )$
-      - id: ruff
+      - id: ruff-check
         args: ["--fix"]
         files: |
           (?x)^(
