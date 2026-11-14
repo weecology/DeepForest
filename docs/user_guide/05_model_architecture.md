@@ -82,7 +82,7 @@ from deepforest import main
 m = main.deepforest()
 existing_loader = m.load_dataset(csv_file=m.config.train.csv_file,
                                 root_dir=m.config.train.root_dir,
-                                batch_size=m.config.batch_size)
+                                batch_size=m.train_batch_size)
 
 # Can be passed directly to main.deepforest(existing_train_dataloader) or reassign to existing deepforest object
 m.existing_train_dataloader_loader
@@ -101,5 +101,5 @@ ds = dataset.TileDataset(tile=np.random.random((400,400,3)).astype("float32"), p
 existing_loader = m.predict_dataloader(ds)
 
 batches = m.trainer.predict(m, existing_loader)
-len(batches[0]) == m.config.batch_size + 1
+len(batches[0]) == m.predict_batch_size
 ```

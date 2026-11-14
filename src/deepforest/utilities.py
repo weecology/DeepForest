@@ -78,6 +78,16 @@ def load_config(
     # Merge in sequence (base, derived config, overrides)
     config = OmegaConf.merge(base, yaml_cfg, overrides)
 
+    # Fail fast on invalid batch sizes instead of exploding inside a
+    # dataloader minutes into training/prediction.
+    for _key in ("batch_size", "train_batch_size", "predict_batch_size"):
+        _val = config.get(_key)
+        if _val is not None:
+            if isinstance(_val, bool) or not isinstance(_val, int):
+                raise ValueError(f"{_key} must be a positive integer, got {_val!r}")
+            if _val <= 0:
+                raise ValueError(f"{_key} must be a positive integer, got {_val}")
+
     # This hack is necessary because OmegaConf will merge rather than
     # replace label_dict by default.
     yaml_cfg_label_dict = yaml_cfg.get("label_dict", None)  # type: ignore

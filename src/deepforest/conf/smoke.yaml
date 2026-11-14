@@ -5,7 +5,8 @@ defaults:
   - _self_
 
 workers: 0
-batch_size: 2
+train_batch_size: 2
+predict_batch_size: 2
 log_root: ./lightning_logs_smoke
 
 train:
