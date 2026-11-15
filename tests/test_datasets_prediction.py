@@ -9,7 +9,7 @@ from deepforest import get_data
 from deepforest import predict
 from shapely import geometry
 import pandas as pd
-from deepforest.datasets.prediction import TiledRaster, SingleImage, MultiImage, FromCSVFile, PredictionDataset
+from deepforest.datasets.prediction import TiledRaster, SingleImage, MultiImage, FromCSVFile, PredictionDataset, _is_tiled
 
 
 def test_TiledRaster():
@@ -21,6 +21,40 @@ def test_TiledRaster():
 
     # assert crop shape
     assert ds[1].shape == (3, 300, 300)
+
+def _write_geotiff(path, tiled, width=512, height=512, count=3):
+    import rasterio as rio
+    from rasterio.transform import from_origin
+
+    profile = dict(driver="GTiff", dtype="uint8", count=count, width=width,
+                   height=height, crs="EPSG:32617",
+                   transform=from_origin(0, height, 1, 1), tiled=tiled)
+    if tiled:
+        profile.update(blockxsize=256, blockysize=256)
+    with rio.open(path, "w", **profile) as dst:
+        dst.write(np.zeros((count, height, width), dtype="uint8"))
+
+
+@pytest.mark.parametrize("tiled", [True, False])
+def test_is_tiled(tmp_path, tiled):
+    import warnings
+    import rasterio as rio
+
+    path = tmp_path / "raster.tif"
+    _write_geotiff(path, tiled=tiled)
+    with rio.open(path) as src, warnings.catch_warnings():
+        # The helper must not use rasterio's deprecated is_tiled
+        warnings.simplefilter("error", PendingDeprecationWarning)
+        warnings.simplefilter("error", DeprecationWarning)
+        assert _is_tiled(src) is tiled
+
+
+def test_TiledRaster_not_tiled(tmp_path):
+    path = tmp_path / "striped.tif"
+    _write_geotiff(path, tiled=False)
+    with pytest.raises(ValueError, match="not tiled"):
+        TiledRaster(path=str(path), patch_size=300, patch_overlap=0)
+
 
 def test_SingleImage_path():
     ds = SingleImage(

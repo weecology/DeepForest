@@ -13,6 +13,24 @@ from deepforest import preprocess
 from deepforest.utilities import read_file
 
 
+def _is_tiled(src):
+    """Return True if an open rasterio dataset is tiled.
+
+    Replaces rasterio's ``DatasetReader.is_tiled``, which is deprecated. Striped
+    rasters store blocks that span the full image width, so a raster is tiled
+    when every band's block is narrower than the image.
+
+    Args:
+        src: An open rasterio dataset.
+
+    Returns:
+        bool: True if the raster is tiled, False otherwise.
+    """
+    return bool(src.block_shapes) and all(
+        src.width > block_width for _, block_width in src.block_shapes
+    )
+
+
 # Base prediction class
 class PredictionDataset(Dataset):
     """Base class for prediction datasets.
@@ -397,7 +415,7 @@ class TiledRaster(PredictionDataset):
             height = src.shape[1]
 
             # Check is tiled
-            if not src.is_tiled:
+            if not _is_tiled(src):
                 raise ValueError(
                     "Out-of-memory dataset is selected, but raster is not tiled, "
                     "leading to entire raster being read into memory and defeating "
