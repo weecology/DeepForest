@@ -35,13 +35,14 @@ def _write_geotiff(path, tiled, width=512, height=512, count=3):
         dst.write(np.zeros((count, height, width), dtype="uint8"))
 
 
-@pytest.mark.parametrize("tiled", [True, False])
-def test_is_tiled(tmp_path, tiled):
+# The 100 px case is a tiled raster smaller than one 256 px tile
+@pytest.mark.parametrize("tiled, size", [(True, 512), (False, 512), (True, 100)])
+def test_is_tiled(tmp_path, tiled, size):
     import warnings
     import rasterio as rio
 
     path = tmp_path / "raster.tif"
-    _write_geotiff(path, tiled=tiled)
+    _write_geotiff(path, tiled=tiled, width=size, height=size)
     with rio.open(path) as src, warnings.catch_warnings():
         # The helper must not use rasterio's deprecated is_tiled
         warnings.simplefilter("error", PendingDeprecationWarning)

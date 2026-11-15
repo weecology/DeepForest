@@ -16,9 +16,8 @@ from deepforest.utilities import read_file
 def _is_tiled(src):
     """Return True if an open rasterio dataset is tiled.
 
-    Replaces rasterio's ``DatasetReader.is_tiled``, which is deprecated. Striped
-    rasters store blocks that span the full image width, so a raster is tiled
-    when every band's block is narrower than the image.
+    Replaces rasterio's deprecated ``DatasetReader.is_tiled``, using the body
+    of that property as rasterio recommends.
 
     Args:
         src: An open rasterio dataset.
@@ -26,8 +25,10 @@ def _is_tiled(src):
     Returns:
         bool: True if the raster is tiled, False otherwise.
     """
+    # It's rare but possible that a dataset's bands have different block
+    # structure, so check them all against the width of the dataset.
     return bool(src.block_shapes) and all(
-        src.width > block_width for _, block_width in src.block_shapes
+        src.width != block_width for _, block_width in src.block_shapes
     )
 
 
