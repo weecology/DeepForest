@@ -37,17 +37,11 @@ uv add deepforest
 :::{grid-item-card} In-depth instructions?
 :class-card: install-card
 :shadow: md
+:link: install
+:link-type: doc
+:link-alt: View Installation Guide
 
 Installing a specific version? Installing from source? Check the advanced installation page.
-
-+++
-```{button-ref} install
-:ref-type: doc
-:color: secondary
-:click-parent: true
-:align: center
-View Installation Guide
-```
 :::
 ::::
 
@@ -59,24 +53,22 @@ DeepForest is a python package for airborne object detection and classification.
 :gutter: 4
 :margin: 2 2 0 0
 
-:::{grid-item}
+:::{grid-item-card}
+:footer: *Tree crown prediction using DeepForest*
 ```{image} ../../www/OSBS_sample.png
 :width: 100%
 :alt: Tree crown detection
 :class: shadow
 ```
-+++
-*Tree crown prediction using DeepForest*
 :::
 
-:::{grid-item}
+:::{grid-item-card}
+:footer: *Bird detection using DeepForest*
 ```{image} ../../www/bird_panel.jpg
 :width: 100%
 :alt: Bird detection
 :class: shadow
 ```
-+++
-*Bird detection using DeepForest*
 :::
 ::::
 

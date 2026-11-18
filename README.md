@@ -15,7 +15,7 @@
 
 # What is DeepForest?
 
-DeepForest is a python package for training and predicting ecological objects in airborne imagery. DeepForest currently comes with a tree crown object detection model and a bird detection model. Both are single class modules that can be extended to species classification based on new data. Users can extend these models by annotating and training custom models.
+DeepForest is a Python package for training and predicting ecological objects in airborne imagery. Pretrained models are available for tree-crown, bird, livestock, Everglades bird-species, and nest detection, as well as point-based tree detection. DeepForest also provides crop classifiers for alive/dead trees and NEON tree species and genus classification. These models are starting points that can be fine-tuned with new annotations, and users can train custom models for other applications.
 
 ![](www/image.png)
 
