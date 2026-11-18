@@ -100,9 +100,6 @@ def compute_metric_across_ranks(metric: Any) -> dict[str, Any]:
     each whole list once, move every tensor onto this rank's device,
     then compute from the combined crops.
     """
-    if not is_distributed():
-        return metric.compute()
-
     sync_was = metric._to_sync
     metric._to_sync = False
     saw_crops = False
