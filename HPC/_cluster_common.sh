@@ -8,10 +8,10 @@ cluster_repo_root() {
         pwd
         return
     fi
-    # This file lives at src/deepforest/scripts/HPC/_cluster_common.sh
+    # This file lives at HPC/_cluster_common.sh
     local common_dir
     common_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-    cd "${common_dir}/../../../.."
+    cd "${common_dir}/.."
     pwd
 }
 

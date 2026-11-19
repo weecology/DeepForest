@@ -2,11 +2,10 @@
 # Shared launcher for DeepForest cluster pytest cases.
 #
 # Usage (batch):
-#   sbatch --export=ALL,CASE=validation_empty_rank \
-#     src/deepforest/scripts/HPC/run_cluster_test.sbatch
+#   sbatch --export=ALL,CASE=validation_empty_rank HPC/run_cluster_test.sbatch
 #
 # Usage (interactive allocation):
-#   CASE=validation_empty_rank bash src/deepforest/scripts/HPC/run_cluster_test.sh
+#   CASE=validation_empty_rank bash HPC/run_cluster_test.sh
 #
 # Add a new case by extending the CASE table below and adding a matching
 # tests/test_cluster_*.py file. Keep site paths and GPU counts in this

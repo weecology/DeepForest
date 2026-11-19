@@ -8,7 +8,7 @@ This page shows supported patterns for running DeepForest across multiple GPUs a
 
 Match `#SBATCH --ntasks-per-node` to `devices` (one Slurm task per GPU) and `#SBATCH --nodes` to `num_nodes`. For multi-GPU DDP, launch with `srun`. For a single GPU, the cluster train script runs the command directly in the batch step.
 
-Example launchers live under `src/deepforest/scripts/HPC/`.
+Example launchers live under `HPC/`.
 
 ## Shared Settings
 
@@ -31,30 +31,30 @@ mkdir -p slurm_logs
 
 ## Train
 
-Use `src/deepforest/scripts/HPC/run_cluster_train.sbatch` for production training and smoke tests. The launcher script is `run_cluster_train.sh`.
+Use `HPC/run_cluster_train.sbatch` for production training and smoke tests. The launcher script is `run_cluster_train.sh`.
 
 ### Production training (single GPU)
 
 Defaults use `TRAIN_MODE=train` and `CONFIG_NAME=bird`. Submit from the repo root:
 
 ```bash
-sbatch src/deepforest/scripts/HPC/run_cluster_train.sbatch
+sbatch HPC/run_cluster_train.sbatch
 ```
 
 Hydra overrides and resume:
 
 ```bash
 export COMET_EXPERIMENT_NAME="exp_lr_0.0005"
-sbatch src/deepforest/scripts/HPC/run_cluster_train.sbatch train.lr=0.0005 train.epochs=80
+sbatch HPC/run_cluster_train.sbatch train.lr=0.0005 train.epochs=80
 
-RESUME_CKPT=/path/to/last.ckpt sbatch src/deepforest/scripts/HPC/run_cluster_train.sbatch
+RESUME_CKPT=/path/to/last.ckpt sbatch HPC/run_cluster_train.sbatch
 ```
 
 Multi-GPU or multi-node training: set Slurm resources at submit time and pass matching Hydra settings if needed. The script infers `SCENARIO` from the allocation.
 
 ```bash
 sbatch --nodes=2 --ntasks-per-node=2 --gpus-per-node=2 --cpus-per-task=8 --mem=128G --time=15:00:00 \
-  src/deepforest/scripts/HPC/run_cluster_train.sbatch \
+  HPC/run_cluster_train.sbatch \
   --strategy ddp devices=2 num_nodes=2
 ```
 
@@ -66,17 +66,17 @@ Smoke tests use bundled OSBS sample data (`TRAIN_MODE=smoke`, `CONFIG_NAME=smoke
 # 1 GPU
 TRAIN_MODE=smoke SCENARIO=1gpu sbatch --nodes=1 --ntasks-per-node=1 --gpus-per-node=1 \
   --cpus-per-task=8 --mem=32G --time=00:30:00 \
-  src/deepforest/scripts/HPC/run_cluster_train.sbatch
+  HPC/run_cluster_train.sbatch
 
 # Multi-GPU (one node)
 TRAIN_MODE=smoke SCENARIO=multigpu GPUS_PER_NODE=2 sbatch --nodes=1 --ntasks-per-node=2 --gpus-per-node=2 \
   --cpus-per-task=8 --mem=64G --time=00:45:00 \
-  src/deepforest/scripts/HPC/run_cluster_train.sbatch
+  HPC/run_cluster_train.sbatch
 
 # Multi-node
 TRAIN_MODE=smoke SCENARIO=multinode GPUS_PER_NODE=2 NNODES=2 sbatch --nodes=2 --ntasks-per-node=2 --gpus-per-node=2 \
   --cpus-per-task=8 --mem=64G --time=01:00:00 \
-  src/deepforest/scripts/HPC/run_cluster_train.sbatch
+  HPC/run_cluster_train.sbatch
 ```
 
 Optional: `export COMET_EXPERIMENT_NAME="my-smoke-run"` before `sbatch`. Disable Comet with `USE_COMET=0`.
@@ -122,7 +122,7 @@ srun uv run deepforest evaluate \
 For the cluster regression test and example launcher (submit from the repo root):
 
 ```bash
-sbatch src/deepforest/scripts/HPC/run_cluster_predict_test.sbatch
+sbatch HPC/run_cluster_predict_test.sbatch
 ```
 
 To run your own CSV prediction job directly:
@@ -146,7 +146,7 @@ For large rasters on a cluster, prefer `predict_tile(..., dataloader_strategy="w
 The ready-to-run test launcher is:
 
 ```bash
-sbatch src/deepforest/scripts/HPC/run_cluster_predict_tile_test.sbatch
+sbatch HPC/run_cluster_predict_tile_test.sbatch
 ```
 
 To run a tiled prediction job directly:

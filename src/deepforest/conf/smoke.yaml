@@ -1,5 +1,5 @@
 # Quick cluster smoke-test config (bundled OSBS sample data).
-# Paths are set by src/deepforest/scripts/HPC/run_cluster_train.sh (TRAIN_MODE=smoke).
+# Paths are set by HPC/run_cluster_train.sh (TRAIN_MODE=smoke).
 defaults:
   - config
   - _self_

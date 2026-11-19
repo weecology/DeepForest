@@ -2,10 +2,9 @@
 # Shared Slurm entry for cluster pytest cases.
 #
 # Default resources fit small 2-GPU validation cases. Override at submit time:
-#   sbatch --export=ALL,CASE=validation_empty_rank \
-#     src/deepforest/scripts/HPC/run_cluster_test.sbatch
+#   sbatch --export=ALL,CASE=validation_empty_rank HPC/run_cluster_test.sbatch
 #   sbatch --time=00:20:00 --export=ALL,CASE=validation_empty_rank \
-#     src/deepforest/scripts/HPC/run_cluster_test.sbatch
+#     HPC/run_cluster_test.sbatch
 #
 #SBATCH --job-name=deepforest-cluster-test
 #SBATCH --output=%x-%j.out
@@ -19,8 +18,9 @@
 
 set -euo pipefail
 
-HPC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Slurm copies this .sbatch into the spool dir, so BASH_SOURCE is not the repo.
+cd "${SLURM_SUBMIT_DIR:?SLURM_SUBMIT_DIR not set}"
 CASE="${CASE:-validation_empty_rank}"
 export CASE
 
-bash "${HPC_DIR}/run_cluster_test.sh"
+bash "${SLURM_SUBMIT_DIR}/HPC/run_cluster_test.sh"

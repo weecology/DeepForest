@@ -12,6 +12,6 @@
 
 set -euo pipefail
 
+# Slurm copies this .sbatch into the spool dir, so BASH_SOURCE is not the repo.
 cd "${SLURM_SUBMIT_DIR:?SLURM_SUBMIT_DIR not set}"
-HPC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-bash "$HPC_DIR/run_cluster_train.sh" "$@"
+bash "${SLURM_SUBMIT_DIR}/HPC/run_cluster_train.sh" "$@"
