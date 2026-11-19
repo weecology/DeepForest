@@ -213,6 +213,23 @@ class AutomodelWrapper(nn.Module):
             # so use the model's weighted total for backprop.
             return {"loss": preds.loss, **preds.loss_dict}
 
+    def freeze_backbone(self) -> None:
+        """Prevent training the image backbone of the transformers model.
+
+        Uses the model's own freeze_backbone method if it has one,
+        such as some DETR models, otherwise freezes the backbone module
+        if it can be found.
+        """
+        base_model = getattr(self.net, "model", None)
+        if hasattr(base_model, "freeze_backbone"):
+            base_model.freeze_backbone()
+        elif hasattr(base_model, "backbone"):
+            base_model.backbone.requires_grad_(False)
+        else:
+            raise ValueError(
+                f"Cannot find a backbone to freeze in {type(self.net).__name__}."
+            )
+
     def save_pretrained(self, save_directory, push_to_hub=False, **kwargs):
         """Save the model and processor to a directory or push to HF Hub."""
         self.net.save_pretrained(save_directory, push_to_hub=push_to_hub, **kwargs)
@@ -246,6 +263,10 @@ class Model(BaseModel):
         if pretrained is None:
             hf_args.setdefault("id2label", self.config.numeric_to_label_dict)
 
-        return AutomodelWrapper(
+        model = AutomodelWrapper(
             self.config, name=pretrained, revision=revision, **hf_args
-        ).to(map_location)
+        )
+        if self.config.train.freeze_backbone:
+            model.freeze_backbone()
+
+        return model.to(map_location)

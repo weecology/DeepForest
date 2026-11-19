@@ -81,6 +81,7 @@ class TrainConfig:
     epochs: int = 1
     fast_dev_run: bool = False
     preload_images: bool = False
+    freeze_backbone: bool = False
     validate_coordinates: bool = True
     augmentations: list[str] | None = field(default_factory=lambda: ["HorizontalFlip"])
 
@@ -170,11 +171,11 @@ class Config:
     batch size, accelerator and number of workers.
 
     Here we also set the architecture, which names a module in
-    deepforest.models, for example "retinanet", "treeformer" or
-    "automodel" (any transformers object detection model, such as
-    Deformable DETR or RF-DETR). Some tested architectures like
-    "deformabledetr" will be mapped to "automodel" for convenience, or
-    you can specify "automodel" directly.
+    deepforest.models, for example "retinanet", "retinanet_dinov3",
+    "treeformer" or "automodel" (any transformers object detection
+    model, such as Deformable DETR or RF-DETR). Some tested
+    architectures like "deformabledetr" will be mapped to "automodel"
+    for convenience, or you can specify "automodel" directly.
 
     If you modify the number of classes or label dict from what is
     loaded from the hub, it's assumed that you intend to fine-tune or

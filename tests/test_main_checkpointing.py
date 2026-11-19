@@ -8,6 +8,7 @@ import torch
 
 from deepforest import get_data, main, utilities
 
+ARCHITECTURES = ["retinanet", "automodel", "retinanet_dinov3"]
 
 @pytest.fixture
 def config(architecture, tmp_path_factory):
@@ -49,7 +50,8 @@ def state_dicts_equal(model_a, model_b):
     return True
 
 
-@pytest.mark.parametrize("architecture", ["retinanet", "automodel"])
+
+@pytest.mark.parametrize("architecture", ARCHITECTURES)
 def test_train_reload_checkpoint(config):
     """Test train and reload checkpoint"""
 
@@ -67,7 +69,8 @@ def test_train_reload_checkpoint(config):
     os.remove(checkpoint_path)
 
 
-@pytest.mark.parametrize("architecture", ["retinanet", "automodel"])
+
+@pytest.mark.parametrize("architecture", ARCHITECTURES)
 def test_train_and_resume(config):
     """Test resume training from checkpoint with modified config (typically for continuing training)"""
 
@@ -89,7 +92,7 @@ def test_train_and_resume(config):
     assert loaded.trainer.current_epoch == 3
     os.remove(checkpoint_path)
 
-@pytest.mark.parametrize("architecture", ["retinanet", "automodel"])
+@pytest.mark.parametrize("architecture", ARCHITECTURES)
 def test_train_fit_ckpt(config):
     """Test resume directly via fit (typically for interrupted training)"""
 
@@ -109,7 +112,8 @@ def test_train_fit_ckpt(config):
     os.remove(checkpoint_path)
 
 
-@pytest.mark.parametrize("architecture", ["retinanet", "automodel"])
+
+@pytest.mark.parametrize("architecture", ARCHITECTURES)
 def test_pretrain_finetune(config):
     # Pretrain model
     pretrain = main.deepforest(config=config)
@@ -138,7 +142,8 @@ def test_pretrain_finetune(config):
     os.remove(f"{log_dir}/finetune.ckpt")
 
 
-@pytest.mark.parametrize("architecture", ["retinanet", "automodel"])
+
+@pytest.mark.parametrize("architecture", ARCHITECTURES)
 def test_local_hf_checkpoint(config):
     """Test loading model.name from local checkpoint path"""
 
@@ -161,7 +166,7 @@ def test_local_hf_checkpoint(config):
 
     shutil.rmtree(pretrain_checkpoint)
 
-@pytest.mark.parametrize("architecture", ["retinanet", "automodel"])
+@pytest.mark.parametrize("architecture", ARCHITECTURES)
 def test_checkpoint_label_dict(config, tmp_path, architecture):
     """Test that the label dict is saved and loaded correctly from a checkpoint"""
     # Modify config to use a custom label
@@ -240,7 +245,7 @@ def test_save_and_reload_checkpoint(config):
 
     os.remove(checkpoint_path)
 
-@pytest.mark.parametrize("architecture", ["retinanet", "automodel"])
+@pytest.mark.parametrize("architecture", ARCHITECTURES)
 def test_load_from_checkpoint_with_overrides(config):
     """Test that config_args can override saved config when loading from checkpoint"""
     # Train and save model
@@ -271,7 +276,7 @@ def test_load_from_checkpoint_with_overrides(config):
 
     os.remove(checkpoint_path)
 
-@pytest.mark.parametrize("architecture", ["retinanet", "automodel"])
+@pytest.mark.parametrize("architecture", ARCHITECTURES)
 def test_load_from_checkpoint_with_config_dict(config):
     """Test that a full config dict can be passed directly when loading from checkpoint"""
     # Train and save model
@@ -340,7 +345,8 @@ def test_save_and_reload_weights(config, tmp_path):
     os.remove(weights_path)
 
 
-@pytest.mark.parametrize("architecture", ["retinanet"])
+
+@pytest.mark.parametrize("architecture", ARCHITECTURES)
 def test_reload_multi_class(config, tmp_path):
     """Test reloading a multi-class model checkpoint"""
     # Configure for 2 classes with matching data
