@@ -18,71 +18,44 @@
 :img-top: _static/index_getting_started.svg
 :class-card: intro-card
 :shadow: md
+:link: getting_started
+:link-type: ref
+:link-alt: To the getting started guides
 
 New to *DeepForest*? Check out the getting started guides. They contain an introduction to *DeepForest*'s main concepts and links to additional tutorials.
-
-+++
-```{button-ref} getting_started
-:ref-type: ref
-:color: secondary
-:click-parent: true
-:expand:
-To the getting started guides
-```
 :::
 
 :::{grid-item-card} User Guide
 :img-top: _static/index_user_guide.svg
 :class-card: intro-card
 :shadow: md
+:link: user_guide
+:link-type: ref
+:link-alt: To the user guide
 
 The user guide provides in-depth information on the key concepts of DeepForest with useful background information and explanation.
-
-+++
-```{button-ref} user_guide
-:ref-type: ref
-:color: secondary
-:class: sd-rounded-pill
-:click-parent: true
-:expand:
-To the user guide
-```
 :::
 
 :::{grid-item-card} Developer Guide
 :img-top: _static/index_contribute.svg
 :class-card: intro-card
 :shadow: md
+:link: development
+:link-type: ref
+:link-alt: To the development guide
 
 Want to improve DeepForest? The contributing guidelines will guide you through the process of improving and contributing to DeepForest.
-
-+++
-```{button-ref} development
-:ref-type: ref
-:color: secondary
-:class: sd-rounded-pill
-:click-parent: true
-:expand:
-To the development guide
-```
 :::
 
 :::{grid-item-card} API Reference
 :img-top: _static/index_api.svg
 :class-card: intro-card
 :shadow: md
+:link: api
+:link-type: ref
+:link-alt: To the API reference
 
 Want to improve DeepForest? The contributing guidelines will guide you through the process of improving and contributing to DeepForest.
-
-+++
-```{button-ref} api
-:ref-type: ref
-:color: secondary
-:class: sd-rounded-pill
-:click-parent: true
-:expand:
-To the API reference
-```
 :::
 ::::
 
