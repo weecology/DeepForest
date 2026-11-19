@@ -991,17 +991,11 @@ class deepforest(pl.LightningModule):
         metrics = {}
 
         if self.model.task == "box":
-            # IoU and mAP
-            if len(self.iou_metric.groundtruth_labels) > 0:
-                metrics.update(self.iou_metric.compute())
-                # Lightning bug: claims this is a warning but it's not. See issue #16218 in Lightning-AI/pytorch-lightning
-                output = self.mAP_metric.compute()
-
-                # Remove classes from output dict
-                output = {
-                    key: value for key, value in output.items() if not key == "classes"
-                }
-                metrics.update(output)
+            metrics.update(distributed.compute_metric_across_ranks(self.iou_metric))
+            map_output = distributed.compute_metric_across_ranks(self.mAP_metric)
+            metrics.update(
+                {key: value for key, value in map_output.items() if key != "classes"}
+            )
             metrics.update(self.precision_recall_metric.compute())
 
         elif self.model.task == "point":

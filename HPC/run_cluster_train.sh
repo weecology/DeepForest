@@ -11,9 +11,9 @@
 #   multinode  - DDP across nodes
 #
 # Override at submit time, e.g.:
-#   sbatch src/deepforest/scripts/HPC/run_cluster_train.sbatch train.lr=0.0005
+#   sbatch HPC/run_cluster_train.sbatch train.lr=0.0005
 #   TRAIN_MODE=smoke SCENARIO=multigpu sbatch --nodes=1 --ntasks-per-node=2 --gpus-per-node=2 \
-#     src/deepforest/scripts/HPC/run_cluster_train.sbatch
+#     HPC/run_cluster_train.sbatch
 set -euo pipefail
 
 TRAIN_MODE="${TRAIN_MODE:-train}"

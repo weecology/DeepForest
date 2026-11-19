@@ -6,6 +6,7 @@ from collections.abc import Iterator
 from typing import Any
 
 import pandas as pd
+import torch
 import torch.distributed as dist
 from torch.utils.data import Sampler
 
@@ -72,6 +73,55 @@ def gather_object(obj: Any) -> list[Any]:
     gathered = [None] * get_world_size()
     dist.all_gather_object(gathered, obj)
     return gathered
+
+
+def _move_to_device(value: Any, device: torch.device) -> Any:
+    """Move tensors onto one device.
+
+    all_gather_object keeps each rank's GPU.
+    """
+    if isinstance(value, torch.Tensor):
+        return value.to(device)
+    if isinstance(value, list):
+        return [_move_to_device(item, device) for item in value]
+    if isinstance(value, tuple):
+        return tuple(_move_to_device(item, device) for item in value)
+    if isinstance(value, dict):
+        return {key: _move_to_device(item, device) for key, item in value.items()}
+    return value
+
+
+def compute_metric_across_ranks(metric: Any) -> dict[str, Any]:
+    """Compute a detection metric when ranks saw different numbers of crops.
+
+    TorchMetrics stores one tensor per crop and gathers those tensors
+    one at a time. A rank that skipped an empty crop sends fewer tensors
+    than a rank that did not, and the gather does not finish. Gather
+    each whole list once, move every tensor onto this rank's device,
+    then compute from the combined crops.
+    """
+    sync_was = metric._to_sync
+    metric._to_sync = False
+    saw_crops = False
+    try:
+        for name in list(metric._reductions):
+            value = getattr(metric, name)
+            if not isinstance(value, list):
+                continue
+            gathered = gather_object(value)
+            flat = _move_to_device(
+                [item for part in gathered for item in part],
+                metric.device,
+            )
+            setattr(metric, name, flat)
+            saw_crops = saw_crops or bool(flat)
+        if not saw_crops:
+            return {}
+        if metric._update_count == 0:
+            metric._update_count = 1
+        return metric.compute()
+    finally:
+        metric._to_sync = sync_was
 
 
 def gather_dataframe(frame: pd.DataFrame) -> pd.DataFrame:
