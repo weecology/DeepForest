@@ -8,6 +8,7 @@ repos:
         exclude: '\.(svg|csv|xml|cpg|prj)$'
       - id: check-yaml
       - id: check-added-large-files
+        exclude: ^docs/figures/bird_prediction_example_1\.png$
       - id: check-json
         files: citation_count.json
 
