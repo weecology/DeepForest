@@ -43,9 +43,18 @@ case "${CASE}" in
         REQUIRED_FILES+=("${DEEPFOREST_HPC_VALIDATION_CSV}")
         REQUIRED_DIRS+=("${DEEPFOREST_HPC_ROOT_DIR}")
         ;;
+    validation_uneven_nonempty)
+        JOB_DESC="uneven nonempty validation (#1460)"
+        CONDA_ENV_NAME="${CONDA_ENV_NAME:-mypredict}"
+        export DEEPFOREST_HPC_VALIDATION_CSV="${DEEPFOREST_HPC_VALIDATION_CSV:-${DEFAULT_HPC_ROOT}/treeABC_blank.csv}"
+        export DEEPFOREST_HPC_ROOT_DIR="${DEEPFOREST_HPC_ROOT_DIR:-${DEFAULT_HPC_ROOT}}"
+        PYTEST_TARGET="tests/test_cluster_validation_uneven_nonempty.py"
+        REQUIRED_FILES+=("${DEEPFOREST_HPC_VALIDATION_CSV}")
+        REQUIRED_DIRS+=("${DEEPFOREST_HPC_ROOT_DIR}")
+        ;;
     *)
         echo "Unknown CASE: ${CASE}"
-        echo "Known cases: validation_empty_rank"
+        echo "Known cases: validation_empty_rank, validation_uneven_nonempty"
         exit 1
         ;;
 esac
