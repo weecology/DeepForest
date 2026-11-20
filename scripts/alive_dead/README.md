@@ -21,6 +21,7 @@ HiPerGator at `/blue/ewhite/b.weinstein/DeepForest/alive_dead`; given a copy of
 | Source | Labels | Used for |
 |---|---|---|
 | NEON hand-labelled crops (6,329 after removing duplicates and conflicts) | hand | fine-tuning and test |
+| NEON Woody Vegetation Structure (VST) dead and pre-death trees, RELEASE-2026, matched to crowns in NEON RGB, 2,120 kept after a human cull | weak, reviewed | fine-tuning (train only) |
 | [deadtrees.earth DTE-aerial-train](https://huggingface.co/datasets/ayushi3536/deadtree.earth-aerial-train_cc_by), CC BY, 0.1 m | crowns detected by DeepForest, labelled from pseudo-label masks | pretraining |
 | [deadtrees.earth DTE-aerial-bench](https://huggingface.co/datasets/ayushi3536/deadtree.earth-aerial-bench), 10 cm | crowns labelled from expert masks | evaluation only |
 | [TreeFinder](https://www.kaggle.com/datasets/zhihaow/tree-finder), NAIP 0.6 m | dead-blob boxes and detector crowns | tested for pretraining, not used |
@@ -44,12 +45,24 @@ python make_split.py --root $ROOT --manifest neon_hand.csv --name neon_hand_v1
 python make_split.py --root $ROOT --manifest dte_train.csv --name dte_train_v2 --n-folds 10
 python make_split.py --root $ROOT --manifest dte_bench.csv --name dte_bench_v2 --all-test
 
-# 3. Pretrain on deadtrees.earth crowns, then fine-tune on the hand labels
-sbatch train.sbatch dte_train_v2 pretrain_dte --epochs 8 --num-workers 16
-sbatch train.sbatch neon_hand_v1 finetune_dte \
-    --init-from $ROOT/runs/pretrain_dte/best.ckpt --extra-eval $ROOT/splits/dte_bench_v2
+# 3. NEON VST crowns: survey tables, stem coordinates, RGB/CHM tiles, crops,
+#    then a human review that deletes obvious mismatches
+NEON_TOKEN=... python download_vst.py --out_dir $ROOT/sources/neon_vst
+python merge_vst.py --vst_dir $ROOT/sources/neon_vst/RELEASE-2026 \
+    --tos_dir $ROOT/sources/neon_tos_plots_V12/<unzipped folder>
+sbatch fetch_vst_tiles.sbatch                  # reads the token from ~/.neon_token
+sbatch build_vst_crops.sbatch                  # GPU; also writes the review zip
+python apply_vst_review.py --root $ROOT --review-dir <returned review folder>
+python make_split.py --root $ROOT --base-split neon_hand_v1 \
+    --train-only neon_vst_reviewed.csv --name neon_hand_vst_v1
 
-# 4. Evaluate any checkpoint or Hugging Face model on a split
+# 4. Pretrain on deadtrees.earth crowns, then fine-tune on the NEON crowns
+sbatch train.sbatch dte_train_v1 pretrain_dte_train_v1_resnet50 --epochs 8 --num-workers 16
+sbatch train.sbatch neon_hand_vst_v1 finetune_neon_hand_vst_v1_from_dte_train_v1 \
+    --init-from $ROOT/runs/pretrain_dte_train_v1_resnet50/best.ckpt \
+    --extra-eval $ROOT/splits/dte_bench_all $ROOT/splits/dte_bench_v2
+
+# 5. Evaluate any checkpoint or Hugging Face model on a split
 python evaluate_cropmodel.py --split-dir $ROOT/splits/dte_bench_v2 --split test \
     --model weecology/cropmodel-deadtrees --out $ROOT/runs/hf_current/eval_dte_bench_v2
 ```
@@ -77,6 +90,19 @@ filters without running detection again.
 
 Size filtering doesn't fix the main remaining issue: the detector often splits a
 large crown into several 2–4 m boxes, and those fragments are kept.
+
+## NEON VST crowns
+
+`build_vst_crops.py` takes every tree ever recorded as standing dead or dead with a
+broken bole, at least 3 m tall and with a mapped stem, and pairs it with every
+RGB flight over its plot. A flight is labelled Dead when the last field visit on
+or before it recorded the tree dead and no later visit recorded it live, and
+Alive for flights before the tree died. The nearest detected crown is cropped,
+and crowns whose lidar canopy height disagrees with the field height are dropped.
+Most dead stems are under live canopy, so a person then deleted 81% of the Dead
+candidates (`apply_vst_review.py`). Tiles in the `neon_hand_v1` validation and
+test splits are excluded, and `make_split.py --base-split` keeps those splits
+unchanged.
 
 ## Known issues in the NEON hand labels
 

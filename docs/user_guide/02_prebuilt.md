@@ -109,18 +109,20 @@ Crop models are classification models (e.g. ResNets) that are applied to cropped
 
 ### Alive/Dead trees model
 
-`weecology/cropmodel-deadtrees` classifies each predicted tree crown as `Alive` or `Dead` from RGB. It is a ResNet-50 that is first pretrained on about 250,000 crowns from the [deadtrees.earth](https://deadtrees.earth) aerial dataset ([DTE-aerial](https://arxiv.org/abs/2605.19605), CC BY part) and then fine-tuned on 6,329 hand-labelled NEON crown crops from 41 sites.
+`weecology/cropmodel-deadtrees` classifies each predicted tree crown as `Alive` or `Dead` from RGB. It is a ResNet-50 that is first pretrained on about 250,000 crowns from the [deadtrees.earth](https://deadtrees.earth) aerial dataset ([DTE-aerial](https://arxiv.org/abs/2605.19605), CC BY part) and then fine-tuned on 8,449 NEON crown crops: 6,329 hand-labelled crops from 41 sites, plus 2,120 crowns of trees recorded as dead or alive in NEON's field surveys, checked by a person.
 
 - **Pretraining crowns**: DeepForest detects crowns on 0.1 m deadtrees.earth patches. A crown is labelled Dead when at least 50% of its box is mapped as tree mortality, and Alive when it has no mortality and at least 70% tree cover.
 - **Hand labels**: NEON crops are split into train, validation and test by 1 km tile, so no tile is in more than one split.
+- **Field-survey crowns**: trees recorded as standing dead in the NEON Woody Vegetation Structure survey, and the same trees before they died, are matched to the nearest detected crown in each airborne RGB flight from 2014 to 2026. A person removed the obvious mismatches, mostly live canopy above a dead understorey stem. These crowns are used for training only, and none come from validation or test tiles.
 - **Evaluation**: the NEON test split (882 crops, 136 dead) and 2,841 crowns from the 25 expert-labelled sites of the [DTE-aerial benchmark](https://huggingface.co/datasets/ayushi3536/deadtree.earth-aerial-bench). Neither was used for training.
 
 | Model | NEON test AUROC | NEON test Dead F1 | DTE benchmark AUROC | DTE benchmark Dead F1 |
 |---|---|---|---|---|
 | NEON hand labels only | 0.965 | 0.87 | 0.930 | 0.47 |
-| deadtrees.earth pretraining + NEON fine-tuning | 0.985 | 0.87 | 0.983 | 0.84 |
+| deadtrees.earth pretraining + NEON hand labels | 0.985 | 0.87 | 0.983 | 0.84 |
+| deadtrees.earth pretraining + NEON hand labels + field-survey crowns (current) | 0.974 | 0.85 | 0.989 | 0.93 |
 
-Dead F1 uses a 0.5 threshold. The model is conservative: lowering the Dead threshold to 0.2 raises Dead recall from 0.73 to 0.82 on the DTE benchmark (precision 0.99 to 0.98) and from 0.85 to 0.93 on NEON test (precision 0.89 to 0.81). The mortality class describes visible symptoms (leaf loss, grey or brown crowns), not physiological death, and can be confused with leaf-off deciduous trees, shadows or pale-crowned species.
+Dead F1 uses a 0.5 threshold. The field-survey crowns trade a little NEON precision for a large gain on the DTE benchmark, where Dead recall rises from 0.73 to 0.92. They also make the Dead scores better calibrated: on the DTE benchmark, 10% of wrong calls have a confidence above 0.99, compared with 21% without them and 86% for the first version of this model. At 0.5, Dead recall and precision are 0.87 and 0.83 on NEON test and 0.92 and 0.94 on the DTE benchmark; a threshold of 0.7 gives 0.82 and 0.92 on NEON test. The mortality class describes visible symptoms (leaf loss, grey or brown crowns), not physiological death, and can be confused with leaf-off deciduous trees, shadows or pale-crowned species.
 
 ```python
 from deepforest import main

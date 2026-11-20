@@ -128,3 +128,30 @@ def test_flag_crowns():
     assert flags.flag_edge.tolist() == [False, False, True, False, False]
     assert flags.flag_aspect.tolist() == [False, False, False, True, False]
     assert flags.flag_nested.tolist() == [False, False, False, False, True]
+
+
+def test_make_split_base_split_train_only(manifest):
+    make_split(manifest, ["test.csv"], "v1", n_folds=5, seed=0, all_test=False)
+    extra = pd.read_csv(manifest / "manifests" / "test.csv").assign(
+        source="extra", group=lambda d: "new_" + d.group, md5=None
+    )
+    extra.to_csv(manifest / "manifests" / "extra.csv", index=False)
+    make_split(
+        manifest, [], "v2", 5, 0, False, base_split="v1", train_only=["extra.csv"]
+    )
+    v1 = pd.read_csv(manifest / "splits" / "v1" / "split.csv")
+    v2 = pd.read_csv(manifest / "splits" / "v2" / "split.csv")
+    assert (v2[v2.source == "extra"].split == "train").all()
+    pd.testing.assert_frame_equal(v2[v2.source == "test"], v1)
+
+
+def test_make_split_rejects_tile_shared_across_sources(manifest):
+    make_split(manifest, ["test.csv"], "v1", n_folds=5, seed=0, all_test=False)
+    extra = pd.read_csv(manifest / "manifests" / "test.csv").assign(
+        source="extra", md5=None
+    )
+    extra.to_csv(manifest / "manifests" / "extra.csv", index=False)
+    with pytest.raises(AssertionError, match="more than one split"):
+        make_split(
+            manifest, [], "v2", 5, 0, False, base_split="v1", train_only=["extra.csv"]
+        )
