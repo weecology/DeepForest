@@ -108,17 +108,35 @@ Crop models are classification models (e.g. ResNets) that are applied to cropped
 
 
 ### Alive/Dead trees model
-To provide a simple filter for trees that appear dead in the RGB data we collected 6,342 image crops from the prediction landscape, as well as other NEON sites, and hand annotated them as either alive or dead. We finetuned a resnet-50 pre-trained on ImageNet to classify alive or dead trees before passing them to the species classification model. The model was trained with an ADAM optimizer with a learning rate of 0.001 and batch size of 128 for 40 epochs, and was evaluated on a randomly held out of 10% of the crops. The evaluation accuracy of the alive-dead model was 95.8% (Table S1).
 
-Table S1 Confusion matrix for the Alive/Dead model in Weinstein et al. 2023
+`weecology/cropmodel-deadtrees` classifies each predicted tree crown as `Alive` or `Dead` from RGB. It is a ResNet-50 that is first pretrained on about 250,000 crowns from the [deadtrees.earth](https://deadtrees.earth) aerial dataset ([DTE-aerial](https://arxiv.org/abs/2605.19605), CC BY part) and then fine-tuned on 8,449 NEON crown crops: 6,329 hand-labelled crops from 41 sites, plus 2,120 crowns of trees recorded as dead or alive in NEON's field surveys, checked by a person.
 
-|                 | Predicted Alive | Predicted Dead |
-|-----------------|-----------------|----------------|
-| **Observed Alive**  | 527             | 9              |
-| **Observed Dead**   | 10              | 89             |
+- **Pretraining crowns**: DeepForest detects crowns on 0.1 m deadtrees.earth patches. A crown is labelled Dead when at least 50% of its box is mapped as tree mortality, and Alive when it has no mortality and at least 70% tree cover.
+- **Hand labels**: NEON crops are split into train, validation and test by 1 km tile, so no tile is in more than one split.
+- **Field-survey crowns**: trees recorded as standing dead in the NEON Woody Vegetation Structure survey, and the same trees before they died, are matched to the nearest detected crown in each airborne RGB flight from 2014 to 2026. A person removed the obvious mismatches, mostly live canopy above a dead understorey stem. These crowns are used for training only, and none come from validation or test tiles.
+- **Evaluation**: the NEON test split (882 crops, 136 dead) and 2,841 crowns from the 25 expert-labelled sites of the [DTE-aerial benchmark](https://huggingface.co/datasets/ayushi3536/deadtree.earth-aerial-bench). Neither was used for training.
 
-* Note *, due to the smaller training sizes, the confidence scores are overfit and not smooth. We do not recommend using the confidence scores from this model until it is trained on more diverse data.
+| Model | NEON test AUROC | NEON test Dead F1 | DTE benchmark AUROC | DTE benchmark Dead F1 |
+|---|---|---|---|---|
+| NEON hand labels only | 0.965 | 0.87 | 0.930 | 0.47 |
+| deadtrees.earth pretraining + NEON hand labels | 0.985 | 0.87 | 0.983 | 0.84 |
+| deadtrees.earth pretraining + NEON hand labels + field-survey crowns (current) | 0.974 | 0.85 | 0.989 | 0.93 |
 
+Dead F1 uses a 0.5 threshold. The field-survey crowns trade a little NEON precision for a large gain on the DTE benchmark, where Dead recall rises from 0.73 to 0.92. They also make the Dead scores better calibrated: on the DTE benchmark, 10% of wrong calls have a confidence above 0.99, compared with 21% without them and 86% for the first version of this model. At 0.5, Dead recall and precision are 0.87 and 0.83 on NEON test and 0.92 and 0.94 on the DTE benchmark; a threshold of 0.7 gives 0.82 and 0.92 on NEON test. The mortality class describes visible symptoms (leaf loss, grey or brown crowns), not physiological death, and can be confused with leaf-off deciduous trees, shadows or pale-crowned species.
+
+```python
+from deepforest import main
+from deepforest.model import CropModel
+
+m = main.deepforest()
+m.load_model("weecology/deepforest-tree")
+crop_model = CropModel.load_model("weecology/cropmodel-deadtrees")
+predictions = m.predict_tile(path="tile.tif", crop_model=crop_model)
+```
+
+The training pipeline, from data sources to evaluation, is in [`scripts/alive_dead`](https://github.com/weecology/DeepForest/tree/main/scripts/alive_dead).
+
+The first version of this model (trained on the NEON hand labels only) is described in:
 
 Citation: Weinstein, Ben G., et al. "Capturing long‐tailed individual tree diversity using an airborne imaging and a multi‐temporal hierarchical model." Remote Sensing in Ecology and Conservation 9.5 (2023): 656-670.
 
