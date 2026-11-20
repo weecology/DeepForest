@@ -136,9 +136,7 @@ def test_make_split_base_split_train_only(manifest):
         source="extra", group=lambda d: "new_" + d.group, md5=None
     )
     extra.to_csv(manifest / "manifests" / "extra.csv", index=False)
-    make_split(
-        manifest, [], "v2", 5, 0, False, base_split="v1", train_only=["extra.csv"]
-    )
+    make_split(manifest, [], "v2", 5, 0, False, base_split="v1", train_only=["extra.csv"])
     v1 = pd.read_csv(manifest / "splits" / "v1" / "split.csv")
     v2 = pd.read_csv(manifest / "splits" / "v2" / "split.csv")
     assert (v2[v2.source == "extra"].split == "train").all()
