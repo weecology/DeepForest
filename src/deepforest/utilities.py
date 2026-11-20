@@ -701,14 +701,14 @@ def __check_and_assign_label__(
 def __assign_root_dir__(
     input,
     gdf: gpd.GeoDataFrame,
-    root_dir: str | None = None,
+    root_dir: str | os.PathLike | None = None,
 ):
     if root_dir is not None:
-        gdf.root_dir = root_dir
+        gdf.root_dir = os.fspath(root_dir)
     else:
         # If the user specified a path to file, use that root_dir as default.
-        if isinstance(input, str):
-            gdf.root_dir = os.path.dirname(input)
+        if isinstance(input, (str, os.PathLike)):
+            gdf.root_dir = os.path.dirname(os.fspath(input))
         else:
             raise ValueError(
                 "root_dir argument not specified and input is a dataframe, where are the images stored?"
@@ -728,8 +728,8 @@ def _pandas_to_deepforest_format__(input, df, image_path, root_dir, label):
 
 
 def read_file(
-    input: str | pd.DataFrame,
-    root_dir: str | None = None,
+    input: str | os.PathLike | pd.DataFrame,
+    root_dir: str | os.PathLike | None = None,
     image_path: str | None = None,
     label: str | None = None,
 ) -> gpd.GeoDataFrame:
@@ -751,7 +751,8 @@ def read_file(
         )
 
     # read file
-    if isinstance(input, str):
+    if isinstance(input, (str, os.PathLike)):
+        input = os.fspath(input)
         if input.endswith(".csv"):
             df = pd.read_csv(input)
             gdf = _pandas_to_deepforest_format__(input, df, image_path, root_dir, label)

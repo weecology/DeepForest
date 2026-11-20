@@ -1,6 +1,7 @@
 # test_utilities
 import json
 import os
+from pathlib import Path
 
 import geopandas as gpd
 import numpy as np
@@ -55,6 +56,17 @@ def test_read_file(tmp_path):
     assert "image_path" in shp.columns
     assert "label" in shp.columns
     assert hasattr(shp, "root_dir")
+
+
+def test_read_file_pathlib_path():
+    """Read CSV annotations when input and root_dir are pathlib.Path objects"""
+    csv_path = Path(get_data("OSBS_029.csv"))
+    annotations = utilities.read_file(input=csv_path, root_dir=csv_path.parent)
+    assert not annotations.empty
+    assert "geometry" in annotations.columns
+    assert "image_path" in annotations.columns
+    assert "label" in annotations.columns
+    assert annotations.root_dir == os.fspath(csv_path.parent)
 
 
 def test_read_file_multiple_images(tmp_path):

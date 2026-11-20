@@ -1,5 +1,6 @@
 # test preprocessing
 import os
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -99,6 +100,22 @@ def test_split_raster_from_pd_dataframe(tmp_path):
                                                  root_dir=os.path.dirname(get_data("OSBS_029.tif")),
                                                  patch_size=300,
                                                  patch_overlap=0)
+
+    # Returns a 7 column pandas array
+    assert output_annotations.shape[1] == 7
+    assert not output_annotations.empty
+
+
+def test_split_raster_from_pathlib_path(tmp_path):
+    """Split raster into crops when annotations_file is a pathlib.Path"""
+    annotations_file = Path(get_data("OSBS_029.csv"))
+    output_annotations = preprocess.split_raster(
+        path_to_raster=get_data("OSBS_029.tif"),
+        annotations_file=annotations_file,
+        save_dir=tmp_path,
+        patch_size=300,
+        patch_overlap=0,
+    )
 
     # Returns a 7 column pandas array
     assert output_annotations.shape[1] == 7
