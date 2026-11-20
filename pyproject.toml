@@ -132,7 +132,6 @@ ignore = [
     "E501",  # line too long, handled by black
     "B008",  # do not perform function calls in argument defaults
     "C901",  # too complex
-    "UP038", # Use X | Y in isinstance call - this is incorrect for runtime
 ]
 
 [tool.ruff.lint.per-file-ignores]
