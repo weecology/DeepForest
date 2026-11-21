@@ -85,3 +85,16 @@ def test_retinanet_override_class_error():
     # Mismatch between label_dict and class count
     with pytest.raises(ValueError):
         retinanet.RetinaNetHub.from_pretrained("weecology/deepforest-tree", num_classes=1, label_dict={"Tree": 0, "Shrub": 1})
+
+
+@pytest.mark.parametrize("freeze_backbone", [True, False])
+def test_freeze_backbone(config, freeze_backbone):
+    config.num_classes = 1
+    config.label_dict = {"Tree": 0}
+    config.train.freeze_backbone = freeze_backbone
+    model = retinanet.Model(config).create_model()
+
+    body_trainable = any(p.requires_grad for p in model.backbone.body.parameters())
+    assert body_trainable != freeze_backbone
+    assert all(p.requires_grad for p in model.backbone.fpn.parameters())
+    assert all(p.requires_grad for p in model.head.parameters())

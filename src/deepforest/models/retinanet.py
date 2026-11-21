@@ -221,4 +221,8 @@ class Model(BaseModel):
                 **hf_args,
             )
 
+        # Freeze the ResNet; the feature pyramid and heads are still trained.
+        if self.config.train.freeze_backbone:
+            model.backbone.body.requires_grad_(False)
+
         return model.to(map_location)
