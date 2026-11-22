@@ -18,13 +18,15 @@ that increasing the patch size works better on higher quality data. For
 example, here is a drone collected data at the standard 400px.
 
 ```python
+from deepforest.visualize import plot_results
+
 tile = model.predict_tile(
     path="/Users/ben/Desktop/test.jpg",
-    return_plot=True,
     patch_overlap=0,
     iou_threshold=0.05,
     patch_size=400
 )
+plot_results(tile)
 ```
 
 ![Example Patch - 400px](../../www/example_patch400.png)
@@ -61,9 +63,17 @@ and removes any overlapping boxes greater than the
 intersection-over-union threshold (IoU). Intersection-over-union is the
 most common object detection metric, defined as the area of intersection
 between two boxes divided by the area of union. If users find that there
-is too much overlap among boxes, increasing the IoU will return fewer
-boxes. To increase the number of overlapping boxes, reduce the IoU
-threshold.
+is too much overlap among boxes, decreasing the IoU threshold will remove
+more of the overlapping boxes. To keep more overlapping boxes, increase
+the IoU threshold.
+
+Two IoU thresholds control non-max suppression in DeepForest. The
+`nms_thresh` config value is used inside the default `retinanet` model
+for each image or window, and the `iou_threshold` argument of
+`predict_tile` is used when the predictions from overlapping windows are
+combined. See the non-max suppression section of the
+[prediction guide](16_prediction.md) for where each one is applied and
+how to change it.
 
 ## Annotate local training data
 

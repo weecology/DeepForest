@@ -122,6 +122,33 @@ The image shows that the speed of the predict_tile function is related to the st
 The _predict_tile_ function is sensitive to _patch_size_, especially when using the prebuilt model on new data.
 We encourage users to experiment with various patch sizes. For 0.1m data, 400-800px per window is appropriate, but it will depend on the density of tree plots. For coarser resolution tiles, >800px patch sizes have been effective.
 
+### Non-max suppression
+
+Object detection models often predict several overlapping boxes for the same tree. Non-max suppression (NMS) works through the boxes from the highest score down and keeps each box unless it overlaps an already kept box by more than an intersection-over-union (IoU) threshold. A lower threshold removes more overlapping boxes, and a higher threshold keeps more of them. `predict_tile` removes boxes in two steps:
+
+1. **Within each window.** The default `retinanet` model drops boxes scoring below `score_thresh` (default 0.1), runs NMS separately for each label using `nms_thresh` (default 0.05), and keeps at most `detections_per_img` (default 300) boxes per window. These config values are passed to the model when it is created, so set them with `config_args`.
+2. **Across windows.** `predict_tile` moves the window predictions back into image coordinates and runs one more NMS over all boxes in the image, using its `iou_threshold` argument (default 0.15). This step ignores labels, and it runs even when the image fits in a single window. Its main job is to remove the duplicate boxes predicted for trees that fall in the overlap between windows. Point models merge windows by distance instead, using `point.nms_distance_thresh` (in pixels).
+
+| Step | Parameter | Default | How to change it |
+|---|---|---|---|
+| Within each window | `nms_thresh` | 0.05 | `main.deepforest(config_args={"nms_thresh": 0.3})` |
+| Across windows | `iou_threshold` | 0.15 | `model.predict_tile(path, iou_threshold=0.3)` |
+
+```python
+from deepforest import get_data, main
+
+# Keep crowns that overlap by up to IoU 0.3
+model = main.deepforest(config_args={"nms_thresh": 0.3})
+path = get_data("OSBS_029.tif")
+boxes = model.predict_tile(path, patch_size=300, patch_overlap=0.25, iou_threshold=0.3)
+```
+
+A box that survives the first step can still be removed by the second, so to keep more overlapping crowns in a dense canopy, raise both thresholds. A higher `iou_threshold` also keeps more duplicate boxes where windows overlap, so lower it if you see doubled crowns along window edges.
+
+`predict_image` and `predict_file` run the first step on each whole image. They do not merge windows, so `iou_threshold` does not apply to them. When the predictions for an image contain more than one label, they run one more NMS across labels using `nms_thresh`. On the command line, `deepforest predict --mode tile` uses `nms_thresh` for both steps, for example `deepforest predict image.tif --mode tile nms_thresh=0.3`.
+
+Evaluation uses a separate IoU threshold, `validation.iou_threshold` (default 0.4), to match predictions to ground truth. It does not change which boxes are predicted. See the [evaluation guide](12_evaluation.md).
+
 ## Predict a directory of using a csv file using model.predict_file
 
 For a list of images with annotations in a csv file, the `predict_file` function will return a dataframe with the predicted bounding boxes for each image as a single dataframe. This is useful for making predictions on a large number of images that have ground truth annotations.
