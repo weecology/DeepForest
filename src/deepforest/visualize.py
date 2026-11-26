@@ -270,7 +270,7 @@ def convert_to_sv_format(
         detections = sv.KeyPoints(
             xy=points,
             class_id=labels,
-            confidence=scores,
+            keypoint_confidence=scores,
             data={"class_name": [class_name[class_id] for class_id in labels]},
         )
 
@@ -510,8 +510,8 @@ def _plot_image_with_geometry(df, image, sv_color, thickness=1, radius=3):
         point_detections = sv.Detections(
             xyxy=xyxy,
             class_id=detections.class_id,
-            confidence=detections.confidence.reshape(-1)
-            if detections.confidence is not None
+            confidence=detections.keypoint_confidence.reshape(-1)
+            if detections.keypoint_confidence is not None
             else None,
         )
         point_annotator = sv.CircleAnnotator(color=sv_color, thickness=thickness)
