@@ -9,7 +9,6 @@ MODEL_NAMES = [
     "weecology/everglades-bird-species-detector",
     "weecology/deepforest-tree",
     "weecology/deepforest-livestock",
-    "weecology/cropmodel-deadtrees",
     "weecology/everglades-nest-detection",
 ]
 
