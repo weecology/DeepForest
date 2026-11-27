@@ -1,0 +1,22 @@
+# RetinaNet with a frozen DINOv3 backbone, pretrained on diverse imagery.
+# The facebook/dinov3 repositories are gated: accept the license on
+# Hugging Face and log in before first use.
+defaults:
+  - config
+  - _self_
+
+architecture: 'retinanet_dinov3'
+
+# use 'facebook/dinov3-vitl16-pretrain-lvd1689m' for the base model.
+model:
+  name: weecology/deepforest-tree-dinov3
+  revision: 'main'
+
+# A new model needs labels, override these for your data
+num_classes: 1
+label_dict:
+  Tree: 0
+
+train:
+# DINOv3 backbones are conventionally frozen during training (see the original paper).
+  freeze_backbone: True

@@ -6,6 +6,7 @@ from deepforest.model import CropModel
 BOX_MODELS = [
     "weecology/deepforest-bird",
     "weecology/deepforest-tree",
+    "weecology/deepforest-tree-dinov3",
     "weecology/deepforest-livestock",
     "weecology/everglades-bird-species-detector",
     "weecology/everglades-nest-detection",

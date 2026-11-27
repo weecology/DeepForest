@@ -94,6 +94,8 @@ train:
     fast_dev_run: False
     # preload images to GPU memory for fast training. This depends on GPU size and number of images.
     preload_images: False
+    # Freeze the model backbone while training.
+    freeze_backbone: False
     # Validate that annotation coordinates fall within image bounds before training.
     validate_coordinates: True
 

@@ -111,3 +111,21 @@ def m_point(download_release, tmp_path_factory):
     m.create_trainer()
 
     return m
+
+
+@pytest.fixture(scope="session")
+def dinov3_encoder(tmp_path_factory):
+    """A small, randomly initialized DINOv3 encoder saved to disk.
+    """
+    from transformers import DINOv3ViTConfig, DINOv3ViTImageProcessor, DINOv3ViTModel
+
+    path = tmp_path_factory.mktemp("dinov3-encoder")
+    config = DINOv3ViTConfig(
+        hidden_size=32,
+        intermediate_size=64,
+        num_attention_heads=2,
+        num_hidden_layers=1,
+    )
+    DINOv3ViTModel(config).save_pretrained(path)
+    DINOv3ViTImageProcessor().save_pretrained(path)
+    return str(path)

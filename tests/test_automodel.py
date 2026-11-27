@@ -184,3 +184,14 @@ def test_unsupported_model_type_error(config, monkeypatch):
     monkeypatch.setattr(automodel.AutoModelForObjectDetection, "from_pretrained", fail)
     with pytest.raises(ValueError, match="Please try upgrading your package"):
         automodel.Model(config).create_model("org/unsupported-model")
+
+
+@pytest.mark.parametrize("freeze_backbone", [True, False])
+def test_freeze_backbone(config, freeze_backbone):
+    config.train.freeze_backbone = freeze_backbone
+    model = automodel.Model(config).create_model(config.model.name)
+
+    backbone = model.net.model.backbone
+    backbone_trainable = any(p.requires_grad for p in backbone.parameters())
+    assert backbone_trainable != freeze_backbone
+    assert any(p.requires_grad for p in model.parameters())
