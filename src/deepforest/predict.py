@@ -7,10 +7,44 @@ import shapely
 import torch
 from scipy.spatial import cKDTree
 from shapely import affinity
+from torch.utils.data import DataLoader
+from torch.utils.data.distributed import DistributedSampler
 from torchvision.ops import nms
 
 from deepforest import distributed
 from deepforest.datasets import cropmodel
+
+
+def _assemble_crop_predictions(
+    local_indices: list[int],
+    local_labels: list[int],
+    local_scores: list[float],
+    num_boxes: int,
+) -> tuple[list[int], list[float]]:
+    """Rebuild crop labels/scores in dataset order after a DDP predict shard.
+
+    DistributedSampler may pad by repeating early indices. Keep the
+    first value seen for each index so padded repeats do not overwrite.
+    """
+    gathered = distributed.gather_object((local_indices, local_labels, local_scores))
+    labels: list[int | None] = [None] * num_boxes
+    scores: list[float | None] = [None] * num_boxes
+    filled = [False] * num_boxes
+    for indices, part_labels, part_scores in gathered:
+        for index, label, score in zip(indices, part_labels, part_scores, strict=True):
+            if index >= num_boxes or filled[index]:
+                continue
+            labels[index] = int(label)
+            scores[index] = float(score)
+            filled[index] = True
+
+    if not all(filled):
+        missing = [i for i, seen in enumerate(filled) if not seen]
+        raise RuntimeError(
+            f"Crop model DDP gather missed box indices {missing} of {num_boxes}"
+        )
+
+    return labels, scores  # type: ignore[return-value]
 
 
 def translate_predictions(predictions: pd.DataFrame) -> pd.DataFrame:
@@ -313,6 +347,7 @@ def _predict_crop_model_(
         expand = cropmodel_cfg.get("expand", 0)
 
     # Create dataset
+    results = results.reset_index(drop=True)
     bounding_box_dataset = cropmodel.BoundingBoxDataset(
         results,
         root_dir=os.path.dirname(path),
@@ -324,8 +359,26 @@ def _predict_crop_model_(
         expand=expand,
     )
 
-    # Create dataloader
-    crop_dataloader = crop_model.predict_dataloader(bounding_box_dataset)
+    # With 2+ GPUs, each GPU only scores some of the rows (e.g. 2 labels for
+    # a 4-row table). Keep the row indices so we can fill the full column later.
+    sampler = None
+    if distributed.is_distributed():
+        sampler = DistributedSampler(
+            bounding_box_dataset,
+            num_replicas=distributed.get_world_size(),
+            rank=distributed.get_rank(),
+            shuffle=False,
+            drop_last=False,
+        )
+        crop_dataloader = DataLoader(
+            bounding_box_dataset,
+            batch_size=crop_model.config["cropmodel"]["batch_size"],
+            shuffle=False,
+            sampler=sampler,
+            num_workers=crop_model.config["cropmodel"]["num_workers"],
+        )
+    else:
+        crop_dataloader = crop_model.predict_dataloader(bounding_box_dataset)
 
     # Run prediction
     crop_results = trainer.predict(crop_model, crop_dataloader)
@@ -349,8 +402,15 @@ def _predict_crop_model_(
             f"load_from_disk(), which creates the dictionaries based on file contents."
         )
 
-    results[label_column] = [crop_model.numeric_to_label_dict[x] for x in label]
+    if sampler is not None:
+        label, score = _assemble_crop_predictions(
+            local_indices=list(sampler),
+            local_labels=[int(x) for x in label],
+            local_scores=[float(x) for x in score],
+            num_boxes=len(results),
+        )
 
+    results[label_column] = [crop_model.numeric_to_label_dict[x] for x in label]
     results[score_column] = score
 
     return results
@@ -362,28 +422,26 @@ def _crop_models_wrapper_(
     if crop_models is not None and not isinstance(crop_models, list):
         crop_models = [crop_models]
 
-    # Run predictions
+    if not crop_models:
+        return results
+
+    # One image per dataset. Several crop models add columns to those same rows.
+    is_single_model = len(crop_models) == 1
     crop_results = []
-    if crop_models:
-        is_single_model = (
-            len(crop_models) == 1
-        )  # Flag to check if only one model is passed
+    for image_path in results.image_path.unique():
+        image_results = results.loc[results.image_path == image_path].copy()
+        path = os.path.join(results.root_dir, image_path)
         for i, crop_model in enumerate(crop_models):
-            for path in results.image_path.unique():
-                path = os.path.join(results.root_dir, path)
-                crop_result = _predict_crop_model_(
-                    crop_model=crop_model,
-                    results=results,
-                    path=path,
-                    trainer=trainer,
-                    model_index=i,
-                    transform=transform,
-                    augmentations=augmentations,
-                    is_single_model=is_single_model,
-                )
-                crop_results.append(crop_result)
+            image_results = _predict_crop_model_(
+                crop_model=crop_model,
+                results=image_results,
+                path=path,
+                trainer=trainer,
+                model_index=i,
+                transform=transform,
+                augmentations=augmentations,
+                is_single_model=is_single_model,
+            )
+        crop_results.append(image_results)
 
-    # Concatenate results
-    crop_results = pd.concat(crop_results)
-
-    return crop_results
+    return pd.concat(crop_results)
