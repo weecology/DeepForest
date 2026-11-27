@@ -100,6 +100,9 @@ docs = [
     "sphinx-design",
     "sphinx-markdown-tables",
 ]
+spotlight = [
+    "renumics-spotlight>=1.7.1",
+]
 
 [project.scripts]
 deepforest = "deepforest.scripts.cli:main"
