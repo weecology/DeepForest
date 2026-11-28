@@ -138,8 +138,8 @@ def train(
             save_top_k=1,
             save_last=True,
         )
-        # Using equals causes a lot of strife with Hydra, so use colon instead.
-        checkpoint_callback.CHECKPOINT_EQUALS_CHAR = ":"
+        # Using equals causes a lot of strife with Hydra, so use underscore instead.
+        checkpoint_callback.CHECKPOINT_EQUALS_CHAR = "_"
         callbacks.append(checkpoint_callback)
 
     trainer_kwargs = {
